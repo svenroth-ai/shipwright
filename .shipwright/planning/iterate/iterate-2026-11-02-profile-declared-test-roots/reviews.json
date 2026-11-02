@@ -1,0 +1,308 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-02-profile-declared-test-roots",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-02T20:57:33.959250+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "approach |",
+          "file": null,
+          "line": null,
+          "finding": "The spec and the plan contradict each other on precedence. The spec is explicit: profile roots replace the conventional defaults (step 2 \"replaces everything below\" analog; vite-hono's list is a complete root set, and the \"Out of scope\" framing frames it as the profile's answer). Revision 5 unilaterally switches to a union with defaults. These produce different manifests: a vite-hono project would also scan top-level `tests/`, `test/`, `__tests__/`, etc., which the spec's profile list deliberately does not include.",
+          "suggestion": "Resolve this in the spec, not the plan. If union is genuinely safer (never fewer folders than today), amend the spec's precedence section and AC1 to say so, and note that the vite-hono list is additive. If replace is intended, revert revision 5. As written, the implementation will pass its own tests but ship different behavior than the reviewed spec.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "Spec says non-existent folders \"are dropped silently, as for the config today\"; the plan adds that a profile whose folders all fail to exist, or an empty list, \"behaves like no profile.\" That's a reasonable fallback, but combined with union it creates a subtle state: a partially-matching profile silently union with defaults, so a typo like `server/test` instead of `server/tests` degrades to defaults-only with no signal that the profile contributed nothing.",
+          "suggestion": "When the resolved profile list is non-empty in the profile but yields zero existing folders, emit the (already-planned) source-naming warning — \"profile X declared test_roots but none resolve\" — instead of falling back silently.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk |",
+          "file": null,
+          "line": null,
+          "finding": "The disclosed limitation (a) is worse than \"disclosed\": if `shipwright_run_config.json` is commonly gitignored, the F11 gate archive regen uses default roots while local runs use profile roots, meaning the gate can under-report coverage for exactly the projects this change was made for. A \"known limit\" note doesn't prevent a merge blocking on a manifest discrepancy that doesn't reproduce locally.",
+          "suggestion": "At minimum, when the run config is absent from the archive the warning text should name that cause (the plan only says the warning \"points at `traceability.test_roots`\"). Better: have the gate regen read the profile name from the run config before archiving, or require the run config be tracked as part of this change's docs.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency |",
+          "file": null,
+          "line": null,
+          "finding": "_test_links_profile_roots.py` computes the shared scripts path as `parents[5]` \"like `_lib_loader`\". A hardcoded depth is fine if it mirrors an existing convention, but the plan should state the test covers a moved-file failure (an import error should surface as the broken-profile stderr path, not a crash — the plan says `profile_test_roots` \"never raises\", so verify the sys.path/append failure is inside the caught region).",
+          "suggestion": "Add one unit test: shared dir unreachable → returns None + one stderr line, no exception.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "Schema validation gap: the schema accepts any string array; a profile with `\"traceability\": {\"test_roots\": \"server/tests\"}` (string not list) is said to \"break the profile for every phase\" per the docs row. That's a harsh blast radius for a typo in an optional key.",
+          "suggestion": "Confirm profile validation treats a type-invalid `traceability` as an unknown/wrong-type key (ignored or warned) rather than invalidating the whole profile, or at least confirm that's the existing schema behavior for unknown keys so the docs statement is accurate.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach ·",
+          "file": null,
+          "line": null,
+          "finding": "The final revisions union profile roots with conventional defaults, contradicting the specification’s replacement precedence. This can scan unrelated folders and change manifests beyond the declared profile roots. Empty or nonexistent profile roots also acquire fallback behavior that the specification does not define.",
+          "suggestion": "Implement config → profile → defaults as replacement tiers. Explicitly define empty-list and zero-existing-folder behavior, and test that defaults are excluded when a profile declares roots.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency ·",
+          "file": null,
+          "line": null,
+          "finding": "Excluding user-level profiles means this collector may not use the project’s resolved stack profile. A user-level profile can resolve elsewhere in the application while compliance reports it as unknown—or selects a bundled profile with the same name and different roots. Archive consistency alone does not resolve that mismatch.",
+          "suggestion": "Make the supported resolution contract explicit. If compliance requires project-local or bundled profiles, document that restriction and give an actionable diagnostic when the selected profile is unavailable there. Test name collisions and user-only profiles.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk ·",
+          "file": null,
+          "line": null,
+          "finding": "The proposed archive-like fixture does not verify that the actual gate archive includes the required files. The plan simultaneously relies on a tracked run config and acknowledges that it may be gitignored; a local-tree fixture can pass while real gate regeneration uses defaults.",
+          "suggestion": "Exercise the actual archive creation and collector-loading path using a temporary Git repository containing a committed run config and project profile. Assert that local and archived regeneration produce identical links. Cover the missing-run-config limitation separately and document it clearly; a “no folder resolved” warning will not explain it when conventional folders exist.  The implementation structure is reasonable and appropriately scoped, but the root-selection semantics and profile-resolution contract need alignment before implementation. The archive test should verify the prerequisite on which gate parity depends.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-02T20:49:46.027293+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n**Category: approach | Severity: high**\n**Finding:** The spec and the plan contradict each other on precedence. The spec is explicit: profile roots *replace* the conventional defaults (step 2 \"replaces everything below\" analog; vite-hono's list is a complete root set, and the \"Out of scope\" framing frames it as the profile's answer). Revision 5 unilaterally switches to a *union with defaults*. These produce different manifests: a vite-hono project would also scan top-level `tests/`, `test/`, `__tests__/`, etc., which the spec's profile list deliberately does not include.\n**Suggestion:** Resolve this in the spec, not the plan. If union is genuinely safer (never fewer folders than today), amend the spec's precedence section and AC1 to say so, and note that the vite-hono list is additive. If replace is intended, revert revision 5. As written, the implementation will pass its own tests but ship different behavior than the reviewed spec.\n\n**Category: edge-case | Severity: medium**\n**Finding:** Spec says non-existent folders \"are dropped silently, as for the config today\"; the plan adds that a profile whose folders *all* fail to exist, or an empty list, \"behaves like no profile.\" That's a reasonable fallback, but combined with union it creates a subtle state: a partially-matching profile silently union with defaults, so a typo like `server/test` instead of `server/tests` degrades to defaults-only with no signal that the profile contributed nothing.\n**Suggestion:** When the resolved profile list is non-empty in the profile but yields zero existing folders, emit the (already-planned) source-naming warning — \"profile X declared test_roots but none resolve\" — instead of falling back silently.\n\n**Category: risk | Severity: medium**\n**Finding:** The disclosed limitation (a) is worse than \"disclosed\": if `shipwright_run_config.json` is commonly gitignored, the F11 gate archive regen uses *default* roots while local runs use *profile* roots, meaning the  […truncated]\n\n[openai] 1. **Category: approach · Severity: medium**  \n   **Finding:** The final revisions union profile roots with conventional defaults, contradicting the specification’s replacement precedence. This can scan unrelated folders and change manifests beyond the declared profile roots. Empty or nonexistent profile roots also acquire fallback behavior that the specification does not define.  \n   **Suggestion:** Implement config → profile → defaults as replacement tiers. Explicitly define empty-list and zero-existing-folder behavior, and test that defaults are excluded when a profile declares roots.\n\n2. **Category: dependency · Severity: medium**  \n   **Finding:** Excluding user-level profiles means this collector may not use the project’s resolved stack profile. A user-level profile can resolve elsewhere in the application while compliance reports it as unknown—or selects a bundled profile with the same name and different roots. Archive consistency alone does not resolve that mismatch.  \n   **Suggestion:** Make the supported resolution contract explicit. If compliance requires project-local or bundled profiles, document that restriction and give an actionable diagnostic when the selected profile is unavailable there. Test name collisions and user-only profiles.\n\n3. **Category: risk · Severity: medium**  \n   **Finding:** The proposed archive-like fixture does not verify that the actual gate archive includes the required files. The plan simultaneously relies on a tracked run config and acknowledges that it may be gitignored; a local-tree fixture can pass while real gate regeneration uses defaults.  \n   **Suggestion:** Exercise the actual archive creation and collector-loading path using a temporary Git repository containing a committed run config and project profile. Assert that local and archived regeneration produce identical links. Cover the missing-run-config limitation separately and document it clearly; a “no folder resolved” warning will not explain it when c […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-compliance/scripts/lib/collectors/_test_links_profile_roots.py",
+          "line": 74,
+          "finding": "A corrupt shipwright_run_config.json produced a message pointing at a profile file.",
+          "suggestion": "Tell the run-config error apart. FIXED: the message now says shipwright_run_config.json could not be read; test updated.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-compliance/scripts/lib/collectors/_test_links_profile_roots.py",
+          "line": 43,
+          "finding": "_WARNED_NO_ROOTS also holds profile keys; name no longer describes it.",
+          "suggestion": "Optional rename. DECLINED: tests and the earlier iterate clear it under this name; low value.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-compliance/tests/test_test_links_profile_roots.py",
+          "line": 193,
+          "finding": "The unreachable-shared-dir test only exercised the _pc is None guard, not the ImportError branch.",
+          "suggestion": "FIXED: a subprocess test loads a copy of the module where parents[5]/shared/scripts does not exist, asserts _pc is None, sys.path unchanged and ('', []) returned.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "CHANGELOG-unreleased.d/",
+          "line": null,
+          "finding": "Changelog drop missing.",
+          "suggestion": "Written at F4.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-02T20:59:54.179669+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "hidden coupling & blast radius",
+          "file": "shared/profiles/vite-hono.json",
+          "line": null,
+          "finding": "Claim under doubt: The profile tier only adds folders for existing vite-hono projects — The profile tier replaces the defaults, so a vite-hono project with a top-level tests/ would lose those links locally while the gate (which adds the defaults) keeps them.",
+          "suggestion": "FIXED: tests and integration-tests added to the vite-hono list; regression test test_a_vite_hono_project_keeps_the_links_of_its_top_level_tests_folder.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-compliance/scripts/lib/collectors/_test_links_profile_roots.py",
+          "line": null,
+          "finding": "Claim under doubt: An unreachable shared dir degrades with one line — It degrades silently because without profile_consumer the profile name cannot be read, so it is indistinguishable from no profile.",
+          "suggestion": "REBUTTED: a warning would fire on every project without a profile; an unreachable shared dir is a broken install and breaks _lib_loader first. Wording corrected (no line is claimed).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-compliance/scripts/lib/collectors/_evidence_readers.py",
+          "line": null,
+          "finding": "Claim under doubt: vitest per-package JUnit paths match nested manifest paths — Package-relative file attributes may not re-anchor to server/ or client/ (hypothesis, not traced). Fails red, not green.",
+          "suggestion": "DISCLOSED as a known limit / follow-up: same class as the Playwright rootDir fix of #969, outside this change.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-02T21:03:07.982538+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-compliance/scripts/lib/collectors/_test_links_io.py` (~line 205 in the new `_resolve_test_roots`)",
+          "line": null,
+          "finding": "The `warn=False` contract (\"callers resolving on a throwaway tree stay quiet\") is only partially honored. The new `warn` parameter flows into the profile path, but the non-list-config diagnostic (`traceability.test_roots is not a list; using default roots`) still writes to stderr unconditionally. The F11 gate resolves roots on throwaway archives with `warn=False`, so a base/head archive carrying a corrupt compliance config now emits a stray stderr line the new design explicitly says should be suppressed.",
+          "suggestion": "Gate that write with `if warn:` (or route it through the new `_once` helper with the warn flag), and extend `test_warn_false_is_silent_for_throwaway_trees` to cover a non-list config value.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "plugins/shipwright-compliance/tests/test_test_links_profile_roots.py` — `test_a_tagged_test_in_a_nested_folder_reaches_the_manifest",
+          "line": null,
+          "finding": "AC1 names two locations: a tagged test in `server/tests` and one in `client/e2e`. The manifest-level test only creates and asserts the `server/tests` file; `client/e2e` is asserted only as a scan root in the roots test. A regression that dropped `client/e2e` from scanning (e.g. a bad glob or a prune-dir interaction) would still pass the manifest test, because `client/e2e` is only checked at the root-resolution layer, never end-to-end. The spec_review_reply acknowledges this as \"minor\" but it is an explicit acceptance criterion.",
+          "suggestion": "Add a second tagged test file under `client/e2e` and assert both paths appear in the manifest.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/schemas/stack_profile.schema.json` — the new `traceability` property",
+          "line": null,
+          "finding": "Sibling optional keys in this schema (`design_system`, `folder_structure`, `migrations`) are typed `[\"object\", \"null\"]`; `traceability` is `\"object\"` only. A profile writing `\"traceability\": null` (a plausible \"unset\" marker consistent with the file's other keys) now fails validation for every phase — the exact blast radius the docs warn about for a wrong type. Not a spec violation, but an unnecessary inconsistency with the schema's own conventions.",
+          "suggestion": "Type it `[\"object\", \"null\"]` to match its siblings.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "plugins/shipwright-compliance/tests/test_test_links_profile_roots.py` — `test_an_unreachable_shared_dir_degrades_without_raising",
+          "line": null,
+          "finding": "This test monkeypatches `pr_mod._pc = None` and asserts the guard — it exercises no import behavior at all and would pass even if the import block were completely broken. The subprocess test (`test_a_module_placed_where_shared_scripts_does_not_exist...`) does cover the ImportError branch, so this is redundancy/mislabel rather than a coverage hole, but the first test's name implies it tests reachability.",
+          "suggestion": "Either fold it into the subprocess test or rename it to state it only checks the `_pc is None` guard.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "plugins/shipwright-compliance/scripts/lib/collectors/_test_links_profile_roots.py` — `_ADDED` computation",
+          "line": null,
+          "finding": "sys.path` membership is checked by exact string (`str(_SHARED_SCRIPTS) not in sys.path`) on a resolved path, but other insertion sites (e.g. the tests insert `shared/scripts` via `Path` strings, `sys.path.insert`) may hold equivalent-but-differently-normalized entries (trailing separators, case on case-insensitive filesystems, symlinks resolved differently). In that case the module appends a duplicate entry, `_ADDED` is True, and it then removes its own entry — behavior stays correct, but a pre-existing equivalent entry is not detected, so a redundant path entry appears for the module's lifetime. Cosmetic in practice given the finally-removal; noting for completeness.",
+          "suggestion": "Optional: compare using `Path(os.path.normpath(p))` for each entry instead of raw string membership.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "spec",
+          "file": "plugins/shipwright-compliance/scripts/lib/collectors/_test_links_io.py",
+          "line": 189,
+          "finding": "An unknown or broken profile produces two stderr lines when no default test folder exists. `profile_test_roots()` emits its diagnostic, then `configured_test_roots()` calls `warn_no_roots()`; the different deduplication keys allow both. This violates AC3’s one-line requirement. Existing tests avoid this case by creating `tests/`.",
+          "suggestion": "Combine the profile failure and empty-scan diagnosis into one warning, or suppress the second warning after a profile diagnostic. Add a test with an unknown profile and no conventional folders.  Overall assessment: ship-with-fixes for this diagnostic edge case; the core precedence, root validation, and bundled-profile behavior appear sound. Execution was unavailable because the environment rejected shell access.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-02T21:01:42.763568+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- Category: bug\n  Severity: medium\n  File: `plugins/shipwright-compliance/scripts/lib/collectors/_test_links_io.py` (~line 205 in the new `_resolve_test_roots`)\n  Finding: The `warn=False` contract (\"callers resolving on a throwaway tree stay quiet\") is only partially honored. The new `warn` parameter flows into the profile path, but the non-list-config diagnostic (`traceability.test_roots is not a list; using default roots`) still writes to stderr unconditionally. The F11 gate resolves roots on throwaway archives with `warn=False`, so a base/head archive carrying a corrupt compliance config now emits a stray stderr line the new design explicitly says should be suppressed.\n  Suggestion: Gate that write with `if warn:` (or route it through the new `_once` helper with the warn flag), and extend `test_warn_false_is_silent_for_throwaway_trees` to cover a non-list config value.\n\n- Category: test\n  Severity: medium\n  File: `plugins/shipwright-compliance/tests/test_test_links_profile_roots.py` — `test_a_tagged_test_in_a_nested_folder_reaches_the_manifest`\n  Finding: AC1 names two locations: a tagged test in `server/tests` **and** one in `client/e2e`. The manifest-level test only creates and asserts the `server/tests` file; `client/e2e` is asserted only as a scan root in the roots test. A regression that dropped `client/e2e` from scanning (e.g. a bad glob or a prune-dir interaction) would still pass the manifest test, because `client/e2e` is only checked at the root-resolution layer, never end-to-end. The spec_review_reply acknowledges this as \"minor\" but it is an explicit acceptance criterion.\n  Suggestion: Add a second tagged test file under `client/e2e` and assert both paths appear in the manifest.\n\n- Category: edge-case\n  Severity: low\n  File: `shared/schemas/stack_profile.schema.json` — the new `traceability` property\n  Finding: Sibling optional keys in this schema (`design_system`, `folder_structure`, `migrations`) are typed `[\"object\", \"null […truncated]\n\n[openai] - Category: spec\n- Severity: low\n- File: plugins/shipwright-compliance/scripts/lib/collectors/_test_links_io.py:189\n- Finding: An unknown or broken profile produces two stderr lines when no default test folder exists. `profile_test_roots()` emits its diagnostic, then `configured_test_roots()` calls `warn_no_roots()`; the different deduplication keys allow both. This violates AC3’s one-line requirement. Existing tests avoid this case by creating `tests/`.\n- Suggestion: Combine the profile failure and empty-scan diagnosis into one warning, or suppress the second warning after a profile diagnostic. Add a test with an unknown profile and no conventional folders.\n\nOverall assessment: ship-with-fixes for this diagnostic edge case; the core precedence, root validation, and bundled-profile behavior appear sound. Execution was unavailable because the environment rejected shell access.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-02T20:58:23.207656+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-02T20:48:51.641854+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-02T20:48:51.752490+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

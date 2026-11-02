@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "1. **Answer.** Yes \u2014 this is essentially a no-new-mechanism change: an optional key in an existing schema, read by an existing resolver, so it should exist roughly as proposed (Option A).\n\n2. **The smallest thing that would do.** Option A as described. Option D (scaffold writes the setting into the compliance config at creation time) is the only serious rival: it makes the project's choice explicit, self-documenting, and immune to profile resolution changes later. But it bakes a snapshot of the profile into every generated project forever, and doesn't help projects already created. A is smaller and self-updating. Option B (scan at any depth) changes default behaviour for every existing project \u2014 too broad. Option C leaves new users with a gate that lies until they find a hidden setting.\n\n3. **What it costs to keep.** One ongoing obligation: the profile's `test_roots` vocabulary must stay identical to the compliance config's, and the vite-hono values must track that template's actual layout as the profile evolves. Plus the documented `sys.path` import convention in the compliance plugin, which now has another consumer.\n\n4. **What it forecloses.** None identified of significance. The known limit \u2014 F11 archive regen missing user-level profiles \u2014 is a pre-existing property of profile resolution, not something this change creates.\n\n5. **Findings:**\n\n- Category: ownership\n- Severity: low\n- Finding: The gate/local-run divergence for user-level profiles is recorded as a \"known limit\" but nothing will ever surface it to the affected user; a gate that silently scans different roots than a local run will be diagnosed the hard way, once, by whoever hits it.\n- Suggestion: When the resolved profile comes from the user level and the gate is regenerating from an archive, emit the same one-line stderr notice used for a broken profile, so the disagreement is observable rather than archaeology.\n\n- Category: proportionality\n- Severity: low\n- Finding: The `sys.path`-append / import / `sys.path`-remove dance in the compliance plugin is a convention being accrued rather than a mechanism being justified; each new consumer makes it harder to later replace with a proper shared module boundary.\n- Suggestion: Acceptable to ship, but record it as tech debt owed to whichever change next needs profile data in a plugin, rather than treating the convention as settled.\n\nNo other findings. The mechanism is a data point in an already-standing resolver; that is the right size for this problem.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Should it exist?** Yes\u2014option A is a proportionate extension of existing profile metadata and test-root resolution for a problem the project already has.\n\n2. **Smallest thing that would do:** Add the optional profile key, populate it for vite-hono, and consult it through the existing resolver only when the compliance config has no explicit roots. This fixes existing projects without broader recursive discovery or scaffolding-generated configuration that can drift.\n\n3. **What it costs to keep:** Profile maintainers must update the declared roots when the stack layout changes; collector maintainers must preserve the shared setting\u2019s meaning and precedence.\n\n4. **What it forecloses:** none identified.\n\n5. **Findings:** No findings.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "architecture",
+  "capture": {
+    "run_id": "iterate-2026-11-02-profile-declared-test-roots",
+    "at": "2026-11-02T20:49:00.343351+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "approve"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}

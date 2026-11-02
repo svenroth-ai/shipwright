@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: spec\n- Severity: low\n- File: plugins/shipwright-compliance/scripts/lib/collectors/_test_links_io.py:189\n- Finding: An unknown or broken profile produces two stderr lines when no default test folder exists. `profile_test_roots()` emits its diagnostic, then `configured_test_roots()` calls `warn_no_roots()`; the different deduplication keys allow both. This violates AC3\u2019s one-line requirement. Existing tests avoid this case by creating `tests/`.\n- Suggestion: Combine the profile failure and empty-scan diagnosis into one warning, or suppress the second warning after a profile diagnostic. Add a test with an unknown profile and no conventional folders.\n\nOverall assessment: ship-with-fixes for this diagnostic edge case; the core precedence, root validation, and bundled-profile behavior appear sound. Execution was unavailable because the environment rejected shell access.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "## Findings\n\n- Category: bug\n  Severity: medium\n  File: `plugins/shipwright-compliance/scripts/lib/collectors/_test_links_io.py` (~line 205 in the new `_resolve_test_roots`)\n  Finding: The `warn=False` contract (\"callers resolving on a throwaway tree stay quiet\") is only partially honored. The new `warn` parameter flows into the profile path, but the non-list-config diagnostic (`traceability.test_roots is not a list; using default roots`) still writes to stderr unconditionally. The F11 gate resolves roots on throwaway archives with `warn=False`, so a base/head archive carrying a corrupt compliance config now emits a stray stderr line the new design explicitly says should be suppressed.\n  Suggestion: Gate that write with `if warn:` (or route it through the new `_once` helper with the warn flag), and extend `test_warn_false_is_silent_for_throwaway_trees` to cover a non-list config value.\n\n- Category: test\n  Severity: medium\n  File: `plugins/shipwright-compliance/tests/test_test_links_profile_roots.py` \u2014 `test_a_tagged_test_in_a_nested_folder_reaches_the_manifest`\n  Finding: AC1 names two locations: a tagged test in `server/tests` **and** one in `client/e2e`. The manifest-level test only creates and asserts the `server/tests` file; `client/e2e` is asserted only as a scan root in the roots test. A regression that dropped `client/e2e` from scanning (e.g. a bad glob or a prune-dir interaction) would still pass the manifest test, because `client/e2e` is only checked at the root-resolution layer, never end-to-end. The spec_review_reply acknowledges this as \"minor\" but it is an explicit acceptance criterion.\n  Suggestion: Add a second tagged test file under `client/e2e` and assert both paths appear in the manifest.\n\n- Category: edge-case\n  Severity: low\n  File: `shared/schemas/stack_profile.schema.json` \u2014 the new `traceability` property\n  Finding: Sibling optional keys in this schema (`design_system`, `folder_structure`, `migrations`) are typed `[\"object\", \"null\"]`; `traceability` is `\"object\"` only. A profile writing `\"traceability\": null` (a plausible \"unset\" marker consistent with the file's other keys) now fails validation for every phase \u2014 the exact blast radius the docs warn about for a wrong type. Not a spec violation, but an unnecessary inconsistency with the schema's own conventions.\n  Suggestion: Type it `[\"object\", \"null\"]` to match its siblings.\n\n- Category: test\n  Severity: low\n  File: `plugins/shipwright-compliance/tests/test_test_links_profile_roots.py` \u2014 `test_an_unreachable_shared_dir_degrades_without_raising`\n  Finding: This test monkeypatches `pr_mod._pc = None` and asserts the guard \u2014 it exercises no import behavior at all and would pass even if the import block were completely broken. The subprocess test (`test_a_module_placed_where_shared_scripts_does_not_exist...`) does cover the ImportError branch, so this is redundancy/mislabel rather than a coverage hole, but the first test's name implies it tests reachability.\n  Suggestion: Either fold it into the subprocess test or rename it to state it only checks the `_pc is None` guard.\n\n- Category: bug\n  Severity: low\n  File: `plugins/shipwright-compliance/scripts/lib/collectors/_test_links_profile_roots.py` \u2014 `_ADDED` computation\n  Finding: `sys.path` membership is checked by exact string (`str(_SHARED_SCRIPTS) not in sys.path`) on a resolved path, but other insertion sites (e.g. the tests insert `shared/scripts` via `Path` strings, `sys.path.insert`) may hold equivalent-but-differently-normalized entries (trailing separators, case on case-insensitive filesystems, symlinks resolved differently). In that case the module appends a duplicate entry, `_ADDED` is True, and it then removes its own entry \u2014 behavior stays correct, but a pre-existing equivalent entry is not detected, so a redundant path entry appears for the module's lifetime. Cosmetic in practice given the finally-removal; noting for completeness.\n  Suggestion: Optional: compare using `Path(os.path.normpath(p))` for each entry instead of raw string membership.\n\n## Verified sound\n\n- Tiered REPLACE precedence (config \u2192 profile \u2192 defaults) matches the spec exactly, including the \"all profile folders missing \u2192 warn naming the profile and fall back\" rule, and the empty-list-is-absent rule.\n- Profile entries are routed through the same `_expand_root_entries` loop, so the `**`/absolute/`..`/symlink containment checks apply to profile data (path-escape finding from the architecture review is genuinely addressed, and `test_profile_entries_that_escape_the_project_are_dropped` exercises it).\n- The sys.path guard, module-level import, and removal-only-what-we-added are correct; both subprocess tests (lonely copy, pre-existing entry) genuinely validate the import contract, including the ADR-045 constraint about the gate's `sys.modules` cleanup.\n- User-level profiles excluded; the not-found diagnostic explains it, matching the external-review fix.\n- The AC5 gate test builds a real git repo and goes through `check_cross_layer_coverage` on archives; the not-committed variant pins the disclosed limitation and asserts the new scan-note text.\n- `shipwright_run_config.json` corrupt-file vs broken-profile vs not-found diagnostics are distinguished (the code-review fix is in the diff and tested).\n- No security issues: no injection sinks, no user-level lookup, resolver-validated profile names.\n\n## Overall assessment\n\nShip-with-fixes: the implementation faithfully follows a heavily reviewed spec and the remaining defects are small \u2014 gate-archive quietness for the non-list config diagnostic, and the missing `client/e2e` manifest assertion that completes AC1's letter.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-11-02-profile-declared-test-roots",
+    "at": "2026-11-02T21:00:12.900140+00:00"
+  },
+  "verdicts": {
+    "openai": "revise",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}
