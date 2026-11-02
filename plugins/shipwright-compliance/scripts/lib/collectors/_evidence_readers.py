@@ -16,10 +16,15 @@ the id must survive, all fail-closed:
   (browser); ``results[]`` are retries within a project. Each project is reduced to a
   verdict, then projects are combined FAIL-CLOSED (any project fail ⇒ fail), so a
   chromium pass can never mask a firefox fail.
+* **Playwright rootDir** — the JSON reporter writes each spec ``file`` relative to
+  ``config.rootDir`` (the testDir), not the project root; with no explicit base the
+  report's own absolute ``rootDir`` (when inside the project) is the base. It is
+  an absolute host path, so it only helps a report read on the machine that made it.
 """
 
 from __future__ import annotations
 
+import posixpath
 import re
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -172,20 +177,60 @@ def _playwright_state(spec: dict) -> tuple[str, str]:
     return verdict
 
 
+def _playwright_rootdir_base(data: dict, root: Path | None) -> str:
+    """Project-relative POSIX path of the report's ``config.rootDir``, or ``""``.
+
+    Playwright writes each spec ``file`` relative to ``config.rootDir`` (the ``testDir``), not to
+    the project root, so a config in a sub-folder yields ids that never join the manifest. The
+    report carries ``rootDir`` as an ABSOLUTE path; a missing/relative/non-string value, one
+    outside ``root``, or ``root`` itself yields ``""`` (⇒ the unchanged historical behavior —
+    fail-closed, never a guessed prefix).
+    """
+    config = data.get("config")
+    raw = config.get("rootDir") if isinstance(config, dict) else None
+    if root is None or not isinstance(raw, str) or not raw or not Path(raw).is_absolute():
+        return ""
+    try:
+        rel = Path(raw).resolve().relative_to(Path(root).resolve()).as_posix()
+    except (ValueError, OSError):
+        return ""
+    return "" if rel == "." else rel
+
+
+def _playwright_path(file: str, root: Path | None, explicit_base: str, derived_base: str) -> str:
+    """Project-relative id path of ONE spec ``file``.
+
+    An explicit base keeps ``norm_path``'s historical rebase. A DERIVED base is certain (the file
+    IS rootDir-relative), so it is joined unconditionally: ``norm_path``'s "already prefixed"
+    heuristic would skip it for ``<rootDir>/<rootDir-name>/x.spec.ts`` and key another test. An
+    already absolute file is rebased onto ``root`` by ``norm_path`` and gets no prefix at all.
+    A ``..`` segment (a project whose testDir lies outside rootDir) is collapsed; a result that
+    still climbs out of the project never joins (fail-closed).
+    """
+    if explicit_base or not derived_base or Path(file).is_absolute():
+        return norm_path(file, root, explicit_base)
+    rel = norm_path(file, root)
+    return posixpath.normpath(f"{derived_base}/{rel}")
+
+
 def read_playwright(data: dict, root: Path | None = None, base: str = "") -> dict:
     """Parse Playwright JSON-reporter output into ``{file::title → evidence}``.
 
     Recurses nested ``suites`` (describe blocks), carrying the file down from the
-    enclosing file-suite so a nested spec still keys to its source file.
+    enclosing file-suite so a nested spec still keys to its source file. With no explicit
+    ``base``, the spec files are rebased under the report's own ``config.rootDir`` (when it
+    lies inside ``root``); an explicit ``base`` always wins.
     """
     out: dict = {}
+    explicit_base = base
+    derived_base = "" if base else _playwright_rootdir_base(data, root)
 
     def walk(suite: dict, file: str) -> None:
         file = suite.get("file") or file
         for spec in suite.get("specs", []) or []:
             title = spec.get("title")
             if title and file:
-                tid = f"{norm_path(file, root, base)}::{title}"
+                tid = f"{_playwright_path(file, root, explicit_base, derived_base)}::{title}"
                 merge_into(out, tid, entry(*_playwright_state(spec), "playwright"))
         for sub in suite.get("suites", []) or []:
             walk(sub, file)

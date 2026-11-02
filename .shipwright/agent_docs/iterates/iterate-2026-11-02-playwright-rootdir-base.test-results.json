@@ -1,0 +1,125 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-02-playwright-rootdir-base",
+    "date": "2026-11-02",
+    "unit": {
+      "status": "passed",
+      "passed": 24401,
+      "skipped": 107,
+      "total": 24508
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run --project plugins/shipwright-compliance --extra dev pytest plugins/shipwright-compliance/tests/test_playwright_rootdir_base.py -q",
+      "exit_code": 0,
+      "tests_run": 15,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\playwright-rootdir-base\\.shipwright\\runs\\iterate-2026-11-02-playwright-rootdir-base\\surface_verification.log",
+      "timestamp": "2026-11-02T14:44:30.999Z",
+      "attempts": 1
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "a Playwright report whose config.rootDir lies inside the project keys specs under that folder (the #969 case)",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_playwright_rootdir_base.py::test_rootdir_inside_project_rebases_spec_file PASSED"
+        },
+        {
+          "behavior": "the rebase also holds through build_index, the real call path",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_playwright_rootdir_base.py::test_rootdir_is_applied_through_build_index PASSED"
+        },
+        {
+          "behavior": "rootDir equal to the project root adds no prefix",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_playwright_rootdir_base.py::test_rootdir_equal_to_project_root_adds_no_prefix PASSED"
+        },
+        {
+          "behavior": "an explicit base still wins over rootDir",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_playwright_rootdir_base.py::test_explicit_base_wins_over_rootdir PASSED"
+        },
+        {
+          "behavior": "a rootDir outside the project is ignored (fail-closed)",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_playwright_rootdir_base.py::test_rootdir_outside_project_is_ignored_fail_closed PASSED"
+        },
+        {
+          "behavior": "missing or malformed config keeps the previous behaviour",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_playwright_rootdir_base.py::test_missing_or_malformed_config_keeps_prior_behaviour PASSED"
+        },
+        {
+          "behavior": "an absolute spec file outside rootDir gets no derived prefix",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_playwright_rootdir_base.py::test_absolute_spec_file_outside_rootdir_gets_no_derived_prefix PASSED"
+        },
+        {
+          "behavior": "a derived base is joined even when the file repeats the dir name (no false pass)",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_playwright_rootdir_base.py::test_derived_base_is_joined_even_when_the_file_repeats_the_dir_name PASSED"
+        },
+        {
+          "behavior": "a .. path is collapsed and a project escape never joins",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_playwright_rootdir_base.py::test_dotdot_file_is_collapsed_and_a_project_escape_never_joins PASSED"
+        },
+        {
+          "behavior": "native-separator rootDir and nested suites",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_playwright_rootdir_base.py::test_native_separator_rootdir_and_nested_suite PASSED"
+        },
+        {
+          "behavior": "without a project root the rootDir is not used",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_playwright_rootdir_base.py::test_without_root_the_rootdir_is_not_used PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 11,
+        "tested": 11,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 1,
+        "covered_acs": 1
+      }
+    },
+    "declared_removals": [],
+    "exemptions": {
+      "count": 0,
+      "items": []
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-11-02-playwright-rootdir-base",
+    "commit": "239398468fee2d024ce3640eaf7e890079175d4e",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

@@ -1,0 +1,171 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-02-playwright-rootdir-base",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-02T14:20:34.455096+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-02T14:24:06.030722+00:00",
+      "disposition": "small complexity; plan runs at medium+ only per the phase matrix",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-compliance/tests/test_playwright_rootdir_base.py",
+          "line": 84,
+          "finding": "test_absolute_spec_file_is_not_prefixed_twice passes even without the is_absolute guard (absolute file under rootDir already starts with the base).",
+          "suggestion": "Use an absolute spec file under root but outside rootDir and assert other/x.spec.ts.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-compliance/scripts/lib/collectors/_evidence_readers.py",
+          "line": 55,
+          "finding": "A derived base goes through norm_path's startswith(b+'/') heuristic, which skips the prefix when rootDir=<root>/e2e and the spec is <root>/e2e/e2e/x.spec.ts; the id could join a different manifest test (false pass).",
+          "suggestion": "Join the derived base without the heuristic.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-compliance/scripts/lib/collectors/_evidence_readers.py",
+          "line": 215,
+          "finding": "Multi-project configs with files outside the config testDir produce client/e2e/../smoke/a.spec.ts which never joins (fail-closed).",
+          "suggestion": "Optional normpath.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-compliance/scripts/lib/collectors/_evidence_readers.py",
+          "line": 186,
+          "finding": "rootDir is an absolute host path, so cross-machine reports keep the old non-joining ids; no CLI way to pass a playwright base.",
+          "suggestion": "Follow-up: --playwright-base CLI arg; note same-host assumption.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-compliance/tests/test_playwright_rootdir_base.py",
+          "line": 39,
+          "finding": "No native-backslash rootDir case and no nested-suite case.",
+          "suggestion": "Add both.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-compliance/scripts/lib/collectors/_evidence_readers.py",
+          "line": 3,
+          "finding": "Module docstring lists three joins; rootDir rebase is a fourth.",
+          "suggestion": "Add a bullet.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-02T14:23:02.607339+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "239398468fee2d024ce3640eaf7e890079175d4e"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-02T14:24:05.871133+00:00",
+      "disposition": "Stage 3 is conditional: the diff has no migration, async, cross-plugin import or irreversible op; pure path-string normalisation in one reader",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "diff-below-threshold"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter",
+      "completed_at": "2026-11-02T14:24:59.365032+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "unstructured",
+      "raw_excerpt": "[glm] I reviewed the diff against the spec (issue #969) and the stated acceptance criteria.\n\n**Spec compliance**\n- Base derived from `config[\"rootDir\"]` only when base is empty: ✅ (`derived_base = \"\" if base else ...`, and `_playwright_path` prefers `explicit_base`).\n- Fail-closed on missing/malformed/relative/outside-root rootDir: ✅ (`_playwright_rootdir_base` checks `isinstance`, non-empty, `is_absolute`, and `relative_to` failure). The \"rootDir == root ⇒ no prefix\" case is also handled (rel == \".\" → \"\"), matching the historical behavior for root-at-root configs.\n- Reports without `rootDir` unchanged: ✅ — derived base is \"\" and `_playwright_path` falls through to `norm_path(file, root, explicit_base)` with empty base, identical to the old call.\n\n**Correctness**\n- The `is_absolute(file)` guard is genuinely needed and correct: a report mixing absolute file paths with a rootDir would otherwise double-prefix files that `norm_path` already rebased onto root.\n- The unconditional join for the derived base (bypassing `norm_path`'s \"already prefixed\" heuristic) is a deliberate, correct choice; the `e2e/e2e/x.spec.ts` test demonstrates the false-keying bug that heuristic would reintroduce.\n- `..` escaping: `posixpath.normpath` collapses but can still produce leading `..` for a testDir outside rootDir; the test confirms such ids simply don't join (fail-closed, no false pass). Consistent with spec.\n\n**Tests**\n- Tests assert the actual keyed output (`executed == \"pass\"`, membership of the full joined id), not just that the function ran. The edge-case tests (absolute-file-outside-rootDir, repeated-dir-name, `..` escape, malformed config incl. non-dict config value, no-root caller) would each catch a plausible wrong implementation. Error paths are covered.\n\n**Regressions**\n- Default behavior when `base=\"\"` and no usable rootDir is byte-identical to before (same `norm_path(file, root, base)` call). Callers with an explicit base are unaffected. No export changes.\n\n**Minor o […truncated]\n\n[openai] No concrete defects found in the diff. The implementation derives a base only from an absolute rootDir contained within root, preserves explicit-base precedence, and retains historical behavior when rootDir is absent or invalid. The tests assert resulting evidence IDs and cover integration, nested suites, repeated directory names, and traversal paths.\n\nShip-as-is. This assessment is based on the supplied diff; local execution was blocked by the environment policy.\n\nSHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-02T14:21:41.198482+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "239398468fee2d024ce3640eaf7e890079175d4e"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-02T14:24:06.171273+00:00",
+      "disposition": "small complexity; plan_internal runs at medium+ only per the phase matrix",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-02T14:24:06.302219+00:00",
+      "disposition": "small complexity; architecture_internal runs at medium+ only per the phase matrix",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}
