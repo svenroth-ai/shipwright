@@ -34,14 +34,24 @@
       "attempts": 1
     },
     "test_completeness": {
-      "status": "n/a",
-      "reason_code": "trivial-auto",
-      "behaviors": [],
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "the union merge driver still keeps both sides when parallel iterates append (the module whose docstring changed)",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "shared/tests/test_parallel_merge_cascade_integration.py (3 tests) PASSED"
+        }
+      ],
       "counts": {
-        "testable": 0,
-        "tested": 0,
+        "testable": 1,
+        "tested": 1,
         "untestable": 0,
         "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 1,
+        "covered_acs": 1
       }
     }
   },

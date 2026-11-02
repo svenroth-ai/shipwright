@@ -1,7 +1,7 @@
 {
   "run_id": "iterate-2026-11-02-gitattributes-union-comment",
-  "date": "2026-11-02T22:38:10.186526Z",
-  "event_at": "2026-11-02T21:32:04.825389+00:00",
+  "date": "2026-11-02T22:40:45.667631Z",
+  "event_at": "2026-11-02T22:38:10.825915+00:00",
   "type": "bug",
   "complexity": "trivial",
   "prior_source": "history",
@@ -9,14 +9,24 @@
   "tests_passed": true,
   "adr": "iterate-2026-11-02-gitattributes-union-comment",
   "test_completeness": {
-    "status": "n/a",
-    "reason_code": "trivial-auto",
-    "behaviors": [],
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "the union merge driver still keeps both sides when parallel iterates append (the module whose docstring changed)",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "shared/tests/test_parallel_merge_cascade_integration.py (3 tests) PASSED"
+      }
+    ],
     "counts": {
-      "testable": 0,
-      "tested": 0,
+      "testable": 1,
+      "tested": 1,
       "untestable": 0,
       "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 1,
+      "covered_acs": 1
     }
   },
   "surface_verification": {
