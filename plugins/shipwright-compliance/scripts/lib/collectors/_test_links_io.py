@@ -17,6 +17,9 @@ import sys
 from pathlib import Path
 
 from ._lib_loader import load_shared_lib
+from ._test_links_profile_roots import (  # noqa: F401  (_WARNED_NO_ROOTS: re-exported, tests clear it)
+    _WARNED_NO_ROOTS, profile_test_roots, warn_no_roots, warn_profile_roots_unresolved,
+)
 
 _ZERO_SHA = "0" * 40
 _PY_SUFFIXES = (".py",)
@@ -31,10 +34,6 @@ _PRUNE_DIRS = frozenset({
     "node_modules", ".git", ".venv", "venv", "__pycache__", ".worktrees", "dist",
     "build", ".pytest_cache", ".mypy_cache", ".ruff_cache", ".tox", ".next",
 })
-# Project roots already warned about "no test folder resolved" (one line per root per process:
-# repeated regens of the same real root stay quiet). The F11 gate resolves roots on throwaway
-# archives and passes warn=False -- its own failure text carries the diagnosis.
-_WARNED_NO_ROOTS: set[str] = set()
 # Directory names + filename infixes that mark the integration layer. Both the
 # `tests/integration/` dir AND the top-level `integration-tests/` dir count (the
 # integration-tests.md.template globs `**/tests/integration/**,**/*.integration.test.*`).
@@ -179,64 +178,56 @@ def configured_test_roots(project_root: Path, *, warn: bool = True) -> list[Path
     """Resolve the scan roots (see ``_resolve_test_roots``) and SAY SO when there are none.
 
     An empty result used to be silent: a project whose tests live below ``server/`` and
-    ``client/`` (the ``vite-hono`` layout) has none of the conventional TOP-LEVEL folders, so
-    zero test files were scanned and the coverage gate then asked for tests that already
-    existed (GitHub issue #972). The resolution is unchanged -- still ``[]`` -- the warning is
-    diagnostic only, so no manifest moves. One line per project root per process; ``warn=False``
-    is for callers resolving on a throwaway tree (the F11 gate's archives).
+    ``client/`` has none of the conventional TOP-LEVEL folders, so zero test files were scanned
+    and the coverage gate then asked for tests that already existed (GitHub issue #972). One line
+    per project root per process; ``warn=False`` is for callers resolving on a throwaway tree
+    (the F11 gate's archives), which carry their own diagnosis.
     """
-    roots = _resolve_test_roots(project_root)
+    roots = _resolve_test_roots(project_root, warn=warn)
     if warn and not roots:
-        _warn_no_roots(project_root)
+        warn_no_roots(project_root, _read_traceability_config(project_root, quiet=True).get("test_roots"),
+                      _DEFAULT_TEST_DIRS)
     return roots
 
 
-def _warn_no_roots(project_root: Path) -> None:
-    key = str(Path(project_root).resolve())
-    configured = _read_traceability_config(project_root, quiet=True).get("test_roots")
-    if key in _WARNED_NO_ROOTS:
-        return
-    _WARNED_NO_ROOTS.add(key)
-    if configured == []:
-        why = "traceability.test_roots is an empty list, which turns test scanning off"
-    elif isinstance(configured, list):
-        why = "traceability.test_roots matched no directory"
-    else:
-        why = "none of the default folders (" + ", ".join(_DEFAULT_TEST_DIRS) + ") exists at the top level"
-    sys.stderr.write(
-        f"[test_links] no test folder resolved for {key}: {why}, so no test file will be scanned "
-        "and every requirement reads as untested. Set traceability.test_roots in "
-        "shipwright_compliance_config.json to the folders that hold your tests "
-        '(e.g. ["server/tests", "client/src", "client/e2e"]).\n'
-    )
+def _resolve_test_roots(project_root: Path, *, warn: bool = True) -> list[Path]:
+    """Resolve the directories the collector scans. Tiers, first that applies wins (REPLACE, no union):
+
+    1. ``traceability.test_roots`` in ``shipwright_compliance_config.json`` -- the project's own
+       choice, used exactly (even when it resolves to zero dirs); a non-list value falls back to
+       the defaults with a stderr diagnostic, never a silent revert.
+    2. ``traceability.test_roots`` of the project's stack profile (``_test_links_profile_roots``)
+       when at least one declared folder exists; a declared list matching nothing warns and falls on.
+    3. The conventional ``_DEFAULT_TEST_DIRS`` (zero change for a project with neither).
+    """
+    entries = _read_traceability_config(project_root).get("test_roots")
+    if entries is None:
+        name, declared = profile_test_roots(project_root, warn=warn)
+        if declared:
+            roots = _expand_root_entries(project_root, declared)
+            if roots:
+                return roots
+            if warn:
+                warn_profile_roots_unresolved(project_root, name)
+        return default_test_roots(project_root)
+    if not isinstance(entries, list):
+        if warn:
+            sys.stderr.write("[test_links] traceability.test_roots is not a list; using default roots\n")
+        return default_test_roots(project_root)
+    return _expand_root_entries(project_root, entries)
 
 
-def _resolve_test_roots(project_root: Path) -> list[Path]:
-    """Resolve the directories the collector scans, honoring an optional project opt-in.
-
-    Reads ``traceability.test_roots`` (dir names / fixed-depth globs relative to the project
-    root) from ``shipwright_compliance_config.json``. ABSENT ⇒ the collector keeps its exact
-    historical scope — the conventional ``_DEFAULT_TEST_DIRS`` (zero change for every existing
-    project + the frozen fixtures). PRESENT ⇒ exactly those roots, so a monorepo opts its
-    ``plugins/*/tests`` + ``shared/tests`` in via config rather than the shared collector
-    hardcoding any repo layout.
+def _expand_root_entries(project_root: Path, entries: list) -> list[Path]:
+    """Expand ``test_roots`` entries (config AND profile alike) into existing directories.
 
     Each entry may be a literal dir (``shared/tests``) or a BOUNDED glob (``plugins/*/tests``);
     ``Path.glob`` resolves at the pattern's fixed depth so root resolution never descends a
     vendored tree. A ``**`` entry is skipped (it would re-introduce the rglob-descent hang the
-    walk-prune fixes); a non-string / empty entry is skipped too. Presence is authoritative — a
-    PRESENT list is used exactly (each valid entry resolved, even if it resolves to zero dirs);
-    only an ABSENT key or a non-list value falls back to the default (the latter with a stderr
-    diagnostic, never a silent revert). Each resolved dir is containment-checked (``os.walk`` runs
-    ``followlinks=False``; a match resolving OUTSIDE the project root — an absolute/``..``/symlink
-    escape — is dropped). Results are de-duplicated by resolved path and per-pattern sorted.
+    walk-prune fixes); a non-string / empty entry is skipped too. Each resolved dir is
+    containment-checked (``os.walk`` runs ``followlinks=False``; a match resolving OUTSIDE the
+    project root -- an absolute/``..``/symlink escape -- is dropped). Results are de-duplicated by
+    resolved path and per-pattern sorted.
     """
-    entries = _read_traceability_config(project_root).get("test_roots")
-    if entries is None:
-        return default_test_roots(project_root)                     # key absent → historical default
-    if not isinstance(entries, list):
-        sys.stderr.write("[test_links] traceability.test_roots is not a list; using default roots\n")
-        return default_test_roots(project_root)
     root = project_root.resolve()
     roots: list[Path] = []
     seen: set[Path] = set()

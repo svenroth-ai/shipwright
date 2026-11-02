@@ -786,6 +786,15 @@ _Where the work detail lives_ at the end of this document.
   counted as uncovered; and a measurement that cannot be made at all shows a visible warning
   instead of silently letting every commit through.
   (iterate-2026-10-08-u9-rtm-80-hook)
+- (E) [AC16] Given a project built from a stack that keeps its tests in nested folders
+  rather than at the top level, when the links between requirements and tests are
+  produced, then the stack description tells the collector where those tests live,
+  so a new project of that stack has its tests linked without anyone writing a
+  setting by hand. A setting the project writes itself replaces the stack's, a stack
+  description that is missing or cannot be read never stops the evidence from being
+  produced (the default folders apply and one line says why), and the merge check
+  looks in the same folders as a local run, provided the file naming the stack is
+  committed. Run `iterate-2026-11-02-profile-declared-test-roots`.
 
 <a id="fr-0111"></a>
 ### FR-01.11 — Ongoing change at the depth it deserves

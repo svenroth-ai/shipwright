@@ -4280,6 +4280,7 @@ Each plugin reads project context at startup to ensure consistency. This table s
 | events.jsonl | — | — | — | — | — | — | post-Scout bounded query (`full` explicit only) | read |
 | area_catalog.json | project seed | — | plan seed | build refresh | — | — | post-Scout match + refresh | — |
 | run_config.json | — | — | — | — | — | — | B2 | read |
+| stack profile `traceability.test_roots` (project + bundled profiles only, never `~/.shipwright/profiles`) | — | — | — | — | — | — | — | read (`test_links` collector, only when `shipwright_compliance_config.json` sets no `traceability.test_roots`) |
 | project_config.json | — | Step 1 | — | — | B | B2 | — | read |
 | build_config.json | — | — | — | D (read+write) | — | — | — | read |
 | known_failures.json | — | — | — | — | 2.5/5 | — | — | read |

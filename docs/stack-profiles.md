@@ -75,6 +75,7 @@ is ignored (keys starting with `_` are comments). The ones that change behaviour
 | `design_system` | `/shipwright-design` | |
 | `ux_shape`, `ui_host` | brief-driven runs | optional plain strings (for example `"ux_shape": "chat-first"`; the bundled `chat-first-json` declares both); no loader reads them yet, the value format is defined by the unit that first reads them, and profiles without them work unchanged |
 | `rules`, `folder_structure`, `migrations` | project scaffolding | |
+| `traceability.test_roots` | `/shipwright-compliance` (test-to-requirement links, merge gate) | list of folders (or fixed-depth globs such as `plugins/*/tests`) that hold the tests; folders that do not exist are skipped. Used only when the project's `shipwright_compliance_config.json` sets no `traceability.test_roots` of its own, which replaces it. Only project and bundled profiles are read for this, never `~/.shipwright/profiles`, so the result is the same on every machine and in the merge gate; the gate also needs `shipwright_run_config.json` (which names the profile) to be committed. A wrong type here (for example a string instead of a list) makes the whole profile invalid for every phase. `vite-hono` declares `server/tests`, `server/src`, `client/src`, `client/tests`, `client/e2e`, `e2e`, `tests`, `integration-tests` |
 | `stack` | adopt matching | what adopt compares a repository against |
 
 `schema_version` (optional whole number, 1 when missing) says which profile format the

@@ -73,6 +73,11 @@
     "eslint": "^9.0.0"
   },
 
+  "traceability": {
+    "_comment": "Where the compliance collector looks for tests. Folders that do not exist are skipped; a project's own traceability.test_roots in shipwright_compliance_config.json replaces this list.",
+    "test_roots": ["server/tests", "server/src", "client/src", "client/tests", "client/e2e", "e2e", "tests", "integration-tests"]
+  },
+
   "package_manager": "npm",
   "rules": ["tests", "components", "config"],
 

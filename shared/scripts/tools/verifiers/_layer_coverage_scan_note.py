@@ -27,5 +27,6 @@ def no_scan_note(head: dict) -> str:
     return (
         "the regenerated traceability manifest links no test at all, so no test file was found "
         "in the folders the collector scans. If the project already has tests, they sit outside "
-        "those folders: set traceability.test_roots in shipwright_compliance_config.json"
+        "those folders: set traceability.test_roots in shipwright_compliance_config.json (a stack "
+        "profile's test_roots reaches this gate only when shipwright_run_config.json is committed)"
     )
