@@ -232,3 +232,16 @@ test("S05 ignores generated reports and tests, and still scans a hook at the plu
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
+
+// @covers FR-01.01
+test("gates (S08): a plan-versus-mockup contradiction question is expected; the no-sections override question is not", () => {
+  const q = (option: string, question: string) => `terminal question answered with its first option "${option}" (${question})`;
+  const contradiction = [
+    q("Follow mockup: no draft", "Mockup-vs-Section Contradiction: should the board still show the reply draft as a read-only card?"),
+    q("Follow mockup", "The board step's plan says 768px; the mockup you approved switches at 900px"),
+  ];
+  expect(classifyGates(contradiction).unexpected).toEqual([]);
+  const noSections = [q("Override with reason", "The plan lists no sections, so Build has nothing to build. No sections found.")];
+  expect(classifyGates(noSections).unexpected.length).toBe(1);
+  expect(classifyGates([q("Skip the mockup", "Mockup-vs-Section Contradiction: proceed?")]).unexpected.length).toBe(1);
+});
