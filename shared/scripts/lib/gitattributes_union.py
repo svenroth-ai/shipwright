@@ -49,7 +49,7 @@ UNION_PATHS: tuple[str, ...] = ("shipwright_events.jsonl", ".shipwright/triage.j
 #: Curated agent-docs whose ``## …Updates`` / ``## Learnings`` append-sections
 #: collide when parallel iterates each prepend a bullet (a DISTINCT category from
 #: the JSONL logs: curated prose, NOT in ``CHURN_ALLOWLIST``, never regenerated).
-#: ``merge=union`` keeps both bullets (honored server-side). Rationale + the
+#: ``merge=union`` keeps both bullets in a local merge (GitHub's server side ignores it). Rationale + the
 #: line-union garble caveat: docs/hooks-and-pipeline.md + the template comment.
 CURATED_DOC_UNION_PATHS: tuple[str, ...] = (
     ".shipwright/agent_docs/architecture.md",

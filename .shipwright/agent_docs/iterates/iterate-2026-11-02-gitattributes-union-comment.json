@@ -1,0 +1,37 @@
+{
+  "run_id": "iterate-2026-11-02-gitattributes-union-comment",
+  "date": "2026-11-02T22:38:10.186526Z",
+  "event_at": "2026-11-02T21:32:04.825389+00:00",
+  "type": "bug",
+  "complexity": "trivial",
+  "prior_source": "history",
+  "branch": "iterate/gitattributes-union-comment",
+  "tests_passed": true,
+  "adr": "iterate-2026-11-02-gitattributes-union-comment",
+  "test_completeness": {
+    "status": "n/a",
+    "reason_code": "trivial-auto",
+    "behaviors": [],
+    "counts": {
+      "testable": 0,
+      "tested": 0,
+      "untestable": 0,
+      "untested_testable": 0
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run --extra dev pytest shared/tests/test_gitattributes_union.py shared/tests/test_gitattributes_exact_bytes.py shared/tests/test_gitattributes_union_selfheal.py -q",
+    "exit_code": 0,
+    "tests_run": 35,
+    "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\gitattributes-union-comment\\.shipwright\\runs\\iterate-2026-11-02-gitattributes-union-comment\\surface_verification.log",
+    "timestamp": "2026-11-02T22:37:42.540Z",
+    "attempts": 1
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}

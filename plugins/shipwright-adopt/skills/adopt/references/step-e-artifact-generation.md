@@ -207,8 +207,8 @@ Writes — **in order**:
     exact evidence bytes even when `core.autocrlf` is enabled and keeping
     byte-preserved CRLF evidence out of text whitespace checks. `merge=union` is git's
     built-in line-union driver: when two iterates each append, both sides'
-    lines are kept automatically (no conflict markers, honored by GitHub's
-    server-side PR merge too) — the protection that kept the monorepo
+    lines are kept automatically in a local merge (no conflict markers; GitHub's
+    server-side PR merge does NOT apply it, #978) — the protection that kept the monorepo
     merge-theater-free but had never reached managed repos (WebUI #96–#100
     hand-resolved exactly these files). **Unlike** the `.gitleaks.toml`
     scaffold this is a **merge, not never-overwrite**: an existing user

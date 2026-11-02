@@ -1,0 +1,61 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-02-gitattributes-union-comment",
+    "date": "2026-11-02",
+    "unit": {
+      "status": "passed",
+      "passed": 24455,
+      "skipped": 107,
+      "total": 24562
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run --extra dev pytest shared/tests/test_gitattributes_union.py shared/tests/test_gitattributes_exact_bytes.py shared/tests/test_gitattributes_union_selfheal.py -q",
+      "exit_code": 0,
+      "tests_run": 35,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\gitattributes-union-comment\\.shipwright\\runs\\iterate-2026-11-02-gitattributes-union-comment\\surface_verification.log",
+      "timestamp": "2026-11-02T22:37:42.540Z",
+      "attempts": 1
+    },
+    "test_completeness": {
+      "status": "n/a",
+      "reason_code": "trivial-auto",
+      "behaviors": [],
+      "counts": {
+        "testable": 0,
+        "tested": 0,
+        "untestable": 0,
+        "untested_testable": 0
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-24-r5b-merge-lane",
+    "commit": "032d1ebbf0ef9c99eb98f240c8f1110e981a32a5",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
