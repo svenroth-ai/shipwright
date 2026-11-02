@@ -179,14 +179,14 @@ test("brief package to a working skill-backed board app through the WebUI", asyn
     if (!resume?.skipPackageCopy) fs.cpSync(fixtureDir, path.join(projectPath, "brief"), { recursive: true });
     await ui.openBoard(page, base, projectId);
     await report.step("Project ready, Brief package in brief/", page, [resume?.note, housekeeping].filter(Boolean).join(" "));
-    let launched: ReturnType<typeof captureLaunchCommands> | null = null;
+    let launched: Awaited<ReturnType<typeof captureLaunchCommands>> | null = null;
     if (resume?.skipStartPipeline) {
       await report.step("Resume: the pipeline was already started, New pipeline not clicked again", null);
     } else {
       await ui.startPipeline(page, "Build the social engagement board", "Build the app from the approved Brief package: /shipwright-run --brief brief/");
       markPipelineStarted(runDir); // the task exists from here on: a resume must not click "New pipeline" again
       await report.step("New pipeline, package handed over", page);
-      launched = captureLaunchCommands(page);
+      launched = await captureLaunchCommands(page);
       await ui.launchPipeline(page);
     }
 
@@ -199,7 +199,8 @@ test("brief package to a working skill-backed board app through the WebUI", asyn
     const hasLaunch = await page.getByTestId("cta-launch-in-terminal").waitFor({ state: "visible", timeout: 10_000 }).then(() => true, () => false);
     const launchedByModal = !resume?.skipStartPipeline && ui.launchedByModal(hasLaunch, await ui.taskStateText(page.request, base, taskId));
     if ((resume?.skipStartPipeline || launchedByModal) && !hasLaunch) {
-      await report.step(launchedByModal ? "No launch button: the modal already launched the task" : "Resume: no launch button on the task page, the task was already launched", page);
+      await report.step(launchedByModal ? "No launch button: the modal already launched the task" : "Resume: no launch button on the task page, the task was already launched", page,
+        launchedByModal ? `Launch command captured from the modal's request: ${launched?.get() ? "yes" : "no"}.` : undefined);
       // The modal's hand-over can be lost (the task then waits at an empty prompt and the page has no button): watch, hand it over again, fail fast.
       if (launchedByModal) {
         await ensureLaunched({

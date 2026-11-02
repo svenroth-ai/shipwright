@@ -8,7 +8,7 @@ import { checkMasterDetailShape, snapshotMasterDetail, type MasterDetailSnapshot
 import type { RealThreadState } from "../../src/board-api-real.js";
 import { Checklist, parseChecklist } from "../../src/checklist.js";
 import { launchedByModal, startTaskSession, taskStateText } from "../../src/driver.js";
-import { ensureLaunched, launchVerdict } from "../../src/launch-recovery.js";
+import { captureLaunchCommands, ensureLaunched, launchVerdict } from "../../src/launch-recovery.js";
 import { REAL_FIXTURE_NAME } from "../../src/fixture.js";
 import { findExternalUse } from "../../src/project-checks.js";
 import { checkSelfContainedWithAdapter } from "../../src/project-checks-adapter.js";
@@ -182,4 +182,41 @@ test("launch watch: started at once, handed over again when stalled, failing fas
 
   const nothing = mk(["state awaiting_external_start"], [""], false);
   await expect(ensureLaunched(nothing.w)).rejects.toThrow(/no command was captured.*\(empty\)/);
+});
+
+// @covers FR-01.06
+test("launch capture reads the body inside the route and passes the untouched response on", async () => {
+  type Fetch = () => Promise<{ json: () => Promise<unknown> }>;
+  const make = async () => {
+    let pattern!: RegExp;
+    let handler!: (route: never) => Promise<void>;
+    const cap = await captureLaunchCommands({ route: async (p: RegExp, h: typeof handler) => { pattern = p; handler = h; } } as never);
+    const run = async (method: string, fetch: Fetch) => {
+      const seen: string[] = [];
+      let passed: unknown;
+      const route = { request: () => ({ method: () => method }), fetch, fulfill: async (o: { response: unknown }) => { seen.push("fulfill"); passed = o.response; }, continue: async () => { seen.push("continue"); } };
+      await handler(route as never);
+      return { seen, passed };
+    };
+    return { cap, run, pattern };
+  };
+  const { cap, run, pattern } = await make();
+  expect(cap.get()).toBeNull();
+  expect(pattern.exec("http://127.0.0.1:3000/api/external/tasks/t-1/launch")).not.toBeNull();
+  expect(pattern.exec("http://127.0.0.1:3000/api/external/tasks/t-1")).toBeNull();
+
+  const commands = { powershell: "p", cmd: "c", posix: "x" };
+  const res = { json: async () => ({ task: {}, commands }) };
+  expect(await run("GET", async () => res)).toEqual({ seen: ["continue"], passed: undefined }); // other verbs untouched
+  expect(cap.get()).toBeNull();
+  const ok = await run("POST", async () => res);
+  expect(ok.seen).toEqual(["fulfill"]);
+  expect(ok.passed).toBe(res); // the page sees the very response it asked for
+  expect(cap.get()).toEqual(commands);
+
+  const bad = await make();
+  const notJson = await bad.run("POST", async () => ({ json: async () => { throw new Error("not json"); } }));
+  expect(notJson.seen).toEqual(["fulfill"]); // still delivered, just not captured
+  expect(bad.cap.get()).toBeNull();
+  expect((await bad.run("POST", async () => { throw new Error("net"); })).seen).toEqual(["continue"]);
 });
