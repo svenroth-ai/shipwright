@@ -256,3 +256,27 @@ test("run-12: an agent auth failure in the terminal is detected", () => {
   expect(isAuthFailure("+ // authentication_failed handler\n+ const msg = 'Login expired';")).toBe(false);
   expect(isAuthFailure("+ throw new Error('Invalid API key')\n+ // authentication_failed handler\n" + "x\n".repeat(8))).toBe(false);
 });
+
+// @covers FR-01.06
+test("S05: reading the headers of an incoming request is not external use; real reaches and key reads still are", () => {
+  const dir = tmp();
+  try {
+    write(dir, "backend/a.py", [
+      "origin = self.headers.get('Origin')",
+      "host = self.headers.get(\"Host\")",
+      "if self.headers.get(\"Origin\") != f\"http://{self.headers.get('Host')}\":",
+      "    token = request.headers['X-Synthetic']",
+    ].join("\n") + "\n");
+    expect(findExternalUse(dir, ["backend/a.py"])).toEqual([]);
+    write(dir, "backend/b.py", "key = os.environ.get(\"SYNTHETIC_KEY\")\n");
+    expect(findExternalUse(dir, ["backend/b.py"])).toEqual([]); // not a key-named read: the existing rule needs API_KEY/SECRET/...
+    write(dir, "backend/c.py", "key = os.environ.get(\"SYNTHETIC_API_KEY\")\n");
+    expect(findExternalUse(dir, ["backend/c.py"]).length).toBe(1);
+    write(dir, "backend/d.py", "import requests\nrequests.get('https://svc.synthetic-host.org/x')\n");
+    expect(findExternalUse(dir, ["backend/d.py"]).length).toBe(1);
+    write(dir, "backend/e.py", "if self.headers.get('Origin') != 'http://svc.synthetic-host.org': pass\n");
+    expect(findExternalUse(dir, ["backend/e.py"]).length).toBe(1);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});

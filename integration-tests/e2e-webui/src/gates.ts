@@ -7,11 +7,14 @@ import type { Checklist } from "./checklist.js";
 export interface ExpectedGate {
   meaning: string;
   pattern: RegExp;
+  /** Judge the whole recorded text (question and option) instead of the chosen option only. */
+  wholeText?: boolean;
 }
 
 export const EXPECTED_GATES: ExpectedGate[] = [
   { meaning: "approve the design (screens, mockups or review)", pattern: /\bapprov(?:e|ed|al)\b/i },
   { meaning: "launch the next pipeline phase", pattern: /launched the next pipeline phase/i },
+  { meaning: "resolve a contradiction between the plan or section text and the approved mockup or spec", wholeText: true, pattern: /(?=.*\bmockup)(?=.*(?:contradict|no draft|\d\s?px\b|plan says))/is },
   { meaning: "submit answers the person has already given", pattern: /^submit/i },
 ];
 
@@ -35,7 +38,7 @@ export function classifyGates(gates: string[]): GateVerdict {
   const verdict: GateVerdict = { expected: [], unexpected: [] };
   for (const g of gates) {
     // The veto reads the whole text (question and option); the expected meaning is judged on the chosen option only.
-    const known = !NEVER_EXPECTED.test(g) && EXPECTED_GATES.some((e) => e.pattern.test(subject(g)));
+    const known = !NEVER_EXPECTED.test(g) && EXPECTED_GATES.some((e) => e.pattern.test(e.wholeText ? g : subject(g)));
     (known ? verdict.expected : verdict.unexpected).push(g);
   }
   return verdict;
