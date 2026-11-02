@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-02-plan-validator-unseeded-sections",
+  "date": "2026-11-02",
+  "section": "Iterate — bug: plan validator false ask",
+  "title": "Plan validation reads plan-side sections when the build config is unseeded",
+  "context": "At plan completion the validator asked a person 'No sections found in build config' because sections[] is Build-owned state, unseeded until Build starts.",
+  "decision": "When the build config lists no sections, _validate_plan takes the section list from the plan's own .shipwright/planning/<split>/sections/*.md; the ask stays when neither side has sections.",
+  "consequences": "Guided runs are no longer asked a false question after a complete plan; completeness against the manifest remains with the plan_checks canon.",
+  "rationale": "Plan's output is the section files; validating them needs no Build state, and Plan must not seed Build-owned config.",
+  "rejected": "Making Plan seed sections[] in the build config: crosses ownership (Build writes it) and would invite stale state.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

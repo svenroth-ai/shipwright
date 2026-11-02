@@ -1,0 +1,202 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-02-plan-validator-unseeded-sections",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-02T10:02:06.311366+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-02T10:02:51.359383+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-run/scripts/lib/phase_validators_split.py",
+          "line": null,
+          "finding": "Docstring said nothing is read for an unresolvable split id; the fallback now lists section files.",
+          "suggestion": "Reword the docstring.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-run/scripts/lib/phase_validators_split.py",
+          "line": null,
+          "finding": "split_id or recorded_split computed twice.",
+          "suggestion": "Compute once above the fallback.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-run/tests/test_phase_validators_split.py",
+          "line": null,
+          "finding": "No tests for non-.md entries in sections/ and for the current_split fallback without a task split.",
+          "suggestion": "Add both tests.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "correctness",
+          "file": "plugins/shipwright-run/scripts/lib/phase_validators_split.py",
+          "line": null,
+          "finding": "In fallback mode the missing-file check cannot fail; completeness vs the manifest is enforced by the plan_checks canon.",
+          "suggestion": "Comment it.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-02T10:03:24.368288+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "6be9a50e1b93becd0908d97673eb8a01b8c5a84f"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "only a plan that really completed now passes _validate_plan",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "concurrency & ordering",
+          "file": null,
+          "line": null,
+          "finding": "residual false ask when current_split names another split with empty sections[]",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling",
+          "file": null,
+          "line": null,
+          "finding": "docstring and docs row wording stale",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-02T10:09:19.351083+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "6be9a50e1b93becd0908d97673eb8a01b8c5a84f"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "plugins/shipwright-run/scripts/lib/phase_validators_split.py (~line 178, `sections = _plan_side_sections(project_root, split_id or recorded_split)`)",
+          "line": null,
+          "finding": "If both `split_id` and `recorded_split` are `None`/empty (no split passed, no resolvable `current_split`, and no build-config file), `Path / None` raises `TypeError` instead of producing the ASK issue. The existing test passes only because the canon/plan-side resolution supplies a split in that fixture; the bare \"no build config, no split anywhere\" state isn't covered.",
+          "suggestion": "Guard the fallback — if `(split_id or recorded_split)` is falsy, skip the plan-side lookup (or treat it as empty) so the existing \"No sections found… Did /shipwright-plan complete?\" ASK path handles it.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "plugins/shipwright-run/tests/test_phase_validators_split.py (test_plan_build_config_sections_win_over_plan_side_files)",
+          "line": null,
+          "finding": "The \"build config wins\" half doesn't actually prove precedence: writing `extra.md` and passing doesn't distinguish \"build-config sections used\" from \"plan-side files used\", since both would validate. Only the second half (adding a bogus `gone` section) demonstrates the config is consulted.",
+          "suggestion": "Make the first half meaningful — e.g., put a section in the config whose file does NOT exist while plan-side files do, and assert it fails; that proves plan-side files don't mask config entries.  No security or regression concerns: the fallback is read-only, scoped under `.shipwright/planning/<split>/`, and `split_id` traversal is already constrained by the earlier resolved-splits check described in the docstring. Returned section dicts (`{\"name\": ...}` only) are only used for the name/exists check in this validator.  Overall: implements the spec correctly with good error-path coverage; the two items above are refinements, not blockers.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-02T10:02:48.078999+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] Reviewing against the spec: the fix makes `_validate_plan` fall back to `.shipwright/planning/<split>/sections/*.md` when the build config lists no sections, and the ask still fires when both are empty. The implementation does that, the message is updated, the doc row matches, and the tests cover the fallback, the still-asks case, and build-config-wins precedence.\n\nFindings:\n\n- Category: edge-case\n  Severity: low\n  File: plugins/shipwright-run/scripts/lib/phase_validators_split.py (~line 178, `sections = _plan_side_sections(project_root, split_id or recorded_split)`)\n  Finding: If both `split_id` and `recorded_split` are `None`/empty (no split passed, no resolvable `current_split`, and no build-config file), `Path / None` raises `TypeError` instead of producing the ASK issue. The existing test passes only because the canon/plan-side resolution supplies a split in that fixture; the bare \"no build config, no split anywhere\" state isn't covered.\n  Suggestion: Guard the fallback — if `(split_id or recorded_split)` is falsy, skip the plan-side lookup (or treat it as empty) so the existing \"No sections found… Did /shipwright-plan complete?\" ASK path handles it.\n\n- Category: test\n  Severity: low\n  File: plugins/shipwright-run/tests/test_phase_validators_split.py (test_plan_build_config_sections_win_over_plan_side_files)\n  Finding: The \"build config wins\" half doesn't actually prove precedence: writing `extra.md` and passing doesn't distinguish \"build-config sections used\" from \"plan-side files used\", since both would validate. Only the second half (adding a bogus `gone` section) demonstrates the config is consulted.\n  Suggestion: Make the first half meaningful — e.g., put a section in the config whose file does NOT exist while plan-side files do, and assert it fails; that proves plan-side files don't mask config entries.\n\nNo security or regression concerns: the fallback is read-only, scoped under `.shipwright/planning/<split>/`, and `split_id` traversal is alr […truncated]\n\n[openai] No concrete defects found in the supplied diff. The fallback uses plan-side Markdown files when build-config sections are empty, preserves configured-section precedence, and still asks when neither source contains sections. The tests assert these behaviors, including the missing-config case.\n\nShip-as-is based on the supplied diff. Local file inspection was blocked by execution policy, so I could not inspect surrounding code or run tests.\n\nSHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "openai": "approve",
+        "glm": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-02T10:01:57.559210+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "6be9a50e1b93becd0908d97673eb8a01b8c5a84f"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-02T10:02:51.494286+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-02T10:02:51.612198+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}

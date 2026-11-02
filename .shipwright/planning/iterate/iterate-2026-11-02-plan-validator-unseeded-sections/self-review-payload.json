@@ -1,0 +1,9 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"Falls back to plan-side sections/*.md only when build config lists none; ask kept when neither side has sections; build config untouched."},
+{"name":"Error Handling","verdict":"pass","note":"Missing/nonexistent sections dir returns [] and falls to the existing ask; missing build config file already yields {}."},
+{"name":"Security Basics","verdict":"pass","note":"Split name is validated against resolved splits when they exist; read-only globbing, nothing written."},
+{"name":"Test Quality","verdict":"pass","note":"Four new tests: unseeded passes, no build config file, neither side asks, build-config sections win and missing file still asks."},
+{"name":"Performance Basics","verdict":"pass","note":"One directory glob only on the previously failing path."},
+{"name":"Naming & Structure","verdict":"pass","note":"Small private helper next to its only caller; docstring and docs row updated."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Reads the build config and plan section files from disk; tests use real files on disk in the real layout, no format change."}
+]}
