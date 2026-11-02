@@ -63,7 +63,7 @@ def profile_test_roots(project_root: Path, *, warn: bool = True) -> tuple[str, l
             return "", []
         res = _pc.pr.resolve_profile(
             name, root,
-            search_dirs=[("project", str(root / ".shipwright" / "profiles")), ("bundled", _pc.pr.bundled_dir())],
+            search_dirs=[d for d in _pc.pr.search_dirs(root) if d[0] != "user"],
         )
     except (ValueError, OSError) as exc:
         if warn:
