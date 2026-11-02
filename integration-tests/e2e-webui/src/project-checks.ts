@@ -116,11 +116,13 @@ function hostOf(raw: string): string {
 
 /** A host that is ONE template token (`{DEFAULT_HOST}`, `${host}`, `%s`, `<host>`) names no real server; `{region}.api.openai.com` still does. */
 const PLACEHOLDER_HOST = /^(?:\$?\{[^}]*\}|%s|<[^>]*>)$/;
+/** A host cut off inside an interpolated request-header read (`f"http://{self.headers.get('Host')}"`): it echoes the incoming request, it reaches nothing. */
+const HEADER_READ_HOST = /^\$?\{[^}]*\bheaders\b/;
 
 /** External URLs and key reads in code lines (comment lines are skipped) of the given files. */
 export function findExternalUse(projectPath: string, files: string[], opts: { reservedTestDomains?: boolean } = {}): string[] {
   const hits: string[] = [];
-  const harmless = (host: string) => LOOPBACK.test(host) || HARMLESS_HOSTS.test(host) || PLACEHOLDER_HOST.test(host) || (!!opts.reservedTestDomains && RESERVED_TEST_HOSTS.test(host));
+  const harmless = (host: string) => LOOPBACK.test(host) || HARMLESS_HOSTS.test(host) || PLACEHOLDER_HOST.test(host) || HEADER_READ_HOST.test(host) || (!!opts.reservedTestDomains && RESERVED_TEST_HOSTS.test(host));
   for (const rel of files) {
     const lines = fs.readFileSync(path.join(projectPath, rel), "utf8").split(/\r?\n/);
     lines.forEach((line, i) => {
