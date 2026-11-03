@@ -1,0 +1,62 @@
+{
+  "run_id": "iterate-2026-11-03-oss-scan-gitignore-scope",
+  "date": "2026-11-03T18:51:11.945875Z",
+  "event_at": "2026-11-03T08:59:58.736704+00:00",
+  "type": "bug",
+  "complexity": "small",
+  "prior_source": "keyword",
+  "branch": "iterate/oss-scan-gitignore-scope",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-11-03-oss-scan-gitignore-scope",
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": [],
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "scan appends only /.shipwright/securityreports/ (derived from REPORTS_DIR) and git ignores the written report path",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-security/tests/test_run_scan_gitignore.py::TestGitignoreBestEffort::test_appends_reports_entry_when_gitignore_exists_without_it PASSED (real git check-ignore)"
+      },
+      {
+        "behavior": "a new ADR under .shipwright/ stays stageable after a scan (the #985 loss)",
+        "disposition": "tested",
+        "evidence": "test_run_scan_gitignore.py::test_new_tracked_files_under_shipwright_are_not_ignored PASSED (real git check-ignore returns 1)"
+      },
+      {
+        "behavior": "a pre-existing broad /.shipwright/ entry is kept byte-for-byte and warned about, also next to the canonical /.shipwright/* block",
+        "disposition": "tested",
+        "evidence": "test_run_scan_gitignore.py::test_broad_entry_is_kept_and_warned_about, ::test_broad_entry_next_to_canonical_block_is_still_warned_about PASSED"
+      },
+      {
+        "behavior": "canonical /.shipwright/* wildcard, legacy /securityreports/ and an existing reports entry count as present (no append); no .gitignore => none created; missing trailing newline handled",
+        "disposition": "tested",
+        "evidence": "test_run_scan_gitignore.py (6 tests) + ::test_status_values PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 4,
+      "tested": 4,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 4,
+      "covered_acs": 4
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run --directory plugins/shipwright-security pytest tests/test_run_scan_gitignore.py tests/test_run_scan_and_report.py -q",
+    "exit_code": 0,
+    "tests_run": 26,
+    "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\oss-scan-gitignore-scope\\.shipwright\\runs\\iterate-2026-11-03-oss-scan-gitignore-scope\\surface_verification.log",
+    "timestamp": "2026-11-03T18:50:50.549Z",
+    "attempts": 1
+  }
+}

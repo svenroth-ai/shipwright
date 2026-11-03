@@ -6,8 +6,7 @@ Covers the unit-level contract:
   - History gets archived as scan-{ts}-{uuid}.{md,json}
   - Pairs (md+json) are pruned together; strict filename pattern; manual
     files in history/ are left alone
-  - .gitignore best-effort: appended only when missing; never overwritten;
-    legacy `/securityreports/` recognised as already-present (no double-write)
+  - .gitignore handling is covered in test_run_scan_gitignore.py
   - scan_id is consistent between md (HTML comment) and json (field)
   - --full-evidence retains raw secret values; default-on redaction strips them
   - One-time stderr notice when a legacy securityreports/ dir exists
@@ -16,7 +15,6 @@ from __future__ import annotations
 
 import json
 import re
-import subprocess
 import sys
 from pathlib import Path
 from typing import Any
@@ -239,96 +237,6 @@ class TestRetention:
         assert (history / "user-notes.md").exists()
         assert (history / "manual-export.json").exists()
         assert (history / "scan-2026-04-23.md").exists()
-
-
-# ---------------------------------------------------------------------------
-# .gitignore best-effort
-# ---------------------------------------------------------------------------
-
-
-class TestGitignoreBestEffort:
-
-    @pytest.mark.covers("FR-01.07/AC12")
-    def test_appends_shipwright_entry_when_gitignore_exists_without_it(
-        self, stub_oss_backend, tmp_path: Path,
-    ):
-        # AC12's actual claim is that the findings "stay in a place that does
-        # not travel with the code" — a string appended to .gitignore proves
-        # nothing about Git's own behavior (external code review, openai,
-        # medium: a test asserting only the appended line "would pass" even
-        # if a negating rule or an already-tracked report meant Git still
-        # includes it). Prove the claim with Git itself, not a string match:
-        # init a real repo, run the scan, then ask `git check-ignore` whether
-        # the exact report path the scan just wrote is actually excluded.
-        subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
-        gi = tmp_path / ".gitignore"
-        gi.write_text("node_modules/\n.venv/\n", encoding="utf-8")
-
-        run_scan_and_report.run(project_root=tmp_path, repo="x", full_evidence=False)
-        content = gi.read_text(encoding="utf-8")
-        # New canonical entry added
-        assert "/.shipwright/" in content
-        # Existing entries preserved
-        assert "node_modules/" in content
-        assert ".venv/" in content
-
-        report_path = tmp_path / run_scan_and_report.REPORTS_DIR / run_scan_and_report.LATEST_JSON
-        assert report_path.exists(), "the scan must have actually written a report to prove against"
-        check = subprocess.run(
-            ["git", "check-ignore", "-q", str(report_path)],
-            cwd=tmp_path,
-        )
-        assert check.returncode == 0, (
-            "git must actually ignore the written report path, not merely have "
-            "an appended .gitignore line that happens to look right"
-        )
-
-    def test_does_not_duplicate_when_shipwright_entry_already_present(
-        self, stub_oss_backend, tmp_path: Path,
-    ):
-        gi = tmp_path / ".gitignore"
-        gi.write_text("node_modules/\n/.shipwright/\n", encoding="utf-8")
-
-        run_scan_and_report.run(project_root=tmp_path, repo="x", full_evidence=False)
-        content = gi.read_text(encoding="utf-8")
-        assert content.count("/.shipwright/") == 1
-
-    def test_does_not_double_write_when_legacy_entry_present(
-        self, stub_oss_backend, tmp_path: Path,
-    ):
-        # Migration-friendly: a project still on the legacy /securityreports/
-        # entry counts as "present" — we don't auto-append /.shipwright/. The
-        # user can clean up the legacy entry on their own schedule.
-        gi = tmp_path / ".gitignore"
-        gi.write_text("node_modules/\n/securityreports/\n", encoding="utf-8")
-
-        run_scan_and_report.run(project_root=tmp_path, repo="x", full_evidence=False)
-        content = gi.read_text(encoding="utf-8")
-        assert content.count("/securityreports/") == 1
-        # And we did NOT auto-add the new entry over the top
-        assert "/.shipwright/" not in content
-
-    def test_does_not_create_gitignore_when_absent(
-        self, stub_oss_backend, tmp_path: Path,
-    ):
-        # No .gitignore exists in tmp_path
-        assert not (tmp_path / ".gitignore").exists()
-
-        run_scan_and_report.run(project_root=tmp_path, repo="x", full_evidence=False)
-        # We don't materialize a .gitignore in projects that didn't have one
-        assert not (tmp_path / ".gitignore").exists()
-
-    def test_handles_gitignore_without_trailing_newline(
-        self, stub_oss_backend, tmp_path: Path,
-    ):
-        gi = tmp_path / ".gitignore"
-        gi.write_text("node_modules/", encoding="utf-8")  # no trailing \n
-
-        run_scan_and_report.run(project_root=tmp_path, repo="x", full_evidence=False)
-        content = gi.read_text(encoding="utf-8")
-        # Entry on its own line — no merge with the previous line
-        assert "node_modules//.shipwright/" not in content
-        assert "/.shipwright/" in content
 
 
 # ---------------------------------------------------------------------------

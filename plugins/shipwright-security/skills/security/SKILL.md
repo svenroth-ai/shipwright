@@ -286,7 +286,7 @@ Output:
 - `{project_root}/.shipwright/securityreports/latest.md` — human-readable Markdown report
 - `{project_root}/.shipwright/securityreports/latest.json` — machine-readable sidecar (`schema_version: 1`, `scan_id`, full normalized findings)
 - `{project_root}/.shipwright/securityreports/history/scan-YYYYMMDD-HHMMSS-{6hex}.{md,json}` — archived (last 20 pairs retained)
-- `{project_root}/.gitignore` — `/.shipwright/` appended if file exists and entry missing (legacy `/securityreports/` recognised as already-present so we don't double-write during migration)
+- `{project_root}/.gitignore` — `/.shipwright/securityreports/` appended if file exists and entry missing (never the whole `/.shipwright/`: that would hide new tracked ADRs and plans from `git add -A`; a pre-existing broad entry is left in place and warned about; legacy `/securityreports/` recognised as already-present so we don't double-write during migration)
 
 The wrapper redacts secret evidence by default (Gitleaks `match`/`secret`/`commit`/`author`/`email` fields; high-entropy strings in `description` / `remediation_hint`). Use `--full-evidence` to retain raw values for explicit local debugging — refused when `CI` env is set.
 
