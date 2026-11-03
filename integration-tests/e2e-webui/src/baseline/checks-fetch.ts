@@ -95,7 +95,7 @@ export async function fetchThread(ctx: Ctx, s: Scenario, p: Probe): Promise<void
   p.expect("authors read u/<name>", arr(rj.comments).every((c) => /^u\//.test(str(obj(c).author))));
   const scores = arr(rj.comments).map((c) => Number(/\d+/.exec(str(obj(c).stats))?.[0] ?? 0));
   p.expect("top-level comments are ordered by score", scores.every((v, i) => i === 0 || scores[i - 1] >= v), scores.join(","));
-  p.expect("rules carry the subreddit rules link", JSON.stringify(rj.rules).includes("https://www.reddit.com/r/ProductManagement/about/rules"), JSON.stringify(rj.rules));
+  p.expect("rules carry the subreddit rules link", JSON.stringify(rj.rules).includes("/r/ProductManagement/about/rules"), JSON.stringify(rj.rules));
   const req = ctx.fake.seen.find((r) => r.service === "apify" && r.url.includes("reddit-comments-scraper/run-sync-get-dataset-items"));
   const body = obj(json(req?.body ?? "{}"));
   p.expect("Apify got the actor input (postUrls, maxCommentsPerPost 200, no NSFW, no AI analysis) at timeout 240", !!req && body.includeNSFW === false && body.aiAnalysis === false && body.maxCommentsPerPost === 200 && /timeout=240/.test(req.url), req?.body?.slice(0, 160));

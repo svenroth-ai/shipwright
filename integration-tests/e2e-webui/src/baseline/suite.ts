@@ -56,7 +56,7 @@ const mockupState = async (api: Scenario["api"], ctx: Ctx) => {
 };
 
 export async function runBaselineSuite(input: SuiteInput): Promise<void> {
-  const { project, fixtureDir, checklist, report, page } = input;
+  const { project, fixtureDir, checklist } = input;
   const fake = await startFakeServices(path.join(fixtureDir, "seed", "recorded"));
   const ctx: Ctx = { project, fixtureDir, python: resolvePython(), tmpRoot: tmpRootFor(), fake, tokens: dummyTokens(), leaks: [], synthetic: loadSynthetic(fixtureDir) };
   const rec = (id: string, body: (p: Probe) => Promise<void>) => recordProbe(checklist, id, body);

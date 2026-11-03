@@ -3,7 +3,7 @@
 // from the brief's fit criteria; the elements are found by role and visible text.
 import type { Page } from "@playwright/test";
 import { filterLabel, filterOptions, findItem, itemsOf, leafCount, mainText, openBoard, openThread, pickPlatform, readTabs, rowTitle, setFilter } from "./board-ui.js";
-import { K_HN, K_POSTED, K_SKIPPED } from "./checks-runs.js";
+import { K_HN, K_POSTED } from "./checks-runs.js";
 import { arr, get, obj, post, str, type Api, type Obj } from "./http.js";
 import type { Probe } from "./probe.js";
 import { compareFonts, compareTokens, parseFontTokens, parseTokens } from "../tokens.js";

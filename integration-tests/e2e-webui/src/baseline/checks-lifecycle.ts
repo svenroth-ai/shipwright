@@ -19,15 +19,18 @@ function helper(ctx: Ctx, rel: string, verb: string, port: number, dataDir: stri
   // stdout and stderr go to a file, not pipes: a server the helper leaves running would otherwise keep the pipes open until the timeout
   const run = (withFlag: boolean) => {
     const log = path.join(home, `helper-${Math.random().toString(16).slice(2)}.log`);
-    const fd = fs.openSync(log, "w");
+    const fd = fs.openSync(log, "w+");
     let status: number | null;
     try {
       status = spawnSync(ctx.python, [path.join(ctx.project, rel), verb, "--port", String(port), ...(withFlag ? ["--data-dir", dataDir] : [])],
         { cwd: ctx.project, env: cleanEnv(home, { SOCIAL_ENGAGEMENT_HOME: dataDir }), stdio: ["ignore", fd, fd], timeout: 60_000 }).status;
+      const size = fs.fstatSync(fd).size;
+      const buf = Buffer.alloc(size);
+      fs.readSync(fd, buf, 0, size, 0);
+      return { status, out: buf.toString("utf8") };
     } finally {
       fs.closeSync(fd);
     }
-    return { status, out: fs.readFileSync(log, "utf8") };
   };
   let r = run(true);
   let form = "--data-dir";

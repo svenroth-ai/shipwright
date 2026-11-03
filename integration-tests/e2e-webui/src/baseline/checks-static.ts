@@ -28,7 +28,19 @@ export function checkStoreOnly(project: string, p: Probe): void {
 
 const MODEL_IMPORT = /\b(?:import|from)\s+(?:anthropic|openai|google\.generativeai|cohere|mistralai|litellm)\b|api\.anthropic\.com|api\.openai\.com|generativelanguage\.googleapis\.com/;
 const SERVICE_NAMES = /\b(?:SYFTEN|APIFY)_(?:TOKEN|BASE_URL)\b|\bHN_ALGOLIA_BASE_URL\b/;
-const DEFAULT_HOSTS: [string, RegExp][] = [["syften.py", /syften\.com\/api\/0\.1/], ["apify.py", /api\.apify\.com\/v2/], ["hn_algolia.py", /hn\.algolia\.com\/api\/v1/]];
+const DEFAULT_HOSTS: [string, string, string][] = [["syften.py", "syften.com", "/api/0.1"], ["apify.py", "api.apify.com", "/v2"], ["hn_algolia.py", "hn.algolia.com", "/api/v1"]];
+
+/** True when the text holds an http(s) URL whose host is exactly `host` and whose path starts with `prefix`. */
+function namesUrl(text: string, host: string, prefix: string): boolean {
+  return (text.match(/https?:\/\/[^\s"'`)]+/g) ?? []).some((u) => {
+    try {
+      const url = new URL(u);
+      return url.hostname === host && url.pathname.startsWith(prefix);
+    } catch {
+      return false;
+    }
+  });
+}
 // Two or more of the five dashes of the lint rule in one character class or in a row: a copy of the dash list. A single dash used as a placeholder does not match.
 const DASH_LIST = /[‒–—―−]\s*[‒–—―−]|\\u20(?:1[2-5])[^\n]{0,12}\\u20(?:1[2-5])|\\u2212/i;
 
@@ -37,9 +49,9 @@ export function checkAdapterOnly(project: string, p: Probe): void {
   const code = walk(project, (r) => /\.(py|js|mjs|cjs|ts|html|css|sh)$/.test(r) && !SKIP_DIRS.test(r));
   const services = code.filter((f) => f.startsWith("backend/services/"));
   p.expect("backend/services/ holds syften.py, apify.py and hn_algolia.py", DEFAULT_HOSTS.every(([n]) => services.includes(`backend/services/${n}`)), services.join(", ") || "no backend/services/");
-  for (const [name, host] of DEFAULT_HOSTS) {
+  for (const [name, host, prefix] of DEFAULT_HOSTS) {
     const f = services.find((x) => x.endsWith(`/${name}`));
-    p.expect(`${name} holds the default host of its service`, !!f && host.test(read(project, f)));
+    p.expect(`${name} holds the default host of its service`, !!f && namesUrl(read(project, f), host, prefix));
   }
   const outside = code.filter((f) => !f.startsWith("backend/services/"));
   // the brief forbids service hosts and key reads outside the adapter; links to the platforms themselves (rules page, thread links, fonts) are not service calls
