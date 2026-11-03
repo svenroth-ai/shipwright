@@ -5021,6 +5021,20 @@ branch-changed file, deleted files included (dated by the removing commit, or fo
 uncommitted removal by the surviving parent directory's mtime; `lib/_evidence_drop_guard.py`),
 so the repair is always "re-run the tests, then stage".
 
+**`surface = native` — a UI change in a native (Expo / React Native) package.** A UI diff is
+driven in a browser (`web`, Playwright report) unless EVERY touched UI file lies in a native
+package; then `--surface native` takes Jest results instead (`_surface_native.py`). A package is
+native when its nearest `package.json` — at the verified commit AND at the merge-base, unless the
+package is new in the diff — depends on `react-native` or `expo` and on no web framework
+(`react-dom` only counts as one without `react-native-web`, the stock `create-expo-app` pair);
+`*.web.tsx`, `.html`, `.vue` files are refused, so a web app cannot use `native` to skip its
+browser run. Evidence is staged as Jest JSON (`evidence_drop.py stage --vitest`) or as JUnit
+that carries the `file` attribute (jest-junit `addFileAttribute`; `--junit <package dir>=<xml>`
+names the directory its relative paths start from); only JS/TS results under a touched native
+package count, every touched package needs a passing one, and `tests_run` (Jest's `Tests:` line)
+is checked against the per-assertion count. A backend `src/**/*.ts` file in the same diff still
+counts as UI (the `src/` rule is shared with Browser Verify and is narrowed separately).
+
 **Every `iterate_latest` reader must say whose run it is.** Since an iterate no
 longer commits `shipwright_test_results.json`, whatever sits at `HEAD` is
 `main`'s copy — the PREVIOUS run's evidence, in this run's worktree, shaped

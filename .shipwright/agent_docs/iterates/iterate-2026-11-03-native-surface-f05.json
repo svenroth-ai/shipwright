@@ -1,0 +1,72 @@
+{
+  "run_id": "iterate-2026-11-03-native-surface-f05",
+  "date": "2026-11-03T22:59:10.489340Z",
+  "event_at": "2026-11-03T22:56:23.118627+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "prior_source": "keyword",
+  "branch": "iterate/native-surface-f05",
+  "spec": ".shipwright/planning/iterate/iterate-2026-11-03-native-surface-f05.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-11-03-native-surface-f05",
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": [],
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "surface=native accepts Jest JSON / JUnit results of a provably native package (AC1, AC2)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_surface_native.py (12 tests: accepted evidence, evidence filter, new screen, new Expo app) PASSED"
+      },
+      {
+        "behavior": "native is refused for web files, web packages, packages that a web package depends on, missing/unusable manifests, and relabelling via added/deleted/nested manifests (AC3)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_surface_native_gates.py and shared/tests/test_surface_native_scope.py (46 tests incl. react-native-web without expo, +api/.web.mjs, consumer package) PASSED"
+      },
+      {
+        "behavior": "every existing evidence rule still applies to native: tests_run, exit_code, fresh provenance, per-assertion counting once per format, per-package passing result from a tracked test file (AC4)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_surface_native_gates.py::test_every_touched_native_package_needs_its_own_passing_tests, ::test_jest_staged_as_json_and_as_junit_is_counted_once, shared/tests/test_surface_native_scope.py::test_two_packages_in_two_formats_add_up PASSED"
+      },
+      {
+        "behavior": "Jest per-assertion counting never inflates a cli/api block",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_surface_native_scope.py::test_jest_json_does_not_inflate_a_cli_block_count PASSED"
+      },
+      {
+        "behavior": "read_vitest_cases counts every assertion, including duplicate titles",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-compliance/tests/test_execution_evidence_paths.py (read_vitest_cases) PASSED"
+      },
+      {
+        "behavior": "the documented surface lists (SKILL.md / F0.5.md) match the orchestrator's valid surfaces, native included (AC5)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_surface_verification.py::test_valid_surfaces_match_skill_md PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 6,
+      "tested": 6,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 5,
+      "covered_acs": 5
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run pytest shared/tests/test_surface_native.py shared/tests/test_surface_native_gates.py shared/tests/test_surface_native_scope.py -q",
+    "exit_code": 0,
+    "tests_run": 63,
+    "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\native-surface-f05\\.shipwright\\runs\\iterate-2026-11-03-native-surface-f05\\surface_verification.log",
+    "timestamp": "2026-11-03T22:54:57.686Z",
+    "attempts": 1
+  }
+}

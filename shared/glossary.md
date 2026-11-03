@@ -496,7 +496,7 @@
   medium-iterate plan stage and at code-review cascade for risk-flag iterates.
 - **Surface-Verification** — `shared/scripts/surface_verification.py`,
   the F0.5 end-to-end gate. Empirically drives the user-erlebbare
-  surface (web / cli / api / none) and writes the
+  surface (web / native / cli / api / none) and writes the
   `iterate_latest.surface_verification` block downstream readers
   consume.
 

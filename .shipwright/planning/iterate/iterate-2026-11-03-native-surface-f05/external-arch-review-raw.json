@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "1. **The question, answered in one sentence.** Yes \u2014 but as an extension of the existing surface check (Option A), not as any new standing mechanism; the brief itself claims \"nothing standing,\" and that claim holds.\n\n2. **The smallest thing that would do.** Option A exactly: one new accepted value in the surface vocabulary, with the evidence rule derived from the diff's own `package.json` at the verified commit. Option B is strictly larger \u2014 a standing per-project config that must be kept correct and can go stale when a project gains a web target. Option C leaves a permanent manual accept on every native iterate, which is a standing obligation of the worse kind (a human noticing red is \"expected\"). Option D breaks Browser Verify's shared UI rule to fix a native problem. A is the smallest.\n\n3. **What it costs to keep.** A fourth surface value whose semantics (which report kinds, which runner labels, the native-package filter) must be preserved on every future change to the surface check, plus a reader of `package.json` at a commit that must stay consistent with how the rest of the pipeline reads provenance. That is a real but proportionate cost \u2014 it rides entirely on machinery that already has to be reasoned about.\n\n4. **What it forecloses.** None identified of consequence; if a project later gains a web target alongside native, the `react-dom`/`next` exclusion keeps `native` honest and the two-surface diff is refused rather than silently passing.\n\n5. **Findings:**\n\n- Category: proportionality\n- Severity: low\n- Finding: The deferral of the backend-`src/**/*.ts` rule means a diff mixing backend TS with native UI stays red under `native` (AC3), so some native iterates will still need manual accepts until the follow-up lands.\n- Suggestion: Acceptable as-is given the shared rule with Browser Verify, but name the follow-up run as blocking for full relief, or document that mixed diffs of that shape continue to fail by design.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. No new standing mechanism is needed; option A is a proportionate extension of the existing surface check.\n\n2. The smallest thing that would do is `native`, derived from the touched packages at the verified commit, accepting existing staged JS/TS test evidence scoped to those packages. This removes routine manual overrides without adding project configuration or weakening the web requirement.\n\n3. The ongoing obligation is maintaining the native-package classification and evidence eligibility rules alongside the existing surface rules.\n\n4. What it forecloses: packages combining native and web dependencies cannot use this native route; they would need a later refinement if supporting them becomes necessary.\n\n5. No findings.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "architecture",
+  "capture": {
+    "run_id": "iterate-2026-11-03-native-surface-f05",
+    "at": "2026-11-03T22:07:42.911234+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "approve"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}

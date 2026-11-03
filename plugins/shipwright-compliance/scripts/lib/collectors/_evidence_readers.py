@@ -261,3 +261,23 @@ def read_vitest(data: dict, root: Path | None = None, base: str = "") -> dict:
                 status, executed = "skipped", "not_run"
             merge_into(out, f"{rel}::{title}", entry(status, executed, "vitest"))
     return out
+
+
+def read_vitest_cases(data: dict, root: Path | None = None, base: str = "") -> dict[str, int]:
+    """``{file::title → passing assertion count}``: the unit Jest prints as ``Tests: N passed``.
+
+    :func:`read_vitest` keys by ``file::title`` only, so one title under two ``describe``
+    blocks (or the rows of an ``it.each``) folds into ONE id; counting its assertions keeps
+    the runner's own ``tests_run`` comparable, as :func:`read_junit_cases` does for JUnit.
+    """
+    out: dict[str, int] = {}
+    for tr in data.get("testResults", []) or []:
+        file = tr.get("name")
+        if not file:
+            continue
+        rel = norm_path(file, root, base)
+        for a in tr.get("assertionResults", []) or []:
+            if a.get("title") and a.get("status") == "passed":
+                tid = f"{rel}::{a['title']}"
+                out[tid] = out.get(tid, 0) + 1
+    return out

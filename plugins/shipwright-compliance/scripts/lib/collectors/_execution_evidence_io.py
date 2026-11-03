@@ -37,7 +37,7 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
-from ._evidence_readers import read_junit_cases  # noqa: F401 - re-exported for the F0.5 verifier
+from ._evidence_readers import read_junit_cases, read_vitest_cases  # noqa: F401 - re-exported for the F0.5 verifier
 from .execution_evidence import build_index
 
 # Conventional raw-report drop locations (relative to project_root). Finalization

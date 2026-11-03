@@ -1,0 +1,380 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-03-native-surface-f05",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-03T22:15:52.161322+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "Before merging, run one real probe: `jest --json --ci` and `jest-junit` with `addFileAttribute` from a real Expo project, stage both through `evidence_drop`, and confirm both parse. If Jest-JSON doesn't fit the vitest reader, prefer requiring JUnit-with-`file` only and drop the Jest-JSON path from AC1.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "Document the assumption explicitly (deps must be declared in the nearest manifest) and add a test for \"no `package.json` found above path\" (clear error naming the path). If hoisting is in scope, consider walking up to the workspace root — otherwise state it as a known limitation in the docs.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security |",
+          "file": null,
+          "line": null,
+          "finding": "Normalize paths (resolve `..`, compare against the resolved package root) before the under-root test; add a test with `../` traversal in `file`.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "Add the mixed-monorepo test case explicitly.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk |",
+          "file": null,
+          "line": null,
+          "finding": "Ensure the full existing surface test files run green (step 7) specifically covers `web` with each existing KIND/label combination — the plan implies it; make it explicit in the test-first list.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency |",
+          "file": null,
+          "line": null,
+          "finding": "One sentence in the refusal text or docs.  Overall assessment: The approach is sound — deriving native-ness from the diff's own manifests rather than a config switch is the right call, and the evidence rules are preserved. The main gap is unvalidated Jest report shapes; fix that with one real probe and this is ready.  SHIPWRIGHT_VERDICT: approve",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "The plan adds a package/extension filter but does not specify whether it runs before calculating the passing count. If report-wide totals remain authoritative, unrelated Python tests or tests in another package could inflate the count backing `tests_run`.",
+          "suggestion": "Calculate the eligible passing count from individual results after filtering by native package and JS/TS extension. Add a mixed-report test where the overall total exceeds `tests_run` but the eligible total does not. Preserve existing failure and provenance checks.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "Report path resolution is underspecified. Jest JSON commonly contains absolute test paths, while JUnit `file` values can be relative to the package or invocation directory. Incorrect resolution could reject valid monorepo evidence or attribute tests to the wrong package.",
+          "suggestion": "Define the supported path bases and normalize paths before checking containment. Use path-aware containment rather than string prefixes, reject unresolved or escaping paths, and test absolute Jest paths, package-relative JUnit paths, and sibling packages with similar names.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk |",
+          "file": null,
+          "line": null,
+          "finding": "Separating report kinds from runner labels changes shared evidence routing, but the listed new tests focus on native behavior. In particular, JUnit’s existing `pytest` label makes accidental changes to other surfaces plausible.",
+          "suggestion": "Ensure the existing surface tests explicitly cover the accepted report kinds for `web`, `cli`, and `none`, including continued rejection of JUnit/Vitest evidence as a substitute for required Playwright evidence.  The approach is sound and appropriately scoped: deriving eligibility from committed package manifests avoids introducing a project-level bypass. Clarify filtered counting and report path resolution before implementation; both directly affect whether native evidence proves the intended change.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-03T22:08:10.752790+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] **Findings**\n\n1. **Category: edge-case | Severity: medium** — Jest JSON staged as \"vitest-shaped\" is asserted but never empirically validated. Jest's `--json` output (`testResults[]` with `assertionResults[]`) is not identical to vitest's JSON shape, and the plan's own Confidence Calibration admits real `jest-junit` output wasn't run. If the reader doesn't fully parse Jest's `numPassedTests`/suite structure, `tests_run` silently falls back to a short count or zero and every native run fails late.\n   **Suggestion:** Before merging, run one real probe: `jest --json --ci` and `jest-junit` with `addFileAttribute` from a real Expo project, stage both through `evidence_drop`, and confirm both parse. If Jest-JSON doesn't fit the vitest reader, prefer requiring JUnit-with-`file` only and drop the Jest-JSON path from AC1.\n\n2. **Category: edge-case | Severity: medium** — \"Nearest `package.json`\" fails under dependency hoisting: in yarn/pnpm workspaces, `react-native`/`expo` may be declared only at the workspace root or in `node_modules`-adjacent manifests, not in the package nearest the touched UI path. The check would then wrongly refuse a legitimately native diff.\n   **Suggestion:** Document the assumption explicitly (deps must be declared in the nearest manifest) and add a test for \"no `package.json` found above path\" (clear error naming the path). If hoisting is in scope, consider walking up to the workspace root — otherwise state it as a known limitation in the docs.\n\n3. **Category: security | Severity: low** — The `file` attribute from a staged report is trusted to prove results live under the touched native package. A crafted report can carry `file: \"../nativeapp/tests/x.test.ts\"` or symlink-style paths that escape the package root while satisfying a `startswith` check.\n   **Suggestion:** Normalize paths (resolve `..`, compare against the resolved package root) before the under-root test; add a test with `../` traversal in `file`.\n\n4. **Category: edge-case […truncated]\n\n[openai] 1. **Category: edge-case | Severity: medium**  \n   **Finding:** The plan adds a package/extension filter but does not specify whether it runs before calculating the passing count. If report-wide totals remain authoritative, unrelated Python tests or tests in another package could inflate the count backing `tests_run`.  \n   **Suggestion:** Calculate the eligible passing count from individual results after filtering by native package and JS/TS extension. Add a mixed-report test where the overall total exceeds `tests_run` but the eligible total does not. Preserve existing failure and provenance checks.\n\n2. **Category: edge-case | Severity: medium**  \n   **Finding:** Report path resolution is underspecified. Jest JSON commonly contains absolute test paths, while JUnit `file` values can be relative to the package or invocation directory. Incorrect resolution could reject valid monorepo evidence or attribute tests to the wrong package.  \n   **Suggestion:** Define the supported path bases and normalize paths before checking containment. Use path-aware containment rather than string prefixes, reject unresolved or escaping paths, and test absolute Jest paths, package-relative JUnit paths, and sibling packages with similar names.\n\n3. **Category: risk | Severity: low**  \n   **Finding:** Separating report kinds from runner labels changes shared evidence routing, but the listed new tests focus on native behavior. In particular, JUnit’s existing `pytest` label makes accidental changes to other surfaces plausible.  \n   **Suggestion:** Ensure the existing surface tests explicitly cover the accepted report kinds for `web`, `cli`, and `none`, including continued rejection of JUnit/Vitest evidence as a substitute for required Playwright evidence.\n\nThe approach is sound and appropriately scoped: deriving eligibility from committed package manifests avoids introducing a project-level bypass. Clarify filtered counting and report path resolution before implementation; both di […truncated]",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "security",
+          "file": "shared/scripts/tools/verifiers/_surface_native.py",
+          "line": 110,
+          "finding": "Round 1: a diff could add a nested native package.json under a web app (or delete a nested web one under a native root) and relabel a web UI file as native. FIXED: the package owning each path is resolved at the merge-base as well and must be the same native one; mutation-checked, tests added.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/F0.5.md",
+          "line": 117,
+          "finding": "Round 1: staging Jest as JSON and as JUnit counted every test twice against tests_run. FIXED: one format is counted (the larger); test added.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/_surface_native.py",
+          "line": 123,
+          "finding": "Round 2: the merge-base rule refused a NEW Expo app under a bare workspace root and accepted a pre-existing browser file claimed by a new manifest in a manifest-less repo. FIXED: existing files need the same native base-side package, new files are refused only when a web package owned their location; tests and mutation checks added.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": "shared/scripts/tools/verifiers/_surface_native.py",
+          "line": 408,
+          "finding": "Round 1 lows (Windows drive/UNC report paths, base==commit, wider web deny set, malformed Jest JSON, stale surface lists, .jinja2, Windows npx note): all FIXED with tests.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/_surface_native.py",
+          "line": 141,
+          "finding": "Round 3: a first native app under a root manifest that counts as web is refused once; a new file under a manifest the diff adds is judged by that manifest unless a web package owned the location. DISCLOSED in the module docstring and the F0.5 recipe; esbuild/rollup/lit/@vitejs/ added to the web set.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-03T22:33:01.759793+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "bypass",
+          "file": "shared/scripts/tools/verifiers/_surface_native.py",
+          "line": 89,
+          "finding": "Claim under doubt: Universal Expo app (react-dom + react-native-web) that ships a web build is accepted as native. REBUTTED/DISCLOSED: the stock create-expo-app template has exactly this shape, so refusing it would refuse nearly every Expo app; whether a web build ships is not derivable from the manifest alone. The F0.5 recipe and module docstring state that an Expo app with a real web build needs --surface web; the PR names it as a disclosed limit. — Universal Expo app (react-dom + react-native-web) that ships a web build is accepted as native. REBUTTED/DISCLOSED: the stock create-expo-app template has exactly this shape, so refusing it would refuse nearly every Expo app; whether a web build ships is not derivable from the manifest alone. The F0.5 recipe and module docstring state that an Expo app with a real web build needs --surface web; the PR names it as a disclosed limit.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "bypass",
+          "file": "shared/scripts/tools/verifiers/_surface_native.py",
+          "line": 40,
+          "finding": "Claim under doubt: react-dom + react-native-web exemption let any unlisted bundler through. FIXED: the exemption now needs expo; bundlers/frameworks added (rsbuild, rspack, farmfe, waku, umi, ionic, capacitor, @react-router/, @modern-js/, @tauri-apps/, @storybook/, @tanstack/react-start); tests added. — react-dom + react-native-web exemption let any unlisted bundler through. FIXED: the exemption now needs expo; bundlers/frameworks added (rsbuild, rspack, farmfe, waku, umi, ionic, capacitor, @react-router/, @modern-js/, @tauri-apps/, @storybook/, @tanstack/react-start); tests added.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "bypass",
+          "file": "shared/scripts/tools/verifiers/_surface_native.py",
+          "line": 147,
+          "finding": "Claim under doubt: A new sham manifest inside an existing non-JS web tree. DISCLOSED as a known limit (new files under a diff-added manifest); follow-up, not a core path of #989. — A new sham manifest inside an existing non-JS web tree. DISCLOSED as a known limit (new files under a diff-added manifest); follow-up, not a core path of #989.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "wrong-surface",
+          "file": "shared/scripts/tools/verifiers/surface_check.py",
+          "line": 195,
+          "finding": "Claim under doubt: Expo +api routes pass as native UI. FIXED: +api. files are refused as web/server-only (test added); .web.mjs/.cjs and +html.mjs/.cjs added. — Expo +api routes pass as native UI. FIXED: +api. files are refused as web/server-only (test added); .web.mjs/.cjs and +html.mjs/.cjs added.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "coupling",
+          "file": "shared/scripts/tools/verifiers/_surface_native.py",
+          "line": 213,
+          "finding": "Claim under doubt: Consumer check is direct and declaration-only. DISCLOSED as a known limit (transitive/aliased consumers); follow-up. — Consumer check is direct and declaration-only. DISCLOSED as a known limit (transitive/aliased consumers); follow-up.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/_surface_native.py",
+          "line": 125,
+          "finding": "Claim under doubt: base == commit refuses post-merge audits. REBUTTED: the F0.5 check runs at F11 on the pre-merge branch commit; no post-merge caller of the surface check exists, and refusing is fail-closed. — base == commit refuses post-merge audits. REBUTTED: the F0.5 check runs at F11 on the pre-merge branch commit; no post-merge caller of the surface check exists, and refusing is fail-closed.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "evidence",
+          "file": "shared/scripts/tools/verifiers/_surface_native.py",
+          "line": 184,
+          "finding": "Claim under doubt: JUnit base relabel and non-test JS files counted as evidence. FIXED in part: only test-named files (.test./.spec./__tests__) count (test added); cross-package base relabel stays a disclosed limit. — JUnit base relabel and non-test JS files counted as evidence. FIXED in part: only test-named files (.test./.spec./__tests__) count (test added); cross-package base relabel stays a disclosed limit.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "bypass",
+          "file": "shared/scripts/tools/verifiers/_surface_native.py",
+          "line": 49,
+          "finding": "Claim under doubt: Expo 'use dom' components. DISCLOSED as a known limit; .mjs/.cjs suffixes FIXED. — Expo 'use dom' components. DISCLOSED as a known limit; .mjs/.cjs suffixes FIXED.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/_surface_native.py",
+          "line": 226,
+          "finding": "Claim under doubt: node_modules substring match. FIXED: whole path segment. — node_modules substring match. FIXED: whole path segment.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-03T22:46:06.753603+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "regression |",
+          "file": "shared/scripts/tools/verifiers/_surface_runner.py (~line 138, the new `if \"vitest\" in prov[\"reports\"]` block)",
+          "line": null,
+          "finding": "passing_case_counts` is shared by every surface, but the new vitest-JSON branch now applies per-assertion counts for all surfaces, not just `native`. `cli` and `api` have no runner filter in `SURFACE_RUNNERS`, so a staged Jest/vitest report in the same run now inflates the `cases` total that backs `tests_run` for a `cli` run (previously each vitest id counted as 1). Since the check is `cases < tests_run → fail`, this inflation can mask a short-count `cli`/`api` block that previously failed — a silent loosening of an existing gate.",
+          "suggestion": "Apply the per-assertion vitest counting only when the surface is `native` (thread the surface through, or gate the branch on it), or add a regression test asserting a `cli` block with `tests_run` larger than the pytest passing count still fails when a vitest report is also staged.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug |",
+          "file": "shared/scripts/tools/verifiers/_surface_runner.py (junit loop followed by `counts.update(... vitest ...)`) and the docs claim in plugins/shipwright-iterate/skills/iterate/references/F0.5.md (\"staging both is counted once, as the larger\")",
+          "line": null,
+          "finding": "When the same test id appears in both the JUnit and vitest case-count dicts, `counts.update` makes the vitest count win unconditionally, not the larger of the two. The documented rule (\"the larger\") and the `_case_count` max-over-labels logic can therefore disagree with the per-id counts for duplicate ids (e.g. a jest-junit report without describe-prefixed names producing ids identical to the JSON ones).",
+          "suggestion": "Merge with max (`counts[tid] = max(counts.get(tid, 0), n)`) or drop the \"as the larger\" wording; add a test where JUnit carries a higher per-id count than the JSON.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": "shared/scripts/tools/verifiers/_surface_native.py — `native_result_in`, `not root or path.startswith(root + \"/\")",
+          "line": null,
+          "finding": "When a touched native package is the repo root (`directory == \"\"`), every project-relative JS/TS result in the staged report counts, including results belonging to other (non-touched, possibly non-native) directories in the same repo, and `uncovered_root` is satisfied by any one passing result anywhere. This is only a whole-repo-package scenario so exposure is small, but it means `tests_run` for a root-package native run can be backed by results outside any UI-bearing directory.",
+          "suggestion": "Acceptable if intentional (single-package repo); if not, document it or require the passing results to at least be JS/TS under the repo (which they are) — but a one-line comment pinning the `root == \"\"` semantics would prevent future \"fixes\" in either direction.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test |",
+          "file": "shared/tests/test_surface_native.py — `test_a_package_new_in_this_diff_is_accepted_when_it_is_native_at_the_verified_commit",
+          "line": null,
+          "finding": "This test is byte-for-byte the same scenario as `test_native_ui_diff_passes_with_jest_json_under_the_package` (same fixture via `native_repo`, same staging, same assertion); it does not actually exercise the \"new in this diff\" merge-base branch any differently — `FILES` puts `package.json` in the branch commit in both tests, and there is no distinct assertion on the new-file path. The genuinely new-file cases live in the gates file, so coverage exists, but this test's name promises something it doesn't pin.",
+          "suggestion": "Either delete it or make it distinct (e.g. assert the base-side check ran, or add a new file rather than the package manifest case it claims).  Non-findings I checked deliberately: the `Tests:`-line-only filter for `parse_tests_run` (AC1) is correctly implemented and tested including ANSI codes; the kinds/labels split is pinned by an explicit test; path traversal (`../`), Windows drive/UNC, and sibling-prefix (`apps/mobile-admin`) containment are all tested; the merge-base relabel attacks (nested manifest added, nested web manifest deleted, browser file claimed by a new manifest) each have a dedicated test; AC5 refusal text and both docs files state the recipe including the `file` attribute.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/tools/verifiers/_surface_native.py",
+          "line": 156,
+          "finding": "Directory containment does not establish package ownership. Tests in a nested, separate package such as `apps/mobile/web/package.json` count as evidence for touched UI in `apps/mobile`, even if that nested package is web-only. This violates AC4’s requirement that another package’s results never satisfy native evidence.",
+          "suggestion": "Resolve each result file’s nearest package at the verified commit and require that package to be one of the touched native packages. Add a test with a nested package whose passing results are the only staged evidence.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/tools/verifiers/_surface_evidence.py",
+          "line": 115,
+          "finding": "Taking the maximum count across report formats undercounts distinct tests. If touched package A supplies two Jest JSON assertions and touched package B supplies two different JUnit cases, both packages have valid evidence, but `tests_run=4` fails because this returns two.",
+          "suggestion": "Deduplicate overlapping executions rather than treating all reports in different formats as duplicates. Preserve the sum for distinct package results and test a mixed-format, two-package run.  Overall assessment: ship-with-fixes. The implementation covers the main native flow, but package attribution and mixed-format counting need correction before shipping.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "gpt+glm",
+      "completed_at": "2026-11-03T22:41:19.307553+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- Category: regression | Severity: medium\n- File: shared/scripts/tools/verifiers/_surface_runner.py (~line 138, the new `if \"vitest\" in prov[\"reports\"]` block)\n- Finding: `passing_case_counts` is shared by every surface, but the new vitest-JSON branch now applies per-assertion counts for **all** surfaces, not just `native`. `cli` and `api` have no runner filter in `SURFACE_RUNNERS`, so a staged Jest/vitest report in the same run now inflates the `cases` total that backs `tests_run` for a `cli` run (previously each vitest id counted as 1). Since the check is `cases < tests_run → fail`, this inflation can mask a short-count `cli`/`api` block that previously failed — a silent loosening of an existing gate.\n- Suggestion: Apply the per-assertion vitest counting only when the surface is `native` (thread the surface through, or gate the branch on it), or add a regression test asserting a `cli` block with `tests_run` larger than the pytest passing count still fails when a vitest report is also staged.\n\n- Category: bug | Severity: low\n- File: shared/scripts/tools/verifiers/_surface_runner.py (junit loop followed by `counts.update(... vitest ...)`) and the docs claim in plugins/shipwright-iterate/skills/iterate/references/F0.5.md (\"staging both is counted once, as the larger\")\n- Finding: When the same test id appears in both the JUnit and vitest case-count dicts, `counts.update` makes the **vitest** count win unconditionally, not the larger of the two. The documented rule (\"the larger\") and the `_case_count` max-over-labels logic can therefore disagree with the per-id counts for duplicate ids (e.g. a jest-junit report without describe-prefixed names producing ids identical to the JSON ones).\n- Suggestion: Merge with max (`counts[tid] = max(counts.get(tid, 0), n)`) or drop the \"as the larger\" wording; add a test where JUnit carries a higher per-id count than the JSON.\n\n- Category: edge-case | Severity: low\n- File: shared/scripts/tools/verifiers/_surfa […truncated]\n\n[openai] - Category: spec\n- Severity: medium\n- File: shared/scripts/tools/verifiers/_surface_native.py:156\n- Finding: Directory containment does not establish package ownership. Tests in a nested, separate package such as `apps/mobile/web/package.json` count as evidence for touched UI in `apps/mobile`, even if that nested package is web-only. This violates AC4’s requirement that another package’s results never satisfy native evidence.\n- Suggestion: Resolve each result file’s nearest package at the verified commit and require that package to be one of the touched native packages. Add a test with a nested package whose passing results are the only staged evidence.\n\n- Category: bug\n- Severity: medium\n- File: shared/scripts/tools/verifiers/_surface_evidence.py:115\n- Finding: Taking the maximum count across report formats undercounts distinct tests. If touched package A supplies two Jest JSON assertions and touched package B supplies two different JUnit cases, both packages have valid evidence, but `tests_run=4` fails because this returns two.\n- Suggestion: Deduplicate overlapping executions rather than treating all reports in different formats as duplicates. Preserve the sum for distinct package results and test a mixed-format, two-package run.\n\nOverall assessment: ship-with-fixes. The implementation covers the main native flow, but package attribution and mixed-format counting need correction before shipping.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-03T22:18:55.896862+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-03T22:10:01.469341+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-03T22:08:10.636143+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

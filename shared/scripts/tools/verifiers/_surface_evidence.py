@@ -44,6 +44,7 @@ from lib import evidence_drop  # noqa: E402
 
 from ._layer_coverage_evidence import fresh_evidence  # noqa: E402
 from ._layer_coverage_regen import _load_collector  # noqa: E402
+from ._surface_native import NativeScope  # noqa: E402
 from ._surface_revision import revision_problem  # noqa: E402
 from ._surface_runner import (  # noqa: E402
     latest_attempts,
@@ -53,10 +54,21 @@ from ._surface_runner import (  # noqa: E402
     under,
 )
 
-__all__ = ["SURFACE_RUNNERS", "evidence_problem", "runner_test_paths"]
+__all__ = ["SURFACE_REPORT_KINDS", "SURFACE_RUNNERS", "evidence_problem", "runner_test_paths"]
 
-#: Staged report kinds a surface's results must come from; absent = any kind.
-SURFACE_RUNNERS: dict[str, frozenset[str]] = {"web": frozenset({"playwright"})}
+#: Two vocabularies that only coincide for Playwright. REPORT KINDS name what was staged
+#: (``junit``, ``vitest``, ``playwright``); RUNNER LABELS are what the reader writes on each
+#: result (every JUnit result says ``pytest``). ``native`` = Jest JSON or JUnit with a ``file``
+#: attribute. Absent surface = any kind / any label.
+SURFACE_REPORT_KINDS: dict[str, frozenset[str]] = {
+    "web": frozenset({"playwright"}), "native": frozenset({"junit", "vitest"})}
+SURFACE_RUNNERS: dict[str, frozenset[str]] = {
+    "web": frozenset({"playwright"}), "native": frozenset({"pytest", "vitest"})}
+_STAGE_HINT = {
+    "web": "(`evidence_drop.py stage --playwright <report.json>` together with the JUnit reports)",
+    "native": ("(`evidence_drop.py stage --vitest <jest-results.json>` from `jest --json`, or a JUnit report that "
+               "carries the `file` attribute - jest-junit `addFileAttribute` - staged as `--junit <package dir>=<junit.xml>`)"),
+}
 
 _RERUN = ("re-run this run's tests (F0, and F0.5 for the surface) on this revision, then stage "
           "the reports that run wrote: `uv run shared/scripts/tools/stage_f0_evidence.py "
@@ -81,11 +93,11 @@ def _provenance_problem(project_root: Path, run_id: str, commit: str, surface: s
     problem, note = revision_problem(project_root, head, prov.get("tested_tree"), commit, branch_paths)
     if problem:
         return f"stale: {problem}. To repair, {rerun}", ""
-    needed = SURFACE_RUNNERS.get(surface)
+    needed = SURFACE_REPORT_KINDS.get(surface)
     if needed and not needed.intersection(prov["reports"]):
         return (f"surface={surface} needs a staged {'/'.join(sorted(needed))} report, but only "
                 f"{', '.join(sorted(prov['reports']))} was staged. Stage the surface runner's report "
-                "(`evidence_drop.py stage --playwright <report.json>` together with the JUnit reports)"), ""
+                f"{_STAGE_HINT.get(surface, '')}"), ""
     return None, note
 
 
@@ -93,13 +105,29 @@ def _passing(results: dict) -> list[str]:
     return [tid for tid, e in results.items() if e.get("executed") == "pass" and e.get("status") == "enabled"]
 
 
+def _case_count(passed: list[str], results: dict, per_case: dict, scope: NativeScope | None) -> int:
+    """Passing cases behind ``passed``. Native evidence staged in BOTH Jest formats (JSON + JUnit) for one package
+    names every test twice under different id shapes, so each package counts one format - the larger - and the
+    packages are summed (they hold different tests)."""
+    if scope is None:
+        return passing_case_count(passed, per_case)
+    total = 0
+    for root in scope.roots:
+        mine = [t for t in passed if scope.owner(t) == root]
+        total += max((passing_case_count([t for t in mine if results[t].get("runner") == lb], per_case)
+                      for lb in {results[t].get("runner") for t in mine}), default=0)
+    return total
+
+
 def evidence_problem(project_root: Path, run_id: str, commit: str, block: dict,
                      touched: dict[str, list[str]] | None = None,
-                     branch_paths: list[str] | tuple[str, ...] = ()) -> tuple[str | None, str]:
+                     branch_paths: list[str] | tuple[str, ...] = (),
+                     native_scope: NativeScope | None = None) -> tuple[str | None, str]:
     """``(problem, summary)``: ``problem`` is ``None`` when the evidence backs the block.
 
     ``touched`` is the diff's runnable surfaces (``_surface_detect.detect_surfaces``);
-    ``branch_paths`` the diff's changed paths (``measure_diff``).
+    ``branch_paths`` the diff's changed paths (``measure_diff``); ``native_scope`` the native
+    packages ``surface=native`` was granted for (only their own JS/TS test results count).
     """
     surface = str(block.get("surface"))
     named = runner_test_paths(project_root, block.get("runner"))
@@ -121,7 +149,8 @@ def evidence_problem(project_root: Path, run_id: str, commit: str, block: dict,
     needed = SURFACE_RUNNERS.get(surface)
 
     def of_surface(results: dict) -> dict:
-        return {tid: e for tid, e in results.items() if not needed or e.get("runner") in needed}
+        return {tid: e for tid, e in results.items()
+                if (not needed or e.get("runner") in needed) and (native_scope is None or native_scope.owner(tid) is not None)}
 
     # No commit: fresh_evidence's own ancestry test is replaced by revision_problem above,
     # which also accepts a consolidated (soft-reset) head whose tested tree equals the commit.
@@ -145,10 +174,15 @@ def evidence_problem(project_root: Path, run_id: str, commit: str, block: dict,
         return (f"the block records exit_code 0, but the staged evidence has {len(failed)} failing "
                 f"test(s) ({scope}), first {failed[0]!r}"), ""
     passed = _passing(results)
+    gap = native_scope.uncovered(passed) if native_scope else None
+    if gap:
+        return (f"no passing JS/TS test result under the native package {gap!r}: every package whose UI this diff "
+                "touches needs its own passing tests in the staged reports"), ""
     tests_run = block.get("tests_run")
     # tests_run is the runner's own count, per CASE (pytest "N passed"); the index folds a
     # parametrized function into one id, so compare in the runner's unit, not the index's.
-    cases = passing_case_count(passed, passing_case_counts(project_root, loaded[2]))
+    cases = _case_count(passed, results, passing_case_counts(project_root, loaded[2], vitest=native_scope is not None),
+                        native_scope)
     if cases < tests_run:
         return (f"the block records tests_run={tests_run}, but the staged evidence shows only "
                 f"{cases} passing {surface} case(s) in {len(passed)} test(s) ({scope})"), ""
