@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "**Findings**\n\n- **Category: approach** \u2014 **Severity: medium**\n  The plan's own confidence section admits the dynamic checks have only ever run against a stub, and that unknowns remain (linkedin-queries.json format, helper flags). An entire 21-capability checklist derived from brief text, never validated against anything real, will likely have a noisy first run full of false failures the checklist itself can't distinguish from real regressions. Suggestion: add a mechanism to mark checklist expectations as \"unverified until first real run\" in the report, and budget a calibration pass after run 1; otherwise the operator gets a wall of red that may be checker bugs.\n\n- **Category: approach** \u2014 **Severity: medium**\n  Byte-identical copy plus an approval stamp \"outside the hash\" is fragile: the acceptance criterion depends on the pipeline's digest excluding exactly the key `approval.ts` writes. You probed the digest once, but any future pipeline change to hash-excluded keys silently breaks criterion 1. Suggestion: add a permanent unit test asserting the copy's hash equals the source hash after stamping (you mention this probe \u2014 make it a regression test, not a one-off).\n\n- **Category: risk** \u2014 **Severity: medium**\n  `if (baseline)` branches sprinkled across shared modules (\"one branch each in the spec for static checks, approval stamp and the suite\") is the main threat to \"social-engagement-real keeps working unchanged.\" Scattered fixture-conditional logic in shared code is exactly how the old fixture silently drifts. Suggestion: prefer a fixture-registry/dispatch (fixture name \u2192 checklist + suite + options) so shared modules stay branch-free; at minimum, add an explicit e2e smoke of `social-engagement-real` selection in CI or the unit specs so regression is caught.\n\n- **Category: edge-case** \u2014 **Severity: medium**\n  Companion lifecycle: the plan says free port, temp HOME, clean env, kill \u2014 but doesn't cover the built `backend/server.py` failing to start, hanging on startup, or leaking past teardown (which would poison the throw-away data folder checks of a subsequent run). Suggestion: hard timeout on startup with captured stderr in the failure report, and a teardown guard that kills by PID group even when a check throws mid-run.\n\n- **Category: edge-case** \u2014 **Severity: low**\n  Criterion 4 says an unreached state is \"reported and no wrong screenshot is attached\" \u2014 but doesn't define partial failure: recipe reached the screen but the marker never appeared. Ensure the tour distinguishes \"state unreachable\" from \"marker missing on reachable screen\" so operators can tell navigation bugs from rendering bugs.\n\n- **Category: edge-case** \u2014 **Severity: low**\n  Clock override for expiry tests: confirm the override applies to the companion process (env var) rather than test-side calculation, or derived-expiry checks will race at boundaries. Also verify expiry math across a month/year boundary in the synthetic data.\n\n- **Category: security** \u2014 **Severity: low**\n  Dummy tokens are random per run \u2014 good \u2014 but ensure the fake servers bind 127.0.0.1 only and that no recorded response in `seed/recorded/` contains real credentials (the secrecy scan checks the app's output, not the fixture's own inputs). A one-time scan of the seed data is worth doing since it's copied from a real skill.\n\n- **Category: risk** \u2014 **Severity: low**\n  \"Test harness and fixture data; no product behaviour\" \u2014 but companion checks read-modify-write `brief.json` in the copy. Verify the write only ever targets the run-local copy and never the fixture directory (a path-resolution bug here corrupts the committed fixture and fails the hash check on the next run). Add an assertion that the source fixture path is read-only in tests.\n\n**Overall assessment:** The approach is sound and unusually well-probed for a test-harness change, with the main risks concentrated in the acknowledged \"first real run is the real test\" gap and in the `if (baseline)` branches that could quietly regress the existing fixtures. Tighten those two and this is ready.",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Category: security | Severity: high**  \n   **Finding:** A clean environment and dummy tokens do not enforce \u201cno real network.\u201d The built adapter could ignore a fake-service URL, use a hardcoded production endpoint, or launch a helper that accesses the internet. Recording fake-server requests would not detect that traffic.  \n   **Suggestion:** Run the backend and its child processes with outbound access restricted to the local fake services. Fail the check on unexpected destinations, and verify that each adapter actually contacted its designated fake.\n\n2. **Category: edge-case | Severity: medium**  \n   **Finding:** The process-launch approach does not specify readiness, bounded timeouts, or cleanup after failed assertions. Selecting a free port before starting Python also creates a port-allocation race. These can produce intermittent failures or leave servers running across checks.  \n   **Suggestion:** Define a bounded readiness probe, capture startup errors, and always terminate and await the process tree in `finally`. Prefer binding port zero and discovering the assigned port; otherwise retry address-in-use failures. Test startup failure, readiness timeout, and cleanup after an assertion fails.\n\n3. **Category: approach | Severity: medium**  \n   **Finding:** The plan acknowledges unresolved `linkedin-queries.json` formatting and helper flags, yet intends to issue capability verdicts. If checks assume an undocumented format or invocation, a valid generated app could fail because of the harness rather than the brief.  \n   **Suggestion:** Resolve those expectations against the delivered brief before implementing assertions. Where the brief leaves implementation freedom, check observable behavior instead. Report genuinely unresolved prerequisites as blocked or inconclusive, rather than passing them or treating them as application failures.\n\n4. **Category: risk | Severity: medium**  \n   **Finding:** \u201cAdditive hooks\u201d alone do not establish that the two existing fixtures retain their behavior. Checklist selection, trigger phrases, approval stamping, and suite dispatch all touch their shared execution path.  \n   **Suggestion:** Add focused regression tests for default, real, and baseline fixture dispatch. Assert the selected checklist and suite, printed report identity, and that baseline approval stamping never modifies either existing fixture or the source package.\n\nThe approach is sound and appropriately scoped, particularly the separate baseline modules and state-marker checks before screenshots. Address network enforcement, process lifecycle, unresolved contract assumptions, and shared-path regression coverage before proceeding.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-11-03-e2e-baseline-fixture",
+    "at": "2026-11-03T08:42:01.817867+00:00"
+  },
+  "verdicts": {
+    "glm": "unknown",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": false,
+    "requires_resolution": true,
+    "reason": "verdict could not be read for: glm (glm=unknown, openai=revise)"
+  }
+}

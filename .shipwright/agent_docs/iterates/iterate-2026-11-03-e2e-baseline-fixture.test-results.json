@@ -1,0 +1,107 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-03-e2e-baseline-fixture",
+    "date": "2026-11-03",
+    "unit": {
+      "status": "passed",
+      "passed": 104,
+      "skipped": 0,
+      "total": 104
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 36,
+      "skipped": 0,
+      "total": 36
+    },
+    "e2e": {
+      "status": "not_run",
+      "passed": 0,
+      "skipped": 0,
+      "total": 0
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "Package copy is byte-identical, hash verifies, carries no approval",
+          "disposition": "tested",
+          "evidence": "test_e2e_baseline_fixture.py::test_package_is_the_delivered_one_valid_and_unapproved PASSED; baseline-fixture.spec.ts hash test PASSED"
+        },
+        {
+          "behavior": "Harness approval is stamped into the run copy only and keeps the pipeline digest",
+          "disposition": "tested",
+          "evidence": "baseline-fixture.spec.ts approval tests PASSED; test_package_with_the_harness_approval_in_its_copy_passes_the_dry_harness PASSED"
+        },
+        {
+          "behavior": "Fixture selection: baseline selected by name, board and real unchanged, typos refused, variantFor refuses baseline",
+          "disposition": "tested",
+          "evidence": "baseline-fixture.spec.ts fixture and variantFor tests PASSED; test_harness_selects_the_fixture_by_name_and_leaves_the_other_two_alone PASSED"
+        },
+        {
+          "behavior": "Every checklist item has an evaluator, only S03 and S09 soft, screen-map ids each have a recipe",
+          "disposition": "tested",
+          "evidence": "test_answer_key_has_an_evaluator_per_item_and_only_s03_and_s09_are_soft PASSED; test_screen_map_requirements_are_headings_of_brief_md_and_mockups_match PASSED"
+        },
+        {
+          "behavior": "Fake Syften/Apify/HN replay the recorded files, 401 and forced failures",
+          "disposition": "tested",
+          "evidence": "baseline-fixture.spec.ts fake-server tests PASSED"
+        },
+        {
+          "behavior": "Dynamic checks start the companion, speak HTTP, pass a correct backend and fail a flawed one, report a companion that cannot start",
+          "disposition": "tested",
+          "evidence": "baseline-contract.spec.ts 3 tests PASSED"
+        },
+        {
+          "behavior": "Static checks (store only, adapter only, SKILL.md) on good and bad synthetic trees",
+          "disposition": "tested",
+          "evidence": "baseline-fixture.spec.ts static check tests PASSED"
+        },
+        {
+          "behavior": "Board helpers read the approved mockup states",
+          "disposition": "tested",
+          "evidence": "baseline-board-ui.spec.ts 2 tests PASSED"
+        },
+        {
+          "behavior": "Checks against a REAL built app (B01-B46)",
+          "disposition": "untestable",
+          "reason_code": "requires-prod-credential",
+          "reason": "needs a built app, which only exists after a model-driven e2e run that the operator starts"
+        },
+        {
+          "behavior": "Existing 104 unit specs and e2e-webui project guards still pass",
+          "disposition": "tested",
+          "evidence": "npx playwright test --project=unit: 104 passed; test_e2e_webui_project.py PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 9,
+        "tested": 9,
+        "untestable": 1,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 5,
+        "covered_acs": 5
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-11-03-e2e-baseline-fixture",
+    "commit": "dfe261d9ff032a8ab8881c6ce4d1e1f92471bbf3",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

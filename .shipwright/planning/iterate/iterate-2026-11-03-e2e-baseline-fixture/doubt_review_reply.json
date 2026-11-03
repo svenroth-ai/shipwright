@@ -1,0 +1,27 @@
+{
+ "stage": "doubt",
+ "verdict": "proceed-after-addressing",
+ "doubts": [
+  {
+   "severity": "medium",
+   "lens": "boundary",
+   "claim_under_doubt": "outbound traffic of the built app not blocked - fixed (dead proxy in cleanEnv, no-op BROWSER)",
+   "disproof_attempt": "see doubt-reviewer report",
+   "what_would_resolve_it": "addressed in the tree"
+  },
+  {
+   "severity": "medium",
+   "lens": "concurrency",
+   "claim_under_doubt": "companions/helper servers may outlive an abort - partly fixed (lifecycle runs stop in finally); no shutdown registry",
+   "disproof_attempt": "see doubt-reviewer report",
+   "what_would_resolve_it": "addressed in the tree"
+  },
+  {
+   "severity": "low",
+   "lens": "vacuous",
+   "claim_under_doubt": "B03 without a running companion - fixed; B14 cross-token - fixed; B12 score order, B39 link form - accepted, noted",
+   "disproof_attempt": "see doubt-reviewer report",
+   "what_would_resolve_it": "addressed in the tree"
+  }
+ ]
+}

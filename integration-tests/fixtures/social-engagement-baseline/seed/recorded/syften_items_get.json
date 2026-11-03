@@ -1,0 +1,164 @@
+[
+  {
+    "id": 880009,
+    "item": {
+      "backend": "Bluesky",
+      "backend_sub": "",
+      "type": "post",
+      "item_url": "https://bsky.app/profile/synthetic.example/post/3kq2abc",
+      "timestamp": "2026-11-02T18:00:00Z",
+      "title": "",
+      "text": "spec drift is real",
+      "author": "synthetic.example",
+      "lang": "en"
+    },
+    "filter": "\"spec drift\"",
+    "ai": {
+      "verdict": "accepted"
+    }
+  },
+  {
+    "id": 880001,
+    "item": {
+      "backend": "Reddit",
+      "backend_sub": "ProductManagement",
+      "type": "post",
+      "item_url": "https://www.reddit.com/r/ProductManagement/comments/1oq7k2m/how_do_you_keep_track_of_what_an_ai_codi/",
+      "timestamp": "2026-11-02T14:05:11Z",
+      "title": "How do you keep track of what an AI coding agent actually changed?",
+      "text": "Our two devs use agents for most tickets now. Velocity looks great on the board, but when a stakeholder asks why a rule behaves the way it does, nobody can answer without reading the diff. As the PO, how do I keep a record of what was built and why, without becoming a code reviewer?",
+      "author": "maple_orbit",
+      "lang": "en"
+    },
+    "filter": "\"what the agent built\" site:reddit.com",
+    "ai": {
+      "verdict": "accepted"
+    }
+  },
+  {
+    "id": 880008,
+    "item": {
+      "backend": "Hacker News",
+      "backend_sub": "",
+      "type": "comment",
+      "item_url": "https://news.ycombinator.com/item?id=46120103",
+      "timestamp": "2026-11-01T12:02:00Z",
+      "title": "",
+      "text": "<p>Mutation testing caught most of our hollow tests.</p>",
+      "author": "pallas_r",
+      "lang": "en"
+    },
+    "filter": "\"hollow tests\"",
+    "ai": {
+      "verdict": "accepted"
+    }
+  },
+  {
+    "id": 880005,
+    "item": {
+      "backend": "Hacker News",
+      "backend_sub": "",
+      "type": "story",
+      "item_url": "https://news.ycombinator.com/item?id=46120001",
+      "timestamp": "2026-11-01T10:20:00Z",
+      "title": "Ask HN: How do you verify agent-written changes against the spec?",
+      "text": "<p>We have specs in markdown and agents that implement them. Tests pass. But nobody checks that the tests actually cover the spec. What does your verification step look like?</p>",
+      "author": "kestrel_n",
+      "lang": "en"
+    },
+    "filter": "\"spec drift\" OR \"verify\" site:news.ycombinator.com",
+    "ai": {
+      "verdict": "accepted"
+    }
+  },
+  {
+    "id": 880002,
+    "item": {
+      "backend": "Reddit",
+      "backend_sub": "ExperiencedDevs",
+      "type": "post",
+      "item_url": "https://www.reddit.com/r/ExperiencedDevs/comments/1on3f8q/our_team_ships_faster_with_agents_but_no/",
+      "timestamp": "2026-10-31T19:40:00Z",
+      "title": "Our team ships faster with agents but nobody can explain the codebase anymore",
+      "text": "Six months in. Throughput is up, incidents are up too, and onboarding a new dev takes longer than before because the code has no author who remembers why. Anyone found a working practice for this?",
+      "author": "granite_finch",
+      "lang": "en"
+    },
+    "filter": "\"what the agent built\" site:reddit.com",
+    "ai": {
+      "verdict": "accepted"
+    }
+  },
+  {
+    "id": 880006,
+    "item": {
+      "backend": "Hacker News",
+      "backend_sub": "",
+      "type": "story",
+      "item_url": "https://news.ycombinator.com/item?id=46080002",
+      "timestamp": "2026-10-29T15:00:00Z",
+      "title": "Show HN: A tiny tool that diffs requirements against tests",
+      "text": "<p>It reads requirement ids from a markdown file and test names from pytest and prints the gaps. Repo: <a href=\"https://github.com/example-synthetic/reqdiff\">github.com/example-synthetic/reqdiff</a></p>",
+      "author": "tamsin_w",
+      "lang": "en"
+    },
+    "filter": "\"spec drift\" OR \"verify\" site:news.ycombinator.com",
+    "ai": {
+      "verdict": "accepted"
+    }
+  },
+  {
+    "id": 880004,
+    "item": {
+      "backend": "Reddit",
+      "backend_sub": "agile",
+      "type": "post",
+      "item_url": "https://www.reddit.com/r/agile/comments/1o8zw3d/product_owner_here:_how_do_i_review_work/",
+      "timestamp": "2026-10-15T16:30:00Z",
+      "title": "Product owner here: how do I review work an agent did?",
+      "text": "I cannot read code. The team says the agent did the story. How do I accept it with a clear conscience?",
+      "author": "sorrel_po",
+      "lang": "en"
+    },
+    "filter": "\"what the agent built\" site:reddit.com",
+    "ai": {
+      "verdict": "accepted"
+    }
+  },
+  {
+    "id": 880003,
+    "item": {
+      "backend": "Reddit",
+      "backend_sub": "SaaS",
+      "type": "post",
+      "item_url": "https://www.reddit.com/r/SaaS/comments/1o4kq7e/do_you_write_requirements_before_prompti/",
+      "timestamp": "2026-10-12T08:15:00Z",
+      "title": "Do you write requirements before prompting, or after?",
+      "text": "Small team, B2B tool. Half of us write a spec first, the other half prompt and then document. Which one held up for you after a few months?",
+      "author": "harbor_quill",
+      "lang": "en"
+    },
+    "filter": "\"what the agent built\" site:reddit.com",
+    "ai": {
+      "verdict": "accepted"
+    }
+  },
+  {
+    "id": 880007,
+    "item": {
+      "backend": "Hacker News",
+      "backend_sub": "",
+      "type": "story",
+      "item_url": "https://news.ycombinator.com/item?id=45900003",
+      "timestamp": "2026-10-08T12:00:00Z",
+      "title": "Ask HN: Is spec drift a real problem in your team?",
+      "text": "",
+      "author": "bramble_t",
+      "lang": "en"
+    },
+    "filter": "\"spec drift\" OR \"verify\" site:news.ycombinator.com",
+    "ai": {
+      "verdict": "accepted"
+    }
+  }
+]

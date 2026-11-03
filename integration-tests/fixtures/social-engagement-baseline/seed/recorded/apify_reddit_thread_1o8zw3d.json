@@ -1,0 +1,28 @@
+[
+  {
+    "dataType": "post",
+    "id": "1o8zw3d",
+    "parsedId": "1o8zw3d",
+    "url": "https://www.reddit.com/r/agile/comments/1o8zw3d/",
+    "communityName": "r/agile",
+    "title": "Product owner here: how do I review work an agent did?",
+    "body": "I cannot read code. The team says the agent did the story. How do I accept it with a clear conscience?",
+    "authorName": "sorrel_po",
+    "ageHours": 448.5,
+    "score": 23,
+    "commentsCount": 1,
+    "createdAt": "2026-10-15T16:30:00Z"
+  },
+  {
+    "dataType": "comment",
+    "id": "mq4d001",
+    "parsedId": "mq4d001",
+    "postId": "1o8zw3d",
+    "parentKind": "post",
+    "parsedParentId": "1o8zw3d",
+    "authorName": "juniper_sm",
+    "body": "Same way as before: demo against the acceptance criteria.",
+    "ageHours": 420.0,
+    "score": 9
+  }
+]

@@ -1,0 +1,140 @@
+[
+  {
+    "type": "post",
+    "id": "7390112233445566771",
+    "linkedinUrl": "https://www.linkedin.com/posts/wren-halvorsen_synthetic-activity-7390112233445566771-aB3x",
+    "content": "We let an AI agent implement a full change request last month. The code passed review. What did not pass: our V&V lead asked for evidence that each requirement was tested, and we had to reconstruct it by hand for two days. How are other regulated teams handling evidence for agent-written changes?",
+    "author": {
+      "name": "Wren Halvorsen",
+      "info": "QA Lead | Verification and validation in medical software",
+      "linkedinUrl": "https://www.linkedin.com/in/wren-halvorsen",
+      "type": "profile"
+    },
+    "postedAt": {
+      "timestamp": 1793519100000,
+      "date": "2026-11-01T07:45:00Z"
+    },
+    "engagement": {
+      "likes": 88,
+      "comments": 2,
+      "shares": 0
+    },
+    "query": {
+      "search": "verification evidence ai coding"
+    },
+    "comments": [
+      {
+        "type": "comment",
+        "id": "7390112233445566901",
+        "postId": "7390112233445566771",
+        "commentary": "Same here. Evidence is the bottleneck, not the code.",
+        "createdAtTimestamp": 1793524200000,
+        "actor": {
+          "name": "Ilse Brandvold",
+          "position": "Systems Engineer",
+          "linkedinUrl": "https://www.linkedin.com/in/ilse-brandvold"
+        }
+      },
+      {
+        "type": "comment",
+        "id": "7390112233445566902",
+        "postId": "7390112233445566771",
+        "commentary": "We now require the trace before the merge, not after.",
+        "createdAtTimestamp": 1793532600000,
+        "actor": {
+          "name": "Marek Solheim",
+          "position": "Head of Quality",
+          "linkedinUrl": "https://www.linkedin.com/in/marek-solheim"
+        }
+      }
+    ]
+  },
+  {
+    "type": "post",
+    "id": "7389001122334455662",
+    "linkedinUrl": "https://www.linkedin.com/posts/odile-merriweather_synthetic-activity-7389001122334455662-aB3x",
+    "content": "Hot take: the requirement is the only artefact that survives an AI rewrite of the code. If your requirements are vague, your agent output is unaccountable. Tell me I am wrong.",
+    "author": {
+      "name": "Odile Merriweather",
+      "info": "Senior Business Analyst | Requirements engineering",
+      "linkedinUrl": "https://www.linkedin.com/in/odile-merriweather",
+      "type": "profile"
+    },
+    "postedAt": {
+      "timestamp": 1793366400000,
+      "date": "2026-10-30T13:20:00Z"
+    },
+    "engagement": {
+      "likes": 143,
+      "comments": 1,
+      "shares": 0
+    },
+    "query": {
+      "search": "requirements traceability ai"
+    },
+    "comments": [
+      {
+        "type": "comment",
+        "id": "7389001122334455801",
+        "postId": "7389001122334455662",
+        "commentary": "Not wrong. But who keeps them current?",
+        "createdAtTimestamp": 1793372400000,
+        "actor": {
+          "name": "Teodor Aske",
+          "position": "Product Manager",
+          "linkedinUrl": "https://www.linkedin.com/in/teodor-aske"
+        }
+      }
+    ]
+  },
+  {
+    "type": "post",
+    "id": "7388111122223333553",
+    "linkedinUrl": "https://www.linkedin.com/posts/synthbridge-solutions_synthetic-activity-7388111122223333553-aB3x",
+    "content": "Register now for our webinar on AI delivery at scale! Limited seats.",
+    "author": {
+      "name": "Synthbridge Solutions",
+      "info": "12,400 followers",
+      "linkedinUrl": "https://www.linkedin.com/in/synthbridge-solutions",
+      "type": "company"
+    },
+    "postedAt": {
+      "timestamp": 1793181600000,
+      "date": "2026-10-28T10:00:00Z"
+    },
+    "engagement": {
+      "likes": 19,
+      "comments": 0,
+      "shares": 0
+    },
+    "query": {
+      "search": "ai governance delivery"
+    },
+    "comments": []
+  },
+  {
+    "type": "post",
+    "id": "7384555566667777444",
+    "linkedinUrl": "https://www.linkedin.com/posts/rafe-lindqvist_synthetic-activity-7384555566667777444-aB3x",
+    "content": "Steering committee asked me a simple question: which of the features shipped this quarter were written by an agent, and who checked them? I could not answer. Working on it.",
+    "author": {
+      "name": "Rafe Lindqvist",
+      "info": "Delivery Lead | Programme assurance",
+      "linkedinUrl": "https://www.linkedin.com/in/rafe-lindqvist",
+      "type": "profile"
+    },
+    "postedAt": {
+      "timestamp": 1791192600000,
+      "date": "2026-10-05T09:30:00Z"
+    },
+    "engagement": {
+      "likes": 34,
+      "comments": 0,
+      "shares": 0
+    },
+    "query": {
+      "search": "verification evidence ai coding"
+    },
+    "comments": []
+  }
+]

@@ -1,0 +1,113 @@
+{
+  "about": "Recorded service answers for a local FAKE server used by tests. Synthetic data in the real service shapes. Point SYFTEN_BASE_URL, APIFY_BASE_URL and HN_ALGOLIA_BASE_URL at the fake server; it answers the request below with the file. Recorded at 2026-11-03T09:00:00Z; the fake server may shift every timestamp by (now - recorded_at) so ages stay the same.",
+  "recorded_at": "2026-11-03T09:00:00Z",
+  "auth": "Every route requires 'Authorization: Bearer <any non-empty token>' except hn_algolia; a missing header answers 401 {\"error\": \"unauthorized\"}.",
+  "routes": [
+    {
+      "service": "syften",
+      "method": "POST",
+      "path": "/items/get",
+      "when": "body has no 'before'",
+      "status": 200,
+      "file": "syften_items_get.json"
+    },
+    {
+      "service": "syften",
+      "method": "POST",
+      "path": "/items/get",
+      "when": "body has 'before' (second page)",
+      "status": 200,
+      "file": "syften_items_get_empty.json"
+    },
+    {
+      "service": "apify",
+      "method": "POST",
+      "path": "/acts/harshmaur~reddit-comments-scraper/run-sync-get-dataset-items",
+      "when": "body.postUrls[0].url contains '/comments/1oq7k2m/'",
+      "status": 200,
+      "file": "apify_reddit_thread_1oq7k2m.json"
+    },
+    {
+      "service": "apify",
+      "method": "POST",
+      "path": "/acts/harshmaur~reddit-comments-scraper/run-sync-get-dataset-items",
+      "when": "body.postUrls[0].url contains '/comments/1on3f8q/'",
+      "status": 200,
+      "file": "apify_reddit_thread_1on3f8q.json"
+    },
+    {
+      "service": "apify",
+      "method": "POST",
+      "path": "/acts/harshmaur~reddit-comments-scraper/run-sync-get-dataset-items",
+      "when": "body.postUrls[0].url contains '/comments/1o4kq7e/'",
+      "status": 200,
+      "file": "apify_reddit_thread_1o4kq7e.json"
+    },
+    {
+      "service": "apify",
+      "method": "POST",
+      "path": "/acts/harshmaur~reddit-comments-scraper/run-sync-get-dataset-items",
+      "when": "body.postUrls[0].url contains '/comments/1o8zw3d/'",
+      "status": 200,
+      "file": "apify_reddit_thread_1o8zw3d.json"
+    },
+    {
+      "service": "hn_algolia",
+      "method": "GET",
+      "path": "/items/46120001",
+      "status": 200,
+      "file": "hn_algolia_item_46120001.json"
+    },
+    {
+      "service": "hn_algolia",
+      "method": "GET",
+      "path": "/items/46080002",
+      "status": 200,
+      "file": "hn_algolia_item_46080002.json"
+    },
+    {
+      "service": "hn_algolia",
+      "method": "GET",
+      "path": "/items/45900003",
+      "status": 200,
+      "file": "hn_algolia_item_45900003.json"
+    },
+    {
+      "service": "hn_algolia",
+      "method": "GET",
+      "path": "/items/46120103",
+      "status": 200,
+      "file": "hn_algolia_item_46120103.json"
+    },
+    {
+      "service": "apify",
+      "method": "POST",
+      "path": "/acts/harvestapi~linkedin-post-search/runs",
+      "status": 201,
+      "file": "apify_linkedin_run_start.json"
+    },
+    {
+      "service": "apify",
+      "method": "GET",
+      "path": "/actor-runs/synthRun0001",
+      "status": 200,
+      "file": "apify_linkedin_run_status.json"
+    },
+    {
+      "service": "apify",
+      "method": "GET",
+      "path": "/datasets/synthDataset0001/items",
+      "when": "query offset=0",
+      "status": 200,
+      "file": "apify_linkedin_dataset_items.json"
+    },
+    {
+      "service": "apify",
+      "method": "POST",
+      "path": "/acts/harshmaur~reddit-comments-scraper/run-sync-get-dataset-items",
+      "when": "any other thread url",
+      "status": 200,
+      "file": "apify_empty_dataset.json"
+    }
+  ]
+}

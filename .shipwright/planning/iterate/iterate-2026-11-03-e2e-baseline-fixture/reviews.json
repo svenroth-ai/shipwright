@@ -1,0 +1,282 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-03-e2e-baseline-fixture",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-03T08:42:13.544360+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "security |",
+          "file": null,
+          "line": null,
+          "finding": "A clean environment and dummy tokens do not enforce “no real network.” The built adapter could ignore a fake-service URL, use a hardcoded production endpoint, or launch a helper that accesses the internet. Recording fake-server requests would not detect that traffic.",
+          "suggestion": "Run the backend and its child processes with outbound access restricted to the local fake services. Fail the check on unexpected destinations, and verify that each adapter actually contacted its designated fake.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "The process-launch approach does not specify readiness, bounded timeouts, or cleanup after failed assertions. Selecting a free port before starting Python also creates a port-allocation race. These can produce intermittent failures or leave servers running across checks.",
+          "suggestion": "Define a bounded readiness probe, capture startup errors, and always terminate and await the process tree in `finally`. Prefer binding port zero and discovering the assigned port; otherwise retry address-in-use failures. Test startup failure, readiness timeout, and cleanup after an assertion fails.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach |",
+          "file": null,
+          "line": null,
+          "finding": "The plan acknowledges unresolved `linkedin-queries.json` formatting and helper flags, yet intends to issue capability verdicts. If checks assume an undocumented format or invocation, a valid generated app could fail because of the harness rather than the brief.",
+          "suggestion": "Resolve those expectations against the delivered brief before implementing assertions. Where the brief leaves implementation freedom, check observable behavior instead. Report genuinely unresolved prerequisites as blocked or inconclusive, rather than passing them or treating them as application failures.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk |",
+          "file": null,
+          "line": null,
+          "finding": "“Additive hooks” alone do not establish that the two existing fixtures retain their behavior. Checklist selection, trigger phrases, approval stamping, and suite dispatch all touch their shared execution path.",
+          "suggestion": "Add focused regression tests for default, real, and baseline fixture dispatch. Assert the selected checklist and suite, printed report identity, and that baseline approval stamping never modifies either existing fixture or the source package.  The approach is sound and appropriately scoped, particularly the separate baseline modules and state-marker checks before screenshots. Address network enforcement, process lifecycle, unresolved contract assumptions, and shared-path regression coverage before proceeding.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-03T08:43:07.589434+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] **Findings**\n\n- **Category: approach** — **Severity: medium**\n  The plan's own confidence section admits the dynamic checks have only ever run against a stub, and that unknowns remain (linkedin-queries.json format, helper flags). An entire 21-capability checklist derived from brief text, never validated against anything real, will likely have a noisy first run full of false failures the checklist itself can't distinguish from real regressions. Suggestion: add a mechanism to mark checklist expectations as \"unverified until first real run\" in the report, and budget a calibration pass after run 1; otherwise the operator gets a wall of red that may be checker bugs.\n\n- **Category: approach** — **Severity: medium**\n  Byte-identical copy plus an approval stamp \"outside the hash\" is fragile: the acceptance criterion depends on the pipeline's digest excluding exactly the key `approval.ts` writes. You probed the digest once, but any future pipeline change to hash-excluded keys silently breaks criterion 1. Suggestion: add a permanent unit test asserting the copy's hash equals the source hash after stamping (you mention this probe — make it a regression test, not a one-off).\n\n- **Category: risk** — **Severity: medium**\n  `if (baseline)` branches sprinkled across shared modules (\"one branch each in the spec for static checks, approval stamp and the suite\") is the main threat to \"social-engagement-real keeps working unchanged.\" Scattered fixture-conditional logic in shared code is exactly how the old fixture silently drifts. Suggestion: prefer a fixture-registry/dispatch (fixture name → checklist + suite + options) so shared modules stay branch-free; at minimum, add an explicit e2e smoke of `social-engagement-real` selection in CI or the unit specs so regression is caught.\n\n- **Category: edge-case** — **Severity: medium**\n  Companion lifecycle: the plan says free port, temp HOME, clean env, kill — but doesn't cover the built `backend/server.py` failing to start, hang […truncated]\n\n[openai] 1. **Category: security | Severity: high**  \n   **Finding:** A clean environment and dummy tokens do not enforce “no real network.” The built adapter could ignore a fake-service URL, use a hardcoded production endpoint, or launch a helper that accesses the internet. Recording fake-server requests would not detect that traffic.  \n   **Suggestion:** Run the backend and its child processes with outbound access restricted to the local fake services. Fail the check on unexpected destinations, and verify that each adapter actually contacted its designated fake.\n\n2. **Category: edge-case | Severity: medium**  \n   **Finding:** The process-launch approach does not specify readiness, bounded timeouts, or cleanup after failed assertions. Selecting a free port before starting Python also creates a port-allocation race. These can produce intermittent failures or leave servers running across checks.  \n   **Suggestion:** Define a bounded readiness probe, capture startup errors, and always terminate and await the process tree in `finally`. Prefer binding port zero and discovering the assigned port; otherwise retry address-in-use failures. Test startup failure, readiness timeout, and cleanup after an assertion fails.\n\n3. **Category: approach | Severity: medium**  \n   **Finding:** The plan acknowledges unresolved `linkedin-queries.json` formatting and helper flags, yet intends to issue capability verdicts. If checks assume an undocumented format or invocation, a valid generated app could fail because of the harness rather than the brief.  \n   **Suggestion:** Resolve those expectations against the delivered brief before implementing assertions. Where the brief leaves implementation freedom, check observable behavior instead. Report genuinely unresolved prerequisites as blocked or inconclusive, rather than passing them or treating them as application failures.\n\n4. **Category: risk | Severity: medium**  \n   **Finding:** “Additive hooks” alone do not establish that the two e […truncated]",
+      "verdicts": {
+        "glm": "unknown",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-03T09:02:26.314239+00:00",
+      "disposition": "code-reviewer ran and returned PASS with 6 medium findings (fixed in the tree), but the Stage-1 spec-reviewer never returned PASS: three rounds each REJECTED with new Fit-criterion gaps, all fixed in the tree; the 4th spawn was refused by the runner spawn guard. external_code and doubt carry the cascade",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "stage-1-rejected"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "boundary",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: outbound traffic of the built app not blocked - fixed (dead proxy in cleanEnv, no-op BROWSER) — see doubt-reviewer report",
+          "suggestion": "addressed in the tree",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "concurrency",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: companions/helper servers may outlive an abort - partly fixed (lifecycle runs stop in finally); no shutdown registry — see doubt-reviewer report",
+          "suggestion": "addressed in the tree",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "vacuous",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: B03 without a running companion - fixed; B14 cross-token - fixed; B12 score order, B39 link form - accepted, noted — see doubt-reviewer report",
+          "suggestion": "addressed in the tree",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-03T08:59:07.056062+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "dfe261d9ff032a8ab8881c6ce4d1e1f92471bbf3"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case |",
+          "file": "integration-tests/e2e-webui/src/baseline/companion.ts:16-26 (`freePort`)",
+          "line": null,
+          "finding": "Classic TOCTOU port race: the port is bound, closed, and only then handed to the spawned Python process. Another process can grab it in between; the companion then fails to bind and the whole scenario is reported as \"companion could not be run\", a flaky failure unrelated to the app. The external plan review flagged this explicitly and the diff does not address it (no retry on address-in-use, no bind-port-0 discovery).",
+          "suggestion": "Retry `startCompanion` once or twice when the health probe fails with an exit code that indicates a bind error, or have the server print the chosen port when given `--port 0` and read it from the log.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case |",
+          "file": "integration-tests/e2e-webui/src/baseline/checks-lifecycle.ts:24-40 (`helper`)",
+          "line": null,
+          "finding": "spawnSync(..., timeout: 60_000)` assumes `companion.py start` daemonizes and exits. If the built helper runs the companion in the foreground (a legitimate reading of the brief), every lifecycle check blocks for 60 s per invocation and then fails with `exit null` — B01–B05 plus B27 burn ~5 minutes and fail for a harness reason. This is acknowledged in the answer key's calibration note, but there is no code to distinguish \"helper hung\" from \"helper runs the server\": the timeout produces `status: null` with no diagnostic distinguishing it.",
+          "suggestion": "On a null status with no output, record evidence saying \"helper did not return within 60 s (may run the companion in the foreground)\" so the operator can tell a harness mismatch from an app bug.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug |",
+          "file": "integration-tests/e2e-webui/src/baseline/checks-runs.ts (B17, `lint`)",
+          "line": null,
+          "finding": "ctx.synthetic.find((i) => i.url === url)` for the \"clean item\" passes `undefined` into `items` (serialized as `null`) if the seed run has no item for `45900003`; likewise `variant()` silently falls back to `{}`. The check would then report \"a clean item passes with ok true\" as a failure caused by the app, when the real cause is a harness/seed mismatch. Same pattern in `checks-runs.expiry` (`mk` base `{}` if the agile url is absent — the `old` computation excludes that url defensively, but `mk` does not).",
+          "suggestion": "Guard the clean-item check: if `find` returns undefined, record `p.note(\"the synthetic run holds no item for <url>\")` and skip, instead of posting `null`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug |",
+          "file": "integration-tests/e2e-webui/src/baseline/tour-baseline.ts:38-41 (`phone-picker` recipe)",
+          "line": null,
+          "finding": "If `openBoard(page, ...)` throws inside the recipe (server slow, board error), the 390 px page's browser context is never closed — `reach.page` is never assigned, so the `finally`-style close at the end of `tourBaseline` never sees it. The error is converted to a `no(...)` reach, so the run continues with a leaked context (and its `/` route) for the rest of the tour.",
+          "suggestion": "Wrap the body of the recipe in try/catch and close the context in the catch before returning `no(...)`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test |",
+          "file": "integration-tests/e2e-webui/tests/unit/baseline-fixture.spec.ts:76-99 (fake-server test) and integration-tests/e2e-webui/src/baseline/checks-fetch.ts (`linkedinFetch`)",
+          "line": null,
+          "finding": "linkedinFetch` retries a second file shape only when the answer is a 400 matching `/quer/i` — a backend that reports \"no active queries\" with a different wording (or 503/other status) is not retried, and B11 then fails on the harness's guess about the undocumented `linkedin-queries.json` format. The answer key flags this as a first-run unknown, but there is no way for the check itself to mark the result \"inconclusive on format\" rather than \"app failed\".",
+          "suggestion": "When both shapes produce a 4xx that mentions queries, record the outcome with evidence prefixed \"unverified: linkedin-queries.json format assumption\" so the operator can distinguish a harness guess from a real defect.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": "integration-tests/e2e-webui/src/baseline/board-ui.ts (`openThread` / `findItem` misses)",
+          "line": null,
+          "finding": "findItem` returns `{}` on a miss; `openThread` then calls `pickPlatform(page, \"\")` (regex `^\\s\\b`, matches the first tab) and `getByText(\"\")`, which either throws or clicks an arbitrary row — the resulting item failure names neither the missing thread nor the cause. All callers are wrapped in `recordProbe` so it fails loudly, but the evidence is misleading.",
+          "suggestion": "In `openThread`, bail out early when `str(item.platform) === \"\"`, e.g. throw `new Error(\"thread not found in items\")` so the probe evidence names the problem.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "integration-tests/e2e-webui/src/baseline/suite.ts",
+          "line": 56,
+          "finding": "The supplied diff adds no files under `integration-tests/fixtures/social-engagement-baseline/`, yet the suite immediately reads its recordings. The required package copy is missing, so baseline runs and the new fixture tests fail before evaluating the app.",
+          "suggestion": "Include the complete byte-identical package, including `OPEN.md` and `provenance.md`, and verify its digest.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "integration-tests/e2e-webui/src/baseline/checks-contract.ts:72–73",
+          "line": null,
+          "finding": "B09 expects `platform=x` to be rejected as unknown, but X is explicitly a supported platform in this fixture. A correctly implemented backend will fail this hard check.",
+          "suggestion": "Use an unsupported platform such as `bluesky` and expect the corresponding error text. Separately verify that `platform=x` succeeds.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "integration-tests/e2e-webui/src/baseline/probe.ts:16–19",
+          "line": null,
+          "finding": "equal()` compares serialized objects, making JSON property order part of the API contract. Valid responses containing the expected fields in a different order fail hard checks throughout the suite.",
+          "suggestion": "Use structural deep equality that ignores object property order while preserving array order.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "integration-tests/e2e-webui/src/baseline/checks-static.ts",
+          "line": 48,
+          "finding": "The permitted-host regex ends with a literal backspace character rather than `\\b`. Ordinary platform, font and other permitted URLs therefore do not match the exemption, causing B31 to reject valid generated code containing those URLs.",
+          "suggestion": "Replace the control character with the intended boundary and add a regression test containing permitted external links outside the adapter.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "integration-tests/e2e-webui/src/baseline/companion.ts",
+          "line": 60,
+          "finding": "The backend runs with unrestricted outbound networking. Passing fake-service URLs and later reporting missing fake requests does not satisfy “no real network”: an adapter using its production default can contact the real service before the check fails. The browser restriction does not cover Python or its children.",
+          "suggestion": "Run the backend and its child processes with outbound access restricted to the local fake services, and test that a production-host request is blocked.  Ship-with-fixes. The fixture-specific structure is appropriate, but the supplied change has a missing required package, deterministic false failures, and an unenforced network constraint.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-03T08:58:38.453220+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- Category: edge-case | Severity: medium\n- File: integration-tests/e2e-webui/src/baseline/companion.ts:16-26 (`freePort`)\n- Finding: Classic TOCTOU port race: the port is bound, closed, and only then handed to the spawned Python process. Another process can grab it in between; the companion then fails to bind and the whole scenario is reported as \"companion could not be run\", a flaky failure unrelated to the app. The external plan review flagged this explicitly and the diff does not address it (no retry on address-in-use, no bind-port-0 discovery).\n- Suggestion: Retry `startCompanion` once or twice when the health probe fails with an exit code that indicates a bind error, or have the server print the chosen port when given `--port 0` and read it from the log.\n\n- Category: edge-case | Severity: medium\n- File: integration-tests/e2e-webui/src/baseline/checks-lifecycle.ts:24-40 (`helper`)\n- Finding: `spawnSync(..., timeout: 60_000)` assumes `companion.py start` daemonizes and exits. If the built helper runs the companion in the foreground (a legitimate reading of the brief), every lifecycle check blocks for 60 s per invocation and then fails with `exit null` — B01–B05 plus B27 burn ~5 minutes and fail for a harness reason. This is acknowledged in the answer key's calibration note, but there is no code to distinguish \"helper hung\" from \"helper runs the server\": the timeout produces `status: null` with no diagnostic distinguishing it.\n- Suggestion: On a null status with no output, record evidence saying \"helper did not return within 60 s (may run the companion in the foreground)\" so the operator can tell a harness mismatch from an app bug.\n\n- Category: bug | Severity: low\n- File: integration-tests/e2e-webui/src/baseline/checks-runs.ts (B17, `lint`)\n- Finding: `ctx.synthetic.find((i) => i.url === url)` for the \"clean item\" passes `undefined` into `items` (serialized as `null`) if the seed run has no item for `45900003`; likewise `variant()` silent […truncated]\n\n[openai] - Category: spec\n- Severity: high\n- File: integration-tests/e2e-webui/src/baseline/suite.ts:56\n- Finding: The supplied diff adds no files under `integration-tests/fixtures/social-engagement-baseline/`, yet the suite immediately reads its recordings. The required package copy is missing, so baseline runs and the new fixture tests fail before evaluating the app.\n- Suggestion: Include the complete byte-identical package, including `OPEN.md` and `provenance.md`, and verify its digest.\n\n- Category: bug\n- Severity: medium\n- File: integration-tests/e2e-webui/src/baseline/checks-contract.ts:72–73\n- Finding: B09 expects `platform=x` to be rejected as unknown, but X is explicitly a supported platform in this fixture. A correctly implemented backend will fail this hard check.\n- Suggestion: Use an unsupported platform such as `bluesky` and expect the corresponding error text. Separately verify that `platform=x` succeeds.\n\n- Category: bug\n- Severity: medium\n- File: integration-tests/e2e-webui/src/baseline/probe.ts:16–19\n- Finding: `equal()` compares serialized objects, making JSON property order part of the API contract. Valid responses containing the expected fields in a different order fail hard checks throughout the suite.\n- Suggestion: Use structural deep equality that ignores object property order while preserving array order.\n\n- Category: bug\n- Severity: medium\n- File: integration-tests/e2e-webui/src/baseline/checks-static.ts:48\n- Finding: The permitted-host regex ends with a literal backspace character rather than `\\b`. Ordinary platform, font and other permitted URLs therefore do not match the exemption, causing B31 to reject valid generated code containing those URLs.\n- Suggestion: Replace the control character with the intended boundary and add a regression test containing permitted external links outside the adapter.\n\n- Category: spec\n- Severity: high\n- File: integration-tests/e2e-webui/src/baseline/companion.ts:60\n- Finding: The backend runs with unrestr […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-03T09:02:26.450169+00:00",
+      "disposition": "spec-reviewer REJECTED in 3 rounds, each time with Fit-criterion gaps (version banner, failed save, X over 280, review line, avatars, bold angle, tab wrap); every named gap was fixed in the tree and the answer key extended (B44-B46); the 4th spawn was refused by the runner spawn guard, so no PASS was ever recorded",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "stage-1-rejected"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-03T08:53:22.974186+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-03T08:43:07.717321+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

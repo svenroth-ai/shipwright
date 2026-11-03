@@ -1,0 +1,15 @@
+{
+  "id": 46120103,
+  "created_at": "2026-11-01T12:02:00Z",
+  "created_at_i": 1793534520,
+  "type": "comment",
+  "author": "pallas_r",
+  "title": null,
+  "url": null,
+  "text": "<p>Mutation testing caught most of our hollow tests.</p>",
+  "points": null,
+  "parent_id": 46120001,
+  "story_id": 46120001,
+  "options": [],
+  "children": []
+}

@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "profile": "skill-companion-app",
+  "deploy_target": "none",
+  "autonomy": "guided",
+  "ui_host": "served-board",
+  "ux_shape": "classic",
+  "source_class": "derived-from-existing-skill",
+  "scope": "scope.md",
+  "design_system": "visual-guidelines.md",
+  "brief_dir": "brief",
+  "env_preflight": [],
+  "allow_parallel_builders": false,
+  "package_sha256": "c039070f0953e9c505da8582eaabd1e069d09e3dd7fbd73a34598bc82f215085"
+}
