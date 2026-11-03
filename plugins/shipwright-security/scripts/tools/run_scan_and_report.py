@@ -62,6 +62,7 @@ from atomic_write import durable_atomic_write  # noqa: E402
 from redact import redact_findings  # noqa: E402
 from gitleaks_inspect import class_degradations as gitleaks_degradations  # noqa: E402
 from scan_coverage import build_coverage  # noqa: E402
+from scan_gitignore import ensure_gitignore_entry  # noqa: E402
 from scan_history import HISTORY_DIRNAME, new_scan_id, prune_history  # noqa: E402
 from security_triage_emit import emit_findings_to_triage, emit_scan_card  # noqa: E402
 
@@ -94,8 +95,6 @@ REPORTS_DIR = ".shipwright/securityreports"  # relative to project_root
 LEGACY_REPORTS_DIRNAME = "securityreports"   # pre-iterate-3 location, only used for upgrade notice
 LATEST_MD = "latest.md"
 LATEST_JSON = "latest.json"
-GITIGNORE_ENTRY = "/.shipwright/"            # ignore the whole hidden dir, future-proof
-LEGACY_GITIGNORE_ENTRIES = {"/securityreports/", "securityreports/"}  # accepted as "present" during migration
 
 
 # ---------------------------------------------------------------------------
@@ -108,37 +107,6 @@ def _atomic_write(path: Path, text: str) -> None:
     via the shared :func:`durable_atomic_write`); same-directory tmp avoids
     cross-drive rename failures on Windows."""
     durable_atomic_write(path, text)
-
-
-def _ensure_gitignore_entry(project_root: Path) -> str:
-    """Best-effort gitignore append.
-
-    - If .gitignore is missing → skip silently (don't materialize one).
-    - If .gitignore exists and contains the entry → no-op (idempotent).
-    - Else → append, ensuring the existing file ends with a newline first.
-
-    Returns: 'added' | 'present' | 'skipped'
-    """
-    gi = project_root / ".gitignore"
-    if not gi.exists():
-        return "skipped"
-
-    existing = gi.read_text(encoding="utf-8")
-    # Match exact entry on its own line. Accept the new `/.shipwright/`
-    # canonical form AND the legacy `/securityreports/` (kept idempotent
-    # for projects mid-migration so we don't double-write).
-    accepted = {GITIGNORE_ENTRY} | LEGACY_GITIGNORE_ENTRIES
-    lines = existing.splitlines()
-    for line in lines:
-        if line.strip() in accepted:
-            return "present"
-
-    # Need to append. Ensure file ends with a newline before adding our entry,
-    # otherwise we'd merge with the last existing line.
-    suffix = "" if existing.endswith("\n") else "\n"
-    addition = f"{suffix}{GITIGNORE_ENTRY}\n"
-    gi.write_text(existing + addition, encoding="utf-8")
-    return "added"
 
 
 def _emit_legacy_dir_notice(project_root: Path) -> bool:
@@ -258,7 +226,7 @@ def run(*, project_root: Path, repo: str = "unknown", full_evidence: bool = Fals
 
     removed = prune_history(history_dir)
 
-    gitignore_status = _ensure_gitignore_entry(project_root)
+    gitignore_status = ensure_gitignore_entry(project_root, REPORTS_DIR)
 
     # Mirror the REDACTED findings into triage. Best-effort — a triage failure
     # never blocks the report already on disk.

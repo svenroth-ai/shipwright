@@ -214,7 +214,7 @@ What this means for `.shipwright/`:
 
 | Your `.gitignore` says | Semgrep | Trivy | Gitleaks (`detect`) |
 |------------------------|---------|-------|---------------------|
-| `/.shipwright/` (default for new projects) | skips (untracked) | scans (no manifests inside → no findings) | skips (gitignored = never in history) |
+| `/.shipwright/` (older default) or `/.shipwright/*` (canonical whitelist) | skips (untracked) | scans (no manifests inside → no findings) | skips (gitignored = never in history) |
 | `.shipwright/` removed; `agent_docs/` tracked | scans agent_docs | scans agent_docs (markdown → no SCA findings) | scans history once committed |
 
 **Recommendation:** if you start tracking `.shipwright/agent_docs/`, keep
@@ -234,9 +234,10 @@ patterns on subsequent scans.
 > `--scanners misconfig`, you must also add `securityreports` to
 > `SHIPWRIGHT_SCAN_EXCLUDES`.
 
-The default Shipwright gitignore line is `.shipwright/` (whole tree ignored).
-git can't re-include a child once the parent directory is fully ignored, so
-to track `agent_docs/` while keeping reports ignored, replace the directory-
+The scan itself only adds `/.shipwright/securityreports/`. Older versions wrote
+`/.shipwright/` (whole tree ignored); the scan leaves such a line in place and
+warns. git can't re-include a child once the parent directory is fully ignored,
+so to track `agent_docs/` while keeping reports ignored, replace the directory-
 level ignore with a contents-level one:
 
 ```gitignore
