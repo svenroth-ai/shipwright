@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "## Findings\n\n- **Category: approach \u2014 Severity: medium**\n  Finding: The fixes loosen several checks (B30's 409-sentence exemption, B31's \"anywhere in backend/services/\", case-insensitive matching everywhere) without documenting negative probes \u2014 i.e., no evidence that a *wrong* implementation would still fail these checks. Case-insensitive matching in B37/tour is justified (innerText/text-transform), but B30's \"ignore this exact sentence\" and B31's broadened scope could let real violations slip through.\n  Suggestion: For each loosened check, add a unit test with an intentionally non-compliant fixture that must stay red (e.g., a 409 message that is *not* the brief's mandated sentence, a service host outside the allowed package, a hidden-`<option>` click path). The plan mentions unit tests but doesn't specify they cover the negative direction.\n\n- **Category: edge-case \u2014 Severity: medium**\n  Finding: `visibleText` / banner text counting \"visible elements only\" needs a concrete definition \u2014 hidden via `display:none`? `visibility:hidden`? inside collapsed `<details>`? Playwright's `innerText` already drops non-rendered text, so if `visibleText` is `innerText`-based it may behave differently across browsers/hidden mechanisms. B36-B46 will be flaky or silently wrong if the visibility rule isn't pinned down.\n  Suggestion: Define visibility as \"what `innerText` yields\" (or use `:visible` selectors) and state it in the helper's docs; add a unit/DOM test with the hidden `<option>` case explicitly.\n\n- **Category: edge-case \u2014 Severity: low**\n  Finding: B39 \"keeps the Copy button element\" while its label changes to \"Copied\" \u2014 if the check later re-queries by text/accessible name (\"Copy\"), a re-query after the label flips will fail. Keeping the element handle is the right call, but any locator strategy inside the check must be key/selector-based, not text-based.\n  Suggestion: Verify the retained handle is re-used for all assertions on that button; assert the label transition only once.\n\n- **Category: risk \u2014 Severity: low**\n  Finding: `SHIPWRIGHT_E2E_RECHECK_PROJECT` pointing at a stale or mismatched build (built from a different commit than the answer key expects) will produce confusing reds that look like harness bugs again \u2014 the exact failure mode this change is fixing.\n  Suggestion: Have `recheck` record/validate the built project's version or at least print a clear \"built project may be stale\" hint when a red could indicate version mismatch; or document in README which build recheck is known-good against.\n\n- **Category: edge-case \u2014 Severity: low**\n  Finding: `listRow` clicking by `[data-k]` key: no stated fallback/diagnostic when the key is absent (thread not in visible list \u2014 e.g., pagination, virtualization, or filter state). A silent timeout produces a hard-to-diagnose red.\n  Suggestion: Fail fast with a message listing the visible `[data-k]` keys when the target key isn't found.\n\n- **Category: security \u2014 Severity: low**\n  Finding: None specific \u2014 test harness only, no product code, no new dependencies. Confirm `recheck` script doesn't gain unintended shell interpolation of the env var into a path/command (use it as an argv/env value, not string-built shell).\n  Suggestion: Pass the path as an argument, not interpolated into a shell string.\n\n## Overall assessment\n\nThe approach is sound and well-scoped: the root-cause diagnoses (hidden `<option>`, JSON-escaped quote comparison, text-transform casing) are concrete and the empirical probes against the real built project give good confidence. The main gap is that loosened checks need negative tests proving they can still fail, and the visibility semantics of `visibleText` should be pinned down.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Category:** approach \u00b7 **Severity:** medium  \n   **Finding:** B30\u2019s \u201cignores the brief\u2019s mandated 409 sentence\u201d needs a narrower definition. Excluding a whole matching line or record could hide a real `lessons.md` access that also contains that sentence, violating the requirement that real accesses still fail.  \n   **Suggestion:** Exempt only the mandated response text from the prose scan, while checking actual file-access evidence independently. Add regression cases for the sentence alone, a real access alone, and both together.\n\n2. **Category:** edge-case \u00b7 **Severity:** low  \n   **Finding:** The new recheck entry point does not specify behavior when the project variable is missing, points to an invalid directory, or a required check cannot execute. An empty or partially skipped run could look successful.  \n   **Suggestion:** Validate the project path before starting, fail clearly when required artifacts are absent, and return a nonzero exit status for failed checks or an incomplete tour.\n\n3. **Category:** dependency \u00b7 **Severity:** low  \n   **Finding:** A dedicated Playwright project does not by itself guarantee \u201cno pipeline and no model\u201d; shared configuration, global setup, or project dependencies may still invoke them.  \n   **Suggestion:** Verify that the recheck configuration has no pipeline/model setup dependencies. Include a smoke check with model credentials unavailable to confirm the command runs independently.\n\nThe targeted locator and text-comparison fixes are sound and appropriately scoped. Tighten B30\u2019s exemption and its regression coverage before proceeding; the recheck observations are small reliability refinements.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-11-03-baseline-harness-fixes",
+    "at": "2026-11-03T18:43:34.080049+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

@@ -19,8 +19,10 @@ export function checkStoreOnly(project: string, p: Probe): void {
   const store = files.filter((f) => f.startsWith("backend/store/"));
   p.expect("backend/store/ exists with python files", store.length > 0, "no backend/store/*.py");
   p.expect("a class Store is defined there", store.some((f) => /\bclass\s+Store\b/.test(read(project, f))));
+  // the brief itself words the 409 of a repeated lesson as "this lesson is already in lessons.md": that sentence is an answer text, not a file access
+  const MANDATED_TEXT = /this lesson is already in lessons\.md/g;
   const FILE_NAME = /\b(data|state|feedback|config)\.json\b|\blessons\.md\b|\bevents\.jsonl\b/;
-  const outside = files.filter((f) => !f.startsWith("backend/store/") && FILE_NAME.test(codeOnly(read(project, f))));
+  const outside = files.filter((f) => !f.startsWith("backend/store/") && FILE_NAME.test(codeOnly(read(project, f)).replace(MANDATED_TEXT, "")));
   p.expect("no file outside backend/store/ names a data file", outside.length === 0, outside.slice(0, 4).join(", "));
   const tests = walk(project, (r) => /^tests\/.*\.py$/.test(r)).map((f) => read(project, f)).join("\n") + store.map((f) => read(project, f)).join("\n");
   p.expect("the store has an in-memory implementation next to the JSON one (the same suite can run on both)", /class\s+\w*Mem\w*/i.test(tests) && /class\s+\w*Json\w*/i.test(tests));
@@ -28,7 +30,8 @@ export function checkStoreOnly(project: string, p: Probe): void {
 
 const MODEL_IMPORT = /\b(?:import|from)\s+(?:anthropic|openai|google\.generativeai|cohere|mistralai|litellm)\b|api\.anthropic\.com|api\.openai\.com|generativelanguage\.googleapis\.com/;
 const SERVICE_NAMES = /\b(?:SYFTEN|APIFY)_(?:TOKEN|BASE_URL)\b|\bHN_ALGOLIA_BASE_URL\b/;
-const DEFAULT_HOSTS: [string, string, string][] = [["syften.py", "syften.com", "/api/0.1"], ["apify.py", "api.apify.com", "/v2"], ["hn_algolia.py", "hn.algolia.com", "/api/v1"]];
+const ADAPTER_FILES = ["syften.py", "apify.py", "hn_algolia.py"];
+const DEFAULT_HOSTS: [string, string, string][] = [["Syften", "syften.com", "/api/0.1"], ["Apify", "api.apify.com", "/v2"], ["Algolia", "hn.algolia.com", "/api/v1"]];
 
 /** True when the text holds an http(s) URL whose host is exactly `host` and whose path starts with `prefix`. */
 function namesUrl(text: string, host: string, prefix: string): boolean {
@@ -48,11 +51,10 @@ const DASH_LIST = /[‒–—―−]\s*[‒–—―−]|\\u20(?:1[2-5])[^\n]{0,
 export function checkAdapterOnly(project: string, p: Probe): void {
   const code = walk(project, (r) => /\.(py|js|mjs|cjs|ts|html|css|sh)$/.test(r) && !SKIP_DIRS.test(r));
   const services = code.filter((f) => f.startsWith("backend/services/"));
-  p.expect("backend/services/ holds syften.py, apify.py and hn_algolia.py", DEFAULT_HOSTS.every(([n]) => services.includes(`backend/services/${n}`)), services.join(", ") || "no backend/services/");
-  for (const [name, host, prefix] of DEFAULT_HOSTS) {
-    const f = services.find((x) => x.endsWith(`/${name}`));
-    p.expect(`${name} holds the default host of its service`, !!f && namesUrl(read(project, f), host, prefix));
-  }
+  p.expect("backend/services/ holds syften.py, apify.py and hn_algolia.py", ADAPTER_FILES.every((n) => services.includes(`backend/services/${n}`)), services.join(", ") || "no backend/services/");
+  // the default hosts may sit in any file of the adapter package (a shared settings module is part of the adapter); only files outside it are barred from naming them
+  const adapterText = services.map((f) => read(project, f)).join("\n");
+  for (const [name, host, prefix] of DEFAULT_HOSTS) p.expect(`the adapter package holds the default host of ${name}`, namesUrl(adapterText, host, prefix));
   const outside = code.filter((f) => !f.startsWith("backend/services/"));
   // the brief forbids service hosts and key reads outside the adapter; links to the platforms themselves (rules page, thread links, fonts) are not service calls
   const external = findExternalUse(project, outside).filter((h) => !/reaches (www\.|old\.)?(reddit\.com|redd\.it|news\.ycombinator\.com|linkedin\.com|lnkd\.in|x\.com|twitter\.com|fonts\.googleapis\.com|fonts\.gstatic\.com|github\.com|svenroth\.ai)\b/.test(h));

@@ -14,7 +14,8 @@ const enc = encodeURIComponent;
 const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
 const threadOf = async (api: Api, key: string): Promise<Obj> => obj((await get(api, `/api/threads/${enc(key)}`)).json);
 const listOf = async (api: Api, q: string): Promise<Obj[]> => arr(obj((await get(api, `/api/threads?status=${q}`)).json).threads).map(obj);
-const plain = (e: unknown): string => JSON.stringify(e);
+/** Text of an answer part for `includes`: a list of strings is joined as they are (JSON.stringify would escape the quotes inside the brief's error texts). */
+const plain = (e: unknown): string => (Array.isArray(e) ? e.map((x) => (typeof x === "string" ? x : JSON.stringify(x))).join(" | ") : JSON.stringify(e));
 const day = (offset: number): string => new Date(Date.parse(`${TODAY}T00:00:00Z`) + offset * 86_400_000).toISOString().slice(0, 10);
 
 /** The stand-in agent's item for url `url` taken from the synthetic run, with changes. */

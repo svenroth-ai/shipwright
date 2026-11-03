@@ -1,0 +1,329 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-03-baseline-harness-fixes",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-03T18:55:10.533709+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The fixes loosen several checks (B30's 409-sentence exemption, B31's \"anywhere in backend/services/\", case-insensitive matching everywhere) without documenting negative probes — i.e., no evidence that a wrong implementation would still fail these checks. Case-insensitive matching in B37/tour is justified (innerText/text-transform), but B30's \"ignore this exact sentence\" and B31's broadened scope could let real violations slip through.",
+          "suggestion": "For each loosened check, add a unit test with an intentionally non-compliant fixture that must stay red (e.g., a 409 message that is not the brief's mandated sentence, a service host outside the allowed package, a hidden-`<option>` click path). The plan mentions unit tests but doesn't specify they cover the negative direction.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "visibleText` / banner text counting \"visible elements only\" needs a concrete definition — hidden via `display:none`? `visibility:hidden`? inside collapsed `<details>`? Playwright's `innerText` already drops non-rendered text, so if `visibleText` is `innerText`-based it may behave differently across browsers/hidden mechanisms. B36-B46 will be flaky or silently wrong if the visibility rule isn't pinned down.",
+          "suggestion": "Define visibility as \"what `innerText` yields\" (or use `:visible` selectors) and state it in the helper's docs; add a unit/DOM test with the hidden `<option>` case explicitly.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "B39 \"keeps the Copy button element\" while its label changes to \"Copied\" — if the check later re-queries by text/accessible name (\"Copy\"), a re-query after the label flips will fail. Keeping the element handle is the right call, but any locator strategy inside the check must be key/selector-based, not text-based.",
+          "suggestion": "Verify the retained handle is re-used for all assertions on that button; assert the label transition only once.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "SHIPWRIGHT_E2E_RECHECK_PROJECT` pointing at a stale or mismatched build (built from a different commit than the answer key expects) will produce confusing reds that look like harness bugs again — the exact failure mode this change is fixing.",
+          "suggestion": "Have `recheck` record/validate the built project's version or at least print a clear \"built project may be stale\" hint when a red could indicate version mismatch; or document in README which build recheck is known-good against.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "listRow` clicking by `[data-k]` key: no stated fallback/diagnostic when the key is absent (thread not in visible list — e.g., pagination, virtualization, or filter state). A silent timeout produces a hard-to-diagnose red.",
+          "suggestion": "Fail fast with a message listing the visible `[data-k]` keys when the target key isn't found.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "None specific — test harness only, no product code, no new dependencies. Confirm `recheck` script doesn't gain unintended shell interpolation of the env var into a path/command (use it as an argv/env value, not string-built shell).",
+          "suggestion": "Pass the path as an argument, not interpolated into a shell string.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach ·",
+          "file": null,
+          "line": null,
+          "finding": "B30’s “ignores the brief’s mandated 409 sentence” needs a narrower definition. Excluding a whole matching line or record could hide a real `lessons.md` access that also contains that sentence, violating the requirement that real accesses still fail.",
+          "suggestion": "Exempt only the mandated response text from the prose scan, while checking actual file-access evidence independently. Add regression cases for the sentence alone, a real access alone, and both together.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "The new recheck entry point does not specify behavior when the project variable is missing, points to an invalid directory, or a required check cannot execute. An empty or partially skipped run could look successful.",
+          "suggestion": "Validate the project path before starting, fail clearly when required artifacts are absent, and return a nonzero exit status for failed checks or an incomplete tour.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency ·",
+          "file": null,
+          "line": null,
+          "finding": "A dedicated Playwright project does not by itself guarantee “no pipeline and no model”; shared configuration, global setup, or project dependencies may still invoke them.",
+          "suggestion": "Verify that the recheck configuration has no pipeline/model setup dependencies. Include a smoke check with model credentials unavailable to confirm the command runs independently.  The targeted locator and text-comparison fixes are sound and appropriately scoped. Tighten B30’s exemption and its regression coverage before proceeding; the recheck observations are small reliability refinements.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-03T18:55:10.800181+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: approach — Severity: medium**\n  Finding: The fixes loosen several checks (B30's 409-sentence exemption, B31's \"anywhere in backend/services/\", case-insensitive matching everywhere) without documenting negative probes — i.e., no evidence that a *wrong* implementation would still fail these checks. Case-insensitive matching in B37/tour is justified (innerText/text-transform), but B30's \"ignore this exact sentence\" and B31's broadened scope could let real violations slip through.\n  Suggestion: For each loosened check, add a unit test with an intentionally non-compliant fixture that must stay red (e.g., a 409 message that is *not* the brief's mandated sentence, a service host outside the allowed package, a hidden-`<option>` click path). The plan mentions unit tests but doesn't specify they cover the negative direction.\n\n- **Category: edge-case — Severity: medium**\n  Finding: `visibleText` / banner text counting \"visible elements only\" needs a concrete definition — hidden via `display:none`? `visibility:hidden`? inside collapsed `<details>`? Playwright's `innerText` already drops non-rendered text, so if `visibleText` is `innerText`-based it may behave differently across browsers/hidden mechanisms. B36-B46 will be flaky or silently wrong if the visibility rule isn't pinned down.\n  Suggestion: Define visibility as \"what `innerText` yields\" (or use `:visible` selectors) and state it in the helper's docs; add a unit/DOM test with the hidden `<option>` case explicitly.\n\n- **Category: edge-case — Severity: low**\n  Finding: B39 \"keeps the Copy button element\" while its label changes to \"Copied\" — if the check later re-queries by text/accessible name (\"Copy\"), a re-query after the label flips will fail. Keeping the element handle is the right call, but any locator strategy inside the check must be key/selector-based, not text-based.\n  Suggestion: Verify the retained handle is re-used for all assertions on that button; assert the label tra […truncated]\n\n[openai] 1. **Category:** approach · **Severity:** medium  \n   **Finding:** B30’s “ignores the brief’s mandated 409 sentence” needs a narrower definition. Excluding a whole matching line or record could hide a real `lessons.md` access that also contains that sentence, violating the requirement that real accesses still fail.  \n   **Suggestion:** Exempt only the mandated response text from the prose scan, while checking actual file-access evidence independently. Add regression cases for the sentence alone, a real access alone, and both together.\n\n2. **Category:** edge-case · **Severity:** low  \n   **Finding:** The new recheck entry point does not specify behavior when the project variable is missing, points to an invalid directory, or a required check cannot execute. An empty or partially skipped run could look successful.  \n   **Suggestion:** Validate the project path before starting, fail clearly when required artifacts are absent, and return a nonzero exit status for failed checks or an incomplete tour.\n\n3. **Category:** dependency · **Severity:** low  \n   **Finding:** A dedicated Playwright project does not by itself guarantee “no pipeline and no model”; shared configuration, global setup, or project dependencies may still invoke them.  \n   **Suggestion:** Verify that the recheck configuration has no pipeline/model setup dependencies. Include a smoke check with model credentials unavailable to confirm the command runs independently.\n\nThe targeted locator and text-comparison fixes are sound and appropriately scoped. Tighten B30’s exemption and its regression coverage before proceeding; the recheck observations are small reliability refinements.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "integration-tests/e2e-webui/src/baseline/tour-baseline.ts",
+          "line": 29,
+          "finding": "Hidden-element bug class still open in the draft-card recipe (getByText without a visibility filter).",
+          "suggestion": "Use visibleText for the click and the marker.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "integration-tests/e2e-webui/src/baseline/board-ui.ts",
+          "line": 61,
+          "finding": "listRow depends on data-k, a name taken from the mockups; header comment claims never by names the agent chose.",
+          "suggestion": "Name data-k as a mockup contract in the header comment.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "readability",
+          "file": "integration-tests/e2e-webui/src/baseline/tour-baseline.ts",
+          "line": 17,
+          "finding": "Comment says markers match without case but text() adds no i flag; posted recipe is case sensitive.",
+          "suggestion": "Reword the comment and add /i to posted.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "integration-tests/e2e-webui/src/baseline/checks-board.ts",
+          "line": 168,
+          "finding": "B39 keeps an ElementHandle that a re-rendering framework would detach.",
+          "suggestion": "Look the button up again by role Copy reply or Copied.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "integration-tests/e2e-webui/src/baseline/checks-board.ts",
+          "line": 128,
+          "finding": "B37 matches the word question anywhere in main, weaker than before.",
+          "suggestion": "Accepted: the other two labels carry the check.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "integration-tests/e2e-webui/src/baseline/checks-board.ts",
+          "line": 300,
+          "finding": "File sits at the 300-line cap.",
+          "suggestion": "Split on the next touch.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "integration-tests/e2e-webui/tests/recheck.spec.ts",
+          "line": 20,
+          "finding": "Throws instead of skipping without the project variable.",
+          "suggestion": "test.skip when unset.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-03T18:55:11.425770+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "b9022ff72b5b2cb23b6bfe34fdc1ca8badc884cb"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-03T18:55:11.728332+00:00",
+      "disposition": "test-harness TypeScript only: no migration, concurrency, cross-plugin import or irreversible operation",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "diff-below-threshold"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "integration-tests/e2e-webui/src/baseline/checks-board.ts:155 (commentCount)",
+          "line": null,
+          "finding": "AC 1 says \"comment-count text counts visible elements only\", but only the second half of the disjunction was fixed. `leafCount(b.page, re) >= 2` still counts hidden elements, so if the phone picker's hidden `<option>`s repeat \"N comments\" text (exactly the bug class this iterate fixes), the check passes via `leafCount` even though neither visible place shows the count — a false pass the harness was supposed to eliminate.",
+          "suggestion": "Apply the visible filter to the `leafCount` side too (e.g. pass a visible-only variant of the leaf counter, or drop the `leafCount` half and count with `visibleText` alone), or make the assertion require both the row and the header to be visible matches.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "integration-tests/e2e-webui/src/baseline/checks-static.ts:22-24 (checkStoreOnly)",
+          "line": null,
+          "finding": "The mandated-text carve-out is applied to every file's code text, so any file that happens to contain the sentence \"this lesson is already in lessons.md\" gets that occurrence removed before the FILE_NAME scan. If a real file access elsewhere is documented in a comment that quotes the full sentence, the `lessons.md` mention inside it is also masked. The unit test only probes the sentence alone, not a masked access sharing a line with it.",
+          "suggestion": "Narrow the carve-out (e.g. only strip occurrences that are not part of a `FILE_NAME` match context), or accept and document the residual risk; at minimum add a unit case with the sentence and a real access in the same file.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "integration-tests/e2e-webui/src/baseline/checks-board.ts:170-171 (copyAndOpen)",
+          "line": null,
+          "finding": "copy.elementHandle()` is grabbed before the click; if the app re-renders the button on click (React-style replace rather than mutate), the stale handle's `innerText` resolves on a detached node and returns `\"\"` via the catch, making the \"Copied\" check fail against a correct app. The old role lookup would at least have re-queried. This is the same fragility the iterate set out to remove, just inverted.",
+          "suggestion": "After the click, re-query the button by a stable attribute (e.g. within the thread view's action bar) rather than freezing an `elementHandle`, or verify via a locator scoped to the container that keeps identity across re-renders.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "integration-tests/e2e-webui/tests/unit/baseline-harness-fixes.spec.ts:17-19",
+          "line": null,
+          "finding": "The \"no key\" fallback branch of `listRow` is only exercised on a page with exactly one row, so it doesn't prove the fallback avoids the hidden `<option>` when multiple `[data-k]` rows exist or the fallback itself mis-selects. A broken fallback (e.g. text lookup without the row constraint) would still pass this test as written, since the test page has no hidden-option ambiguity in the fallback path.",
+          "suggestion": "Add a hidden `<option>` with a different thread's title and two rows, then assert the fallback clicks the row whose title matches, not any element containing the text.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "integration-tests/e2e-webui/src/baseline/board-ui.ts:60-63 (listRow)",
+          "line": null,
+          "finding": "The CSS attribute selector escapes only `\"` and `\\` in the key. Thread keys are platform slugs, so this is fine in practice, but if `str(item.key)` were empty the code silently falls back to the text path even when `item.key` was expected — combined with `filter({ hasText: rowTitle })` truncating at 60 chars, two threads whose titles share the first 60 characters would make the fallback open the wrong thread (a real hazard for long HN titles that repeat).",
+          "suggestion": "In the fallback, additionally assert the clicked row's `data-k` equals the expected key after click (or match on the full title), to guard against the 60-char truncation ambiguity.  Positive notes: B17's `plain` join, B31's package-wide host scan with the per-file outside check preserved, the recheck project wiring (non-zero exit on hard reds, `expect(b.some(...))` guard against an empty run), and the tour fixes (case-insensitive marker, platform re-pick for the Expired filter) all match the acceptance criteria and are covered by real-behavior unit tests, not smoke tests.  Overall: the harness fixes are correct in direction and mostly well-tested, but AC 1 is only half-applied to the comment-count check (hidden elements can still produce a false pass), so ship-with-fixes.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "integration-tests/e2e-webui/src/baseline/tour-baseline.ts",
+          "line": 23,
+          "finding": "list-thread` now matches without case, but still never selects a platform or opens a thread. AC5 explicitly requires selecting the right platform. If the selected platform has no Open threads, the recipe reports an unreached state even when another platform has suitable threads.",
+          "suggestion": "Find an eligible Open thread in the fixture items and explicitly select its platform and visible list row before checking the summary marker.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "integration-tests/e2e-webui/src/baseline/tour-baseline.ts",
+          "line": 48,
+          "finding": "The `expired` recipe selects the platform, but its title comparison still uses case-sensitive `.includes()`. This leaves AC5 partially implemented: a title displayed through uppercase or lowercase `text-transform` can incorrectly produce “STATE NOT REACHED.”",
+          "suggestion": "Normalize both the rendered text and expected title to the same case before comparing.  Overall assessment: ship-with-fixes. The diff addresses the reported harness failures, but the tour recipes still miss two explicit requirements.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-03T18:55:11.594872+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] - Category: spec\n- Severity: medium\n- File: integration-tests/e2e-webui/src/baseline/checks-board.ts:155 (commentCount)\n- Finding: AC 1 says \"comment-count text counts visible elements only\", but only the second half of the disjunction was fixed. `leafCount(b.page, re) >= 2` still counts hidden elements, so if the phone picker's hidden `<option>`s repeat \"N comments\" text (exactly the bug class this iterate fixes), the check passes via `leafCount` even though neither visible place shows the count — a false pass the harness was supposed to eliminate.\n- Suggestion: Apply the visible filter to the `leafCount` side too (e.g. pass a visible-only variant of the leaf counter, or drop the `leafCount` half and count with `visibleText` alone), or make the assertion require both the row and the header to be visible matches.\n\n- Category: edge-case\n- Severity: low\n- File: integration-tests/e2e-webui/src/baseline/checks-static.ts:22-24 (checkStoreOnly)\n- Finding: The mandated-text carve-out is applied to *every* file's code text, so any file that happens to contain the sentence \"this lesson is already in lessons.md\" gets that occurrence removed before the FILE_NAME scan. If a real file access elsewhere is documented in a comment that quotes the full sentence, the `lessons.md` mention inside it is also masked. The unit test only probes the sentence alone, not a masked access sharing a line with it.\n- Suggestion: Narrow the carve-out (e.g. only strip occurrences that are not part of a `FILE_NAME` match context), or accept and document the residual risk; at minimum add a unit case with the sentence and a real access in the same file.\n\n- Category: bug\n- Severity: low\n- File: integration-tests/e2e-webui/src/baseline/checks-board.ts:170-171 (copyAndOpen)\n- Finding: `copy.elementHandle()` is grabbed before the click; if the app re-renders the button on click (React-style replace rather than mutate), the stale handle's `innerText` resolves on a detached node and returns `\"\"` […truncated]\n\n[openai] - Category: spec\n- Severity: medium\n- File: integration-tests/e2e-webui/src/baseline/tour-baseline.ts:23\n- Finding: `list-thread` now matches without case, but still never selects a platform or opens a thread. AC5 explicitly requires selecting the right platform. If the selected platform has no Open threads, the recipe reports an unreached state even when another platform has suitable threads.\n- Suggestion: Find an eligible Open thread in the fixture items and explicitly select its platform and visible list row before checking the summary marker.\n\n- Category: spec\n- Severity: medium\n- File: integration-tests/e2e-webui/src/baseline/tour-baseline.ts:48\n- Finding: The `expired` recipe selects the platform, but its title comparison still uses case-sensitive `.includes()`. This leaves AC5 partially implemented: a title displayed through uppercase or lowercase `text-transform` can incorrectly produce “STATE NOT REACHED.”\n- Suggestion: Normalize both the rendered text and expected title to the same case before comparing.\n\nOverall assessment: ship-with-fixes. The diff addresses the reported harness failures, but the tour recipes still miss two explicit requirements.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-03T18:55:11.294430+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "b9022ff72b5b2cb23b6bfe34fdc1ca8badc884cb"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-03T18:55:11.870278+00:00",
+      "disposition": "effective complexity small: plan_internal and architecture_internal apply at medium+",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-03T18:55:11.870278+00:00",
+      "disposition": "effective complexity small: plan_internal and architecture_internal apply at medium+",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}

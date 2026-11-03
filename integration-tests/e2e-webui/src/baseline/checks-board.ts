@@ -2,7 +2,7 @@
 // (synthetic run stored, reddit:1on3f8q posted, reddit:1o8zw3d skipped, clock 2026-11-03). Status counts, texts and layout come
 // from the brief's fit criteria; the elements are found by role and visible text.
 import type { Page } from "@playwright/test";
-import { filterLabel, filterOptions, findItem, itemsOf, leafCount, mainText, openBoard, openThread, pickPlatform, readTabs, rowTitle, setFilter } from "./board-ui.js";
+import { filterLabel, filterOptions, findItem, itemsOf, leafCount, listRow, visibleText, mainText, openBoard, openThread, pickPlatform, readTabs, rowTitle, setFilter } from "./board-ui.js";
 import { K_HN, K_POSTED } from "./checks-runs.js";
 import { arr, get, obj, post, str, type Api, type Obj } from "./http.js";
 import type { Probe } from "./probe.js";
@@ -48,7 +48,7 @@ export async function keyboardAndHash(b: BoardEnv, p: Probe): Promise<void> {
   await openBoard(b.page, b.origin);
   await pickPlatform(b.page, "hn");
   const hashOf = () => b.page.evaluate(() => decodeURIComponent(location.hash));
-  await b.page.getByText(rowTitle(findItem(b.items, "hn:46120001")), { exact: false }).first().click();
+  await listRow(b.page, findItem(b.items, "hn:46120001")).click();
   await b.page.locator("h1").first().click({ trial: false }).catch(() => undefined);
   await b.page.keyboard.press("j");
   await b.page.waitForTimeout(350);
@@ -62,7 +62,7 @@ export async function keyboardAndHash(b: BoardEnv, p: Probe): Promise<void> {
   p.expect("the selected thread's key is in the address hash", /hn:46\d+/.test(first), first);
   p.expect("j selects the next thread and k the previous one", next === first && back !== first && /hn:/.test(back), `j ${first}, k ${back}, j ${next}`);
   await setFilter(b.page, "Posted");
-  await b.page.getByText(rowTitle(findItem(b.items, K_POSTED)), { exact: false }).first().click();
+  await listRow(b.page, findItem(b.items, K_POSTED)).click();
   const posted = await hashOf();
   const other = await b.newPage();
   try {
@@ -89,8 +89,8 @@ export async function threadView(b: BoardEnv, p: Probe): Promise<void> {
   const t = findItem(b.items, KEY_1OQ);
   await openBoard(b.page, b.origin);
   await openThread(b.page, t);
-  const text = await mainText(b.page);
-  p.expect("the summary shows Question, Others say and Our angle", ["Question", "Others say", "Our angle"].every((s) => text.includes(s)));
+  const text = await mainText(b.page); // innerText follows text-transform, so the labels are compared without case
+  p.expect("the summary shows Question, Others say and Our angle", ["question", "others say", "our angle"].every((s) => text.toLowerCase().includes(s)));
   const angle = str(obj(t.summary).angle).slice(0, 30);
   const bold = await b.page.evaluate((a) => { const el = [...document.querySelectorAll("main *")].find((e) => e.children.length === 0 && (e.textContent ?? "").includes(a)); return el ? Number(getComputedStyle(el).fontWeight) >= 600 || !!el.closest("b, strong") : null; }, angle);
   p.expect("the angle text is bold", bold === true, bold === null ? "angle text not found" : String(bold));
@@ -152,10 +152,10 @@ export async function commentCount(b: BoardEnv, p: Probe): Promise<void> {
     const n = Number(item.comment_count);
     await openThread(b.page, item);
     const re = n === 1 ? "\\b1 comment\\b" : `\\b${n} comments\\b`;
-    p.expect(`${key}: the list row and the post header both read ${n === 1 ? "1 comment" : `${n} comments`}`, (await leafCount(b.page, re)) >= 2 || (await b.page.getByText(new RegExp(re)).count()) >= 2, `${await leafCount(b.page, re)} places`);
+    p.expect(`${key}: the list row and the post header both read ${n === 1 ? "1 comment" : `${n} comments`}`, (await leafCount(b.page, re)) >= 2 || (await visibleText(b.page, new RegExp(re)).count()) >= 2, `${await leafCount(b.page, re)} places`);
   }
   await openThread(b.page, findItem(b.items, KEY_1OQ));
-  p.expect("the platform's own total (13) is not shown", (await b.page.getByText(/\b13 comments\b/).count()) === 0);
+  p.expect("the platform's own total (13) is not shown", (await visibleText(b.page, /\b13 comments\b/).count()) === 0);
 }
 
 /** B39: Copy reply, Open thread, the X character count. */
@@ -169,7 +169,7 @@ export async function copyAndOpen(b: BoardEnv, p: Probe): Promise<void> {
   const clip = await b.page.evaluate(() => navigator.clipboard.readText()).catch((e: Error) => `clipboard unreadable: ${e.message}`);
   p.expect("Copy reply puts exactly the reply text on the clipboard", clip === str(obj(t.reply).text), clip.slice(0, 80));
   await wait(150);
-  p.expect("the button then reads Copied", /Copied/i.test(await copy.innerText().catch(() => "")));
+  p.expect("the button then reads Copied", /Copied/i.test(await b.page.getByRole("button", { name: /Copy reply|Copied/i }).first().innerText().catch(() => ""))); // the button label turns into "Copied"
   const sent: string[] = [];
   await b.page.route("**/api/open", async (route) => { sent.push(route.request().postData() ?? ""); await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ opened: str(obj(JSON.parse(route.request().postData() ?? "{}")).url) }) }); });
   const button = b.page.getByRole("button", { name: /Open thread/i }).first();
@@ -290,10 +290,10 @@ export async function versionBanner(b: BoardEnv, p: Probe): Promise<void> {
   await openBoard(b.page, b.origin);
   const before = await v();
   p.expect("GET /api/version answers a JSON object", Object.keys(obj((await get(b.api, "/api/version")).json)).length > 0, before);
-  p.expect("no update banner is shown before an outside write", (await b.page.getByText(/Claude updated the board/i).count()) === 0);
+  p.expect("no update banner is shown before an outside write", (await visibleText(b.page, /Claude updated the board/i).count()) === 0);
   const t = b.items.find((i) => i.status === "drafted") ?? {};
   await post(b.api, "/api/feedback", { key: str(t.key), text: "Outside write for the version poll." });
   await wait(4500);
   p.expect("the version changes after the write", (await v()) !== before);
-  p.expect("the board shows \"Claude updated the board\" with a Reload button", (await b.page.getByText(/Claude updated the board/i).count()) > 0 && (await b.page.getByRole("button", { name: /Reload/i }).count()) > 0);
+  p.expect("the board shows \"Claude updated the board\" with a Reload button", (await visibleText(b.page, /Claude updated the board/i).count()) > 0 && (await b.page.getByRole("button", { name: /Reload/i }).count()) > 0);
 }

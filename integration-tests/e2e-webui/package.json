@@ -7,7 +7,8 @@
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test:unit": "playwright test --project=unit",
-    "e2e": "playwright test --project=e2e"
+    "e2e": "playwright test --project=e2e",
+    "recheck": "playwright test --project=recheck"
   },
   "devDependencies": {
     "@playwright/test": "^1.59.1",
