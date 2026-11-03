@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-03-phase-quality-session-id-skip",
+  "date": "2026-11-03",
+  "section": "Iterate - bug: phase-quality W3 must not audit a session id as an iterate run",
+  "title": "W3 SKIPs when the audited id is a session id, not an iterate run",
+  "context": "GitHub #984: when no iterate run resolves, resolve_run_id falls back to the Claude session UUID (or 'unknown'). W3 then looked for a work_completed event under that id, found none and FAILed for a run that does not exist; the FAIL was saved as a snapshot and repeated in every later SessionStart notice although the project's finished iterates all recorded work_completed. W2 already had unresolvable_run_id_skip; W3 had no guard.",
+  "decision": "New session_id_run_skip in tools/verifiers/_iterate_run_id.py: for an id that is a bare UUID or 'unknown' it delegates to unresolvable_run_id_skip with the run's matching work_completed events as candidates. W3 calls it before its 'no work_completed' FAIL. The guard is deliberately narrower than W2's: it applies only to session-shaped ids, so a real-looking run id with no event, and stale test-evidence for a real run, keep FAILing.",
+  "consequences": "New sessions audited without an active iterate get a SKIP (reason_code unresolvable_run_id) instead of a false FAIL. Session-id W3 FAILs saved before this fix are not rewritten; they age out through gc_old_findings. C4/C5 take no run id, so a run-id guard cannot apply to them and they are unchanged.",
+  "rationale": "The bug is specifically that a session id is treated as a run. Skipping every unknown id would have made 'W3 fails for a missing completion' untestable and would hide genuine misses, and an existing test pins that a made-up run id still FAILs.",
+  "rejected": "(1) Guarding W3 with unresolvable_run_id_skip for every id: hides real misses and breaks test_w3_fails_without_work_event. (2) Fixing resolve_run_id to return no id: it is shared by many checks and changes their input. (3) Extending the staleness predicate to retire old session-id FAILs: separate concern, follow-up.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}
