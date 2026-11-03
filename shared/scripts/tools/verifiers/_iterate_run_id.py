@@ -1,4 +1,4 @@
-"""run_id-resolution guard for the iterate spec checks (S2/S3/S9/S10, W2).
+"""run_id-resolution guard for the iterate spec checks (S2/S3/S9/S10, W2, W3 for session ids).
 
 Layer 2 of iterate-2026-05-31-phasequality-triage-bundle. When the resolved
 run_id is a sentinel (``""`` / ``"unknown"`` — emitted by the phase-quality
@@ -65,6 +65,7 @@ not written yet, so only the latter may fall back to the most recent entry
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -80,6 +81,17 @@ from lib.phase_quality import (  # noqa: E402
 )
 
 _RUN_ID_SENTINELS = frozenset({"", "unknown"})
+# A Claude session id: what ``resolve_run_id`` falls back to when no iterate run
+# resolves. It is never an ``iterate_history`` key, so a check that goes looking
+# for "its" events under it can only come back empty.
+_SESSION_UUID = re.compile(
+    r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.IGNORECASE,
+)
+
+
+def is_session_shaped_run_id(run_id: str) -> bool:
+    """True for ``"unknown"`` or a bare UUID: the audit's no-run fallbacks."""
+    return run_id.lower() == "unknown" or bool(_SESSION_UUID.fullmatch(run_id))
 
 
 def has_exact_iterate_entry(project_root: Path, run_id: str) -> bool:
@@ -219,3 +231,23 @@ def unresolvable_run_id_skip(
         reason_code=REASON_CODE_UNRESOLVABLE_RUN_ID,
         **kw,
     )
+
+
+def session_id_run_skip(
+    project_root: Path,
+    run_id: str,
+    candidates: list[Any],
+    check_id: str,
+    name: str,
+) -> dict[str, Any] | None:
+    """SKIP finding when ``run_id`` is the audit's session-id fallback, else ``None``.
+
+    :func:`unresolvable_run_id_skip` narrowed to ids that are provably not an
+    iterate run (a session UUID or ``"unknown"``), for the checks that must keep
+    FAILing a REAL-looking run id that has no events. ``candidates`` are the
+    run's own events/files: if any exist the audit is about a real run and
+    proceeds (GitHub issue #984).
+    """
+    if not run_id or not is_session_shaped_run_id(run_id):
+        return None
+    return unresolvable_run_id_skip(project_root, run_id, candidates, check_id, name)

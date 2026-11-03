@@ -35,6 +35,7 @@ from source_state import parse_banner_line  # noqa: E402
 from tools.verifiers.common import read_events_jsonl  # noqa: E402
 from tools.verifiers._iterate_run_id import (  # noqa: E402
     resolve_iterate_entry,
+    session_id_run_skip,
     unresolvable_run_id_skip,
 )
 
@@ -228,6 +229,13 @@ def check_w3_work_completed_and_evidence(
         and event.get("source") == "iterate"
         and (not run_id or _event_run_id(event) == run_id)
     ]
+
+    # A session UUID / "unknown" is the audit's no-run fallback, not an iterate
+    # run: SKIP instead of FAILing for a run that does not exist (#984). A real
+    # run id with no event still FAILs below.
+    guard = session_id_run_skip(project_root, run_id, matched, "W3", W3_NAME)
+    if guard is not None:
+        return guard
 
     if not matched:
         return make_finding(
