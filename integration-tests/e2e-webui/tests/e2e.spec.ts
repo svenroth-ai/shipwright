@@ -10,7 +10,7 @@ import { httpCall } from "../src/board-api.js";
 import { Checklist, parseChecklist } from "../src/checklist.js";
 import * as ui from "../src/driver.js";
 import { ConfigError, loadConfig } from "../src/env.js";
-import { activeFixture, PROFILE, type FixtureName, expectedFile as expectedPath, fixtureDir as fixturePath } from "../src/fixture.js";
+import { BASELINE_FIXTURE_NAME, activeFixture, PROFILE, type FixtureName, expectedFile as expectedPath, fixtureDir as fixturePath } from "../src/fixture.js";
 import { follow, waitForTask } from "../src/follow.js";
 import { captureLaunchCommands, ensureLaunched, handOverCommands } from "../src/launch-recovery.js";
 import { appendRecord, loadRecords, wholeRun } from "../src/gate-log.js";
@@ -19,6 +19,8 @@ import { checkProjectFiles, listHtml, readScreenshotCheck, recordScreenshotCheck
 import { checkPluginShape, checkScreensComposed, checkTestsRan } from "../src/project-checks.js";
 import { checkSkillTriggers } from "../src/skill-trigger.js";
 import { variantFor } from "../src/variant.js";
+import { recordFixtureApproval } from "../src/baseline/approval.js";
+import { runBaselineSuite, runStatic } from "../src/baseline/suite.js";
 import { acquireLock, addLockPid, markFinished, markPipelineStarted, planResume, releaseLock, writeManifest, type ResumePlan, type RunIdentity } from "../src/resume.js";
 import { provisionHome } from "../src/provision.js";
 import { Report } from "../src/report.js";
@@ -61,7 +63,8 @@ test("brief package to a working skill-backed board app through the WebUI", asyn
     if (error instanceof ConfigError || error instanceof AuthError) throw new Error(error.message);
     throw error;
   }
-  const variant = variantFor(FIXTURE_NAME);
+  const baseline = FIXTURE_NAME === BASELINE_FIXTURE_NAME; // own checklist and suite (src/baseline/)
+  const variant = baseline ? null : variantFor(FIXTURE_NAME);
   const fixtureDir = fixturePath(repoRoot, FIXTURE_NAME);
   const expectedFile = expectedPath(repoRoot, FIXTURE_NAME);
   // MAX_MINUTES is a real limit: the test timeout follows it, with room left for the report and the shutdown.
@@ -113,6 +116,7 @@ test("brief package to a working skill-backed board app through the WebUI", asyn
         project: projectPath,
         resume_run_source: cfg.sources.SHIPWRIGHT_E2E_RESUME_RUN,
         fixture: FIXTURE_NAME,
+        checklist: checklist.describe(path.relative(repoRoot, expectedFile).split(path.sep).join("/")),
         fixture_source: cfg.sources.SHIPWRIGHT_E2E_FIXTURE === "unset" ? "unset (default)" : cfg.sources.SHIPWRIGHT_E2E_FIXTURE,
       },
     },
@@ -177,6 +181,7 @@ test("brief package to a working skill-backed board app through the WebUI", asyn
     if (!known) await ui.createProject(page, base, `${FIXTURE_NAME}-e2e`, projectPath, PROFILE);
     const projectId = known ?? (await ui.findProjectId(page.request, base, projectPath));
     if (!resume?.skipPackageCopy) fs.cpSync(fixtureDir, path.join(projectPath, "brief"), { recursive: true });
+    if (baseline && !resume?.skipPackageCopy) recordFixtureApproval(path.join(projectPath, "brief")); // the delivered package has no approval; the copy gets it (outside the hash)
     await ui.openBoard(page, base, projectId);
     await report.step("Project ready, Brief package in brief/", page, [resume?.note, housekeeping].filter(Boolean).join(" "));
     let launched: Awaited<ReturnType<typeof captureLaunchCommands>> | null = null;
@@ -229,9 +234,10 @@ test("brief package to a working skill-backed board app through the WebUI", asyn
     const mockups = listHtml(path.join(fixtureDir, "mockups"));
     checkPluginShape(projectPath, checklist);
     checkScreensComposed(projectPath, mockups, checklist);
-    variant.selfContained(projectPath, checklist);
+    if (baseline) await runStatic(projectPath, checklist);
+    else variant!.selfContained(projectPath, checklist);
     checkTestsRan(projectPath, checklist);
-    if (checklist.items.some((i) => i.id === "S09")) checkSkillTriggers(projectPath, checklist, { ...process.env, HOME: tempHome, USERPROFILE: tempHome });
+    if (checklist.items.some((i) => i.id === "S09")) checkSkillTriggers(projectPath, checklist, { ...process.env, HOME: tempHome, USERPROFILE: tempHome }, undefined, baseline ? "open the reply board" : undefined);
     if (status === "complete") {
       await ui.openBoard(page, base, projectId);
       // The Test phase used the throw-away data folder of this fixed port; move it aside so H06-H10 start fresh.
@@ -252,10 +258,15 @@ test("brief package to a working skill-backed board app through the WebUI", asyn
       const call = httpCall(origin);
       const health = await call("GET", "/api/health").then((r) => r.status, () => 0);
       checklist.record("H05", health === 200 ? "pass" : "fail", `GET /api/health -> ${health}`);
-      const { state } = await variant.api(call, checklist);
-      await app.goto(origin, { waitUntil: "domcontentloaded" });
-      await variant.board(app, fs.readFileSync(path.join(fixtureDir, "visual-guidelines.md"), "utf8"), state, checklist);
-      await tourBoard(app, await page.context().newPage(), origin, fixtureDir, state, report);
+      if (baseline) {
+        // The preview only proves the button works; the checks start their own companions on throw-away data (see src/baseline/).
+        await runBaselineSuite({ project: projectPath, fixtureDir, checklist, report, page });
+      } else {
+        const { state } = await variant!.api(call, checklist);
+        await app.goto(origin, { waitUntil: "domcontentloaded" });
+        await variant!.board(app, fs.readFileSync(path.join(fixtureDir, "visual-guidelines.md"), "utf8"), state, checklist);
+        await tourBoard(app, await page.context().newPage(), origin, fixtureDir, state, report);
+      }
     }
     // Earlier part as loaded at start + this run's memory; gates.jsonl is not re-read (the agent can reach it).
     const judged = wholeRun(earlierRun, report.gateList(), report.escalationList());

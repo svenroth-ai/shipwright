@@ -36,6 +36,12 @@ export class Checklist {
     return this.items.filter((i) => i.kind === "hard" && i.verdict !== "pass");
   }
 
+  /** One line for the report: which checklist ran and how many items it holds. */
+  describe(file: string): string {
+    const hard = this.items.filter((i) => i.kind === "hard").length;
+    return `${file} (${this.items.length} items: ${hard} hard, ${this.items.length - hard} soft)`;
+  }
+
   toMarkdown(): string {
     const rows = this.items.map((i) => `| ${i.id} | ${i.kind} | ${cell(i.text)} | ${i.verdict} | ${cell(i.evidence)} |`);
     return ["| Item | Kind | Expectation | Result | Evidence |", "|---|---|---|---|---|", ...rows].join("\n");

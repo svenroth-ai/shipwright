@@ -86,12 +86,12 @@ export function projectSkillNames(projectPath: string): Set<string> {
 }
 
 /** Records S09: observed when a skill of the project was called, fail-soft otherwise; "not evaluated" when not asked for or the run could not be made. */
-export function checkSkillTriggers(projectPath: string, checklist: Checklist, env: NodeJS.ProcessEnv, run: Runner = runClaude): void {
+export function checkSkillTriggers(projectPath: string, checklist: Checklist, env: NodeJS.ProcessEnv, run: Runner = runClaude, phrase: string = TRIGGER_PHRASE): void {
   if (env.SHIPWRIGHT_E2E_SKILL_TRIGGER !== "1") {
     checklist.record("S09", "not evaluated", "not run: set SHIPWRIGHT_E2E_SKILL_TRIGGER=1 to check the trigger in a headless Claude session");
     return;
   }
-  const r = run(projectPath, TRIGGER_PHRASE, env);
+  const r = run(projectPath, phrase, env);
   if (r.error || r.stdout.trim() === "") {
     const shim = r.error && /ENOENT/.test(r.error) && process.platform === "win32" ? " (on Windows an npm `claude.cmd` shim needs a shell; a native claude.exe on PATH works)" : "";
     checklist.record("S09", "not evaluated", `the session could not be run: ${r.error ?? `no output (exit ${r.status})`}${shim}`);
@@ -102,6 +102,6 @@ export function checkSkillTriggers(projectPath: string, checklist: Checklist, en
   const mine = all.filter((s) => own.has(s));
   const others = all.filter((s) => !own.has(s));
   checklist.record("S09", mine.length > 0 ? "observed" : "fail",
-    mine.length > 0 ? `phrase "${TRIGGER_PHRASE}" called the project's skill: ${mine.join(", ")}${others.length ? `; other skills called: ${others.join(", ")}` : ""}`
-      : `phrase "${TRIGGER_PHRASE}" did not call a skill of the project within 2 turns (${[...own].join(", ") || "no skills found"}); skills called: ${all.join(", ") || "none"} (exit ${r.status})`);
+    mine.length > 0 ? `phrase "${phrase}" called the project's skill: ${mine.join(", ")}${others.length ? `; other skills called: ${others.join(", ")}` : ""}`
+      : `phrase "${phrase}" did not call a skill of the project within 2 turns (${[...own].join(", ") || "no skills found"}); skills called: ${all.join(", ") || "none"} (exit ${r.status})`);
 }

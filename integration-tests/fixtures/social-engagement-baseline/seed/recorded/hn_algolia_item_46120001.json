@@ -1,0 +1,77 @@
+{
+  "id": 46120001,
+  "created_at": "2026-11-01T10:20:00Z",
+  "created_at_i": 1793528400,
+  "type": "story",
+  "author": "kestrel_n",
+  "title": "Ask HN: How do you verify agent-written changes against the spec?",
+  "url": null,
+  "text": "<p>We have specs in markdown and agents that implement them. Tests pass. But nobody checks that the tests actually cover the spec. What does your verification step look like?</p>",
+  "points": 96,
+  "parent_id": null,
+  "story_id": 46120001,
+  "options": [],
+  "children": [
+    {
+      "id": 46120101,
+      "created_at": "2026-11-01T10:50:00Z",
+      "created_at_i": 1793530200,
+      "type": "comment",
+      "author": "ostrich_lab",
+      "title": null,
+      "url": null,
+      "text": "<p>We generate tests from the spec, then review the generated tests, not the code.</p>",
+      "points": null,
+      "parent_id": 46120001,
+      "story_id": 46120001,
+      "options": [],
+      "children": [
+        {
+          "id": 46120102,
+          "created_at": "2026-11-01T11:20:00Z",
+          "created_at_i": 1793532000,
+          "type": "comment",
+          "author": "kestrel_n",
+          "title": null,
+          "url": null,
+          "text": "<p>Who reviews the generated tests? That is the same trust problem one level up.</p>",
+          "points": null,
+          "parent_id": 46120101,
+          "story_id": 46120001,
+          "options": [],
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": 46120103,
+      "created_at": "2026-11-01T11:50:00Z",
+      "created_at_i": 1793533800,
+      "type": "comment",
+      "author": "pallas_r",
+      "title": null,
+      "url": null,
+      "text": "<p>Mutation testing caught most of our hollow tests.</p>",
+      "points": null,
+      "parent_id": 46120001,
+      "story_id": 46120001,
+      "options": [],
+      "children": []
+    },
+    {
+      "id": 46120104,
+      "created_at": "2026-11-01T12:20:00Z",
+      "created_at_i": 1793535600,
+      "type": "comment",
+      "author": null,
+      "title": null,
+      "url": null,
+      "text": null,
+      "points": null,
+      "parent_id": 46120001,
+      "story_id": 46120001,
+      "options": [],
+      "children": []
+    }
+  ]
+}

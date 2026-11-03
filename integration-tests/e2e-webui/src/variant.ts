@@ -1,4 +1,4 @@
-// The checks that differ between the two fixtures, behind one interface so the spec does not branch on the fixture name:
+// The checks that differ between the board and the real-skill fixtures (the baseline fixture goes its own way, src/baseline/), behind one interface so the spec does not branch on the fixture name:
 // the API checks, the self-containment check (S05), and the board checks (S01, S02, S04) in the browser.
 import type { Page } from "@playwright/test";
 import { runApiChecks, type Call, type ThreadState } from "./board-api.js";
@@ -6,7 +6,7 @@ import { runRealApiChecks } from "./board-api-real.js";
 import { checkBoardShape, checkBoardTokens, snapshotBoard } from "./board-dom.js";
 import { checkMasterDetailShape, snapshotMasterDetail } from "./board-dom-real.js";
 import type { Checklist } from "./checklist.js";
-import { REAL_FIXTURE_NAME, type FixtureName } from "./fixture.js";
+import { BASELINE_FIXTURE_NAME, REAL_FIXTURE_NAME, type FixtureName } from "./fixture.js";
 import { checkSelfContainedWithAdapter } from "./project-checks-adapter.js";
 import { checkSelfContained } from "./project-checks.js";
 import { parseFontTokens, parseTokens } from "./tokens.js";
@@ -41,4 +41,8 @@ const masterDetailVariant: Variant = {
   },
 };
 
-export const variantFor = (fixture: FixtureName): Variant => (fixture === REAL_FIXTURE_NAME ? masterDetailVariant : tabsVariant);
+export const variantFor = (fixture: FixtureName): Variant => {
+  // The baseline fixture does not use the Variant interface: it has its own suite (src/baseline/suite.ts). A missed branch fails loudly.
+  if (fixture === BASELINE_FIXTURE_NAME) throw new Error("the baseline fixture has no Variant; the spec routes it to src/baseline/suite.ts");
+  return fixture === REAL_FIXTURE_NAME ? masterDetailVariant : tabsVariant;
+};

@@ -1,0 +1,9 @@
+{"items": [
+  {"name": "Spec Compliance", "verdict": "pass", "note": "All 5 ACs map to code: byte-identical package, fixture selection + checklist line in the report, 35 B items from brief Fit criteria plus shared items, state-reaching recipes with markers, small modules with unit tests."},
+  {"name": "Error Handling", "verdict": "pass", "note": "A check that throws becomes a failed item with the reason (recordProbe); a companion that cannot start fails its group with the first output lines; scenarios always stop the companion and delete temp folders."},
+  {"name": "Security Basics", "verdict": "pass", "note": "The built app is run with a clean env (no inherited keys), temp HOME, fixed argv, loopback only; tokens are random dummy values; no shell; file contents never enter the report except short evidence."},
+  {"name": "Test Quality", "verdict": "pass", "note": "17 new unit tests: fake servers over the real recorded files, approval stamp with the real pipeline digest, static checks on good and bad synthetic trees, a stub backend that passes and one that fails the Host rule, mockup selectors; 4 new pytest tests; existing 103 unit specs still pass."},
+  {"name": "Performance Basics", "verdict": "pass", "note": "Each scenario starts one process and waits for health; the only fixed sleeps are 1.1 s for run-id resolution and short UI settles."},
+  {"name": "Naming & Structure", "verdict": "pass", "note": "src/baseline/ holds 17 modules, largest 258 lines (cap 300); shared modules only got additive hooks."},
+  {"name": "Affected Boundaries", "verdict": "pass", "note": "brief.json copy (hash-excluded keys only, verified with the pipeline digest), index.json replay, run-synthetic.json post, companion API, screen-map.json (python test pins one recipe per screen). No real built app exists to round-trip against; stub and real recordings used."}
+]}

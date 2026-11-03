@@ -1,0 +1,31 @@
+{
+  "id": 45900003,
+  "created_at": "2026-10-08T12:00:00Z",
+  "created_at_i": 1791460800,
+  "type": "story",
+  "author": "bramble_t",
+  "title": "Ask HN: Is spec drift a real problem in your team?",
+  "url": null,
+  "text": null,
+  "points": 12,
+  "parent_id": null,
+  "story_id": 45900003,
+  "options": [],
+  "children": [
+    {
+      "id": 45900101,
+      "created_at": "2026-10-08T12:30:00Z",
+      "created_at_i": 1791462600,
+      "type": "comment",
+      "author": "quill_a",
+      "title": null,
+      "url": null,
+      "text": "<p>Only when the spec lives in a different tool than the code.</p>",
+      "points": null,
+      "parent_id": 45900003,
+      "story_id": 45900003,
+      "options": [],
+      "children": []
+    }
+  ]
+}
