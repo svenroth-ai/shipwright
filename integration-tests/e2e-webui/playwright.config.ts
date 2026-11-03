@@ -10,6 +10,7 @@ export default defineConfig({
   reporter: [["list"]],
   projects: [
     { name: "e2e", testMatch: "e2e.spec.ts" },
+    { name: "recheck", testMatch: "recheck.spec.ts" },
     { name: "unit", testMatch: "unit/*.spec.ts" },
   ],
 });

@@ -564,6 +564,7 @@ Python 3.11+ with uv as package manager. All scripts are invoked via uv run. Hoo
 - (2026-11-01) e2e-webui — S05 compares `seed/recorded/` with the package byte for byte; the Windows checkout is CRLF while `brief_package` hashes CRLF==LF, so a resumed run built under the other checkout fails with "line endings only". [→ iterate-2026-11-01-e2e-s05-shipped-recorded]
 - (2026-11-01) e2e-webui — the NewIssueModal's Launch already starts the task and hands the command to the task page through sessionStorage, so the harness must not reload that page; no Launch button with the task awaiting_external_start or active means launched. [→ iterate-2026-11-01-e2e-launch-race]
 - (2026-11-02) e2e-webui — read a response body inside `page.route` (`route.fetch()` then `fulfill({response})`), never from a `response` event: after the page navigates the body is unavailable. [→ iterate-2026-11-02-e2e-capture-launch]
+- (2026-11-03) e2e baseline harness — a check on a built app must click the visible `[data-k]` row (a text lookup hits the hidden picker `<option>`), compare error lists as text not `JSON.stringify` (quotes escape), and match `innerText` without case (text-transform); verify a harness fix with `npm run recheck` against a built project, not a 6.5 h run. [→ iterate-2026-11-03-baseline-harness-fixes]
 
 ## Contributing
 

@@ -83,6 +83,18 @@ over HTTP with `seed/agent/run-synthetic.json`. No real network and no real key 
 `linkedin-queries.json`; the harness writes a list of `{query, status: "active"}`. Opening a good link with `POST /api/open` would start
 the OS browser, so only the refusals are checked. `S09` uses the phrase "open the reply board".
 
+**Re-check without a run.** A full run takes hours; the baseline checks themselves need no model. To run B01-B46 and the screen tour again
+against a project that is already built (it starts the project's own `companion.py`/`server.py` on free ports with throw-away data, nothing is written
+into the project, no pipeline, no token):
+
+```bash
+cd integration-tests/e2e-webui
+SHIPWRIGHT_E2E_RECHECK_PROJECT=<built project folder> npm run recheck     # optional SHIPWRIGHT_E2E_RECHECK_OUT=<report folder>
+```
+
+It prints one line per B item (evidence for the ones that fail) and writes `report.md` with the tour screenshots to the report folder
+(default `<os tmp>/e2e-recheck`). The command exits non-zero while a hard B item is red. The non-B items of the checklist stay "not evaluated". A project built from an older brief or answer key shows reds that are not harness bugs: re-check the project that the answer key was written for. Takes about 1.5 minutes (`tests/recheck.spec.ts`).
+
 **Screen tour.** For each screen of `screen-map.json` the harness brings the board into the mockup's state from its own recipe
 (`tour-baseline.ts`: select the first thread, pick the filter, narrow the window, create the feedback of the mockup as the stand-in agent),
 then checks a marker of that state. A state that cannot be reached is written into the report ("STATE NOT REACHED ...") with only the

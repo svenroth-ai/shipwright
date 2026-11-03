@@ -1,6 +1,6 @@
 // How the harness drives the built board: the platform switch, the status filter, the thread list. Everything is found by role,
-// label and visible text (the approved mockups are the contract), never by class names the building agent may have chosen.
-import type { Page } from "@playwright/test";
+// label and visible text (the approved mockups are the contract), never by class names the building agent may have chosen. The one attribute taken from the approved mockups is `data-k` (the thread key on a list row).
+import type { Locator, Page } from "@playwright/test";
 import { arr, obj, str, type Obj } from "./http.js";
 
 export const PLATFORM_LABEL: Record<string, string> = { linkedin: "LinkedIn", reddit: "Reddit", hn: "Hacker News", x: "X" };
@@ -52,12 +52,25 @@ export function rowTitle(item: Obj): string {
   return (str(post.title) || str(post.text)).slice(0, 60);
 }
 
-/** Opens a thread the way a person does: filter All, the thread's platform, the row with its title. */
+/**
+ * The visible list row of a thread. A bare text lookup finds the thread's title first in the hidden <option> of the phone
+ * picker (it repeats every title) and the click then times out; rows carry the thread key in `data-k` (the approved mockups do too).
+ */
+export function listRow(page: Page, item: Obj): Locator {
+  const key = str(item.key);
+  const rows = key ? page.locator(`[data-k="${key.replace(/["\\]/g, "\\$&")}"]`) : page.locator("[data-k]").filter({ hasText: rowTitle(item) });
+  return rows.filter({ visible: true }).first();
+}
+
+/** Visible elements whose own text matches `re`; hidden ones (a banner not yet shown, an unselected option) do not count. */
+export const visibleText = (page: Page, re: RegExp): Locator => page.getByText(re).filter({ visible: true });
+
+/** Opens a thread the way a person does: filter All, the thread's platform, the visible row of the thread. */
 export async function openThread(page: Page, item: Obj, filter = "All"): Promise<void> {
   if (str(item.platform) === "") throw new Error("the thread this check needs is not in the stored items");
   await setFilter(page, filter);
   await pickPlatform(page, str(item.platform));
-  await page.getByText(rowTitle(item), { exact: false }).first().click({ timeout: 8000 });
+  await listRow(page, item).click({ timeout: 8000 });
   await page.waitForTimeout(500);
 }
 

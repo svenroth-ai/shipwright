@@ -5,7 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import type { Page } from "@playwright/test";
-import { findItem, mainText, openBoard, openThread, rowTitle, setFilter } from "./board-ui.js";
+import { findItem, mainText, openBoard, openThread, pickPlatform, visibleText, rowTitle, setFilter } from "./board-ui.js";
 import type { BoardEnv } from "./checks-board.js";
 import { post, str } from "./http.js";
 import type { Report } from "../report.js";
@@ -14,24 +14,25 @@ export interface Reach { reached: boolean; note: string; page?: Page }
 type Recipe = (b: BoardEnv) => Promise<Reach>;
 const ok = (note: string, page?: Page): Reach => ({ reached: true, note, page });
 const no = (note: string): Reach => ({ reached: false, note });
+/** innerText follows text-transform (uppercase labels), so a marker regexp carries /i. */
 const text = async (p: Page, re: RegExp) => re.test(await mainText(p));
 
 export const RECIPES: Record<string, Recipe> = {
   "list-thread": async (b) => {
     await openBoard(b.page, b.origin);
     await setFilter(b.page, "Open");
-    return (await text(b.page, /Our angle/)) ? ok("The Open list with the first thread selected.") : no("the first thread did not show its summary");
+    return (await text(b.page, /Our angle/i)) ? ok("The Open list with the first thread selected.") : no("the first thread did not show its summary");
   },
   "draft-card": async (b) => {
     await openBoard(b.page, b.origin);
     await openThread(b.page, findItem(b.items, "reddit:1oq7k2m"));
-    await b.page.getByText(/Jump to the draft/i).first().click({ timeout: 4000 }).catch(() => undefined);
-    return (await b.page.getByText(/^Draft reply/i).count()) > 0 ? ok("reddit:1oq7k2m opened at its draft card.") : no("no 'Draft reply' card on the opened thread");
+    await visibleText(b.page, /Jump to the draft/i).first().click({ timeout: 4000 }).catch(() => undefined);
+    return (await visibleText(b.page, /^Draft reply/i).count()) > 0 ? ok("reddit:1oq7k2m opened at its draft card.") : no("no 'Draft reply' card on the opened thread");
   },
   posted: async (b) => {
     await openBoard(b.page, b.origin);
     await setFilter(b.page, "Posted");
-    return (await text(b.page, /posted/i)) && (await text(b.page, /mq2bZZ1|Reopen/)) ? ok("The Posted filter with the posted thread.") : no("the Posted filter did not show a posted thread");
+    return (await text(b.page, /posted/i)) && (await text(b.page, /mq2bZZ1|Reopen/i)) ? ok("The Posted filter with the posted thread.") : no("the Posted filter did not show a posted thread");
   },
   "feedback-saved": async (b) => {
     await openBoard(b.page, b.origin);
@@ -43,7 +44,8 @@ export const RECIPES: Record<string, Recipe> = {
     await openBoard(b.page, b.origin);
     await setFilter(b.page, "Expired");
     const gone = b.items.find((i) => i.status === "expired");
-    return gone && (await mainText(b.page)).includes(rowTitle(gone).slice(0, 30)) ? ok("The Expired filter, listing an expired thread.") : no("the Expired filter did not list an expired thread");
+    if (gone) await pickPlatform(b.page, str(gone.platform)); // the filter keeps the selected platform; the expired thread may sit on another one
+    return gone && (await mainText(b.page)).toLowerCase().includes(rowTitle(gone).slice(0, 30).toLowerCase()) ? ok("The Expired filter, listing an expired thread.") : no("the Expired filter did not list an expired thread");
   },
   "x-count": async (b) => {
     await openBoard(b.page, b.origin);

@@ -1,0 +1,69 @@
+{
+  "run_id": "iterate-2026-11-03-baseline-harness-fixes",
+  "date": "2026-11-03T18:57:27.996902Z",
+  "event_at": "2026-11-03T18:57:09.794418+00:00",
+  "type": "bug",
+  "complexity": "small",
+  "prior_source": "keyword",
+  "branch": "iterate/baseline-harness-fixes",
+  "spec": ".shipwright/planning/iterate/iterate-2026-11-03-baseline-harness-fixes.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-11-03-baseline-harness-fixes",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "A thread's visible list row is clicked even when a hidden picker option repeats its title; hidden banner text is not counted",
+        "disposition": "tested",
+        "evidence": "baseline-harness-fixes.spec.ts hidden option test PASSED"
+      },
+      {
+        "behavior": "B30 ignores only the brief's mandated lessons.md sentence; a real access, a reworded message and an access in another file stay red",
+        "disposition": "tested",
+        "evidence": "baseline-harness-fixes.spec.ts B30 test PASSED"
+      },
+      {
+        "behavior": "B31 finds default hosts anywhere in backend/services/ and still fails a missing host or a host outside the adapter",
+        "disposition": "tested",
+        "evidence": "baseline-harness-fixes.spec.ts B31 test PASSED"
+      },
+      {
+        "behavior": "B17, B37, B39, B44 and the tour against a real built app",
+        "disposition": "untestable",
+        "reason_code": "requires-prod-credential",
+        "reason": "needs a built app from a model-driven run; verified by hand with npm run recheck against run-phse68 (all B items pass, tour reaches every state)"
+      },
+      {
+        "behavior": "Existing unit specs and e2e-webui project guards still pass",
+        "disposition": "tested",
+        "evidence": "playwright unit: 107 passed; test_e2e_webui_project.py and test_e2e_baseline_fixture.py 16 passed"
+      }
+    ],
+    "counts": {
+      "testable": 4,
+      "tested": 4,
+      "untestable": 1,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 6,
+      "covered_acs": 6
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "node integration-tests/e2e-webui/node_modules/@playwright/test/cli.js test --config integration-tests/e2e-webui/playwright.config.ts --project=unit",
+    "exit_code": 0,
+    "tests_run": 107,
+    "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\baseline-harness-fixes\\.shipwright\\runs\\iterate-2026-11-03-baseline-harness-fixes\\surface_verification.log",
+    "timestamp": "2026-11-03T18:56:40.005Z",
+    "attempts": 1
+  },
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": [
+    "touches_build"
+  ]
+}
