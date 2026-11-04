@@ -298,7 +298,7 @@ _Where the work detail lives_ at the end of this document.
 
 - (E) [AC01] Given requirements with a user-facing side, when design is declared
   finished, then every one of them has at least one screen — none is left
-  without a mockup. In an autonomous run with a brief package, a capability whose brief section names no mockup is recorded as having no screen by rule, not by a question.
+  without a mockup. In an autonomous run with a brief package, a capability whose brief section states `UI: none` is recorded as having no screen by rule, not by a question.
 - (E) [AC02] Given screens have been designed, when design is declared finished, then
   the design tokens a build needs — colours, typography, spacing — exist as one
   reusable definition, so the build matches the design instead of guessing at
@@ -451,7 +451,7 @@ _Where the work detail lives_ at the end of this document.
 - (E) [AC12] Given a project whose screens were designed as mockups first, when the test
   phase runs, then each screen is compared back to its mockup and every
   divergence is named — and a screen that matched before and diverges now is
-  reported as a regression, distinct from one never checked. Each screen is compared at the viewport it was designed for (a phone screen at phone width), and in an autonomous run a remaining mismatch is overridden by rule only when every cause was decided earlier and the screen is within tolerance without it.
+  reported as a regression, distinct from one never checked. Each screen is compared at the viewport it was designed for (a phone screen at phone width), and in an autonomous run plain CSS deviations are fixed by the test phase itself while a remaining mismatch still stops for the person.
 - (E) [AC13] Given a project with several pages, when the test phase runs, then a
   pattern used one way on most pages and differently on a few is reported as an
   outlier, grouped by what caused it.

@@ -5,13 +5,13 @@
 
 After ``apply-brief-package.py`` a minted FR that no screen-map entry covers is ``unmapped`` and the ``fr-coverage`` gate stays red.
 In an AUTONOMOUS run (a brief package governs it, or autonomy is autonomous/unattended) the answer is already in the package for
-a capability whose ``brief.md`` section says it has no screen: the section's ``Source:`` line names no ``Mockup`` (or the section
-states ``UI: none``). Those FRs are written under ``## Non-UI FRs`` in ``design-manifest.md`` citing ONE decision-log entry
+a capability whose ``brief.md`` section says it has no screen: the section states ``UI: none`` on a line of its own. Only that
+explicit marker counts: a missing mockup reference is NOT a statement that there is no screen (the author may have forgotten it). Those FRs are written under ``## Non-UI FRs`` in ``design-manifest.md`` citing ONE decision-log entry
 (``write_decision_log.py``) that names them; the ``fr-coverage`` gate then honours them. Nothing else changes: no screen is
 invented, the package and ``uploads/`` stay untouched.
 
-A capability that has neither a screen nor such a note, one whose section DOES name a mockup that was never mapped (the package
-contradicts itself), or one with no section at all stays a question (``ask`` in the output, exit 1). An interactive run is not
+A capability without the marker (even with a ``Source:`` line that names no mockup), one whose section names a mockup or screen
+that was never mapped (the package contradicts itself), or one with no section at all stays a question (``ask`` in the output, exit 1). An interactive run is not
 touched at all: ``action: "ask"``, nothing written (the operator-authored entry in upload-mode.md stays the way).
 
 Prints JSON ``{autonomous, action, recorded[], ask[], adr}``. Exit 0 = nothing left to ask, 1 = something left, 2 = cannot run.
@@ -32,9 +32,9 @@ _SHARED = Path(__file__).resolve().parents[4] / "shared"
 
 
 _SECTION_RE = re.compile(r"^##\s+(.+?)\s*$", re.M)
-_UI_NONE_RE = re.compile(r"^\s*[-*]?\s*(?:ui|screen)\s*:\s*(?:none|no)\s*\.?\s*$", re.I | re.M)
+_UI_NONE_RE = re.compile(r"^\s*[-*]?\s*ui\s*:\s*none\s*\.?\s*$", re.I | re.M)  # the brief format's one marker
 _SCREEN_REF_RE = re.compile(r"mockup|wireframe|\bscreens?\b|\b\d{2}-[\w-]+\.html\b", re.I)
-_MOCKUP_REF_RE = re.compile(r"mockup|wireframe|\b\S+\.html\b|\bfigma\b", re.I)  # a concrete screen reference (the bare word "screen" is prose)
+_MOCKUP_REF_RE = re.compile(r"mockup|wireframe|\bfigma\b|\b\d{2}-[\w-]+\.html\b", re.I)  # a concrete screen reference (the bare word "screen" is prose)
 _DUP_MARK = "<<duplicate-heading>>"
 _PLACEHOLDER_RE = re.compile(r"replace with a real FR id", re.I)
 _SLUG_COLLAPSE_RE = re.compile(r"[^a-z0-9]+")
@@ -79,16 +79,13 @@ def non_ui_verdict(section: str | None) -> tuple[bool, str]:
         return False, "no section for it in brief.md"
     if _DUP_MARK in section:
         return False, "two brief.md headings map to the same capability name"
-    sources = [ln for ln in section.splitlines() if ln.strip().lower().startswith("source:")]
-    if _UI_NONE_RE.search(section):  # an explicit "UI: none" wins over the bare word "screen" in prose; a concrete mockup file still contradicts it
+    if _UI_NONE_RE.search(section):  # an explicit "UI: none" wins over the bare word "screen" in prose; a concrete mockup reference still contradicts it
         if _MOCKUP_REF_RE.search(section):
-            return False, "its brief.md section states UI: none but also names a mockup file (the package contradicts itself)"
+            return False, "its brief.md section states UI: none but also names a mockup (the package contradicts itself)"
         return True, "its brief.md section states UI: none"
     if _SCREEN_REF_RE.search(section):  # a screen reference no screen-map entry covers is a contradiction
         return False, "its brief.md section refers to a mockup or screen that no screen-map entry covers (the package contradicts itself)"
-    if sources:
-        return True, "its brief.md Source line names no Mockup"
-    return False, "its brief.md section says nothing about a screen (no Source line)"
+    return False, "its brief.md section has no explicit `UI: none` line"
 
 
 def _manifest_with(manifest: str, lines: list[str]) -> str:
@@ -111,7 +108,7 @@ def _log_decision(root: Path, frs: list[str]) -> str | None:
          "--section", "Design (Brief package, non-UI FRs)", "--commit", "n/a",
          "--title", "Brief capabilities without a screen are non-UI FRs",
          "--context", f"The screen-map maps no screen to {names}; fr-coverage stays red until they are dealt with."[:_MAX],
-         "--decision", ("Autonomous rule: the brief.md section of each of these capabilities names no mockup (or states UI: none), "
+         "--decision", ("Autonomous rule: the brief.md section of each of these capabilities states `UI: none` on a line of its own, "
                         "so they are recorded under ## Non-UI FRs in design-manifest.md; no screen is invented.")[:_MAX],
          "--consequences", "fr-coverage is satisfied; the FRs are verified by tests and checks, not by design-fidelity screenshots."[:_MAX],
          "--rejected", "Asking the person (the package already says so); re-approving the package; inventing screens."[:_MAX]],

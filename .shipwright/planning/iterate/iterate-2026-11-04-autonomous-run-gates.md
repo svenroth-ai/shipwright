@@ -19,16 +19,11 @@ decides by documented rule and records the decision; a conflict the rule cannot 
    numeric viewport meta width, a `phone-frame`/`mobile-frame` element in the markup, leading comment "phone width NNNpx"),
    else 1280x800. Both shots of a screen use the same size; `viewport` and `viewport_source` are recorded per screen; an
    invalid declaration is an `error` for that screen only. The tolerance and the metric are unchanged.
-2. **Autonomous override rule (Test gate).** `autonomous_override.py` allows an override of a failing screenshot check without
-   a question only in an autonomous run, when the gate raised nothing but the screenshot finding, the check really ran
-   (`fail`, fresh capture, standard tolerance), every accepted cause cites an ADR in `decision_log.md` or a brief-package
-   file, and every failing screen is within the tolerance without those causes (same ratio the tool recorded). Otherwise it
-   answers `allowed: false` with reasons and the question stays. The override itself is the ordinary one
-   (`--override-reason`, recorded in `validation_overrides[]`; apply still refuses `unattended`). The Test phase fixes plain
-   CSS deviations itself in an autonomous run.
-3. **Non-UI capabilities (Design).** `record-non-ui-frs.py` writes unmapped FRs whose `brief.md` section has a `Source:` line that names no Mockup
-   (or states `UI: none`; `UI: none` wins over the word "screen" in prose) under `## Non-UI FRs` with ONE decision-log entry, in an autonomous run; a capability with neither
-   a screen nor such a note, or whose section names an unmapped Mockup, is returned in `ask[]` (exit 1). Interactive runs untouched.
+2. **Test gate in an autonomous run.** The Test phase fixes plain CSS deviations from approved values itself (max 3 rounds). A screenshot `fail` that remains
+   is a question: a check result is never overridden by rule on evidence the run produced itself (decided after PR #994 review).
+3. **Non-UI capabilities (Design).** `record-non-ui-frs.py` writes unmapped FRs whose `brief.md` section states `UI: none` on a line of its own
+   (`UI: none` wins over the word "screen" in prose; a Source line without a mockup is NOT enough) under `## Non-UI FRs` with ONE decision-log entry, in an autonomous run; any other
+   capability, or one whose section names an unmapped Mockup, is returned in `ask[]` (exit 1). Interactive runs untouched.
 4. **Size target vs behaviour (Build, run-20 gate 28).** In an autonomous run a section's "under ~N lines" is a soft
    target: the spec-reviewer passes a split into further modules and rejects cut behaviour / raised limits.
 5. Docs (`docs/hooks-and-pipeline.md`, `docs/guide.md`) and the skill/reference prose describe the above.
@@ -38,7 +33,6 @@ decides by documented rule and records the decision; a conflict the rule cannot 
 - `screenshot_check.py` -> `screenshot_capture.mjs`: jobs.json gains an optional per-job `viewport` (producer: Python, consumer: node).
   Probed against real Chromium on run 20's project (phone screen 07 captured at 390x800, ratio 0.58 -> 0.25 with the
   remaining causes unchanged).
-- `shipwright_test_results.json` `screenshot_check_accepted_causes` (writer: Test phase prose; reader: `autonomous_override.py`).
 
 ## External review findings
 
@@ -59,3 +53,9 @@ External code review (GPT + GLM) and plan/architecture reviews, with disposition
 | png_compare not found in the installed plugin cache | accepted-and-fixed (`_png_compare`, version-aware) |
 | prose-only override rule instead of code (architecture, GLM) | rejected-with-reason: a prose rule is what left the question open in run 20; the code check keeps a real failure from passing silently |
 | guided run with a brief package counts as autonomous | accepted: the specified common rule; stated in the guide |
+
+### Decided after the PR review (operator)
+
+- The by-rule screenshot override (`autonomous_override.py`, accepted causes, neutralised pair, apply re-check) was REMOVED: a check result must not be overridable by evidence the run produced itself. A screenshot `fail` that remains after the viewport and CSS/seed-data fixes stays a question.
+- Non-UI recording needs an explicit `UI: none` line (a Source line without a mockup stays a question); the baseline brief and its fixture carry the marker.
+- Rows above about the override rule (provenance, source quotes, apply re-run, png_compare lookup) are superseded by that removal.

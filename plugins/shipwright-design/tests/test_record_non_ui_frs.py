@@ -1,7 +1,7 @@
 """record-non-ui-frs: an autonomous run records the brief's own non-UI capabilities without asking.
 
-The package already says which capabilities have no screen (their brief.md section names no Mockup, or states `UI: none`).
-A capability with neither a screen nor such a note, or whose section names a Mockup that was never mapped, stays a question.
+The package says which capabilities have no screen with an explicit `UI: none` line in their brief.md section.
+A capability without it (a Source line naming no Mockup is not enough), or whose section names a Mockup that was never mapped, stays a question.
 """
 
 import importlib.util
@@ -22,7 +22,7 @@ pytestmark = pytest.mark.covers("FR-01.04")
 BRIEF = (
     "# Notes\n\n"
     "## Capture note\nRequirement: x\nSource: REA; Mockup `01-notes.html`.\n\n"
-    "## List notes\nRequirement: y\nSource: Interview (backend store only).\n\n"
+    "## List notes\nRequirement: y\nUI: none\nSource: Interview (backend store only).\n\n"
     "## Edit note\nRequirement: z\nSource: REA; Mockup `02-editor.html`.\n"
 )
 MANIFEST = (
@@ -77,6 +77,28 @@ def test_the_brief_declared_non_ui_fr_is_recorded_and_the_other_stays_a_question
     assert f"### {out['adr']}:" in log and "FR-01.02" in log
 
 
+def test_the_real_baseline_brief_has_every_unmapped_capability_marked_and_none_contradicted():
+    fixture = _REPO / "integration-tests" / "fixtures" / "social-engagement-baseline"
+    sections = rec.brief_sections((fixture / "brief.md").read_text(encoding="utf-8-sig"))
+    mapped = {r for s in json.loads((fixture / "screen-map.json").read_text(encoding="utf-8"))["screens"] for r in s["requirements"]}
+    caps = {slug: body for slug, body in sections.items() if "Requirement:" in body}
+    unmapped = {slug: body for slug, body in caps.items() if slug not in mapped}
+    assert len(unmapped) == 10
+    assert all(rec.non_ui_verdict(body)[0] for body in unmapped.values()), {s: rec.non_ui_verdict(b) for s, b in unmapped.items()}
+    assert not any(rec.non_ui_verdict(body)[0] for slug, body in caps.items() if slug in mapped)  # a screen-mapped capability is never non-UI
+
+
+def test_the_decision_log_entry_states_the_explicit_marker_rule(project):
+    run(_SCRIPT, project)
+    log = (project / ".shipwright" / "agent_docs" / "decision_log.md").read_text(encoding="utf-8")
+    assert "states `UI: none` on a line of its own" in log and "names no mockup" not in log
+
+
+@pytest.mark.parametrize("line", ["Screen: none", "UI: no", "screen: no"])
+def test_only_the_documented_marker_counts(line):
+    assert rec.non_ui_verdict(f"Requirement: x\n{line}\nSource: REA.\n")[0] is False
+
+
 def test_with_the_open_one_resolved_by_a_note_everything_is_recorded_and_the_gate_goes_green(tmp_path):
     project = applied_project(tmp_path, BRIEF.replace("Source: REA; Mockup `02-editor.html`.", "UI: none\nSource: REA."))
     code, out = run(_SCRIPT, project)
@@ -112,7 +134,7 @@ def test_it_cannot_run_before_the_package_is_applied_or_the_manifest_exists(tmp_
 @pytest.mark.parametrize("section,expected", [
     (None, False),
     ("Requirement: x\nSource: REA; Mockup `01.html`.\n", False),
-    ("Requirement: x\nSource: Interview.\n", True),
+    ("Requirement: x\nSource: Interview.\n", False),  # a Source line without a mockup is not a statement that there is no screen
     ("Requirement: x\n- UI: none\n", True),
     ("Requirement: x\n", False),
     ("Requirement: x\nUI: none\nSource: REA; Mockup `01-home.html`.\n", False),  # contradicts itself: a person decides

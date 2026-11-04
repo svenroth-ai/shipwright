@@ -53,17 +53,7 @@ followed by a re-run of the tool, max 3 rounds; still red → STOP and report as
 
 **Autonomous run** (a brief package governs it, or autonomy is `autonomous`/`unattended`): decide by this rule, record it, and ask a person only
 for what the rule cannot settle. (a) A screen that differs from the approved screen by a plain CSS deviation in the BUILT app (a spacing, size
-or font value that is not the approved/visual-guideline value) is FIXED by the Test phase itself, within the 3 rounds above; that is
-not a question. (b) A `fail` that remains is attributed, per failing screen, by re-capturing with each cause neutralised in a throw-away copy, never
-in the built app or an approved screen. The causes a run may accept are ONLY those an earlier decision already documents: an ADR in `decision_log.md`
-or a file of the brief package (for example the brief's own required header line, the offline-fonts ADR, the phone viewport); an ADR counts only when it is already COMMITTED (one the Test phase writes itself does not). Write them to
-`shipwright_test_results.json` as `screenshot_check_accepted_causes`: `{"accepted_causes": {"a": "<text>"}, "sources": {"a": "ADR-129" | "brief:brief.md"}, "quotes": {"a": "<12+ characters found verbatim in that brief file>"},
-"screens": [{"mockup", "real_diff_ratio", "attributed_diff_ratio_without_accepted_causes", "causes": ["a"], "neutralised": {"approved": "e2e/screenshots/...png", "built": "e2e/screenshots/...png"}}]}`
-(the throw-away pair the ratio was measured on; the rule recomputes the ratio from it, requires the check's real pair to reproduce the recorded ratio, and refuses a neutralised shot that is a real capture or a byte copy of the opposite one; a cause also needs a verbatim `quotes` excerpt, for an ADR source too). `screenshot_check` itself stays
-unchanged (`fail`). The phase then still STOPs at its gate; the run coordinator (single-session-loop.md "Override") runs `autonomous_override.py`, which
-allows the override only when every cause is documented and every failing screen, re-measured from its neutralised pair, is within the tolerance WITHOUT those causes, and records it in
-`validation_overrides[]` with the reason. A real mismatch (no attribution, or still over the tolerance without the causes), an `error`, or any other gate
-finding stays a question. Interactive runs behave as before: the person decides.
+or font value that is not the approved/visual-guideline value) is FIXED by the Test phase itself, within the 3 rounds above; so is test data that differs from the state the mockup shows (for example a mockup with feedback history that the seeded test data lacks): seed the data in the app's own test or seed data, never in an approved screen. Neither is a question. (b) A `fail` that remains after the per-screen viewport and the CSS fix is a QUESTION for the person, as in an interactive run: the Test phase never overrides a screenshot result with evidence it produced itself (no accepted-cause list, no neutralised copy of a screenshot). Interactive runs behave as before: the person decides.
 
 **3. Record** in `shipwright_test_results.json`:
 ```json

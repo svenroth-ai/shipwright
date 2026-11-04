@@ -54,8 +54,14 @@ try {
 try {
   for (const job of jobs) {
     // One context per job: a step that saves state (localStorage, cookies, a submitted form) never reaches the next screen.
-    const jobViewport = job.viewport && Number(job.viewport.width) > 0 && Number(job.viewport.height) > 0
-      ? { width: Number(job.viewport.width), height: Number(job.viewport.height) } : viewport;
+    // A job's own viewport must be whole numbers inside screenshot_viewport.py's bounds; anything else fails THIS job (never a silent default size).
+    const vp = job.viewport;
+    if (vp !== undefined && !(vp && Number.isInteger(vp.width) && vp.width >= 240 && vp.width <= 3840 && Number.isInteger(vp.height) && vp.height >= 320 && vp.height <= 4000)) {
+      result.ok = false;
+      result.errors.push({ out: job.out, error: "job viewport must be whole numbers, width 240-3840 and height 320-4000" });
+      continue;
+    }
+    const jobViewport = vp ? { width: vp.width, height: vp.height } : viewport;
     const context = await browser.newContext({ viewport: jobViewport, deviceScaleFactor: 1, reducedMotion: "reduce" });
     const page = await context.newPage();
     try {

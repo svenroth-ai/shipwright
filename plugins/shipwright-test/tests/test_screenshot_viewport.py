@@ -59,8 +59,15 @@ def test_device_width_declares_nothing():
     assert sv._mockup_viewport(PAGE.format(head='<meta name="viewport" content="width=device-width, initial-scale=1">', body="")) is None
 
 
-def test_only_the_approved_side_is_consulted_for_the_viewport():
-    assert "[p for p in (approved,) if p]" in Path(sc.__file__).read_text(encoding="utf-8")
+def test_only_the_approved_side_decides_the_viewport(tmp_path, monkeypatch):
+    desktop = PAGE.format(head="", body="desktop")
+    phone = PAGE.format(head=PHONE_CSS, body="<div class='phone-frame'>x</div>")
+    root = _project(tmp_path, [{"mockup": "01-a.html", "route": "/"}], {"01-a.html": desktop})
+    (root / ".shipwright" / "designs" / "screens" / "01-a.html").write_text(phone, encoding="utf-8")  # the built-side copy claims a phone
+    seen = {}
+    monkeypatch.setattr(sc, "_capture", lambda project, jobs, timeout: seen.setdefault("jobs", jobs) and "stop")
+    r = sc.run_screenshot_check(root, base_url="http://x", capture=True)
+    assert r["screens"][0]["viewport"] == [1280, 800] and r["screens"][0]["viewport_source"] == "default"
 
 
 def test_meta_declarations():
@@ -69,7 +76,7 @@ def test_meta_declarations():
     bad = sv._mockup_viewport(PAGE.format(head='<meta name="shipwright-viewport" content="nonsense">', body=""))
     assert isinstance(bad, str) and "nonsense" in bad  # declared but not a viewport: an error text, never a silent default
     assert isinstance(sv._mockup_viewport(PAGE.format(head='<meta name="viewport" content="width=5000">', body="")), str)
-    assert isinstance(sv._mockup_viewport(PAGE.format(head="<style>:root{--phone-width: 999px}</style>", body="<div class='phone-frame'>")), str) is False
+    assert sv._mockup_viewport(PAGE.format(head="<style>:root{--phone-width: 999px}</style>", body="<div class='phone-frame'>")) == ((999, 800), "mockup-phone-frame")
     assert isinstance(sv._mockup_viewport(PAGE.format(head="<style>:root{--phone-width: 100px}</style>", body="<div class='phone-frame'>")), str)
 
 
@@ -80,7 +87,7 @@ def test_leading_comment_naming_the_phone_width():
     assert sv._mockup_viewport(later) is None  # only the FIRST comment, the mockup's own header
 
 
-def test_precedence_routes_entry_then_screen_map_then_mockup_then_default(tmp_path):
+def test_precedence_screen_map_then_mockup_then_default_and_routes_entry_is_an_error(tmp_path):
     phone = tmp_path / "p.html"
     phone.write_text(PAGE.format(head=PHONE_CSS, body="<div class='phone-frame'>x</div>"), encoding="utf-8")
     plain = tmp_path / "d.html"
@@ -88,7 +95,6 @@ def test_precedence_routes_entry_then_screen_map_then_mockup_then_default(tmp_pa
     assert sv.screen_viewport({}, {"viewport": [500, 600]}, [phone]) == ((500, 600), "screen-map")
     assert sv._mockup_viewport(PAGE.format(head="", body="<main><div class='phone-frame'>a preview widget</div></main>")) is None  # not the root
     assert "not accepted" in sv.screen_viewport({"viewport": "600x700"}, {"viewport": [500, 600]}, [phone])  # test wiring cannot pick it
-    assert sv.screen_viewport({}, {"viewport": [500, 600]}, [phone]) == ((500, 600), "screen-map")
     assert sv.screen_viewport({}, {}, [phone]) == ((360, 800), "mockup-phone-frame")
     assert sv.screen_viewport({}, None, [plain, phone]) == ((360, 800), "mockup-phone-frame")  # the approved upload may declare it
     assert sv.screen_viewport({}, {}, [plain]) == ((1280, 800), "default")
@@ -118,8 +124,8 @@ def test_jobs_carry_the_screens_own_viewport_and_the_result_records_it(tmp_path,
     seen = {}
     monkeypatch.setattr(sc, "_capture", lambda project, jobs, timeout: seen.setdefault("jobs", jobs) and "stop")
     r = sc.run_screenshot_check(root, base_url="http://x", capture=True)
-    sizes = [(j["out"].split("built")[-1][-14:], j["viewport"]) for j in seen["jobs"] if "/built/" in j["out"].replace("\\", "/")]
-    assert [s[1] for s in sizes] == [{"width": 1280, "height": 800}, {"width": 360, "height": 800}]
+    sizes = [j["viewport"] for j in seen["jobs"] if "/built/" in j["out"].replace("\\", "/")]
+    assert sizes == [{"width": 1280, "height": 800}, {"width": 360, "height": 800}]
     for approved, built in zip(seen["jobs"][0::2], seen["jobs"][1::2]):  # both shots of a screen share one size
         assert approved["viewport"] == built["viewport"]
     got = [(s.get("viewport"), s.get("viewport_source")) for s in r["screens"]]
@@ -130,8 +136,11 @@ def test_jobs_carry_the_screens_own_viewport_and_the_result_records_it(tmp_path,
 
 def test_an_invalid_viewport_declaration_is_an_error_for_that_screen_only(tmp_path, monkeypatch):
     html = PAGE.format(head="", body="x")
-    root = _project(tmp_path, [{"mockup": "01-a.html", "route": "/", "viewport": "tiny"}, {"mockup": "02-b.html", "route": "/"}],
+    root = _project(tmp_path, [{"mockup": "01-a.html", "route": "/"}, {"mockup": "02-b.html", "route": "/"}],
                     {"01-a.html": html, "02-b.html": html})
+    (root / "brief").mkdir()
+    (root / "brief" / "screen-map.json").write_text(json.dumps({"screens": [{"id": "a", "mockup": "01-a.html", "viewport": "tiny"}]}), encoding="utf-8")
+    (root / "shipwright_run_config.json").write_text(json.dumps({"brief_dir": "brief"}), encoding="utf-8")
     seen = {}
     monkeypatch.setattr(sc, "_capture", lambda project, jobs, timeout: seen.setdefault("jobs", jobs) and "stop")
     r = sc.run_screenshot_check(root, base_url="http://x", capture=True)

@@ -111,7 +111,7 @@ def test_recover_and_redispatch_bump_a_version_less_task_from_the_default(tmp_pr
 # --- the override refusal is a type check --------------------------------------------
 
 def _override_raising(monkeypatch, exc_type) -> None:
-    def hook(*, reason, verdict, project_root=None):
+    def hook(*, reason, verdict):
         def _raise(_config, _task):
             raise exc_type("no human on the locked config")
         return _raise, {}

@@ -138,16 +138,6 @@ Repeat until a terminal signal:
    refusal only stops a cooperative caller: use it **only on a person's explicit answer** —
    never because retries ran out — and never brief a phase-runner to call it.
 
-   **Autonomous override rule (no question for an already-decided cause).** When the gate rejection is the Test phase's screenshot check
-   (`Screenshot check did not pass`) in an autonomous run (a brief package, or autonomy `autonomous`/`unattended`), run
-   `uv run "{plugin_root}/scripts/lib/autonomous_override.py" --project-root "{project_root}"` (it runs the Test validator itself; the gate verdict is never taken from you).
-   Exit 0 (`allowed: true`): re-apply the same result with `--override-reason "<the printed reason>"` WITHOUT asking; the override is the
-   ordinary one (the gate still runs, the reason and findings land in `validation_overrides[]`, and `unattended` is still refused by apply).
-   It allows only when the gate raised nothing but the screenshot finding, the check really ran (`fail`, fresh capture, standard tolerance),
-   every accepted cause cites an already committed ADR or a brief file (with a verbatim quote), and every failing screen, re-measured from its
-   neutralised screenshot pair, is within the tolerance without those causes. Apply re-runs this rule under its lock for the gate verdict it then sees (a by-rule override covers the screenshot finding only). Exit 1:
-   ask as above, quoting the printed `reasons`. Never brief a phase-runner to call it, and never use it for any other finding.
-
    On resume, the master rebuilds pipeline context with a third subcommand:
    ```bash
    uv run "{plugin_root}/scripts/lib/orchestrator.py" single-session-reload \

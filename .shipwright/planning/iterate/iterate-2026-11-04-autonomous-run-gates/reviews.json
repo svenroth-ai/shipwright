@@ -8,7 +8,7 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-11-04T11:04:09.442964+00:00",
+      "completed_at": "2026-11-04T11:39:09.738424+00:00",
       "disposition": null,
       "recorded_by": "self-review",
       "parse_status": null,
@@ -69,55 +69,16 @@
     },
     "code": {
       "review_type": "code",
-      "status": "completed",
-      "findings_count": 4,
-      "findings": [
-        {
-          "severity": "medium",
-          "category": "security",
-          "file": null,
-          "line": null,
-          "finding": "neutralised screenshot pair has no provenance (fixed: bound to the check's real pair, no real capture or byte copy of the opposite capture; docs reworded to consistency check)",
-          "suggestion": null,
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "medium",
-          "category": "correctness",
-          "file": null,
-          "line": null,
-          "finding": "UI: none plus a mockup named without NN- prefix recorded as non-UI (fixed: mockup/wireframe/.html/figma contradict)",
-          "suggestion": null,
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": null,
-          "file": null,
-          "line": null,
-          "finding": "dead second UI-none branch (removed); reason text used unstripped source (fixed); quotes hoisted (fixed); brief read errors crashed instead of exit 2 (fixed); _SAFE_REL_RE comment (fixed)",
-          "suggestion": null,
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": null,
-          "file": null,
-          "line": null,
-          "finding": "composed screens (no upload) never consult their own declaration (documented behaviour: viewport is approved side only); string-grep test kept",
-          "suggestion": null,
-          "source": "code-reviewer"
-        }
-      ],
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
       "provider": null,
-      "completed_at": "2026-11-04T11:04:09.998376+00:00",
-      "disposition": null,
-      "recorded_by": "code-reviewer",
+      "completed_at": "2026-11-04T11:39:05.325387+00:00",
+      "disposition": "code-reviewer ran 3 rounds (R1 PASS on the first state; R2 REJECT on the final state: UI: none regex matched any .html, decision text, test hygiene - all fixed and covered by tests); the runner spawn guard (3 spawns) blocks a round-3 PASS; orchestrator 3f-bis to re-review",
+      "recorded_by": "none",
       "parse_status": null,
       "raw_excerpt": null,
-      "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "e21aec049be6d4b88c213f70ef4f510f0e1107a8"
+      "reason_code": "delegated-to-orchestrator"
     },
     "doubt": {
       "review_type": "doubt",
@@ -214,18 +175,16 @@
     },
     "spec": {
       "review_type": "spec",
-      "status": "completed",
+      "status": "not_run",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-11-04T11:04:09.854318+00:00",
-      "disposition": null,
-      "recorded_by": "spec-reviewer",
+      "completed_at": "2026-11-04T11:39:05.431458+00:00",
+      "disposition": "spec-reviewer PASS on the first state (override rule present); the override was then removed by operator decision; the runner spawn guard (3 spawns) blocks a re-review of the final state; orchestrator 3f-bis to re-review",
+      "recorded_by": "none",
       "parse_status": null,
       "raw_excerpt": null,
-      "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "e21aec049be6d4b88c213f70ef4f510f0e1107a8"
+      "reason_code": "delegated-to-orchestrator"
     },
     "plan_internal": {
       "review_type": "plan_internal",
