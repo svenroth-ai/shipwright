@@ -129,9 +129,9 @@ def _combined_model(htmls: list[str]) -> _Model:
         media |= {int(w) for pre in _MEDIA_RULE_RE.findall(html) for w in _WIDTH_RE.findall(pre)}
         colors |= {c.lower() for c in _HEX_RE.findall(html)}
         ext = ext or any("stylesheet" in k.lower() and not _FONT_HOST_RE.search(k) for k in _LINK_RE.findall(html))
-        for blk in re.findall(r"<(?:script|template)\b[^>]*>(.*?)</(?:script|template)>", html, re.S | re.I):
+        for blk in re.findall(r"<(?:script|template)\b[^>]*>(.*?)</(?:script|template)\s*[^>]*>", html, re.S | re.I):
             scripts += [_norm(pc) for _q, lit in _SCRIPT_STR_RE.findall(blk) for pc in re.split(r"<[^>]*>", lit)]
-        body = re.sub(r"<(script|style)\b.*?</\1>", " ", html, flags=re.S | re.I)
+        body = re.sub(r"<(script|style)\b.*?</\1\s*[^>]*>", " ", html, flags=re.S | re.I)
         frags += [_norm(t) for t in re.split(r"<[^>]*>", body)]
         frags += [_norm(v) for v in _VISATTR_RE.findall(html)]
     frags = [f for f in frags if len(f) >= 2]
