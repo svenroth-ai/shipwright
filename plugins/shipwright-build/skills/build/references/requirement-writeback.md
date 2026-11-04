@@ -152,3 +152,8 @@ The carve-out is stated wherever the scope rule is stated — this file,
 (criterion 3), and `agents/section-builder.md` (Step 10 item 1). A carve-out
 present in one reviewer and absent in another is worse than none: it makes the
 outcome depend on which reviewer happened to run.
+
+**Size target vs required behaviour (autonomous runs).** A section's "keep it under ~N lines" is a soft target; the required behaviour and the
+300-line file guideline outrank it. When the behaviour does not fit, split it into further modules inside the section's scope (each within the guideline,
+declared as attributed extras at Step 10b) and log the decision; never cut required behaviour or raise a limit to get past the spec-reviewer
+(its size-target carve-out passes the split). Ask only when no split is possible. Interactive runs behave as before.

@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-04-autonomous-run-gates",
+  "date": "2026-11-04",
+  "section": "Iterate — feature: autonomous run gates",
+  "title": "Autonomous runs decide the remaining Test/Design/Build gates by rule",
+  "context": "Run 20 still asked about a phone screen compared at desktop size, an override for already-decided screenshot causes, brief capabilities without a screen, and a size target against required behaviour.",
+  "decision": "Per-screen viewport from the approved package; autonomous_override.py allows a screenshot-only override only on committed-ADR or brief-quoted causes with the ratio re-measured from a neutralised pair; record-non-ui-frs.py records brief-declared non-UI FRs; a size target is soft in autonomous runs.",
+  "consequences": "Fewer questions in autonomous runs; interactive unchanged; the override rule couples to the screenshot metric and the accepted-causes block.",
+  "rationale": "Each answer already exists in the approved package or an earlier decision; evidence is checked by code, not taken from the agent.",
+  "rejected": "Prose-only override rule (agent approves itself); loosening the tolerance; asking each time; viewport from the built file or screen-routes.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

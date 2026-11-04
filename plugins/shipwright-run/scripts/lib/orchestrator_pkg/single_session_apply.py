@@ -196,7 +196,7 @@ def apply_phase_result(
         verdict = phase_gate.evaluate_gate(project_root, task, config, gate=gate)
         if override_reason is not None:
             on_complete, override_written = phase_gate.override_hook(
-                reason=override_reason, verdict=verdict,
+                reason=override_reason, verdict=verdict, project_root=project_root,
             )
         elif verdict["ask"]:
             return _gate_rejected(project_root, config, verdict, phase_task_id=phase_task_id,

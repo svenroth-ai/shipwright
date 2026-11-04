@@ -34,9 +34,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # sibling by unique name: `lib` is ambiguous across roots (ADR-045)
 import png_compare  # noqa: E402
+import screenshot_viewport  # noqa: E402
+from screenshot_viewport import VIEWPORT  # noqa: E402
 
 MARKER = "brief-package-applied.json"
-VIEWPORT = (1280, 800)
 _NN_RE = re.compile(r"^(\d{1,3})-")
 _DYNAMIC_RE = re.compile(r"[\[\]:*{}]")
 
@@ -46,6 +47,13 @@ def _read_json(path: Path):
         return json.loads(path.read_text(encoding="utf-8-sig"))
     except (OSError, json.JSONDecodeError):
         return None
+
+
+def _map_entry(mockup: str, screen_map: dict):
+    """The package screen-map entry of a screen (same NN prefix rule as ``_approved_for``), else None."""
+    m = _NN_RE.match(Path(mockup).name)
+    screens = screen_map.get("screens") if isinstance(screen_map, dict) else None
+    return screens[int(m.group(1)) - 1] if m and isinstance(screens, list) and 1 <= int(m.group(1)) <= len(screens) else None
 
 
 def _approved_for(root: Path, mockup: str, screen_map: dict) -> Path | None:
@@ -126,7 +134,7 @@ def _capture(root: Path, jobs: list[dict], timeout: int) -> str | None:
     try:
         proc = subprocess.run(
             [node, str(script), "--project", str(root), "--jobs", str(jobs_file),
-             "--width", str(VIEWPORT[0]), "--height", str(VIEWPORT[1]),
+             "--width", str(VIEWPORT[0]), "--height", str(VIEWPORT[1]),  # default; a job's own "viewport" wins
              *[a for d in _playwright_dirs(root) for a in ("--search", str(d))]],
             cwd=str(root), capture_output=True, text=True, timeout=timeout, encoding="utf-8",
         )
@@ -172,19 +180,25 @@ def run_screenshot_check(root: Path, base_url: str | None = None, tolerance: flo
         approved = _approved_for(root, mockup, smap)
         source = _builder_file(root, mockup) or approved
         res = {"mockup": mockup, "route": route, "status": "pending", "stem": stem, **({"approved": approved} if approved else {})}
+        vp = screenshot_viewport.screen_viewport(entry, _map_entry(mockup, smap), [p for p in (approved,) if p])  # the APPROVED side only: the built file cannot pick its own size
         if not stem or source is None:
             res.update(status="error", error=f"no approved design screen in screens/ or uploads/ for {mockup!r}")
         elif not route.startswith("/") or _DYNAMIC_RE.search(route):
             res.update(status="error", error=f"route {route!r} is not a concrete path: add a 'sample_route' to its screen-routes.json entry")
         elif steps is not None and (why := _bad_steps(steps)):
             res.update(status="error", error=f"screen {mockup!r}: {why}")
+        elif isinstance(vp, str):
+            res.update(status="error", error=f"screen {mockup!r}: {vp}")
         else:
             res["compared_with"] = source.relative_to(root).as_posix()
+            res["viewport"], res["viewport_source"] = list(vp[0]), vp[1]  # evidence: the size BOTH shots of this screen were taken at
             if steps:
                 res["steps"] = steps  # evidence: the state the built page was brought into
             if capture:
-                jobs += [{"url": source.resolve().as_uri(), "out": str(shots / "approved" / f"{stem}.png")},
-                         {"url": f"{base_url}{route}", "out": str(shots / "built" / f"{stem}.png"), **({"steps": steps} if steps else {})}]
+                size = {"width": vp[0][0], "height": vp[0][1]}
+                jobs += [{"url": source.resolve().as_uri(), "out": str(shots / "approved" / f"{stem}.png"), "viewport": size},
+                         {"url": f"{base_url}{route}", "out": str(shots / "built" / f"{stem}.png"), "viewport": size,
+                          **({"steps": steps} if steps else {})}]
         results.append(res)
     covered = {res["approved"].name for res in results if "approved" in res}
     for entry in (smap.get("screens") if isinstance(smap.get("screens"), list) else []):

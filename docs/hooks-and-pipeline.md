@@ -1079,7 +1079,7 @@ Dashboard uses `PIPELINE_PHASES` as canonical order. The previous
 "compliance" column was retired alongside the v7 decouple — compliance
 docs are still populated as an auto-background side effect, but the
 dashboard no longer renders a phase column for them.
-After build completes: shows split summary table. After test completes: shows test layer results (unit/integration/pgtap/smoke/e2e/design_fidelity). With a Brief package (`.shipwright/designs/brief-package-applied.json`) the test phase also runs the blocking screenshot check (`screenshot_check.py`, step 3.7b) and records `screenshot_check`; the test-phase validator (`phase_validators_late._validate_test`) BLOCKS a Brief-package project unless that block has `applies: true`, `status: "pass"`, `captured: true` and the standard tolerance (0.15, read from the test plugin when it sits beside the run plugin, else a pinned literal; projects without a package are unaffected).
+After build completes: shows split summary table. After test completes: shows test layer results (unit/integration/pgtap/smoke/e2e/design_fidelity). With a Brief package (`.shipwright/designs/brief-package-applied.json`) the test phase also runs the blocking screenshot check (`screenshot_check.py`, step 3.7b) and records `screenshot_check`; the test-phase validator (`phase_validators_late._validate_test`) BLOCKS a Brief-package project unless that block has `applies: true`, `status: "pass"`, `captured: true` and the standard tolerance (0.15, read from the test plugin when it sits beside the run plugin, else a pinned literal; projects without a package are unaffected). Each screen is captured at its own viewport (`screenshot_viewport.py`: the package screen-map `viewport`, else the mockup's own declaration such as a `phone-frame` root element, else 1280x800; a `viewport` on a screen-routes entry is an `error`; `viewport` + `viewport_source` per screen in the result). Autonomous runs (brief package, or autonomy autonomous/unattended): the test phase may record `screenshot_check_accepted_causes` (causes citing a committed ADR in `decision_log.md` or a `brief:<file>` plus a verbatim quote, per-screen attribution with the neutralised screenshot pair), and the run coordinator runs `plugins/shipwright-run/scripts/lib/autonomous_override.py` before asking for an override: it runs the Test validator itself and allows a `single-session-apply --override-reason "autonomous rule: ..."` only when the gate raised nothing but the screenshot finding, the check really ran, every cause is documented and every failing screen, re-measured with `png_compare` from its neutralised pair, is within tolerance without the causes; `phase_gate.override_hook` re-checks under the lock that nothing but the screenshot finding is overridden (the override lands in `validation_overrides[]`; `unattended` is refused).
 
 ---
 
@@ -4208,6 +4208,11 @@ section-writer subagent (has a Write tool — SS4)
   → WRITES {planning_dir}/sections/{NN-name}.md itself (direct persistence)
   → SubagentStop write-section-on-stop.py fires = non-blocking fallback
        (no-op if the file exists; salvages from transcript only if missing)
+design SKILL (Brief mode, no hook; `scripts/checks/record-non-ui-frs.py`, after Step 6 and before the `fr-coverage` gate)
+  → autonomous run (brief package, or autonomy autonomous/unattended): every unmapped FR whose `brief.md` section names no Mockup in its
+    `Source:` line (or states `UI: none`) is written under `## Non-UI FRs` in design-manifest.md citing ONE decision-log entry the tool appends
+    (`write_decision_log.py`); no screen is invented. Exit 1 lists `ask[]` (no screen and no non-UI note, or a section that names an unmapped Mockup):
+    only those stay a question. Interactive run: untouched (`action: ask`).
 plan SKILL Step 9 design check (no hook; `check-plan-gates.py --gate sections` +
   `check-design-contradictions.py --record-decisions`, lib `plan_design_check.py`)
   → autonomous run (brief_package in shipwright_run_config.json, or autonomy
@@ -4218,6 +4223,9 @@ plan SKILL Step 9 design check (no hook; `check-plan-gates.py --gate sections` +
     `Design decision:` and logged as `Plan Design Decision — {split}/{section}`.
     Interactive run: notes only. Build treats a recorded `Design decision:` as resolved
     and stops only on an unresolved `Design contradiction:`.
+    Size target vs behaviour (autonomous run): a section's "under ~N lines" is soft; the spec-reviewer's size-target
+    carve-out passes a split into further modules and rejects cut behaviour or a raised limit (build SKILL +
+    `references/requirement-writeback.md`); ask only when no split is possible.
 plan SKILL completes
   → update-step --step plan --status complete
   → validate_plan() fires (checks sections exist in config + files on disk)

@@ -1,0 +1,69 @@
+{
+  "run_id": "iterate-2026-11-04-autonomous-run-gates",
+  "date": "2026-11-04T11:08:47.761444Z",
+  "event_at": "2026-11-04T11:08:02.457914+00:00",
+  "type": "feature",
+  "complexity": "medium",
+  "prior_source": "keyword",
+  "branch": "iterate/autonomous-run-gates",
+  "spec": ".shipwright/planning/iterate/iterate-2026-11-04-autonomous-run-gates.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-11-04-autonomous-run-gates",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "viewport per screen from the approved package; invalid declaration is a per-screen error; built file and screen-routes cannot pick it",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-test/tests/test_screenshot_viewport.py PASSED"
+      },
+      {
+        "behavior": "autonomous override only for a screenshot-only failure with committed, quoted causes and bound evidence",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-run/tests/test_autonomous_override.py PASSED"
+      },
+      {
+        "behavior": "apply re-runs the by-rule override under its lock",
+        "disposition": "tested",
+        "evidence": "test_the_apply_hook_reruns_the_rule PASSED"
+      },
+      {
+        "behavior": "brief-declared non-UI FRs recorded once with one ADR; contradictions and interactive runs stay questions",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-design/tests/test_record_non_ui_frs.py PASSED"
+      },
+      {
+        "behavior": "size target is a soft target in autonomous runs (spec-reviewer rule)",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-build/tests/test_size_target_rule.py PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 5,
+      "tested": 5,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 5,
+      "covered_acs": 5
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run pytest plugins/shipwright-run/tests/test_autonomous_override.py -q -p no:cacheprovider",
+    "exit_code": 0,
+    "tests_run": 39,
+    "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\autonomy-gates\\.shipwright\\runs\\iterate-2026-11-04-autonomous-run-gates\\surface_verification.log",
+    "timestamp": "2026-11-04T10:47:12.765Z",
+    "attempts": 1
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": [
+    "touches_public_api"
+  ]
+}

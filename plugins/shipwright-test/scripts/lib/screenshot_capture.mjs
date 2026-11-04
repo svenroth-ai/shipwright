@@ -2,11 +2,12 @@
 //
 // node screenshot_capture.mjs --project <dir> --jobs <jobs.json> [--width 1280 --height 800]
 //
-// jobs.json: [{"url": "http://localhost:3000/login", "out": "<abs png path>", "steps": [{"click": "#tab-queue"}]}, ...]
+// jobs.json: [{"url": "http://localhost:3000/login", "out": "<abs png path>", "viewport": {"width": 390, "height": 800}, "steps": [{"click": "#tab-queue"}]}, ...]
+// optional "viewport" is that job's own size (a phone screen); without it the --width/--height default applies. The approved and built shot of one screen get the same one.
 // optional "steps" bring a served page into a state before the shot: {"click": sel} | {"fill": [sel, text]} | {"wait_for": sel}.
 // Nothing is injected into the page (no style/script tag): the app's own Content-Security-Policy cannot block the capture.
 // url may be http(s):// (the built app) or file:// (the approved design screens). Every shot is the
-// FIXED viewport (no full-page), animations off, so both sides have the same pixel size.
+// fixed viewport (default 1280x800, per job when it declares one; no full-page), animations off, so both sides have the same pixel size.
 // `playwright` is resolved from the PROJECT (where playwright_setup installed it), not from here.
 // stdout: one JSON object {"ok": bool, "captured": [...], "errors": [{"out","error"}]}.
 import { createRequire } from "node:module";
@@ -53,7 +54,9 @@ try {
 try {
   for (const job of jobs) {
     // One context per job: a step that saves state (localStorage, cookies, a submitted form) never reaches the next screen.
-    const context = await browser.newContext({ viewport, deviceScaleFactor: 1, reducedMotion: "reduce" });
+    const jobViewport = job.viewport && Number(job.viewport.width) > 0 && Number(job.viewport.height) > 0
+      ? { width: Number(job.viewport.width), height: Number(job.viewport.height) } : viewport;
+    const context = await browser.newContext({ viewport: jobViewport, deviceScaleFactor: 1, reducedMotion: "reduce" });
     const page = await context.newPage();
     try {
       const response = await page.goto(job.url, { waitUntil: "load", timeout: 30000 });

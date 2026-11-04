@@ -1,0 +1,257 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-04-autonomous-run-gates",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-04T11:04:09.442964+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "The override depends on `screenshot_check_accepted_causes` written by Test phase prose, but the approach does not define how those claims are verified. An ADR citation establishes a rationale; it does not establish that removing the cited causes brings every failing screen within tolerance. Trusting a prose-authored adjusted ratio could bypass a real visual failure.",
+          "suggestion": "Define a structured, per-screen cause schema and validate cited files and anchors. Derive the adjusted ratio from tool-produced evidence using the existing metric and denominator; reject unsupported causes, missing evidence, and any screen still above tolerance.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "“Fresh capture,” “standard tolerance,” and “nothing but the screenshot finding” are prerequisites without an explicit verification mechanism. Stale results from an earlier capture or a gate containing another failure could incorrectly qualify for automatic override.",
+          "suggestion": "Bind the eligibility decision to the current run, gate results, capture artifacts, and effective tolerance. Fail closed on missing or mismatched evidence, and recheck eligibility when consuming the decision through the ordinary override path.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The non-UI classification rule is internally ambiguous: a section naming no Mockup qualifies automatically, while a capability with neither a screen nor “such a note” must be returned in `ask[]`. An incomplete UI requirement could therefore be silently classified as non-UI.",
+          "suggestion": "Specify whether an existing FR section with no Mockup reference is sufficient evidence, distinguish that from a missing section, and define precedence for contradictory `UI: none` and Mockup references. Make repeated execution idempotent so it produces one classification and decision-log entry.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The viewport boundary lacks a concrete value contract and fallback policy. A numeric width or frame element may supply no height, and malformed higher-priority declarations must produce a screen error rather than silently fall back. Incorrect handling could also abort otherwise valid screens.",
+          "suggestion": "Define accepted viewport syntax, positive finite dimension bounds, width-only height behavior, and declaration precedence. Validate in Python and defensively in Node; verify legacy jobs without `viewport`, mixed valid/invalid screens, and identical dimensions for both captures.  The direction is sound and appropriately scoped, but the automatic override needs a verifiable evidence contract before it can safely replace a question. Resolve the classification ambiguity and viewport contract alongside that work.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "codex",
+      "completed_at": "2026-11-04T11:04:09.570724+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: security** | **Severity: high** | The autonomous override rule (AC2) is circular in trust: `screenshot_check_accepted_causes` is written by the Test phase's own prose (an LLM agent in the run), and `autonomous_override.py` then decides whether to suppress a human question based on that self-reported data — including \"every accepted cause cites an ADR or brief-package file.\" An agent can write a plausible cause citing any existing file and bypass the gate with no external check. | Make the citation check concrete: verify the referenced ADR/brief file exists, predates the override (or is a run artifact with its own validation), and consider requiring the cause list to be structured data the check tool itself derives (e.g. ratio recomputed from artifacts), not free text the agent authors. At minimum, state explicitly in the spec how citations are validated, and record the override path distinctly in `validation_overrides[]` so a human can audit which overrides were autonomous.\n\n- **Category: risk** | **Severity: medium** | Making a `viewport` on a screen-routes entry an *error* is a breaking behavior change: existing packages that already set one (a natural thing for a user to write) will now hard-fail a screen. The spec says interactive runs are unchanged, but this rule doesn't distinguish run modes. | Downgrade to a warning with the value ignored (plus an `ask[]` question), or only enforce the error in autonomous runs; check whether any existing packages/tests in the repo would trip it.\n\n- **Category: edge-case** | **Severity: medium** | AC2 requires \"every failing screen is within the tolerance without those causes (same ratio the tool recorded)\" — but the accepted causes themselves explain part of the diff, so \"without those causes\" is ambiguous: is the ratio recomputed with cause-masked regions, or is it just the raw recorded ratio? The spec doesn't define how causes map to screen regions. | Specify the mechanism: either acc […truncated]\n\n[openai] 1. **Category:** security  \n   **Severity:** high  \n   **Finding:** The override depends on `screenshot_check_accepted_causes` written by Test phase prose, but the approach does not define how those claims are verified. An ADR citation establishes a rationale; it does not establish that removing the cited causes brings every failing screen within tolerance. Trusting a prose-authored adjusted ratio could bypass a real visual failure.  \n   **Suggestion:** Define a structured, per-screen cause schema and validate cited files and anchors. Derive the adjusted ratio from tool-produced evidence using the existing metric and denominator; reject unsupported causes, missing evidence, and any screen still above tolerance.\n\n2. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** “Fresh capture,” “standard tolerance,” and “nothing but the screenshot finding” are prerequisites without an explicit verification mechanism. Stale results from an earlier capture or a gate containing another failure could incorrectly qualify for automatic override.  \n   **Suggestion:** Bind the eligibility decision to the current run, gate results, capture artifacts, and effective tolerance. Fail closed on missing or mismatched evidence, and recheck eligibility when consuming the decision through the ordinary override path.\n\n3. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** The non-UI classification rule is internally ambiguous: a section naming no Mockup qualifies automatically, while a capability with neither a screen nor “such a note” must be returned in `ask[]`. An incomplete UI requirement could therefore be silently classified as non-UI.  \n   **Suggestion:** Specify whether an existing FR section with no Mockup reference is sufficient evidence, distinguish that from a missing section, and define precedence for contradictory `UI: none` and Mockup references. Make repeated execution idempotent so it produces one classification and decision-log entry.\n\n4.  […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "neutralised screenshot pair has no provenance (fixed: bound to the check's real pair, no real capture or byte copy of the opposite capture; docs reworded to consistency check)",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "UI: none plus a mockup named without NN- prefix recorded as non-UI (fixed: mockup/wireframe/.html/figma contradict)",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "dead second UI-none branch (removed); reason text used unstripped source (fixed); quotes hoisted (fixed); brief read errors crashed instead of exit 2 (fixed); _SAFE_REL_RE comment (fixed)",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "composed screens (no upload) never consult their own declaration (documented behaviour: viewport is approved side only); string-grep test kept",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-04T11:04:09.998376+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "e21aec049be6d4b88c213f70ef4f510f0e1107a8"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-04T11:04:10.141192+00:00",
+      "disposition": "doubt-reviewer ran 2 rounds (round 1 and 2 REJECT, all high findings fixed: pair provenance, ADR quote, hook re-run, png_compare in cache, other-screen capture); the runner spawn guard (3 spawns) blocked the round-3 PASS; delegated to the orchestrator 3f-bis",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "delegated-to-orchestrator"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "security / bug",
+          "file": null,
+          "line": null,
+          "finding": "derive the viewport only from the approved side — pass `[p for p in (approved,) if p]` (plus the screen-map entry); never consult the builder file.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": null,
+          "line": null,
+          "finding": "match a phone-frame element anywhere in the body markup (comments/scripts already stripped), or at minimum also accept the frame as any early structural element, not only the first child.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": null,
+          "line": null,
+          "finding": "check `UI: none` first, restrict the contradiction veto to the `Source:` line naming a Mockup, and treat a Source-less section as non-UI (or explicitly amend the spec/docs if \"ask\" is intended).",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": null,
+          "line": null,
+          "finding": "match the screen-map entry by its mockup/screen id (as `apply-brief-package.py` does) rather than by positional index.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "plugins/shipwright-test/scripts/lib/screenshot_viewport.py",
+          "line": 51,
+          "finding": "Invalid numeric viewport declarations can silently fall back to 1280x800. The regex only recognizes three or four digits, so `width=99` and `width=10000` are ignored instead of producing the per-screen error AC1 requires. It also partially accepts `width=390.5` as 390.",
+          "suggestion": "Parse the complete width value, then validate its integer format and range. Return an error for invalid numeric declarations while retaining support for `width=device-width`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "plugins/shipwright-design/scripts/checks/record-non-ui-frs.py",
+          "line": 69,
+          "finding": "Any occurrence of “screen” anywhere in a capability section is treated as an unmapped screen reference, before checking `UI: none`. For example, `Requirement: Store screen capture events` followed by `UI: none` is returned in `ask[]`, although the section explicitly declares no UI and names no Mockup.",
+          "suggestion": "Distinguish actual mockup or screen references from ordinary requirement prose. Honor an explicit `UI: none` unless the section also identifies a concrete conflicting mockup.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-run/scripts/lib/autonomous_override.py",
+          "line": 206,
+          "finding": "An invalid tolerance is recorded as a refusal reason but execution continues to `float(tolerance)`. With `tolerance: null` and otherwise valid attribution, the rule raises `TypeError` instead of returning `allowed: false` with reasons. The existing tolerance tests cover numeric values only.",
+          "suggestion": "Return the refusal before recomputing evidence when tolerance validation fails, or guard recomputation behind valid prerequisites. Add a test for null and nonnumeric tolerance values.  Overall assessment: ship-with-fixes. The implementation covers the main workflows, but declaration parsing and refusal handling need these specific corrections.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "codex",
+      "completed_at": "2026-11-04T11:04:09.701219+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: security / bug — Severity: high**\n  `plugins/shipwright-test/scripts/lib/screenshot_check.py` (~line in `run_screenshot_check`, `vp = screenshot_viewport.screen_viewport(entry, _map_entry(mockup, smap), [p for p in (source, approved) if p])`)\n  `source` is `_builder_file(root, mockup) or approved` — the **built app's file**, i.e. code the agent just wrote. It is passed first in the sources list, so a `<meta name=\"shipwright-viewport\" content=\"390x800\">` (or phone-frame markup) in the *implementation* picks the viewport a screen is compared at. This is exactly the hole the design closes (\"test wiring cannot pick the size a red screen is compared at\", step-3.7b: \"It is 1280x800 unless the **approved package** declares another one\"): the implementation can shrink the comparison to its own favor and turn a `fail` into a `pass`.\n  Suggestion: derive the viewport only from the approved side — pass `[p for p in (approved,) if p]` (plus the screen-map entry); never consult the builder file.\n\n- **Category: spec — Severity: medium**\n  `plugins/shipwright-test/scripts/lib/screenshot_viewport.py` — `_PHONE_ROOT_RE`\n  AC1 says \"a `phone-frame`/`mobile-frame` element **in the markup**\" declares a phone screen. The implementation only recognizes the element when it is the *first child of `<body>`* (`<body ...>\\s*<el ... phone-frame`). A mockup with a wrapper (`<body><div class=\"app\"><div class=\"phone-frame\">…`) — the common shape — silently falls back to 1280x800, recreating the run-20 desktop-vs-phone false failure the feature exists to fix. The tests pin the strict behavior rather than the spec.\n  Suggestion: match a phone-frame element anywhere in the body markup (comments/scripts already stripped), or at minimum also accept the frame as any early structural element, not only the first child.\n\n- **Category: spec — Severity: medium**\n  `plugins/shipwright-design/scripts/checks/record-non-ui-frs.py` — `non_ui_verdict`\n  Two deviations from  […truncated]\n\n[openai] - Category: spec\n- Severity: medium\n- File: plugins/shipwright-test/scripts/lib/screenshot_viewport.py:51\n- Finding: Invalid numeric viewport declarations can silently fall back to 1280x800. The regex only recognizes three or four digits, so `width=99` and `width=10000` are ignored instead of producing the per-screen error AC1 requires. It also partially accepts `width=390.5` as 390.\n- Suggestion: Parse the complete width value, then validate its integer format and range. Return an error for invalid numeric declarations while retaining support for `width=device-width`.\n\n- Category: spec\n- Severity: medium\n- File: plugins/shipwright-design/scripts/checks/record-non-ui-frs.py:69\n- Finding: Any occurrence of “screen” anywhere in a capability section is treated as an unmapped screen reference, before checking `UI: none`. For example, `Requirement: Store screen capture events` followed by `UI: none` is returned in `ask[]`, although the section explicitly declares no UI and names no Mockup.\n- Suggestion: Distinguish actual mockup or screen references from ordinary requirement prose. Honor an explicit `UI: none` unless the section also identifies a concrete conflicting mockup.\n\n- Category: bug\n- Severity: medium\n- File: plugins/shipwright-run/scripts/lib/autonomous_override.py:206\n- Finding: An invalid tolerance is recorded as a refusal reason but execution continues to `float(tolerance)`. With `tolerance: null` and otherwise valid attribution, the rule raises `TypeError` instead of returning `allowed: false` with reasons. The existing tolerance tests cover numeric values only.\n- Suggestion: Return the refusal before recomputing evidence when tolerance validation fails, or guard recomputation behind valid prerequisites. Add a test for null and nonnumeric tolerance values.\n\nOverall assessment: ship-with-fixes. The implementation covers the main workflows, but declaration parsing and refusal handling need these specific corrections.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-04T11:04:09.854318+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "e21aec049be6d4b88c213f70ef4f510f0e1107a8"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-04T11:04:10.273856+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-04T11:04:10.394994+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

@@ -1,0 +1,8 @@
+{"items": [
+{"name": "Spec Compliance", "verdict": "pass", "note": "AC1-5 implemented; spec-reviewer PASS"},
+{"name": "Error Handling", "verdict": "pass", "note": "invalid viewport declaration is a per-screen error; null tolerance and failed validator refuse the override"},
+{"name": "Security Basics", "verdict": "pass", "note": "path containment for neutralised pair and brief files; ADR read from git HEAD; apply re-checks the verdict under its lock"},
+{"name": "Test Quality", "verdict": "pass", "note": "viewport, override, non-UI and size-target tests incl. real PNG pair and git fixture"},
+{"name": "Performance Basics", "verdict": "pass", "note": "one extra PNG compare per failing screen"},
+{"name": "Naming & Structure", "verdict": "pass", "note": "new modules under 300 LOC; phase_gate.py kept at 300"},
+{"name": "Affected Boundaries", "verdict": "pass", "note": "jobs.json viewport probed on real Chromium; accepted-causes block round-tripped in tests"}]}

@@ -1,0 +1,1 @@
+feat(run): autonomous runs decide the screenshot viewport per screen, overrides already-decided screenshot causes by checked rule, record brief-declared non-UI capabilities and treat a size target as soft, instead of asking

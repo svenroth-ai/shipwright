@@ -42,6 +42,7 @@ from single_session.loop_state import (  # noqa: E402
     load_loop_state,
 )
 
+from .autonomous_hook import by_rule_refusal  # noqa: E402
 from .validation_record import (  # noqa: E402
     GATE_ERROR_PREFIX,
     normalise_override_reason,
@@ -63,6 +64,7 @@ TERMINAL_BY_AUTONOMY = {"guided": "ask_human", "autonomous": "failed", "unattend
 # a cooperative caller only; phase-runner.md forbids a runner overriding at all.
 _HUMAN_AUTONOMY = frozenset({"guided", "autonomous"})
 
+AUTONOMOUS_REASON_PREFIX = "autonomous rule:"  # autonomous_override.py; the hook re-runs that rule (autonomous_hook)
 # Findings a re-dispatch cannot fix (see ``is_retryable``).
 _NON_RETRYABLE_KINDS = frozenset({"canon_degraded", "critical_gate", "archived_split"})
 
@@ -164,7 +166,7 @@ def check_override(
 
 
 def override_hook(
-    *, reason: str, verdict: dict[str, Any],
+    *, reason: str, verdict: dict[str, Any], project_root: Optional[Path] = None,
 ) -> tuple[Callable[[dict[str, Any], dict[str, Any]], None], dict[str, Any]]:
     """The ``complete_phase_task(on_complete=...)`` hook + the dict it fills with the record.
 
@@ -175,6 +177,8 @@ def override_hook(
     def _hook(config: dict[str, Any], task: dict[str, Any]) -> None:
         if not _human_can_override(config):
             raise OverrideRefused(_no_human(config)["error"])
+        if reason.startswith(AUTONOMOUS_REASON_PREFIX) and (why := by_rule_refusal(project_root, verdict["ask"])):
+            raise OverrideRefused(why)  # by-rule: the rule is re-run under the lock, for the screenshot finding ONLY
         written.update(record_validation_override(
             config, task["phase"], reason=reason,
             ask_issues=verdict["ask"], inform_issues=verdict["inform"],
