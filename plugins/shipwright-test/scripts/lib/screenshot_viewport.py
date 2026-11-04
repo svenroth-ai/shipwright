@@ -57,7 +57,7 @@ def _mockup_viewport(html: str) -> tuple[tuple[int, int], str] | str | None:
             vp = _parse_viewport(int(raw)) if re.fullmatch(r"\d{1,5}", raw) else None
             return (vp, "mockup-meta") if vp else f"the mockup's viewport meta width {raw!r} is not a whole width in {_MIN_W}-{_MAX_W}"
     comment = _LEADING_COMMENT_RE.match(html)  # only the mockup's own header comment, never one in the body
-    markup = re.sub(r"<!--.*?-->|<style\b.*?</style\s*>|<script\b.*?</script\s*>", "", html, flags=re.S | re.I)
+    markup = re.sub(r"<!--.*?--!?>|<style\b.*?</style[^>]*>|<script\b.*?</script[^>]*>", "", html, flags=re.S | re.I)
     if _PHONE_ROOT_RE.search(markup):  # the screen IS a phone frame (the page's outermost element): the frame's own width is the page width
         w = _PHONE_VAR_RE.search(html)
         px = _PX_RE.fullmatch(w.group(1).strip()) if w else None

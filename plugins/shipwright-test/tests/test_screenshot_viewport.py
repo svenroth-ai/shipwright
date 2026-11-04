@@ -39,7 +39,7 @@ def test_a_desktop_mockup_declares_nothing():
 
 def test_a_phone_frame_in_the_markup_is_a_phone_screen_at_its_own_width():
     html = PAGE.format(head=PHONE_CSS, body='<div class="app-topnav phone-frame">x</div>')
-    assert sv._mockup_viewport(html) == ((360, 800), "mockup-phone-frame")
+    assert sv._mockup_viewport(html) == ((390, 800), "mockup-phone-frame")
     no_var = PAGE.format(head="", body="<div class='phone-frame'>x</div>")
     assert sv._mockup_viewport(no_var) == ((390, 800), "mockup-phone-frame")
 
@@ -68,6 +68,12 @@ def test_only_the_approved_side_decides_the_viewport(tmp_path, monkeypatch):
     monkeypatch.setattr(sc, "_capture", lambda project, jobs, timeout: seen.setdefault("jobs", jobs) and "stop")
     r = sc.run_screenshot_check(root, base_url="http://x", capture=True)
     assert r["screens"][0]["viewport"] == [1280, 800] and r["screens"][0]["viewport_source"] == "default"
+
+
+def test_a_phone_frame_after_a_script_end_tag_with_attributes_still_counts_as_markup_only_outside_it():
+    html = PAGE.format(head="", body="<script>var x = 1;</script foo><div class='phone-frame'>x</div>")
+    assert sv._mockup_viewport(html) == ((390, 800), "mockup-phone-frame")
+    assert sv._mockup_viewport(PAGE.format(head="", body="<script>'<div class=\"phone-frame\">'</script bar>")) is None
 
 
 def test_meta_declarations():
