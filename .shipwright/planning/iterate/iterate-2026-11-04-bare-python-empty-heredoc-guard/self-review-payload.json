@@ -1,0 +1,10 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"Guard denies python - with a closed but empty (or whitespace-only) heredoc; non-empty heredocs and non-interpreter heredocs stay allowed; constitution, runner prompt and hooks doc updated in the same diff."},
+{"name":"Error Handling","verdict":"pass","note":"Hook stays fail-open (main() catches everything); SHIPWRIGHT_BARE_PYTHON_GUARD=off unchanged."},
+{"name":"Security Basics","verdict":"pass","note":"No secrets, no new inputs; hook only reads the command string."},
+{"name":"Test Quality","verdict":"pass","note":"4 deny cases incl. the exact subagent command, 2 allow cases, 1 integration test through the registered hook command in a real subprocess; 49 pass."},
+{"name":"Performance Basics","verdict":"pass","note":"One extra pass over already-masked lines; no extra spawns."},
+{"name":"Naming & Structure","verdict":"pass","note":"mask() returns a third list (empty); empty_heredocs() mirrors unterminated_heredocs(); file stays under 300 LOC."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Hook stdin/stdout JSON contract unchanged; CRLF line endings preserved in the three CRLF files."},
+{"name":"Test Hygiene Probe","verdict":"n/a","note":"No skips or quarantines added."}
+]}
