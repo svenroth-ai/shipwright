@@ -1,0 +1,96 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-04-bare-python-empty-heredoc-guard",
+    "date": "2026-11-04",
+    "unit": {
+      "status": "passed",
+      "passed": 24551,
+      "skipped": 107,
+      "total": 24658
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run --directory plugins/shipwright-iterate pytest tests/test_bare_python_stdin_guard.py -q",
+      "exit_code": 0,
+      "tests_run": 53,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\bare-python-empty-heredoc-guard\\.shipwright\\runs\\iterate-2026-11-04-bare-python-empty-heredoc-guard\\surface_verification.log",
+      "timestamp": "2026-11-04T08:18:46.588Z",
+      "attempts": 1
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "python - with a closed but EMPTY heredoc (the exact runner-subagent command) is denied",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-iterate/tests/test_bare_python_stdin_guard.py::test_denies_stdin_that_never_ends[cd /x && cat a.json; python - ...] PASSED"
+        },
+        {
+          "behavior": "uv run python - with empty heredoc, whitespace-only body and <<- tab form are denied",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-iterate/tests/test_bare_python_stdin_guard.py::test_denies_stdin_that_never_ends (3 new cases) PASSED"
+        },
+        {
+          "behavior": "a heredoc with a real body (also after a blank first line), a commit-message heredoc and an empty heredoc feeding a non-interpreter stay allowed",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-iterate/tests/test_bare_python_stdin_guard.py::test_allows_well_formed_commands (5 new cases) PASSED"
+        },
+        {
+          "behavior": "documented over-block: empty heredoc on a line that also runs python - is blamed on the interpreter",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-iterate/tests/test_bare_python_stdin_guard.py::test_denies_stdin_that_never_ends[python - < f.py && cat > o ...] PASSED"
+        },
+        {
+          "behavior": "the registered hooks.json command, run as a real subprocess on the runner-subagent command, denies the empty heredoc and allows the same shape with a body",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "plugins/shipwright-iterate/tests/test_bare_python_stdin_guard.py::test_registered_bash_hook_composes_with_the_worktree_gate PASSED"
+        },
+        {
+          "behavior": "the empty-heredoc hang itself on Windows Git-Bash (python never exits)",
+          "disposition": "tested",
+          "evidence": "reproduced live this session: three shapes (direct, eval-wrapped, stdin closed) all hit the 6 s timeout without printing after-python"
+        }
+      ],
+      "counts": {
+        "testable": 6,
+        "tested": 6,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 6,
+        "covered_acs": 6
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-24-r5b-merge-lane",
+    "commit": "032d1ebbf0ef9c99eb98f240c8f1110e981a32a5",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

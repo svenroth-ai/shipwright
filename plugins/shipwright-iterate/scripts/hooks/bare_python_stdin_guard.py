@@ -10,18 +10,23 @@ interpreter sits on a stdin nobody answers. Two runner subagents emitted
 ``python - 2>/dev/null; uv run python -c ...`` and ``python - <<'EOF' 2>/dev/null || uv run
 python - <<'EOF2'`` (a loose ``EOF`` after it); a system Python process was then found
 spinning at 100 % of a core for 15 and 17 hours, each start time matching one runner command to
-the second. The mechanism was inferred from those start times, not reproduced.
+the second. The mechanism was inferred from those start times; the empty-heredoc form was later reproduced.
 
 Denied: (1) an interpreter call (``python``, ``python3``, ``python3.12``, ``py``,
 ``python.exe``, optionally behind env assignments, ``uv run [opts]``, ``timeout N``, ``env``,
 ``exec``, ``nohup``) whose first non-option argument is ``-`` and that has no ``<``/``<<``
 here-doc/here-string/redirect and is not a later pipeline stage; (2) a heredoc that feeds such an
-interpreter line but is never closed. Everything else passes, including ``grep '<<EOF'``,
+interpreter line but is never closed; (3) one that is closed with an empty body
+(``python - <<'E'`` + newline + ``E``): reproduced on Windows Git-Bash, the interpreter never
+exits (``after-python`` never printed, 6 s timeout), and a runner subagent left a system Python
+at 100 % of a core for ~12 h on 2026-11-03 this way. Everything else passes, including ``grep '<<EOF'``,
 ``python -c 'a << b'``, ``git commit -m "...; python - ..."`` and heredoc bodies: quoted text and
 heredoc bodies are blanked before anything is matched.
 
 Known misses (documented, not hidden): a variable as the interpreter (``"$PY" -``), and shell
-functions or aliases. Fail-open throughout (any error means allow);
+functions or aliases. Over-blocking, the safe direction: an empty heredoc on a line that also runs an
+interpreter on ``-`` is blamed on the interpreter even when it feeds another command on that line
+(``python - < f.py && cat > o <<'E'`` + ``E``). Fail-open throughout (any error means allow);
 ``SHIPWRIGHT_BARE_PYTHON_GUARD=off`` lifts it. Threat model: a forgetful cooperative model, not
 an adversary. Cost: one extra ``uv run --no-project`` spawn per Bash call."""
 
@@ -42,16 +47,22 @@ _VALUE_OPTIONS = frozenset({"-X", "-W"})  # python options that swallow the next
 _HEREDOC_OPEN = re.compile(r"""<<(-?)\s*(?:(['"])(?P<q>.+?)\2|(?P<u>[^\s;&|<>()'"]+))""")
 
 
-def mask(command: str) -> tuple[list[str], list[str]]:
-    """Return (lines with quoted text and heredoc bodies blanked, delimiters left unterminated on an interpreter line)."""
+def mask(command: str) -> tuple[list[str], list[str], list[str]]:
+    """Return (lines with quoted text and heredoc bodies blanked, delimiters left unterminated on an interpreter
+    line, delimiters closed with an empty body on an interpreter line)."""
     masked: list[str] = []
-    pending: list[tuple[str, bool, bool]] = []  # (word, tab-stripped closer, line runs an interpreter)
+    empty: list[str] = []
+    pending: list[list] = []  # [word, tab-stripped closer, line runs an interpreter, body has text]
     quote = ""
     for raw in command.replace("\r\n", "\n").split("\n"):
         if pending:
-            word, dash, _ = pending[0]
+            word, dash, interpreter, has_body = pending[0]
             if (raw.lstrip("\t") if dash else raw) == word:
                 pending.pop(0)
+                if interpreter and not has_body:
+                    empty.append(word)
+            elif raw.strip():
+                pending[0][3] = True
             masked.append("")
             continue
         out: list[str] = []
@@ -100,9 +111,9 @@ def mask(command: str) -> tuple[list[str], list[str]]:
         line = "".join(out)
         runs_interpreter = _stdin_python(line, check_fed=False)
         for word, dash in opened:
-            pending.append((word, dash, runs_interpreter))
+            pending.append([word, dash, runs_interpreter, False])
         masked.append(line)
-    return masked, [word for word, _, interpreter in pending if interpreter]
+    return masked, [word for word, _, interpreter, _ in pending if interpreter], empty
 
 
 def _joined(lines: list[str]) -> list[str]:
@@ -168,6 +179,10 @@ def unterminated_heredocs(command: str) -> list[str]:
     return mask(command)[1]
 
 
+def empty_heredocs(command: str) -> list[str]:
+    return mask(command)[2]
+
+
 def _deny(reason: str) -> dict:
     return {"hookSpecificOutput": {
         "hookEventName": "PreToolUse",
@@ -192,6 +207,10 @@ def handle_payload(payload: dict) -> dict | None:
     if open_words:
         return _deny(f"The heredoc delimiter {', '.join(sorted(set(open_words)))} feeding an interpreter is never "
                      "closed, so it would wait on stdin forever.")
+    empty_words = empty_heredocs(command)
+    if empty_words:
+        return _deny(f"The heredoc {', '.join(sorted(set(empty_words)))} feeding an interpreter has an empty body; "
+                     "`python -` then never reads a program and hangs (reproduced on Windows Git-Bash).")
     if bare_python_without_input(command):
         return _deny("`python -` has no heredoc, pipe or file behind it, so it would wait on stdin forever.")
     return None

@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-04-bare-python-empty-heredoc-guard",
+  "date": "2026-11-04",
+  "section": "Iterate - change: bare-python guard denies an empty heredoc",
+  "title": "Deny python - fed by a closed but empty heredoc",
+  "context": "A runner subagent ran python - 2>/dev/null <<'E' with an empty body. The existing guard allowed any closed heredoc, but on Windows Git-Bash python never exits on it (reproduced three ways); the process spun at 100 % of a core for ~12 h on 2026-11-03.",
+  "decision": "mask() also reports heredocs closed with an empty or whitespace-only body on an interpreter line; handle_payload denies them. The rule also goes into shared/constitution.md NEVER and the runner prompt, and the hooks doc row.",
+  "consequences": "One more deny shape in a fail-open hook. Known over-block (safe direction): an empty heredoc on a line that also runs python - is blamed on the interpreter. The fix reaches running sessions only after the plugin cache sync.",
+  "rationale": "The failure is silent and costs hours of CPU; the empty-body shape is cheap to detect with the existing masker and was a real incident, not a theory.",
+  "rejected": "Only extending the prompt rule (advisory, did not stop the incident); a timeout wrapper around python (hides the bug, cannot see the heredoc).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}
