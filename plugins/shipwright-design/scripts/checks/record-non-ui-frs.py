@@ -32,7 +32,7 @@ _SHARED = Path(__file__).resolve().parents[4] / "shared"
 
 
 _SECTION_RE = re.compile(r"^##\s+(.+?)\s*$", re.M)
-_UI_NONE_RE = re.compile(r"^\s*[-*]?\s*ui\s*:\s*none\s*\.?\s*$", re.I | re.M)  # the brief format's one marker
+_UI_NONE_RE = re.compile(r"^[ \t]*[-*]?[ \t]*ui[ \t]*:[ \t]*none[ \t]*\.?[ \t]*$", re.I | re.M)  # the brief format's one marker
 _SCREEN_REF_RE = re.compile(r"mockup|wireframe|\bscreens?\b|\b\d{2}-[\w-]+\.html\b", re.I)
 _MOCKUP_REF_RE = re.compile(r"mockup|wireframe|\bfigma\b|\b\d{2}-[\w-]+\.html\b", re.I)  # a concrete screen reference (the bare word "screen" is prose)
 _DUP_MARK = "<<duplicate-heading>>"

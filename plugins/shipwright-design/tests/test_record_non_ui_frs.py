@@ -94,7 +94,7 @@ def test_the_decision_log_entry_states_the_explicit_marker_rule(project):
     assert "states `UI: none` on a line of its own" in log and "names no mockup" not in log
 
 
-@pytest.mark.parametrize("line", ["Screen: none", "UI: no", "screen: no"])
+@pytest.mark.parametrize("line", ["Screen: none", "UI: no", "screen: no", "UI:\n\nnone"])
 def test_only_the_documented_marker_counts(line):
     assert rec.non_ui_verdict(f"Requirement: x\n{line}\nSource: REA.\n")[0] is False
 
