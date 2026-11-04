@@ -6,6 +6,8 @@ A capability without it (a Source line naming no Mockup is not enough), or whose
 
 import importlib.util
 import json
+import sys
+import types
 from pathlib import Path
 
 import pytest
@@ -54,6 +56,21 @@ def applied_project(tmp_path, brief_md):
     assert code == 0 and out["unmapped_frs"] == ["FR-01.02", "FR-01.03"], out
     (root / ".shipwright" / "designs" / "design-manifest.md").write_text(MANIFEST, encoding="utf-8")
     return root
+
+
+@pytest.fixture(autouse=True)
+def _in_process_adr(monkeypatch):
+    """The in-process tests cannot run the real decision-log writer (it binds the shared ``lib``, ADR-045); the subprocess tests do."""
+    monkeypatch.setattr(rec, "_log_decision", lambda _root, _frs: "ADR-900")
+    real_load = rec._load
+
+    def load(path, name):
+        if name == "_shipwright_design_apply_brief_package":  # apply() imports the shared ``lib`` too: stub its already-applied verdict
+            return types.SimpleNamespace(apply=lambda root: {"ok": True, "already_applied": True, "unmapped_frs": ["FR-01.02", "FR-01.03"]})
+        if name == "_shipwright_design_brief_design_plan":  # same collision (the grill tools bind ``tools``)
+            return types.SimpleNamespace(fr_ids_by_slug=lambda root: {"capture-note": ["FR-01.01"], "list-notes": ["FR-01.02"], "edit-note": ["FR-01.03"]})
+        return real_load(path, name)
+    monkeypatch.setattr(rec, "_load", load)
 
 
 @pytest.fixture
@@ -179,3 +196,43 @@ def test_a_screen_reference_anywhere_or_a_loose_ui_none_is_not_a_non_ui_note(sec
 def test_ui_none_must_be_the_whole_line():
     assert rec._UI_NONE_RE.search("UI: no changes to the header, but a new pane") is None
     assert rec._UI_NONE_RE.search("- UI: none.") is not None
+
+
+# In-process twins of the subprocess tests above: diff coverage cannot see a child process.
+
+def test_in_process_recorded_then_second_run_is_a_no_op(project):
+    out, code = rec.run(project)
+    assert code == 1 and out["action"] == "recorded" and [r["fr"] for r in out["recorded"]] == ["FR-01.02"]
+    assert f"- FR-01.02 — {out['adr']} (no screen:" in manifest(project)
+    before = manifest(project)
+    out2, code2 = rec.run(project)
+    assert out2["recorded"] == [] and out2["adr"] is None and manifest(project) == before and code2 == 1
+
+
+def test_in_process_interactive_run_is_not_touched(project):
+    cfg = json.loads((project / "shipwright_run_config.json").read_text(encoding="utf-8"))
+    cfg.pop("brief_package")
+    (project / "shipwright_run_config.json").write_text(json.dumps(cfg), encoding="utf-8")
+    out, code = rec.run(project)
+    assert code == 0 and out["autonomous"] is False and manifest(project) == MANIFEST
+
+
+def test_in_process_before_apply_is_an_error(tmp_path):
+    root = make_project(tmp_path, [{"id": "notes", "mockup": "01-notes.html", "requirements": ["capture-note"]}], {"01-notes.html": PAGE_A})
+    out, code = rec.run(root)
+    assert code == 2 and "must have run first" in out["error"]
+
+
+def test_an_unwritable_manifest_stops_before_any_adr_exists(project, monkeypatch):
+    def refuse(*_a, **_k):
+        raise PermissionError("read-only")
+    monkeypatch.setattr(rec, "open", refuse, raising=False)
+    out, code = rec.run(project)
+    assert code == 2 and "cannot be written" in out["error"]
+    assert not (project / ".shipwright" / "agent_docs" / "decision_log.md").exists()
+
+
+def test_main_prints_the_result_and_returns_the_exit_code(project, monkeypatch, capsys):
+    monkeypatch.setattr(sys, "argv", ["record-non-ui-frs.py", "--project-root", str(project)])
+    assert rec.main() == 1
+    assert json.loads(capsys.readouterr().out)["action"] == "recorded"

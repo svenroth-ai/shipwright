@@ -175,3 +175,8 @@ def test_review_hardening():
     assert sv._mockup_viewport("<!doctype html>\n<html><body><!-- phone width 390px -->x</body></html>") is None
     both = PAGE.format(head='<meta name="viewport" content="width=500"><meta name="shipwright-viewport" content="414x896">', body="")
     assert sv._mockup_viewport(both) == ((414, 896), "mockup-meta")
+
+
+def test_a_meta_without_name_or_content_is_skipped():
+    html = PAGE.format(head='<meta charset="utf-8"><meta content="x"><meta name="shipwright-viewport" content="390x800">', body="")
+    assert sv._mockup_viewport(html) == ((390, 800), "mockup-meta")
