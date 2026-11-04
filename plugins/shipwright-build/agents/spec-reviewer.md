@@ -65,6 +65,12 @@ For each acceptance criterion / requirement / explicit step in the spec, answer:
    code took — a silent choice either way discards the reason mockups exist. Say
    which side the code followed and that the decision belongs to a person; the
    expected resolution is that the requirement is corrected to match the mockup.
+   **Exception:** a `Design decision: <what> -> <winner>, <reason>` line in the
+   section's Design Reference covering that exact difference means Plan already
+   resolved it (autonomous rule: screen over section text, explicit brief override
+   over screen). Code that follows the recorded winner PASSES this item; code that
+   follows the other side REJECTS as `unfaithful`. An unresolved `Design contradiction:`
+   line, or a difference no decision covers, is still REJECT `contradiction`.
 
 ## Anti-rationalization (spec edition)
 

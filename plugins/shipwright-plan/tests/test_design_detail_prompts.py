@@ -27,11 +27,12 @@ def test_section_writer_copies_design_values_from_the_screen():
         assert needle in flat, needle
 
 
-def test_build_spec_reviewer_gate_is_unchanged():
-    """The Build gate is deliberately UNCHANGED: no declared line is an exemption."""
+def test_build_spec_reviewer_only_a_design_decision_exempts():
+    """Only a recorded Design decision: exempts; extension and contradiction lines stay no exemption."""
     flat = " ".join(REVIEWER.split())
     assert "REJECT with `kind: \"contradiction\"`" in flat
-    assert "Design extension" not in flat and "Design contradiction" not in flat
+    # Only a recorded `Design decision:` (autonomous rule) resolves; extension lines stay no exemption.
+    assert "Design extension" not in flat and "Design decision" in flat
     assert "a person confirms" in " ".join(AGENT.split())
 
 

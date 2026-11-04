@@ -4208,6 +4208,16 @@ section-writer subagent (has a Write tool — SS4)
   → WRITES {planning_dir}/sections/{NN-name}.md itself (direct persistence)
   → SubagentStop write-section-on-stop.py fires = non-blocking fallback
        (no-op if the file exists; salvages from transcript only if missing)
+plan SKILL Step 9 design check (no hook; `check-plan-gates.py --gate sections` +
+  `check-design-contradictions.py --record-decisions`, lib `plan_design_check.py`)
+  → autonomous run (brief_package in shipwright_run_config.json, or autonomy
+    autonomous/unattended): section text vs approved screens in .shipwright/designs/screens
+    (quoted UI text near-misses, breakpoint widths, kit colors); fails on an unresolved
+    mismatch or a `Design contradiction:` line not marked `rule cannot decide`; the rule
+    (screen over section text, explicit brief override over screen) is written as
+    `Design decision:` and logged as `Plan Design Decision — {split}/{section}`.
+    Interactive run: notes only. Build treats a recorded `Design decision:` as resolved
+    and stops only on an unresolved `Design contradiction:`.
 plan SKILL completes
   → update-step --step plan --status complete
   → validate_plan() fires (checks sections exist in config + files on disk)

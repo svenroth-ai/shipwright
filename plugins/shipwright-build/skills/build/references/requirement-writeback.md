@@ -39,6 +39,16 @@ reason mockups exist.
 The `spec-reviewer` enforces the same rule from the other side: it returns
 REJECT with `kind: "contradiction"` regardless of which side the code took.
 
+**Recorded `Design decision:` = resolved (autonomous runs).** Plan resolves
+contradictions itself when a brief package governs the run or autonomy is
+`autonomous`/`unattended`: the approved screen wins over section text, an explicit brief
+override wins over the screen, and the section carries
+`Design decision: <what> -> <winner>, <reason>` (also in the decision log). Build
+implements the recorded winner and does NOT stop or ask. Build stops only on a
+`Design contradiction:` line with no covering decision (typically marked
+`rule cannot decide`) or on a difference no line covers. Record the outcome at Step 10b
+with `--contradiction "design decision recorded in plan: <what> -> <winner>"`.
+
 ---
 
 ## Step 10b (build SKILL.md) / Step 15a (section-builder): declare the impact

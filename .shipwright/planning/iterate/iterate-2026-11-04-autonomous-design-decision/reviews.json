@@ -1,0 +1,229 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-04-autonomous-design-decision",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-04T07:58:28.700153+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "codex",
+      "completed_at": "2026-11-04T07:59:20.795989+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "unstructured",
+      "raw_excerpt": "[glm] This mini-plan is a reasonable decomposition of the spec's design-check requirement, but as a reviewer I'd flag several items before considering it sound.\n\n**Architecture / scope findings**\n\n1. **Interaction with gates 9–10 is unaddressed.** The spec says the verifier never re-runs gates 9–11 and that `--gate sections` is the only strict pass. The plan adds new decision-log entries (`Plan Design Decision — {split}/{section}`), but doesn't say whether these interact with the Findings Addressed gate (Step 5 markers) or the per-split decision-recorded gate. Not blocking, but Step 6 (docs/FR) should state they are a distinct entry type.\n\n2. **\"Rule cannot decide\" taxonomy is undefined.** The plan says undecidable contradictions stay as a contradiction and become a \"Build question,\" but no step defines what counts as undecidable vs. resolvable. Step 1 (near-miss only, identifier/digit/script-string skips) gestures at it, but the decision boundary is the core behavior of this feature and it lives nowhere explicitly. This is the biggest gap.\n\n3. **`--record-decisions` as a separate manual invocation is a footgun.** The spec stresses \"the gate itself never writes the log\" and requires running the recorder *before* the gates. An autonomous run that forgets the pre-step will hit the gate failure with no way to auto-fix (autonomous runs can't answer questions). Consider having the orchestration layer run both, or the gate emitting the exact remediation command.\n\n4. **Multi-section divergence:** when the same quoted string appears in two sections referencing different screens, the plan doesn't say whether decisions are per-section or per-string. Divergent decisions for the same text would be silent inconsistency.\n\n**Edge cases**\n\n- Screen files missing/unreadable: does the check fail, warn, or skip? Undefined.\n- Brief-override precedence vs. screen: the spec says \"explicit brief override wins over the screen,\" but the plan's rule summary inverts/omits it in one cla […truncated]\n\n[openai] The approach is sound, but the plan needs a clearer resolution contract and verification strategy before implementation.\n\n- **Automatic resolution is underspecified.** The steps describe detection and decision logging, but do not identify what rewrites conflicting section text. Define the owner and sequence: detect → apply the precedence rule → update the section → record the decision → run strict gates. A `Design decision:` annotation must not conceal implementation instructions that still contradict the winning design.\n\n- **Define how the combined screen model preserves context.** Combining screens can create false contradictions between valid page-specific labels, responsive widths, states, or colors. Keep each observation tied to its screen, component/state, and source location; compare sections only against their named `## Design Reference`. Specify behavior for missing references and conflicting screens.\n\n- **Make precedence evidence-based.** Define how an “explicit brief override” is recognized and linked to its source. Section prose or a pre-existing decision line should not establish an override by itself. When evidence cannot select a winner, preserve `Design contradiction: ... rule cannot decide` and carry the question into Build.\n\n- **Build acceptance needs validation.** “Accept a recorded Design decision” is too broad. Require a decision applicable to the current split, section, and contradiction, with supporting evidence. A stale or unrelated decision must not suppress a new conflict.\n\n- **Keep mutation separate from verification.** The spec requires `--gate sections` to remain read-only. Explicitly place resolution and `--record-decisions` before it, propagate failures, and prevent phase completion after a nonzero gate exit. Preserve required `--plugin-root` validation and exit 2 when absent.\n\n- **Specify safe, repeatable writes.** Repeated runs should neither duplicate decision-log entries nor repeatedly rewrite sections. Validate paths  […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "round 2: external stylesheet rule disabled the breakpoint check for font links (fixed: font hosts ignored)",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "script innerHTML strings not known (fixed: all quote styles, split on tags)",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "decision-log dedupe by substring (fixed: per-ADR block + in-memory set)",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "stale test docstring (fixed)",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-04T07:58:29.004355+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "25cd70303eac28d90107b44493207d43f261c365"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-04T07:58:29.314552+00:00",
+      "disposition": "no migrations, async, cross-plugin import or irreversible ops; Stage 3 not applicable",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "diff-below-threshold"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "test |",
+          "file": "plugins/shipwright-build/tests/test_design_decision_resolved.py:11–26",
+          "line": null,
+          "finding": "These are substring-grep tests over markdown prompt files. They verify only that certain sentences exist in SKILL.md/spec-reviewer/requirement-writeback, not that any agent or checker behaves accordingly. A regression that reverts the behavioral wiring while leaving the prose intact (or vice versa) passes. Notably `test_writeback_reference_documents_the_rule` would pass if the reference contradicted the SKILL, since only two phrases are checked.",
+          "suggestion": "This is partially unavoidable for prompt plugins, but at least assert the pairing (e.g. that the SKILL's \"resolved\" paragraph and the writeback's \"resolved\" paragraph name the same winner set: `screen` and `brief`), and assert that `Design extension` is still NOT an exemption in the reviewer, which the plan-side tests cover but these don't.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug |",
+          "file": "plugins/shipwright-plan/scripts/checks/check-design-contradictions.py:46–48",
+          "line": null,
+          "finding": "The dedup check requires both `Section: {heading}\\n` and `Decision: {d[:500]}` to appear verbatim in the decision log. If `write_decision_log.py` performs any markdown escaping/normalization of `->`, quotes, or trailing whitespace, the substring test silently fails and the same decision is logged repeatedly on re-run. The test `test_record_decisions_logs_once` covers one benign decision string only.",
+          "suggestion": "Confirm `write_decision_log.py` emits the decision verbatim for adversarial strings (arrows, backticks, quotes), or make the dedup key structural (parse headings + decisions) rather than raw substring.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug |",
+          "file": "plugins/shipwright-plan/scripts/checks/check-design-contradictions.py",
+          "line": 33,
+          "finding": "_decisions` globs `sections/.md` but the dedup heading uses `planning.name/{sec.stem}`. If two planning dirs share a section filename (multi-split plans with identically-named sections under different splits), a decision logged for split A suppresses logging the identical decision for split B, since `planning.name` distinguishes them only if the CLI is invoked per-split — which it is, via `--planning-dir`, so this is safe in practice. No action needed; flagging only to confirm `planning.name` is the split name at invocation time.",
+          "suggestion": "None — verify `planning_dir.name` equals the split name used in the gate's `decisions_recorded` check to avoid divergent dedup keys.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": "shared/scripts/lib/plan_design_check.py:169–177 (`breakpoint_mismatch` block)",
+          "line": null,
+          "finding": "if m.media and not m.external_css` means a single `<link rel=\"stylesheet\">` anywhere in any referenced screen disables the breakpoint check for all screens combined. A screen that inlines its breakpoints plus links a kit stylesheet hides real 768px-vs-900px mismatches. Tests document this as intentional (conservative), but the combined-model design makes one screen's link suppress findings for other screens' breakpoints too.",
+          "suggestion": "If suppression per-screen matters, track `external_css` per screen and only skip widths while still checking widths declared against screens that inline their own `@media`. Otherwise document the whole-model suppression.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": "shared/scripts/lib/plan_design_check.py:126–131 (`_literals`)",
+          "line": null,
+          "finding": "visible_vs_attribute` fires only when the line contains one of `button|label|text|reads?|says?|shows?|caption` and lacks an \"excuse\" word. A section line like `- the control displays \"Previous thread\"` (or non-English) evades the check. Conservative-by-design is fine for a near-miss checker, but worth noting the heuristic is narrower than the docs (\"compares quoted UI text\") imply.",
+          "suggestion": "None required; consider widening the trigger word list or noting the limitation in the docstring.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test |",
+          "file": "plugins/shipwright-plan/tests/test_design_check.py:141–156 (`test_cli_in_process_and_failed_log_write_is_a_problem`)",
+          "line": null,
+          "finding": "The test loads the CLI via importlib and monkeypatches `subprocess.run` with a stub whose `run` ignores arguments entirely — it doesn't verify the subprocess was called with the right script path or decision payload, only that a nonzero rc becomes a problem. A wrong `--decision` payload would still pass.",
+          "suggestion": "Capture args in the stub and assert `write_decision_log.py` is invoked with the section heading and decision text.  Positive notes: mode detection (`is_autonomous_design_run`) handles missing/corrupt/non-dict config safely; interactive runs provably never fail (problems only when autonomous, verified by `test_interactive_run_is_unchanged` and `test_design_problems_modes`); the `check-plan-gates.py` integration correctly takes only `[0]` so notes never block; the CLI paths (`parents[4]/shared`) resolve correctly; the boundary-gate-allowed new files (`CHANGELOG-unreleased.d/`, `.shipwright/`) don't trip the boundary check. The lib tests exercise real finding logic including false-stop regressions, not just prose.  Overall: sound implementation of the spec; the findings are refinements to test rigor and dedup robustness rather than functional defects. Ship-as-is is defensible, but the decision-log dedup fragility is worth a quick confirmation against `write_decision_log.py`'s actual output format.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/lib/plan_design_check.py:166–167",
+          "line": null,
+          "finding": "Design extensions and contradiction lines suppress mismatch findings just like recorded decisions. For example, a section specifying `\"Thread bord\"` passes against a screen showing `\"Thread board\"` if an extension line mentions `\"Thread bord\"`, even though no decision resolves that mismatch. This lets an autonomous plan pass the gate and reach Build with an unresolved difference.",
+          "suggestion": "Suppress detected mismatches only when a covering `Design decision:` resolves them. Handle genuine additions and undecidable contradictions separately rather than treating every note as a resolution.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/lib/plan_design_check.py:222–223",
+          "line": null,
+          "finding": "A missing referenced screen is silently ignored. If the Design Reference contains a stale or misspelled filename, `_screens_for` returns no screens and the checker passes without comparing the section’s text, breakpoints, or colors.",
+          "suggestion": "Report missing referenced screens as problems in autonomous runs and as notes in interactive runs, so the check cannot silently succeed without its comparison source.  Overall assessment: ship-with-fixes. The gate integration implements the intended workflow, but these two bypasses allow autonomous plans to pass without the required design verification.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "codex",
+      "completed_at": "2026-11-04T07:58:29.142802+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] Review complete. Findings:\n\n- Category: test | Severity: medium\n  File: plugins/shipwright-build/tests/test_design_decision_resolved.py:11–26\n  Finding: These are substring-grep tests over markdown prompt files. They verify only that certain sentences exist in SKILL.md/spec-reviewer/requirement-writeback, not that any agent or checker behaves accordingly. A regression that reverts the behavioral wiring while leaving the prose intact (or vice versa) passes. Notably `test_writeback_reference_documents_the_rule` would pass if the reference contradicted the SKILL, since only two phrases are checked.\n  Suggestion: This is partially unavoidable for prompt plugins, but at least assert the *pairing* (e.g. that the SKILL's \"resolved\" paragraph and the writeback's \"resolved\" paragraph name the same winner set: `screen` and `brief`), and assert that `Design extension` is still NOT an exemption in the reviewer, which the plan-side tests cover but these don't.\n\n- Category: bug | Severity: low\n  File: plugins/shipwright-plan/scripts/checks/check-design-contradictions.py:46–48\n  Finding: The dedup check requires both `**Section:** {heading}\\n` and `**Decision:** {d[:500]}` to appear verbatim in the decision log. If `write_decision_log.py` performs any markdown escaping/normalization of `->`, quotes, or trailing whitespace, the substring test silently fails and the same decision is logged repeatedly on re-run. The test `test_record_decisions_logs_once` covers one benign decision string only.\n  Suggestion: Confirm `write_decision_log.py` emits the decision verbatim for adversarial strings (arrows, backticks, quotes), or make the dedup key structural (parse headings + decisions) rather than raw substring.\n\n- Category: bug | Severity: low\n  File: plugins/shipwright-plan/scripts/checks/check-design-contradictions.py:33\n  Finding: `_decisions` globs `sections/*.md` but the dedup heading uses `planning.name/{sec.stem}`. If two planning dirs share a section filename (multi-sp […truncated]\n\n[openai] - Category: bug\n- Severity: medium\n- File: shared/scripts/lib/plan_design_check.py:166–167\n- Finding: Design extensions and contradiction lines suppress mismatch findings just like recorded decisions. For example, a section specifying `\"Thread bord\"` passes against a screen showing `\"Thread board\"` if an extension line mentions `\"Thread bord\"`, even though no decision resolves that mismatch. This lets an autonomous plan pass the gate and reach Build with an unresolved difference.\n- Suggestion: Suppress detected mismatches only when a covering `Design decision:` resolves them. Handle genuine additions and undecidable contradictions separately rather than treating every note as a resolution.\n\n- Category: bug\n- Severity: medium\n- File: shared/scripts/lib/plan_design_check.py:222–223\n- Finding: A missing referenced screen is silently ignored. If the Design Reference contains a stale or misspelled filename, `_screens_for` returns no screens and the checker passes without comparing the section’s text, breakpoints, or colors.\n- Suggestion: Report missing referenced screens as problems in autonomous runs and as notes in interactive runs, so the check cannot silently succeed without its comparison source.\n\nOverall assessment: ship-with-fixes. The gate integration implements the intended workflow, but these two bypasses allow autonomous plans to pass without the required design verification.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-04T07:58:28.855571+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "25cd70303eac28d90107b44493207d43f261c365"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-04T07:58:29.599722+00:00",
+      "disposition": "not run: the task brief fixed the design (rule + check + Build acceptance); post-hoc plan arms were not spawned in this single autonomous pass",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "unavailable"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-04T07:58:29.735275+00:00",
+      "disposition": "not run: the task brief fixed the design (rule + check + Build acceptance); post-hoc plan arms were not spawned in this single autonomous pass",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "unavailable"
+    }
+  }
+}

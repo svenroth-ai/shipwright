@@ -1,0 +1,1 @@
+feat(plan): in autonomous runs the plan resolves screen-vs-section contradictions by rule (screen wins, explicit brief override wins over screen), checks sections against the approved screens, and Build accepts a recorded Design decision instead of asking

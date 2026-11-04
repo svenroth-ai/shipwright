@@ -1,0 +1,1 @@
+{"stage": "spec-compliance", "verdict": "PASS", "spec_citations": [], "summary": "Round 2 PASS after round 1 REJECT (decision-log step wiring, per-state claim) was fixed."}

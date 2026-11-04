@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: bug\n- Severity: medium\n- File: shared/scripts/lib/plan_design_check.py:166\u2013167\n- Finding: Design extensions and contradiction lines suppress mismatch findings just like recorded decisions. For example, a section specifying `\"Thread bord\"` passes against a screen showing `\"Thread board\"` if an extension line mentions `\"Thread bord\"`, even though no decision resolves that mismatch. This lets an autonomous plan pass the gate and reach Build with an unresolved difference.\n- Suggestion: Suppress detected mismatches only when a covering `Design decision:` resolves them. Handle genuine additions and undecidable contradictions separately rather than treating every note as a resolution.\n\n- Category: bug\n- Severity: medium\n- File: shared/scripts/lib/plan_design_check.py:222\u2013223\n- Finding: A missing referenced screen is silently ignored. If the Design Reference contains a stale or misspelled filename, `_screens_for` returns no screens and the checker passes without comparing the section\u2019s text, breakpoints, or colors.\n- Suggestion: Report missing referenced screens as problems in autonomous runs and as notes in interactive runs, so the check cannot silently succeed without its comparison source.\n\nOverall assessment: ship-with-fixes. The gate integration implements the intended workflow, but these two bypasses allow autonomous plans to pass without the required design verification.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "Review complete. Findings:\n\n- Category: test | Severity: medium\n  File: plugins/shipwright-build/tests/test_design_decision_resolved.py:11\u201326\n  Finding: These are substring-grep tests over markdown prompt files. They verify only that certain sentences exist in SKILL.md/spec-reviewer/requirement-writeback, not that any agent or checker behaves accordingly. A regression that reverts the behavioral wiring while leaving the prose intact (or vice versa) passes. Notably `test_writeback_reference_documents_the_rule` would pass if the reference contradicted the SKILL, since only two phrases are checked.\n  Suggestion: This is partially unavoidable for prompt plugins, but at least assert the *pairing* (e.g. that the SKILL's \"resolved\" paragraph and the writeback's \"resolved\" paragraph name the same winner set: `screen` and `brief`), and assert that `Design extension` is still NOT an exemption in the reviewer, which the plan-side tests cover but these don't.\n\n- Category: bug | Severity: low\n  File: plugins/shipwright-plan/scripts/checks/check-design-contradictions.py:46\u201348\n  Finding: The dedup check requires both `**Section:** {heading}\\n` and `**Decision:** {d[:500]}` to appear verbatim in the decision log. If `write_decision_log.py` performs any markdown escaping/normalization of `->`, quotes, or trailing whitespace, the substring test silently fails and the same decision is logged repeatedly on re-run. The test `test_record_decisions_logs_once` covers one benign decision string only.\n  Suggestion: Confirm `write_decision_log.py` emits the decision verbatim for adversarial strings (arrows, backticks, quotes), or make the dedup key structural (parse headings + decisions) rather than raw substring.\n\n- Category: bug | Severity: low\n  File: plugins/shipwright-plan/scripts/checks/check-design-contradictions.py:33\n  Finding: `_decisions` globs `sections/*.md` but the dedup heading uses `planning.name/{sec.stem}`. If two planning dirs share a section filename (multi-split plans with identically-named sections under different splits), a decision logged for split A suppresses logging the identical decision for split B, since `planning.name` distinguishes them only if the CLI is invoked per-split \u2014 which it is, via `--planning-dir`, so this is safe in practice. No action needed; flagging only to confirm `planning.name` is the split name at invocation time.\n  Suggestion: None \u2014 verify `planning_dir.name` equals the split name used in the gate's `decisions_recorded` check to avoid divergent dedup keys.\n\n- Category: edge-case | Severity: low\n  File: shared/scripts/lib/plan_design_check.py:169\u2013177 (`breakpoint_mismatch` block)\n  Finding: `if m.media and not m.external_css` means a single `<link rel=\"stylesheet\">` anywhere in any referenced screen disables the breakpoint check for all screens combined. A screen that inlines its breakpoints plus links a kit stylesheet hides real 768px-vs-900px mismatches. Tests document this as intentional (conservative), but the combined-model design makes one screen's link suppress findings for *other* screens' breakpoints too.\n  Suggestion: If suppression per-screen matters, track `external_css` per screen and only skip widths while still checking widths declared against screens that inline their own `@media`. Otherwise document the whole-model suppression.\n\n- Category: edge-case | Severity: low\n  File: shared/scripts/lib/plan_design_check.py:126\u2013131 (`_literals`)\n  Finding: `visible_vs_attribute` fires only when the line contains one of `button|label|text|reads?|says?|shows?|caption` and lacks an \"excuse\" word. A section line like `- the control displays \"Previous thread\"` (or non-English) evades the check. Conservative-by-design is fine for a near-miss checker, but worth noting the heuristic is narrower than the docs (\"compares quoted UI text\") imply.\n  Suggestion: None required; consider widening the trigger word list or noting the limitation in the docstring.\n\n- Category: test | Severity: low\n  File: plugins/shipwright-plan/tests/test_design_check.py:141\u2013156 (`test_cli_in_process_and_failed_log_write_is_a_problem`)\n  Finding: The test loads the CLI via importlib and monkeypatches `subprocess.run` with a stub whose `run` ignores arguments entirely \u2014 it doesn't verify the subprocess was called with the right script path or decision payload, only that a nonzero rc becomes a problem. A wrong `--decision` payload would still pass.\n  Suggestion: Capture args in the stub and assert `write_decision_log.py` is invoked with the section heading and decision text.\n\nPositive notes: mode detection (`is_autonomous_design_run`) handles missing/corrupt/non-dict config safely; interactive runs provably never fail (problems only when autonomous, verified by `test_interactive_run_is_unchanged` and `test_design_problems_modes`); the `check-plan-gates.py` integration correctly takes only `[0]` so notes never block; the CLI paths (`parents[4]/shared`) resolve correctly; the boundary-gate-allowed new files (`CHANGELOG-unreleased.d/`, `.shipwright/`) don't trip the boundary check. The lib tests exercise real finding logic including false-stop regressions, not just prose.\n\nOverall: sound implementation of the spec; the findings are refinements to test rigor and dedup robustness rather than functional defects. Ship-as-is is defensible, but the decision-log dedup fragility is worth a quick confirmation against `write_decision_log.py`'s actual output format.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-11-04-autonomous-design-decision",
+    "at": "2026-11-04T07:50:14.537816+00:00"
+  },
+  "verdicts": {
+    "openai": "revise",
+    "glm": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

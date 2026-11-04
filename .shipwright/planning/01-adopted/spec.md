@@ -368,7 +368,12 @@ _Where the work detail lives_ at the end of this document.
   other, when that is noticed, then building stops and a person decides — because
   the mockup is the thing someone actually looked at and judged against real use,
   the expected outcome is that the requirement is corrected to match it, not that
-  the mockup is quietly overridden or quietly followed.
+  the mockup is quietly overridden or quietly followed. In an autonomous run (a
+  brief package governs it, or autonomy is autonomous) the plan has already decided
+  it by a fixed rule — the approved screen wins over section text, a value the brief
+  explicitly sets to override the screen wins over the screen — and recorded that as
+  a design decision, so building follows it without asking; only a case that rule
+  cannot decide still stops for a person.
 - (E) [AC06] Given a section cannot be built without touching something shared that lies
   outside it, when that change is made, then it is the smallest one the section
   needs and it is recorded as belonging to that section — "nothing outside the
