@@ -153,7 +153,7 @@ The carve-out is stated wherever the scope rule is stated — this file,
 present in one reviewer and absent in another is worse than none: it makes the
 outcome depend on which reviewer happened to run.
 
-**Size target vs required behaviour (autonomous runs).** A section's "keep it under ~N lines" is a soft target; the required behaviour and the
+**Size target vs required behaviour (autonomous runs).** Only a section carrying the line `Size decision: split allowed (soft target)` (the section-writer adds it in an autonomous run, never in an interactive one) gets this rule; the reviewer and the builder both read the section, so the marker is the one signal. `section-builder.md` needs no copy of it: the rule only widens what the reviewer passes, and that file is at its bloat cap. A section's "keep it under ~N lines" is then a soft target; the required behaviour and the
 300-line file guideline outrank it. When the behaviour does not fit, split it into further modules inside the section's scope (each within the guideline,
 declared as attributed extras at Step 10b) and log the decision; never cut required behaviour or raise a limit to get past the spec-reviewer
 (its size-target carve-out passes the split). Ask only when no split is possible. Interactive runs behave as before.

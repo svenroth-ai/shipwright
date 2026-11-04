@@ -13,7 +13,7 @@ design-approval gate (D9): it never approves, waives, or changes a design.
 uv run "{plugin_root}/scripts/lib/screenshot_check.py" --cwd "{project_root}" --base-url "{dev_url}"
 ```
 Per screen of `screen-routes.json` it screenshots the approved design screen (`.shipwright/designs/uploads/`, found through the
-package's `screen-map.json`) and the built route in the same Chromium at 1280x800, then compares them.
+package's `screen-map.json`, or its `screens/` copy) and the built route in the same Chromium, then compares them (1280x800 unless the screen declares another size, see below).
 `screen-routes.json` is read in Design's flat form (`{"01-login.html": "/login"}`) or the nested form
 (`{"screens": [{"mockup": ..., "route": ...}]}`). A screen is compared as Design left it
 (`.shipwright/designs/screens/NN-id.html`, review-loop edits included), else the approved upload; the result names the file
@@ -22,7 +22,7 @@ You MAY add `sample_route` or missing route entries to `screen-routes.json`: tha
 A screen that is a STATE of one served page (a board tab, a pane, a modal) has no route of its own: give its entry the page's `route` plus `steps`, run on the built page before the shot: `{"click": "#tab-queue"}`, `{"fill": ["#q", "text"]}`, `{"wait_for": ".card"}` (nested form, e.g. `{"mockup": "04-queue.html", "route": "/", "steps": [{"click": "#tab-queue"}]}`). The step list is closed: click, fill, wait_for, selectors only, at most 10 per entry; no navigation or script step, anything else is an `error` for that screen. A step that cannot run fails that screen only, naming the step number; a polling board pays up to 5 s of network-idle wait per step. Each state needs its OWN design screen file (steps run on the built page only): a state with no screen of its own is an `error` to report, not a `fail` to fix. Steps must reach the state the screen shows, never a page that merely looks alike. Design writes the flat form, so add `steps` (flat dict value or nested entry) as test wiring. Only CSS animations are frozen, not JS-driven motion. Every screen is captured in a fresh browser context, so state one screen saves never reaches the next; the `steps` used are recorded in the screen's result. A screen with neither a route nor steps is an `error`. The capture injects nothing into the page, so the app's own Content-Security-Policy cannot block it. Every screen of the
 package's `screen-map.json` must appear in `screen-routes.json` (a package screen that was never built is an `error`),
 and an approved design screen that renders blank is an `error`. Only the first viewport (the fold) is compared. It is 1280x800 unless the approved package declares another one for that screen: a `viewport` key on its package `screen-map.json` entry (`[390, 800]`, `{"width": 390}` or `"390x800"`), or the mockup itself (a
-`<meta name="shipwright-viewport" content="390x800">`, a `<meta name="viewport" content="width=390">`, a `phone-frame` element in its markup,
+`<meta name="shipwright-viewport" content="390x800">`, a `<meta name="viewport" content="width=390">`, a `phone-frame` element as the root element of its markup,
 or a leading comment saying `phone width 390px`). A phone screen is thus compared phone to phone: both shots of a screen use the same size,
 and `viewport` + `viewport_source` are recorded per screen. A screen whose `steps` pick a state must use the controls that exist at that
 width (a phone shows a thread picker with next/previous buttons, not the list). A declaration that is not a viewport is an `error`, and so is a `viewport` key on a `screen-routes.json` entry: test wiring cannot choose the size a screen is compared at. Run it only when the marker file exists (the tool also checks).
@@ -44,11 +44,11 @@ changing the tolerance, fonts or a screen, or waiving it; this step never waives
 |---|---|---|
 | 0 `pass` | every screen within tolerance | record it (step 3), continue to Step 3.8 |
 | 0 `skipped` (`applies: false`) | no Brief package | record `skipped: no Brief package`, continue |
-| 1 `fail` | at least one screen is over the tolerance | **STOP the test phase and report** the failing screens with `diff_ratio` and both screenshot paths. Do not continue to "done". |
+| 1 `fail` | at least one screen is over the tolerance | **STOP the test phase and report** the failing screens with `diff_ratio` and both screenshot paths. Do not continue to "done". Exception, autonomous run only (see below): a plain CSS deviation or a seed-data difference is fixed in the BUILT app / its own seed data first, within the 3 rounds. |
 | 2 `error` | the check could not run or compare a screen (no app, no browser, missing mockup, size mismatch, route not concrete) | **STOP and report** the `error` / `capture_error` text. An error is NOT a pass. If the text says Playwright or the browser is missing, run `playwright_setup.py` once (setup, not a waiver) and re-run; still `error` → STOP and report. |
 
 Never: raise the tolerance, edit or regenerate an approved design screen or `uploads/`, delete a screenshot, mark a screen
-"expected", skip the step, or approve anything. A fix is allowed only in the BUILT app (the screen's route/component)
+"expected", skip the step, or approve anything. A fix is allowed only in the BUILT app (the screen's route/component, and the app's own seed/test data, never an approved screen or its upload)
 followed by a re-run of the tool, max 3 rounds; still red → STOP and report as above.
 
 **Autonomous run** (a brief package governs it, or autonomy is `autonomous`/`unattended`): decide by this rule, record it, and ask a person only

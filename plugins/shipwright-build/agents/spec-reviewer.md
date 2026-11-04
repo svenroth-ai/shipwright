@@ -57,8 +57,10 @@ For each acceptance criterion / requirement / explicit step in the spec, answer:
      section" would make such a section unbuildable — that was never the intent.
      Reject an *unrecorded* or *oversized* shared change; never a recorded,
      minimal one.
-   - **Size-target carve-out (autonomous runs) -- do NOT reject this.** A section's
-     "keep it under ~N lines" is a soft target; the section's required behaviour and
+   - **Size-target carve-out (autonomous runs) -- do NOT reject this.** Applies ONLY
+     when the section contains the line `Size decision: split allowed (soft target)` (Plan writes it in autonomous runs
+     only); without that line the size target is a limit as before. A section's
+     "keep it under ~N lines" is then a soft target; the section's required behaviour and
      the file-size guideline (300 lines) outrank it. When the required behaviour does
      not fit, the code MAY be split into further modules inside the section's scope
      (each within the guideline, recorded as attributed extras): that satisfies the

@@ -137,7 +137,7 @@ def test_jobs_carry_the_screens_own_viewport_and_the_result_records_it(tmp_path,
     got = [(s.get("viewport"), s.get("viewport_source")) for s in r["screens"]]
     assert got[:2] == [([1280, 800], "default"), ([360, 800], "mockup-phone-frame")]
     assert r["screens"][2]["status"] == "error" and "not accepted" in r["screens"][2]["error"]
-    assert r["viewport"] == [1280, 800]  # the default stays the top-level value
+    assert r["default_viewport"] == [1280, 800] and "viewport" not in r  # screens carry their own size
 
 
 def test_an_invalid_viewport_declaration_is_an_error_for_that_screen_only(tmp_path, monkeypatch):

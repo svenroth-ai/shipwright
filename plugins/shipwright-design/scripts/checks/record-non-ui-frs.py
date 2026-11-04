@@ -34,7 +34,7 @@ _SHARED = Path(__file__).resolve().parents[4] / "shared"
 _SECTION_RE = re.compile(r"^##\s+(.+?)\s*$", re.M)
 _UI_NONE_RE = re.compile(r"^[ \t]*[-*]?[ \t]*ui[ \t]*:[ \t]*none[ \t]*\.?[ \t]*$", re.I | re.M)  # the brief format's one marker
 _SCREEN_REF_RE = re.compile(r"mockup|wireframe|\bscreens?\b|\b\d{2}-[\w-]+\.html\b", re.I)
-_MOCKUP_REF_RE = re.compile(r"mockup|wireframe|\bfigma\b|\b\d{2}-[\w-]+\.html\b", re.I)  # a concrete screen reference (the bare word "screen" is prose)
+_MOCKUP_REF_RE = re.compile(r"mockup|wireframe|\bfigma\b|\b\d{2}-[\w-]+\.html\b", re.I)  # a concrete screen reference: the package's NN-name.html naming (an arbitrary .html mention, e.g. index.html, is prose)
 _DUP_MARK = "<<duplicate-heading>>"
 _PLACEHOLDER_RE = re.compile(r"replace with a real FR id", re.I)
 _SLUG_COLLAPSE_RE = re.compile(r"[^a-z0-9]+")
@@ -151,11 +151,17 @@ def run(root: Path) -> tuple[dict, int]:
         (recorded if non_ui else ask).append({"fr": fr, "slug": fr_slug.get(fr), "why": why})
     adr = None
     if recorded:
+        try:  # writable BEFORE an ADR exists: a failed write after it would leave an orphan ADR that a rerun duplicates
+            with open(manifest_path, "a", encoding="utf-8"):
+                pass
+        except OSError as exc:
+            return {"error": f"the manifest cannot be written ({type(exc).__name__})", "recorded": [], "ask": ask}, 2
         adr = _log_decision(root, [r["fr"] for r in recorded])
         if adr is None:
             return {"error": "the decision-log entry could not be written", "recorded": [], "ask": ask}, 2
-        manifest_path.write_text(_manifest_with(manifest, [
-            f"- {r['fr']} — {adr} (no screen: {r['why']})" for r in recorded]), encoding="utf-8")
+        new_manifest = _manifest_with(manifest, [
+            f"- {r['fr']} — {adr} (no screen: {r['why']})" for r in recorded])
+        manifest_path.write_text(new_manifest, encoding="utf-8")
     return {"autonomous": True, "action": "recorded" if recorded else ("ask" if ask else "nothing"),
             "recorded": recorded, "ask": ask, "adr": adr}, 1 if ask else 0
 

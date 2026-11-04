@@ -154,7 +154,7 @@ def run_screenshot_check(root: Path, base_url: str | None = None, tolerance: flo
     designs = root / ".shipwright" / "designs"
     if not (designs / MARKER).is_file():
         return {"applies": False, "status": "skipped", "reason": "no Brief package was applied by Design"}
-    base = {"applies": True, "metric": png_compare.METRIC, "tolerance": tolerance, "viewport": list(VIEWPORT), "captured": capture}
+    base = {"applies": True, "metric": png_compare.METRIC, "tolerance": tolerance, "default_viewport": list(VIEWPORT), "captured": capture}
     data = _read_json(designs / "screen-routes.json")
     file_base_url, entries = _route_entries(data)
     if not entries:
