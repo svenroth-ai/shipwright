@@ -28,6 +28,7 @@ Source: REA for the server flags, bind address and health idea (`serve_board.py`
 
 ## Split the work between agent, backend and board
 Requirement: Every task of a round belongs to exactly one of three roles: the agent judges and writes, the backend stores and enforces rules, the board shows and collects the person's input.
+UI: none
 - Outcome: a reader of the code finds every deterministic rule (store, dedupe, lint, status rules, expiry, feedback queue, service calls) in `backend/`, every judgement in the skill instructions, and no rule duplicated in the board
 - Fit criterion: a draft with an em dash sent by the agent to `POST /api/runs` is refused with 422 by the backend even though the skill instructions forbid it too; the board's JavaScript holds no lint rule (a search for the dash list and the word "beta" in `board/` finds nothing); no file in `backend/` imports or calls a model API
 - Purpose: the agent can be wrong in judgement but never in a hard rule, and the rules can be tested without a model
@@ -53,6 +54,7 @@ Source: Interview (copied from what the real skill makes Claude do versus what i
 
 ## Serve the companion API
 Requirement: The backend serves the board and one JSON API on 127.0.0.1 that both the board and the agent use; the endpoints and answers are exactly the contract below.
+UI: none
 - Outcome: the board and the agent read and change all data only through these endpoints
 - Fit criterion: `GET /api/nope` answers 404 `{"error": "not found"}`; `GET /api/version` with `Host: evil.example` answers 403 `{"error": "local access only"}`; `POST /api/status` without the header `X-Board: 1` answers 403 `{"error": "local board only"}`; a body over 20000 bytes to `POST /api/feedback` answers 413 `{"error": "too large"}`; a body that is not JSON answers 400 with an `error` text; every answer carries `Content-Type: application/json; charset=utf-8` (the page itself `text/html`), `Cache-Control: no-store` and `X-Content-Type-Options: nosniff`
 - Purpose: one contract for two clients, so the board and the agent cannot disagree about the data
@@ -94,6 +96,7 @@ Contract (K = the real server has it, C = the real server has it in another form
 
 ## Fetch hits from the sources
 Requirement: On the agent's request the backend fetches new hits from Syften (Reddit and Hacker News) and from the Apify LinkedIn post search, and answers them in one normalised shape.
+UI: none
 - Outcome: the agent gets every new Reddit and Hacker News hit since the last fetch and the recent LinkedIn posts of the active queries, without handling paging, tokens or other sources
 - Fit criterion: with the fake server serving `seed/recorded/`, `POST /api/fetch/syften {}` on a fresh data folder answers 200 with 8 hits (4 Reddit, 4 Hacker News, one of them the comment hit `https://news.ycombinator.com/item?id=46120103`) and `"dropped_other": 1` (the Bluesky item), and afterwards `GET /api/config` holds `"last_run": "2026-11-02T18:00:00Z"` (the newest item seen, the dropped one included, as the real skill does); `POST /api/fetch/linkedin {"posted": "week"}` answers 4 posts, the company page with `flags.company` true, each with `known` false and an `item` skeleton
 - Purpose: the person sees fresh conversations without searching any platform
@@ -106,6 +109,7 @@ Source: REA (`syften.py items`, `linkedin_search.py run`, SKILL.md run step 1 an
 
 ## Drop threads that are already known
 Requirement: The backend tells which hits belong to a thread it already holds, so the agent only works on new threads.
+UI: none
 - Outcome: a hit on a thread that was drafted, posted or skipped in an earlier round, or a comment hit on such a thread, is not offered again
 - Fit criterion: after `POST /api/runs` stored the thread `https://news.ycombinator.com/item?id=46120001` with `syften_urls` `["https://news.ycombinator.com/item?id=46120103"]`, `POST /api/threads/unseen {"urls": ["https://news.ycombinator.com/item?id=46120103", "https://news.ycombinator.com/item?id=46080002", "https://news.ycombinator.com/item?id=46080002"]}` answers `{"unseen": ["https://news.ycombinator.com/item?id=46080002"]}`, and the same hits from `POST /api/fetch/syften` carry `"known": true` and `"known": false`
 - Purpose: no thread is answered twice and no work is repeated
@@ -118,6 +122,7 @@ Source: REA (`state.py key`, `unseen`, the alias rule in `build_board.py merge`)
 
 ## Load a thread with its comment tree
 Requirement: The backend loads a Reddit or Hacker News thread with its post and comment tree in the board's item shape, cut to a readable size, keeping the comment the hit matched.
+UI: none
 - Outcome: the agent reads the whole conversation before it drafts, and the board can show it the way the platform does
 - Fit criterion: with the fake server, `POST /api/fetch/thread {"url": "https://news.ycombinator.com/item?id=46120103"}` answers the story `https://news.ycombinator.com/item?id=46120001` (the comment resolved to its story) with 3 comments in total (the deleted one dropped) and the HTML turned to plain text; `POST /api/fetch/thread {"url": "https://www.reddit.com/r/ProductManagement/comments/1oq7k2m/", "max_comments": 5, "keep": ["mq1a009"]}` answers a tree that holds `mq1a009` and its parents `mq1a008`, comments ordered by score, authors as `u/<name>`, and `rules` with the link `https://www.reddit.com/r/ProductManagement/about/rules`; a LinkedIn url answers 400
 - Purpose: a draft that ignores what others already said adds nothing
@@ -142,6 +147,7 @@ Source: REA (`build_board.py merge`, template header for the item shape, SKILL.m
 
 ## Lint a draft before it is stored
 Requirement: The backend checks every run item against fixed rules and the posting mode, and refuses errors and reports warnings without changing the text.
+UI: none
 - Outcome: the agent learns every broken rule in one answer and can fix it before the person sees the draft
 - Fit criterion: in mode `expertise`, `POST /api/runs/check` with an item whose `reply.text` is `We delve into Shipwright beta v1.0 and the Command Center, see https://svenroth.ai/x`, whose `why` holds an em dash and whose `reply.to` is `c9` (not in the tree) answers 422 with these errors for that url: `em/en dash in why`, `reply.to not found in comments: c9`, `never write "beta"`, `never write "v1.0"`, `"Command Center" must follow "Shipwright"`, `mode expertise allows no product mention and no link`, and the warning `tone words ['delve']: replace the vague claim with a concrete detail`; in mode `open` the last error becomes `svenroth.ai link needs UTM tags: https://svenroth.ai/x`; an item with `"date": "03.11.2026"`, an `http://` url or 11 comments without a summary gets `date must be YYYY-MM-DD, got '03.11.2026'`, `url must be https`, `11 comments, needs summary {question, others, angle}`
 - Purpose: hard rules hold even when the agent forgets them
@@ -190,6 +196,7 @@ Source: REA (`state.py feedback` and `resolve`, observed); Interview for the age
 
 ## Learn lessons from feedback
 Requirement: When a feedback entry states a rule that holds beyond its thread, the agent adds one line to `lessons.md` through the backend, and reads all lessons before drafting.
+UI: none
 - Outcome: the same correction never has to be given twice
 - Fit criterion: `POST /api/lessons {"rule": "No rhetorical question at the end of a reply.", "feedback_id": "<id>"}` (an existing entry) answers `{"line": "- No rhetorical question at the end of a reply. (<id>)"}` and `GET /api/lessons` holds that line; the same rule again (compared without case and trailing punctuation) answers 409 `this lesson is already in lessons.md`; an unknown feedback id answers 404
 - Purpose: feedback compounds into the person's own style guide
@@ -226,6 +233,7 @@ Source: REA (`state.py config`, `MODES`); Interview for the meaning of each mode
 
 ## Keep the data behind one store module
 Requirement: All data sits behind one store module with a JSON-file implementation in the data folder.
+UI: none
 - Outcome: the data files are the ones the real skill keeps, and no route reads or writes a data file directly
 - Fit criterion: after the synthetic run, a feedback save and a status change, the data folder holds `data.json` (`{"title", "items": [..]}` with 11 items), `state.json` (an object keyed by thread key with `status`, `url`, `date`, `platform`, `aliases`, and `posted_at`, `posted_url` for posted), `feedback.json` (`{"entries": [..]}`), `config.json`, `runs/<run_id>.json` and no `.tmp` file; a test runs the same store test suite against an in-memory store and the JSON store and both pass
 - Purpose: the board, the API and the agent never touch a data file directly
@@ -238,6 +246,7 @@ Source: REA (file names and shapes from `state.py`, `build_board.py`, observed i
 
 ## Reach external services through one adapter
 Requirement: Every call to Syften, Apify or the Hacker News Algolia API goes through one adapter package whose base URLs and tokens come from the environment, so tests can point it at a local fake server.
+UI: none
 - Outcome: the app runs against the real services in use and against recorded answers in every test, with the same code
 - Fit criterion: with `SYFTEN_BASE_URL`, `APIFY_BASE_URL`, `HN_ALGOLIA_BASE_URL` pointing at a fake server that answers from `seed/recorded/index.json`, every fetch endpoint answers as in its section; the fake server sees `Authorization: Bearer <token>` on Syften and Apify calls and no token in any URL; with `APIFY_TOKEN` unset `POST /api/fetch/thread` on a Reddit url answers 503 `APIFY_TOKEN missing: put it into .env.local in the data folder` and the fake server sees no request; the token value appears in no log line and no answer
 - Purpose: no test needs the network or a key, and a service can be exchanged in one place
@@ -298,6 +307,7 @@ Source: REA (`board.html` `@media (max-width:820px)` and `.mnav`); Mockup `07-ph
 
 ## Guide the agent with skill instructions
 Requirement: The plugin's `SKILL.md` tells the agent how to run a round through the companion API, how to judge, draft, apply feedback and learn, and what it must never do.
+UI: none
 - Outcome: a new session of Claude runs a round the way the real skill does, using only the API for data
 - Fit criterion: `skills/social-engagement/SKILL.md` has a description naming its trigger phrases ("social engagement", "reply board", "social listening", "open the reply board", "Syften", "fetch new hits"), and sections First start, Read first, Run, Feedback and lessons, Reply rules, Never; every data step in it names its endpoint from the contract and none names a data file path to edit by hand; a headless session given "open the reply board" calls the skill
 - Purpose: judgement lives in instructions the person can read and change

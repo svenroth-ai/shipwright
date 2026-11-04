@@ -1,0 +1,8 @@
+{"items": [
+{"name": "Spec Compliance", "verdict": "pass", "note": "AC1-5 as amended after the PR review; override rule removed, UI: none marker explicit"},
+{"name": "Error Handling", "verdict": "pass", "note": "invalid viewport declaration is a per-screen error (python and node); brief read errors exit 2"},
+{"name": "Security Basics", "verdict": "pass", "note": "no by-rule override of a check result; viewport only from the approved side"},
+{"name": "Test Quality", "verdict": "pass", "note": "viewport, non-UI marker, size-target tests; baseline fixture tests"},
+{"name": "Performance Basics", "verdict": "pass", "note": "no new heavy work"},
+{"name": "Naming & Structure", "verdict": "pass", "note": "no dead override code left; new modules under 300 LOC"},
+{"name": "Affected Boundaries", "verdict": "pass", "note": "jobs.json viewport probed on real Chromium; brief.md marker round-tripped through the package hash"}]}

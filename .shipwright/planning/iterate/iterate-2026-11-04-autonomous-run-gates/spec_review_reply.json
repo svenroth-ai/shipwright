@@ -1,0 +1,1 @@
+{"stage": "spec-compliance", "verdict": "PASS", "spec_citations": [], "summary": "AC1-5 met, nothing out of scope. Two non-blocking notes: the bare word screen widened the non-UI veto (fixed: UI: none now wins), the size-target carve-out sits in three reviewer texts (builder-side text not changed, outside AC4)."}

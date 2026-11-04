@@ -22,6 +22,9 @@ This is the ONE public surface; later units import it and never re-implement it:
 * :func:`verify_hash` (``expected=`` required) / :func:`verify_recorded_hash` -- hash
   compare only; the second is tamper-evidence, NOT approval.
 
+``brief.md`` marker for a capability without a screen: a line ``UI: none`` in the capability's ``## `` section. In an autonomous run Design
+records exactly those unmapped capabilities as non-UI by rule (``record-non-ui-frs.py``); any other unmapped capability stays a question.
+
 What the hash does and does not promise (obligations are B2/U3's, not code here):
 
 * It proves the package is **unchanged since the hash was taken**. It does not prove a
