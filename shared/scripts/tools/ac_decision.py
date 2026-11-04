@@ -14,7 +14,8 @@
     {"items": [{"kind": "add|change|remove|restore|exempt", "ac": "FR-01.03.AC05", "owner_fr": "FR-01.03",
                 "new_fr": {"id": "FR-01.30", "title": "one sentence"}, "old_text": "...", "new_text": "outcome wording",
                 "restores_ac": "FR-01.03.AC05",
-                "files": ["plugins/x/scripts/a.py"]}]}      # files: only for kind unchanged (observable files change, promise stays)
+                "files": ["plugins/x/scripts/a.py"]}]}      # files: required for kind unchanged (observable files change, promise stays); for an add, the paths this
+                                                                # work will change (before the build the diff is empty) - they only feed the question's "Affects:" line
 
 ``--base-ref`` is required: it is resolved to merge-base(base-ref, HEAD) and the catalog is read there (git), never from
 the working tree. ``--bind-id`` is the run's STABLE id (for a campaign unit ``{campaign_slug}--{unit_id}``, never an
@@ -32,7 +33,7 @@ not authentication: a determined agent with shell access can read the key. Re-ru
 --status pending --reason ... --operator ...``, then run the unit again with ``--answers`` and the same ``--bind-id``.
 
 Exit codes: 0 every item decided; 10 a question must go to the operator (unattended: the printed ``escalation``
-holds ONLY this unit); 2 the declaration or an input is invalid (``errors`` / ``error`` says what to fix).
+holds ONLY this unit); 11 the operator answered "I do not understand this": reword the promise in plainer words (``explain`` names the items) and run again - the new wording is asked again; 2 the declaration or an input is invalid (``errors`` / ``error`` says what to fix).
 """
 
 from __future__ import annotations
@@ -46,6 +47,7 @@ _SCRIPTS_ROOT = Path(__file__).resolve().parent.parent
 if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
+from lib.ac_apply import ANSWERS  # noqa: E402
 from lib.ac_catalog import load_catalog  # noqa: E402
 from lib.ac_decision import decide  # noqa: E402
 from lib.ac_hold import AC_HOLD_REASON, OPERATOR_ENV, is_unattended, load_key, operator_channel_open, sign  # noqa: E402
@@ -54,7 +56,7 @@ from lib.ac_suggest import make_suggester  # noqa: E402
 from lib.ac_surface import git_changes, merge_base, observable_files  # noqa: E402
 from lib.ac_wording import diff_identifiers  # noqa: E402
 
-EXIT_OK, EXIT_ASK, EXIT_INVALID = 0, 10, 2
+EXIT_OK, EXIT_ASK, EXIT_EXPLAIN, EXIT_INVALID = 0, 10, 11, 2
 
 
 class _Fail(Exception):
@@ -99,7 +101,7 @@ def run_answer(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(prog="ac_decision.py answer")
     ap.add_argument("--decided", required=True, help="decided.json (--out) or the held unit's result.json")
     ap.add_argument("--item", type=int, required=True)
-    ap.add_argument("--choice", required=True, help="yes | no | other | not_a_promise, or the LETTER the operator picked from a pick-list question")
+    ap.add_argument("--choice", required=True, help="yes | no | other | not_a_promise | cross_cutting | explain, or the LETTER the operator picked from a pick-list question")
     ap.add_argument("--text-file", default="", help="the operator's wording / owning FR id (a file, never a command line)")
     ap.add_argument("--answers", required=True, help="answer file to create or extend")
     args = ap.parse_args(argv)
@@ -115,8 +117,8 @@ def run_answer(argv: list[str]) -> int:
     picked = (qs[0].get("options") or {}).get(choice.upper()) if len(choice) == 1 and choice.isalpha() else None
     if picked:  # a letter of the pick list: the area id stays in the machine record, the operator never types it
         choice, text = picked["choice"], picked.get("text") or text
-    elif choice not in ("yes", "no", "other", "not_a_promise"):
-        raise _Fail(f"--choice must be yes, no, other, not_a_promise or a letter of the question's pick list, not {choice!r}")
+    elif choice not in ANSWERS:
+        raise _Fail(f"--choice must be {', '.join(ANSWERS)} or a letter of the question's pick list, not {choice!r}")
     prior = _load(args.answers, "--answers") if Path(args.answers).exists() else {"answers": []}
     sha = qs[0]["question_sha256"]
     kept = [a for a in (prior.get("answers", []) if isinstance(prior, dict) else []) if isinstance(a, dict) and (a.get("item") != args.item or a.get("question_sha256") != sha)]
@@ -189,7 +191,7 @@ def run_decide(argv: list[str]) -> int:
         print(f"ac_decision: diff unavailable ({exc}); the exemption can only be tested at F11", file=sys.stderr)
     bind_id = (args.bind_id or args.run_id) + (f"@{args.nonce}" if args.nonce else "")
     suggester = make_suggester(catalog, args.project_root, idents, not args.no_cache, not args.no_suggest)
-    result = decide(data.get("items"), catalog, unattended, surface, idents, answers, bind_id, suggester)
+    result = decide(data.get("items"), catalog, unattended, surface, idents, answers, bind_id, suggester, list(changes))
     result["exemption_check"] = (f"tested against the current diff ({len(changes)} file(s), {surface['ignored']} not observable)" if surface and changes else
                                  "a claim only: the diff is empty before the build; F11 tests it against the committed diff (a warning)")
     if surface is not None:
@@ -200,7 +202,7 @@ def run_decide(argv: list[str]) -> int:
     if args.out:
         Path(args.out).write_text(text + "\n", encoding="utf-8", newline="\n")
     print(text)
-    return {"ok": EXIT_OK, "ask": EXIT_ASK, "skipped": EXIT_OK}.get(result["status"], EXIT_INVALID)
+    return {"ok": EXIT_OK, "ask": EXIT_ASK, "explain": EXIT_EXPLAIN, "skipped": EXIT_OK}.get(result["status"], EXIT_INVALID)
 
 
 def main(argv: list[str] | None = None) -> int:

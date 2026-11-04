@@ -22,7 +22,7 @@ Return ONE JSON object and nothing else - no prose, no code fence:
 1. Exactly one sentence, in plain everyday words, that says what the user or operator will see change or can rely on.
 2. Keep EVERY number, limit, unit and condition of the promise. Nothing may be dropped, softened or added: no number, and no word such as "not", "never", "unless", "only", "without", "except", "cannot", "at most", "at least", "more/less/fewer than", "all", "every", "any", "each", "before", "after", "within", "no" may be left out - and none may be added that the promise does not have. Keep them in those exact words.
 3. No file names, folder names, tool names, command names, code names or abbreviations.
-4. Avoid the words "feature", "FR", "phase", "pipeline", "commit" and "gate". If one is truly unavoidable, explain it in a few plain words right after it.
+4. Jargon must be EXPLAINED in everyday words, never copied. These words mean nothing to the reader: "reviewer", "stack profile", "command", "merged", "deployment", "coordinator", "feature", "FR", "phase", "pipeline", "commit", "gate", "campaign", "branch". Say what each one means instead (for example "stack profile" becomes "the ready-made set of technology choices a project starts from", "merged" becomes "added to the main version", "reviewer" becomes "the AI or person that checks the work"). If you cannot explain it in a few words, describe its effect. A sentence that only swaps one or two words for synonyms is not a plain wording: either make it plainer or repeat the promise as it is.
 5. Do not add facts, reasons or examples that are not in the promise.
 
 ## Rules for `areas`

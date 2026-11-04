@@ -243,12 +243,12 @@ and for the record it warns when it differs from the base in a removing way and 
    but no FR the tool can read, is **skipped** with a note: nothing is asked, refused or held. **One ask rule:** the operator is asked ONLY when (a)
    an existing AC is changed or removed, (b) no single area of the product owns the new AC, or (c) a new area is proposed.
    Everything else is decided alone, counted (`counts`: auto, asked, exempt, restore, unchanged, answered_inline) and listed in the PR body
-   (`references/F11.md`). Exit `0` decided or skipped · `10` ask · `2` fix the declaration.
+   (`references/F11.md`). Exit `0` decided or skipped · `10` ask · `11` reword (the operator did not understand) · `2` fix the declaration.
 4. **Ask (exit 10), interactively:** put each printed question to the operator in exactly its words (a no-owner
    question is a lettered pick list of areas, in everyday words; with an external review key a small model writes the plain
    wording and picks the areas by meaning, code validates it and falls back to fixed wording - a display aid only: the PR body
    lists your original wording next to the plain one, and the frozen AC text is always yours), then write the reply into the item
-   (`"answer": {"choice": "yes|no|other|not_a_promise", "text": "..."}`) and run the tool again. "Somewhere new" takes the new area's name in `text`.
+   (`"answer": {"choice": "yes|no|other|not_a_promise|cross_cutting|explain", "text": "..."}`) and run the tool again. "Somewhere new" takes the new area's name in `text`; "Applies to several areas" (`cross_cutting`, offered first when the change touches two or more plugins or no area fits) makes the promise its own requirement (`new_fr` with `cross_cutting: true`). The question also shows `Affects:` and `Already in the catalog:` lines computed by code; give the paths you will change in the add item's `files` (the diff is empty before the build). **"I do not understand this" (`explain`, exit `11`):** reword the promise in plainer words (same meaning, short sentences, no technical terms) in `new_text` and run the tool again; the new wording is a new question (in an unattended run it holds only this unit, as any ask).
    **Unattended runs.** A run is unattended when BOTH `SHIPWRIGHT_LOOP_ID` and `SHIPWRIGHT_LOOP_UNIT_ID` are set, or
    the root is a per-unit worktree `<main>/.worktrees/campaign-<slug>--<unit>` (the orchestrator's own
    `campaign-<slug>` worktree is attended); `--autonomous` can only make it stricter. Then an inline `answer` is
@@ -259,7 +259,7 @@ and for the record it warns when it differs from the base in a removing way and 
    (exit 3). The rest of the wave continues; campaign finalize prints the open `ac_questions`. A standalone
    `--autonomous` run records `record_hard_blocker.py --reason-code operator-only-decision` with the fixed detail sentence.
    **The operator answers, not the agent:** `ac_decision.py answer --decided {result.json or decided_json} --item N
-   --choice <letter, or yes|no|other|not_a_promise> [--text-file wording.txt] --answers {answers_json}`. The answer is
+   --choice <letter, or yes|no|other|not_a_promise|cross_cutting|explain> [--text-file wording.txt] --answers {answers_json}`. The answer is
    bound to the sha256 of stable id + nonce + item index + kind + original promise + the canonical options map (not the question's wording, so a moved base never invalidates it) and signed (HMAC under `~/.shipwright/ac_operator.key`,
    made on first use). In an unattended session `answer` refuses unless `SHIPWRIGHT_AC_OPERATOR_CHANNEL` is set (the
    orchestrator shell needs it). **`answered_via` and `unattended` are self-reported; the signature is a guard against

@@ -37,9 +37,9 @@ def test_a_good_reply_is_a_gloss_under_the_original_and_the_record_keeps_both_th
     assert out["original_promise"] == _PROMISE and out["plain_promise"].startswith("A draft that is 30 days old")
     assert json.loads(calls[0][1]["content"])["promise"] == _PROMISE
     q = ad.render_question({"kind": "add", "new_text": _PROMISE}, _CAT, out)
-    first = q.splitlines()[0]
-    assert first.startswith(f"This change adds a new promise: {_PROMISE}. In plain words: A draft that is 30 days old")  # display = frozen text first
-    assert first.endswith("Where does it belong?") and "FR-01" not in q and "A Saving drafts: How drafts are saved and kept." in q
+    lines = q.splitlines()
+    assert lines[0] == f"This change adds a new promise: {_PROMISE}." and lines[1].startswith("In plain words: A draft that is 30 days old")  # display = frozen text first
+    assert lines[2] == "Which requirement would this promise belong to?" and "FR-01" not in q and "A Saving drafts: How drafts are saved and kept." in q
     assert ad.question_options({"kind": "add", "new_text": _PROMISE}, _CAT, out)["A"] == {"choice": "yes", "text": "FR-01.03"}
     meta = ad.suggestion_meta(out)
     assert meta["suggestion_source"] == "model" and meta["suggestion_original_promise"] == _PROMISE and meta["suggestion_model"] == "stub/model" and "suggestion_prompt_sha" in meta

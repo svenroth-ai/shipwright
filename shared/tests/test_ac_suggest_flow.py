@@ -100,7 +100,7 @@ def test_the_decide_tool_uses_the_suggestion_records_it_and_the_flags_and_nonce_
     out = tmp_path / "decided.json"
     assert cli.main([*base, "--out", str(out)]) == 10
     q = json.loads(out.read_text(encoding="utf-8"))["questions"][0]
-    assert q["suggestion_source"] == "model" and f"{_PROMISE}. In plain words: A draft that is 30 days old" in q["question"]
+    assert q["suggestion_source"] == "model" and f"{_PROMISE}.\nIn plain words: A draft that is 30 days old" in q["question"]
     answers = tmp_path / "a.json"
     assert cli.main(["answer", "--decided", str(out), "--item", "0", "--choice", "A", "--answers", str(answers)]) == 0
     entry = json.loads(answers.read_text(encoding="utf-8"))["answers"][0]

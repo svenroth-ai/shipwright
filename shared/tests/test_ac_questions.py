@@ -107,15 +107,17 @@ def test_a_no_owner_question_is_a_lettered_pick_list_in_everyday_words():
     text = q["question"]
     for jargon in ("feature", "FR-", "feature id"):
         assert jargon not in text
-    assert text.startswith("This change adds a new promise: A saved draft survives a restart. Where does it belong?")  # no model: the fixed wording
-    lines = text.splitlines()[1:]
+    assert text.startswith("This change adds a new promise: A saved draft survives a restart.\nWhich requirement would this promise belong to?")  # no model: the fixed wording
+    lines = text.splitlines()[2:]
     assert lines[0].startswith("A Saving drafts: ") and "It is kept after a restart" in lines[0]
-    assert lines[-3].startswith("C Somewhere new") and lines[-2].startswith("D It is not a promise") and lines[-1].startswith("E Not wanted:")
+    assert lines[-4].startswith("C Somewhere new") and lines[-3].startswith("D It is not a promise") and lines[-2].startswith("E Not wanted:") and lines[-1].startswith("F I do not understand")
     assert q["options"]["A"] == {"choice": "yes", "text": "FR-01.03"} and q["options"]["C"] == {"choice": "other"} and q["options"]["D"] == {"choice": "not_a_promise"}
+    assert q["options"]["F"] == {"choice": "explain"}
     again = ad.decide([{"kind": "add", "new_text": "A saved draft survives a restart"}], catalog, bind_id="b")["questions"][0]
     assert again == q                                                   # deterministic
     none = ad.decide([{"kind": "add", "new_text": "Orbits remain stable"}], catalog)["questions"][0]
-    assert none["question"].splitlines()[1].startswith("A An area that already exists") and none["options"]["A"] == {"choice": "yes"}
+    assert none["question"].splitlines()[2].startswith("A Applies to several areas") and none["options"]["A"] == {"choice": "cross_cutting"}   # no single owning area: its own requirement first
+    assert none["question"].splitlines()[3].startswith("B An area that already exists") and none["options"]["B"] == {"choice": "yes"}
 
 
 @pytest.mark.covers("FR-01.11/AC49")
@@ -152,7 +154,8 @@ def test_the_gloss_explains_at_most_two_jargon_terms_once_and_only_from_the_data
     assert ac_gloss.gloss("The widget works", custom) == " (widget: a small part)"
     q = ad.decide([{"kind": "add", "new_text": "Every commit is checked by a gate"}], cat_of(_AREAS))["questions"][0]["question"]
     assert "a saved snapshot of the work" in q.splitlines()[0] and "an automatic check" in q.splitlines()[0]
-    assert "(commit:" not in ad.render_question({"kind": "change", "old_text": "Every commit is kept", "new_text": "Every commit is kept long"})   # changed promises stay as they were
+    assert "(commit: a saved snapshot" in ad.render_question({"kind": "change", "old_text": "Every commit is kept", "new_text": "Every commit is kept long"})   # a changed or removed promise explains its jargon too
+    assert "(claude review: " in ad.render_question({"kind": "remove", "old_text": "Adopting a project sets up the automatic Claude review on every pull request"})
 
 
 @pytest.mark.covers("FR-01.11/AC49")
