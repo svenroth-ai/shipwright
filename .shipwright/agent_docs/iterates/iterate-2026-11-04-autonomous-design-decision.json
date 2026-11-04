@@ -1,0 +1,74 @@
+{
+  "run_id": "iterate-2026-11-04-autonomous-design-decision",
+  "date": "2026-11-04T08:00:18.421330Z",
+  "event_at": "2026-11-04T07:59:56.334283+00:00",
+  "type": "feature",
+  "complexity": "medium",
+  "prior_source": "keyword",
+  "branch": "iterate/autonomous-design-contradiction",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-11-04-autonomous-design-decision",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "Previous/Next-thread wording mismatch fails an autonomous plan",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-plan/tests/test_design_check.py::test_previous_next_thread_wording_mismatch_fails_autonomous PASSED"
+      },
+      {
+        "behavior": "recorded Design decision resolves; extension line does not",
+        "disposition": "tested",
+        "evidence": "test_recorded_design_decision_resolves_it and shared test_extension_line_does_not_resolve_a_mismatch PASSED"
+      },
+      {
+        "behavior": "undecidable contradiction stays a Build stop; unmarked one fails the plan",
+        "disposition": "tested",
+        "evidence": "test_undecidable_contradiction_remains_a_stop_for_build PASSED"
+      },
+      {
+        "behavior": "interactive run unchanged (notes only)",
+        "disposition": "tested",
+        "evidence": "test_interactive_run_is_unchanged PASSED"
+      },
+      {
+        "behavior": "harmless additions, identifiers, multi-screen values, font link do not stop",
+        "disposition": "tested",
+        "evidence": "test_false_stop_regressions_from_review and test_harmless_additions_do_not_stop PASSED"
+      },
+      {
+        "behavior": "Build accepts a recorded Design decision",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-build/tests/test_design_decision_resolved.py PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 6,
+      "tested": 6,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 1,
+      "covered_acs": 1
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run pytest shared/scripts/tests/test_plan_design_check.py -q",
+    "exit_code": 0,
+    "tests_run": 16,
+    "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\auto-design-decision\\.shipwright\\runs\\iterate-2026-11-04-autonomous-design-decision\\surface_verification.log",
+    "timestamp": "2026-11-04T07:59:45.143Z",
+    "attempts": 1
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": [
+    "touches_public_api"
+  ]
+}

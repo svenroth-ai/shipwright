@@ -78,8 +78,11 @@ def main() -> int:
             "screen defines from the screen itself, never from memory: the literal `@media` width of the "
             "breakpoint that governs the control, a `Per-state content:` line (shown and NOT shown) for each "
             "state that has its own screen, and `Design extension: <element> - <requirement id>, not in "
-            "<screen>` for anything an FR/AC needs that the screen lacks. Where the spec truly contradicts "
-            "the screen, take no side: add a `Design contradiction:` line (a person decides in Build). Match by name/content. "
+            "<screen>` for anything an FR/AC needs that the screen lacks. In an interactive run, where the spec truly "
+            "contradicts the screen take no side: add a `Design contradiction:` line (a person decides in Build). In an autonomous run "
+            "(brief package or autonomy autonomous/unattended) apply the rule instead: the screen wins over the spec text, a brief value that "
+            "deliberately overrides the screen wins over the screen; write `Design decision: <what> -> <winner>, <reason>`; only an undecidable "
+            "case stays `Design contradiction: ... rule cannot decide`. Match by name/content. "
             "Skip for non-UI sections."
         )
 

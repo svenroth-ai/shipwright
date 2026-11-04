@@ -159,3 +159,12 @@ Next steps:
      ...
 ================================================================================
 ```
+
+**Design check (autonomous runs).** `--gate sections` also compares each section's quoted UI text,
+stated breakpoint widths and named colors with the screens its `## Design Reference` names
+(`shared/scripts/lib/plan_design_check.py`; near-miss only, a new string is a harmless addition) and
+fails an autonomous run (brief package or autonomy `autonomous`/`unattended`) on an unresolved mismatch
+or on a `Design contradiction:` line that does not say `rule cannot decide`. Fix it by writing
+`Design decision: <what> -> <winner>, <reason>` (screen wins; an explicit brief override wins over the
+screen). `uv run --project {plugin_root} {plugin_root}/scripts/checks/check-design-contradictions.py --planning-dir "{planning_dir}" --project-root "$(pwd)" --record-decisions` (run it before the gates; the gate itself never writes the log) writes each decision to the decision log
+(`Plan Design Decision — {split}/{section}`). Interactive runs: notes only, nothing fails.
