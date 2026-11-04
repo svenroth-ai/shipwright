@@ -44,10 +44,11 @@ from surface_verification import (  # noqa: E402  (after sys.path tweak)
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.covers("FR-01.11/AC07")
 def test_valid_surfaces_match_skill_md():
     """SKILL.md F0.5 names exactly four surfaces. Order is irrelevant but
     drift between code and prose is a silent regression risk."""
-    assert set(VALID_SURFACES) == {"web", "cli", "api", "none"}
+    assert set(VALID_SURFACES) == {"web", "cli", "api", "none", "native"}
 
 
 # ---------------------------------------------------------------------------

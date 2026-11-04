@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: spec\n- Severity: medium\n- File: shared/scripts/tools/verifiers/_surface_native.py:156\n- Finding: Directory containment does not establish package ownership. Tests in a nested, separate package such as `apps/mobile/web/package.json` count as evidence for touched UI in `apps/mobile`, even if that nested package is web-only. This violates AC4\u2019s requirement that another package\u2019s results never satisfy native evidence.\n- Suggestion: Resolve each result file\u2019s nearest package at the verified commit and require that package to be one of the touched native packages. Add a test with a nested package whose passing results are the only staged evidence.\n\n- Category: bug\n- Severity: medium\n- File: shared/scripts/tools/verifiers/_surface_evidence.py:115\n- Finding: Taking the maximum count across report formats undercounts distinct tests. If touched package A supplies two Jest JSON assertions and touched package B supplies two different JUnit cases, both packages have valid evidence, but `tests_run=4` fails because this returns two.\n- Suggestion: Deduplicate overlapping executions rather than treating all reports in different formats as duplicates. Preserve the sum for distinct package results and test a mixed-format, two-package run.\n\nOverall assessment: ship-with-fixes. The implementation covers the main native flow, but package attribution and mixed-format counting need correction before shipping.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "## Findings\n\n- Category: regression | Severity: medium\n- File: shared/scripts/tools/verifiers/_surface_runner.py (~line 138, the new `if \"vitest\" in prov[\"reports\"]` block)\n- Finding: `passing_case_counts` is shared by every surface, but the new vitest-JSON branch now applies per-assertion counts for **all** surfaces, not just `native`. `cli` and `api` have no runner filter in `SURFACE_RUNNERS`, so a staged Jest/vitest report in the same run now inflates the `cases` total that backs `tests_run` for a `cli` run (previously each vitest id counted as 1). Since the check is `cases < tests_run \u2192 fail`, this inflation can mask a short-count `cli`/`api` block that previously failed \u2014 a silent loosening of an existing gate.\n- Suggestion: Apply the per-assertion vitest counting only when the surface is `native` (thread the surface through, or gate the branch on it), or add a regression test asserting a `cli` block with `tests_run` larger than the pytest passing count still fails when a vitest report is also staged.\n\n- Category: bug | Severity: low\n- File: shared/scripts/tools/verifiers/_surface_runner.py (junit loop followed by `counts.update(... vitest ...)`) and the docs claim in plugins/shipwright-iterate/skills/iterate/references/F0.5.md (\"staging both is counted once, as the larger\")\n- Finding: When the same test id appears in both the JUnit and vitest case-count dicts, `counts.update` makes the **vitest** count win unconditionally, not the larger of the two. The documented rule (\"the larger\") and the `_case_count` max-over-labels logic can therefore disagree with the per-id counts for duplicate ids (e.g. a jest-junit report without describe-prefixed names producing ids identical to the JSON ones).\n- Suggestion: Merge with max (`counts[tid] = max(counts.get(tid, 0), n)`) or drop the \"as the larger\" wording; add a test where JUnit carries a higher per-id count than the JSON.\n\n- Category: edge-case | Severity: low\n- File: shared/scripts/tools/verifiers/_surface_native.py \u2014 `native_result_in`, `not root or path.startswith(root + \"/\")`\n- Finding: When a touched native package is the repo root (`directory == \"\"`), every project-relative JS/TS result in the staged report counts, including results belonging to other (non-touched, possibly non-native) directories in the same repo, and `uncovered_root` is satisfied by any one passing result anywhere. This is only a whole-repo-package scenario so exposure is small, but it means `tests_run` for a root-package native run can be backed by results outside any UI-bearing directory.\n- Suggestion: Acceptable if intentional (single-package repo); if not, document it or require the passing results to at least be JS/TS under the repo (which they are) \u2014 but a one-line comment pinning the `root == \"\"` semantics would prevent future \"fixes\" in either direction.\n\n- Category: test | Severity: low\n- File: shared/tests/test_surface_native.py \u2014 `test_a_package_new_in_this_diff_is_accepted_when_it_is_native_at_the_verified_commit`\n- Finding: This test is byte-for-byte the same scenario as `test_native_ui_diff_passes_with_jest_json_under_the_package` (same fixture via `native_repo`, same staging, same assertion); it does not actually exercise the \"new in this diff\" merge-base branch any differently \u2014 `FILES` puts `package.json` in the branch commit in *both* tests, and there is no distinct assertion on the new-file path. The genuinely new-file cases live in the gates file, so coverage exists, but this test's name promises something it doesn't pin.\n- Suggestion: Either delete it or make it distinct (e.g. assert the base-side check ran, or add a new file rather than the package manifest case it claims).\n\nNon-findings I checked deliberately: the `Tests:`-line-only filter for `parse_tests_run` (AC1) is correctly implemented and tested including ANSI codes; the kinds/labels split is pinned by an explicit test; path traversal (`../`), Windows drive/UNC, and sibling-prefix (`apps/mobile-admin`) containment are all tested; the merge-base relabel attacks (nested manifest added, nested web manifest deleted, browser file claimed by a new manifest) each have a dedicated test; AC5 refusal text and both docs files state the recipe including the `file` attribute.\n\n## Overall assessment\n\nThe change implements the spec faithfully \u2014 all five ACs are covered with real-git-repo, production-staging tests, and the reviewer-driven security holes (relabeling via the diff's own manifests, cross-package evidence, double-counted dual formats) are closed and mutation-pinned. The one substantive concern is the shared `passing_case_counts` change loosening the `cli`/`api` count check; fix that (or prove it safe with a regression test) and the rest is refinements.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-11-03-native-surface-f05",
+    "at": "2026-11-03T22:33:32.446153+00:00"
+  },
+  "verdicts": {
+    "openai": "revise",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

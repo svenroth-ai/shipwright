@@ -834,8 +834,10 @@ _Where the work detail lives_ at the end of this document.
   is never guessed.
 - (E) [AC07] Given a change of medium size or larger, when it is finished, then
   whatever a person can actually see or use — a page, a command, an interface,
-  or an explicitly recorded "none" — is driven through a running system;
-  producing only documents counts as no test and fails the gate.
+  a screen of a mobile app that is provably not a web page, or an explicitly
+  recorded "none" — is driven through a running system; a mobile screen counts
+  only with passing test results from its own native package. Producing only
+  documents counts as no test and fails the gate.
 - (E) [AC08] Given a project that declares how its test suite is laid out, when the
   pre-finish test gate runs, then the test units run as parallel processes and
   return the same pass-or-fail verdict as running them one after another. A unit

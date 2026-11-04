@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "**Findings**\n\n1. **Category: edge-case | Severity: medium** \u2014 Jest JSON staged as \"vitest-shaped\" is asserted but never empirically validated. Jest's `--json` output (`testResults[]` with `assertionResults[]`) is not identical to vitest's JSON shape, and the plan's own Confidence Calibration admits real `jest-junit` output wasn't run. If the reader doesn't fully parse Jest's `numPassedTests`/suite structure, `tests_run` silently falls back to a short count or zero and every native run fails late.\n   **Suggestion:** Before merging, run one real probe: `jest --json --ci` and `jest-junit` with `addFileAttribute` from a real Expo project, stage both through `evidence_drop`, and confirm both parse. If Jest-JSON doesn't fit the vitest reader, prefer requiring JUnit-with-`file` only and drop the Jest-JSON path from AC1.\n\n2. **Category: edge-case | Severity: medium** \u2014 \"Nearest `package.json`\" fails under dependency hoisting: in yarn/pnpm workspaces, `react-native`/`expo` may be declared only at the workspace root or in `node_modules`-adjacent manifests, not in the package nearest the touched UI path. The check would then wrongly refuse a legitimately native diff.\n   **Suggestion:** Document the assumption explicitly (deps must be declared in the nearest manifest) and add a test for \"no `package.json` found above path\" (clear error naming the path). If hoisting is in scope, consider walking up to the workspace root \u2014 otherwise state it as a known limitation in the docs.\n\n3. **Category: security | Severity: low** \u2014 The `file` attribute from a staged report is trusted to prove results live under the touched native package. A crafted report can carry `file: \"../nativeapp/tests/x.test.ts\"` or symlink-style paths that escape the package root while satisfying a `startswith` check.\n   **Suggestion:** Normalize paths (resolve `..`, compare against the resolved package root) before the under-root test; add a test with `../` traversal in `file`.\n\n4. **Category: edge-case | Severity: low** \u2014 `native_check`'s dual return `(roots, problem)` conflates \"no roots\" with \"explicit offending path.\" AC3 requires naming the specific non-native path; make sure the failure result carries the offending path(s), not just a bare refusal, and cover it in a test where the diff mixes two packages, one native one web.\n   **Suggestion:** Add the mixed-monorepo test case explicitly.\n\n5. **Category: risk | Severity: low** \u2014 Splitting KINDS vs RUNNER labels in `_surface_evidence.py` touches the shared evidence vocabulary used by `web` (vitest/playwright reports with `pytest` JUnit labels). The refactor is sensible but is the one place existing web runs could regress.\n   **Suggestion:** Ensure the full existing surface test files run green (step 7) specifically covers `web` with each existing KIND/label combination \u2014 the plan implies it; make it explicit in the test-first list.\n\n6. **Category: dependency | Severity: low** \u2014 The out-of-scope backend-`src/*.ts`-counts-as-UI gap means a very plausible diff (native package + a shared backend TS file under `src/`) is refused for `native` with no workaround. This is acknowledged, but consider whether the refusal message can hint that the backend-src rule is the cause, so users aren't misled into thinking their package isn't native.\n   **Suggestion:** One sentence in the refusal text or docs.\n\n**Overall assessment:** The approach is sound \u2014 deriving native-ness from the diff's own manifests rather than a config switch is the right call, and the evidence rules are preserved. The main gap is unvalidated Jest report shapes; fix that with one real probe and this is ready.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Category: edge-case | Severity: medium**  \n   **Finding:** The plan adds a package/extension filter but does not specify whether it runs before calculating the passing count. If report-wide totals remain authoritative, unrelated Python tests or tests in another package could inflate the count backing `tests_run`.  \n   **Suggestion:** Calculate the eligible passing count from individual results after filtering by native package and JS/TS extension. Add a mixed-report test where the overall total exceeds `tests_run` but the eligible total does not. Preserve existing failure and provenance checks.\n\n2. **Category: edge-case | Severity: medium**  \n   **Finding:** Report path resolution is underspecified. Jest JSON commonly contains absolute test paths, while JUnit `file` values can be relative to the package or invocation directory. Incorrect resolution could reject valid monorepo evidence or attribute tests to the wrong package.  \n   **Suggestion:** Define the supported path bases and normalize paths before checking containment. Use path-aware containment rather than string prefixes, reject unresolved or escaping paths, and test absolute Jest paths, package-relative JUnit paths, and sibling packages with similar names.\n\n3. **Category: risk | Severity: low**  \n   **Finding:** Separating report kinds from runner labels changes shared evidence routing, but the listed new tests focus on native behavior. In particular, JUnit\u2019s existing `pytest` label makes accidental changes to other surfaces plausible.  \n   **Suggestion:** Ensure the existing surface tests explicitly cover the accepted report kinds for `web`, `cli`, and `none`, including continued rejection of JUnit/Vitest evidence as a substitute for required Playwright evidence.\n\nThe approach is sound and appropriately scoped: deriving eligibility from committed package manifests avoids introducing a project-level bypass. Clarify filtered counting and report path resolution before implementation; both directly affect whether native evidence proves the intended change.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-11-03-native-surface-f05",
+    "at": "2026-11-03T22:07:13.098107+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}
