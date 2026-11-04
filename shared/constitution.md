@@ -97,6 +97,7 @@
 - Commit `.env` files
 - Write sensitive detail — security/vulnerability descriptions, file:line, exploit steps, internal audit roadmaps, secrets — into **git-tracked** artifacts (`.shipwright/triage.jsonl`, which the outbox sweeps into the PR → tracked → public; `campaign.md` / `status.json`; specs; commit messages). Keep such detail in a gitignored store (the `Spec/` report, the gitignored campaign dir); the triage item / campaign card is a NEUTRAL, descriptive launch-pointer that references it — a title like "Audit bug-fixes — auto batch" is fine, "subsystem X is exploitable via …" or file:line is not
 - File a triage item to track the **current** run's own work — a step you are doing / just did, a gate that already STOPped the run, or a finding a background producer already emits. Triage logs genuine *deferred* follow-ups ("later"); the board / events log owns "now". When in doubt it belongs on the board, not in the backlog
+- Run `python -` / `uv run python -` without a non-empty, closed heredoc, a pipe or `< file` behind it: the interpreter waits on stdin and never exits, burning a core for hours (subagents left Python spinning 12-17 h). Use `uv run python - <<'EOF'` with a real body and a closing `EOF`, or `-c`; the `bare_python_stdin_guard.py` hook denies the bare and empty-heredoc forms
 - Retry blindly without root-cause analysis
 - Amend a commit that was blocked by a pre-commit hook
 - Loop more than 3 debugging attempts without escalating

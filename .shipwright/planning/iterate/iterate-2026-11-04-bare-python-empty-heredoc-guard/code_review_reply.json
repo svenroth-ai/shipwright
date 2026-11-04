@@ -1,0 +1,24 @@
+{
+  "section": "iterate-2026-11-04-bare-python-empty-heredoc-guard",
+  "review": [
+    {"severity": "low", "category": "correctness", "file": "plugins/shipwright-iterate/scripts/hooks/bare_python_stdin_guard.py", "line": 110,
+     "finding": "The empty-body check uses the same per-line runs_interpreter flag as the unterminated check, so every heredoc opened on a line that also runs `python -` is blamed on the interpreter (e.g. `python - < script.py && cat > out.txt <<'E'` + `E`). Rare; failing this way only blocks a command.",
+     "suggestion": "Accept as a documented known miss, or attribute each heredoc to its own segment. At minimum pin the behaviour with a test."},
+    {"severity": "low", "category": "correctness", "file": "plugins/shipwright-iterate/tests/test_bare_python_stdin_guard.py", "line": 55,
+     "finding": "Allow-list gaps: blank first body line followed by text; two heredocs on one command where only the second is empty; git commit -m \"$(cat <<'EOF' ... EOF)\" regression. Traced by the reviewer: all handled correctly, nothing pins it.",
+     "suggestion": "Add `python - <<'E'\\n\\nprint(1)\\nE`, a git-commit heredoc case, and `cat <<'A'\\nA\\nuv run python - <<'B'\\nprint(1)\\nB` to the allow parametrize."},
+    {"severity": "low", "category": "readability", "file": "plugins/shipwright-iterate/scripts/hooks/bare_python_stdin_guard.py", "line": 53,
+     "finding": "pending is a heterogeneous untyped 4-slot list mutated by magic index (pending[0][3] = True).",
+     "suggestion": "Keep tuples and track head body state in a local, or use a small dataclass."},
+    {"severity": "low", "category": "readability", "file": "docs/hooks-and-pipeline.md", "line": 2808,
+     "finding": "Edited registry row has two incident parentheticals in one sentence; the colon attaches to the wrong clause; the row still says a closed `uv run python - <<'EOF' ... EOF` passes without stating non-empty; dated provenance is not docs content.",
+     "suggestion": "Rewrite: 'Denies a Bash command whose `python -` has no heredoc, pipe or `<` behind it, or whose heredoc feeding that line is never closed or is closed with an empty/whitespace-only body: the interpreter then waits on stdin forever.' Keep one short incident reference; say 'closed, non-empty'."},
+    {"severity": "low", "category": "readability", "file": "plugins/shipwright-iterate/tests/test_bare_python_stdin_guard.py", "line": 140,
+     "finding": "The new integration test duplicates the hooks.json discovery block of the existing integration test and adds no new code path.",
+     "suggestion": "Add the empty-heredoc command as a third subprocess assertion inside test_registered_bash_hook_composes_with_the_worktree_gate, or share a helper."},
+    {"severity": "info", "category": "performance", "file": "plugins/shipwright-iterate/scripts/hooks/bare_python_stdin_guard.py", "line": 204,
+     "finding": "handle_payload now calls mask(command) three times; negligible next to the uv run spawn.",
+     "suggestion": "Optional: compute mask once."}
+  ],
+  "notes": "No HIGH or MEDIUM findings. Closer matching, <<- tab stripping, FIFO consumption of multiple heredocs, and quoted $(cat <<'EOF') commit-message heredocs verified by tracing. Constitution NEVER entry accurate; docs/guide.md needs no update."
+}
