@@ -1,0 +1,1 @@
+{"stage": "spec-compliance", "verdict": "PASS", "spec_citations": [], "summary": "PASS: all acceptance criteria met (format added, both fields written surgically, read/verify via describe_version_state, CRLF/indent tests, docs updated, no change for undeclared projects, release/webui out of diff)."}
