@@ -1,0 +1,10 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"All 4 ACs and the BRIEF S0 Done-when covered; spec-reviewer PASS."},
+{"name":"Error Handling","verdict":"pass","note":"Gate fails closed on crashes, timeouts, unparsable runs, unreadable known file; rotation probe failure opens a fresh file."},
+{"name":"Security Basics","verdict":"pass","note":"Drop names validated, keys sanitized (cap 80), env override gated by test flag, template guard test."},
+{"name":"Test Quality","verdict":"pass","note":"Unit, harness, gate and concurrency tests; harness asserts contents and cannot pass on a git error."},
+{"name":"Performance Basics","verdict":"pass","note":"Dormant path only; legacy path adds no process spawns. Gate 433s with 3 jobs."},
+{"name":"Naming & Structure","verdict":"pass","note":"Drops code in a new events_layout module; record_event kept at 728 lines (bloat exception not raised)."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Config JSON (BOM/CRLF/non-ASCII probed), drop files round-trip through record_event and assembled read, merge-tree harness."},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"scan_test_hygiene --diff: no findings."}
+]}

@@ -46,8 +46,8 @@ def _git_version() -> tuple[int, ...]:
     return tuple(int(p) for p in digits)
 
 
-pytestmark = pytest.mark.skipif(
-    _git_version() < (2, 40), reason="git merge-tree --write-tree with --attr-source needs git >= 2.40")
+pytestmark = [pytest.mark.covers("FR-01.11"), pytest.mark.skipif(
+    _git_version() < (2, 40), reason="git merge-tree --write-tree with --attr-source needs git >= 2.40")]
 
 
 def _record(wt: Path, run_id: str, desc: str, env_extra: dict[str, str]) -> None:

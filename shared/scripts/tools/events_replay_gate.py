@@ -10,8 +10,8 @@ and compares the failures against a committed, RATCHETED known set
 (``events_replay_known_failing.json``):
 
 * a failure that is NOT in the known set        -> gate FAILS (new regression);
-* a known entry that now passes ("stale")       -> reported; ``--tighten`` removes it
-  (and ``--strict-stale`` makes it a failure). The set may only SHRINK: ``init``
+* a known entry that now passes ("stale")       -> reported; ``tighten`` removes it; it is a
+  FAILURE under ``--strict-stale`` and always in CI (``GITHUB_ACTIONS``). The set may only SHRINK: ``init``
   refuses to run over a non-empty set and ``tighten`` can only delete.
 * wall-clock over ``budget_seconds``            -> gate FAILS (the stated time budget).
 
@@ -248,12 +248,15 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--repo", type=Path, default=_SHARED_ROOT.parent)
     ap.add_argument("--root", action="append", default=[], help="only roots whose path contains this")
     ap.add_argument("--jobs", type=int, default=1, help="roots run in parallel (separate processes)")
-    ap.add_argument("--timeout", type=int, default=3000, help="per pytest process, seconds")
+    ap.add_argument("--timeout", type=int, default=2400,
+                    help="per pytest process, seconds (below the CI step limit of 45 min)")
     ap.add_argument("--list", action="store_true", help="print the selected files and exit")
-    ap.add_argument("--strict-stale", action="store_true", help="fail when a known entry now passes")
+    ap.add_argument("--strict-stale", action="store_true",
+                    help="fail when a known entry now passes (always on under GITHUB_ACTIONS)")
     ap.add_argument("--report", type=Path, help="write the full JSON report here")
     args = ap.parse_args(argv)
     repo = args.repo.resolve()
+    strict_stale = args.strict_stale or bool(os.environ.get("GITHUB_ACTIONS"))
     plans = _plans(repo, args.root)
 
     if args.list:
@@ -332,11 +335,11 @@ def main(argv: list[str] | None = None) -> int:
         for n in new:
             print(f"  - {n}")
     if stale:
-        print(f"{'FAIL' if args.strict_stale else 'NOTE'}: {len(stale)} known entr(y/ies) now pass; "
+        print(f"{'FAIL' if strict_stale else 'NOTE'}: {len(stale)} known entr(y/ies) now pass; "
               f"run `events_replay_gate.py tighten` and commit the smaller set:")
         for n in stale[:50]:
             print(f"  - {n}")
-        rc = rc or (1 if args.strict_stale else 0)
+        rc = rc or (1 if strict_stale else 0)
     if budget and elapsed > budget:
         rc = 1
         print(f"FAIL: wall-clock {elapsed}s exceeds the stated budget of {budget}s")

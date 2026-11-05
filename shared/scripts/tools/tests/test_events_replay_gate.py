@@ -16,10 +16,14 @@ sys.modules[_spec.name] = gate
 _spec.loader.exec_module(gate)
 
 
+pytestmark = pytest.mark.covers("FR-01.11")
+
+
 @pytest.fixture
 def known_file(tmp_path, monkeypatch):
     path = tmp_path / "known.json"
     monkeypatch.setattr(gate, "KNOWN_PATH", path)
+    monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
     return path
 
 
@@ -228,3 +232,11 @@ def test_init_refuses_to_record_a_crashed_root(tmp_path, known_file, fake_run):
 
 def test_preflight_canary_passes_on_this_repo():
     assert gate.preflight(Path(__file__).resolve().parents[4]) is None
+
+
+def test_stale_entries_fail_in_ci_without_the_flag(tmp_path, known_file, fake_run, monkeypatch):
+    _write(known_file, ["gone::t"])
+    fake_run["failing"] = []
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")
+    monkeypatch.setattr(gate, "base_known", lambda repo: ("absent", None))
+    assert _main(tmp_path) == 1

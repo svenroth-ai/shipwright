@@ -1,0 +1,42 @@
+{
+  "section": "S0-harness-dormant-writer (round 2)",
+  "review": [
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "shared/scripts/tools/events_replay_gate.py",
+      "finding": "init could record <pytest-...> sentinels as known entries.",
+      "suggestion": "refuse in init (fixed)"
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "shared/scripts/tools/events_replay_known_failing.json",
+      "finding": "budget_note stale on --jobs.",
+      "suggestion": "update (fixed)"
+    },
+    {
+      "severity": "low",
+      "category": "performance",
+      "file": "shared/scripts/lib/events_layout.py",
+      "finding": "_git_identity starts 3 git processes per call.",
+      "suggestion": "merge git-dir and common-dir queries (follow-up; dormant path)"
+    },
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "shared/scripts/tools/events_replay_gate.py",
+      "finding": "per-process timeout default longer than the CI step limit.",
+      "suggestion": "ci passes --timeout 2400 (fixed)"
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "shared/tests/test_events_layout.py",
+      "finding": "import os inside the test.",
+      "suggestion": "moved (fixed)"
+    }
+  ],
+  "round_1": "REQUEST CHANGES at 5d37163a8 (1 high SSoT bypass, 3 medium gate gaps) - all fixed and APPROVED in round 2 at bd73f1d52",
+  "verdict": "APPROVE"
+}

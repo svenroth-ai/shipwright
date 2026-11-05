@@ -25,6 +25,7 @@ sys.path.append(str(Path(__file__).resolve().parent))
 from _events_split import split_log  # noqa: E402
 
 CRLF, LF = bytes([13, 10]), bytes([10])
+pytestmark = pytest.mark.covers("FR-01.11")
 FIX = Path(__file__).parent / "fixtures" / "events_layout"
 
 
