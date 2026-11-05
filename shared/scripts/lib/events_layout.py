@@ -48,9 +48,9 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
+from .events_log import resolve_events_path
 from .jsonl_records import RecordRead, read_jsonl_records
 
-EVENT_FILE = "shipwright_events.jsonl"  # same literal as lib.events_log.EVENT_FILE
 DROPS_DIR = "shipwright_events.d"
 ARCHIVE_DIR = "shipwright_events.archive"
 SYNC_CONFIG = "shipwright_sync_config.json"
@@ -81,23 +81,32 @@ def events_layout(project_root: Path | str) -> str:
 
 def events_lock_path(project_root: Path | str) -> Path:
     """The advisory lock file -- identical to the legacy ``<log>.lock``, untracked."""
-    return Path(project_root) / (EVENT_FILE + ".lock")
+    legacy = resolve_events_path(project_root)
+    return legacy.with_name(legacy.name + ".lock")
 
 
 def _git_identity(root: Path) -> tuple[str, bool, str]:
-    """(absolute git dir, is main tree, branch name or ``HEAD`` when detached)."""
+    """(absolute git dir, is main tree, branch name or ``HEAD`` when detached).
+
+    Branch is queried separately so an unborn HEAD only loses the branch name, never
+    the worktree identity (``wt8`` must not change at the first commit).
+    """
+    def _q(*args: str) -> str:
+        return subprocess.run(["git", "-C", str(root), "rev-parse", *args], capture_output=True,
+                              text=True, timeout=15, check=True).stdout.strip()
+
     try:
-        out = subprocess.run(
-            ["git", "-C", str(root), "rev-parse", "--absolute-git-dir",
-             "--git-common-dir", "--abbrev-ref", "HEAD"],
-            capture_output=True, text=True, timeout=15, check=True,
-        ).stdout.splitlines()
-        git_dir = os.path.realpath(out[0])
-        common = Path(out[1])
+        git_dir = os.path.realpath(_q("--absolute-git-dir"))
+        common = Path(_q("--git-common-dir"))
         common = common if common.is_absolute() else root / common
-        return git_dir, git_dir == os.path.realpath(common), out[2] if len(out) > 2 else "HEAD"
-    except (OSError, subprocess.SubprocessError, IndexError):
+        is_main = git_dir == os.path.realpath(common)
+    except (OSError, subprocess.SubprocessError):
         return os.path.realpath(root), True, ""
+    try:
+        branch = _q("--abbrev-ref", "HEAD")
+    except (OSError, subprocess.SubprocessError):
+        branch = ""
+    return git_dir, is_main, branch
 
 
 def _wt8(git_dir: str) -> str:
@@ -154,7 +163,7 @@ def _names_in_head(root: Path) -> set[str] | None:
 def resolve_events_write_path(project_root: Path | str) -> Path:
     """Where the next event is appended. Call it INSIDE ``events_lock_path``'s lock.
 
-    ``legacy``: the literal ``project_root / EVENT_FILE`` (today's behaviour).
+    ``legacy``: ``resolve_events_path`` (today's behaviour).
     ``drops``: rotate-on-commit -- the open drop of this key and worktree (one NOT
     yet in HEAD's tree), else a fresh file name with a new nonce. The file itself
     comes into existence on the first complete write; the folder alone is invisible
@@ -162,7 +171,7 @@ def resolve_events_write_path(project_root: Path | str) -> Path:
     """
     root = Path(project_root)
     if events_layout(root) != "drops":
-        return root / EVENT_FILE
+        return resolve_events_path(root)
     git_dir, is_main, branch = _git_identity(root)
     key, wt8 = drop_key(root, (git_dir, is_main, branch)), _wt8(git_dir)
     prefix = f"{key}--{wt8}--"
@@ -198,7 +207,7 @@ def read_events_assembled(project_root: Path | str) -> RecordRead:
     Byte-for-byte the plain legacy read when no drops/archive folder exists.
     """
     root = Path(project_root)
-    result = read_jsonl_records(root / EVENT_FILE)
+    result = read_jsonl_records(resolve_events_path(root))
     folders = [root / d for d in (ARCHIVE_DIR, DROPS_DIR) if (root / d).is_dir()]
     if not folders:
         return result

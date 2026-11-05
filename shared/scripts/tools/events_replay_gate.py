@@ -64,7 +64,7 @@ _UNIT_S4 = re.compile(
     r"append_|commit_event_followup|event_seeder|phase_history|decision_drop|convert_configs|"
     r"verif|tests_block|test_evidence|f11|seal")
 _UNIT_S2 = re.compile(r"ledger_anchor|reader|read_events|latest_event|record_boundary|events_log|position")
-_FAIL_LINE = re.compile(r"^(?:FAILED|ERROR) (\S+?)(?: - .*)?$")
+_FAIL_LINE = re.compile(r"^(?:FAILED|ERROR) (.+?)(?: - .*)?$")
 
 
 def classify_unit(test_id: str) -> str:
@@ -104,17 +104,22 @@ def _pytest_cmd(plan: RootPlan, args: list[str]) -> list[str]:
 
 
 def _run(plan: RootPlan, args: list[str], env_extra: dict[str, str], timeout: int) -> tuple[set[str], str]:
+    """Failure ids of one pytest process. FAIL-CLOSED: anything that is not a clean
+    0/1 exit, or an exit 1 with no parseable failure, yields a ``<pytest-...>`` sentinel."""
     env = {k: v for k, v in os.environ.items() if not k.startswith("SHIPWRIGHT_EVENTS_LAYOUT")}
     env.update(env_extra)
     env["PYTHONIOENCODING"] = "utf-8"
-    proc = subprocess.run(_pytest_cmd(plan, args), cwd=plan.cwd, env=env, capture_output=True,
-                          text=True, encoding="utf-8", errors="replace", timeout=timeout)
+    try:
+        proc = subprocess.run(_pytest_cmd(plan, args), cwd=plan.cwd, env=env, capture_output=True,
+                              text=True, encoding="utf-8", errors="replace", timeout=timeout)
+    except subprocess.TimeoutExpired:
+        return {f"{plan.pytest_arg}::<pytest-timeout>"}, ""
     failed: set[str] = set()
     for line in proc.stdout.splitlines():
         m = _FAIL_LINE.match(line.strip())
         if m:
             failed.add(m.group(1))
-    if proc.returncode not in (0, 1) and not failed:
+    if proc.returncode not in (0, 1) or (proc.returncode == 1 and not failed):
         failed.add(f"{plan.pytest_arg}::<pytest-exit-{proc.returncode}>")
     return failed, proc.stdout[-400:]
 
@@ -135,14 +140,14 @@ def run_root(plan: RootPlan, timeout: int) -> dict:
     baseline: set[str] = set()
     if drops_failed:
         # Re-run only the failing tests with the layout forced back to legacy.
-        runnable = sorted(n for n in drops_failed if "<pytest-exit" not in n)
+        runnable = sorted(n for n in drops_failed if "<pytest-" not in n and "::" in n)
         if runnable:
             baseline, _ = _run(plan, runnable, LEGACY_ENV, timeout)
-    if any("<pytest-exit" in n for n in baseline):
-        # the legacy re-run itself broke (e.g. an unparsable node id): never read that
-        # as "no baseline failures" -- surface it as a failure of this root.
-        drops_failed = drops_failed | {n for n in baseline if "<pytest-exit" in n}
-        baseline = {n for n in baseline if "<pytest-exit" not in n}
+    # The legacy re-run itself broke (sentinel): never read that as "no baseline
+    # failures" -- surface it as a failure of this root. Collection errors (no `::`)
+    # mean the selected tests never ran, so they are never excused as baseline.
+    drops_failed = drops_failed | {n for n in baseline if "<pytest-" in n}
+    baseline = {n for n in baseline if "<pytest-" not in n and "::" in n}
     return {
         "root": plan.rel_root, "files": len(files), "seconds": round(time.monotonic() - started, 1),
         "drops_failed": sorted(_global_id(plan, n) for n in drops_failed - baseline),
@@ -178,22 +183,36 @@ def ratchet_violations(doc: dict, base_doc: dict | None) -> list[str]:
         return []
     out = [f"entry added since the merge-base: {n}"
            for n in doc.get("known", {}) if n not in base_doc.get("known", {})]
-    if int(doc.get("budget_seconds", 0)) > int(base_doc.get("budget_seconds", 0)) > 0:
-        out.append(f"budget_seconds raised {base_doc['budget_seconds']} -> {doc['budget_seconds']}")
+    base_budget, budget = int(base_doc.get("budget_seconds", 0)), int(doc.get("budget_seconds", 0))
+    if base_budget > 0 and budget <= 0:
+        out.append("budget_seconds removed or zeroed (the stated time budget cannot be switched off)")
+    elif budget > base_budget > 0:
+        out.append(f"budget_seconds raised {base_budget} -> {budget}")
     return out
 
 
-def base_known(repo: Path) -> dict | None:
-    """The known file at the merge-base with origin/main, or None when unavailable."""
+def base_known(repo: Path) -> tuple[str, dict | None]:
+    """The known file at the merge-base with origin/main as ``(state, doc)``.
+
+    ``ok`` = loaded; ``absent`` = the base has no such file (the set is being
+    introduced); ``unresolved`` = the base could not be determined at all.
+    """
     rel = KNOWN_PATH.resolve().relative_to(repo.resolve()).as_posix()
     try:
         base = subprocess.run(["git", "-C", str(repo), "merge-base", "HEAD", "origin/main"],
                               capture_output=True, text=True, timeout=30, check=True).stdout.strip()
-        blob = subprocess.run(["git", "-C", str(repo), "show", f"{base}:{rel}"],
-                              capture_output=True, text=True, timeout=30, check=True).stdout
-        return json.loads(blob)
+    except (OSError, subprocess.SubprocessError):
+        return "unresolved", None
+    try:
+        blob = subprocess.run(["git", "-C", str(repo), "cat-file", "-e", f"{base}:{rel}"],
+                              capture_output=True, text=True, timeout=30)
+        if blob.returncode != 0:
+            return "absent", None
+        shown = subprocess.run(["git", "-C", str(repo), "show", f"{base}:{rel}"],
+                               capture_output=True, text=True, timeout=30, check=True).stdout
+        return "ok", json.loads(shown)
     except (OSError, subprocess.SubprocessError, ValueError):
-        return None
+        return "unresolved", None
 
 
 def save_known(doc: dict) -> None:
@@ -231,6 +250,8 @@ def main(argv: list[str] | None = None) -> int:
     selected = sum(r["files"] for r in results)
     print(f"events-replay: {selected} event-related file(s) over {len(results)} root(s), {elapsed}s; "
           f"{len(failing)} drops-only failure(s), {len(baseline)} baseline failure(s) excluded")
+    for n in baseline:
+        print(f"  baseline (fails under legacy too, excluded -- check it is not caused by THIS change): {n}")
     for r in results:
         print(f"  {r['root']}: {r['files']} file(s), {r['seconds']}s, {len(r['drops_failed'])} failing")
     if args.report:
@@ -249,7 +270,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     new = [n for n in failing if n not in known]
-    stale = [n for n in known if n not in failing]
+    stale = [n for n in known if n not in failing and n not in baseline]
     by_unit: dict[str, int] = {}
     for n, meta in known.items():
         by_unit[meta.get("unit", "?")] = by_unit.get(meta.get("unit", "?"), 0) + 1
@@ -262,7 +283,15 @@ def main(argv: list[str] | None = None) -> int:
         return 1 if new else 0
 
     rc = 0
-    for violation in ratchet_violations(doc, base_known(repo)):
+    base_state, base_doc = base_known(repo)
+    if base_state == "unresolved":
+        msg = "cannot read the known set at the merge-base with origin/main, so shrink-only is NOT verified"
+        if os.environ.get("GITHUB_ACTIONS"):
+            rc = 1
+            print(f"FAIL: {msg} (CI must fetch full history)")
+        else:
+            print(f"NOTE: {msg}")
+    for violation in ratchet_violations(doc, base_doc):
         rc = 1
         print(f"FAIL: ratchet may only shrink -- {violation}")
     budget = int(doc.get("budget_seconds", 0))

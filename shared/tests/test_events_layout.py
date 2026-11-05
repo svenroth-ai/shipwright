@@ -246,15 +246,17 @@ def test_unborn_head_means_nothing_committed(tmp_path, monkeypatch):
 def test_the_test_flag_is_never_set_by_plugins_or_templates():
     """BRIEF section 2: the override flag is set only by the harness / this repo's CI."""
     repo = Path(__file__).resolve().parents[2]
+    import os
     offenders = []
     for base in (repo / "plugins", repo / "shared" / "templates"):
-        for path in base.rglob("*"):
-            parts = path.relative_to(repo).parts
-            if (not path.is_file() or "tests" in parts or ".venv" in parts or "node_modules" in parts
-                    or path.suffix not in {".py", ".md", ".json", ".yml", ".yaml", ".sh", ".toml", ".txt"}):
-                continue
-            if el.ENV_LAYOUT_TEST in path.read_text(encoding="utf-8", errors="ignore"):
-                offenders.append(path.relative_to(repo).as_posix())
+        for cur, dirs, files in os.walk(base):
+            dirs[:] = [d for d in dirs if d not in {"tests", ".venv", "node_modules", "__pycache__"}]
+            for name in files:
+                path = Path(cur) / name
+                if path.suffix not in {".py", ".md", ".json", ".yml", ".yaml", ".sh", ".toml", ".txt"}:
+                    continue
+                if el.ENV_LAYOUT_TEST in path.read_text(encoding="utf-8", errors="ignore"):
+                    offenders.append(path.relative_to(repo).as_posix())
     assert not offenders, offenders
 
 
@@ -266,3 +268,9 @@ def test_config_with_bom_crlf_and_non_ascii_is_read(tmp_path):
     assert events_layout(tmp_path) == "drops"
     cfg.write_text('{"events_layout": ""}', encoding="utf-8")
     assert events_layout(tmp_path) == "legacy"
+
+
+def test_legacy_target_is_the_events_log_resolver(tmp_path):
+    from lib.events_log import resolve_events_path
+    assert resolve_events_write_path(tmp_path) == resolve_events_path(tmp_path)
+    assert el.events_lock_path(tmp_path).name == resolve_events_path(tmp_path).name + ".lock"

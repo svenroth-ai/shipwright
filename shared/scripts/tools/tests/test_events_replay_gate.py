@@ -31,7 +31,7 @@ def fake_run(monkeypatch):
     monkeypatch.setattr(gate, "run_root", lambda plan, timeout: {
         "root": "shared/tests", "files": state["files"], "seconds": 1.0,
         "drops_failed": list(state["failing"]), "baseline_failed": []})
-    monkeypatch.setattr(gate, "base_known", lambda repo: None)
+    monkeypatch.setattr(gate, "base_known", lambda repo: ("absent", None))
     return state
 
 
@@ -121,7 +121,7 @@ def test_ratchet_violations_against_the_merge_base():
 def test_check_fails_when_the_set_grew_since_the_merge_base(tmp_path, known_file, fake_run, monkeypatch):
     _write(known_file, ["a::t", "added::t"])
     fake_run["failing"] = ["a::t", "added::t"]
-    monkeypatch.setattr(gate, "base_known", lambda repo: {"budget_seconds": 100, "known": {"a::t": {}}})
+    monkeypatch.setattr(gate, "base_known", lambda repo: ("ok", {"budget_seconds": 100, "known": {"a::t": {}}}))
     assert _main(tmp_path) == 1
 
 
@@ -141,3 +141,72 @@ def test_pytest_cmd_keeps_each_roots_own_addopts():
         base = ""
         marker_expr = "not slow and not cross_plugin"
     assert "-m" in gate._pytest_cmd(Q, [])
+
+
+def test_budget_cannot_be_switched_off():
+    base = {"budget_seconds": 100, "known": {}}
+    assert gate.ratchet_violations({"budget_seconds": 0, "known": {}}, base)
+    assert gate.ratchet_violations({"known": {}}, base)
+
+
+def test_unresolvable_base_fails_in_ci_only(tmp_path, known_file, fake_run, monkeypatch):
+    _write(known_file, [])
+    monkeypatch.setattr(gate, "base_known", lambda repo: ("unresolved", None))
+    monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
+    assert _main(tmp_path) == 0
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")
+    assert _main(tmp_path) == 1
+
+
+def test_fail_line_keeps_ids_with_spaces():
+    m = gate._FAIL_LINE.match("FAILED shared/tests/test_x.py::test_y[hello world] - assert 1 == 2")
+    assert m.group(1) == "shared/tests/test_x.py::test_y[hello world]"
+
+
+class _Proc:
+    def __init__(self, rc, out):
+        self.returncode, self.stdout = rc, out
+
+
+class _Plan:
+    base = ""
+    marker_expr = None
+    cwd = Path(".")
+    pytest_arg = "shared/tests"
+    rel_root = "shared/tests"
+
+
+def test_run_is_fail_closed(monkeypatch):
+    def fake(rc, out):
+        monkeypatch.setattr(gate.subprocess, "run", lambda *a, **k: _Proc(rc, out))
+        return gate._run(_Plan, [], {}, 10)[0]
+    assert fake(0, "") == set()
+    assert fake(1, "FAILED a.py::t - x") == {"a.py::t"}
+    assert any("pytest-exit-1" in n for n in fake(1, "no summary lines"))
+    assert any("pytest-exit-2" in n for n in fake(2, "FAILED a.py::t"))
+
+    def boom(*a, **k):
+        raise gate.subprocess.TimeoutExpired("pytest", 1)
+    monkeypatch.setattr(gate.subprocess, "run", boom)
+    assert any("pytest-timeout" in n for n in gate._run(_Plan, [], {}, 1)[0])
+
+
+def test_baseline_failures_never_hide_collection_errors_and_do_not_make_known_entries_stale(
+        tmp_path, known_file, monkeypatch):
+    _write(known_file, ["a.py::known"])
+    monkeypatch.setattr(gate, "_plans", lambda repo, only: [_Plan])
+    monkeypatch.setattr(gate, "base_known", lambda repo: ("absent", None))
+    monkeypatch.setattr(gate, "select_files", lambda plan: [Path("a.py")])
+    calls = []
+
+    def fake_run(plan, args, env, timeout):
+        calls.append(env["SHIPWRIGHT_EVENTS_LAYOUT"])
+        if env["SHIPWRIGHT_EVENTS_LAYOUT"] == "drops":
+            return {"a.py::known", "b.py"}, ""      # `b.py` = collection error (no ::)
+        return {"a.py::known"}, ""                   # fails under legacy too
+    monkeypatch.setattr(gate, "_run", fake_run)
+    monkeypatch.setattr(gate, "_global_id", lambda plan, n: n)
+    # the collection error stays a (new) failure; the known entry that also fails under
+    # legacy is a platform failure -- neither stale nor new.
+    assert _main(tmp_path, "--strict-stale") == 1
+    assert calls == ["drops", "legacy"]
