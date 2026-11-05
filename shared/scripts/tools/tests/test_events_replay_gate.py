@@ -27,6 +27,7 @@ def known_file(tmp_path, monkeypatch):
 def fake_run(monkeypatch):
     """Replace plan discovery + root execution; ``failing`` is the drops-only set."""
     state = {"failing": [], "files": 3}
+    monkeypatch.setattr(gate, "preflight", lambda repo: None)
     monkeypatch.setattr(gate, "_plans", lambda repo, only: [object()])
     monkeypatch.setattr(gate, "run_root", lambda plan, timeout: {
         "root": "shared/tests", "files": state["files"], "seconds": 1.0,
@@ -194,6 +195,7 @@ def test_run_is_fail_closed(monkeypatch):
 def test_baseline_failures_never_hide_collection_errors_and_do_not_make_known_entries_stale(
         tmp_path, known_file, monkeypatch):
     _write(known_file, ["a.py::known"])
+    monkeypatch.setattr(gate, "preflight", lambda repo: None)
     monkeypatch.setattr(gate, "_plans", lambda repo, only: [_Plan])
     monkeypatch.setattr(gate, "base_known", lambda repo: ("absent", None))
     monkeypatch.setattr(gate, "select_files", lambda plan: [Path("a.py")])
@@ -210,3 +212,19 @@ def test_baseline_failures_never_hide_collection_errors_and_do_not_make_known_en
     # legacy is a platform failure -- neither stale nor new.
     assert _main(tmp_path, "--strict-stale") == 1
     assert calls == ["drops", "legacy"]
+
+
+def test_budget_may_rise_only_with_a_reason():
+    base = {"budget_seconds": 100, "known": {}}
+    assert gate.ratchet_violations({"budget_seconds": 200, "known": {}}, base)
+    assert gate.ratchet_violations({"budget_seconds": 200, "budget_reason": "  ", "known": {}}, base)
+    assert gate.ratchet_violations({"budget_seconds": 200, "budget_reason": "more tests", "known": {}}, base) == []
+
+
+def test_init_refuses_to_record_a_crashed_root(tmp_path, known_file, fake_run):
+    fake_run["failing"] = ["shared/tests::<pytest-exit-2>"]
+    assert _main(tmp_path, "init") == 2 and not known_file.exists()
+
+
+def test_preflight_canary_passes_on_this_repo():
+    assert gate.preflight(Path(__file__).resolve().parents[4]) is None

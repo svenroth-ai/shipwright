@@ -30,6 +30,13 @@ write; the folder alone is invisible to git); a torn line is recovered by
 serialize on the lock, so they share the one open file and every recorded event is
 readable exactly once.
 
+UNSUPPORTED before the flip unit (S9a): setting ``events_layout: drops`` in a real
+repo today splits the log -- writers use drops while ``attach_commit_to_event``,
+``latest_event_dt``/``finalized_run_ids`` and the compliance twin still read the
+legacy file only. The key is honoured now because S0 owns reading it. The order
+inside the assembled read is (parsed instant, id); the per-file append-order
+contract belongs to S2.
+
 Not in S0 (owned by later units, see the BRIEF): the ``run`` stamp and 16-hex ids
 (S4), the single live key-precedence writer module (S4), per-file read status
 (S2), fold/archive tooling (S6). The key rule below is the minimum a dormant
@@ -138,7 +145,12 @@ def drop_key(project_root: Path | str, identity: tuple[str, bool, str] | None = 
 
 
 def _names_in_head(root: Path) -> set[str] | None:
-    """Drop file names already in HEAD's tree (``ls-tree``, never ``git status``).
+    """Drop file names already CLOSED: in HEAD's tree OR staged in the index.
+
+    ``ls-tree`` + ``ls-files``, never ``git status``. A staged-but-uncommitted drop
+    counts as closed (DESIGN 10.2: writers append only to UNTRACKED files), or an
+    append between ``git add`` and ``git commit`` would edit a file that is then
+    committed with N lines while the working copy holds N+1.
 
     ``set()`` for an unborn HEAD / no repo (nothing is committed). ``None`` when the
     probe itself failed: the caller must then NOT reuse any existing file (a new
@@ -153,6 +165,10 @@ def _names_in_head(root: Path) -> set[str] | None:
             ["git", "-C", str(root), "ls-tree", "--name-only", "HEAD", DROPS_DIR + "/"],
             capture_output=True, text=True, timeout=15, check=True,
         ).stdout
+        out += "\n" + subprocess.run(
+            ["git", "-C", str(root), "ls-files", "--", DROPS_DIR + "/"],
+            capture_output=True, text=True, timeout=15, check=True,
+        ).stdout
     except FileNotFoundError:
         return set()  # git not installed: not a repo, nothing committed
     except (OSError, subprocess.SubprocessError):
@@ -164,8 +180,8 @@ def resolve_events_write_path(project_root: Path | str) -> Path:
     """Where the next event is appended. Call it INSIDE ``events_lock_path``'s lock.
 
     ``legacy``: ``resolve_events_path`` (today's behaviour).
-    ``drops``: rotate-on-commit -- the open drop of this key and worktree (one NOT
-    yet in HEAD's tree), else a fresh file name with a new nonce. The file itself
+    ``drops``: rotate-on-commit -- the open drop of this key and worktree (one in
+    neither HEAD's tree nor the index), else a fresh file name with a new nonce. The file itself
     comes into existence on the first complete write; the folder alone is invisible
     to git, so no empty file is ever committed.
     """

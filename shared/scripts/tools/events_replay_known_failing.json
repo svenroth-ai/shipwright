@@ -1,5 +1,5 @@
 {
-  "budget_note": "budget_seconds was measured on Windows (--jobs 3, init); the Linux CI runner (--jobs 2, 45 min step timeout) needs confirming on first CI run.",
+  "budget_note": "budget_seconds was measured on Windows (--jobs 3); CI runs ubuntu with --jobs 3 and needs confirming on the first run. It may be raised only with a non-empty budget_reason.",
   "budget_seconds": 1306,
   "known": {
     "integration-tests/test_gate_honesty_cli_integration.py::test_pass_record_fencing_and_skip_reason_compose": {

@@ -220,7 +220,7 @@ jobs:
         # The override is set by the tool itself, never by this workflow.
         shell: bash
         timeout-minutes: 45
-        run: uv run --with pytest python shared/scripts/tools/events_replay_gate.py --jobs 3 --strict-stale
+        run: uv run --with pytest python shared/scripts/tools/events_replay_gate.py --jobs 3 --strict-stale --timeout 2400
 
       - name: Combine coverage
         # Diff-coverage roadmap Phase 2: fold every per-tier data file in

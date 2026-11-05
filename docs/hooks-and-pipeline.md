@@ -1054,7 +1054,7 @@ replays every event-related test file of every test root under the override
 (one pytest process per root) against the ratcheted known set
 `events_replay_known_failing.json` (entries split by owning unit; may only shrink);
 it runs as a step of `ci.yml`'s Python job with a stated time budget. Bare-origin
-harness: `integration-tests/test_events_drops_harness.py`; fixture pair:
+harness: `integration-tests/test_events_drops_harness.py`. **Setting `events_layout: drops` in a real repo is unsupported until the flip unit (S9a)**: writers would use drops while `attach_commit_to_event`, `latest_event_dt`, `finalized_run_ids` and the compliance twin still read only the legacy file; fixture pair:
 `shared/tests/fixtures/events_layout/` (`unsplit.jsonl` + `split/`).
 
 ### Pipeline Constants

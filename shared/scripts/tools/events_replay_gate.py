@@ -164,6 +164,29 @@ def _plans(repo: Path, only: list[str]) -> list[RootPlan]:
     return [p for p in plans if not only or any(o in p.rel_root for o in only)]
 
 
+def preflight(repo: Path) -> str | None:
+    """Canary: the override must really select ``drops`` (and legacy without the flag).
+
+    Without it a renamed variable would make every replay run legacy and, once the
+    known set is empty, turn the gate vacuously green.
+    """
+    code = ("import sys; sys.path.insert(0, sys.argv[1]); import tempfile; "
+            "from lib.events_layout import events_layout as e; print(e(tempfile.mkdtemp()))")
+
+    def probe(env_extra: dict[str, str]) -> str:
+        env = {k: v for k, v in os.environ.items() if not k.startswith("SHIPWRIGHT_EVENTS_LAYOUT")}
+        env.update(env_extra)
+        r = subprocess.run([sys.executable, "-c", code, str(repo / "shared" / "scripts")],
+                           capture_output=True, text=True, env=env, timeout=120)
+        return r.stdout.strip() or r.stderr.strip()[-200:]
+
+    got = probe(DROPS_ENV)
+    if got != "drops":
+        return f"DROPS_ENV resolved to {got!r}, expected 'drops'"
+    got = probe({"SHIPWRIGHT_EVENTS_LAYOUT": "drops"})
+    return None if got == "legacy" else f"the plain env var resolved to {got!r}, expected 'legacy'"
+
+
 def load_known() -> dict:
     """Missing file = empty set (first recording). An unparseable file is an ERROR."""
     if not KNOWN_PATH.exists():
@@ -186,8 +209,8 @@ def ratchet_violations(doc: dict, base_doc: dict | None) -> list[str]:
     base_budget, budget = int(base_doc.get("budget_seconds", 0)), int(doc.get("budget_seconds", 0))
     if base_budget > 0 and budget <= 0:
         out.append("budget_seconds removed or zeroed (the stated time budget cannot be switched off)")
-    elif budget > base_budget > 0:
-        out.append(f"budget_seconds raised {base_budget} -> {budget}")
+    elif budget > base_budget > 0 and not str(doc.get("budget_reason", "")).strip():
+        out.append(f"budget_seconds raised {base_budget} -> {budget} without a `budget_reason`")
     return out
 
 
@@ -241,6 +264,10 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"  {f.relative_to(repo).as_posix()}")
         return 0
 
+    problem = preflight(repo)
+    if problem:
+        print(f"FAIL: override canary -- {problem}")
+        return 1
     started = time.monotonic()
     with ThreadPoolExecutor(max_workers=max(1, args.jobs)) as pool:
         results = list(pool.map(lambda p: run_root(p, args.timeout), plans))
@@ -262,6 +289,10 @@ def main(argv: list[str] | None = None) -> int:
     if args.mode == "init":
         if known:
             print("ERROR: known set is not empty; the ratchet may only shrink (use `tighten`).", file=sys.stderr)
+            return 2
+        if any("<pytest-" in n for n in failing):
+            print("ERROR: a root crashed or timed out during recording; fix that first "
+                  "(sentinels can never become known entries).", file=sys.stderr)
             return 2
         doc["known"] = {n: {"unit": classify_unit(n)} for n in failing}
         doc["budget_seconds"] = int(elapsed * 2) + 60

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -246,7 +247,6 @@ def test_unborn_head_means_nothing_committed(tmp_path, monkeypatch):
 def test_the_test_flag_is_never_set_by_plugins_or_templates():
     """BRIEF section 2: the override flag is set only by the harness / this repo's CI."""
     repo = Path(__file__).resolve().parents[2]
-    import os
     offenders = []
     for base in (repo / "plugins", repo / "shared" / "templates"):
         for cur, dirs, files in os.walk(base):
@@ -274,3 +274,16 @@ def test_legacy_target_is_the_events_log_resolver(tmp_path):
     from lib.events_log import resolve_events_path
     assert resolve_events_write_path(tmp_path) == resolve_events_path(tmp_path)
     assert el.events_lock_path(tmp_path).name == resolve_events_path(tmp_path).name + ".lock"
+
+
+def test_staged_but_uncommitted_drop_is_closed(tmp_path, monkeypatch):
+    """DESIGN 10.2: no append between `git add` and `git commit`."""
+    monkeypatch.setenv(el.ENV_LAYOUT, "drops")
+    monkeypatch.setenv(el.ENV_LAYOUT_TEST, "1")
+    monkeypatch.setenv("SHIPWRIGHT_RUN_ID", "run-s")
+    root = _repo(tmp_path)
+    first = resolve_events_write_path(root)
+    first.write_text("{}\n")
+    _git(root, "add", str(first))
+    second = resolve_events_write_path(root)
+    assert second != first and second.name.startswith("run-s--")
