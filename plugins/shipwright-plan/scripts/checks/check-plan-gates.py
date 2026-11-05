@@ -20,8 +20,8 @@ review finding addressed or rejected-with-reason (#10); a UI project's E2E
 plan names >=1 flow (#11); autonomous runs: sections agree with the approved
 screens (``plan_design_check``).
 
-``--gate boundary`` (#7 — planning writes no production code) — every
-changed path must fall under ``PLAN_ALLOWED_PREFIXES``; non-git roots skip it.
+``--gate boundary`` (#7 — planning writes no production code) — every path changed since the
+session-start baseline must fall under ``PLAN_ALLOWED_PREFIXES``; non-git roots skip it.
 
 Strict by design (unlike the lenient phase verifier — this plan has no excuse).
 Exit codes: ``0`` all gates passed · ``1`` a gate failed · ``2`` bad usage.
@@ -50,7 +50,8 @@ from external_review_config import (  # noqa: E402
     load_review_config,
 )
 from plan_design_check import design_problems  # noqa: E402
-from phase_write_boundary import find_boundary_violations, git_dirty_paths  # noqa: E402
+from phase_boundary_baseline import PLAN_BASELINE_REL, session_changes  # noqa: E402
+from phase_write_boundary import find_boundary_violations  # noqa: E402
 from plan_gate_extras import (  # noqa: E402
     decisions_recorded,
     e2e_journeys_named,
@@ -215,11 +216,10 @@ def sections_gate(planning_dir: Path, project_root: Path, plugin_root: Path) -> 
     )
 
 
-def boundary_gate(project_root: Path) -> dict:
-    """FR-01.03 #7 — planning writes no production code, runs no tests.
-    Reads the session's own uncommitted change set; a non-git project
-    yields no evidence and passes trivially, not a violation."""
-    changed = git_dirty_paths(project_root)
+def boundary_gate(project_root: Path, split: str | None = None) -> dict:
+    """FR-01.03 #7 — planning writes no production code. Only changes since the session-start baseline
+    of this split (setup-planning-session.py) count; without one, the whole dirty set; non-git passes."""
+    changed = session_changes(project_root, PLAN_BASELINE_REL, split)
     violations = find_boundary_violations(changed, list(PLAN_ALLOWED_PREFIXES))
     if violations:
         return _gate(
@@ -284,7 +284,7 @@ def main() -> int:
     if args.gate in ("sections", "all"):
         results.append(sections_gate(planning_dir, project_root, plugin_root))
     if args.gate in ("boundary", "all"):
-        results.append(boundary_gate(project_root))
+        results.append(boundary_gate(project_root, planning_dir.name))
 
     failed = [r["gate"] for r in results if not r["ok"]]
     print(json.dumps({

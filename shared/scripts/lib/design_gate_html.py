@@ -122,3 +122,9 @@ def standalone_html_violations(html: str) -> list[str]:
             if host is not None and host not in _ALLOWED_EXTERNAL_HOSTS:
                 violations.append(raw)
     return violations
+
+
+#: Public names for the autonomous approved-link rule (``autonomous_rules.standalone_split``),
+#: which must judge "external" exactly as gate #6 does.
+ALLOWED_EXTERNAL_HOSTS = _ALLOWED_EXTERNAL_HOSTS
+external_host = _external_host

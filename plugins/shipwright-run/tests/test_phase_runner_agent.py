@@ -125,3 +125,14 @@ def test_review_status_is_backward_compatible_and_validated():
     for bad in ({"state": "deferred"}, {"state": "bogus"}, "x",
                 {"state": "completed", "passes": {"spec": 1}}):
         assert not is_valid_result({**base, "review_status": bad}), bad
+
+
+@pytest.mark.covers("FR-01.05/AC05")
+def test_autonomous_rule_decisions_are_not_handed_back_as_questions():
+    """e2e run 22: a decision a phase rule settles is not returned to the master to ask."""
+    md = " ".join(AGENT_MD.read_text(encoding="utf-8").split())
+    assert "Autonomous run: what a rule decides is not handed back as a question." in md
+    assert "only what the tool answers with exit 1 (`action: ask`) is a question" in md
+    loop = " ".join((AGENT_MD.parent.parent / "skills" / "run" / "references" / "single-session-loop.md")
+                    .read_text(encoding="utf-8").split())
+    assert "never briefs a phase-runner \"install nothing without asking\"" in loop

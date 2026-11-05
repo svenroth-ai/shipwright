@@ -13,8 +13,12 @@ Output (JSON):
         "plugin_root": "/path/to/plugin",
         "resume_from_step": <step_number>,
         "state": { ... },
-        "session_id": "<id>"
+        "session_id": "<id>",
+        "boundary_baseline": "written" | "kept" | "not_written"
     }
+
+The boundary baseline (FR-01.03 #7) records what earlier phases left uncommitted,
+so ``check-plan-gates.py --gate boundary`` judges only this session's changes.
 """
 
 import argparse
@@ -36,6 +40,7 @@ from external_review_config import (  # noqa: E402
     load_review_config,
 )
 from review_marker import STATE_BLOCK, evaluate_review_state  # noqa: E402
+from phase_boundary_baseline import PLAN_BASELINE_REL, record as record_baseline  # noqa: E402
 
 
 SESSION_STATE_FILE = "shipwright_plan_session.json"
@@ -163,6 +168,9 @@ def main() -> int:
     spec_path = Path(args.file).resolve()
     planning_dir = spec_path.parent
 
+    # FR-01.03 #7: what an earlier phase left uncommitted is not this session's change.
+    boundary_baseline = record_baseline(Path(args.project_root), PLAN_BASELINE_REL, planning_dir.name)  # per split
+
     # Ensure sections directory exists
     (planning_dir / "sections").mkdir(exist_ok=True)
 
@@ -203,6 +211,7 @@ def main() -> int:
         "external_review_enabled": review_status == "available",
         "e2e_enabled": is_e2e_enabled(global_config),
         "session_id": args.session_id or "",
+        "boundary_baseline": boundary_baseline,
         "message": f"{'Starting new' if is_new else 'Resuming'} planning session in: {planning_dir}",
     }
 
