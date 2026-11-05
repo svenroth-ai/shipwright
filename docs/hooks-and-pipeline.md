@@ -1037,6 +1037,26 @@ sync-path entrypoint (run before `git pull`). New write surface: a single
 `chore(triage)` commit on the main tree's default branch (only the
 `.shipwright/triage.jsonl` path). See `shared/tests/test_reconcile_triage*.py`.
 
+### Event-log layout: dormant per-run drops (campaign `events-drop-files`, S0)
+
+`shared/scripts/lib/events_layout.py` holds a **dormant** second layout for the
+event log: one file per run, `shipwright_events.d/<key>--<wt8>--<nonce8>.jsonl`,
+so parallel PRs only ADD different files. The default stays `legacy` (the single
+`shipwright_events.jsonl`, bytes unchanged). Precedence: the `events_layout` key
+in `shipwright_sync_config.json` (read at runtime; absent = legacy forever); the
+env var `SHIPWRIGHT_EVENTS_LAYOUT` is a **test-only** override honoured only with
+`SHIPWRIGHT_EVENTS_LAYOUT_TEST=1` (the plain var changes nothing; never set it in
+plugins or consumer CI templates). Write path: `record_event.append_event*` choose
+the file under the lock (`shipwright_events.jsonl.lock`, outside the folder);
+read path: `lib.config.read_events_result` assembles legacy (file order) then
+drops (parsed instant, id). Standing gate: `shared/scripts/tools/events_replay_gate.py`
+replays every event-related test file of every test root under the override
+(one pytest process per root) against the ratcheted known set
+`events_replay_known_failing.json` (entries split by owning unit; may only shrink);
+it runs as a step of `ci.yml`'s Python job with a stated time budget. Bare-origin
+harness: `integration-tests/test_events_drops_harness.py`; fixture pair:
+`shared/tests/fixtures/events_layout/` (`unsplit.jsonl` + `split/`).
+
 ### Pipeline Constants
 
 **File:** `plugins/shipwright-run/scripts/lib/orchestrator_pkg/constants.py`

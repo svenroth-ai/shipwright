@@ -1,0 +1,310 @@
+{
+  "budget_note": "budget_seconds was measured on Windows (--jobs 3, init); the Linux CI runner (--jobs 2, 45 min step timeout) needs confirming on first CI run.",
+  "budget_seconds": 1306,
+  "known": {
+    "integration-tests/test_gate_honesty_cli_integration.py::test_pass_record_fencing_and_skip_reason_compose": {
+      "unit": "S3"
+    },
+    "integration-tests/test_phase_gate_real_skill_canon.py::test_a_phase_that_writes_no_audit_entry_is_still_rejected": {
+      "unit": "S3"
+    },
+    "integration-tests/test_phase_gate_real_skill_canon.py::test_a_second_split_needs_its_own_entry_under_the_runs_id": {
+      "unit": "S3"
+    },
+    "integration-tests/test_phase_gate_real_skill_canon.py::test_real_skill_finalization_passes_the_enforced_gate[runner-exports-the-run-id]": {
+      "unit": "S3"
+    },
+    "integration-tests/test_phase_gate_real_skill_canon.py::test_real_skill_finalization_passes_the_enforced_gate[skill-mints-its-own-id]": {
+      "unit": "S3"
+    },
+    "integration-tests/test_single_session_sole_mode.py::test_loop_emits_one_tracked_start_end_pair_per_split": {
+      "unit": "S4"
+    },
+    "plugins/shipwright-compliance/tests/test_grade_snapshot_attribution.py::TestComplianceRegenAttributesTheTree::test_regen_in_a_branch_tree_lands_an_attributed_snapshot": {
+      "unit": "S4"
+    },
+    "plugins/shipwright-compliance/tests/test_grade_snapshot_attribution.py::TestEmitterAttributesTheTree::test_a_raising_resolver_never_costs_us_the_snapshot": {
+      "unit": "S4"
+    },
+    "plugins/shipwright-compliance/tests/test_grade_snapshot_attribution.py::TestEmitterAttributesTheTree::test_a_worktree_at_the_fork_point_is_not_called_main": {
+      "unit": "S4"
+    },
+    "plugins/shipwright-compliance/tests/test_grade_snapshot_attribution.py::TestEmitterAttributesTheTree::test_snapshot_from_a_real_repo_names_its_branch_and_base": {
+      "unit": "S4"
+    },
+    "plugins/shipwright-compliance/tests/test_grade_snapshot_attribution.py::TestEmitterAttributesTheTree::test_snapshot_on_the_default_branch_is_main_lineage": {
+      "unit": "S4"
+    },
+    "plugins/shipwright-compliance/tests/test_grade_snapshot_attribution.py::TestEmitterAttributesTheTree::test_unresolvable_tree_still_emits_an_explicitly_unknown_snapshot": {
+      "unit": "S4"
+    },
+    "plugins/shipwright-compliance/tests/test_grade_snapshot_dirty.py::TestDirtyDescribesTheTreeBeforeTheProducerWrote::test_a_parents_earlier_capture_wins": {
+      "unit": "S4"
+    },
+    "plugins/shipwright-compliance/tests/test_grade_snapshot_dirty.py::TestDirtyDescribesTheTreeBeforeTheProducerWrote::test_an_explicit_empty_run_id_does_not_adopt_the_environment": {
+      "unit": "S4"
+    },
+    "plugins/shipwright-compliance/tests/test_grade_snapshot_dirty.py::TestDirtyDescribesTheTreeBeforeTheProducerWrote::test_an_explicit_run_id_beats_the_environment": {
+      "unit": "S4"
+    },
+    "plugins/shipwright-compliance/tests/test_grade_snapshot_dirty.py::TestDirtyDescribesTheTreeBeforeTheProducerWrote::test_an_unrelated_runs_capture_is_not_inherited": {
+      "unit": "S4"
+    },
+    "plugins/shipwright-compliance/tests/test_grade_snapshot_dirty.py::TestDirtyDescribesTheTreeBeforeTheProducerWrote::test_genuinely_uncommitted_source_emits_dirty_true": {
+      "unit": "S4"
+    },
+    "plugins/shipwright-compliance/tests/test_grade_snapshot_dirty.py::TestDirtyDescribesTheTreeBeforeTheProducerWrote::test_no_git_omits_the_field_rather_than_guessing": {
+      "unit": "S4"
+    },
+    "plugins/shipwright-compliance/tests/test_grade_snapshot_dirty.py::TestDirtyDescribesTheTreeBeforeTheProducerWrote::test_pristine_tree_emits_dirty_false": {
+      "unit": "S4"
+    },
+    "plugins/shipwright-compliance/tests/test_grade_snapshot_dirty.py::TestDirtyDescribesTheTreeBeforeTheProducerWrote::test_run_id_falls_back_to_the_environment": {
+      "unit": "S4"
+    },
+    "plugins/shipwright-compliance/tests/test_grade_snapshot_regen.py::TestComplianceRegenComposition::test_a_second_regen_over_unchanged_data_adds_nothing": {
+      "unit": "S2"
+    },
+    "plugins/shipwright-compliance/tests/test_grade_snapshot_regen.py::TestComplianceRegenComposition::test_dashboard_regen_emits_snapshot": {
+      "unit": "S2"
+    },
+    "plugins/shipwright-compliance/tests/test_grade_snapshot_regen.py::TestEmitGradeSnapshot::test_a_regen_that_changes_nothing_appends_nothing": {
+      "unit": "S3"
+    },
+    "plugins/shipwright-compliance/tests/test_grade_snapshot_regen.py::TestEmitGradeSnapshot::test_a_regen_whose_grade_changed_still_appends": {
+      "unit": "S3"
+    },
+    "plugins/shipwright-compliance/tests/test_grade_snapshot_regen.py::TestEmitGradeSnapshot::test_appends_exactly_one_event": {
+      "unit": "S3"
+    },
+    "plugins/shipwright-run/tests/test_phase_skip_reason.py::test_recover_phase_task_cli_records_reason_and_one_event": {
+      "unit": "S3"
+    },
+    "plugins/shipwright-run/tests/test_phase_skip_reason.py::test_single_session_recover_cli_records_reason_event_and_loop_event": {
+      "unit": "S3"
+    },
+    "plugins/shipwright-run/tests/test_single_session_phase_started.py::test_single_session_apply_emits_paired_phase_completed": {
+      "unit": "S4"
+    },
+    "plugins/shipwright-run/tests/test_single_session_phase_started.py::test_single_session_apply_ok_false_emits_phase_failed": {
+      "unit": "S4"
+    },
+    "plugins/shipwright-run/tests/test_single_session_phase_started.py::test_single_session_full_walk_one_started_per_phase": {
+      "unit": "S4"
+    },
+    "plugins/shipwright-run/tests/test_single_session_phase_started.py::test_single_session_next_emits_phase_started": {
+      "unit": "S4"
+    },
+    "plugins/shipwright-run/tests/test_single_session_phase_started.py::test_single_session_reclaim_does_not_double_emit": {
+      "unit": "S4"
+    },
+    "shared/scripts/tools/tests/test_record_event.py::TestConcurrency::test_parallel_writes_no_data_loss": {
+      "unit": "S4"
+    },
+    "shared/scripts/tools/tests/test_record_event.py::TestWorktreeAwareLog::test_append_event_from_worktree_lands_in_worktree_log": {
+      "unit": "S4"
+    },
+    "shared/scripts/tools/tests/test_record_event.py::TestWorktreeAwareLog::test_non_git_dir_behavior_unchanged": {
+      "unit": "S4"
+    },
+    "shared/tests/test_attach_commit_to_event.py::test_attach_commit_to_event_is_atomic_no_partial_write_on_unicode": {
+      "unit": "S4"
+    },
+    "shared/tests/test_attach_commit_to_event.py::test_attach_commit_to_event_patches_only_commit_field": {
+      "unit": "S4"
+    },
+    "shared/tests/test_attach_commit_to_event.py::test_attach_commit_to_event_patches_target_line_only": {
+      "unit": "S4"
+    },
+    "shared/tests/test_attach_commit_to_event.py::test_attach_commit_to_event_preserves_unrelated_events": {
+      "unit": "S4"
+    },
+    "shared/tests/test_attach_commit_to_event.py::test_attach_commit_to_event_returns_false_when_id_not_found": {
+      "unit": "S4"
+    },
+    "shared/tests/test_claims_hardening_followups.py::test_a_finalize_rerun_with_unclassified_extras_is_refused_not_short_circuited": {
+      "unit": "S4"
+    },
+    "shared/tests/test_completion_writers.py::test_a_phase_rerun_that_records_no_new_event_still_passes": {
+      "unit": "S4"
+    },
+    "shared/tests/test_completion_writers.py::test_a_split_that_skips_the_marker_write_is_still_caught": {
+      "unit": "S4"
+    },
+    "shared/tests/test_completion_writers.py::test_the_hand_built_shape_matches_the_writer": {
+      "unit": "S4"
+    },
+    "shared/tests/test_completion_writers.py::test_the_marker_and_the_completion_land_on_one_clock": {
+      "unit": "S4"
+    },
+    "shared/tests/test_completion_writers.py::test_the_written_entry_reads_back_as_an_instant": {
+      "unit": "S4"
+    },
+    "shared/tests/test_completion_writers_iterate_ledger.py::test_the_iterate_ledger_writer_produces_a_readable_completion": {
+      "unit": "S4"
+    },
+    "shared/tests/test_compliance_input_state.py::test_a_left_alone_input_reaches_the_operator": {
+      "unit": "S3"
+    },
+    "shared/tests/test_compliance_refresh_real_producer.py::test_the_append_only_logs_keep_every_line_they_started_with": {
+      "unit": "S4"
+    },
+    "shared/tests/test_compliance_refresh_real_producer.py::test_the_inputs_left_alone_are_exactly_the_two_logs_that_moved": {
+      "unit": "S3"
+    },
+    "shared/tests/test_compliance_refresh_real_producer.py::test_the_producers_own_appends_do_not_break_the_fixpoint": {
+      "unit": "S3"
+    },
+    "shared/tests/test_events_newline_integrity.py::test_append_onto_missing_and_empty_log_injects_no_leading_newline": {
+      "unit": "S4"
+    },
+    "shared/tests/test_events_newline_integrity.py::test_append_onto_terminated_log_injects_no_blank_line": {
+      "unit": "S4"
+    },
+    "shared/tests/test_events_newline_integrity.py::test_append_onto_unterminated_log_does_not_concatenate": {
+      "unit": "S4"
+    },
+    "shared/tests/test_finalize_bundle_integration.py::test_bundle_composes_the_real_tools_and_writes_every_artifact": {
+      "unit": "S4"
+    },
+    "shared/tests/test_finalize_bundle_integration.py::test_bundle_output_equals_the_manual_sequence": {
+      "unit": "S4"
+    },
+    "shared/tests/test_finalize_bundle_integration.py::test_partial_failure_then_whole_bundle_retry_recovers_without_dups": {
+      "unit": "S4"
+    },
+    "shared/tests/test_finalize_bundle_integration.py::test_whole_bundle_retry_is_idempotent": {
+      "unit": "S4"
+    },
+    "shared/tests/test_finalize_campaign_status.py::test_run_regenerates_campaign_status_with_byte_parity": {
+      "unit": "S3"
+    },
+    "shared/tests/test_finalize_event_self_id.py::test_cli_manual_flag_path_stamps_event": {
+      "unit": "S4"
+    },
+    "shared/tests/test_finalize_event_self_id.py::test_event_carries_campaign_and_sub_iterate_id": {
+      "unit": "S4"
+    },
+    "shared/tests/test_finalize_event_self_id.py::test_stamp_is_idempotent_per_run_id": {
+      "unit": "S4"
+    },
+    "shared/tests/test_finalize_iterate.py::test_attach_commit_after_finalize_patches_event": {
+      "unit": "S4"
+    },
+    "shared/tests/test_finalize_iterate.py::test_cli_attach_commit_subcommand": {
+      "unit": "S4"
+    },
+    "shared/tests/test_finalize_iterate.py::test_event_extras_cannot_spoof_system_fields": {
+      "unit": "S4"
+    },
+    "shared/tests/test_finalize_iterate.py::test_finalize_allows_event_with_change_type_pair": {
+      "unit": "S4"
+    },
+    "shared/tests/test_finalize_iterate.py::test_finalize_allows_feature_event_with_affected_frs": {
+      "unit": "S4"
+    },
+    "shared/tests/test_finalize_iterate.py::test_finalize_rerun_is_idempotent_but_still_gated": {
+      "unit": "S4"
+    },
+    "shared/tests/test_finalize_iterate.py::test_run_includes_iterate_event_in_compliance_data": {
+      "unit": "S4"
+    },
+    "shared/tests/test_finalize_iterate.py::test_run_merges_event_extras_into_event": {
+      "unit": "S4"
+    },
+    "shared/tests/test_finalize_iterate.py::test_run_no_longer_requires_commit_arg": {
+      "unit": "S4"
+    },
+    "shared/tests/test_finalize_iterate.py::test_run_records_event_pre_commit_with_empty_commit": {
+      "unit": "S4"
+    },
+    "shared/tests/test_finalize_iterate.py::test_run_records_event_with_commit": {
+      "unit": "S4"
+    },
+    "shared/tests/test_finalize_test_evidence_gate.py::test_finalize_allows_no_tests_reason": {
+      "unit": "S4"
+    },
+    "shared/tests/test_grade_snapshot_dedup.py::TestDedupIsOptIn::test_the_replay_route_still_appends_an_identical_snapshot": {
+      "unit": "S4"
+    },
+    "shared/tests/test_grade_snapshot_dedup.py::TestTheDedupItself::test_a_changed_grade_or_score_appends[A-88.0]": {
+      "unit": "S4"
+    },
+    "shared/tests/test_grade_snapshot_dedup.py::TestTheDedupItself::test_a_changed_grade_or_score_appends[A-94.7]": {
+      "unit": "S4"
+    },
+    "shared/tests/test_grade_snapshot_dedup.py::TestTheDedupItself::test_a_changed_grade_or_score_appends[B-89.0]": {
+      "unit": "S4"
+    },
+    "shared/tests/test_grade_snapshot_dedup.py::TestTheKnownLimit::test_a_stale_tree_still_appends_a_value_recorded_elsewhere": {
+      "unit": "S4"
+    },
+    "shared/tests/test_grade_snapshot_dedup.py::TestWhatMayBeComparedWithWhat::test_an_amended_predecessor_preserves_the_effective_transition": {
+      "unit": "S4"
+    },
+    "shared/tests/test_grade_snapshot_dedup_never_raises.py::TestTheComparisonNeverRaises::test_a_corrupt_line_never_turns_an_older_match_into_a_skip": {
+      "unit": "S4"
+    },
+    "shared/tests/test_grade_snapshot_dedup_never_raises.py::TestTheComparisonNeverRaises::test_a_corrupt_line_warning_as_error_does_not_cost_the_snapshot": {
+      "unit": "S4"
+    },
+    "shared/tests/test_grade_snapshot_dedup_never_raises.py::TestTheComparisonNeverRaises::test_a_malformed_amendment_fails_open": {
+      "unit": "S4"
+    },
+    "shared/tests/test_iterate_ledger_anchor.py::test_an_in_place_f5c_rerun_after_a_new_event_is_now_caught": {
+      "unit": "S2"
+    },
+    "shared/tests/test_iterate_ledger_anchor.py::test_main_stamps_and_omits_the_anchor_in_process": {
+      "unit": "S2"
+    },
+    "shared/tests/test_iterate_ledger_anchor.py::test_the_hand_built_ledger_fixture_matches_the_writer": {
+      "unit": "S2"
+    },
+    "shared/tests/test_iterate_ledger_anchor.py::test_the_ledger_writer_stamps_the_anchor_c3_reads": {
+      "unit": "S2"
+    },
+    "shared/tests/test_iterate_ledger_anchor.py::test_the_marker_and_the_ledger_entry_land_on_one_clock": {
+      "unit": "S2"
+    },
+    "shared/tests/test_iterate_ledger_anchor.py::test_the_real_f5c_before_f5b_ordering_still_passes": {
+      "unit": "S2"
+    },
+    "shared/tests/test_iterate_tests_block.py::TestFinalizeIterateWiring::test_finalize_keeps_an_explicit_extras_block": {
+      "unit": "S4"
+    },
+    "shared/tests/test_iterate_tests_block.py::TestFinalizeIterateWiring::test_finalize_writes_no_tests_key_without_a_matching_ledger": {
+      "unit": "S4"
+    },
+    "shared/tests/test_iterate_tests_block.py::TestFinalizeIterateWiring::test_finalize_writes_the_derived_totals_onto_the_event": {
+      "unit": "S4"
+    },
+    "shared/tests/test_phase_completed_per_split_integration.py::test_multi_split_build_records_every_split_end": {
+      "unit": "S4"
+    },
+    "shared/tests/test_phase_completed_per_split_integration.py::test_single_split_phase_unchanged": {
+      "unit": "S4"
+    },
+    "shared/tests/test_record_event.py::TestFrOrChangeTypeGate::test_main_passes_with_affected_frs": {
+      "unit": "S4"
+    },
+    "shared/tests/test_record_event.py::TestFrOrChangeTypeGate::test_main_passes_with_change_type": {
+      "unit": "S4"
+    },
+    "shared/tests/test_record_event.py::TestWorktreeEventLogRoundTrip::test_append_then_read_roundtrips_in_worktree": {
+      "unit": "S4"
+    },
+    "shared/tests/test_record_event.py::TestWorktreeEventLogRoundTrip::test_attach_commit_patches_worktree_log_in_place": {
+      "unit": "S4"
+    },
+    "shared/tests/test_record_event_test_evidence.py::TestFrGateTestEvidenceCli::test_main_passes_with_no_tests_reason": {
+      "unit": "S4"
+    },
+    "shared/tests/test_requirement_gate_spec_impact.py::test_the_cli_refuses_an_unclassified_bug_and_accepts_the_reason_code": {
+      "unit": "S3"
+    },
+    "shared/tests/test_verify_iterate_finalization.py::test_boundary_roundtrip_worktree_producer_to_verifier": {
+      "unit": "S4"
+    }
+  },
+  "schema": 1
+}

@@ -34,6 +34,7 @@ if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
 from lib.events_log import resolve_events_path  # noqa: E402
+from lib.events_layout import events_lock_path, resolve_events_write_path  # noqa: E402
 from lib.events_amend import apply_amendments  # noqa: E402
 # grade_snapshot shape + attribution; top-level for ADR-045 like tests_block.
 from grade_snapshot_shape import apply_grade_snapshot, reject_asserted_attribution  # noqa: E402
@@ -377,17 +378,16 @@ def append_event(project_root: Path, event: dict) -> str:
     ``grade_snapshot`` one) lives in ``append_event_idempotent`` (deep-audit
     F14); the CLI and the compliance grade emitter both route through it.
 
-    Resolves the per-tree event log via ``resolve_events_path``. Under a
-    ``/shipwright-iterate`` run this is the worktree-local copy: the append
-    lands there and F6 commits it, so the event ships through the iterate PR
-    rather than being orphaned in the main tree. The ``.lock`` mutex is derived
-    from the resolved path. See ``lib.events_log`` for the model + history.
+    The target is chosen under the lock by ``resolve_events_write_path``: the
+    per-tree legacy log (worktree-local; F6 commits it so the event ships through
+    the iterate PR), or a per-run drop under the dormant drops layout. The lock is
+    ``events_lock_path``. See ``lib.events_log`` / ``lib.events_layout``.
     """
-    path = resolve_events_path(project_root)
-    lock_path = path.with_name(path.name + ".lock")
+    lock_path = events_lock_path(project_root)
     line = json.dumps(event, ensure_ascii=False, separators=(",", ":")) + "\n"
 
     with _FileLock(lock_path):
+        path = resolve_events_write_path(project_root)  # chosen under the lock
         # Termination guard (iterate-2026-07-18-events-jsonl-record-boundary,
         # mirroring `triage.py _append_line`): never assume the PREVIOUS writer
         # left a trailing newline, or two records land on one physical line.
@@ -431,8 +431,7 @@ def append_event_idempotent(
     manual/replay callers remain unconditional; only the compliance emitter
     enables it.
     """
-    path = resolve_events_path(project_root)
-    lock_path = path.with_name(path.name + ".lock")
+    lock_path = events_lock_path(project_root)
     line = json.dumps(event, ensure_ascii=False, separators=(",", ":")) + "\n"
 
     with _FileLock(lock_path):
@@ -469,6 +468,7 @@ def append_event_idempotent(
                 if split_id is not None:
                     skip["splitId"] = split_id
                 return None, skip
+        path = resolve_events_write_path(project_root)
         # Same termination guard as `append_event` — probed AFTER the dedup
         # checks so a skipped duplicate never touches the file at all.
         needs_separator = ends_without_newline(path)
