@@ -99,11 +99,18 @@ def test_dev_tooling_installs_only_what_is_declared(tmp_path, capsys):
     assert _run(tmp_path, "--kind", "dev-tooling", capsys=capsys)[1] == 2
 
 
-def test_an_unknown_profile_only_narrows_what_counts_as_declared(tmp_path, capsys):
+def test_an_unknown_profile_fails_loud_instead_of_narrowing_silently(tmp_path, capsys):
     _project(tmp_path, brief_package={"a": 1}, profile="no-such-profile")
-    assert rad._profile(tmp_path) is None
     out, code = _run(tmp_path, "--kind", "dev-tooling", "--command", "npx playwright install chromium", capsys=capsys)
-    assert (code, out["action"]) == (1, "ask")
+    assert code == 2 and "stack profile cannot be resolved" in out["error"]
+
+
+def test_no_readable_run_config_means_no_profile(tmp_path):
+    assert rad._profile(tmp_path) is None
+    (tmp_path / "shipwright_run_config.json").write_text("{not json", encoding="utf-8")
+    assert rad._profile(tmp_path) is None
+    (tmp_path / "shipwright_run_config.json").write_text('{"profile": 7}', encoding="utf-8")
+    assert rad._profile(tmp_path) is None
 
 
 def test_a_failed_log_write_is_exit_2(tmp_path, capsys, monkeypatch):

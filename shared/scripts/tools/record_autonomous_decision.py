@@ -142,27 +142,36 @@ def _hard_constraint(root: Path, a: argparse.Namespace) -> tuple[dict, int]:
 
 
 def _profile(root: Path) -> dict | None:
+    """The run's stack profile; ``None`` when the run config names none. A profile the config names but
+    the resolver refuses (unknown, corrupt, too new) raises -- the caller fails loud (exit 2)."""
     try:
         name = json.loads((root / "shipwright_run_config.json").read_text(encoding="utf-8")).get("profile")
-        if not isinstance(name, str) or not name:
-            return None
-        added = str(_SCRIPTS) not in sys.path
-        if added:
-            sys.path.append(str(_SCRIPTS))
-        try:
-            from profile_resolver import resolve_profile
-        finally:
-            if added:
-                sys.path.remove(str(_SCRIPTS))
-        return resolve_profile(name, root).data
-    except Exception:  # noqa: BLE001 - no readable profile only narrows what counts as declared
+    except (OSError, ValueError, AttributeError):  # no readable run config: no profile declares anything
         return None
+    if not isinstance(name, str) or not name:
+        return None
+    added = str(_SCRIPTS) not in sys.path
+    if added:
+        sys.path.append(str(_SCRIPTS))
+    try:
+        from profile_resolver import resolve_profile
+    finally:
+        if added:
+            sys.path.remove(str(_SCRIPTS))
+    return resolve_profile(name, root).data
+
+
+def _profile_error(exc: ValueError) -> tuple[dict, int]:
+    return {"error": f"the run's stack profile cannot be resolved: {exc}"}, 2
 
 
 def _dev_tooling(root: Path, a: argparse.Namespace) -> tuple[dict, int]:
     if not a.command:
         return {"error": "at least one --command is required"}, 2
-    profile = _profile(root)
+    try:
+        profile = _profile(root)
+    except ValueError as exc:  # the named stack profile is unknown, corrupt or too new
+        return _profile_error(exc)
     verdicts = [{"command": c, "allowed": ok, "why": why}
                 for c in a.command for ok, why in [rules.dev_tooling_verdict(c, root, profile)]]
     if not all(v["allowed"] for v in verdicts):
