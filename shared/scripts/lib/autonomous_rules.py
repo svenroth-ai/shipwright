@@ -10,7 +10,10 @@ autonomous run (:func:`is_autonomous_run`: a brief package governs it, or autono
 * **Approved links** (:func:`standalone_split`) -- an external ``<a href>`` the approved
   package mockup already carries (Open thread, a posted-comment link) is approved
   functionality, not a loaded asset. The design ``standalone`` gate keeps it instead of
-  failing; every other external reference still fails, exactly as before.
+  failing; every other external reference still fails, exactly as before. The approved set
+  is read from the PACKAGE's ``mockups/`` (never the editable ``uploads/`` copy), and only
+  after ``brief_package.verify_package`` re-checks the package against the hash run_config
+  records outside it (:func:`verified_package_mockups`); a failed check keeps nothing.
 * **Explicit brief value** (:func:`brief_states`) -- a brief value wins over plan text and
   over screens that do not show it, but only a value the brief really states: the quote
   must occur in the package's ``brief.md``.
@@ -18,7 +21,9 @@ autonomous run (:func:`is_autonomous_run`: a brief package governs it, or autono
   builder); the recorder only refuses a record without measurements (:func:`has_measurements`).
 * **Declared dev tooling** (:func:`dev_tooling_verdict`) -- an install of tooling the project
   already declares (its ``package.json``/``pyproject.toml``, or the stack profile's test
-  framework) may run; anything else stays a question.
+  framework) may run; anything else stays a question. A JavaScript install must pass
+  ``--ignore-scripts`` (no lifecycle script runs); the recorder also refuses when the manifest
+  changed since the phase started (``phase_boundary_baseline.path_unchanged``).
 """
 
 from __future__ import annotations
@@ -29,20 +34,41 @@ import shlex
 from html.parser import HTMLParser
 from pathlib import Path
 
+
+def _private(name: str):
+    """``shared/scripts/lib/<name>`` via ``shared_lib_loader`` (a module with relative imports, top-level)."""
+    import sys
+    scripts = str(Path(__file__).resolve().parents[1])
+    added = scripts not in sys.path
+    if added:
+        sys.path.append(scripts)
+    try:
+        from shared_lib_loader import load_shared_lib
+        return load_shared_lib(name, prefer_private=True)
+    finally:
+        if added and scripts in sys.path:  # leave sys.path as found: shared/scripts holds a `tools` package
+            sys.path.remove(scripts)
+
+
 try:
+    from . import brief_package as _brief_package
     from .design_gate_html import ALLOWED_EXTERNAL_HOSTS, external_host
+    from .known_differences import KNOWN_DIFFERENCES_REL, append_known_difference, known_difference_exists
     from .plan_design_check import is_autonomous_design_run as is_autonomous_run
 except ImportError:  # loaded top-level (check-design-gates.py puts shared/scripts/lib on sys.path)
     from design_gate_html import ALLOWED_EXTERNAL_HOSTS, external_host
+    from known_differences import KNOWN_DIFFERENCES_REL, append_known_difference, known_difference_exists
     from plan_design_check import is_autonomous_design_run as is_autonomous_run
+    _brief_package = _private("brief_package")
 
-__all__ = ["KNOWN_DIFFERENCES_REL", "append_known_difference", "approved_package_links", "brief_states",
-           "dev_tooling_verdict", "has_measurements", "known_difference_exists", "is_autonomous_run", "standalone_findings", "standalone_split"]
+__all__ = [
+    "KNOWN_DIFFERENCES_REL", "append_known_difference", "approved_package_links", "brief_states",
+    "dev_tooling_verdict", "has_measurements", "is_autonomous_run", "known_difference_exists",
+    "standalone_findings", "standalone_split", "verified_package_mockups",
+]
 
-KNOWN_DIFFERENCES_REL = ".shipwright/designs/known-differences.md"
 _DESIGNS_REL = ".shipwright/designs"
 _WS = re.compile(r"\s+")
-_KD_RE = re.compile(r"^## KD-(\d+)\b", re.M)
 _MEASURE_RE = re.compile(r"\d+(?:\.\d+)?\s*px\b", re.I)
 _SHELL_META = re.compile(r"[;&|`$<>\n\\]")
 _BROWSERS = {"chromium", "firefox", "webkit", "chrome", "msedge", "chromium-headless-shell"}
@@ -54,9 +80,6 @@ _JS_FLAGS = {"-D", "--save-dev", "-E", "--save-exact", "--no-audit", "--no-fund"
 _UV_FLAGS = re.compile(r"^(--frozen|--locked|--all-extras|--dev|--all-groups|--extra=[\w.-]+|--group=[\w.-]+)$")
 _UV_VALUE_FLAGS = {"--extra", "--group"}
 _UV_VALUE = re.compile(r"^[\w.-]+$")
-_KD_HEADER = ("# Known differences: built app and approved screens\n\n"
-              "Written by autonomous runs (`record_autonomous_decision.py`), one entry per rule decision. "
-              "It waives nothing: `screenshot_check.py` does not read this file.\n")
 
 
 class _Tags(HTMLParser):
@@ -99,10 +122,10 @@ def standalone_split(html: str, approved: set[str]) -> tuple[list[str], list[str
     return violations, kept
 
 
-def approved_package_links(uploads_dir: Path) -> set[str]:
-    """External ``<a href>`` values in the approved package mockups (``.shipwright/designs/uploads``)."""
+def approved_package_links(mockups_dir: Path) -> set[str]:
+    """External ``<a href>`` values in the approved package's mockups (pass a VERIFIED ``mockups/``)."""
     links: set[str] = set()
-    for path in sorted(Path(uploads_dir).glob("*.html")):
+    for path in sorted(Path(mockups_dir).rglob("*.html")):
         try:
             html = path.read_text(encoding="utf-8", errors="ignore")
         except OSError:
@@ -111,16 +134,37 @@ def approved_package_links(uploads_dir: Path) -> set[str]:
     return links
 
 
-def standalone_findings(project_root: Path, files: list[str]) -> tuple[list[str], list[str]]:
-    """Gate #6 over ``files`` (relative to ``.shipwright/designs``): ``(problems, kept)``.
+def verified_package_mockups(project_root: Path) -> tuple[Path | None, str]:
+    """``(<package>/mockups, "")`` once ``verify_package`` re-checks the package (layout + hash) against
+    the ``brief_package.package_sha256`` run_config records OUTSIDE it; ``(None, why)`` otherwise."""
+    root = Path(project_root).resolve()
+    bdir = _brief_dir(root)
+    record = _json(root / "shipwright_run_config.json").get("brief_package")
+    expected = record.get("package_sha256") if isinstance(record, dict) else None
+    if bdir is None or not isinstance(expected, str):
+        return None, "run_config records no brief package directory and hash to verify against"
+    try:
+        ok, issues = _brief_package.verify_package(bdir, expected=expected)
+    except (OSError, ValueError) as exc:
+        return None, f"the brief package cannot be verified: {exc}"
+    if not ok:
+        return None, "the brief package fails verification: " + ", ".join(sorted({i["code"] for i in issues}))
+    return bdir / "mockups", ""
+
+
+def standalone_findings(project_root: Path, files: list[str]) -> tuple[list[str], list[str], str]:
+    """Gate #6 over ``files`` (relative to ``.shipwright/designs``): ``(problems, kept, unverified)``.
 
     Approved links are kept only in an autonomous run whose brief package was applied
-    (``brief-package-applied.json``: the ``uploads`` gate holds them byte-identical to the package).
+    (``brief-package-applied.json``) AND re-verifies (:func:`verified_package_mockups`).
+    ``unverified`` names why a package run kept nothing (the run then asks); ``""`` otherwise.
     """
     designs = Path(project_root) / _DESIGNS_REL
     approved: set[str] = set()
+    unverified = ""
     if is_autonomous_run(project_root) and (designs / "brief-package-applied.json").is_file():
-        approved = approved_package_links(designs / "uploads")
+        mockups, unverified = verified_package_mockups(project_root)
+        approved = approved_package_links(mockups) if mockups is not None else set()
     problems, kept = [], []
     for rel in files:
         try:
@@ -130,27 +174,33 @@ def standalone_findings(project_root: Path, files: list[str]) -> tuple[list[str]
         violations, ok = standalone_split(html, approved)
         problems += [f"{rel}: external reference {v}" for v in violations]
         kept += [f"{rel}: approved package link {k}" for k in ok]
-    return problems, kept
+    return problems, kept, unverified
 
 
 def _norm(text: str) -> str:
     return _WS.sub(" ", text.replace("’", "'")).strip().lower()
 
 
-def _brief_text(project_root: Path) -> str | None:
-    """The package's ``brief.md`` (run config ``brief_dir``: project-relative, inside the project)."""
+def _brief_dir(project_root: Path) -> Path | None:
+    """The package directory run_config names (``brief_dir``: project-relative, inside the project)."""
     root = Path(project_root).resolve()
+    raw = _json(root / "shipwright_run_config.json").get("brief_dir")
+    rel = raw.replace("\\", "/") if isinstance(raw, str) else ""
+    if not rel.strip() or Path(rel).is_absolute() or ".." in rel.split("/"):
+        return None
     try:
-        cfg = json.loads((root / "shipwright_run_config.json").read_text(encoding="utf-8"))
-        raw = cfg.get("brief_dir") if isinstance(cfg, dict) else None
-        rel = raw.replace("\\", "/") if isinstance(raw, str) else ""
-        if not rel.strip() or Path(rel).is_absolute() or ".." in rel.split("/"):
-            return None
-        brief = (root / rel / "brief.md").resolve()
-        if not brief.is_relative_to(root):
-            return None
-        return brief.read_text(encoding="utf-8-sig", errors="ignore")
-    except (OSError, ValueError, AttributeError):
+        bdir = (root / rel).resolve()
+    except OSError:
+        return None
+    return bdir if bdir.is_relative_to(root) else None
+
+
+def _brief_text(project_root: Path) -> str | None:
+    """The package's ``brief.md``."""
+    bdir = _brief_dir(project_root)
+    try:
+        return (bdir / "brief.md").read_text(encoding="utf-8-sig", errors="ignore") if bdir else None
+    except OSError:
         return None
 
 
@@ -205,8 +255,8 @@ def _uv_args_ok(args: list[str]) -> bool:
 def dev_tooling_verdict(command: str, project_root: Path, profile: dict | None = None) -> tuple[bool, str]:
     """``(may_install, why)`` for ONE install command an autonomous run wants to run.
 
-    Allowed: ``npm|pnpm|yarn install`` (and ``npm ci``) of what ``package.json`` declares, optionally naming
-    only packages it already declares; ``npx playwright install [browser...]`` when Playwright is declared
+    Allowed: ``npm|pnpm|yarn install --ignore-scripts`` (and ``npm ci --ignore-scripts``) of what
+    ``package.json`` declares, optionally naming only packages it already declares; ``npx playwright install [browser...]`` when Playwright is declared
     (manifest or the profile's ``testing.e2e.framework``); ``uv sync`` with a ``pyproject.toml``. A global
     install, another registry, ``--with-deps`` (system packages), shell syntax or any other command: ask.
     """
@@ -224,6 +274,8 @@ def dev_tooling_verdict(command: str, project_root: Path, profile: dict | None =
         flags = [t for t in tokens[2:] if t.startswith("-")]
         if any(f not in _JS_FLAGS for f in flags):
             return False, f"flag not allowed for a declared install: {' '.join(f for f in flags if f not in _JS_FLAGS)}"
+        if "--ignore-scripts" not in flags:
+            return False, "a declared install runs with --ignore-scripts (no package lifecycle script runs)"
         specs = [t for t in tokens[2:] if not t.startswith("-")]
         missing = sorted(t for t in specs if _pkg_name(t) not in declared)
         if missing:
@@ -244,28 +296,3 @@ def dev_tooling_verdict(command: str, project_root: Path, profile: dict | None =
             return False, f"argument not allowed for a declared sync: {' '.join(tokens[2:])}"
         return True, "installs only what pyproject.toml already declares"
     return False, "not an install of declared dev tooling (npm/pnpm/yarn install, npx playwright install, uv sync)"
-
-
-def known_difference_exists(project_root: Path, title: str) -> bool:
-    """A ``## KD-NN: <title>`` entry already exists (a resumed or repeated call records nothing twice)."""
-    try:
-        text = (Path(project_root) / KNOWN_DIFFERENCES_REL).read_text(encoding="utf-8")
-    except OSError:
-        return False
-    want = _norm(title)
-    return any(_norm(m.group(1)) == want for m in re.finditer(r"^## KD-\d+:\s*(.+)$", text, re.M))
-
-
-def append_known_difference(project_root: Path, title: str, fields: list[tuple[str, str]]) -> str:
-    """Append ``## KD-NN: <title>`` with ``- **field:** value`` lines; returns ``KD-NN``."""
-    path = Path(project_root) / KNOWN_DIFFERENCES_REL
-    try:
-        text = path.read_text(encoding="utf-8")
-    except OSError:
-        text = _KD_HEADER
-    number = max((int(n) for n in _KD_RE.findall(text)), default=0) + 1
-    kd = f"KD-{number:02d}"
-    body = "\n".join(f"- **{k}:** {_WS.sub(' ', v).strip()}" for k, v in fields if v and v.strip())
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(text.rstrip("\n") + f"\n\n## {kd}: {_WS.sub(' ', title).strip()}\n\n{body}\n", encoding="utf-8")
-    return kd

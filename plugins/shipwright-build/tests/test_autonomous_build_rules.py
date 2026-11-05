@@ -17,7 +17,8 @@ def test_skill_decides_the_three_build_conflicts_by_rule():
     s = _flat("skills/build/SKILL.md")
     assert "Autonomous run, two more rules — decide, do not ask:" in s
     assert "--kind brief-wins|hard-constraint" in s and "known-differences.md" in s
-    assert "--kind dev-tooling --command" in s and "exit 1 = undeclared (or an interactive run): ask" in s
+    assert "--kind dev-tooling --phase Build" in s and "or an interactive run: ask" in s
+    assert "a manifest changed since the section started" in s
 
 
 def test_spec_reviewer_settles_by_rule_only_in_an_autonomous_run():
@@ -34,3 +35,32 @@ def test_writeback_reference_documents_both_rules():
     w = _flat("skills/build/references/requirement-writeback.md")
     assert "Explicit brief value and hard requirements (autonomous runs)." in w
     assert "--kind hard-constraint" in w and "NNN px" in w
+
+
+def _setup_module():
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "_build_setup_inproc", ROOT / "scripts" / "checks" / "setup_implementation_session.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_section_setup_records_the_phase_start_baseline_dev_tooling_compares_with(tmp_path, monkeypatch):
+    import subprocess
+    import sys
+    setup = _setup_module()
+    monkeypatch.setenv("SHIPWRIGHT_SESSION_ID", "run-a")
+    assert setup.record_boundary_baseline(tmp_path, "01-auth") == "not_written"  # not a git repo
+    subprocess.run(["git", "-C", str(tmp_path), "init", "-q"], check=True)
+    assert setup.record_boundary_baseline(tmp_path, "01-auth") == "written"
+    assert (tmp_path / ".shipwright" / "build-boundary-baseline-01-auth.json").is_file()
+    assert setup.record_boundary_baseline(tmp_path, "01-auth") == "kept"  # a resume never re-snapshots
+    monkeypatch.setitem(sys.modules, "shared_lib_loader", None)  # an install without the shared module
+    assert setup.record_boundary_baseline(tmp_path, "02-x") == "not_written"
+
+
+def test_dev_tooling_rule_is_hardened_where_build_reads_it():
+    s = _flat("skills/build/SKILL.md")
+    assert '--scope "{section_name}"' in s
+    assert "an autonomous run always adds `--ignore-scripts` to every npm/pnpm/yarn install" in s

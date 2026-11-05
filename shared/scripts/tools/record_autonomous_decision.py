@@ -16,7 +16,10 @@ Kinds (rules: ``shared/scripts/lib/autonomous_rules.py``):
                      ``--yields``, ``--measurements`` (at least one ``NNN px``). Logs it and adds a
                      known difference.
 ``dev-tooling``      Plan/Build: ``--command`` (repeatable) installs only tooling the project
-                     declares (``autonomous_rules.dev_tooling_verdict``); logs one ADR.
+                     declares (``autonomous_rules.dev_tooling_verdict``; JavaScript installs with
+                     ``--ignore-scripts``) AND only while its manifest is unchanged since the phase
+                     started (``phase_boundary_baseline.path_unchanged``; ``--scope``: the split for
+                     Plan, the section for Build). Logs one ADR.
 
 An interactive run (no brief package, autonomy guided) records nothing: ``action: ask``.
 Prints JSON ``{autonomous, kind, action, adr, kd, why, ...}``. Exit ``0`` decided (or nothing to
@@ -39,10 +42,12 @@ if _ADDED:
 from shared_lib_loader import load_shared_lib  # noqa: E402
 
 rules = load_shared_lib("autonomous_rules", prefer_private=True)
+pbb = load_shared_lib("phase_boundary_baseline", prefer_private=True)
 if _ADDED:  # leave sys.path as found: shared/scripts holds a `tools` package
     sys.path.remove(str(_SCRIPTS))
 
 KINDS = ("approved-links", "brief-wins", "hard-constraint", "dev-tooling")
+_BASELINES = {"Design": pbb.DESIGN_BASELINE_REL, "Plan": pbb.PLAN_BASELINE_REL, "Build": pbb.BUILD_BASELINE_REL}
 LINKS_TITLE = "Approved package links stay in the screens"
 _MAX = 500  # write_decision_log.py field cap
 _DECISION_LOG = ".shipwright/agent_docs/decision_log.md"
@@ -72,7 +77,10 @@ def _already(kind: str) -> tuple[dict, int]:
 def _approved_links(root: Path) -> tuple[dict, int]:
     designs = root / ".shipwright" / "designs"
     files = [p.relative_to(designs).as_posix() for d in ("screens", "flows") for p in sorted((designs / d).glob("*.html"))]
-    problems, kept = rules.standalone_findings(root, files)
+    problems, kept, unverified = rules.standalone_findings(root, files)
+    if unverified:
+        return _ask("approved-links", f"approved links are trusted only from a verified package: {unverified}",
+                    problems=problems)
     if not kept:
         return {"autonomous": True, "kind": "approved-links", "action": "nothing", "adr": None, "kd": None,
                 "why": "no screen keeps an approved package link", "problems": problems}, 0
@@ -165,6 +173,20 @@ def _profile_error(exc: ValueError) -> tuple[dict, int]:
     return {"error": f"the run's stack profile cannot be resolved: {exc}"}, 2
 
 
+def _manifest_moved(root: Path, a: argparse.Namespace) -> str:
+    """Why the declaring manifest cannot be trusted ("" = unchanged since the phase started)."""
+    baseline = _BASELINES.get(a.phase)
+    scope = None if a.phase == "Design" else (a.scope or None)
+    names = sorted({m for c in a.command for m in (pbb.PY_MANIFESTS if c.split()[:1] == ["uv"] else pbb.JS_MANIFESTS)})
+    state = {m: pbb.path_unchanged(root, baseline, scope, m) if baseline else None for m in names}
+    if any(v is None for v in state.values()):
+        return ("no phase-start baseline of this run to compare the manifest with (--phase, and --scope: "
+                "the split for Plan, the section for Build)")
+    moved = [m for m, same in state.items() if not same]
+    return (f"changed since the phase started: {', '.join(moved)}; a manifest edited in this phase cannot "
+            "authorise its own install") if moved else ""
+
+
 def _dev_tooling(root: Path, a: argparse.Namespace) -> tuple[dict, int]:
     if not a.command:
         return {"error": "at least one --command is required"}, 2
@@ -176,12 +198,15 @@ def _dev_tooling(root: Path, a: argparse.Namespace) -> tuple[dict, int]:
                 for c in a.command for ok, why in [rules.dev_tooling_verdict(c, root, profile)]]
     if not all(v["allowed"] for v in verdicts):
         return _ask("dev-tooling", "a command installs something the project does not declare", verdicts=verdicts)
+    if why := _manifest_moved(root, a):
+        return _ask("dev-tooling", why, verdicts=verdicts)
     shown = "; ".join(a.command)
     adr = _log(root, f"{a.phase} (autonomous rule)", "Declared dev tooling installed",
                f"The work needs {shown} to run its tests.",
                "Autonomous rule: installing dev tooling the project already declares (package manifest or stack "
                "profile) needs no question. " + "; ".join(f"{v['command']}: {v['why']}" for v in verdicts),
-               "The tests run in this phase. Nothing undeclared is added; installed folders stay git-ignored.",
+               "The tests run in this phase. Nothing undeclared is added, no lifecycle script runs "
+               "(--ignore-scripts), and the manifest is unchanged since the phase started.",
                "Asking the person; leaving the tests unrun.")
     if adr is None:
         return {"error": "the decision-log entry could not be written"}, 2
@@ -215,6 +240,7 @@ def parse(argv: list[str] | None = None) -> argparse.Namespace:
     ap.add_argument("--yields", default="")
     ap.add_argument("--measurements", default="")
     ap.add_argument("--command", action="append", default=[])
+    ap.add_argument("--scope", default="", help="dev-tooling: the split (Plan) or section (Build) of the baseline")
     return ap.parse_args(argv)
 
 

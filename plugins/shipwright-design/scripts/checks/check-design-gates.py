@@ -179,9 +179,9 @@ def standalone_gate(designs_dir: Path) -> dict:
     """FR-01.04 #6. Autonomous brief runs keep the approved package's own links (lib ``autonomous_rules``)."""
     inventory = scan_designs_dir(designs_dir)
     files = [s["file"] for s in inventory["screens"]] + [f["file"] for f in inventory["flows"]]
-    problems, kept = standalone_findings(designs_dir.parent.parent, files)
+    problems, kept, unverified = standalone_findings(designs_dir.parent.parent, files)
     gate = _gate("standalone", not problems, f"{len(files)} file(s) checked, {len(problems)} external ref(s)", problems)
-    return {**gate, "kept_approved_links": kept} if kept else gate
+    return {**gate, **({"kept_approved_links": kept} if kept else {}), **({"package_unverified": unverified} if unverified else {})}
 
 
 def uploads_gate(project_root: Path, designs_dir: Path) -> dict:

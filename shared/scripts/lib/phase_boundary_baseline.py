@@ -26,9 +26,21 @@ that forges it can hide its own writes (accepted residual risk, same trust
 level as the rest of the in-session gates). A baseline-dirty file edited and
 then restored byte-for-byte reads as unchanged.
 
-Stdlib only, no imports of other lib modules: it is loaded top-level (plan gate),
-through ``shared_lib_loader`` (design wrapper) and as ``lib.phase_boundary_baseline``
-(tests), and must behave the same in all three.
+The same file answers a second question, :func:`path_unchanged`: is a file that decides
+what an install fetches or runs (:data:`WATCHED_MANIFESTS`: manifests, lockfiles, registry
+config, pnpm/yarn hooks, Python build files) byte-identical to what it was when the phase
+started? Each is fingerprinted at the start whether dirty or not (raw bytes: no git filter,
+no line-ending rule), so committing an edit does not hide it. The fingerprints are carried
+over when setup runs again for the same scope, also in a NEW session (a resumed section),
+so a resume cannot re-baseline an edited manifest; a stale carry only makes the run ask.
+An autonomous run installs declared dev tooling only while they are unchanged
+(``record_autonomous_decision.py --kind dev-tooling``). Build records its baseline per section.
+
+Stdlib only, no imports of other lib modules: it is imported by name with
+``shared/scripts/lib`` on ``sys.path`` (``check-plan-gates.py``,
+``setup-planning-session.py``), loaded through ``shared_lib_loader`` (design wrapper,
+build setup, the recorder) and as ``lib.phase_boundary_baseline`` (tests), and must
+behave the same in all of them.
 """
 
 from __future__ import annotations
@@ -44,6 +56,12 @@ DELETED = "<deleted>"
 #: One file per phase, so a design baseline never stands in for a plan one (or back).
 DESIGN_BASELINE_REL = ".shipwright/design-boundary-baseline.json"
 PLAN_BASELINE_REL = ".shipwright/plan-boundary-baseline.json"
+BUILD_BASELINE_REL = ".shipwright/build-boundary-baseline.json"
+#: Files that decide what an install fetches or runs; an edit to any of them is never self-authorised.
+JS_MANIFESTS = ("package.json", "package-lock.json", "npm-shrinkwrap.json", "pnpm-lock.yaml", "yarn.lock", ".npmrc",
+                ".pnpmfile.cjs", "pnpm-workspace.yaml", ".yarnrc", ".yarnrc.yml")
+PY_MANIFESTS = ("pyproject.toml", "uv.lock", "uv.toml", "setup.py", "setup.cfg")
+WATCHED_MANIFESTS = JS_MANIFESTS + PY_MANIFESTS
 
 
 def dirty_paths(project_root: Path) -> list[str]:
@@ -175,11 +193,17 @@ def write_baseline(project_root: Path, baseline_rel: str, scope: str | None = No
     else:
         salt = secrets.token_hex(16)
         snap = {p: fingerprint(project_root, p, salt) for p in dirty_paths(project_root)}
+    carried = existing.get("manifests") if existing is not None and existing.get("scope") == scope else None
+    if isinstance(carried, dict) and isinstance(existing.get("manifest_salt"), str):  # any run: a resume
+        msalt, manifests = existing["manifest_salt"], carried
+    else:
+        msalt = secrets.token_hex(16)
+        manifests = {m: fingerprint(project_root, m, msalt) for m in WATCHED_MANIFESTS}
     target = project_root / baseline_path(baseline_rel, scope)
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(
-        json.dumps({"head": now_head, "run": run, "scope": scope, "salt": salt, "dirty": snap}, indent=2,
-                   sort_keys=True),
+        json.dumps({"head": now_head, "run": run, "scope": scope, "salt": salt, "dirty": snap,
+                    "manifest_salt": msalt, "manifests": manifests}, indent=2, sort_keys=True),
         encoding="utf-8")
     return True
 
@@ -214,3 +238,19 @@ def record(project_root: Path, baseline_rel: str, scope: str | None = None) -> s
         return "written" if write_baseline(root, baseline_rel, scope) else "kept"
     except OSError:
         return "not_written"
+
+
+def path_unchanged(project_root: Path, baseline_rel: str, scope: str | None, rel_path: str) -> bool | None:
+    """Is the watched ``rel_path`` byte-identical to its fingerprint from the phase start? Absent then
+    and now counts as unchanged. ``None`` = cannot tell (no baseline of this run and scope, not the
+    repo root, a baseline without manifest fingerprints, or a path that is not watched): the caller asks.
+    """
+    root = Path(project_root)
+    data = read_baseline(root, baseline_rel, scope)
+    if data is None or data.get("run") != run_id() or data.get("scope") != scope or not at_repo_root(root):
+        return None
+    manifests, msalt = data.get("manifests"), data.get("manifest_salt")
+    if not isinstance(manifests, dict) or not isinstance(msalt, str) or rel_path not in manifests:
+        return None
+    now = fingerprint(root, rel_path, msalt)
+    return now is not None and now == manifests[rel_path]

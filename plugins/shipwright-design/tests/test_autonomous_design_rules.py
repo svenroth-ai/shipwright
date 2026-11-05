@@ -3,6 +3,7 @@ and a brief requirement no mockup shows is built from the brief -- neither is as
 The rule logic is tested in-process in shared/tests/test_autonomous_rules.py."""
 
 import json
+import sys
 from pathlib import Path
 
 import pytest
@@ -13,6 +14,33 @@ pytestmark = pytest.mark.covers("FR-01.04/AC06")
 
 ROOT = Path(__file__).resolve().parent.parent
 LINK = '<a href="https://www.reddit.com/r/x/comments/1">Open thread</a>'
+
+
+def _package_sha256(bdir: Path) -> str:
+    shared = str(ROOT.parent.parent / "shared" / "scripts")
+    sys.path.append(shared)
+    try:
+        from shared_lib_loader import load_shared_lib
+        return load_shared_lib("brief_package", prefer_private=True).package_sha256(bdir)
+    finally:
+        sys.path.remove(shared)
+
+
+def _package(root: Path) -> str:
+    """An approved package whose own mockup carries LINK; returns its hash (run_config records it)."""
+    bdir = root / "brief"
+    (bdir / "mockups").mkdir(parents=True)
+    files = {"brief.md": "# Board\n", "scope.md": "# Scope\n", "visual-guidelines.md": "# Visual\n",
+             "mockups/01-board.html": f"<html><body>{LINK}</body></html>\n",
+             "screen-map.json": json.dumps({"screens": [{"id": "board", "mockup": "01-board.html"}]}),
+             "brief.json": json.dumps({
+                 "version": 2, "profile": "vite-hono", "deploy_target": "none", "autonomy": "autonomous",
+                 "ux_shape": "classic", "source_class": "synthetic", "scope": "scope.md",
+                 "design_system": "visual-guidelines.md", "brief_dir": "brief", "env_preflight": [],
+                 "allow_parallel_builders": False, "ui_host": "web"})}
+    for rel, text in files.items():
+        (bdir / rel).write_text(text, encoding="utf-8")
+    return _package_sha256(bdir)
 
 
 def _project(tmp_path: Path, cfg: dict) -> Path:
@@ -28,13 +56,25 @@ def _project(tmp_path: Path, cfg: dict) -> Path:
 
 
 def test_autonomous_gate_keeps_approved_links_and_still_fails_a_loaded_asset(tmp_path):
-    root = _project(tmp_path, {"autonomy": "guided", "brief_package": {"sha": "x"}})
+    sha = _package(tmp_path)
+    root = _project(tmp_path, {"autonomy": "guided", "brief_dir": "brief", "brief_package": {"package_sha256": sha}})
     code, out = run_gates(root, "standalone")
     gate = next(g for g in out["gates"] if g["gate"] == "standalone")
     assert code == 1
     assert gate["kept_approved_links"] == ["screens/01-board.html: approved package link "
                                            "https://www.reddit.com/r/x/comments/1"]
+    assert "package_unverified" not in gate
     assert _problems(out, "standalone") == ["screens/01-board.html: external reference https://cdn.example/x.png"]
+
+
+def test_a_package_changed_after_approval_keeps_nothing_and_says_why(tmp_path):
+    sha = _package(tmp_path)
+    (tmp_path / "brief" / "scope.md").write_text("# Scope, edited after approval\n", encoding="utf-8")
+    root = _project(tmp_path, {"autonomy": "autonomous", "brief_dir": "brief", "brief_package": {"package_sha256": sha}})
+    code, out = run_gates(root, "standalone")
+    gate = next(g for g in out["gates"] if g["gate"] == "standalone")
+    assert code == 1 and "kept_approved_links" not in gate
+    assert "hash_mismatch" in gate["package_unverified"] and len(_problems(out, "standalone")) == 2
 
 
 def test_interactive_gate_is_unchanged(tmp_path):

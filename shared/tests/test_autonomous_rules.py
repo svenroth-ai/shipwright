@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 import pytest
@@ -10,6 +11,9 @@ import pytest
 from lib import autonomous_rules as ar
 from lib import design_gate_html
 from lib import phase_boundary_baseline as pbb
+
+sys.path.append(str(Path(__file__).resolve().parent))
+from _brief_dir_helpers import bp, build_package  # noqa: E402
 
 pytestmark = pytest.mark.covers("FR-01.04")
 
@@ -36,30 +40,72 @@ def test_split_keeps_only_approved_anchors_and_equals_gate6_without_approval():
     assert ar.standalone_split(html, set())[0] == design_gate_html.standalone_html_violations(html)
 
 
+EVIL = '<a href="https://evil.example/x">only in the editable uploads copy</a>'
+KEPT = ["screens/01-board.html: approved package link https://www.reddit.com/r/x/comments/1",
+        "screens/01-board.html: approved package link https://news.ycombinator.com/item?id=2"]
+
+
+def _package(root: Path, *, record: bool = True) -> Path:
+    """A verified package whose own mockup carries the two links; run_config records its hash."""
+    bdir = build_package(root)
+    (bdir / "mockups" / "sub").mkdir()
+    (bdir / "mockups" / "sub" / "02-board.html").write_text(UPLOAD, encoding="utf-8")
+    pkg = {"package_sha256": bp.package_sha256(bdir)} if record else {}
+    _cfg(root, autonomy="autonomous", brief_dir="brief", brief_package=pkg)
+    return bdir
+
+
 def _designs(root: Path, screen: str, applied: bool = True) -> Path:
     designs = root / ".shipwright" / "designs"
     for d in ("screens", "uploads"):
         (designs / d).mkdir(parents=True, exist_ok=True)
-    (designs / "uploads" / "01-board.html").write_text(UPLOAD, encoding="utf-8")
-    (designs / "uploads" / "broken.html").mkdir()  # unreadable entry is skipped
+    (designs / "uploads" / "01-board.html").write_text(UPLOAD + EVIL, encoding="utf-8")  # never the approved set
     (designs / "screens" / "01-board.html").write_text(screen, encoding="utf-8")
     if applied:
         (designs / "brief-package-applied.json").write_text("{}", encoding="utf-8")
     return designs
 
 
-@pytest.mark.parametrize("cfg,applied,kept", [
-    ({"autonomy": "guided", "brief_package": {"sha": "x"}}, True, 2),
-    ({"autonomy": "guided"}, True, 0),  # interactive: unchanged, the links fail as before
-    ({"autonomy": "autonomous"}, False, 0),  # no applied package: nothing is "approved"
+SCREEN = UPLOAD + EVIL + '<script src="https://cdn.example/a.js"></script>'
+FILES = ["screens/01-board.html", "screens/missing.html"]
+
+
+def test_a_verified_package_keeps_exactly_its_own_links(tmp_path):
+    _package(tmp_path)
+    _designs(tmp_path, SCREEN)
+    problems, kept, unverified = ar.standalone_findings(tmp_path, FILES)
+    assert sorted(kept) == sorted(KEPT) and unverified == ""
+    assert problems == ["screens/01-board.html: external reference https://evil.example/x",
+                        "screens/01-board.html: external reference https://cdn.example/a.js"]
+
+
+def test_a_changed_package_keeps_nothing_and_says_why(tmp_path):
+    bdir = _package(tmp_path)
+    _designs(tmp_path, SCREEN)
+    (bdir / "mockups" / "sub" / "02-board.html").write_text(UPLOAD + EVIL, encoding="utf-8")  # after approval
+    problems, kept, unverified = ar.standalone_findings(tmp_path, FILES)
+    assert kept == [] and len(problems) == 4 and "hash_mismatch" in unverified
+
+
+@pytest.mark.parametrize("cfg,applied", [
+    ({"autonomy": "guided"}, True),  # interactive: unchanged, the links fail as before
+    ({"autonomy": "autonomous"}, False),  # no applied package: nothing is "approved"
 ])
-def test_findings_keep_approved_links_only_in_an_autonomous_package_run(tmp_path, cfg, applied, kept):
-    _cfg(tmp_path, **cfg)
-    _designs(tmp_path, UPLOAD + '<script src="https://cdn.example/a.js"></script>', applied)
-    problems, ok = ar.standalone_findings(tmp_path, ["screens/01-board.html", "screens/missing.html"])
-    assert len(ok) == kept
-    assert len(problems) == 3 - kept
-    assert any("cdn.example/a.js" in p for p in problems)
+def test_no_approved_links_outside_an_autonomous_package_run(tmp_path, cfg, applied):
+    _package(tmp_path)
+    _cfg(tmp_path, brief_dir="brief", **cfg)
+    _designs(tmp_path, SCREEN, applied)
+    assert ar.standalone_findings(tmp_path, FILES)[1:] == ([], "")
+
+
+def test_without_a_recorded_hash_nothing_is_trusted(tmp_path, monkeypatch):
+    _package(tmp_path, record=False)
+    _designs(tmp_path, SCREEN)
+    problems, kept, unverified = ar.standalone_findings(tmp_path, FILES)
+    assert kept == [] and "no brief package directory and hash" in unverified
+    _package(tmp_path / "p2")
+    monkeypatch.setattr(ar._brief_package, "verify_package", lambda *_a, **_k: (_ for _ in ()).throw(OSError("gone")))
+    assert ar.verified_package_mockups(tmp_path / "p2") == (None, "the brief package cannot be verified: gone")
 
 
 # --- explicit brief value / measurements --------------------------------------------------------
@@ -96,10 +142,14 @@ def _pkg(root: Path, dev: dict | None = None) -> None:
 
 
 @pytest.mark.parametrize("command,allowed", [
-    ("npm install", True),
-    ("npm ci", True),
-    ("npm i -D @playwright/test", True),
-    ("npm i -D @playwright/test@1.59.1", False),  # a version spec changes the declared range
+    ("npm install --ignore-scripts", True),
+    ("npm ci --ignore-scripts", True),
+    ("pnpm install --ignore-scripts --frozen-lockfile", True),
+    ("npm i -D --ignore-scripts @playwright/test", True),
+    ("npm install", False),  # lifecycle scripts would run
+    ("npm ci", False),
+    ("npm i -D @playwright/test", False),
+    ("npm i -D --ignore-scripts @playwright/test@1.59.1", False),  # a version spec changes the declared range
     ("npx playwright install chromium", True),
     ("npx playwright install", True),
     ("npm install left-pad", False),
@@ -125,11 +175,11 @@ def test_playwright_declared_by_the_profile_or_not_at_all(tmp_path):
     profile = {"testing": {"e2e": {"framework": "@playwright/test"}}}
     assert ar.dev_tooling_verdict("npx playwright install chromium", tmp_path, profile)[0] is True
     assert ar.dev_tooling_verdict("npx playwright install chromium", tmp_path)[0] is False
-    assert ar.dev_tooling_verdict("npm install", tmp_path)[0] is False  # no package.json
+    assert ar.dev_tooling_verdict("npm install --ignore-scripts", tmp_path)[0] is False  # no package.json
     _pkg(tmp_path, {"vitest": "1"})
     assert ar.dev_tooling_verdict("npx playwright install chromium", tmp_path)[0] is False
     (tmp_path / "package.json").write_text("not json", encoding="utf-8")
-    assert ar.dev_tooling_verdict("npm install", tmp_path)[0] is True  # declares nothing extra: installs the manifest
+    assert ar.dev_tooling_verdict("npm install --ignore-scripts", tmp_path)[0] is True  # installs the manifest
 
 
 def test_uv_sync_needs_a_pyproject(tmp_path):
@@ -171,3 +221,28 @@ def test_record_reports_not_written_outside_a_repo_and_on_oserror(tmp_path, monk
     monkeypatch.setattr(pbb, "write_baseline", deny)
     assert pbb.record(tmp_path, pbb.PLAN_BASELINE_REL) == "not_written"
     assert pbb.DESIGN_BASELINE_REL != pbb.PLAN_BASELINE_REL
+
+
+def test_loaded_top_level_it_still_verifies_through_the_private_package(tmp_path, monkeypatch):
+    """check-design-gates.py imports the module by name (``lib`` on sys.path): the relative imports
+    fail there, and brief_package (relative imports of its own) comes through shared_lib_loader."""
+    import importlib.util
+    lib = Path(ar.__file__).resolve().parent
+    scripts = lib.parent
+
+    def _is_scripts(entry: str) -> bool:
+        try:
+            return bool(entry) and Path(entry).resolve() == scripts
+        except OSError:
+            return False
+
+    monkeypatch.setattr(sys, "path", [str(lib)] + [p for p in sys.path if not _is_scripts(p)])
+    spec = importlib.util.spec_from_file_location("autonomous_rules_toplevel", lib / "autonomous_rules.py")
+    mod = importlib.util.module_from_spec(spec)
+    before = list(sys.path)
+    spec.loader.exec_module(mod)  # _private adds shared/scripts for the loader, then removes it again
+    assert sys.path == before and not any(_is_scripts(p) for p in sys.path)
+    assert mod._brief_package.__name__ != "brief_package"  # never bound top-level: it would not import
+    _package(tmp_path)
+    mockups, why = mod.verified_package_mockups(tmp_path)
+    assert why == "" and mockups == (tmp_path / "brief" / "mockups").resolve()

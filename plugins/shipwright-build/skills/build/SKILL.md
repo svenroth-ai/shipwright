@@ -153,7 +153,7 @@ uv run "{shared_root}/scripts/tools/update_build_dashboard.py" \
 
 ## Step 2: Install Dependencies
 
-If section spec lists npm/pip packages: `npm install {packages}` or `uv add {packages}`. **Do NOT commit package changes yet** — they'll be part of the section commit. **Dev tooling the project already declares** (`npm install` of `package.json`, `npx playwright install <browser>` when Playwright is in `package.json` or the stack profile, `uv sync`): in an autonomous run run `uv run "{shared_root}/scripts/tools/record_autonomous_decision.py" --project-root "$(pwd)" --kind dev-tooling --command "<cmd>" ...` first; exit 0 = ADR recorded, install and do not ask; exit 1 = undeclared (or an interactive run): ask.
+If section spec lists npm/pip packages: `npm install {packages}` or `uv add {packages}` (an autonomous run always adds `--ignore-scripts` to every npm/pnpm/yarn install; a package that needs its install script is a question). **Do NOT commit package changes yet** — they'll be part of the section commit. **Dev tooling the project already declares** (`npm install --ignore-scripts` of `package.json`, `npx playwright install <browser>` when Playwright is in `package.json` or the stack profile, `uv sync`): in an autonomous run run `uv run "{shared_root}/scripts/tools/record_autonomous_decision.py" --project-root "$(pwd)" --kind dev-tooling --phase Build --scope "{section_name}" --command "<cmd>" ...` first; exit 0 = ADR recorded, run exactly that command and do not ask; exit 1 = undeclared, a JavaScript install without `--ignore-scripts`, a manifest changed since the section started (setup's `boundary_baseline`), or an interactive run: ask.
 
 ---
 
