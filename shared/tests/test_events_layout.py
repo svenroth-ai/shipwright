@@ -131,8 +131,9 @@ def test_split_log_reads_back_in_unsplit_order(tmp_path):
 
 def test_committed_split_fixture_matches_the_splitter(tmp_path):
     split_log(FIX / "unsplit.jsonl", tmp_path)
-    expected = {p.name: p.read_bytes() for p in (tmp_path / DROPS_DIR).iterdir()}
-    actual = {p.name: p.read_bytes() for p in (FIX / "split" / DROPS_DIR).iterdir()}
+    # Windows checkouts may apply autocrlf to the committed fixture; compare line content.
+    expected = {p.name: p.read_bytes().replace(b"\r\n", b"\n") for p in (tmp_path / DROPS_DIR).iterdir()}
+    actual = {p.name: p.read_bytes().replace(b"\r\n", b"\n") for p in (FIX / "split" / DROPS_DIR).iterdir()}
     assert actual == expected
 
 
