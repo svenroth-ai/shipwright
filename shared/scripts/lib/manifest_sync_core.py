@@ -19,6 +19,12 @@ import subprocess
 from pathlib import Path
 
 from .manifest_sync_errors import ManifestSyncError
+from .manifest_sync_lock import (
+    assert_unambiguous,
+    find_stale_root_package,
+    render_lock_write,
+    validate_lock_structure,
+)
 from .manifest_sync_marketplace import (
     find_stale_plugin_entries,
     render_marketplace_write,
@@ -40,7 +46,7 @@ __all__ = [
     "validate_version",
 ]
 
-SUPPORTED_FORMATS = ("package_json", "marketplace_json")
+SUPPORTED_FORMATS = ("package_json", "marketplace_json", "package_lock_json")
 
 #: Bare SemVer 2.0.0 X.Y.Z, no leading "v" — canonical semver.org pattern,
 #: rejects leading zeroes (`01.2.3`, `1.2.3-01`) unlike a digit-only regex.
@@ -102,7 +108,8 @@ def git_relative_path(root: Path, project_relative_path: str) -> str:
 def read_manifest_version(text: str, fmt: str) -> str:
     """Parse manifest ``text`` and return its top-level ``version`` string.
 
-    ``package_json`` (a single top-level field) and ``marketplace_json`` (the
+    ``package_json`` (a single top-level field), ``package_lock_json`` (that
+    field plus ``packages[""].version``) and ``marketplace_json`` (the
     same top-level field, plus a ``plugins`` array of entries each carrying
     their own) are implemented. A duplicate top-level ``"version"`` key is
     refused (``ambiguous_manifest_structure``) rather than silently taking
@@ -148,6 +155,9 @@ def read_manifest_version(text: str, fmt: str) -> str:
 
     if fmt == "marketplace_json":
         validate_marketplace_structure(parsed)
+    elif fmt == "package_lock_json":
+        validate_lock_structure(parsed)
+        assert_unambiguous(text)
 
     return version
 
@@ -177,6 +187,11 @@ def describe_version_state(text: str, fmt: str, target_version: str) -> tuple[bo
                 f"root version {target_version!r} matches, but plugins entries "
                 f"still carry a different version: {', '.join(stale)}"
             )
+    if fmt == "package_lock_json" and find_stale_root_package(json.loads(text), target_version):
+        return False, (
+            f"top-level version {target_version!r} matches, but "
+            'packages[""].version carries a different version'
+        )
     return True, ""
 
 
@@ -200,6 +215,9 @@ def render_manifest_write(
 
     if fmt == "marketplace_json":
         return render_marketplace_write(original_text, current_version, new_version)
+
+    if fmt == "package_lock_json":
+        return render_lock_write(original_text, new_version)
 
     pattern = re.compile(r'("version"\s*:\s*")' + re.escape(current_version) + r'(")')
     matches = list(pattern.finditer(original_text))

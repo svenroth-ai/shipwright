@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-05-package-lock-manifest-format",
+  "date": "2026-11-05",
+  "section": "Iterate — feature: package_lock_json release manifest format",
+  "title": "Release manifest sync gains a package_lock_json format",
+  "context": "package-lock.json carries the project version twice (top-level version and packages[''].version) and could not be declared in published_manifests, so lockfiles stayed on the old version after a release and the next npm install dirtied the tree.",
+  "decision": "Add package_lock_json to SUPPORTED_FORMATS (lib/manifest_sync_lock.py). It writes both fields in one pass by replacing the exact string spans found by a small JSON scanner, and verify compares both fields.",
+  "consequences": "Projects can declare lockfiles beside package.json. Undeclared projects are unchanged. Other lockfile formats stay unsupported (unsupported_format).",
+  "rationale": "Span replacement keeps CRLF/LF and indentation byte-for-byte and cannot touch dependency entries, which a regex or a json.dumps re-render could not guarantee on a multi-megabyte lockfile.",
+  "rejected": "Regex substitution (matches dependency versions); full json.dumps re-render (rewrites the whole lockfile, loses CRLF).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}
