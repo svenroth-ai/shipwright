@@ -29,7 +29,7 @@ if the write didn't actually land.
 No file, no `published_manifests` key, or an empty list — all mean "no
 manifests declared." The sync step is then a clean no-op: nothing is read,
 written, or verified, and the release proceeds exactly as it did before this
-mechanism existed. Two `format` values are implemented; any other value is a
+mechanism existed. Three `format` values are implemented; any other value is a
 named failure, not a silent skip:
 
 - **`package_json`** — a single top-level `"version"` field (`package.json`,
@@ -42,6 +42,25 @@ named failure, not a silent skip:
   that is what this format exists to close: this monorepo's own
   `marketplace.json` shipped v0.33.0 with every one of its 14 `plugins[]`
   entries still reading `0.32.0`, because nothing synced the nested field.
+
+- **`package_lock_json`** — an npm `package-lock.json` (lockfileVersion 2/3).
+  The project version lives in two places, top-level `"version"` AND
+  `packages[""].version`; a release writes both in one step, so the next
+  `npm install` no longer dirties the tree. Declare it next to the matching
+  `package.json`:
+
+  ```json
+  {"path": "server/package-lock.json", "format": "package_lock_json"}
+  ```
+
+  The write is surgical (exact string spans), so CRLF/LF and indentation
+  survive byte-for-byte and dependency entries
+  (`packages["node_modules/x"].version`) are never touched. A lockfile
+  without `packages` / `packages[""]` (lockfileVersion 1) is accepted — only
+  the top-level field is then synced. `--verify-commit` fails
+  (`verify_mismatch`) when the top-level field matches but
+  `packages[""].version` does not. Projects that do not declare this format
+  see no behaviour change.
 
 This monorepo declares its own 14 `plugins/*/.claude-plugin/plugin.json`
 (`package_json`) plus its root `.claude-plugin/marketplace.json`
@@ -115,12 +134,12 @@ exact set Step 5.4 actually wrote and staged.
 | `path_is_symlink` | any symlink component in the declared path — **in-root symlinks are refused too**, not just escaping ones: `git add` stages the symlink entry, not the resolved target's changed blob, so a write through an in-root symlink would let the worktree and the staged/committed content diverge |
 | `manifest_missing` | the declared file doesn't exist |
 | `manifest_dirty_before_sync` | the declared file already has uncommitted changes before this tool touched it — refusing to fold unrelated edits into the release commit via `--stage` |
-| `unsupported_format` | `format` isn't `package_json` or `marketplace_json` |
-| `invalid_manifest_structure` | (`marketplace_json` only) `"plugins"` is missing, isn't an array, or one of its entries isn't a JSON object |
+| `unsupported_format` | `format` isn't `package_json`, `marketplace_json` or `package_lock_json` |
+| `invalid_manifest_structure` | (`marketplace_json`) `"plugins"` is missing, isn't an array, or one of its entries isn't a JSON object; (`package_lock_json`) `"packages"` isn't an object, `packages[""]` isn't an object, or its `version` isn't a string |
 | `parse_error` | the manifest isn't valid JSON |
 | `missing_version_field` | no top-level `"version"` key (e.g. a `"private": true` workspace root) — never injected |
 | `invalid_version_type` | `"version"` present but not a string |
-| `ambiguous_manifest_structure` | duplicate top-level `"version"` keys — refuses to guess which one to rewrite |
+| `ambiguous_manifest_structure` | duplicate top-level `"version"` keys (or, for `package_lock_json`, duplicate `packages[""].version`) — refuses to guess which one to rewrite |
 | `write_failed` | an I/O error during the write phase (already-written manifests in this pass are restored) |
 | `stage_failed` | `git add` failed after writes succeeded (already-written manifests are restored) |
 | `verify_mismatch` | (verify-commit only) the committed blob's version doesn't match the release |
@@ -133,14 +152,13 @@ process's working directory.
 
 ## What's out of scope, named rather than silently missing
 
-- **`package-lock.json` / other lockfiles.** Only the manifest's own
-  `version` field is synced. A project with a lockfile that also mirrors the
-  root version (npm lockfileVersion 2/3 does, in two places) will still see
-  it drift. Real scope creep beyond "package.json, the measured case" —
-  not built here.
+- **Lockfiles other than npm's `package-lock.json`** (`yarn.lock`,
+  `pnpm-lock.yaml`, `uv.lock`, …). Only `package_lock_json` is implemented.
+  The lockfile's dependency entries are never rewritten, and the tool does
+  not run `npm install`.
 - **Publishing itself.** Whether/when/how the package reaches npm
   (`npm publish`, `NPM_TOKEN`) is a separate operator task.
-- **Formats other than `package_json`/`marketplace_json`.** Any other value
+- **Formats other than `package_json`/`marketplace_json`/`package_lock_json`.** Any other value
   in `format` fails closed (`unsupported_format`) rather than a generic
   version-rewriting engine nobody has asked for yet.
 - **A `marketplace_json` manifest whose `plugins[]` entries are already

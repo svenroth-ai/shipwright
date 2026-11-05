@@ -1,0 +1,112 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-05-package-lock-manifest-format",
+    "date": "2026-11-05",
+    "unit": {
+      "status": "passed",
+      "passed": 24677,
+      "skipped": 107,
+      "total": 24784
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 3,
+      "skipped": 0,
+      "total": 3
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run pytest shared/scripts/tests/test_manifest_sync_core_lock.py -q",
+      "exit_code": 0,
+      "tests_run": 26,
+      "evidence_path": ".shipwright/runs/iterate-2026-11-05-package-lock-manifest-format/surface_verification.json",
+      "timestamp": "2026-11-05T08:34:41.416Z"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "read returns top-level version; lockfileVersion 1 / missing packages[''] tolerated",
+          "disposition": "tested",
+          "evidence": "test_manifest_sync_core_lock.py::test_read_*"
+        },
+        {
+          "behavior": "malformed packages / packages[''] / non-string version rejected as invalid_manifest_structure",
+          "disposition": "tested",
+          "evidence": "test_manifest_sync_core_lock.py::test_read_rejects_malformed_packages"
+        },
+        {
+          "behavior": "describe flags diverged packages[''] vs top-level and passes when both match",
+          "disposition": "tested",
+          "evidence": "test_manifest_sync_core_lock.py::test_describe_*"
+        },
+        {
+          "behavior": "render updates both fields, never dependency versions, heals diverged versions",
+          "disposition": "tested",
+          "evidence": "test_manifest_sync_core_lock.py::test_render_updates_both_fields_and_not_dependencies, test_render_heals_diverged_versions"
+        },
+        {
+          "behavior": "render preserves CRLF/LF and 2/4-space indent byte-for-byte",
+          "disposition": "tested",
+          "evidence": "test_manifest_sync_core_lock.py::test_render_is_surgical_and_preserves_newlines_and_indent"
+        },
+        {
+          "behavior": "scanner edge shapes: escaped backslash, brackets in strings, nested arrays, unicode-escaped key, key order",
+          "disposition": "tested",
+          "evidence": "test_manifest_sync_core_lock.py::test_render_scanner_edge_shapes, test_render_handles_escaped_strings_and_key_order"
+        },
+        {
+          "behavior": "duplicate packages[''].version refused on read and write path; malformed JSON gives parse_error",
+          "disposition": "tested",
+          "evidence": "test_manifest_sync_core_lock.py::test_read_rejects_duplicate_root_package_version, test_render_duplicate_root_package_version_is_ambiguous, test_render_rejects_malformed_json_as_parse_error"
+        },
+        {
+          "behavior": "sync then --verify-commit round trip against a real git repo; stale packages[''] gives verify_mismatch; idempotent re-sync",
+          "disposition": "tested",
+          "evidence": "test_sync_release_manifests_git_lock.py (3 tests)"
+        },
+        {
+          "behavior": "projects not declaring the format unchanged",
+          "disposition": "tested",
+          "evidence": "existing package_json/marketplace_json suites green in F0 (24784 tests, 0 failed)"
+        }
+      ],
+      "counts": {
+        "testable": 9,
+        "tested": 9,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 4,
+        "covered_acs": 4
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-11-05-package-lock-manifest-format",
+    "commit": "a8db68748b36960c0587269e69185acf6d8a1de1",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

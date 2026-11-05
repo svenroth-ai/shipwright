@@ -1,0 +1,1 @@
+Release manifest sync supports `package_lock_json`: a declared package-lock.json gets its top-level `version` and `packages[""].version` written together at release, preserving line endings and indentation, and `--verify-commit` checks both.

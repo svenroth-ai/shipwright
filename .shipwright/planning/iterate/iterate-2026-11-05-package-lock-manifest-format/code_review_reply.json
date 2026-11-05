@@ -1,0 +1,7 @@
+{"section":"iterate-2026-11-05-package-lock-manifest-format","review":[
+{"severity":"low","category":"correctness","file":"shared/scripts/lib/manifest_sync_core.py","line":184,"finding":"Verify and write disagree on a nested duplicate packages[''].version: render refuses, describe accepts (json.loads keeps the last).","suggestion":"Run the unambiguity check on the read path too."},
+{"severity":"low","category":"correctness","file":"shared/scripts/tests/test_manifest_sync_core_lock.py","line":109,"finding":"Scanner edge cases untested: escaped backslash before closing quote, brackets/commas inside strings, nested arrays, unicode-escaped key.","suggestion":"Add a parametrized test."},
+{"severity":"low","category":"correctness","file":"shared/scripts/lib/manifest_sync_lock.py","line":66,"finding":"Scanner raises IndexError on malformed JSON if render_lock_write is called without prior validation.","suggestion":"json.loads at the top of render_lock_write, mapped to parse_error."},
+{"severity":"low","category":"readability","file":"shared/scripts/lib/manifest_sync_lock.py","line":95,"finding":"Duplicate-key message renders as packages..version.","suggestion":"Fixed label per path."},
+{"severity":"low","category":"performance","file":"shared/scripts/lib/manifest_sync_lock.py","line":62,"finding":"Pure-python char scanner; about 1-2s for multi-MB lockfiles; acceptable.","suggestion":"Optional fast paths."}],
+"verdict_notes":"No high or medium findings; scanner traced by hand and found correct."}

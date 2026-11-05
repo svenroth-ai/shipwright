@@ -1,0 +1,9 @@
+{"items":[
+{"name":"tests cover each AC","verdict":"pass","note":"read/describe/render/verify incl CRLF, missing packages[''], diverged versions"},
+{"name":"no behaviour change for undeclared projects","verdict":"pass","note":"all new code gated on fmt == package_lock_json"},
+{"name":"docs updated","verdict":"pass","note":"manifest-sync.md formats, status table, out-of-scope"},
+{"name":"lint and mirrored gates","verdict":"pass","note":"ruff clean, verify_local 3/3"},
+{"name":"error handling","verdict":"pass","note":"malformed packages -> invalid_manifest_structure; duplicate key -> ambiguous_manifest_structure"},
+{"name":"file size","verdict":"pass","note":"core 230 lines, lock module ~110"},
+{"name":"affected boundaries","verdict":"pass","note":"JSON file read/write boundary exercised through real git round-trip tests"}
+]}
