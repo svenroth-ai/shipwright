@@ -230,7 +230,7 @@ It renders each drop into `decision_log.md` (continuing the ADR
 numbering), embeds a `Run-ID:` line for run-id ↔ ADR traceability, and
 deletes only the drops it aggregated. Run with `--dry-run` first to
 preview the numbers that will be assigned. Drops written after the
-snapshot survive into the next release.
+snapshot survive into the next release. Pending bullet drops fold first: `references/bullet-folding.md`.
 
 Fallback for non-iterate commits: if this release includes bullets that
 weren't produced through iterate F4 (rare — e.g. a cherry-pick from an
@@ -304,10 +304,10 @@ the whole commit.
 
 ```bash
 git add CHANGELOG.md
-git add .shipwright/agent_docs/decision_log.md .shipwright/agent_docs/decision_log_index.md  # if Step 4 folded/refreshed
+git add .shipwright/agent_docs/decision_log.md .shipwright/agent_docs/decision_log_index.md .shipwright/agent_docs/architecture.md .shipwright/agent_docs/conventions.md  # if Step 4 folded/refreshed (bullets: references/bullet-folding.md)
 git add -A .shipwright/agent_docs/decision-drops/ .shipwright/planning/adr/  # stages Step 4's deletions + ADR-dir dirt — see below
 git commit -m "chore(release): v{version}" -- \
-  CHANGELOG.md .shipwright/agent_docs/decision_log.md .shipwright/agent_docs/decision_log_index.md \
+  CHANGELOG.md .shipwright/agent_docs/decision_log.md .shipwright/agent_docs/decision_log_index.md .shipwright/agent_docs/architecture.md .shipwright/agent_docs/conventions.md \
   .shipwright/agent_docs/decision-drops/ .shipwright/planning/adr/ <every path from evidence_pathspec> \
   <every path from manifest_pathspec> \
   && uv run "{shared_root}/scripts/tools/refresh_compliance_docs.py" \

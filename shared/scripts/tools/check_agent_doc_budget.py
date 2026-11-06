@@ -37,6 +37,7 @@ _SCRIPTS_ROOT = Path(__file__).resolve().parent.parent
 if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
+from lib.doc_bullets import TARGETS, effective_text, fold_named, pending  # noqa: E402
 from lib.agent_doc_budget import (  # noqa: E402
     CLAUDE_MD_MAX_NEW_LINES,
     ENTRY_MAX_CHARS,
@@ -66,13 +67,24 @@ def claude_md_growth_overridden() -> bool:
 
 def _read(project_root: Path, filename: str) -> str | None:
     p = project_root / _AGENT_DOCS_REL / filename
-    return p.read_text(encoding="utf-8", errors="ignore") if p.exists() else None
+    if not p.exists() and not any(TARGETS[b.target][0] == filename for b in pending(project_root)[0]):
+        return None
+    return effective_text(project_root / _AGENT_DOCS_REL, filename)  # folded + pending bullet drops
 
 
 def _base_text(project_root: Path, base: str, filename: str) -> str:
-    """The agent-doc file as it was at ``base`` ("" if absent / git failure)."""
+    """The agent-doc file as it was at ``base`` ("" if absent / git failure), with the bullet
+    drops that were still pending AT ``base`` folded in -- the same view ``_read`` gives the branch."""
     rc, out, _ = _run_git(project_root, "show", f"{base}:{_AGENT_DOCS_REL}/{filename}")
-    return out if rc == 0 else ""
+    text = out if rc == 0 else ""
+    bdir = f"{_AGENT_DOCS_REL}/decision-drops/bullets"
+    rc, names, _ = _run_git(project_root, "ls-tree", "--name-only", base, f"{bdir}/")
+    items = []
+    for rel in (r.strip() for r in names.split("\n") if rc == 0 and r.strip()):
+        rc2, content, _ = _run_git(project_root, "show", f"{base}:{rel}")
+        if rc2 == 0:
+            items.append((rel.rsplit("/", 1)[-1], content))
+    return fold_named(text, filename, items) if items else text
 
 
 def resolve_base(project_root: Path, ref: str = "") -> str | None:

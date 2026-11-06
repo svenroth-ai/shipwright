@@ -483,6 +483,13 @@ def check_conventions_reviewed(
         return CheckResult(name, None, "no iterate entry file or run_config", severity=Severity.SKIPPED.value)
     if conv.stat().st_mtime >= reference_mtime:
         return CheckResult(name, True, "conventions.md is fresh")
+    # THIS run's pending conventions/learnings bullet drop IS the update (S5): the doc only changes at fold.
+    from lib.doc_bullets import pending
+    from lib.events_read import sanitize_key
+
+    key = sanitize_key(run_id)
+    if any(b.key == key and b.target in ("conventions", "learnings") for b in pending(project_root)[0]):
+        return CheckResult(name, True, "a pending conventions bullet drop is fresh")
 
     return CheckResult(
         name, False,

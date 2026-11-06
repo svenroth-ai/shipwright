@@ -16,10 +16,10 @@ Step 4, is the ONE serialized point that assigns the sequential ``ADR-NNN``:
    survive into the next release).
 
 Because numbering happens here — single-threaded, lock-held — two parallel
-iterates can never claim the same ADR number, PROVIDED ``/shipwright-changelog``
-itself always runs against ONE shared checkout (doubt-reviewer LOW #6: a
-hypothetical future worktree-isolated changelog run would each hold its own
-lock and its own ``decision-drops/`` copy — not live today, per its SKILL.md).
+iterates can never claim the same ADR number (``/shipwright-changelog`` runs against ONE checkout).
+
+Before the ADRs, pending architecture/convention bullet drops (``decision-drops/bullets/*.md``) are
+folded into their curated docs by ``lib.doc_bullets.fold``; the caller stages those docs too.
 
 Decision-drops are TRACKED (iterate-2026-08-08-track-decision-drops): the
 deletions this script makes on disk are not committed by this script — the
@@ -45,7 +45,7 @@ _SCRIPTS_ROOT = Path(__file__).resolve().parents[1]
 if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
-from lib import architecture_doc  # noqa: E402
+from lib import architecture_doc, doc_bullets  # noqa: E402
 from lib.adr_index import (  # noqa: E402,F401  (re-exports)
     ADR_INDEX_FILENAME,
     ADR_SPEC_FOLDER,
@@ -69,9 +69,7 @@ from tools.write_decision_log import (  # noqa: E402
 DROP_DIRNAME = "decision-drops"  # under .shipwright/agent_docs/
 _REQUIRED_DROP_FIELDS = ("run_id", "section", "decision")
 
-# ``rebuild_adr_index`` moved to ``lib/adr_index.py`` so the drop producer does
-# not have to import from the aggregator that consumes its drops. Re-exported
-# here on purpose: consumer repos already import it from this module.
+# ``rebuild_adr_index`` lives in ``lib/adr_index.py``; re-exported on purpose (consumer repos import it here).
 __all__ = [
     "ADR_INDEX_FILENAME", "ADR_SPEC_FOLDER", "DecisionAggregatorError",
     "aggregate", "drop_dir", "rebuild_adr_index",
@@ -85,11 +83,7 @@ class DecisionAggregatorError(RuntimeError):
 def drop_dir(project_root: Path) -> Path:
     """Resolve ``.shipwright/agent_docs/decision-drops/`` under ``project_root``.
 
-    Symmetric with ``write_decision_drop.drop_dir`` — the producer (iterate F3)
-    and the consumer (this aggregator) MUST agree on where the drop files
-    live. ``/shipwright-changelog`` reads `project_root` directly (no
-    main-root redirect), which is where every merged PR's tracked drop
-    actually lives.
+    Symmetric with ``write_decision_drop.drop_dir`` — producer and consumer MUST agree.
     """
     return Path(project_root) / ".shipwright" / "agent_docs" / DROP_DIRNAME
 
@@ -133,11 +127,8 @@ def aggregate(
 ) -> dict:
     """Fold every decision-drop into ``decision_log.md``. Returns a summary."""
     project_root = Path(project_root).resolve()
-    # ``dd`` (the decision-drop staging dir) and ``log_path`` are both TRACKED,
-    # committed artifacts now, and both ``project_root``-relative — the
-    # asymmetry this comment used to document (drops resolved worktree-aware
-    # against a separate main repo; the log stayed project_root-relative) no
-    # longer exists since iterate-2026-08-08-track-decision-drops.
+    # ``dd`` and ``log_path`` are both TRACKED and ``project_root``-relative
+    # (iterate-2026-08-08-track-decision-drops).
     log_path = project_root / ".shipwright" / "agent_docs" / "decision_log.md"
     dd = drop_dir(project_root)
 
@@ -171,6 +162,13 @@ def aggregate(
                 result["errors"].append(f"{name}: regenerate failed: {exc}")
 
     if not dd.is_dir():
+        _refresh_index()
+        return result
+    bullets = doc_bullets.fold(project_root, dry_run=dry_run)
+    result["bullets_folded"] = bullets["folded"]
+    result["errors"].extend(bullets["errors"] + [f"bullets/{n}: kept, anchor already in doc with different text" for n in bullets["conflicts"]])
+    if bullets["errors"]:  # never fold ADRs over an unfolded bullet
+        result["bullets_failed"] = True
         _refresh_index()
         return result
 
@@ -282,6 +280,8 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     prefix = "[dry-run] " if args.dry_run else ""
+    if summary.get("bullets_folded"):
+        print(f"{prefix}folded {summary['bullets_folded']} architecture/convention bullet(s)")
     if summary["aggregated"]:
         nums = ", ".join(f"ADR-{n:03d}" for n in summary["adr_numbers"])
         print(f"{prefix}aggregated {summary['aggregated']} decision-drop(s): {nums}")
@@ -296,7 +296,7 @@ def main(argv: list[str] | None = None) -> int:
         )
     for err in summary["errors"]:
         print(f"WARNING: {err}", file=sys.stderr)
-    return 0
+    return 1 if summary.get("bullets_failed") else 0
 
 
 if __name__ == "__main__":

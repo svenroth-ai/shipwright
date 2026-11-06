@@ -51,3 +51,21 @@ def scan_decision_drop(path: Path, rel_path: str, scan_markdown, make_finding):
             finding["severity"] = "critical"
             finding["severity_score"] = 9.5
     return findings
+
+
+BULLET_PREFIX = ".shipwright/agent_docs/decision-drops/bullets/"
+
+
+def is_bullet_path(rel_path: str) -> bool:
+    return rel_path.startswith(BULLET_PREFIX) and rel_path.endswith(".md")
+
+
+def scan_decision_drop_bullet(path: Path, rel_path: str, scan_markdown, make_finding):
+    """A bullet drop is runtime-consumed context like a decision drop: no allowlist marker works
+    in it, and its high-confidence findings are promoted to the gated ``critical`` severity."""
+    findings = scan_markdown(path, rel_path, False)
+    for finding in findings:
+        if finding.get("severity") == "high":
+            finding["severity"] = "critical"
+            finding["severity_score"] = 9.5
+    return findings
