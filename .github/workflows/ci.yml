@@ -34,6 +34,8 @@ jobs:
     # every gate step stay in `python-checks`. Sharding this job further is iterate 3/3.
     runs-on: ubuntu-latest
     steps:
+      - name: PROBE deliberate failure
+        run: exit 1
       - uses: actions/checkout@v7
         with:
           # Diff-coverage roadmap Phase 1: the "Diff coverage" step compares the
