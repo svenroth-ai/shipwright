@@ -290,3 +290,21 @@ def test_quarantine_works_on_a_crlf_checkout(tmp_path):
     items = plan_quarantine(root)
     assert apply_quarantine(root, items)["status"] == "quarantined"
     assert bytes([13, 10]) not in (root / QUARANTINE_DIR / junk.name).read_bytes()   # the BASE blob is what moves
+
+
+def test_the_archive_name_does_not_depend_on_the_checkout_line_endings(tmp_path):
+    root = _repo_with_drops(tmp_path)
+    lf = plan_fold(root, now=NOW).archive_name
+    for path in (root / DROPS_DIR).glob("*.jsonl"):
+        path.write_bytes(path.read_bytes().replace(bytes([10]), bytes([13, 10])))
+    assert plan_fold(root, now=NOW).archive_name == lf
+
+
+def test_an_unusable_sync_config_stops_the_rollback_before_any_file_moves(tmp_path):
+    root = _repo_with_drops(tmp_path)
+    (root / "shipwright_sync_config.json").write_text("[1, 2]", encoding="utf-8")
+    with pytest.raises(ValueError):
+        apply_fold(root, plan_fold(root, mode="emergency"))
+    with pytest.raises(ValueError):
+        apply_full_fold(root)
+    assert len(list((root / DROPS_DIR).glob("*.jsonl"))) == 2 and not archive_names(root)

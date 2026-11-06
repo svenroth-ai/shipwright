@@ -27,6 +27,7 @@ Never prints.
 from __future__ import annotations
 
 import re
+from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -34,6 +35,7 @@ from .events_fold_io import (
     EMPTY_BLOB, FOLDERS, GitError, KEEP_NAME, blob, content_hash, drop_key_of, event_hash, git, name_problem, parse_bytes, tree_names,
 )
 from .events_log import ARCHIVE_DIR, DROPS_DIR, EVENT_FILE, QUARANTINE_DIR
+from .events_read import sanitize_key
 
 REGULAR_MODES = ("100644", "100755")
 ARCHIVE_FOLD_NAME = re.compile(r"^fold-[0-9a-f]{12}\.jsonl$")
@@ -106,6 +108,11 @@ def check_integrity(root: Path | str, base_ref: str, head_ref: str = "HEAD", *, 
         bad.append(Violation(code, e.path, detail))
 
     legacy_hashes: set[str] | None = None
+    collisions: set[str] = set()
+    if any(e.status == "A" and e.folder in (DROPS_DIR, ARCHIVE_DIR) for e in entries):  # case-insensitive checkouts merge such names
+        for folder in (DROPS_DIR, ARCHIVE_DIR):
+            seen = Counter(n.lower() for n in tree_names(root, head, folder) or ())
+            collisions |= {n for n, c in seen.items() if c > 1}
     archives: list[tuple[Entry, list[dict]]] = []
     added_archive: set[str] = set()   # per-event hashes of archive files this change adds
     added_quarantine = {(e.new_sha, e.name): e for e in entries if e.status == "A" and e.folder == QUARANTINE_DIR}
@@ -135,8 +142,11 @@ def check_integrity(root: Path | str, base_ref: str, head_ref: str = "HEAD", *, 
                 key = drop_key_of(e.name)
                 if own_keys and key not in own_keys:
                     flag("foreign_key", e, f"key {key!r} is not one of this change's run ids {list(own_keys)}")
-                if any(r.get("run", key) != key for r in parsed.records):
-                    flag("forged_run_id", e, f"an event is stamped with a run other than the file's key {key!r}")
+                if any(r.get("run") != key or (r.get("type") == "work_completed" and sanitize_key(str(r.get("adr_id", key))) != key)
+                       for r in parsed.records):
+                    flag("forged_run_id", e, f"an event is not stamped with the file's own key {key!r} (run, or adr_id of a work_completed)")
+                if e.name.lower() in collisions:
+                    flag("case_collision", e, "differs only in letter case from another file in the folder")
     for e in entries:
         if e.status == "A" or any(v.path == e.path for v in bad):
             continue

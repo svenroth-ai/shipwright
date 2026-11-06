@@ -9,6 +9,7 @@ branch's own diff, so the author can fix them (a fold goes through ``tools/fold_
 
 from __future__ import annotations
 
+import subprocess
 import sys
 from pathlib import Path
 
@@ -36,7 +37,7 @@ def check_events_integrity(project_root: Path, run_id: str, commit_hash: str = "
         if base is None:
             return _skip("no trunk view to judge against")
         violations = check_integrity(root, base, head)  # no pathspec prefilter: a case variant must reach the library
-    except (GitError, OSError) as exc:
+    except (GitError, OSError, subprocess.SubprocessError) as exc:
         return _skip(f"git could not answer: {str(exc)[:120]}")
     if not violations:
         return CheckResult(CHECK_NAME, True, "event folders only grew (or the change touches none)")

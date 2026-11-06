@@ -326,3 +326,20 @@ def test_two_identical_quarantined_files_are_both_recognised(tmp_path):
     assert apply_quarantine(root, plan_quarantine(root, base_ref="base"))["status"] == "quarantined"
     commit(root, "quarantine two")
     assert _codes(root) == []
+
+
+def test_an_added_drop_record_without_a_run_stamp_or_with_a_foreign_adr_id_is_a_forgery(repo):
+    put(repo, DROPS_DIR, "run-a--aaaaaaaa--00000007.jsonl", ev("n1", NEW))                       # no run stamp
+    put(repo, DROPS_DIR, "run-b--aaaaaaaa--00000008.jsonl",
+        ev("n2", NEW, run="run-b", type="work_completed", adr_id="someone-elses-run"))
+    commit(repo)
+    assert [v.code for v in check_integrity(repo, "base", "HEAD")] == ["forged_run_id", "forged_run_id"]
+
+
+def test_a_file_name_differing_only_in_case_from_an_existing_drop_is_blocked(repo):
+    line = json.dumps(ev("n1", NEW, run="RUN-OLD"))
+    sha = subprocess.run(["git", "-C", str(repo), "hash-object", "-w", "--stdin"], input=line, capture_output=True,
+                         text=True, check=True).stdout.strip()
+    git(repo, "update-index", "--add", "--cacheinfo", f"100644,{sha},{DROPS_DIR}/RUN-OLD--aaaaaaaa--00000001.jsonl")
+    git(repo, "commit", "-q", "-m", "case-colliding name")
+    assert "case_collision" in _codes(repo)

@@ -62,7 +62,7 @@ class FoldPlan:
             return None
         digest = hashlib.sha256()
         for item in sorted(self.selected, key=lambda s: s.path.name):
-            digest.update(item.path.name.encode() + b"\0" + hashlib.sha256(item.data).digest())
+            digest.update(item.path.name.encode() + b"\0" + hashlib.sha256(item.data.replace(bytes([13, 10]), bytes([10]))).digest())
         return f"fold-{digest.hexdigest()[:12]}.jsonl"
 
     def records(self) -> list[dict]:
@@ -145,10 +145,19 @@ def ensure_keep(root: Path) -> None:
         durable_atomic_write(keep, b"")
 
 
+def read_sync_config(root: Path | str) -> dict:
+    """The sync config as a dict; ValueError when it is not valid JSON or not an object (checked BEFORE anything moves)."""
+    path = Path(root) / SYNC_CONFIG
+    cfg = json.loads(path.read_text(encoding="utf-8-sig")) if path.exists() else {}
+    if not isinstance(cfg, dict):
+        raise ValueError(f"{SYNC_CONFIG} is not a JSON object")
+    return cfg
+
+
 def set_layout(root: Path | str, value: str) -> None:
     """Write ``events_layout`` into the sync config (other keys untouched; created when absent)."""
     path = Path(root) / SYNC_CONFIG
-    cfg = json.loads(path.read_text(encoding="utf-8-sig")) if path.exists() else {}
+    cfg = read_sync_config(root)
     cfg["events_layout"] = value
     durable_atomic_write(path, json.dumps(cfg, indent=2, ensure_ascii=False) + "\n")
 
@@ -164,6 +173,8 @@ def apply_fold(root: Path | str, plan: FoldPlan, *, allow_conflicts: bool = Fals
             with FileLock(events_lock_path(root)):
                 set_layout(root, "legacy")
         return {"status": "nothing_to_fold", "mode": plan.mode, "skipped": plan.skipped}
+    if plan.mode == "emergency":
+        read_sync_config(root)  # an unusable config must stop the rollback BEFORE a single file moves
     with FileLock(events_lock_path(root)):
         for item in plan.selected:  # a writer may have touched a file since the plan, or a fold removed it
             try:
@@ -177,6 +188,8 @@ def apply_fold(root: Path | str, plan: FoldPlan, *, allow_conflicts: bool = Fals
             return {"status": "conflict", "conflicting_ids": conflicts, "skipped": plan.skipped}
         archive = root / ARCHIVE_DIR / name
         archive.parent.mkdir(exist_ok=True)
+        if archive.exists() and not same_bytes(archive.read_bytes(), "".join(dump_line(r) + chr(10) for r in plan.records()).encode()):
+            return {"status": "archive_incomplete", "missing": 0, "error": f"{name} exists with different content"}
         durable_atomic_write(archive, "".join(dump_line(r) + "\n" for r in plan.records()))
         stored = {event_hash(r) for r in parse_bytes(archive.read_bytes()).records}
         missing = [h for s in plan.selected for r in s.parsed.records if (h := event_hash(r)) not in stored]

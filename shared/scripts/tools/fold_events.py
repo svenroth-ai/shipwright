@@ -91,7 +91,7 @@ def main(argv: list[str] | None = None) -> int:
                      or git(a.project_root, "ls-files", "--", p).stdout.strip()]
             if known:
                 git(a.project_root, "add", "-A", "--", *known)
-    except (GitError, ValueError, OSError) as exc:
+    except (GitError, ValueError, TypeError, OSError) as exc:
         print(json.dumps({"status": "error", "error": str(exc)}))
         return 2
     print(json.dumps(result, indent=2, ensure_ascii=False))

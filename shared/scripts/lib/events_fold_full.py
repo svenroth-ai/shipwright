@@ -19,7 +19,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from .events_fold import ensure_keep, set_layout
+from .events_fold import ensure_keep, read_sync_config, set_layout
 from .events_fold_io import content_hash, dump_line, parse_bytes, sort_key
 from .events_layout import events_lock_path
 from .events_log import ARCHIVE_DIR, DROPS_DIR, event_files, resolve_events_path
@@ -65,6 +65,7 @@ def plan_full_fold(root: Path | str) -> dict:
 
 def apply_full_fold(root: Path | str, *, allow_conflicts: bool = False) -> dict:
     root = Path(root)
+    read_sync_config(root)  # an unusable config must stop the rollback BEFORE a single file moves
     with FileLock(events_lock_path(root)):
         plan = plan_full_fold(root)
         if plan["conflicts"] and not allow_conflicts:
