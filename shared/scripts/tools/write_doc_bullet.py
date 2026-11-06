@@ -105,7 +105,7 @@ def write_doc_bullet(project_root: Path | str, target: str, run_id: str, **kw: s
     for _ in range(5):
         path = bd / f"{target}--{key}--{wt8}--{uuid4().hex[:8]}.md"
         try:
-            fd = os.open(path, flags, 0o644)
+            fd = os.open(path, flags, 0o600)
         except FileExistsError:
             continue
         with os.fdopen(fd, "wb") as fh:

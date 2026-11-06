@@ -184,6 +184,28 @@ def test_committed_check_covers_the_runs_bullets(repo: Path) -> None:
     assert check_decision_drop_committed(repo, "iterate-2026-11-06-a", head).ok is True
 
 
+def _base_side_diagnostics(repo: Path) -> str:
+    """What every step of the base-side lookup returned (a CI failure must explain itself)."""
+    from tools.verifiers.git_helpers import _run_git
+
+    base = check_agent_doc_budget.resolve_base(repo, "main")
+    bdir = ".shipwright/agent_docs/decision-drops/bullets"
+    lines = [f"resolve_base={base!r}", f"head={_git(repo, 'rev-parse', 'HEAD').strip()!r}",
+             f"autocrlf={_git(repo, 'config', '--show-origin', '--get-all', 'core.autocrlf')!r}",
+             f"git={_git(repo, '--version').strip()!r} py={sys.version_info[:3]}"]
+    if base:
+        rc, out, err = _run_git(repo, "ls-tree", "--name-only", "-z", f"{base}:{bdir}")
+        lines.append(f"ls-tree rc={rc} out={out!r} err={err!r}")
+        for name in [n for n in out.split(chr(0)) if n]:
+            rc2, content, err2 = _run_git(repo, "show", f"{base}:{bdir}/{name}")
+            lines.append(f"show {name} rc={rc2} len={len(content)} head={content[:60]!r} err={err2!r}")
+        txt = check_agent_doc_budget._base_text(repo, base, "conventions.md")
+        lines.append(f"_base_text len={len(txt)} tail={txt[-160:]!r}")
+    pend, skipped = doc_bullets.pending(repo)
+    lines.append(f"pending={[(b.target, b.key, len(b.text)) for b in pend]} skipped={skipped}")
+    return " | ".join(lines)
+
+
 @pytest.mark.parametrize("eol", ["\n", "\r\n"], ids=["lf-blob", "crlf-blob"])
 def test_base_side_includes_bullets_pending_at_the_base(repo: Path, eol: str) -> None:
     """A non-compliant bullet already pending on main must not read as NEW in every later PR,
@@ -197,7 +219,7 @@ def test_base_side_includes_bullets_pending_at_the_base(repo: Path, eol: str) ->
     _git(repo, "push", "-q", "origin", "main")
     _git(repo, "checkout", "-q", "-b", "feat")
     pend = check_agent_doc_budget.find_violations(repo, base_ref="main")[0]
-    assert pend == []  # at the base it is already pending, so it is not new here
+    assert pend == [], _base_side_diagnostics(repo)  # at the base it is already pending, so it is not new here
     doc_bullets.fold(repo)
     _git(repo, "add", "-A")
     _git(repo, "commit", "-qm", "fold")
