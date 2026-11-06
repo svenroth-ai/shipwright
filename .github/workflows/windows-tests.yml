@@ -8,14 +8,35 @@ name: Windows Tests
 # real windows-latest runner. ci.yml itself is intentionally untouched here
 # — see .shipwright/planning/iterate/2026-08-05-windows-ci-tests.md.
 #
-# Runs on pull_request (visible in the PR's own Checks tab, pre-merge) as
-# well as push to main, so this is NOT wired into
-# shared/scripts/lib/main_health.py's MONITORED_WORKFLOWS post-merge repair
-# path by design — pre-merge visibility is the detection mechanism here.
+# Runs on pull_request (visible in the PR's own Checks tab, pre-merge) when the
+# PR touches what it tests (see the `paths` filter below) and on every push to
+# main, so this is NOT wired into shared/scripts/lib/main_health.py's
+# MONITORED_WORKFLOWS post-merge repair path by design — pre-merge visibility
+# is the detection mechanism here.
 
 on:
   pull_request:
     branches: [main]
+    # CI-duration iterate 1/3: this job is the longest in the repo (27-30 min
+    # vs ~20 min for ci.yml) and is NOT a Required Check, so it only earns its
+    # runner time on a PR that can change what it tests. It runs the three
+    # shared/ test roots, so the filter is shared/** + scripts/** (the bash and
+    # path-sensitive scripts those tests drive) + the root files that shape the
+    # environment (pyproject.toml, uv.lock, conftest.py, .gitattributes,
+    # .python-version) + this workflow. A plugins/**-only (or docs/**-only) PR is
+    # NOT run on Windows pre-merge; the unfiltered `push` trigger below still
+    # runs it on every merge to main. That result shows on main's commit status
+    # but is NOT watched by main_health (MONITORED_WORKFLOWS), so a Windows-only
+    # break from a skipped PR surfaces post-merge, to whoever looks.
+    paths:
+      - "shared/**"
+      - "scripts/**"
+      - "pyproject.toml"
+      - "uv.lock"
+      - "conftest.py"
+      - ".gitattributes"
+      - ".python-version"
+      - ".github/workflows/windows-tests.yml"
   push:
     branches: [main]
   workflow_dispatch:
