@@ -7,7 +7,8 @@ modify/delete of a file that exists at the merge-base (``events_integrity`` reco
   :data:`FOLD_AGE_DAYS` (by event ``ts``, never mtime) move into ONE new archive file
   ``shipwright_events.archive/fold-<hash>.jsonl`` and are deleted in the same change. The archive name is the
   hash of the folded set, so a second fold of the same set (concurrent, or a re-run) produces the same file
-  (clean add/add) and a fold of nothing is a no-op. Files whose events are not all ok are left and reported.
+  (clean add/add; folds of OVERLAPPING sets are single-actor release work, git may call them a rename conflict --
+  loud, never lossy) and a fold of nothing is a no-op. Files whose events are not all ok are left and reported.
 * **emergency fold** -- the first rollback: every ok drop (age and merge state ignored) into the archive, and
   ``events_layout`` back to ``legacy``. Post-change readers keep seeing everything (archive is read).
 * **quarantine** -- a drop with ZERO recoverable records that was already non-ok at the base ref moves,
