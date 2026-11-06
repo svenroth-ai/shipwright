@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "1. **Should it exist?** Partly: the integrity checker and a one-way fold earn their keep; the quarantine and emergency-fold machinery around them are a second standing mechanism that mostly doesn't.\n\n2. **The smallest thing that would do.** Keep the checker (it is the actual guard for the \"PRs only ADD\" invariant \u2014 that is a correctness gate, not housekeeping) and keep a single one-way fold. Replace emergency fold with `git revert` of the fold commit \u2014 fold is a commit like any other, and revert already exists, is already understood by every future change, and is racing-PR-safe by the same add-only property (the revert re-adds the split files, deletes the archive). Quarantine as a special state is needed only if a *corrupt committed file* is expected; if it isn't yet a real occurrence, the smallest thing is: fold quarantines by including the corrupt bytes in the archive with a status marker \u2014 no separate folder, no byte-identical-twin exception, one mechanism fewer in the checker.\n\n3. **What it costs to keep.** The checker runs on every PR forever and its exception list (fold, quarantine) becomes a place every future housekeeping idea will want to add itself to. Every future fold/emergency flow must be reasoned about against open-PR races. The `.keep` is trivial.\n\n4. **What it forecloses.** The content-recognised exceptions in the checker make any future writer of non-drop files into that folder harder to add, and make the checker's semantics progressively weaker as exceptions accrete.\n\n**Findings**\n\n- Category: simpler-alternative\n- Severity: medium\n- Finding: Emergency fold duplicates git's existing revert machinery; a bespoke rollback flow is a permanent second path that every future change to fold semantics must keep consistent with.\n- Suggestion: Drop emergency fold as a tool feature; document \"revert the fold commit\" as the rollback. If a test shows revert can race an open PR uncleanly, keep only that scenario handled.\n\n- Category: simpler-alternative\n- Severity: medium\n- Finding: Quarantine as a separate location plus a byte-identical-twin checker exception is two mechanisms for the rare \"corrupt file already on main\" case; folding the corrupt bytes into the archive with a status marker needs no second location and no exception.\n- Suggestion: One exception (fold) in the checker, not two; quarantine is a status inside the archive, not a place.\n\n- Category: proportionality\n- Severity: low\n- Finding: Folding at all (vs. Option B) is only worth it if per-run drop counts are expected to reach the point the reader or the repo feels it; the brief doesn't state current or projected volume.\n- Suggestion: State the projected file count in the brief; if it's years away, ship the checker now and land fold when a number justifies it.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **The full mechanism should not exist as proposed:** keep the integrity checker and narrow quarantine support, but defer folding until folder growth causes a measured problem.\n\n2. **Smallest thing that would do:** take B for storage\u2014retain committed drops\u2014and add the checker enforcing append-only changes, key/path validity and run identity. Permit only byte-identical quarantine moves for files with zero recoverable records and non-ok status at the merge-base, independently rechecked by CI. This preserves clean merges without archives or rollback machinery.\n\n3. **What it costs to keep:** maintain the checker alongside writers and readers, plus the quarantine eligibility rule and exception. Folding would additionally require permanent archive compatibility, fold recognition and rollback semantics.\n\n4. **What it forecloses:** the checker intentionally prevents ordinary edits to committed drops. Deferring folding forecloses nothing identified; it remains available later.\n\n5. **Findings**\n\nCategory: proportionality\nSeverity: medium\nFinding: Folding, archive recognition, emergency fold and full rollback impose permanent obligations to address unbounded file count without evidence that file count currently causes material cost.\nSuggestion: Choose B for now, retaining the integrity checker and narrowly constrained quarantine. Introduce folding only when measured reader or repository costs justify it.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "architecture",
+  "capture": {
+    "run_id": "iterate-2026-11-06-events-drop-files-s6-fold-integrity",
+    "at": "2026-11-06T20:50:02.020930+00:00"
+  },
+  "verdicts": {
+    "glm": "revise",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

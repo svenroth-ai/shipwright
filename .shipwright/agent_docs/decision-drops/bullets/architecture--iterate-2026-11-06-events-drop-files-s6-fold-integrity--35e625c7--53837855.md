@@ -1,0 +1,1 @@
+- **iterate-2026-11-06-events-drop-files-s6-fold-integrity** (2026-11-06): Data-flow — Event drop folds: fold_events.py folds aged drops into shipwright_events.archive/fold-<hash>.jsonl; check_events_integrity.py judges event folders at the merge-base (grow-only, no forged run ids). → decision_log (ADR via Run-ID: iterate-2026-11-06-events-drop-files-s6-fold-integrity)

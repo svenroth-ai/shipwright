@@ -1,0 +1,8 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"fold, emergency, full fold, quarantine, key/path validation, integrity check (fold and quarantine exceptions), F11 claim check; no-op without folders; CI workflow wiring deferred to the operator"},
+{"name":"Error Handling","verdict":"pass","note":"verify-before-delete, recheck under the lock, conflicting ids refuse (exit 1), git trouble exits 2, interrupted fold resumable (tested)"},
+{"name":"Security Basics","verdict":"pass","note":"name grammar, case-variant folders, symlinks, archive injection, forged run stamps, foreign keys; files written via durable_atomic_write, no os.open modes"},
+{"name":"Test Quality","verdict":"pass","note":"real git repos, bare-origin merge-tree race, real repo log shape, CRLF checkout, tool output judged by the checker"},
+{"name":"Performance Basics","verdict":"pass","note":"one cat-file per file (batching deferred); no-op path is a single diff"},
+{"name":"Naming & Structure","verdict":"pass","note":"new modules under 300 LOC, events_read at 300 and events_log at 313 not raised"},
+{"name":"Affected Boundaries","verdict":"pass","note":"producer fold tool to consumer checker proven by running the tool then the checker on the commit; reader to fold race probed"}]}

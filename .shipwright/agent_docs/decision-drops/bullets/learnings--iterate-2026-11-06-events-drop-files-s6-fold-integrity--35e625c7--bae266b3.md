@@ -1,0 +1,1 @@
+- (2026-11-06) events — a fold is proven by per-event hash coverage in an added archive, never by commit message; on Windows read blobs with git cat-file and compare bytes CRLF-tolerantly. → iterate-2026-11-06-events-drop-files-s6-fold-integrity
