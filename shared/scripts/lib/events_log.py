@@ -166,8 +166,8 @@ def resolve_events_path(project_root: Path | str) -> Path:
 def event_files(project_root: Path | str) -> list[Path]:
     """Legacy file (listed even if absent), then archive and drop files by name; folders are read whatever the layout."""
     root = Path(project_root)
-    # drops are LISTED before the archive: a fold adds its archive file first and deletes the drops after,
-    # so this order can see an event twice (deduplicated on read), never zero times.
+    # drops are LISTED before the archive (a fold adds its archive file first, deletes the drops after); a file
+    # lost between listing and reading is redone by read_events_assembled; _all_records has no such retry (S6 note)
     listed = {f: sorted(p for p in (root / f).glob("*.jsonl") if p.is_file() and not p.is_symlink())
               if (root / f).is_dir() and not (root / f).is_symlink() else [] for f in (DROPS_DIR, ARCHIVE_DIR)}
     return [resolve_events_path(root), *listed[ARCHIVE_DIR], *listed[DROPS_DIR]]

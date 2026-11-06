@@ -128,9 +128,9 @@ def test_full_fold_appends_to_the_legacy_log_dedups_and_leaves_unsafe_files(tmp_
     put(root, ARCHIVE_DIR, "fold-0123456789ab.jsonl", ev("z1"))
     drop(root, "run-bad", ev("b1"), "{broken", nonce="00000002")
     result = apply_full_fold(root)
-    assert result["status"] == "folded_into_legacy" and result["appended"] == 3   # a1, z1, b1 (recovered)
+    assert result["status"] == "folded_into_legacy" and result["appended"] == 2   # a1, z1; the corrupt file keeps its own b1
     ids = [json.loads(line)["id"] for line in legacy.read_text(encoding="utf-8").splitlines()]
-    assert ids.count("l1") == 1 and sorted(ids) == ["a1", "b1", "l1", "z1"]
+    assert ids.count("l1") == 1 and sorted(ids) == ["a1", "l1", "z1"]
     assert [s["reason"] for s in result["skipped"]] == ["corrupt"]
     assert [p.name for p in (root / DROPS_DIR).glob("*.jsonl")] == ["run-bad--aaaaaaaa--00000002.jsonl"]
     assert not list((root / ARCHIVE_DIR).glob("*.jsonl"))
@@ -272,3 +272,21 @@ def test_a_clashing_id_that_appears_after_the_plan_stops_the_fold(tmp_path):
     assert plan.conflicts == []
     put(root, ".", "shipwright_events.jsonl", ev("e1", description="a writer got there first"))
     assert apply_fold(root, plan)["status"] == "conflict" and not archive_names(root)
+
+
+def test_full_fold_never_duplicates_the_events_of_a_file_it_leaves_behind(tmp_path):
+    root = make_repo(tmp_path)
+    drop(root, "run-bad", ev("b1"), "{broken", nonce="00000002")
+    apply_full_fold(root)
+    ids = [r["id"] for r in read_events_assembled(root).records]
+    assert ids == ["b1"]                                     # from the corrupt drop only, exactly once
+
+
+def test_quarantine_works_on_a_crlf_checkout(tmp_path):
+    root = make_repo(tmp_path)
+    junk = put(root, DROPS_DIR, "run-junk--aaaaaaaa--00000001.jsonl", "not json", "still not json")
+    commit(root)
+    junk.write_bytes(junk.read_bytes().replace(bytes([10]), bytes([13, 10])))
+    items = plan_quarantine(root)
+    assert apply_quarantine(root, items)["status"] == "quarantined"
+    assert bytes([13, 10]) not in (root / QUARANTINE_DIR / junk.name).read_bytes()   # the BASE blob is what moves

@@ -31,7 +31,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .events_fold_io import (
-    EMPTY_BLOB, FOLDERS, GitError, KEEP_NAME, blob, content_hash, drop_key_of, event_hash, git, name_problem, parse_bytes,
+    EMPTY_BLOB, FOLDERS, GitError, KEEP_NAME, blob, content_hash, drop_key_of, event_hash, git, name_problem, parse_bytes, tree_names,
 )
 from .events_log import ARCHIVE_DIR, DROPS_DIR, EVENT_FILE, QUARANTINE_DIR
 
@@ -82,6 +82,13 @@ def _entries(root: Path, base: str, head: str) -> list[Entry]:
     return out
 
 
+def _base_archive_hashes(root: Path, base: str) -> set[str]:
+    out: set[str] = set()
+    for name in tree_names(root, base, ARCHIVE_DIR) or ():
+        out |= {event_hash(r) for r in parse_bytes(blob(root, base, f"{ARCHIVE_DIR}/{name}") or b"").records}
+    return out
+
+
 def _covered(parsed_events: list[dict], pool: set[str]) -> bool:
     return bool(parsed_events) and all(event_hash(r) in pool for r in parsed_events)
 
@@ -101,7 +108,7 @@ def check_integrity(root: Path | str, base_ref: str, head_ref: str = "HEAD", *, 
     legacy_hashes: set[str] | None = None
     archives: list[tuple[Entry, list[dict]]] = []
     added_archive: set[str] = set()   # per-event hashes of archive files this change adds
-    added_quarantine = {e.new_sha: e for e in entries if e.status == "A" and e.folder == QUARANTINE_DIR}
+    added_quarantine = {(e.new_sha, e.name): e for e in entries if e.status == "A" and e.folder == QUARANTINE_DIR}
     for e in entries:
         if e.folder not in FOLDERS:
             flag("bad_path", e, f"{e.folder!r} is a case variant of an event folder")
@@ -139,8 +146,8 @@ def check_integrity(root: Path | str, base_ref: str, head_ref: str = "HEAD", *, 
         old = parse_bytes(blob(root, base, e.path) or b"")
         if e.folder == DROPS_DIR and _covered(old.records, added_archive):
             continue  # fold: every deleted event is in an added archive file
-        twin = added_quarantine.get(e.old_sha)
-        if e.folder == DROPS_DIR and twin is not None and twin.name == e.name and not old.records and old.status != "ok":
+        twin = added_quarantine.get((e.old_sha, e.name))
+        if e.folder == DROPS_DIR and twin is not None and not old.records and old.status != "ok":
             continue  # quarantine: unrecoverable at the merge-base, moved byte-identically
         if allow_full_fold and e.folder in (DROPS_DIR, ARCHIVE_DIR):
             if legacy_hashes is None:
@@ -152,6 +159,8 @@ def check_integrity(root: Path | str, base_ref: str, head_ref: str = "HEAD", *, 
         deleted = {event_hash(r) for e in entries if e.status == "D" and e.folder == DROPS_DIR
                    for r in parse_bytes(blob(root, base, e.path) or b"").records}
         for e, records in archives:
+            if any(event_hash(r) not in deleted for r in records):
+                deleted |= _base_archive_hashes(root, base)  # an overlapping earlier fold already holds them (the reader dedups)
             if any(event_hash(r) not in deleted for r in records):
                 flag("archive_injection", e, "holds events that no deleted merge-base drop held")
     return bad

@@ -163,10 +163,14 @@ def apply_fold(root: Path | str, plan: FoldPlan, *, allow_conflicts: bool = Fals
         if plan.mode == "emergency":  # the rollback also means: stop writing drops, whatever is left to move
             with FileLock(events_lock_path(root)):
                 set_layout(root, "legacy")
-        return {"status": "nothing_to_fold", "skipped": plan.skipped}
+        return {"status": "nothing_to_fold", "mode": plan.mode, "skipped": plan.skipped}
     with FileLock(events_lock_path(root)):
-        for item in plan.selected:  # a writer may have touched a file since the plan
-            if item.path.read_bytes() != item.data:
+        for item in plan.selected:  # a writer may have touched a file since the plan, or a fold removed it
+            try:
+                unchanged = item.path.read_bytes() == item.data
+            except FileNotFoundError:
+                unchanged = False
+            if not unchanged:
                 return {"status": "changed_since_plan", "file": item.path.name}
         conflicts, _ = find_conflicts(root, plan.selected)  # ... or added a clashing id elsewhere
         if conflicts and not allow_conflicts:
@@ -210,7 +214,11 @@ def apply_quarantine(root: Path | str, items: list[Selected]) -> dict:
         return {"status": "nothing_to_quarantine"}
     with FileLock(events_lock_path(root)):
         for item in items:  # a writer may have appended a recoverable record since the plan
-            if item.path.read_bytes() != item.data:
+            try:
+                unchanged = same_bytes(item.path.read_bytes(), item.data)
+            except FileNotFoundError:
+                unchanged = False
+            if not unchanged:
                 return {"status": "changed_since_plan", "file": item.path.name}
         (root / QUARANTINE_DIR).mkdir(exist_ok=True)
         for item in items:

@@ -46,7 +46,7 @@ def _stage_paths(result: dict) -> list[str]:
         paths += [result["legacy_log"]] if result.get("legacy_log") else []
     if status == "quarantined":
         paths += [f"{folder}/{n}" for folder in (QUARANTINE_DIR, DROPS_DIR) for n in result.get("files", [])]
-    if status == "nothing_to_fold":
+    if status == "nothing_to_fold" and result.get("mode") == "emergency":
         paths.append("shipwright_sync_config.json")   # an emergency fold with nothing left still resets the layout
     return paths
 

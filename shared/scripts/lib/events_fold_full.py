@@ -3,12 +3,12 @@
 For consumers still on plugins from before the drops layout (they read only the single log file). One-time,
 conflict-accepting -- a PR that was open against the drops carries stale paths. Steps, all under the events lock:
 
-1. read the whole log through the assembling reader (``read_events_assembled``: legacy in file order, then
-   archive and drops by instant and id) and scan it for ids -- the same id with DIFFERENT content in the legacy
-   log and the folders stops the fold (``allow_conflicts`` appends both). An identical copy is simply skipped;
+1. read the legacy log and every archive/drop file that is fully ok (a file with an unrecoverable remainder is
+   reported and left alone, with its records: appending them would duplicate them for good) and scan for ids --
+   the same id with DIFFERENT content in the legacy log and the folders stops the fold (``allow_conflicts``
+   appends both). An identical copy is simply skipped; the rest is appended in the reader's order;
 2. append the events the legacy log does not hold yet, one line each, after the log's termination guard;
-3. delete the archive and drop files whose every event is now in the legacy log (files that are not ok stay and
-   are reported -- their unrecoverable remainder would be lost), and set ``events_layout`` to ``legacy``.
+3. delete those files once every event is verified in the legacy log, and set ``events_layout`` to ``legacy``.
 
 The ``run`` stamp stays on appended lines (old readers ignore an unknown field). Events without an id are
 appended unless an identical line exists. Idempotent: a second run finds nothing to append.
@@ -20,39 +20,47 @@ import os
 from pathlib import Path
 
 from .events_fold import ensure_keep, set_layout
-from .events_fold_io import content_hash, dump_line, parse_bytes
+from .events_fold_io import content_hash, dump_line, parse_bytes, sort_key
 from .events_layout import events_lock_path
 from .events_log import ARCHIVE_DIR, DROPS_DIR, event_files, resolve_events_path
-from .events_read import read_events_assembled
 from .file_lock import FileLock
 from .jsonl_records import ends_without_newline
 
 
 def plan_full_fold(root: Path | str) -> dict:
-    """What a full fold would do: ``append`` (records), ``files`` (to delete), ``skipped``, ``conflicts``."""
+    """What a full fold would do: ``append`` (records), ``files`` (to delete), ``skipped``, ``conflicts``.
+
+    Only files that are fully ok are taken: the recovered records of a corrupt file would be appended while the
+    file stays behind, and every later assembled read would then see them twice.
+    """
     root = Path(root)
     legacy = resolve_events_path(root)
     in_legacy = parse_bytes(legacy.read_bytes()).records if legacy.exists() else []
-    hashes = {content_hash(r) for r in in_legacy}
-    by_id = {r["id"]: content_hash(r) for r in in_legacy if isinstance(r.get("id"), str)}
-    read = read_events_assembled(root, include_legacy=False)
-    append, conflicts, seen = [], [], set(hashes)
-    for record in read.records:
-        digest = content_hash(record)
-        ident = record.get("id")
+    by_id: dict[str, set[str]] = {}
+    for r in in_legacy:
+        if isinstance(r.get("id"), str):
+            by_id.setdefault(r["id"], set()).add(content_hash(r))
+    seen = {content_hash(r) for r in in_legacy}
+    files, skipped, incoming = [], [], []
+    for path in event_files(root)[1:]:
+        parsed = parse_bytes(path.read_bytes())
+        if parsed.status != "ok":
+            skipped.append({"file": path.name, "reason": parsed.status})
+            continue
+        files.append(path)
+        incoming += parsed.records
+    append, conflicts = [], set()
+    for record in sorted(incoming, key=sort_key):
+        digest, ident = content_hash(record), record.get("id")
         if digest in seen:
             continue
-        if isinstance(ident, str) and by_id.get(ident, digest) != digest and ident not in conflicts:
-            conflicts.append(ident)
         seen.add(digest)
         append.append(record)
         if isinstance(ident, str):
-            by_id.setdefault(ident, digest)
-    ok = {f.path for f in read.files if f.status == "ok"}
-    files = [p for p in event_files(root)[1:] if str(p) in ok]
-    skipped = [{"file": Path(f.path).name, "reason": f.status} for f in read.files if f.status != "ok"]
-    return {"append": append, "files": files, "skipped": skipped,
-            "conflicts": sorted(set(conflicts) | set(read.duplicate_ids))}
+            if by_id.get(ident) and digest not in by_id[ident]:
+                conflicts.add(ident)
+            by_id.setdefault(ident, set()).add(digest)
+    return {"append": append, "files": files, "skipped": skipped, "conflicts": sorted(conflicts)}
 
 
 def apply_full_fold(root: Path | str, *, allow_conflicts: bool = False) -> dict:
@@ -69,7 +77,7 @@ def apply_full_fold(root: Path | str, *, allow_conflicts: bool = False) -> dict:
                 fp.write(separator + lines)
                 fp.flush()
                 os.fsync(fp.fileno())
-        held = {content_hash(r) for r in parse_bytes(legacy.read_bytes()).records}
+        held = {content_hash(r) for r in parse_bytes(legacy.read_bytes() if legacy.exists() else b"").records}
         gone = []
         for path in plan["files"]:
             if all(content_hash(r) in held for r in parse_bytes(path.read_bytes()).records):

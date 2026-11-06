@@ -300,3 +300,29 @@ def test_the_f11_check_catches_a_case_variant_and_passes_a_clean_branch(repo):
     drop(repo, "run-mine", ev("n1", NEW))
     commit(repo)
     assert check_events_integrity(repo, "run-x").ok is True
+
+
+def test_a_second_fold_of_an_overlapping_set_is_not_an_injection(repo):
+    """Main already folded run-old; a branch that folded {run-old, run-two} must still pass once rebased."""
+    apply_fold(repo, plan_fold(repo, mode="emergency"))
+    commit(repo, "fold A (now on the trunk)")
+    git(repo, "branch", "-f", "base")
+    drop(repo, "run-two", ev("e3", NEW))                     # the overlap: run-two's event is already archived
+    drop(repo, "run-three", ev("e9", NEW), nonce="00000002")
+    commit(repo, "branch adds drops")
+    git(repo, "branch", "-f", "base2", "HEAD")
+    apply_fold(repo, plan_fold(repo, mode="emergency"))
+    commit(repo, "fold B")
+    assert sorted({v.code for v in check_integrity(repo, "base2", "HEAD")}) == []
+
+
+def test_two_identical_quarantined_files_are_both_recognised(tmp_path):
+    root = make_repo(tmp_path)
+    for n in ("00000001", "00000002"):
+        put(root, DROPS_DIR, f"run-junk--aaaaaaaa--{n}.jsonl", "not json")
+    commit(root)
+    git(root, "branch", "base")
+    git(root, "switch", "-q", "-c", "pr")
+    assert apply_quarantine(root, plan_quarantine(root, base_ref="base"))["status"] == "quarantined"
+    commit(root, "quarantine two")
+    assert _codes(root) == []
