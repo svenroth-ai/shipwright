@@ -290,7 +290,7 @@ def test_the_full_fold_and_the_checker_agree_when_only_the_run_stamp_differs(rep
 def test_the_f11_check_catches_a_case_variant_and_passes_a_clean_branch(repo):
     git(repo, "update-index", "--add", "--cacheinfo",
         "100644," + subprocess.run(["git", "-C", str(repo), "hash-object", "-w", "--stdin"], input="x", capture_output=True,
-                                   text=True, check=True).stdout.strip() + f",Shipwright_Events.D/x--aaaaaaaa--00000001.jsonl")
+                                   text=True, check=True).stdout.strip() + ",Shipwright_Events.D/x--aaaaaaaa--00000001.jsonl")
     git(repo, "commit", "-q", "-m", "case variant")
     git(repo, "update-ref", "refs/remotes/origin/main", "base")
     git(repo, "symbolic-ref", "refs/remotes/origin/HEAD", "refs/remotes/origin/main")
