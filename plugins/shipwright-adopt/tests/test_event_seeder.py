@@ -3,7 +3,7 @@
 import json
 from pathlib import Path
 
-from lib.event_seeder import seed_adopted_event, seed_backfill_events
+from lib.event_seeder import events_target, seed_adopted_event, seed_backfill_events
 
 
 def test_seed_adopted_event(tmp_path: Path) -> None:
@@ -14,7 +14,7 @@ def test_seed_adopted_event(tmp_path: Path) -> None:
         features_inferred=7, nested_excluded=["webui"],
         plugin_version="0.1.0", commit_sha="abc123",
     )
-    lines = events.read_text(encoding="utf-8").splitlines()
+    lines = events_target(events).read_text(encoding="utf-8").splitlines()
     assert len(lines) == 1
     ev = json.loads(lines[0])
     assert ev["type"] == "adopted"
@@ -31,7 +31,7 @@ def test_seed_backfill_events(tmp_path: Path) -> None:
     ]
     n = seed_backfill_events(events, commits)
     assert n == 2
-    lines = events.read_text(encoding="utf-8").splitlines()
+    lines = events_target(events).read_text(encoding="utf-8").splitlines()
     assert len(lines) == 2
     first = json.loads(lines[0])
     assert first["type"] == "work_completed"

@@ -38,11 +38,12 @@ from lib.architecture_doc import (  # noqa: E402
     scan_drops,
 )
 from lib.events_log import event_files, resolve_events_path  # noqa: E402
-from lib.events_read import EventLogNotReadable, events_text, read_events_assembled, require_readable_for_absence  # noqa: E402
+from lib.events_read import EventLogNotReadable, events_text, latest_by_ts, read_events_assembled, require_readable_for_absence  # noqa: E402
 from lib.jsonl_records import split_records  # noqa: E402
 from lib.iterate_entry import find_entry_by_run_id, read_iterate_entries  # noqa: E402
 from lib.spec_impact_gate import SPEC_IMPACT_INTENTS, none_record_problem  # noqa: E402
 
+from ._events_committed import drops_committed_state  # noqa: E402
 from ._finalization_claims import run_claim_checks  # noqa: E402
 from ._entry_details import _no_entry_detail, _wrong_shape_detail  # noqa: E402, F401 — re-exported
 # The Test Completeness gate lives in its own module (size cap); re-exported here.
@@ -180,7 +181,8 @@ def check_events_has_commit(
             return CheckResult(name, False, detail)
 
     # --- Layer 2 (AC4): when tracked, the event must be in a COMMIT --------
-    committed = _event_committed_in_head(project_root, events, commit_hash, run_id)
+    committed = drops_committed_state(
+        project_root, commit_hash, run_id, _event_committed_in_head(project_root, events, commit_hash, run_id))
     if committed is False:
         return CheckResult(
             name, False,
@@ -534,17 +536,12 @@ def _find_work_event_by_run_id(project_root: Path, run_id: str) -> dict | None:
     """
     if not run_id:
         return None
-    matched: dict | None = None
     try:
         records = read_events_assembled(project_root).records
     except OSError:
         return None
-    for evt in records:
-        if evt.get("type") != "work_completed":
-            continue
-        if evt.get("adr_id") == run_id:
-            matched = evt
-    return matched
+    # Newest by ts (ties: later position): with per-run drop files the list position carries no time meaning.
+    return latest_by_ts(records, lambda e: e.get("type") == "work_completed" and e.get("adr_id") == run_id)
 
 
 def check_spec_impact_recorded(

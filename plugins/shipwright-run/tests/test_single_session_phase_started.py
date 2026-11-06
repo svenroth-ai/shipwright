@@ -20,6 +20,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts" / "lib
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "shared" / "testkit"))
 
 import minimal_valid_project as mvp  # noqa: E402
+from event_log_probe import event_records  # noqa: E402
 from orchestrator import create_config  # noqa: E402
 from orchestrator_pkg import single_session_loop as loop  # noqa: E402
 from orchestrator_pkg.single_session_cli import dispatch_single_session  # noqa: E402
@@ -59,11 +60,7 @@ def _apply_ok(project_root: Path, dispatch: dict) -> dict:
 
 
 def _events_of_type(project_root: Path, event_type: str) -> list[dict]:
-    path = project_root / "shipwright_events.jsonl"
-    if not path.exists():
-        return []
-    events = [json.loads(ln) for ln in path.read_text("utf-8").splitlines() if ln.strip()]
-    return [e for e in events if e.get("type") == event_type]
+    return [e for e in event_records(project_root) if e.get("type") == event_type]
 
 
 def _phase_started(project_root: Path) -> list[dict]:

@@ -1,0 +1,105 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-06-events-drop-files-s4-writers-finalization",
+    "date": "2026-11-06",
+    "unit": {
+      "status": "passed",
+      "passed": 21316,
+      "skipped": 86,
+      "total": 21402
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 666,
+      "skipped": 0,
+      "total": 666
+    },
+    "pgtap": {
+      "status": "not_run",
+      "passed": 0,
+      "skipped": 0,
+      "total": 0
+    },
+    "e2e": {
+      "status": "not_run",
+      "passed": 0,
+      "skipped": 0,
+      "total": 0
+    },
+    "design_fidelity": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "legacy layout: bytes written, ids and ensure_current/seal stay exactly as before",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_events_writers_drops.py::test_legacy_bytes_are_exactly_as_before PASSED"
+        },
+        {
+          "behavior": "12 parallel Stop-hook writers record one phase_completed; a re-run with a fresh run id does not duplicate (KC4)",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "integration-tests/test_events_drops_writers.py::test_kc4_twelve_parallel_stop_hooks_record_one_phase_completed PASSED"
+        },
+        {
+          "behavior": "F6 forgot to stage the gate event: F11 committed-check FAILS after a real ensure_current absorb",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "integration-tests/test_events_drops_writers.py::test_a_real_ensure_current_absorbs_a_late_drop_but_leaves_the_gate_event_to_f6 PASSED"
+        },
+        {
+          "behavior": "key precedence, 80-char cap, 16-hex ids, same-id dedup, atomic creation, rotate-on-commit, run stamp drops-only",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_events_writers_drops.py 18 tests PASSED"
+        },
+        {
+          "behavior": "F6 staging by own key, absorb scope, writers lock, F7b seal, monotonic ts, LF appends, replay after close",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_events_finalization_drops.py 16 tests PASSED"
+        },
+        {
+          "behavior": "replay gate: every event-related test passes under the drops layout, known set empty",
+          "disposition": "tested",
+          "evidence": "events_replay_gate.py check --strict-stale rc=0, known set empty"
+        }
+      ],
+      "counts": {
+        "testable": 6,
+        "tested": 6,
+        "untestable": 0,
+        "untested_testable": 0
+      }
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run pytest integration-tests/test_events_drops_writers.py -q -p no:cacheprovider",
+      "exit_code": 0,
+      "tests_run": 2,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\campaign-events-drop-files--S4\\.shipwright\\runs\\iterate-2026-11-06-events-drop-files-s4-writers-finalization\\surface_verification.log",
+      "timestamp": "2026-11-06T17:07:57.522Z",
+      "attempts": 1,
+      "run_id": "iterate-2026-11-06-events-drop-files-s4-writers-finalization"
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-24-r5b-merge-lane",
+    "commit": "032d1ebbf0ef9c99eb98f240c8f1110e981a32a5",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

@@ -342,9 +342,9 @@ gh pr create \
 
 **Record changelog event — BEFORE the merge, so it ships in the release PR** (an append after the merge strands uncommitted in the main checkout: webui v0.28.0, monorepo v0.34.0). Needs `{PR_URL}`. `{shared_root}` = `{plugin_root}/../../shared`. Chained with `&&`: a failing step stops the release before anything is pushed.
 ```bash
-uv run "{shared_root}/scripts/tools/record_event.py" --project-root "$(pwd)" --type phase_completed --phase changelog --detail "v{version} — {PR_URL}" \
-&& git add shipwright_events.jsonl \
-&& { git diff --cached --quiet -- shipwright_events.jsonl || git commit -m "chore(release): record changelog event for v{version}" -- shipwright_events.jsonl; } \
+uv run "{shared_root}/scripts/tools/record_event.py" --project-root "$(pwd)" --type phase_completed --phase changelog --run-id "release-v{version}" --detail "v{version} — {PR_URL}" \
+&& uv run "{shared_root}/scripts/tools/stage_event_drops.py" --project-root "$(pwd)" --run-id "release-v{version}" \
+&& { [ ! -f shipwright_events.jsonl ] || git add shipwright_events.jsonl; paths=$(git diff --cached --name-only -- shipwright_events.jsonl shipwright_events.d); [ -z "$paths" ] || git commit -m "chore(release): record changelog event for v{version}" -- $paths; } \
 && git push origin HEAD
 ```
 
@@ -357,9 +357,9 @@ gh pr merge --merge --delete-branch
 
 **If already on main:** skip the PR and record the event with the block below — it commits but never pushes (main is pushed once, with the tag, by the next block; the tag stays on the release commit, not on the event commit).
 ```bash
-uv run "{shared_root}/scripts/tools/record_event.py" --project-root "$(pwd)" --type phase_completed --phase changelog --detail "v{version} — tagged on main" \
-&& git add shipwright_events.jsonl \
-&& { git diff --cached --quiet -- shipwright_events.jsonl || git commit -m "chore(release): record changelog event for v{version}" -- shipwright_events.jsonl; }
+uv run "{shared_root}/scripts/tools/record_event.py" --project-root "$(pwd)" --type phase_completed --phase changelog --run-id "release-v{version}" --detail "v{version} — tagged on main" \
+&& uv run "{shared_root}/scripts/tools/stage_event_drops.py" --project-root "$(pwd)" --run-id "release-v{version}" \
+&& { [ ! -f shipwright_events.jsonl ] || git add shipwright_events.jsonl; paths=$(git diff --cached --name-only -- shipwright_events.jsonl shipwright_events.d); [ -z "$paths" ] || git commit -m "chore(release): record changelog event for v{version}" -- $paths; }
 ```
 
 **Push tags and updated main to remote:**

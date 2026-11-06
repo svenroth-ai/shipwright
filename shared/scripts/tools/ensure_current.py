@@ -31,6 +31,7 @@ _SCRIPTS_DIR = Path(__file__).resolve().parent.parent  # shared/scripts
 sys.path.insert(0, str(_SCRIPTS_DIR))
 
 from lib.churn_merge import TRIAGE_LOG  # noqa: E402
+from lib.events_stage import absorb_wt_drops  # noqa: E402
 from lib.main_tree_guards import op_in_progress  # noqa: E402
 from lib.triage_validate import validate_triage_text  # noqa: E402
 from tools import integrate_main  # noqa: E402
@@ -174,7 +175,11 @@ def ensure_current(
     # An absorb-only advance (no merge needed/attempted below) still counts:
     # the caller gates re-push on `integrated`, and a commit sitting unpushed
     # is exactly what this whole guard exists to prevent.
-    absorbed_only_integrated = absorbed == "triage-absorbed"
+    # The event drops of THIS worktree (DESIGN 10.2): same reason, same place; a no-op without a drops folder.
+    ev_absorbed = None if op_in_progress(project_root) else absorb_wt_drops(project_root, run_id)
+    if ev_absorbed:
+        steps.append(ev_absorbed)
+    absorbed_only_integrated = absorbed == "triage-absorbed" or ev_absorbed == "events-absorbed"
 
     branch = default_branch or integrate_main._default_branch(project_root)
     ref = merge_ref or f"origin/{branch}"

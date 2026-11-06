@@ -1054,7 +1054,7 @@ replays every event-related test file of every test root under the override
 (one pytest process per root) against the ratcheted known set
 `events_replay_known_failing.json` (entries split by owning unit; may only shrink);
 it runs as a step of `ci.yml`'s Python job with a stated time budget. Bare-origin
-harness: `integration-tests/test_events_drops_harness.py`. **Setting `events_layout: drops` in a real repo is unsupported until the flip unit (S9a)**: writers would use drops while `attach_commit_to_event`, `latest_event_dt`, `finalized_run_ids` and the compliance twin still read only the legacy file; fixture pair:
+harness: `integration-tests/test_events_drops_harness.py`. **Setting `events_layout: drops` in a real repo stays unsupported until the flip unit (S9a)** (the mixed-version sentinel, fold and integrity tooling land in S6/S7); fixture pair:
 `shared/tests/fixtures/events_layout/` (`unsplit.jsonl` + `split/`).
 
 **Readers (S3).** Every reader goes through the assembling reader
@@ -1068,6 +1068,31 @@ leak guard, churn merge, PR-review generated paths) list all three folders
 the folders and never auto-resolves a conflict inside them. The reference guard
 `lib/events_references.py` (test `shared/tests/test_events_reference_guard.py`) fails on
 any file naming the event log that is not registered with a tag.
+
+**Writers and finalization (S4, still dormant: default `legacy`).** One writer module,
+`lib/events_write.py`, is the only place that appends an event (`record_event`,
+`finalize_iterate`, `convert_configs_to_events`; the adopt seeder carries a documented duplicate because
+the plugin cannot import shared `lib`). Under `legacy` the bytes written are exactly today's. Under the
+drops layout the format changes are DROPS-ONLY: each event is stamped with `run` (its drop key), new ids
+are 16 hex (an identical id with identical content dedups, a differing body keeps both), the key follows
+one function (`events_layout.drop_key`: explicit run id from `--run-id` / `--adr-id` on `work_completed` /
+`SHIPWRIGHT_RUN_ID`, else the per-unit worktree's name, else `_branch-<slug>`, `_detached-<wt8>`, and `_main`
+only for the main tree; at most 80 characters; the adopt seeder's duplicate is a decided exception: `SHIPWRIGHT_RUN_ID`, else the fixed key `_adopt`, because adoption runs once in the main tree before any run exists), a drop is created atomically (written to a hidden temp
+name, then renamed — never an empty `*.jsonl`) and a closed file (one in HEAD's tree or the index, probed
+with `ls-tree`/`ls-files`, never `git status`) is never edited: the next write starts a new file.
+`attach_commit_to_event` becomes an `event_amended {commit}` written to a drop. Dedup (`phase_completed`,
+by-commit) reads the WHOLE log while holding the own-key lock, so a re-run of a phase with a fresh run id
+does not duplicate; it concludes "absent" only when this run's own drop files are readable (KC8).
+
+| Step | Tool | Drops-layout behaviour (no-op under legacy) |
+|------|------|------|
+| F5b | `finalize_iterate.py` | `work_completed` written to the run's drop (key = run id); the prior lookup fails closed on a damaged own drop |
+| F6 | `stage_event_drops.py` | stages exactly this run's untracked drops by name (key + this worktree's `wt8`), never the folder |
+| F11 | `ensure_current.py` | ABSORB: commits the untracked drops of this worktree (validated, folder-scoped) before any merge, EXCEPT the file carrying this run's own `work_completed` — shipping that one is F6's job |
+| F11 | `verify_iterate_finalization.py` | `events.jsonl has commit` runs AFTER the absorb; a drop only in the working copy FAILS it |
+| F7b | `commit_event_followup.py` | seals the main tree's untracked `_main--*` drops |
+| merge | `integrate_merge` / `resolve_churn_conflicts` | validate the legacy log and the drops a merge brought in; `dedup_event_lines` / `event_context_index` ignore the stamped `run` in byte comparison |
+| any | `validate_event_log.py` | checks the legacy log, the archive and every drop file (a non-ok drop is an error) |
 
 ### Pipeline Constants
 

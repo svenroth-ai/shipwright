@@ -12,6 +12,8 @@ import pytest
 
 # Ensure shared scripts are importable
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "testkit"))
+from event_log_probe import event_lines, event_log_exists  # noqa: E402
 
 from scripts.tools.record_event import (
     append_event,
@@ -546,11 +548,8 @@ class TestConcurrency:
         assert len(set(ids)) == 500
 
         # All lines valid JSON
-        path = project / "shipwright_events.jsonl"
-        for line in path.open("r", encoding="utf-8"):
-            line = line.strip()
-            if line:
-                json.loads(line)  # Should not raise
+        for line in event_lines(project):
+            json.loads(line)  # Should not raise
 
 
 # ---------------------------------------------------------------------------
@@ -687,8 +686,7 @@ class TestWorktreeAwareLog:
                            "commit": "c0ffee0"})
         # Lands in the WORKTREE's own log (F6 commits it; ships in the PR).
         # The main tree is never written.
-        assert (wt / "shipwright_events.jsonl").exists()
-        assert not (main / "shipwright_events.jsonl").exists()
+        assert event_log_exists(wt) and not event_log_exists(main)
         assert [e["id"] for e in read_events(wt)] == ["evt-wt000001"]
 
     def test_read_events_from_worktree_reads_worktree_log(self, tmp_path):
@@ -779,7 +777,7 @@ class TestWorktreeAwareLog:
         project_root/EVENT_FILE — no behavior change for plain projects."""
         append_event(tmp_path, {"v": 1, "id": "evt-plain0001", "ts": "T",
                                 "type": "phase_started", "phase": "build"})
-        assert (tmp_path / "shipwright_events.jsonl").exists()
+        assert event_log_exists(tmp_path)
         assert read_events(tmp_path)[0]["id"] == "evt-plain0001"
 
     def test_changed_files_omitted_argument(self, project):

@@ -124,7 +124,7 @@ def emit_grade_snapshot(data: ComplianceData, *, dirty: bool | None = None) -> d
 
     event: dict = {
         "v": SCHEMA_VERSION,
-        "id": generate_event_id(),
+        "id": generate_event_id(data.project_root),
         "ts": datetime.now(timezone.utc).isoformat(),
         "type": "grade_snapshot",
     }

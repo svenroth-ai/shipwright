@@ -14,7 +14,7 @@ from .area_catalog import SCHEMA_VERSION as CATALOG_SCHEMA_VERSION
 from .area_catalog import load_catalog, match_area, normalize_path
 from .commit_trailers import build_run_id_commit_map, resolve_base_ref
 from .event_context_coverage import aggregate_field_coverage
-from .event_context_source import iter_event_lines, source_stats
+from .event_context_source import iter_event_lines, source_stats, strip_run
 
 INDEX_SCHEMA_VERSION = 3
 INDEX_RELATIVE_PATH = Path(".shipwright/runtime/events-context-index.json")
@@ -197,7 +197,7 @@ def build_index(project_root: Path | str, *, persist: bool = True) -> dict[str, 
     for sequence, raw in iter_event_lines(root):
         if not raw.strip():
             continue
-        line_hash = hashlib.sha256(raw).hexdigest()
+        line_hash = hashlib.sha256(strip_run(raw)).hexdigest()  # the run stamp is not content
         try:
             decoded = json.loads(raw.decode("utf-8"))
         except (UnicodeError, json.JSONDecodeError):

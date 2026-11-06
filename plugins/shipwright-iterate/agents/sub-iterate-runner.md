@@ -278,7 +278,7 @@ perform; F6-verify checks all three ran.
   then installs exact bytes as `iterates/<run_id>.test-results.json` before the summary. F6 stages
   the iterates directory. `finalize_iterate.py` does not write either; `adr` is the bare `run_id`.
 - **F6:** Commit (Conventional Commits). Explicit `git add` per-path (never `-A`; include
-  `shipwright_events.jsonl` when tracked, and `decision-drops/` when this sub-iterate wrote an F3 drop; first delete any `<stem>.stderr.txt` in the run dir that backs no `unavailable` row). Footer: `Run-ID: {run_id}` + `Co-Authored-By: Claude <noreply@anthropic.com>`.
+  `shipwright_events.jsonl` when tracked; under the drops layout run `stage_event_drops.py --project-root "{project_root}" --run-id "{run_id}"` instead — this run's own drop files by name, never the folder, and `decision-drops/` when this sub-iterate wrote an F3 drop; first delete any `<stem>.stderr.txt` in the run dir that backs no `unavailable` row). Footer: `Run-ID: {run_id}` + `Co-Authored-By: Claude <noreply@anthropic.com>`.
 - **F6-verify (MANDATORY — do NOT skip):** run the SAME F11 verifier the orchestrator runs, against
   your OWN commit — red is a build failure. NEVER push or return `status:"complete"` on red (that is
   how 4 sub-iterates reported "clean F11" with F3 drop + F5c entry silently missing):

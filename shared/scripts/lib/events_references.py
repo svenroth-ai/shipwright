@@ -15,7 +15,9 @@ The tags, and the structural rule each carries:
 ``C`` classifier  decides whether a PATH is bookkeeping / churn / generated / uncounted;
                   must list ALL three folders (:data:`FOLDERS`) or use ``EVENT_FOLDERS``.
 ``L`` lister      reports that the log exists; must look at the drops folder.
-``W`` writer      writes events or the log file. S4 owns these (writers stay dormant).
+``W`` writer      writes events or the log file; must go through the one writer module
+                  (one of :data:`WRITER_MARKERS`) -- or, for the adopt plugin that cannot import
+                  shared ``lib`` (ADR-045), carry its documented duplicate of it.
 ``S`` ssot        the resolver / reader / layout modules themselves.
 ``M`` marker      the name only labels something (an artifact list, an argument default).
 ``P`` prose       prompts, docs, docstrings, messages and templates that name the file.
@@ -53,6 +55,7 @@ READER_MARKERS = (
     "finalized_run_ids", "iter_event_lines", "source_stats", "has_event_folders", "validate_event_folders",
 )  # a call/import of the assembling reader; a bare folder name or a generic word is NOT enough
 CLASSIFIER_MARKERS = ("EVENT_FOLDERS", "is_event_folder_path")
+WRITER_MARKERS = ("events_write", "events_stage", "events_target", "_DROPS_DIR")  # the writer module / helpers / adopt's duplicate
 
 TOKEN = re.compile(
     r"shipwright_events\.jsonl|\b(?:" + "|".join(sorted(KNOWN_ALIASES | TRACKED_DERIVED | set(RESOLVERS))) + r")\b")
@@ -77,6 +80,7 @@ REGISTRY: dict[str, tuple[str, ...]] = {
         "shared/scripts/tools/replay_baseline_lock.py",
         "shared/scripts/tools/resolve_churn_conflicts.py",
         "shared/scripts/tools/verifiers/adopt_compliance.py",
+        "shared/scripts/tools/validate_event_log.py",
         "shared/scripts/tools/verifiers/common.py",
         "shared/scripts/tools/verifiers/iterate_checks.py",
     ),
@@ -97,14 +101,13 @@ REGISTRY: dict[str, tuple[str, ...]] = {
         "plugins/shipwright-compliance/scripts/lib/compliance_report.py",
         "plugins/shipwright-grade/scripts/lib/authoritative.py",
     ),
-    # Writers and finalization: S4 migrates these; each entry leaves this list with its unit.
+    # Writers and finalization (S4): each goes through the one writer module or its documented duplicate.
     "W": (
         "plugins/shipwright-adopt/scripts/lib/event_seeder.py",
         "plugins/shipwright-adopt/scripts/tools/generate_adoption_artifacts.py",
         "shared/scripts/tools/commit_event_followup.py",
         "shared/scripts/tools/convert_configs_to_events.py",
         "shared/scripts/tools/record_event.py",
-        "shared/scripts/tools/validate_event_log.py",
     ),
     "S": (
         "shared/scripts/lib/events_layout.py",
@@ -245,6 +248,8 @@ def check(repo: Path, tag_of: dict[str, str] | None = None) -> list[str]:
             problems.append(f"{rel}: tagged reader but never uses the assembling reader ({READER_MARKERS[:3]} ...)")
         if tag == "C" and not (all(f in text for f in FOLDERS) or any(m in text for m in CLASSIFIER_MARKERS)):
             problems.append(f"{rel}: tagged classifier but does not list all three folders {FOLDERS}")
+        if tag == "W" and not any(m in text for m in WRITER_MARKERS):
+            problems.append(f"{rel}: tagged writer but never uses the writer module ({WRITER_MARKERS})")
         if tag == "L" and FOLDERS[0] not in text:
             problems.append(f"{rel}: tagged lister but never looks at {FOLDERS[0]}")
         problems += alias_problems(rel, text)
