@@ -1,0 +1,5 @@
+{"ts":"2026-10-04T09:00:00Z","type":"phase_started","session":"s-ddd","phase":"iterate","id":"0000000c"}
+{"ts":"2026-10-04T09:00:00Z","type":"task_created","session":"s-ddd","description":"tie A","id":"00000018"}
+{"ts":"2026-10-04T09:00:00Z","type":"task_created","session":"s-ddd","description":"tie B","id":"00000019"}
+{"ts":"2026-10-04T09:30:00Z","type":"task_created","session":"s-ddd","description":"task of iterate-2026-10-04-delta","id":"0000000d"}
+{"ts":"2026-10-04T10:00:00Z","type":"phase_completed","session":"s-ddd","phase":"iterate","id":"0000000e"}

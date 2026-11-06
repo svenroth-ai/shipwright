@@ -1,0 +1,5 @@
+{"ts":"2026-10-03T09:00:00Z","type":"phase_started","session":"s-ccc","phase":"iterate","id":"00000008"}
+{"ts":"2026-10-03T09:30:00Z","type":"task_created","session":"s-ccc","description":"task of iterate-2026-10-03-gamma","id":"00000009"}
+{"ts":"2026-10-03T10:00:00Z","type":"phase_completed","session":"s-ccc","phase":"iterate","id":"0000000a"}
+{"ts":"2026-10-03T12:30:00+02:00","type":"task_created","session":"s-ccc","description":"offset ts, instant 10:30Z","id":"00000014"}
+{"ts":"2026-10-03T10:45:00Z","type":"task_created","session":"s-ccc","description":"UTC 10:45Z sorts AFTER the offset event","id":"00000015"}

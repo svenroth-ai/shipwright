@@ -1,0 +1,36 @@
+{
+  "stage": "doubt",
+  "gating": "advisory-must-address",
+  "doubts": [
+    {
+      "severity": "high",
+      "lens": "concurrency & ordering",
+      "claim_under_doubt": "a committed drop is never appended to",
+      "disposition": "accepted-and-fixed: staged (index) drops are closed too; test_staged_but_uncommitted_drop_is_closed"
+    },
+    {
+      "severity": "medium",
+      "lens": "hidden coupling",
+      "claim_under_doubt": "time budget is a sound standing gate",
+      "disposition": "accepted-and-fixed: budget may rise with a non-empty budget_reason; note updated; Linux CI confirmation is a documented follow-up"
+    },
+    {
+      "severity": "medium",
+      "lens": "boundary & contract",
+      "claim_under_doubt": "gate cannot be vacuously green",
+      "disposition": "accepted-and-fixed: preflight canary asserts the override selects drops and the plain var does not; (a) known tests masking drops writer guards accepted - test_events_layout.py covers the writer directly"
+    },
+    {
+      "severity": "medium",
+      "lens": "reversibility",
+      "claim_under_doubt": "layout is dormant",
+      "disposition": "accepted-and-fixed: docs + module docstring state events_layout: drops is unsupported before S9a"
+    },
+    {
+      "severity": "low",
+      "lens": "ordering",
+      "claim_under_doubt": "assembled read preserves append order",
+      "disposition": "deferred to S2 read contract (stated in docstring)"
+    }
+  ]
+}

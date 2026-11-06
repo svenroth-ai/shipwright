@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "## Findings\n\n**1. Category: regression \u2014 Severity: high**\n`shared/scripts/tools/record_event.py` (append_event / append_event_idempotent) and `shared/scripts/lib/config.py` (read_events_result)\nThe legacy path previously routed through `resolve_events_path(project_root)` for **both** the log file and its derived lock (`path.with_name(path.name + \".lock\")`). The new code replaces that with `resolve_events_write_path` \u2192 literal `root / EVENT_FILE`, and `read_events_assembled` reads `root / EVENT_FILE` directly. If `resolve_events_path` ever resolves to something other than `<root>/shipwright_events.jsonl` (its documented job: \"under a /shipwright-iterate run this is the worktree-local copy\"), then in **legacy mode** the diff silently changes (a) where events are written, (b) where events are read from, and (c) where the lock file lives \u2014 three behavioral changes in the supposedly byte-identical dormant path, and a lock/file split means concurrent writers could serialize on *different* lock files. The spec constraint \"legacy bytes written by existing plugins must not change\" is only satisfied if `resolve_events_path` is a pure identity function; nothing in the diff proves that, and the removed docstring explicitly said it wasn't. Suggestion: in `legacy` mode, `resolve_events_write_path` must return `resolve_events_path(project_root)` and `events_lock_path` must derive from that resolved path; same for the read side. If identity was verified, add a test asserting `resolve_events_path(root) == root/EVENT_FILE` for all tree shapes.\n\n**2. Category: bug \u2014 Severity: medium**\n`shared/scripts/tools/events_replay_gate.py` \u2014 `_run` / `run_root`\n`subprocess.run(..., timeout=timeout)` raises `TimeoutExpired` on a per-process timeout; it is not caught, so the gate crashes with a traceback instead of recording a failure. Worse, a single hung root in CI kills the whole step without any report of which root hung. Suggestion: catch `subprocess.TimeoutExpired` in `_run` and return a sentinel failure id (e.g. `<pytest-timeout>`) so it fails the gate cleanly and names the root.\n\n**3. Category: edge-case \u2014 Severity: medium**\n`events_replay_gate.py` \u2014 `run_root`\nWhen the drops run exits with a bad code (rc\u2209{0,1}) and no parseable FAILED lines, a `<pytest-exit-N>` sentinel is added to `drops_failed` and deliberately excluded from the legacy baseline re-run (`runnable`). If the root crashes for a layout-independent reason (collection error, missing dep, bad conftest), it would also crash under legacy, but the gate never checks \u2014 it's misattributed as a drops-only failure and trips the \"NEW drops-layout failure\" ratchet. Suggestion: when a sentinel is present, also re-run the whole root (or at least the same file list) under LEGACY_ENV and exclude it if legacy crashes identically.\n\n**4. Category: spec \u2014 Severity: low**\n`events_replay_known_failing.json` (budget) vs `.github/workflows/ci.yml`\n`budget_seconds: 1306` was measured on Windows with `--jobs 3`; CI runs Linux with `--jobs 2`. Two jobs will take roughly 1.5\u00d7 the elapsed wall-clock of three, so the budget is very likely exceeded on the first CI run, failing the step the spec says must land green. The `budget_note` acknowledges this but ships it anyway. Suggestion: either init the budget from the Linux CI run before merging, or run CI with `--jobs 3` to match the measurement.\n\n**5. Category: edge-case \u2014 Severity: low**\n`shared/scripts/lib/events_layout.py` \u2014 `_names_in_head`\nThe `FileNotFoundError` branch (git missing) returns `set()` (\"nothing committed\"), which licenses reusing an existing uncommitted drop file \u2014 but the `OSError`/`SubprocessError` branch correctly returns `None` (never reuse). A missing git binary behaves like \"not a repo\" so reuse is probably safe, but a `subprocess.TimeoutExpired` is a `SubprocessError` subclass \u2014 verify it's covered (it is, via the tuple). Fine; the real nit: `ls-tree ... HEAD -- DROPS_DIR + \"/\"` with `--name-only` and trailing slash is fine, but on `check=True` a valid HEAD with an untracked-but-present dir works; no defect. Disregard \u2014 instead, note the real remaining gap: `events_layout()` swallows a malformed config to `legacy` silently, which is per spec.\n\n**6. Category: test \u2014 Severity: low**\n`shared/tests/test_events_layout.py::test_the_test_flag_is_never_set_by_plugins_or_templates`\nThis test scans the whole plugins tree on every test run (slow) and would also flag the gate's own CI step if it ever moved into a scanned dir; more importantly it doesn't check the workflow or scripts that *should* set the flag \u2014 a plugin could set `SHIPWRIGHT_EVENTS_LAYOUT=drops` (without the flag) freely and nothing tests that plugins never set the flag alone. That's acceptable per spec (the flag is the gate), so low.\n\n## Assessment\n\nThe core mechanism (precedence matrix, rotation-on-commit, assembled read, harness with real merge-tree, shrink-only ratchet) is well built and well tested, but the legacy-mode rewrite bypasses `resolve_events_path` for both read and write, which is exactly the kind of \"dormant path that isn't dormant\" regression the plan reviews warned about \u2014 verify or fix that before merge, plus the gate's unhandled timeout path.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "- Category: bug\n- Severity: high\n- File: shared/scripts/tools/events_replay_gate.py:113\u2013118\n- Finding: The gate can report success despite failed tests. `_FAIL_LINE` cannot parse node IDs containing spaces, such as parametrized tests with `[hello world]`. If pytest exits with code 1 and no summary lines match, `_run` returns an empty failure set because exit code 1 is explicitly accepted.\n- Suggestion: Collect results through a structured pytest report or plugin. At minimum, fail closed whenever pytest returns a failure code without identifiable failures.\n\n- Category: spec\n- Severity: high\n- File: shared/scripts/tools/events_replay_gate.py:140\u2013149\n- Finding: Collection and fixture errors can be silently excluded as platform baseline failures. An `ERROR tests/test_x.py` reproduced under legacy is subtracted from the drops failures, allowing the gate to pass even though that file\u2019s tests never ran. This defeats the requirement to replay every event-related root.\n- Suggestion: Distinguish test assertion failures from collection, setup, and infrastructure errors. Always fail the gate on errors that prevent the selected tests from executing.\n\n- Category: spec\n- Severity: high\n- File: shared/scripts/tools/events_replay_gate.py:195\u2013196\n- Finding: The shrink-only ratchet fails open when its comparison base is unavailable. A missing `origin/main`, shallow history without a merge base, or failed `git show` returns `None`; `ratchet_violations` then permits arbitrary additions to the known-failing set. Newly accepted regressions can therefore pass CI.\n- Suggestion: Ensure CI fetches the required base history and fail when an established baseline cannot be loaded. Handle the initial introduction of the baseline explicitly.\n\nOverall assessment: ship-with-fixes. The harness and fixture pair address the stated acceptance criteria, but the replay gate has paths that can accept failures or bypass its ratchet; repository execution was blocked, so this assessment is based on the supplied diff.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-11-05-s0-harness-dormant-writer",
+    "at": "2026-11-05T15:13:06.330828+00:00"
+  },
+  "verdicts": {
+    "glm": "revise",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

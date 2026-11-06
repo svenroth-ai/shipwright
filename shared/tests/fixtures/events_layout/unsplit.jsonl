@@ -1,0 +1,26 @@
+{"ts":"2026-09-30T08:00:00Z","type":"task_created","description":"legacy event without session","id":"00000016"}
+{"ts":"2026-10-01T09:00:00Z","type":"phase_started","session":"s-aaa","phase":"iterate","id":"00000000"}
+{"ts":"2026-10-01T09:30:00Z","type":"task_created","session":"s-aaa","description":"task of iterate-2026-10-01-alpha","id":"00000001"}
+{"ts":"2026-10-01T10:00:00Z","type":"phase_completed","session":"s-aaa","phase":"iterate","id":"00000002"}
+{"ts":"2026-10-01T11:00:00Z","type":"work_completed","session":"s-aaa","adr_id":"iterate-2026-10-01-alpha","intent":"change","description":"work iterate-2026-10-01-alpha","change_type":"tooling","id":"00000003"}
+{"ts":"2026-10-02T08:00:00Z","type":"task_created","description":"legacy event without session 2","id":"00000017"}
+{"ts":"2026-10-02T09:00:00Z","type":"phase_started","session":"s-bbb","phase":"iterate","id":"00000004"}
+{"ts":"2026-10-02T09:30:00Z","type":"task_created","session":"s-bbb","description":"task of iterate-2026-10-02-beta","id":"00000005"}
+{"ts":"2026-10-02T10:00:00Z","type":"phase_completed","session":"s-bbb","phase":"iterate","id":"00000006"}
+{"ts":"2026-10-02T11:00:00Z","type":"work_completed","session":"s-bbb","adr_id":"iterate-2026-10-02-beta","intent":"change","description":"work iterate-2026-10-02-beta","change_type":"tooling","id":"00000007"}
+{"ts":"2026-10-03T09:00:00Z","type":"phase_started","session":"s-ccc","phase":"iterate","id":"00000008"}
+{"ts":"2026-10-03T09:30:00Z","type":"task_created","session":"s-ccc","description":"task of iterate-2026-10-03-gamma","id":"00000009"}
+{"ts":"2026-10-03T10:00:00Z","type":"phase_completed","session":"s-ccc","phase":"iterate","id":"0000000a"}
+{"ts":"2026-10-03T12:30:00+02:00","type":"task_created","session":"s-ccc","description":"offset ts, instant 10:30Z","id":"00000014"}
+{"ts":"2026-10-03T10:45:00Z","type":"task_created","session":"s-ccc","description":"UTC 10:45Z sorts AFTER the offset event","id":"00000015"}
+{"ts":"2026-10-03T11:00:00Z","type":"work_completed","session":"s-ccc","adr_id":"iterate-2026-10-03-gamma","intent":"change","description":"work iterate-2026-10-03-gamma","change_type":"tooling","id":"0000000b"}
+{"ts":"2026-10-04T09:00:00Z","type":"phase_started","session":"s-ddd","phase":"iterate","id":"0000000c"}
+{"ts":"2026-10-04T09:00:00Z","type":"task_created","session":"s-ddd","description":"tie A","id":"00000018"}
+{"ts":"2026-10-04T09:00:00Z","type":"task_created","session":"s-ddd","description":"tie B","id":"00000019"}
+{"ts":"2026-10-04T09:30:00Z","type":"task_created","session":"s-ddd","description":"task of iterate-2026-10-04-delta","id":"0000000d"}
+{"ts":"2026-10-04T10:00:00Z","type":"phase_completed","session":"s-ddd","phase":"iterate","id":"0000000e"}
+{"ts":"2026-10-04T11:00:00Z","type":"work_completed","session":"s-ddd","adr_id":"iterate-2026-10-04-delta","intent":"change","description":"work iterate-2026-10-04-delta","change_type":"tooling","id":"0000000f"}
+{"ts":"2026-10-05T09:00:00Z","type":"phase_started","session":"s-eee","phase":"iterate","id":"00000010"}
+{"ts":"2026-10-05T09:30:00Z","type":"task_created","session":"s-eee","description":"task of iterate-2026-10-05-eps","id":"00000011"}
+{"ts":"2026-10-05T10:00:00Z","type":"phase_completed","session":"s-eee","phase":"iterate","id":"00000012"}
+{"ts":"2026-10-05T11:00:00Z","type":"work_completed","session":"s-eee","adr_id":"iterate-2026-10-05-eps","intent":"change","description":"work iterate-2026-10-05-eps","change_type":"tooling","id":"00000013"}

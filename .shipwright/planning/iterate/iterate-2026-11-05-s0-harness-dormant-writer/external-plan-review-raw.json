@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "## Findings\n\n**Category: approach \u2014 Severity: medium**\n**Finding:** The replay gate is specified as \"one root per pytest process\" and a CI step with a \"Windows-measured budget,\" but the mini-plan doesn't state what the gate tool actually replays (which event roots, how results are collected) beyond a known-failing JSON. The baseline pass is described as \"gate run once for baseline\" \u2014 but the known-failing set must be split by unit (S2/S3 reader vs S4 writer) *before* those units exist. That means S0 ships a gate with pre-declared failing sets for code that doesn't exist yet.\n**Suggestion:** Define the baseline mechanically: run the gate against current tree, record actual failures, tag entries by unit per DESIGN, and freeze. Document that the S2/S3/S4 entries are projections that must be re-validated when those units land \u2014 otherwise the ratchet can't \"only shrink\" meaningfully.\n\n**Category: approach \u2014 Severity: medium**\n**Finding:** \"Dormant path\" is doing a lot of work: events_layout.py adds a layout switch, rotate-on-commit write path, and assembled read, wired into record_event append paths and lib.config.read_events_result. Wiring into the live append/read paths is *not* dormant \u2014 it's a new runtime code path executed on every event, gated only by a config default. A defect in the switch precedence or the legacy branch degrades the current system even with drops never enabled.\n**Suggestion:** Make the legacy branch a strict pass-through: in legacy mode, record_event and read_events_result must exercise byte-identical code paths to today (ideally via a thin early-return in events_layout.py, not refactored call sites). Add an explicit test asserting legacy-mode output equals pre-change output on the fixture pair.\n\n**Category: edge-case \u2014 Severity: medium**\n**Finding:** SHIPWRIGHT_EVENTS_LAYOUT honoured only with SHIPWRIGHT_EVENTS_LAYOUT_TEST=1 \u2014 but what happens in production if someone sets both? The spec says \"config key events_layout read at runtime,\" implying config-based enablement exists in production. If env+test-flag is the only gate, runtime config reads of `events_layout` are dead code in prod; if config alone can switch layout in prod, that contradicts \"dormant.\"\n**Suggestion:** Resolve the precedence explicitly: config key ignored unless (env var AND test flag)? Or test flag AND config? Write the precedence table as a unit test (the mini-plan lists \"switch precedence\" tests \u2014 make sure this specific interaction is in it, not just env-var ordering).\n\n**Category: edge-case \u2014 Severity: low**\n**Finding:** Rotate-on-commit write path: unhandled cases around rotation failure (partial write, disk full, crash between drop-file write and commit marker) aren't mentioned. Since the drops layout is dormant, this is low-impact now, but the assembled read in S2 will inherit whatever semantics S0 lands.\n**Suggestion:** At minimum, define (and test) that a partially-written drop file is either ignored or repaired by the assembled read; note the decision for S2.\n\n**Category: dependency \u2014 Severity: low**\n**Finding:** ADR-045 import contexts is flagged as a risk but the mitigation is vague (\"events_layout only imported via lib package\"). If events_layout.py sits in shared/scripts/lib/, tests importing it directly could create the dual-import problem ADR-045 presumably prohibits.\n**Suggestion:** State the concrete rule: all imports are `from lib import events_layout` (or whatever the package path is), and add a lint/test check if ADR-045 violations have bitten before.\n\n**Category: risk \u2014 Severity: low**\n**Finding:** The gate \"may only shrink\" ratchet plus \"a red item stops the campaign\" creates a CI stability question: flaky tests will block all future units. No flake policy is stated (retry? quarantine?).\n**Suggestion:** Decide flake handling up front \u2014 a flaky test entering the known-failing set permanently weakens the ratchet's value.\n\n## Overall Assessment\n\nSound overall structure with clear acceptance criteria and good instincts (dormancy, ratchet, fixtures-before-consumers). The two real gaps are mechanical baseline definition for the gate and ensuring the legacy code path is a strict pass-through rather than a refactor-with-default \u2014 both are cheap to fix now and expensive later.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Category: approach \u00b7 Severity: high**  \n   **Finding:** The plan lists switch-precedence tests but leaves the activation rules unclear. \u201cConfig key `events_layout` read at runtime\u201d and \u201cdormant behind the test-only override\u201d need an explicit precedence table; otherwise configuration could activate drops prematurely or reads and writes could select different layouts.  \n   **Suggestion:** Define and test the permitted combinations of config, `SHIPWRIGHT_EVENTS_LAYOUT`, and `SHIPWRIGHT_EVENTS_LAYOUT_TEST`. Verify that ordinary execution stays legacy and that both readers and writers use the same runtime resolution.\n\n2. **Category: risk \u00b7 Severity: high**  \n   **Finding:** \u201cRotate-on-commit\u201d introduces a durability boundary without specifying failure behavior. An interrupted rotation, failed commit, or concurrent append could lose events, duplicate them in assembled reads, or leave a partially written drop.  \n   **Suggestion:** Specify the append/rotation sequence and recovery behavior from the DESIGN. Add focused tests for interrupted rotation and concurrent append, checking that every successfully recorded event remains readable exactly once.\n\n3. **Category: dependency \u00b7 Severity: high**  \n   **Finding:** The replay-gate plan omits the required discovery and process-isolation contract: every event-related test root must run in its own pytest process. A single baseline run and a known-failing JSON file also do not establish that the failure set can only shrink.  \n   **Suggestion:** Explicitly enumerate or discover the roots, launch one process per root, and enforce that current failures are a subset of the checked-in baseline. Fail on new failures, collection errors, crashes, and timeouts; require removal of resolved baseline entries. Preserve the S2/S3 versus S4 attribution and state the CI budget and timeout behavior.\n\n4. **Category: edge-case \u00b7 Severity: medium**  \n   **Finding:** The harness assertions could report clean merges even if drops overwrite or omit events. Likewise, assembled-read equality for one fixture does not establish deterministic ordering when timestamps tie or directory enumeration changes.  \n   **Suggestion:** For all three harness pairs, verify merged event contents as well as conflict status, and explicitly disable union merging. Give the fixture pair tied timestamps and multiple drops, and assert the DESIGN\u2019s ordering rule independently of filesystem enumeration.\n\nThe approach is plausible, but activation, durability, and replay-gate enforcement need concrete commitments before implementation. Repository access was blocked, so this assessment is based on the supplied specification and mini-plan; I could not verify the referenced DESIGN overrides.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-11-05-s0-harness-dormant-writer",
+    "at": "2026-11-05T14:56:33.977478+00:00"
+  },
+  "verdicts": {
+    "glm": "revise",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

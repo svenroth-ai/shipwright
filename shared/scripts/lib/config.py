@@ -17,8 +17,8 @@ from pathlib import Path
 from typing import Any
 
 from .events_amend import apply_amendments  # noqa: F401 — re-exported SSOT
-from .events_log import resolve_events_path
-from .jsonl_records import RecordRead, read_jsonl_records
+from .events_layout import read_events_assembled
+from .jsonl_records import RecordRead
 
 CONFIG_FILES = {
     "run": "shipwright_run_config.json",
@@ -145,8 +145,7 @@ def read_events_result(project_root: str | Path) -> RecordRead:
     recovered prefix is useful for reporting, but it is not proof that no newer
     record existed in the unreadable remainder.
     """
-    path = resolve_events_path(project_root)
-    result = read_jsonl_records(path)
+    result = read_events_assembled(project_root)
     for frag in result.corrupt:
         # ASCII-only: surfaces on Windows cp1252 consoles.
         warnings.warn(
