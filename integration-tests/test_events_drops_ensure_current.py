@@ -175,3 +175,42 @@ def test_ensure_current_is_idempotent(tmp_path):
     assert again.returncode == 0
     assert _git(branch, "rev-parse", "HEAD").stdout.strip() == head
     assert _runs(branch) == {"run-a", "run-b"}
+
+
+def _tree(tmp_path: Path, *, own: bytes | None, other: bytes | None) -> Path:
+    drops = tmp_path / "shipwright_events.d"
+    drops.mkdir()
+    if own is not None:
+        (drops / "run-a--aaaaaaaa--00000001.jsonl").write_bytes(own)
+    if other is not None:
+        (drops / "run-b--bbbbbbbb--00000001.jsonl").write_bytes(other)
+    return tmp_path
+
+
+def _validate(root: Path, run_id: str) -> list[str]:
+    sys.path.insert(0, str(REPO / "shared" / "scripts"))
+    from lib.churn_events import validate_event_folders
+    return validate_event_folders(root, run_id)
+
+
+GOOD = b'{"type":"work_completed","adr_id":"run-a","id":"1","ts":"2026-01-01T00:00:00Z"}\n'
+
+
+def test_validate_event_folders_scopes_blocking_to_the_runs_own_drop(tmp_path):
+    # present event: nothing is reported, whatever else is damaged
+    (tmp_path / "t1").mkdir()
+    assert _validate(_tree(tmp_path / "t1", own=GOOD, other=b"{broken\n"), "run-a") == []
+    # own drop damaged and the event not recoverable: "cannot conclude", never "absent"
+    (tmp_path / "t2").mkdir()
+    errs = _validate(_tree(tmp_path / "t2", own=b"{broken\n", other=GOOD.replace(b"run-a", b"run-b")), "run-a")
+    assert errs and "cannot be concluded" in errs[0]
+    # ANOTHER run's drop damaged while this run's event is missing: plainly absent
+    (tmp_path / "t3").mkdir()
+    errs = _validate(_tree(tmp_path / "t3", own=None, other=b"{broken\n"), "run-a")
+    assert errs and "is absent" in errs[0]
+    # a drop whose name does not follow the writer's shape cannot be ruled out: blocks
+    (tmp_path / "t4").mkdir()
+    root = _tree(tmp_path / "t4", own=None, other=None)
+    (root / "shipwright_events.d" / "oddname.jsonl").write_bytes(b"{broken\n")
+    errs = _validate(root, "run-a")
+    assert errs and "cannot be concluded" in errs[0]

@@ -49,10 +49,9 @@ DERIVED_ALIASES = frozenset({
 })
 FOLDERS = EVENT_FOLDERS
 READER_MARKERS = (
-    "events_read", "read_events_assembled", "read_events_at", "event_lines_at", "events_text", "event_files",
-    "finalized_run_ids", "load_events", "iter_event_lines", "source_stats", "has_event_folders",
-    "validate_event_folders", "shipwright_events.d",
-)
+    "events_read", "read_events_assembled", "read_events_at", "event_lines_at", "events_text",
+    "finalized_run_ids", "iter_event_lines", "source_stats", "has_event_folders", "validate_event_folders",
+)  # a call/import of the assembling reader; a bare folder name or a generic word is NOT enough
 CLASSIFIER_MARKERS = ("EVENT_FOLDERS", "is_event_folder_path")
 
 TOKEN = re.compile(
@@ -69,14 +68,12 @@ REGISTRY: dict[str, tuple[str, ...]] = {
         "plugins/shipwright-compliance/scripts/audit/group_b.py",
         "plugins/shipwright-compliance/scripts/audit/group_d.py",
         "plugins/shipwright-compliance/scripts/lib/collectors/change_history.py",
-        "plugins/shipwright-grade/scripts/lib/authoritative.py",
         "plugins/shipwright-grade/scripts/lib/routing.py",
         "plugins/shipwright-test/scripts/tools/boundary_coverage_report.py",
         "shared/scripts/lib/_fr_history_events.py",
         "shared/scripts/lib/config.py",
         "shared/scripts/lib/event_context_index.py",
         "shared/scripts/lib/phase_quality/_run_id_resolve.py",
-        "shared/scripts/tools/compliance_input_state.py",
         "shared/scripts/tools/replay_baseline_lock.py",
         "shared/scripts/tools/resolve_churn_conflicts.py",
         "shared/scripts/tools/verifiers/adopt_compliance.py",
@@ -84,6 +81,7 @@ REGISTRY: dict[str, tuple[str, ...]] = {
         "shared/scripts/tools/verifiers/iterate_checks.py",
     ),
     "C": (
+        "shared/scripts/tools/compliance_input_state.py",
         "plugins/shipwright-security/scripts/lib/pr_review_generated.py",
         "plugins/shipwright-security/scripts/lib/pr_review_skip_safety.py",
         "shared/scripts/lib/change_type_paths.py",
@@ -95,7 +93,10 @@ REGISTRY: dict[str, tuple[str, ...]] = {
         "shared/scripts/lib/section_file_list.py",
         "shared/scripts/lib/worktree_isolation.py",
     ),
-    "L": ("plugins/shipwright-compliance/scripts/lib/compliance_report.py",),
+    "L": (
+        "plugins/shipwright-compliance/scripts/lib/compliance_report.py",
+        "plugins/shipwright-grade/scripts/lib/authoritative.py",
+    ),
     # Writers and finalization: S4 migrates these; each entry leaves this list with its unit.
     "W": (
         "plugins/shipwright-adopt/scripts/lib/event_seeder.py",

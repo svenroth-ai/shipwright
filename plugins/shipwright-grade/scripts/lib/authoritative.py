@@ -76,13 +76,11 @@ def _authoritative_provenance() -> dict[str, dict]:
 
 def _eventlog_over_cap(root: Path) -> bool:
     """True when the target's event log exceeds the authoritative size ceiling."""
-    total = 0
+    total = 0  # folder bytes only: each legacy log keeps its own per-file ceiling
     for cand in (root / "shipwright_events.jsonl", root / ".shipwright" / "events.jsonl"):
         try:
-            if cand.is_file():
-                total += cand.stat().st_size
-                if cand.stat().st_size > _MAX_AUTHORITATIVE_EVENTLOG_BYTES:
-                    return True
+            if cand.is_file() and cand.stat().st_size > _MAX_AUTHORITATIVE_EVENTLOG_BYTES:
+                return True
         except OSError:  # pragma: no cover - defensive
             continue
     seen = 0
