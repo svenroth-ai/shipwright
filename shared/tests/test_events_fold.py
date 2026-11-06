@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.append(str(Path(__file__).resolve().parent))  # after shared/scripts: tests/ has its own `tools`
 from _events_fold_helpers import NEW, OLD, archive_names, commit, drop, ev, git, make_repo, put  # noqa: E402
 from _events_split import content_key  # noqa: E402
 
@@ -207,10 +207,15 @@ def test_cli_dry_run_and_conflict_exit_code(tmp_path):
     dry = run("fold", "--dry-run", "--base-ref", "HEAD")
     assert dry.returncode == 0 and json.loads(dry.stdout)["status"] == "dry_run"
     assert len(list((root / DROPS_DIR).glob("*.jsonl"))) == 2          # nothing moved
+    (root / "shipwright_sync_config.json").write_text('{"events_layout": "drops"}', encoding="utf-8")
+    commit(root, "layout flag")
+    untracked = put(root, DROPS_DIR, "notes.txt", "x")    # anything else in the folder: must NOT be swept in
     done = run("emergency", "--stage")
     assert done.returncode == 0, done.stderr
-    untracked = drop(root, "run-unrelated", ev("u1", NEW))     # another run in the same tree must NOT be swept in
-    assert "A  shipwright_events.archive/" in git(root, "status", "--short", "--", ARCHIVE_DIR).replace("\r", "")
+    status = git(root, "status", "--short").replace("\r", "")
+    assert "shipwright_events.archive/fold-" in status and "?? shipwright_events.d/notes.txt" in status
+    assert "M  shipwright_sync_config.json" in status           # emergency resets the layout key, staged by name
+    untracked.unlink()
     put(root, ".", "shipwright_events.jsonl", ev("x", description="legacy"))
     drop(root, "run-c", ev("x", description="drop"))
     assert run("emergency").returncode == 1                            # refused: conflicting id
@@ -242,3 +247,28 @@ def test_an_interrupted_fold_is_resumable_and_never_loses_an_event(tmp_path, mon
     again = apply_fold(root, plan_fold(root, now=NOW))
     assert again["status"] == "folded" and archive_names(root) == [again["archive"].split("/")[-1]]
     assert sorted(_hashes(root)) == before and len(archive_names(root)) == 1
+
+
+def test_emergency_fold_resets_the_layout_even_when_nothing_is_left_to_move(tmp_path):
+    root = make_repo(tmp_path)
+    (root / "shipwright_sync_config.json").write_text('{"events_layout": "drops"}', encoding="utf-8")
+    assert apply_fold(root, plan_fold(root, mode="emergency"))["status"] == "nothing_to_fold"
+    assert json.loads((root / "shipwright_sync_config.json").read_text(encoding="utf-8"))["events_layout"] == "legacy"
+
+
+def test_quarantine_refuses_a_file_that_gained_a_record_since_the_plan(tmp_path):
+    root = make_repo(tmp_path)
+    junk = put(root, DROPS_DIR, "run-junk--aaaaaaaa--00000001.jsonl", "not json")
+    commit(root)
+    items = plan_quarantine(root)
+    junk.write_text(junk.read_text(encoding="utf-8") + json.dumps(ev("late")) + chr(10), encoding="utf-8")
+    assert apply_quarantine(root, items)["status"] == "changed_since_plan"
+    assert junk.exists() and not (root / QUARANTINE_DIR).exists()
+
+
+def test_a_clashing_id_that_appears_after_the_plan_stops_the_fold(tmp_path):
+    root = _repo_with_drops(tmp_path)
+    plan = plan_fold(root, now=NOW)
+    assert plan.conflicts == []
+    put(root, ".", "shipwright_events.jsonl", ev("e1", description="a writer got there first"))
+    assert apply_fold(root, plan)["status"] == "conflict" and not archive_names(root)

@@ -35,12 +35,19 @@ REFUSED = ("conflict", "changed_since_plan", "archive_incomplete", "copy_mismatc
 
 def _stage_paths(result: dict) -> list[str]:
     """Exactly what the tool changed (never a folder-level add: other runs may have untracked drops there)."""
-    paths = [f"{DROPS_DIR}/{KEEP_NAME}", "shipwright_sync_config.json"] if result.get("status", "").startswith("folded") else []
-    paths += [f"{DROPS_DIR}/{n}" for n in result.get("folded_files", [])]
-    paths += [result["archive"]] if result.get("archive") else []
-    paths += [f"{QUARANTINE_DIR}/{n}" for n in result.get("files", [])] if result.get("status") == "quarantined" else []
-    paths += [f"{DROPS_DIR}/{n}" for n in result.get("files", [])] if result.get("status") == "quarantined" else []
-    paths += result.get("removed_files", [])
+    status, paths = result.get("status", ""), []
+    if status.startswith("folded"):
+        paths.append(f"{DROPS_DIR}/{KEEP_NAME}")
+        paths += [f"{DROPS_DIR}/{n}" for n in result.get("folded_files", [])]
+        paths += [result["archive"]] if result.get("archive") else []
+        paths += result.get("removed_files", [])
+        if result.get("mode") == "emergency" or status == "folded_into_legacy":
+            paths.append("shipwright_sync_config.json")
+        paths += [result["legacy_log"]] if result.get("legacy_log") else []
+    if status == "quarantined":
+        paths += [f"{folder}/{n}" for folder in (QUARANTINE_DIR, DROPS_DIR) for n in result.get("files", [])]
+    if status == "nothing_to_fold":
+        paths.append("shipwright_sync_config.json")   # an emergency fold with nothing left still resets the layout
     return paths
 
 

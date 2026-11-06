@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.append(str(Path(__file__).resolve().parent))  # after shared/scripts: tests/ has its own `tools`
 from _events_fold_helpers import NEW, commit, drop, ev, git, make_repo, put  # noqa: E402
 
 from lib.events_fold import apply_fold, apply_quarantine, plan_fold, plan_quarantine  # noqa: E402
@@ -18,6 +18,7 @@ from lib.events_fold_full import apply_full_fold  # noqa: E402
 from lib.events_fold_io import name_problem  # noqa: E402
 from lib.events_integrity import check_integrity  # noqa: E402
 from lib.events_log import ARCHIVE_DIR, DROPS_DIR, QUARANTINE_DIR  # noqa: E402
+from tools.verifiers.events_integrity_check import check_events_integrity  # noqa: E402
 
 pytestmark = pytest.mark.covers("FR-01.11")
 NOW = datetime(2026, 11, 6, 12, 0, tzinfo=timezone.utc)
@@ -284,3 +285,18 @@ def test_the_full_fold_and_the_checker_agree_when_only_the_run_stamp_differs(rep
     apply_full_fold(repo)
     commit(repo, "full fold")
     assert _codes(repo, allow_full_fold=True) == []
+
+
+def test_the_f11_check_catches_a_case_variant_and_passes_a_clean_branch(repo):
+    git(repo, "update-index", "--add", "--cacheinfo",
+        "100644," + subprocess.run(["git", "-C", str(repo), "hash-object", "-w", "--stdin"], input="x", capture_output=True,
+                                   text=True, check=True).stdout.strip() + f",Shipwright_Events.D/x--aaaaaaaa--00000001.jsonl")
+    git(repo, "commit", "-q", "-m", "case variant")
+    git(repo, "update-ref", "refs/remotes/origin/main", "base")
+    git(repo, "symbolic-ref", "refs/remotes/origin/HEAD", "refs/remotes/origin/main")
+    bad = check_events_integrity(repo, "run-x")
+    assert bad.ok is False and "case variant" in bad.detail
+    git(repo, "reset", "-q", "--hard", "base")
+    drop(repo, "run-mine", ev("n1", NEW))
+    commit(repo)
+    assert check_events_integrity(repo, "run-x").ok is True

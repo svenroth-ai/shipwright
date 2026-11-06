@@ -78,4 +78,4 @@ def apply_full_fold(root: Path | str, *, allow_conflicts: bool = False) -> dict:
         ensure_keep(root)
         set_layout(root, "legacy")
     return {"status": "folded_into_legacy", "appended": len(plan["append"]), "removed_files": gone,
-            "skipped": plan["skipped"], "folders": [DROPS_DIR, ARCHIVE_DIR]}
+            "skipped": plan["skipped"], "legacy_log": legacy.relative_to(root).as_posix(), "folders": [DROPS_DIR, ARCHIVE_DIR]}

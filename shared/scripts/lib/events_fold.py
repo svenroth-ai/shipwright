@@ -160,11 +160,17 @@ def apply_fold(root: Path | str, plan: FoldPlan, *, allow_conflicts: bool = Fals
         return {"status": "conflict", "conflicting_ids": plan.conflicts, "skipped": plan.skipped}
     name = plan.archive_name
     if name is None:
+        if plan.mode == "emergency":  # the rollback also means: stop writing drops, whatever is left to move
+            with FileLock(events_lock_path(root)):
+                set_layout(root, "legacy")
         return {"status": "nothing_to_fold", "skipped": plan.skipped}
     with FileLock(events_lock_path(root)):
         for item in plan.selected:  # a writer may have touched a file since the plan
             if item.path.read_bytes() != item.data:
                 return {"status": "changed_since_plan", "file": item.path.name}
+        conflicts, _ = find_conflicts(root, plan.selected)  # ... or added a clashing id elsewhere
+        if conflicts and not allow_conflicts:
+            return {"status": "conflict", "conflicting_ids": conflicts, "skipped": plan.skipped}
         archive = root / ARCHIVE_DIR / name
         archive.parent.mkdir(exist_ok=True)
         durable_atomic_write(archive, "".join(dump_line(r) + "\n" for r in plan.records()))
@@ -203,6 +209,9 @@ def apply_quarantine(root: Path | str, items: list[Selected]) -> dict:
     if not items:
         return {"status": "nothing_to_quarantine"}
     with FileLock(events_lock_path(root)):
+        for item in items:  # a writer may have appended a recoverable record since the plan
+            if item.path.read_bytes() != item.data:
+                return {"status": "changed_since_plan", "file": item.path.name}
         (root / QUARANTINE_DIR).mkdir(exist_ok=True)
         for item in items:
             target = root / QUARANTINE_DIR / item.path.name
