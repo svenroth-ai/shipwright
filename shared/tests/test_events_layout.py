@@ -246,6 +246,19 @@ def test_unborn_head_means_nothing_committed(tmp_path, monkeypatch):
     assert resolve_events_write_path(tmp_path) == first
 
 
+def test_unborn_head_with_a_staged_drop_counts_it_as_closed(tmp_path, monkeypatch):
+    """S0 follow-up: ``git add`` before the first commit must close the file."""
+    monkeypatch.setenv(el.ENV_LAYOUT, "drops")
+    monkeypatch.setenv(el.ENV_LAYOUT_TEST, "1")
+    monkeypatch.setenv("SHIPWRIGHT_RUN_ID", "run-s")
+    _git(tmp_path, "init", "-q", "-b", "main")
+    first = resolve_events_write_path(tmp_path)
+    first.write_text("{}\n")
+    _git(tmp_path, "add", "--", first.relative_to(tmp_path).as_posix())
+    assert el._names_in_head(tmp_path) == {first.name}
+    assert resolve_events_write_path(tmp_path) != first
+
+
 def test_the_test_flag_is_never_set_by_plugins_or_templates():
     """BRIEF section 2: the override flag is set only by the harness / this repo's CI."""
     repo = Path(__file__).resolve().parents[2]

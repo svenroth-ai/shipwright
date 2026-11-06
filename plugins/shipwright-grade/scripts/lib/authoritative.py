@@ -17,6 +17,7 @@ raises and never grades authoritatively off degenerate data.
 from __future__ import annotations
 
 import dataclasses
+from itertools import islice
 from pathlib import Path
 from typing import Any
 
@@ -36,6 +37,10 @@ _MODE_AUTHORITATIVE = "authoritative"
 # heuristic projection (whose reads are byte-bounded). A real Shipwright log is a
 # few hundred KB per year of history, so 10 MB is a generous ceiling.
 _MAX_AUTHORITATIVE_EVENTLOG_BYTES = 10_000_000
+# The per-run layout adds a folder a hostile clone can fill: bound the TOTAL bytes and the file COUNT
+# of the readable event folders too (quarantine holds raw damaged bytes and is never read).
+_MAX_AUTHORITATIVE_EVENT_FILES = 5_000
+_EVENT_FOLDERS = ("shipwright_events.d", "shipwright_events.archive")
 
 # Per-dimension authoritative provenance sources (replace the heuristic
 # "deferred to G2" placeholders in report_model._DIM_META). ``disabled`` is empty:
@@ -71,13 +76,25 @@ def _authoritative_provenance() -> dict[str, dict]:
 
 def _eventlog_over_cap(root: Path) -> bool:
     """True when the target's event log exceeds the authoritative size ceiling."""
+    total = 0  # folder bytes only: each legacy log keeps its own per-file ceiling
     for cand in (root / "shipwright_events.jsonl", root / ".shipwright" / "events.jsonl"):
         try:
             if cand.is_file() and cand.stat().st_size > _MAX_AUTHORITATIVE_EVENTLOG_BYTES:
                 return True
         except OSError:  # pragma: no cover - defensive
             continue
-    return False
+    seen = 0
+    try:
+        for d in _EVENT_FOLDERS:  # lazy: a hostile clone with millions of files costs at most cap+1 entries
+            if not (root / d).is_dir() or (root / d).is_symlink():
+                continue
+            for p in islice((root / d).glob("*.jsonl"), _MAX_AUTHORITATIVE_EVENT_FILES + 1 - seen):
+                seen += 1  # EVERY entry spends budget: folders/symlinks named *.jsonl must not dodge the cap
+                if p.is_file() and not p.is_symlink():
+                    total += p.stat().st_size
+        return seen > _MAX_AUTHORITATIVE_EVENT_FILES or total > _MAX_AUTHORITATIVE_EVENTLOG_BYTES
+    except OSError:  # pragma: no cover - defensive
+        return True
 
 
 def try_authoritative_grade(

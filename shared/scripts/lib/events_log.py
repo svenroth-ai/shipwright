@@ -101,6 +101,18 @@ except ImportError:  # contexts 2 + 3 — see above.
 EVENT_FILE = "shipwright_events.jsonl"
 DROPS_DIR = "shipwright_events.d"
 ARCHIVE_DIR = "shipwright_events.archive"
+QUARANTINE_DIR = "shipwright_events.quarantine"
+#: Every folder of the drops layout. Classifiers (paths that are bookkeeping, churn,
+#: generated, uncounted ...) must list ALL of them -- the S3 guard checks it.
+EVENT_FOLDERS = (DROPS_DIR, ARCHIVE_DIR, QUARANTINE_DIR)
+
+
+def is_event_folder_path(rel: str) -> bool:
+    """True for a repo-relative path inside (or naming) one of :data:`EVENT_FOLDERS`."""
+    norm = rel.strip().replace("\\", "/")
+    while norm.startswith("./"):
+        norm = norm[2:]
+    return any(norm == f or norm.startswith(f + "/") for f in EVENT_FOLDERS)
 
 
 def resolve_main_repo_root(project_root: Path | str) -> Path | None:

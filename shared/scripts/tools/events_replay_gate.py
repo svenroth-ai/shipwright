@@ -242,6 +242,11 @@ def save_known(doc: dict) -> None:
     KNOWN_PATH.write_text(json.dumps(doc, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
 
 
+def mode_checks(args: argparse.Namespace) -> bool:
+    """The zero-selection guard applies to a full ``check`` run (``--root`` may legitimately match none)."""
+    return args.mode == "check" and not args.root
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("mode", nargs="?", default="check", choices=("check", "init", "tighten"))
@@ -284,6 +289,9 @@ def main(argv: list[str] | None = None) -> int:
         print(f"  baseline (fails under legacy too, excluded -- check it is not caused by THIS change): {n}")
     for r in results:
         print(f"  {r['root']}: {r['files']} file(s), {r['seconds']}s, {len(r['drops_failed'])} failing")
+    if selected == 0 and mode_checks(args):
+        print("FAIL: the selection matched zero event-related test files -- a gate that ran nothing proves nothing")
+        return 1
     if args.report:
         args.report.write_text(json.dumps({"elapsed": elapsed, "results": results}, indent=2), encoding="utf-8")
 

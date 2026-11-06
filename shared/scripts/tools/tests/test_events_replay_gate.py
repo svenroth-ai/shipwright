@@ -240,3 +240,11 @@ def test_stale_entries_fail_in_ci_without_the_flag(tmp_path, known_file, fake_ru
     monkeypatch.setenv("GITHUB_ACTIONS", "true")
     monkeypatch.setattr(gate, "base_known", lambda repo: ("absent", None))
     assert _main(tmp_path) == 1
+
+
+def test_a_selection_of_zero_files_fails_the_gate(tmp_path, known_file, fake_run, capsys):
+    """S0 follow-up: a vacuously green gate (renamed pattern, empty roots) must not pass."""
+    _write(known_file, [])
+    fake_run["files"] = 0
+    assert _main(tmp_path) == 1
+    assert "zero event-related test files" in capsys.readouterr().out

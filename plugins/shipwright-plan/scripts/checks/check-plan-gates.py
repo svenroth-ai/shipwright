@@ -79,6 +79,10 @@ PLAN_ALLOWED_PREFIXES = (
     "shipwright_project_config.json",
     "shipwright_plan_config.json",
     "CHANGELOG-unreleased.d/",
+    # the event log's folders: the session's own events (drops layout) are bookkeeping, not a boundary breach
+    "shipwright_events.d/",
+    "shipwright_events.archive/",
+    "shipwright_events.quarantine/",
 )
 
 

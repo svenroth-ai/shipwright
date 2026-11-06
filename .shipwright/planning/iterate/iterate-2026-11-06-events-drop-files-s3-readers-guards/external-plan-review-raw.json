@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "## Findings\n\n- **Category: dependency** \u2014 **Severity: medium**\n  **Finding:** Step 1 bundles three distinct S2 follow-ups (sentinel-safe sibling loading, OverflowError handling, vanished-drop fail-closed) into an S3 migration change. These are behavior changes to the read path being introduced at the same time as a wide-scale reader migration, which makes regressions hard to attribute.\n  **Suggestion:** Land the S2 follow-ups as a separate, independently tested change first, or at minimum as an isolated first commit with its own tests, before touching the reader fan-out in step 2.\n\n- **Category: risk** \u2014 **Severity: medium**\n  **Finding:** \"Migrate readers\" (step 2) touches ~11 distinct consumers (config, spec_chain, phase_quality, verifiers, stop guard, backfill, fr_history, affected_acs, compliance, grade, test, adopt) in one step. If all of them are rewired to the assembling reader simultaneously, a single bug in the assembling reader propagates everywhere at once, and bisection is painful.\n  **Suggestion:** Migrate consumers in small committed batches, keeping legacy tests green per batch. The acceptance criterion only requires the end state; the sequencing is up to you and safer done incrementally.\n\n- **Category: edge-case** \u2014 **Severity: medium**\n  **Finding:** The mini-plan is silent on mixed-state repos during rollout: a repo on disk with drops present but code mid-migration (or vice versa). Readers that used to read the legacy file directly will now assemble across three folders \u2014 any consumer that compares the log against an index or fingerprint computed under the old reader (e.g., compliance_input_state, event_context_index) could see spurious drift.\n  **Suggestion:** Explicitly state that fingerprints/indices are invalidated or recomputed on first read through the new reader, and add a test for a repo containing legacy + archive + drop content concurrently.\n\n- **Category: edge-case** \u2014 **Severity: low**\n  **Finding:** Step 5 pairs adding the reference guard with removing the 12 S3 replay-gate known-failing entries. If the guard lands before all migrations are complete, the gate will block in-flight work; if the entries are removed before the guard passes, the ratchet silently weakens.\n  **Suggestion:** Make the removal of the known-failing entries the *last* commit, gated on a clean guard run. Note the entries need re-verification against the actual guard output, not assumed to be exactly 12.\n\n- **Category: approach** \u2014 **Severity: low**\n  **Finding:** KC2 requires \"no unclassified occurrence of the legacy name or its aliases,\" and the guard covers code, prompts, templates, and docs \u2014 but the plan doesn't mention test fixtures or historical docs where the legacy name is intentionally present (e.g., migration tests, compatibility fixtures).\n  **Suggestion:** Define the guard's allowlist mechanism explicitly (classified-mention markers or an exemption list) and enumerate what legitimately retains the legacy name, so the guard doesn't require falsifying history or deleting compatibility tests.\n\n- **Category: risk** \u2014 **Severity: low**\n  **Finding:** The integration test covers ensure_current with a drop and status regeneration, but not the \"vanished-drop fail-closed\" path end-to-end at the ensure_current level, despite that being the riskiest new behavior (a repo where a drop directory disappears between runs).\n  **Suggestion:** Add one integration-level case: drop removed after a prior successful read \u2192 fail closed, with a clear error, not silently degraded to legacy-only content.\n\n- **Category: security** \u2014 **Severity: low**\n  **Finding:** The assembling reader now accepts input from additional folders (drops). If drop location is influenced by repo content or config, path traversal or symlink escapes into the drop reader become a new surface, and the plan doesn't address drop-folder validation.\n  **Suggestion:** Confirm drop paths are resolved and canonicalized under the repo/events root and reject symlinks escaping it; likely a one-assertion check in the reader test.\n\n## Overall Assessment\n\nThe approach is sound and well-scoped for an S3 read-side migration; the main risks are sequencing (behavioral S2 follow-ups bundled with a wide reader migration) and rollout-state edge cases (mixed legacy/drop repos, fingerprint drift, guard-before-migration ordering), all addressable with commit ordering and a couple of added tests.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Category:** risk  \n   **Severity:** high  \n   **Finding:** Migrating `_reconcile_events` to an assembling reader can accidentally turn assembled history into writable legacy content. If reconciliation writes archive or drop records into the legacy log while retaining their source files, later reads can duplicate events and status regeneration can produce incorrect results.  \n   **Suggestion:** Specify reconciliation\u2019s write boundary explicitly. Preserve each source\u2019s ownership, and test that reconciliation followed by repeated reads and status regeneration neither duplicates events nor rewrites unchanged legacy bytes.\n\n2. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** The plan names `event_context_index` and `compliance_input_state`, but does not state how their fingerprints or invalidation rules will include archive and drop inputs. Replacing the reader alone can leave cached results stale when the legacy file is unchanged.  \n   **Suggestion:** Define fingerprints over all inputs affecting assembled events, with deterministic ordering. Test drop creation, modification and deletion, plus movement of events between storage locations.\n\n3. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** The integration scenario specifies a branch-local drop but does not require a distinct event change on main. That can pass without demonstrating that `ensure_current` preserves and assembles events from both sides.  \n   **Suggestion:** Put distinct events on main and the behind-main branch. Run the real reconciliation path, assert that every expected event appears exactly once, verify regenerated campaign statuses, and repeat to establish idempotence.\n\n4. **Category:** approach  \n   **Severity:** medium  \n   **Finding:** The reference guard\u2019s classification policy is unspecified. A broad exemption for a file or directory could conceal a surviving direct reader; a literal-name search could miss aliases. This directly affects whether KC2 is actually enforced.  \n   **Suggestion:** Define narrow, reviewable classifications for legitimate legacy references and aliases across code, prompts, templates and docs. Test that newly introduced direct readers and alias references fail the guard. Remove each replay-gate entry only when its corresponding check passes.\n\nThe migration direction is sound and appropriately scoped. Before proceeding, make reconciliation ownership, cache invalidation and guard enforcement explicit, and strengthen the integration fixture to exercise changes on both branches.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-11-06-events-drop-files-s3-readers-guards",
+    "at": "2026-11-06T10:38:59.413194+00:00"
+  },
+  "verdicts": {
+    "glm": "revise",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

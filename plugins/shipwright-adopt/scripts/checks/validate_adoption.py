@@ -38,21 +38,17 @@ def _discovery():
     return mod
 
 
-def _jsonl_records():
-    # Shared record-boundary reader, loaded by FILE LOCATION under a sentinel name
-    # so the plugin-local ``lib`` is never shadowed (ADR-045) — same shape as
-    # ``_discovery()``. Registered in ``sys.modules`` BEFORE ``exec_module`` because
-    # ``jsonl_records`` defines ``@dataclass`` types and stdlib ``dataclasses``
-    # resolves ``cls.__module__`` through ``sys.modules`` at class-creation time.
-    # Consumer-specific sentinel (NOT a bare shared name): two plugins loading the
-    # SSoT under one process must not collide on a single sys.modules key, where a
-    # different checkout's copy could win (external review, OpenAI #2).
-    mod = sys.modules.get("_shipwright_adopt_jsonl_records")
+def _events_read():
+    # The shared assembling event reader (legacy file + archive/drop files, record-boundary
+    # recovery), loaded by FILE LOCATION under a consumer-specific sentinel name so the plugin-local
+    # ``lib`` is never shadowed (ADR-045); registered in ``sys.modules`` BEFORE ``exec_module``
+    # because its dataclasses resolve ``cls.__module__`` there. It loads its own siblings by path.
+    mod = sys.modules.get("_shipwright_adopt_events_read")
     if mod is None:
         import importlib.util
-        path = Path(__file__).resolve().parents[4] / "shared/scripts/lib/jsonl_records.py"
-        spec = importlib.util.spec_from_file_location("_shipwright_adopt_jsonl_records", path)
-        sys.modules["_shipwright_adopt_jsonl_records"] = mod = importlib.util.module_from_spec(spec)
+        path = Path(__file__).resolve().parents[4] / "shared/scripts/lib/events_read.py"
+        spec = importlib.util.spec_from_file_location("_shipwright_adopt_events_read", path)
+        sys.modules["_shipwright_adopt_events_read"] = mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
     return mod
 
@@ -121,15 +117,15 @@ def _validate_spec(project_root: Path) -> list[str]:
 
 
 def _validate_events(project_root: Path) -> list[str]:
-    events_path = project_root / "shipwright_events.jsonl"
-    if not events_path.exists():
+    reader = _events_read()
+    if not any(p.exists() for p in reader.event_files(project_root)):
         return ["missing: shipwright_events.jsonl"]
-    # Record-boundary recovery via the shared SSoT (see _jsonl_records): an
+    # Record-boundary recovery via the shared SSoT (see _events_read): an
     # 'adopted' event second on a merge=union concatenated line previously read as
     # absent (iterate-2026-07-20-events-record-boundary-remainder). Only JSON
     # objects are returned, so a bare scalar line no longer crashes .get().
     adopted_count = sum(
-        1 for ev in _jsonl_records().read_jsonl_records(events_path).records
+        1 for ev in reader.read_events_assembled(project_root).records
         if ev.get("type") == "adopted"
     )
     if adopted_count == 0:
@@ -163,7 +159,7 @@ _HONESTY_ARTIFACTS = (
 def _derived_catalogue_doc():
     """adopt's ``derived_catalogue_doc``, loaded BY FILE LOCATION under a sentinel
     so no ambiguous ``lib`` package is ever bound (ADR-045) — same shape as
-    ``_discovery`` / ``_jsonl_records`` above."""
+    ``_discovery`` / ``_events_read`` above."""
     mod = sys.modules.get("_shipwright_adopt_derived_catalogue_doc")
     if mod is None:
         import importlib.util

@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "1. **The question, answered in one sentence.** Yes \u2014 but the only new standing mechanism here is the reference-based guard, and it should be a rider on the existing gate ratchet, not a fresh registration system.\n\n2. **The smallest thing that would do.** The reader/classifier migration is pure change to existing machinery \u2014 no mechanism question there. The guard is the one permanent thing: a single test that greps the repo for the legacy names and fails unless the occurrence is on a short allowlist. That allowlist should shrink to zero in a follow-up and the guard should then either be deleted or become a permanent tripwire with an empty list (my preference: keep it as a tripwire, ~20 lines, no new infrastructure).\n\n3. **What it costs to keep.** One test plus an exemption list that someone must maintain: any future file that legitimately needs the string \"EVENT_FILE\" (docs about the migration, the shim itself if option 2 is later needed) has to be registered. That is a small, self-announcing cost \u2014 the test fails loudly, so it cannot silently rot.\n\n4. **What it forecloses.** Nothing significant. It makes option 2 (a compatibility shim) marginally more annoying later, but the guard's allowlist is exactly the hook such a shim would register under.\n\n5. **Findings.**\n\n- Category: existence\n- Severity: low\n- Finding: The guard does not need to be a new \"reference-based guard\" subsystem; the brief's acceptance criteria imply a gate ratchet already exists on the write side, and the read-side items are being removed from it. Building a second, parallel guard mechanism for reads would leave two things that future changes must reason about.\n- Suggestion: Fold the reference check into the existing ratchet/gate test as a new assertion with an empty-or-shortening exemption list, rather than introducing a separately named guard construct. If the ratchet genuinely cannot host it, the standalone grep test is acceptable \u2014 but it should be written as a temporary ratchet with an explicit end state (empty list), not an open-ended registry.\n\n- Category: proportionality\n- Severity: low\n- Finding: The \"folders hold facts / fail closed when a file is unreadable\" constraint is the only piece that could spawn permanent machinery (per-file error taxonomies, partial-read policies). That would be a standing mechanism worth resisting if it grows beyond \"unreadable file \u21d2 error.\"\n- Suggestion: Keep it to a hard error on any unreadable file in the folder; do not build classification or recovery logic around unreadability.\n\nThe core trade \u2014 a ~20-line permanent tripwire to protect a 40-reader migration that would otherwise silently diverge \u2014 is proportionate. Approve.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Should it exist?** Yes to option 1\u2019s shared reader and folder list, but the permanent reference-registration guard should be narrower.\n\n2. **Smallest thing that would do:** Route readers through one assembling reader and classifiers through one shared folder list, preserving legacy bytes while the switch is off and failing closed on unreadable files. Guard direct legacy-path dependencies in code and operational prompts/templates; exclude descriptive and historical documentation from occurrence-by-occurrence registration.\n\n3. **What it costs to keep:** The project must maintain two layouts until retirement, the reader\u2019s assembly semantics, the classifier list, and guard exceptions. Registering documentary mentions adds recurring bookkeeping without protecting runtime behavior.\n\n4. **What it forecloses:** Migration removes readers\u2019 dependence on a physical single file. The broad guard also makes harmless documentation changes depend on maintaining a reference registry.\n\n5. **Findings**\n\nCategory: proportionality\nSeverity: medium\nFinding: Requiring registration of every legacy-name occurrence across documentation makes a migration safeguard a permanent editorial obligation, including mentions that cannot affect behavior.\nSuggestion: Keep the shared reader and classifier list, but scope the guard to executable dependencies and operational instructions. Exclude historical and descriptive documentation by scope rather than registering each mention.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "architecture",
+  "capture": {
+    "run_id": "iterate-2026-11-06-events-drop-files-s3-readers-guards",
+    "at": "2026-11-06T10:38:59.413194+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

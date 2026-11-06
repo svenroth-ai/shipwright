@@ -29,8 +29,7 @@ if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
 from lib.affected_acs_gate import declaration_present, gap_closed, is_scoped_intent, requires_declaration  # noqa: E402
-from lib.events_log import resolve_events_path  # noqa: E402
-from lib.jsonl_records import read_jsonl_records  # noqa: E402
+from lib.events_read import read_events_assembled  # noqa: E402
 
 from .common import CheckResult, Severity  # noqa: E402
 from .git_helpers import _iterate_changed_paths, git_context  # noqa: E402
@@ -53,11 +52,10 @@ def _skip(why: str) -> CheckResult:
 
 
 def _work_event(project_root: Path, run_id: str) -> dict | None:
-    path = resolve_events_path(project_root)
-    if not run_id or not path.exists():
+    if not run_id:
         return None
     try:
-        records = read_jsonl_records(path).records
+        records = read_events_assembled(project_root).records
     except OSError:
         return None
     found = None
