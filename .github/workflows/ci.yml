@@ -26,10 +26,12 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
-  python-checks:
-    # Type-checking is a deliberate won't-do for this repo (see dismissed
-    # triage trg-84f204ba), so the job name does not claim it.
-    name: Python (lint + test)
+  tests-shared:
+    name: Tests (shared)
+    # CI-duration iterate 2/3: the 8-minute shared/ test tier runs in parallel with `tests-main`. It stays
+    # internally SERIAL (no in-process parallelism; the three roots run one pytest process each) and its JUnit +
+    # coverage data travel to `python-checks` by artifact. Plugins, integration and the replay gate are in `tests-main`; lint and
+    # every gate step stay in `python-checks`. Sharding this job further is iterate 3/3.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -53,13 +55,120 @@ jobs:
       - name: Install root dependencies
         run: uv sync
 
-      - name: Lint (ruff)
-        # Bug-focused, GATING lint. The curated ruleset lives in the root
-        # pyproject.toml ([tool.ruff.lint]). Run via uvx with a pinned ruff
-        # version (ruff is not a project dependency, and pinning prevents a
-        # new ruff release from silently breaking the gate). This step gates:
-        # no `|| true`, no `continue-on-error`.
-        run: uvx ruff@0.15.15 check .
+      # Every job regenerates the same deterministic plan (absolute junit paths under the
+      # workspace, identical on every runner) instead of passing it around.
+      - name: Plan test-root JUnit outputs
+        # AC4: every test-root pytest step below writes its own --junit-xml
+        # to a path resolved from ONE upfront plan.json, using the SAME
+        # base convention F0's retention (AC2) uses via
+        # shared/scripts/lib/suite_root_plan.py — never a hand-maintained
+        # root-to-path table duplicated across this file. Needs pytest
+        # importable: it loads conftest.py's discover_test_roots, which
+        # itself does `import pytest` — a dev-only optional dependency, so
+        # `--with pytest` here, same as the test steps below.
+        run: uv run --with pytest shared/scripts/tools/ci_junit_plan.py plan --out .ci-junit
+
+      - name: Prepare coverage data dir
+        # This job starts on a clean runner; the serial job used to create the directory in its
+        # plugin step and the shared tier relied on it existing.
+        shell: bash
+        run: rm -rf .cov-data && mkdir -p .cov-data
+
+      - name: Run shared tests
+        shell: bash
+        run: |
+          set -e
+          # The shared/ suites historically NEVER ran in CI — only
+          # plugins/*/tests/ + integration-tests/ did — which is how regressions
+          # under shared/ rotted unseen (iterate-2026-05-31-ci-shared-tests).
+          #
+          # They must run as SEPARATE per-dir invocations: shared/tests/ and
+          # shared/scripts/tests/ are each their own top-level `tests` package
+          # (each carries __init__.py + a conftest.py), so collecting more than
+          # one in ONE pytest process collides on the duplicate top-level
+          # package name (ModuleNotFoundError / ImportPathMismatchError on
+          # `tests.conftest`). One process per dir = one `tests` package = no
+          # collision. Same pattern as the per-plugin loop above. The root
+          # pyproject.toml supplies `-m 'not slow'` + pythonpath, so no extra
+          # flags are needed here.
+          # `not cross_plugin`: tests importing another plugin's lib/tools
+          # collide on the shared `tests`/`lib` namespace from a shared/tests
+          # session and hard-fail in CI by design (ADR-044 / test_hygiene
+          # .import_or_fail_in_ci) — they run under their owning plugin's
+          # session via the per-plugin loop above. A command-line `-m` replaces
+          # the pyproject `-m 'not slow'`, so restate `not slow` here.
+          #
+          # Diff-coverage roadmap Phase 2: measure the shared/ tier into its own
+          # per-tier data file (.cov-data/.coverage.shared). Run from the repo
+          # root, so coverage records repo-relative `shared/...` paths (no remap
+          # needed at combine time). --cov-append accumulates across the three
+          # separate pytest processes; --cov-config pins the root pyproject
+          # (relative_files + test omit). The stale-state clear + the combined
+          # `coverage xml` now live in the plugin-tests and Combine steps
+          # respectively. Coverage is additive and never gates this step;
+          # --cov-report= silences the per-run terminal table.
+          # --with diff-cover: the diff-coverage GATE fail-path integration test
+          # (shared/scripts/tools/tests/test_measure_diff_coverage_gate.py, Phase-4
+          # hardening) drives the real diff-cover against a synthetic repo to prove
+          # the gate bites. Pinned so a release can't change flags/exit codes; the
+          # test HARD-FAILS in CI if diff-cover is absent (silent-skip discipline).
+          export COVERAGE_FILE="$PWD/.cov-data/.coverage.shared"
+          for dir in shared/tests shared/scripts/tests shared/scripts/tools/tests; do
+            echo "--- Running tests in $dir ---"
+            # AC4: this root's planned --junit-xml (see the Plan step above).
+            junit_out=$(jq -r --arg r "$dir" '.[] | select(.rel_root==$r) | .junit_out' .ci-junit/plan.json)
+            uv run --with pytest --with pytest-mock --with pytest-cov \
+              --with "diff-cover==10.3.0" \
+              pytest "$dir" -v -m "not slow and not cross_plugin" --junit-xml="$junit_out" \
+              --cov=shared --cov-append --cov-config="$PWD/pyproject.toml" --cov-report=
+          done
+
+      - name: Upload test-root evidence (JUnit + coverage data)
+        # Hand-off to `python-checks`. `.ci-junit/` and `.cov-data/` are HIDDEN paths, which
+        # upload-artifact skips by default - hence include-hidden-files. One multi-path upload keeps
+        # the workspace as the archive root so both prefixes survive. error on an empty upload: a
+        # green job that handed over nothing must not look like a pass. if: always() so a red job
+        # still leaves its reports for the gather job to diagnose.
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ci-tests-shared
+          path: |
+            .ci-junit/
+            .cov-data/
+          include-hidden-files: true
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 7
+
+  tests-main:
+    name: Tests (plugins + integration + replay)
+    # Runs in parallel with `tests-shared`. Everything that executes tests lives in a test job, so the
+    # gather job `python-checks` (which `needs` both) only lints, collects and gates: a job with `needs`
+    # does not start before they finish, so tests left in it would run AFTER the shared tier, not beside it.
+    # The scanners are installed here because the shipwright-security plugin's smoke tests need them on PATH.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # Diff-coverage roadmap Phase 1: the "Diff coverage" step compares the
+          # working tree against origin/main, so it needs the merge-base. The
+          # default depth-1 checkout has no history — fetch it all.
+          fetch-depth: 0
+
+      - name: Install uv
+        # Third-party action pinned to a full commit SHA (supply-chain
+        # hardening): a mutable tag like @v3 can be repointed by the upstream
+        # owner. The trailing comment records the human-readable tag.
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e  # v10.3.2
+        with:
+          enable-cache: true
+
+      - name: Install Python
+        run: uv python install 3.11
+
+      - name: Install root dependencies
+        run: uv sync
 
       # OSS security scanners — the shipwright-security plugin's
       # test_oss_backend_smoke.py smoke tests hard-fail in CI when these
@@ -145,55 +254,6 @@ jobs:
             fi
           done
 
-      - name: Run shared tests
-        shell: bash
-        run: |
-          set -e
-          # The shared/ suites historically NEVER ran in CI — only
-          # plugins/*/tests/ + integration-tests/ did — which is how regressions
-          # under shared/ rotted unseen (iterate-2026-05-31-ci-shared-tests).
-          #
-          # They must run as SEPARATE per-dir invocations: shared/tests/ and
-          # shared/scripts/tests/ are each their own top-level `tests` package
-          # (each carries __init__.py + a conftest.py), so collecting more than
-          # one in ONE pytest process collides on the duplicate top-level
-          # package name (ModuleNotFoundError / ImportPathMismatchError on
-          # `tests.conftest`). One process per dir = one `tests` package = no
-          # collision. Same pattern as the per-plugin loop above. The root
-          # pyproject.toml supplies `-m 'not slow'` + pythonpath, so no extra
-          # flags are needed here.
-          # `not cross_plugin`: tests importing another plugin's lib/tools
-          # collide on the shared `tests`/`lib` namespace from a shared/tests
-          # session and hard-fail in CI by design (ADR-044 / test_hygiene
-          # .import_or_fail_in_ci) — they run under their owning plugin's
-          # session via the per-plugin loop above. A command-line `-m` replaces
-          # the pyproject `-m 'not slow'`, so restate `not slow` here.
-          #
-          # Diff-coverage roadmap Phase 2: measure the shared/ tier into its own
-          # per-tier data file (.cov-data/.coverage.shared). Run from the repo
-          # root, so coverage records repo-relative `shared/...` paths (no remap
-          # needed at combine time). --cov-append accumulates across the three
-          # separate pytest processes; --cov-config pins the root pyproject
-          # (relative_files + test omit). The stale-state clear + the combined
-          # `coverage xml` now live in the plugin-tests and Combine steps
-          # respectively. Coverage is additive and never gates this step;
-          # --cov-report= silences the per-run terminal table.
-          # --with diff-cover: the diff-coverage GATE fail-path integration test
-          # (shared/scripts/tools/tests/test_measure_diff_coverage_gate.py, Phase-4
-          # hardening) drives the real diff-cover against a synthetic repo to prove
-          # the gate bites. Pinned so a release can't change flags/exit codes; the
-          # test HARD-FAILS in CI if diff-cover is absent (silent-skip discipline).
-          export COVERAGE_FILE="$PWD/.cov-data/.coverage.shared"
-          for dir in shared/tests shared/scripts/tests shared/scripts/tools/tests; do
-            echo "--- Running tests in $dir ---"
-            # AC4: this root's planned --junit-xml (see the Plan step above).
-            junit_out=$(jq -r --arg r "$dir" '.[] | select(.rel_root==$r) | .junit_out' .ci-junit/plan.json)
-            uv run --with pytest --with pytest-mock --with pytest-cov \
-              --with "diff-cover==10.3.0" \
-              pytest "$dir" -v -m "not slow and not cross_plugin" --junit-xml="$junit_out" \
-              --cov=shared --cov-append --cov-config="$PWD/pyproject.toml" --cov-report=
-          done
-
       - name: Run integration tests
         # Diff-coverage roadmap Phase 2: integration-tests exercise the shared/
         # cross-plugin machinery from the repo root (repo-relative `shared/...`
@@ -221,6 +281,108 @@ jobs:
         shell: bash
         timeout-minutes: 45
         run: uv run --with pytest python shared/scripts/tools/events_replay_gate.py --jobs 2
+
+      - name: Upload test-root evidence (JUnit + coverage data)
+        # Hand-off to `python-checks`, same shape as `tests-shared` (hidden dirs, error on empty, always()).
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ci-tests-main
+          path: |
+            .ci-junit/
+            .cov-data/
+          include-hidden-files: true
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 7
+
+  python-checks:
+    # Type-checking is a deliberate won't-do for this repo (see dismissed
+    # triage trg-84f204ba), so the job name does not claim it.
+    name: Python (lint + test)
+    runs-on: ubuntu-latest
+    needs: [tests-shared, tests-main]
+    # always(): see the `Test jobs finished green` step. The job still runs on every PR and push.
+    if: always()
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # Diff-coverage roadmap Phase 1: the "Diff coverage" step compares the
+          # working tree against origin/main, so it needs the merge-base. The
+          # default depth-1 checkout has no history — fetch it all.
+          fetch-depth: 0
+
+      - name: Install uv
+        # Third-party action pinned to a full commit SHA (supply-chain
+        # hardening): a mutable tag like @v3 can be repointed by the upstream
+        # owner. The trailing comment records the human-readable tag.
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e  # v10.3.2
+        with:
+          enable-cache: true
+
+      - name: Install Python
+        run: uv python install 3.11
+
+      - name: Install root dependencies
+        run: uv sync
+
+      - name: Lint (ruff)
+        # Bug-focused, GATING lint. The curated ruleset lives in the root
+        # pyproject.toml ([tool.ruff.lint]). Run via uvx with a pinned ruff
+        # version (ruff is not a project dependency, and pinning prevents a
+        # new ruff release from silently breaking the gate). This step gates:
+        # no `|| true`, no `continue-on-error`.
+        run: uvx ruff@0.15.15 check .
+
+      - name: Plan test-root JUnit outputs
+        # AC4: every test-root pytest step below writes its own --junit-xml
+        # to a path resolved from ONE upfront plan.json, using the SAME
+        # base convention F0's retention (AC2) uses via
+        # shared/scripts/lib/suite_root_plan.py — never a hand-maintained
+        # root-to-path table duplicated across this file. Needs pytest
+        # importable: it loads conftest.py's discover_test_roots, which
+        # itself does `import pytest` — a dev-only optional dependency, so
+        # `--with pytest` here, same as the test steps below.
+        run: uv run --with pytest shared/scripts/tools/ci_junit_plan.py plan --out .ci-junit
+
+      - name: Test jobs finished green (fail-closed on needs)
+        # `python-checks` is the ONE required check. A job whose `needs` failed is SKIPPED, and GitHub
+        # counts a skipped required check as passing - so without this step a red `tests-shared` would
+        # leave the required check green. if: always() on the JOB (never !cancelled()) keeps even a
+        # cancelled run from leaving it skipped; this step needs its own always() because steps default
+        # to success(). Every result must be exactly `success` (failure, cancelled and skipped all
+        # fail). toJSON(needs) + jq, never contains(needs.*.result, ...).
+        id: needs_ok
+        if: always()
+        shell: bash
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          set -euo pipefail
+          echo "$NEEDS" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
+          if ! echo "$NEEDS" | jq -e 'length > 0 and all(.[]; .result == "success")' > /dev/null; then
+            echo "::error::a test job did not finish green - read its own log; this required check cannot pass without it"
+            exit 1
+          fi
+
+      - name: Download test-job evidence (JUnit + coverage data)
+        # Restores both test jobs' `.ci-junit/` and `.cov-data/` into this job's workspace (which holds
+        # only its own regenerated `.ci-junit/plan.json`). merge-multiple + path: . keeps the prefixes
+        # the archives carry. The one file both artifacts contain, `.ci-junit/plan.json`, is
+        # deterministic and byte-identical, so last-writer-wins is harmless; every other file is disjoint.
+        if: always()
+        uses: actions/download-artifact@v7
+        with:
+          pattern: ci-tests-*
+          merge-multiple: true
+          path: .
+
+      - name: Coverage data set (gate)
+        # The JUnit hand-off is verified further down (ci_junit_plan.py verify), but nothing else notices
+        # a lost `.cov-data` file: combine_coverage.py reports ok on whatever arrived and `Diff coverage
+        # (gate)` is skipped when no coverage.xml exists, so a dropped data file would leave those lines
+        # ungated while the required check stays green.
+        run: uv run shared/scripts/tools/check_ci_coverage_data_set.py --project-root .
 
       - name: Combine coverage
         # Diff-coverage roadmap Phase 2: fold every per-tier data file in

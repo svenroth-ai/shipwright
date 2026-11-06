@@ -26,6 +26,7 @@ from scripts.tools.record_event import (
     read_events,
 )
 from scripts.lib.config import apply_amendments, read_events as config_read_events
+pytestmark = pytest.mark.covers("FR-01.11")
 
 
 @pytest.fixture

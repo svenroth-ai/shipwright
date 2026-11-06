@@ -4,6 +4,8 @@ import json
 from pathlib import Path
 
 from lib.event_seeder import events_target, seed_adopted_event, seed_backfill_events
+import pytest
+pytestmark = pytest.mark.covers("FR-01.11")
 
 
 def test_seed_adopted_event(tmp_path: Path) -> None:

@@ -18,6 +18,8 @@ if str(_TOOLS) not in sys.path:
     sys.path.insert(0, str(_TOOLS))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "testkit"))
 from event_log_probe import event_log_exists, event_text  # noqa: E402
+import pytest
+pytestmark = pytest.mark.covers("FR-01.11")
 
 
 class TestFrGateTestEvidenceCli:

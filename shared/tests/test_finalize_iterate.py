@@ -84,6 +84,7 @@ def test_run_records_event_even_without_commit_arg(project, monkeypatch):
     assert "skipped" not in result["steps"]["event"]
 
 
+@pytest.mark.covers("FR-01.11")
 def test_run_records_event_with_commit(project, monkeypatch):
     monkeypatch.chdir(project)
     monkeypatch.delenv("SHIPWRIGHT_SESSION_ID", raising=False)

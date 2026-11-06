@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-06-ci-parallel-jobs",
+  "date": "2026-11-06",
+  "section": "Iterate — change: parallel CI test jobs",
+  "title": "Run the CI test tiers as two parallel jobs behind one fail-closed required check",
+  "context": "ci.yml ran every tier in one serial job (~16 min on push, ~20 min on a PR). A first design that moved only the shared tier out while the required check still ran the other tiers could not overlap anything, because a job with needs starts after its needs finish.",
+  "decision": "tests-shared and tests-main (plugins, integration, replay, scanners) have no needs and start together; python-checks (Python (lint + test), still the only required check) needs both, runs if: always(), lints, downloads their artifacts and runs every gate step unchanged. A jq step fails it unless every needed job is success.",
+  "consequences": "Expected ~12 min push / ~15 min PR. A skipped or cancelled test job can no longer leave the required check green. New CI-only gate Coverage data set (gate) catches lost coverage files. Lint feedback now arrives after the tests; revisit in iterate 3/3.",
+  "rationale": "Smallest topology that is really parallel; all gate steps keep their names and order so the many step-shape tests, ci_provenance and main_health keep working. Tests live only in the two test jobs, enforced by a body-based drift test.",
+  "rejected": "Four test jobs (rejected by both external reviewers as disproportionate); moving only shared out (no parallelism); xdist inside one job (CI stays serial by standing decision, test_ci_stays_SERIAL).",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ""
+}

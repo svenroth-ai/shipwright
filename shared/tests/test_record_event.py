@@ -26,6 +26,7 @@ from record_event import (  # noqa: E402
     build_event,
     parse_args,
 )
+pytestmark = pytest.mark.covers("FR-01.11")
 
 
 def _args_for_test_run(**kwargs) -> list[str]:

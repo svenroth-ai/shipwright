@@ -1,0 +1,1 @@
+{"stage": "spec-compliance", "verdict": "PASS", "spec_citations": [], "summary": "Final tree (tests-shared + tests-main in parallel, python-checks as gather job): all AC1-AC9 met; every pre-existing gate step keeps name, if and order; test steps moved unchanged into tests-main."}

@@ -212,6 +212,7 @@ def test_events_working_copy_sufficient_when_untracked(git_origin_repo, make_wor
     assert result.ok is True
 
 
+@pytest.mark.covers("FR-01.11")
 def test_boundary_roundtrip_worktree_producer_to_verifier(git_origin_repo, make_worktree):
     """AC-6 boundary round-trip: an event WRITTEN from a worktree via
     record_event lands in that worktree's OWN log and is READ BACK by the F11
