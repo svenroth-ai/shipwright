@@ -125,6 +125,7 @@ def test_a_CONCURRENT_append_during_a_pass_is_never_destroyed(compliance_refresh
     )
 
 
+@pytest.mark.covers("FR-01.11")
 def test_a_left_alone_input_reaches_the_operator(compliance_refresh_repo):
     """Recording it on the function and never reporting it is how the first
     version of this guard went unnoticed."""
@@ -139,7 +140,9 @@ def test_a_left_alone_input_reaches_the_operator(compliance_refresh_repo):
     produce_mod.converge(compliance_refresh_repo, RUN, regenerate=appends)
     result, _ = produce_mod.produce(
         compliance_refresh_repo, RUN, head_sha(compliance_refresh_repo), None)
-    assert "shipwright_events.jsonl" in result.get("inputs_left_alone", [])
+    # Under the drops layout the producer's own append lands in a NEW event file, which is the log that moved.
+    left = [p for p in result.get("inputs_left_alone", []) if p == "shipwright_events.jsonl" or p.startswith("shipwright_events.d/")]
+    assert left
 
 
 def test_a_rewritten_producer_config_IS_rewound(compliance_refresh_repo):

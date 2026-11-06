@@ -34,8 +34,9 @@ _SCRIPTS_DIR = Path(__file__).resolve().parent.parent  # shared/scripts
 sys.path.insert(0, str(_SCRIPTS_DIR))
 
 from lib.churn_merge import EVENTS_LOG, TRIAGE_LOG  # noqa: E402
+from lib.events_log import event_files, is_event_folder_path  # noqa: E402
 
-__all__ = ["APPEND_ONLY_INPUTS", "PRODUCER_STATE", "rewind", "snapshot"]
+__all__ = ["APPEND_ONLY_INPUTS", "PRODUCER_STATE", "event_folder_files", "producer_inputs", "rewind", "snapshot"]
 
 
 #: Tracked paths the producers WRITE that are not part of the derivation's
@@ -74,6 +75,20 @@ PRODUCER_STATE: tuple[str, ...] = (
 APPEND_ONLY_INPUTS: frozenset[str] = frozenset({EVENTS_LOG, TRIAGE_LOG})
 
 
+def event_folder_files(root: Path) -> list[str]:
+    """Repo-relative paths of the archive/drop event files present NOW (drops layout).
+
+    They are part of the event log: an append-only input exactly like the legacy file,
+    which is why the producer's own ``grade_snapshot`` append -- a NEW drop file under
+    the drops layout -- must be reported as left alone, never deleted."""
+    return [p.relative_to(root).as_posix() for p in event_files(root)[1:]]
+
+
+def producer_inputs(root: Path) -> tuple[str, ...]:
+    """:data:`PRODUCER_STATE` plus every event folder file that exists right now."""
+    return PRODUCER_STATE + tuple(event_folder_files(root))
+
+
 def snapshot(root: Path, rels) -> dict[str, bytes | None]:
     """``{relpath: bytes}`` as they are RIGHT NOW; ``None`` for an absent path."""
     return {rel: (root / rel).read_bytes() if (root / rel).is_file() else None
@@ -107,6 +122,8 @@ def rewind(
     those, so undoing its rewrite is exactly what is wanted.
     """
     unrewound: list[str] = []
+    if append_only:  # a file the producer ADDED to an event folder is an append: leave it, say so
+        unrewound += [rel for rel in event_folder_files(root) if rel not in snapshot]
     for rel, blob in snapshot.items():
         path = root / rel
         if blob is None:
@@ -115,7 +132,7 @@ def rewind(
         current = path.read_bytes() if path.is_file() else None
         if current == blob:
             continue
-        if append_only and rel in APPEND_ONLY_INPUTS:
+        if append_only and (rel in APPEND_ONLY_INPUTS or is_event_folder_path(rel)):
             # Grew, shrank or was rewritten — either way this run cannot prove the
             # difference is its own, and guessing costs somebody's evidence.
             unrewound.append(rel)

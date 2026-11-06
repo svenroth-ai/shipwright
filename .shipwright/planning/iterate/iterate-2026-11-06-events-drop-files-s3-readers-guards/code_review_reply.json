@@ -1,0 +1,6 @@
+{"section":"S3-migrate-readers-guards","verdict":"PASS","review":[
+{"severity":"medium","category":"correctness","file":"shared/scripts/lib/_fr_history_events.py","line":134,"finding":"Unreadable drop read as empty; fixed after review (raises EventLogUnreadable) with test."},
+{"severity":"medium","category":"correctness","file":"plugins/shipwright-grade/scripts/lib/routing.py","line":188,"finding":"Staleness read only the legacy tail or an arbitrary drop; fixed after review (newest file by mtime) with test."},
+{"severity":"medium","category":"correctness","file":"shared/scripts/lib/events_references.py","line":1423,"finding":"R-tag structural rule is a substring test; limitation documented, not fixed."},
+{"severity":"medium","category":"security","file":"plugins/shipwright-grade/scripts/lib/authoritative.py","line":418,"finding":"Unbounded folder scan; fixed after review (lazy islice, combined byte total)."},
+{"severity":"low","category":"readability","file":"plugins/shipwright-compliance/scripts/audit/_events_read.py","line":40,"finding":"Dead _jsonl_records; deferred."}]}

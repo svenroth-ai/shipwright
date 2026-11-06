@@ -1057,6 +1057,18 @@ it runs as a step of `ci.yml`'s Python job with a stated time budget. Bare-origi
 harness: `integration-tests/test_events_drops_harness.py`. **Setting `events_layout: drops` in a real repo is unsupported until the flip unit (S9a)**: writers would use drops while `attach_commit_to_event`, `latest_event_dt`, `finalized_run_ids` and the compliance twin still read only the legacy file; fixture pair:
 `shared/tests/fixtures/events_layout/` (`unsplit.jsonl` + `split/`).
 
+**Readers (S3).** Every reader goes through the assembling reader
+`lib/events_read.py` (`read_events_assembled`, `read_events_at`, `events_text`,
+`event_lines_at`), which also reads `shipwright_events.archive/` and reports a
+per-file status; a missing or unreadable drop of a run blocks an absence verdict for that
+run (`require_readable_for_absence`). Classifiers (change-type bookkeeping, diff
+threshold, section file list, project-root markers, gitignore self-heal, worktree
+leak guard, churn merge, PR-review generated paths) list all three folders
+(`.d`, `.archive`, `.quarantine`); `ensure_current` (`resolve_churn_conflicts`) validates
+the folders and never auto-resolves a conflict inside them. The reference guard
+`lib/events_references.py` (test `shared/tests/test_events_reference_guard.py`) fails on
+any file naming the event log that is not registered with a tag.
+
 ### Pipeline Constants
 
 **File:** `plugins/shipwright-run/scripts/lib/orchestrator_pkg/constants.py`

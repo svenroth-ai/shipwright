@@ -32,7 +32,7 @@ from ._constants import PLUGIN_TO_PHASE  # noqa: E402
 # existing ``phase_quality.is_shipwright_project`` callers stay unchanged while
 # the marker set lives in exactly one place.
 from lib.project_root import is_shipwright_project, resolve_project_root  # noqa: E402
-from lib.events_log import resolve_events_path  # noqa: E402
+from lib.events_read import read_events_assembled  # noqa: E402
 # Re-export: run-id resolution moved to its own module, callers unchanged.
 # pointer_run_id re-exported alongside it (context-cost-meter, doubt-review
 # finding): it is the one source scoped to "which run IS this session
@@ -200,16 +200,9 @@ def _engagement_evidence_unreadable(project_root: Path) -> bool:
     (conservative).
     """
     try:
-        ev_path = resolve_events_path(project_root)
-    except Exception:  # noqa: BLE001
+        return any(f.status == "unreadable" for f in read_events_assembled(project_root).files)
+    except Exception:  # noqa: BLE001 - an unreadable legacy log raises OSError; any resolver error counts too
         return True
-    if not ev_path.exists():
-        return False
-    try:
-        ev_path.read_text(encoding="utf-8", errors="ignore")
-    except OSError:
-        return True
-    return False
 
 
 def resolve_engaged_phases(project_root: Path) -> list[str]:

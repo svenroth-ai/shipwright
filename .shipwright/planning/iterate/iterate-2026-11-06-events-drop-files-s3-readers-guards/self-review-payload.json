@@ -1,0 +1,10 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"Readers, aliases, classifiers, plan/design gates, reference guard, KC8 on reconcile, S0/S2 follow-ups, 12 S3 known-failing entries removed; absence-means-pass inventory and writer-side gates deferred to S4."},
+{"name":"Error Handling","verdict":"pass","note":"Vanished or unreadable drops read as non-ok and block absence; reconcile surfaces only the run's own damaged drop; OverflowError caught."},
+{"name":"Security Basics","verdict":"pass","note":"No new input surface; folder names compared as exact path components; no shell interpolation."},
+{"name":"Test Quality","verdict":"pass","note":"Fail-closed, negative guard, real ensure_current integration, flat-load subprocess tests; legacy tests unchanged."},
+{"name":"Performance Basics","verdict":"pass","note":"Folder scans only when folders exist; legacy-only trees take the old path."},
+{"name":"Naming & Structure","verdict":"pass","note":"New files under 300 lines; touched grandfathered files did not grow (events_read 294)."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Producer record_event drops and consumers (events_read, status regeneration, ensure_current) exercised by the real-producer replay and the integration test."},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"Two findings are pre-existing pytest.skip calls outside this diff."}
+]}

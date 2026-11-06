@@ -164,25 +164,19 @@ def scan_tests(roots: list[Path], base: Path) -> list[TestRecord]:
 
 
 def _load_events_fr_by_commit(project_root: Path) -> dict[str, set[str]]:
-    # Locate the event log via the one SSoT resolver (events_log), never a raw
-    # join — pinned by shared/tests/test_events_log_ssot.py.
+    # The whole log (legacy file + archive/drop files) through the one assembling reader.
     try:
-        from events_log import resolve_events_path
-        from jsonl_records import read_jsonl_records
+        from events_read import read_events_assembled
     except ImportError:  # loaded as a package (lib.backfill_scan)
-        from .events_log import resolve_events_path  # type: ignore
-        from .jsonl_records import read_jsonl_records  # type: ignore
-    path = resolve_events_path(project_root)
+        from .events_read import read_events_assembled  # type: ignore
     result: dict[str, set[str]] = {}
-    if not path.exists():
-        return result
     # Record boundaries via the shared SSoT (iterate-2026-07-19-…-readers). The
     # previous line-at-a-time parse dropped EVERY record on a physical line
     # holding more than one, so a concatenated line lost both records'
     # ``affected_frs`` — "corruption reads as absence" on the traceability
     # surface, where it silently un-links an FR from the commit that covered it.
     try:
-        records = read_jsonl_records(path).records
+        records = read_events_assembled(project_root).records
     except OSError:
         return result
     for event in records:

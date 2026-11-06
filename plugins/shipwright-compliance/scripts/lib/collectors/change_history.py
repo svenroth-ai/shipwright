@@ -130,14 +130,12 @@ def _read_event_log(project_root: Path) -> list[dict]:
     The old ``path.open(...)`` also leaked its file handle on every read; the
     shared reader uses a context manager.
     """
-    path = _resolve_events_path(project_root)
-    if not path.exists():
-        return []
-    result = load_shared_lib("jsonl_records").read_jsonl_records(path)
+    # The whole log -- legacy file, then archive and drop files -- via the shared assembling reader (S3).
+    result = load_shared_lib("events_read").read_events_assembled(project_root)
     for frag in result.corrupt:
         # ASCII-only: surfaces on Windows cp1252 consoles.
         warnings.warn(
-            f"Corrupt event at {EVENT_FILE}:{frag.line_no} "
+            f"Corrupt event at {Path(frag.path).name}:{frag.line_no} "
             f"({len(frag.text)} bytes unrecoverable), skipping that fragment"
         )
     return list(result.records)

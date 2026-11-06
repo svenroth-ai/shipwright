@@ -43,7 +43,7 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
-from lib.events_log import resolve_events_path
+from lib.events_read import events_text
 from lib.iterate_stop_guard_background import waiting as background_waiting
 from lib.iterate_stop_guard_transcript import (  # noqa: F401 - re-exported API
     MAX_POINTER_AGE_HOURS,
@@ -146,7 +146,7 @@ def next_phase_hint(worktree: Path, run_id: str, branch: str) -> str:
                     + ". Spawn what is missing (spec-reviewer -> code-reviewer -> doubt-reviewer, external "
                     "review); a reviewer already running in the background is waited for, not re-spawned.")
         try:
-            events = resolve_events_path(worktree).read_text(encoding="utf-8", errors="replace")
+            events = events_text(worktree)  # legacy file + archive/drop files
         except OSError:
             events = ""
         if not any(run_id in ln and "work_completed" in ln for ln in events.splitlines()):

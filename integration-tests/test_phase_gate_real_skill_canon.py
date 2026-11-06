@@ -155,9 +155,7 @@ def test_real_skill_finalization_passes_the_enforced_gate(tmp_path, runner_expor
         else:
             assert recorded.startswith(f"{phase}-") and recorded != run_id
 
-    events = [json.loads(ln) for ln in
-              (project / "shipwright_events.jsonl").read_text(encoding="utf-8").splitlines()
-              if ln.strip()]
+    events = mvp.read_events(project)
     ends = [e for e in events if e.get("type") == "phase_completed" and e.get("phase") == "design"]
     # Known event loss: the skill's end event wins the (phase, splitId) dedup, so the loop's
     # own (phaseTaskId-carrying) end event for the design phase is not recorded.

@@ -57,7 +57,7 @@ from lib.compliance_refresh import (  # noqa: E402
     failed_paths,
 )
 from tools.compliance_input_state import (  # noqa: E402
-    PRODUCER_STATE,
+    producer_inputs,
     rewind,
     snapshot as snapshot_inputs,
 )
@@ -143,7 +143,7 @@ def converge(
     have whichever pass happened to run last committed. ``regenerate`` is injected
     so the LOOP is testable without the compliance plugin — the loop is the
     interesting behaviour here. Returns ``(converged, passes, last_outcomes)``."""
-    inputs = snapshot_inputs(root, PRODUCER_STATE)
+    inputs = snapshot_inputs(root, producer_inputs(root))
     left_alone: set[str] = set()
     previous: dict[str, str] | None = None
     outcomes: dict[str, str] = {}

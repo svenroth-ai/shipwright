@@ -186,13 +186,54 @@ def test_zero_byte_legacy_is_ok_but_an_empty_drop_is_not(tmp_path):
     assert kinds == {"legacy": "ok", "drop": "empty"}
 
 
-def test_a_drop_deleted_between_listing_and_reading_is_skipped(tmp_path, monkeypatch):
+def test_a_drop_deleted_between_listing_and_reading_blocks_absence_of_its_run(tmp_path, monkeypatch):
+    """S2 follow-up (b): a vanished drop is recorded non-ok (fail closed), not skipped."""
     import lib.events_read as er
     gone = _drop(tmp_path, "run-g", _line(id="1"))
     real_files = er.event_files
     monkeypatch.setattr(er, "event_files", lambda root: [*real_files(root), gone.with_name("vanished--aaaaaaaa--00000009.jsonl")])
     read = read_events_assembled(tmp_path)
-    assert [Path(f.path).name for f in read.files] == [gone.name]
+    assert [Path(f.path).name for f in read.files] == [gone.name, "vanished--aaaaaaaa--00000009.jsonl"]
+    assert [f.status for f in read.files] == ["ok", "unreadable"]
+    assert [f.key for f in read.absence_blockers("vanished")] == ["vanished"]
+    assert read.absence_blockers("run-g") == []
+
+
+def test_a_drop_deleted_between_the_two_exists_checks_is_not_empty(tmp_path, monkeypatch):
+    """S2 follow-up (c): ``read_jsonl_records`` maps a missing file to an empty read."""
+    import lib.events_read as er
+    path = _drop(tmp_path, "run-c", _line(id="1"))
+    real = er.read_jsonl_records
+
+    def deleted_first(p, **kw):
+        Path(p).unlink()
+        return real(p, **kw)
+
+    monkeypatch.setattr(er, "read_jsonl_records", deleted_first)
+    read = read_events_assembled(tmp_path)
+    assert [(f.status, f.kind) for f in read.files] == [("unreadable", "drop")]
+    assert read.absence_blockers("run-c")
+    assert not path.exists()
+
+
+def test_a_legacy_log_deleted_in_between_reads_as_absent_not_empty(tmp_path, monkeypatch):
+    import lib.events_read as er
+    log = _write(tmp_path / "shipwright_events.jsonl", _line(id="1"))
+    real = er.read_jsonl_records
+
+    def deleted_first(p, **kw):
+        Path(p).unlink()
+        return real(p, **kw)
+
+    monkeypatch.setattr(er, "read_jsonl_records", deleted_first)
+    read = read_events_assembled(tmp_path)
+    assert read.files == [] and read.records == [] and not log.exists()
+
+
+def test_instant_survives_an_overflowing_offset():
+    """S2 follow-up (a): year-1 plus a positive offset overflows under ``astimezone``."""
+    from lib.events_read import instant
+    assert instant("0001-01-01T00:00:00+05:00") == instant("garbage")
 
 
 def test_symlinked_folder_is_not_read(tmp_path):
@@ -225,7 +266,7 @@ def test_an_unreadable_legacy_log_still_raises_it_never_reads_as_no_events(tmp_p
         read_events_assembled(tmp_path)
 
 
-def test_a_drop_removed_at_open_time_is_skipped_not_reported_unreadable(tmp_path, monkeypatch):
+def test_a_drop_removed_at_open_time_is_reported_unreadable_never_skipped(tmp_path, monkeypatch):
     import lib.events_read as er
     _drop(tmp_path, "run-v", _line(id="1"))
 
@@ -233,4 +274,41 @@ def test_a_drop_removed_at_open_time_is_skipped_not_reported_unreadable(tmp_path
         raise FileNotFoundError(str(path))
 
     monkeypatch.setattr(er, "read_jsonl_records", vanished)
-    assert read_events_assembled(tmp_path).files == []
+    assert [f.status for f in read_events_assembled(tmp_path).files] == ["unreadable"]
+
+
+def test_the_reader_loads_standalone_by_path_with_no_package_around_it(tmp_path):
+    """Sentinel / flat context (``load_shared_lib``): no ``lib`` package on sys.path."""
+    import subprocess
+    import sys
+    lib = Path(__file__).resolve().parents[1] / "scripts" / "lib"
+    _write(tmp_path / "shipwright_events.jsonl", _line(id="a"))
+    _drop(tmp_path, "run-s", _line(id="b"))
+    code = (
+        "import importlib.util, sys\n"
+        f"spec = importlib.util.spec_from_file_location('_flat_events_read', {str(lib / 'events_read.py')!r})\n"
+        "mod = importlib.util.module_from_spec(spec); sys.modules[spec.name] = mod; spec.loader.exec_module(mod)\n"
+        f"print(','.join(e['id'] for e in mod.read_events_assembled({str(tmp_path)!r}).records))\n"
+    )
+    out = subprocess.run([sys.executable, "-I", "-c", code], capture_output=True, text=True, timeout=60)
+    assert out.returncode == 0, out.stderr[-800:]
+    assert out.stdout.strip() == "a,b"
+
+
+def test_event_lines_at_tolerant_decoding_is_the_callers_choice(tmp_path):
+    from lib.events_read import event_lines_at
+    log = tmp_path / "shipwright_events.jsonl"
+    log.write_bytes(_line(id="a").encode("utf-8") + b'\n{"id":"b","x":"\xff"}\n')
+    with pytest.raises(UnicodeDecodeError):
+        event_lines_at(log)
+    assert len(event_lines_at(log, errors="replace")) == 2
+
+
+def test_event_context_source_splits_concatenated_records_of_a_drop(tmp_path):
+    from lib.event_context_source import iter_event_lines
+    _write(tmp_path / "shipwright_events.jsonl", _line(id="a", ts="2026-01-01T00:00:00Z"))
+    path = tmp_path / DROPS_DIR / "run-c--aaaaaaaa--00000001.jsonl"
+    path.parent.mkdir()
+    path.write_text(_line(id="b", ts="2026-01-02T00:00:00Z").strip() + _line(id="c", ts="2026-01-03T00:00:00Z"), encoding="utf-8")
+    import json
+    assert [json.loads(raw)["id"] for _seq, raw in iter_event_lines(tmp_path)] == ["a", "b", "c"]

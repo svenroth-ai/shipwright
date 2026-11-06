@@ -26,8 +26,7 @@ if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
 from lib.affected_acs_gate import declaration_present, is_scoped_intent, requires_declaration  # noqa: E402
-from lib.events_log import resolve_events_path  # noqa: E402
-from lib.jsonl_records import read_jsonl_records  # noqa: E402
+from lib.events_read import read_events_assembled  # noqa: E402
 
 
 def git_paths_for_run(project_root: Path, run_id: str) -> list[str] | None:
@@ -87,8 +86,7 @@ def main() -> int:
     parser.add_argument("--git", action="store_true",
                         help="reconstruct changed paths from Run-ID commits for events that list none")
     args = parser.parse_args()
-    path = resolve_events_path(Path(args.project_root))
-    events = read_jsonl_records(path).records if path.exists() else []
+    events = read_events_assembled(Path(args.project_root)).records
     print(json.dumps(replay(events, args.window, (lambda rid: git_paths_for_run(Path(args.project_root), rid)) if args.git else None), indent=2))
     return 0
 

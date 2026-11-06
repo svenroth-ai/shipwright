@@ -28,9 +28,8 @@ _SCRIPTS_ROOT = Path(__file__).resolve().parents[2]
 if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
-from lib.events_log import resolve_events_path  # noqa: E402
+from lib.events_read import read_events_assembled  # noqa: E402
 from lib.handoff_phase_status import status_of  # noqa: E402
-from lib.jsonl_records import read_jsonl_records  # noqa: E402
 
 # Does a v2 ``phase_tasks[]`` status mean "this phase actually ran, or is running"?
 #
@@ -146,18 +145,13 @@ def load_engagement_inputs(project_root: Path) -> tuple[dict | None, list[dict]]
             cfg = None
 
     events: list[dict] = []
-    ev_path = resolve_events_path(project_root)  # SSOT accessor (worktree-aware)
-    if ev_path.exists():
-        try:
-            # Record-boundary recovery via the shared SSoT, matching
-            # ``_resolution.resolve_run_id``: a merge=union merge can leave two
-            # records on one physical line, and a per-line ``json.loads`` drops
-            # BOTH. Here that silently UN-engages a phase whose ``phase_completed``
-            # event was the only evidence it ran — audit-fewer, the one direction
-            # this module forbids (iterate-2026-07-20-events-record-boundary-remainder).
-            events = [o for o in read_jsonl_records(ev_path).records if isinstance(o, dict)]
-        except OSError:
-            events = []
+    try:
+        # The assembling reader (legacy file, then archive + drop files) recovers concatenated
+        # records: dropping one would silently UN-engage a phase whose ``phase_completed`` event
+        # was the only evidence it ran -- audit-fewer, the one direction this module forbids.
+        events = [o for o in read_events_assembled(project_root).records if isinstance(o, dict)]
+    except OSError:
+        events = []
     return cfg, events
 
 

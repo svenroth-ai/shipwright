@@ -12,8 +12,8 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from pathlib import Path
 
-from lib.events_log import resolve_events_path
-from lib.jsonl_records import read_jsonl_records
+from lib.events_log import event_files, resolve_events_path
+from lib.events_read import read_events_assembled
 
 
 class EventLogUnreadable(RuntimeError):
@@ -132,14 +132,17 @@ def read_work_events(project_root: Path | str) -> tuple[list[dict], int]:
     hierarchy alone.
     """
     path = resolve_events_path(project_root)
-    if not path.exists():
+    if not any(p.exists() for p in event_files(project_root)):
         return [], 0
     try:
-        result = read_jsonl_records(path)
+        result = read_events_assembled(project_root)  # legacy file, then archive + drop files (S3)
     except OSError as exc:
         raise EventLogUnreadable(
             f"the event log at {path} exists but could not be read: {exc}"
         ) from exc
+    unreadable = [Path(f.path).name for f in result.files if f.status == "unreadable"]
+    if unreadable:  # a file that cannot be read is NOT "nothing touched this requirement"
+        raise EventLogUnreadable(f"event file(s) of the log could not be read: {', '.join(unreadable)}")
     events = [
         e for e in apply_amendments(list(result.records))
         if e.get("type") == "work_completed"

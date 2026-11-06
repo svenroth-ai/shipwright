@@ -1,0 +1,395 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-06-events-drop-files-s3-readers-guards",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-06T10:48:50.143851+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "Step 1 bundles three distinct S2 follow-ups (sentinel-safe sibling loading, OverflowError handling, vanished-drop fail-closed) into an S3 migration change. These are behavior changes to the read path being introduced at the same time as a wide-scale reader migration, which makes regressions hard to attribute.",
+          "suggestion": "Land the S2 follow-ups as a separate, independently tested change first, or at minimum as an isolated first commit with its own tests, before touching the reader fan-out in step 2.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "\"Migrate readers\" (step 2) touches ~11 distinct consumers (config, spec_chain, phase_quality, verifiers, stop guard, backfill, fr_history, affected_acs, compliance, grade, test, adopt) in one step. If all of them are rewired to the assembling reader simultaneously, a single bug in the assembling reader propagates everywhere at once, and bisection is painful.",
+          "suggestion": "Migrate consumers in small committed batches, keeping legacy tests green per batch. The acceptance criterion only requires the end state; the sequencing is up to you and safer done incrementally.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The mini-plan is silent on mixed-state repos during rollout: a repo on disk with drops present but code mid-migration (or vice versa). Readers that used to read the legacy file directly will now assemble across three folders — any consumer that compares the log against an index or fingerprint computed under the old reader (e.g., compliance_input_state, event_context_index) could see spurious drift.",
+          "suggestion": "Explicitly state that fingerprints/indices are invalidated or recomputed on first read through the new reader, and add a test for a repo containing legacy + archive + drop content concurrently.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Step 5 pairs adding the reference guard with removing the 12 S3 replay-gate known-failing entries. If the guard lands before all migrations are complete, the gate will block in-flight work; if the entries are removed before the guard passes, the ratchet silently weakens.",
+          "suggestion": "Make the removal of the known-failing entries the last commit, gated on a clean guard run. Note the entries need re-verification against the actual guard output, not assumed to be exactly 12.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "KC2 requires \"no unclassified occurrence of the legacy name or its aliases,\" and the guard covers code, prompts, templates, and docs — but the plan doesn't mention test fixtures or historical docs where the legacy name is intentionally present (e.g., migration tests, compatibility fixtures).",
+          "suggestion": "Define the guard's allowlist mechanism explicitly (classified-mention markers or an exemption list) and enumerate what legitimately retains the legacy name, so the guard doesn't require falsifying history or deleting compatibility tests.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The integration test covers ensure_current with a drop and status regeneration, but not the \"vanished-drop fail-closed\" path end-to-end at the ensure_current level, despite that being the riskiest new behavior (a repo where a drop directory disappears between runs).",
+          "suggestion": "Add one integration-level case: drop removed after a prior successful read → fail closed, with a clear error, not silently degraded to legacy-only content.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "The assembling reader now accepts input from additional folders (drops). If drop location is influenced by repo content or config, path traversal or symlink escapes into the drop reader become a new surface, and the plan doesn't address drop-folder validation.",
+          "suggestion": "Confirm drop paths are resolved and canonicalized under the repo/events root and reject symlinks escaping it; likely a one-assertion check in the reader test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Migrating `_reconcile_events` to an assembling reader can accidentally turn assembled history into writable legacy content. If reconciliation writes archive or drop records into the legacy log while retaining their source files, later reads can duplicate events and status regeneration can produce incorrect results.",
+          "suggestion": "Specify reconciliation’s write boundary explicitly. Preserve each source’s ownership, and test that reconciliation followed by repeated reads and status regeneration neither duplicates events nor rewrites unchanged legacy bytes.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan names `event_context_index` and `compliance_input_state`, but does not state how their fingerprints or invalidation rules will include archive and drop inputs. Replacing the reader alone can leave cached results stale when the legacy file is unchanged.",
+          "suggestion": "Define fingerprints over all inputs affecting assembled events, with deterministic ordering. Test drop creation, modification and deletion, plus movement of events between storage locations.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The integration scenario specifies a branch-local drop but does not require a distinct event change on main. That can pass without demonstrating that `ensure_current` preserves and assembles events from both sides.",
+          "suggestion": "Put distinct events on main and the behind-main branch. Run the real reconciliation path, assert that every expected event appears exactly once, verify regenerated campaign statuses, and repeat to establish idempotence.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The reference guard’s classification policy is unspecified. A broad exemption for a file or directory could conceal a surviving direct reader; a literal-name search could miss aliases. This directly affects whether KC2 is actually enforced.",
+          "suggestion": "Define narrow, reviewable classifications for legitimate legacy references and aliases across code, prompts, templates and docs. Test that newly introduced direct readers and alias references fail the guard. Remove each replay-gate entry only when its corresponding check passes.  The migration direction is sound and appropriately scoped. Before proceeding, make reconciliation ownership, cache invalidation and guard enforcement explicit, and strengthen the integration fixture to exercise changes on both branches.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-06T10:39:43.182996+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: dependency** — **Severity: medium**\n  **Finding:** Step 1 bundles three distinct S2 follow-ups (sentinel-safe sibling loading, OverflowError handling, vanished-drop fail-closed) into an S3 migration change. These are behavior changes to the read path being introduced at the same time as a wide-scale reader migration, which makes regressions hard to attribute.\n  **Suggestion:** Land the S2 follow-ups as a separate, independently tested change first, or at minimum as an isolated first commit with its own tests, before touching the reader fan-out in step 2.\n\n- **Category: risk** — **Severity: medium**\n  **Finding:** \"Migrate readers\" (step 2) touches ~11 distinct consumers (config, spec_chain, phase_quality, verifiers, stop guard, backfill, fr_history, affected_acs, compliance, grade, test, adopt) in one step. If all of them are rewired to the assembling reader simultaneously, a single bug in the assembling reader propagates everywhere at once, and bisection is painful.\n  **Suggestion:** Migrate consumers in small committed batches, keeping legacy tests green per batch. The acceptance criterion only requires the end state; the sequencing is up to you and safer done incrementally.\n\n- **Category: edge-case** — **Severity: medium**\n  **Finding:** The mini-plan is silent on mixed-state repos during rollout: a repo on disk with drops present but code mid-migration (or vice versa). Readers that used to read the legacy file directly will now assemble across three folders — any consumer that compares the log against an index or fingerprint computed under the old reader (e.g., compliance_input_state, event_context_index) could see spurious drift.\n  **Suggestion:** Explicitly state that fingerprints/indices are invalidated or recomputed on first read through the new reader, and add a test for a repo containing legacy + archive + drop content concurrently.\n\n- **Category: edge-case** — **Severity: low**\n  **Finding:** Step 5 pairs adding the […truncated]\n\n[openai] 1. **Category:** risk  \n   **Severity:** high  \n   **Finding:** Migrating `_reconcile_events` to an assembling reader can accidentally turn assembled history into writable legacy content. If reconciliation writes archive or drop records into the legacy log while retaining their source files, later reads can duplicate events and status regeneration can produce incorrect results.  \n   **Suggestion:** Specify reconciliation’s write boundary explicitly. Preserve each source’s ownership, and test that reconciliation followed by repeated reads and status regeneration neither duplicates events nor rewrites unchanged legacy bytes.\n\n2. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** The plan names `event_context_index` and `compliance_input_state`, but does not state how their fingerprints or invalidation rules will include archive and drop inputs. Replacing the reader alone can leave cached results stale when the legacy file is unchanged.  \n   **Suggestion:** Define fingerprints over all inputs affecting assembled events, with deterministic ordering. Test drop creation, modification and deletion, plus movement of events between storage locations.\n\n3. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** The integration scenario specifies a branch-local drop but does not require a distinct event change on main. That can pass without demonstrating that `ensure_current` preserves and assembles events from both sides.  \n   **Suggestion:** Put distinct events on main and the behind-main branch. Run the real reconciliation path, assert that every expected event appears exactly once, verify regenerated campaign statuses, and repeat to establish idempotence.\n\n4. **Category:** approach  \n   **Severity:** medium  \n   **Finding:** The reference guard’s classification policy is unspecified. A broad exemption for a file or directory could conceal a surviving direct reader; a literal-name search could miss aliases. This directly affects whe […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/_fr_history_events.py",
+          "line": 134,
+          "finding": "Unreadable drop read as empty; fixed after review (raises EventLogUnreadable) with test.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-grade/scripts/lib/routing.py",
+          "line": 188,
+          "finding": "Staleness read only the legacy tail or an arbitrary drop; fixed after review (newest file by mtime) with test.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/events_references.py",
+          "line": 1423,
+          "finding": "R-tag structural rule is a substring test; limitation documented, not fixed.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": "plugins/shipwright-grade/scripts/lib/authoritative.py",
+          "line": 418,
+          "finding": "Unbounded folder scan; fixed after review (lazy islice, combined byte total).",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-compliance/scripts/audit/_events_read.py",
+          "line": 40,
+          "finding": "Dead _jsonl_records; deferred.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-06T11:01:20.735101+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "a1ff0da1468cf926837147676efdf51b3992e5fc"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: partial views from readers that drop per-file status — Dormant layout; setting drops is unsupported until S9a. Absence-sensitive readers beyond the KC8 sites are an S4/S9a inventory item (deferred).",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: reconcile scoping untested — Fixed: validate_event_folders unit cases (own damaged, other damaged with own absent, odd name, present).",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: guard R/C substring rules — Narrowed: folder literal and generic words removed from reader markers; two files retagged. Residual raw reads in R files remain a stated limitation.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: leak guard and classifiers accept non-jsonl under folders — Rebutted/deferred to S4 writer routing; nothing reads non-jsonl files there.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: grade cap sum — Fixed: per-legacy-file ceiling kept, folder bytes summed separately; stat guarded.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-06T11:09:33.464257+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "c8cba09177921cbd6a8fab9f41b66c89b9ea8331"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "shared/scripts/lib/events_read.py (`read_events_at`, new)",
+          "line": null,
+          "finding": "When the caller's path is named `shipwright_events.jsonl`, the function silently reads the entire tree's event set (`path.parent`), not just that file. A caller reading a fixture or copy that happens to sit in a directory also containing `shipwright_events.d/` (or archive) now gets extra records it never asked for. `boundary_coverage_report._load_events` passes an `--events` flag path, so a fixture named after the canonical log in a drops-layout tree changes behavior.",
+          "suggestion": "Document/limit the widening, or only assemble folder files when the path is inside the project root being analyzed (e.g. take `project_root` explicitly, or assemble only when `path.parent` has no other marker distinguishing fixtures).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "shared/scripts/lib/churn_events.py (`validate_event_folders`)",
+          "line": null,
+          "finding": "read_events_assembled` can raise a bare `OSError` (unreadable legacy log) — only `EventLogNotReadable` from `require_readable_for_absence` is caught, so an unreadable legacy log during a refresh on a drops tree produces a traceback from `ensure_current` instead of a `events_invalid` status, where the legacy-only path previously surfaced a structured error.",
+          "suggestion": "Wrap the `read_events_assembled` call in try/except OSError and convert to the error-list return value.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": "shared/scripts/lib/events_references.py (`alias_problems`)",
+          "line": null,
+          "finding": "The alias guard only inspects module-level assignments and top-level `ImportFrom`; a function-local alias (`def f(): LOG = \"shipwright_events.jsonl\"`) or concatenation (`\"shipwright_events\" + \".jsonl\"`) is invisible to it, so KC2 can be silently violated by a new reader hidden inside a function. A registered \"M\"/\"P\" file could gain a live reader this way without tripping the reader-marker rule.",
+          "suggestion": "Either walk all `ast.Assign` nodes (not just `tree.body`) for the literal, or state the limitation in the module docstring and accept it; walking the whole tree is a two-line change.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "integration-tests/test_events_drops_ensure_current.py (`test_campaign_status_is_regenerated_from_a_drop`)",
+          "line": null,
+          "finding": "The campaign-status test runs with the legacy log present (BASE_LOG inherited from main) alongside the drop, so it does not prove regeneration works in a drops-only tree (no legacy file) — the state S9a will actually produce. The AC \"campaign-status regeneration from a drop\" is only half-pinned.",
+          "suggestion": "Delete/neuter the legacy log in the test (or add a variant) so the status is derived purely from the drop file.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "plugins/shipwright-compliance/scripts/lib/compliance_report.py",
+          "line": null,
+          "finding": "Under the drops layout the \"Event Log\" row links to the directory `shipwright_events.d` (a folder may exist while the legacy file does not), producing a dead markdown link in the report.",
+          "suggestion": "Link to the folder only if it is non-empty, or list the drop files it contains.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/events_replay_gate.py (`mode_checks`)",
+          "line": null,
+          "finding": "The zero-selection guard only fires for `check` with no `--root`; a `--root` argument whose pattern matches zero files still passes vacuously, which is exactly the \"renamed pattern\" failure the new test's docstring claims to cover — but the test only exercises the no-root case.",
+          "suggestion": "Either extend the guard to fail on `--root` selections matching zero files (with an opt-out flag), or tighten the test/docstring to match the actual coverage.  Positive notes (not defects): the fail-closed handling of vanished/unreadable drops (`_gone`, the post-read `path.exists()` check), the `instant` OverflowError fix, the unborn-HEAD staged-drop fix with its regression test, and the real end-to-end `ensure_current` integration test (including the negative case and the damaged-sibling-drop case) are all concrete and well-pinned. The reference guard's STALE check preventing registry rot is a nice touch.  Overall assessment: a careful, well-tested migration; the findings above are refinements rather than blockers — ship-with-fixes at most for the `read_events_at` fixture-widening and the campaign-status drops-only test.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-compliance/scripts/audit/_events_read.py",
+          "line": 94,
+          "finding": "Unreadable drops no longer preserve this function’s contract. The assembling reader records their failure in `result.files` rather than raising `OSError`, so a log containing only an unreadable drop returns `[]` instead of `None`. Callers lose the distinction between unavailable evidence and an empty log.",
+          "suggestion": "Inspect the assembled file statuses and return `None` when evidence is unreadable, while preserving valid records according to an explicit partial-read policy.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/lib/event_context_source.py",
+          "line": 39,
+          "finding": "The context index still parses physical lines rather than assembled records. A drop containing two concatenated JSON objects is recovered by `read_events_assembled`, but `_extra_lines` passes that entire line to the index’s `json.loads`, which rejects it and omits both events. This leaves the index inconsistent with the migrated readers.",
+          "suggestion": "Use the shared record-boundary recovery for folder records while retaining raw file bytes for fingerprinting. Add a test asserting that both concatenated events appear in the index.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "regression",
+          "file": "shared/scripts/lib/events_read.py",
+          "line": 285,
+          "finding": "event_lines_at` reads legacy text with strict UTF-8 decoding. Migrating `replay_baseline_lock._events_by_run` to this helper removes its previous `errors=\"replace\"` behavior, so a single invalid UTF-8 byte now raises `UnicodeDecodeError` and aborts replay instead of allowing readable events to be processed.",
+          "suggestion": "Preserve the caller’s tolerant decoding behavior, or use the shared recovery reader. Test replay with valid records alongside invalid UTF-8 bytes.  Ship-with-fixes. The migration covers substantial scope and adds meaningful integration coverage, but unreadable evidence handling and reader consistency need correction before shipping.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-06T10:53:34.528409+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] **Findings**\n\n- Category: bug\n  Severity: low\n  File: shared/scripts/lib/events_read.py (`read_events_at`, new)\n  Finding: When the caller's path is named `shipwright_events.jsonl`, the function silently reads the *entire* tree's event set (`path.parent`), not just that file. A caller reading a fixture or copy that happens to sit in a directory also containing `shipwright_events.d/` (or archive) now gets extra records it never asked for. `boundary_coverage_report._load_events` passes an `--events` flag path, so a fixture named after the canonical log in a drops-layout tree changes behavior.\n  Suggestion: Document/limit the widening, or only assemble folder files when the path is inside the project root being analyzed (e.g. take `project_root` explicitly, or assemble only when `path.parent` has no other marker distinguishing fixtures).\n\n- Category: bug\n  Severity: low\n  File: shared/scripts/lib/churn_events.py (`validate_event_folders`)\n  Finding: `read_events_assembled` can raise a bare `OSError` (unreadable legacy log) — only `EventLogNotReadable` from `require_readable_for_absence` is caught, so an unreadable legacy log during a refresh on a drops tree produces a traceback from `ensure_current` instead of a `events_invalid` status, where the legacy-only path previously surfaced a structured error.\n  Suggestion: Wrap the `read_events_assembled` call in try/except OSError and convert to the error-list return value.\n\n- Category: security\n  Severity: low\n  File: shared/scripts/lib/events_references.py (`alias_problems`)\n  Finding: The alias guard only inspects module-level assignments and top-level `ImportFrom`; a function-local alias (`def f(): LOG = \"shipwright_events.jsonl\"`) or concatenation (`\"shipwright_events\" + \".jsonl\"`) is invisible to it, so KC2 can be silently violated by a new reader hidden inside a function. A registered \"M\"/\"P\" file could gain a live reader this way without tripping the reader-marker rule.\n  Suggestion: Either walk all `ast […truncated]\n\n[openai] - Category: bug\n- Severity: medium\n- File: plugins/shipwright-compliance/scripts/audit/_events_read.py:94\n- Finding: Unreadable drops no longer preserve this function’s contract. The assembling reader records their failure in `result.files` rather than raising `OSError`, so a log containing only an unreadable drop returns `[]` instead of `None`. Callers lose the distinction between unavailable evidence and an empty log.\n- Suggestion: Inspect the assembled file statuses and return `None` when evidence is unreadable, while preserving valid records according to an explicit partial-read policy.\n\n- Category: spec\n- Severity: medium\n- File: shared/scripts/lib/event_context_source.py:39\n- Finding: The context index still parses physical lines rather than assembled records. A drop containing two concatenated JSON objects is recovered by `read_events_assembled`, but `_extra_lines` passes that entire line to the index’s `json.loads`, which rejects it and omits both events. This leaves the index inconsistent with the migrated readers.\n- Suggestion: Use the shared record-boundary recovery for folder records while retaining raw file bytes for fingerprinting. Add a test asserting that both concatenated events appear in the index.\n\n- Category: regression\n- Severity: medium\n- File: shared/scripts/lib/events_read.py:285\n- Finding: `event_lines_at` reads legacy text with strict UTF-8 decoding. Migrating `replay_baseline_lock._events_by_run` to this helper removes its previous `errors=\"replace\"` behavior, so a single invalid UTF-8 byte now raises `UnicodeDecodeError` and aborts replay instead of allowing readable events to be processed.\n- Suggestion: Preserve the caller’s tolerant decoding behavior, or use the shared recovery reader. Test replay with valid records alongside invalid UTF-8 bytes.\n\nShip-with-fixes. The migration covers substantial scope and adds meaningful integration coverage, but unreadable evidence handling and reader consistency need correction before sh […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-06T10:53:29.736136+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "a0cee70ce9e5d499289711dbdd5a1a945bc7bed2"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-06T10:48:08.103064+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-06T10:43:26.353258+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

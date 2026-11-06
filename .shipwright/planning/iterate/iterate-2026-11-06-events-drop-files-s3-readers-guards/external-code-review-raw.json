@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: bug\n- Severity: medium\n- File: plugins/shipwright-compliance/scripts/audit/_events_read.py:94\n- Finding: Unreadable drops no longer preserve this function\u2019s contract. The assembling reader records their failure in `result.files` rather than raising `OSError`, so a log containing only an unreadable drop returns `[]` instead of `None`. Callers lose the distinction between unavailable evidence and an empty log.\n- Suggestion: Inspect the assembled file statuses and return `None` when evidence is unreadable, while preserving valid records according to an explicit partial-read policy.\n\n- Category: spec\n- Severity: medium\n- File: shared/scripts/lib/event_context_source.py:39\n- Finding: The context index still parses physical lines rather than assembled records. A drop containing two concatenated JSON objects is recovered by `read_events_assembled`, but `_extra_lines` passes that entire line to the index\u2019s `json.loads`, which rejects it and omits both events. This leaves the index inconsistent with the migrated readers.\n- Suggestion: Use the shared record-boundary recovery for folder records while retaining raw file bytes for fingerprinting. Add a test asserting that both concatenated events appear in the index.\n\n- Category: regression\n- Severity: medium\n- File: shared/scripts/lib/events_read.py:285\n- Finding: `event_lines_at` reads legacy text with strict UTF-8 decoding. Migrating `replay_baseline_lock._events_by_run` to this helper removes its previous `errors=\"replace\"` behavior, so a single invalid UTF-8 byte now raises `UnicodeDecodeError` and aborts replay instead of allowing readable events to be processed.\n- Suggestion: Preserve the caller\u2019s tolerant decoding behavior, or use the shared recovery reader. Test replay with valid records alongside invalid UTF-8 bytes.\n\nShip-with-fixes. The migration covers substantial scope and adds meaningful integration coverage, but unreadable evidence handling and reader consistency need correction before shipping.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "**Findings**\n\n- Category: bug\n  Severity: low\n  File: shared/scripts/lib/events_read.py (`read_events_at`, new)\n  Finding: When the caller's path is named `shipwright_events.jsonl`, the function silently reads the *entire* tree's event set (`path.parent`), not just that file. A caller reading a fixture or copy that happens to sit in a directory also containing `shipwright_events.d/` (or archive) now gets extra records it never asked for. `boundary_coverage_report._load_events` passes an `--events` flag path, so a fixture named after the canonical log in a drops-layout tree changes behavior.\n  Suggestion: Document/limit the widening, or only assemble folder files when the path is inside the project root being analyzed (e.g. take `project_root` explicitly, or assemble only when `path.parent` has no other marker distinguishing fixtures).\n\n- Category: bug\n  Severity: low\n  File: shared/scripts/lib/churn_events.py (`validate_event_folders`)\n  Finding: `read_events_assembled` can raise a bare `OSError` (unreadable legacy log) \u2014 only `EventLogNotReadable` from `require_readable_for_absence` is caught, so an unreadable legacy log during a refresh on a drops tree produces a traceback from `ensure_current` instead of a `events_invalid` status, where the legacy-only path previously surfaced a structured error.\n  Suggestion: Wrap the `read_events_assembled` call in try/except OSError and convert to the error-list return value.\n\n- Category: security\n  Severity: low\n  File: shared/scripts/lib/events_references.py (`alias_problems`)\n  Finding: The alias guard only inspects module-level assignments and top-level `ImportFrom`; a function-local alias (`def f(): LOG = \"shipwright_events.jsonl\"`) or concatenation (`\"shipwright_events\" + \".jsonl\"`) is invisible to it, so KC2 can be silently violated by a new reader hidden inside a function. A registered \"M\"/\"P\" file could gain a live reader this way without tripping the reader-marker rule.\n  Suggestion: Either walk all `ast.Assign` nodes (not just `tree.body`) for the literal, or state the limitation in the module docstring and accept it; walking the whole tree is a two-line change.\n\n- Category: test\n  Severity: low\n  File: integration-tests/test_events_drops_ensure_current.py (`test_campaign_status_is_regenerated_from_a_drop`)\n  Finding: The campaign-status test runs with the legacy log present (BASE_LOG inherited from main) alongside the drop, so it does not prove regeneration works in a drops-only tree (no legacy file) \u2014 the state S9a will actually produce. The AC \"campaign-status regeneration from a drop\" is only half-pinned.\n  Suggestion: Delete/neuter the legacy log in the test (or add a variant) so the status is derived purely from the drop file.\n\n- Category: edge-case\n  Severity: low\n  File: plugins/shipwright-compliance/scripts/lib/compliance_report.py\n  Finding: Under the drops layout the \"Event Log\" row links to the *directory* `shipwright_events.d` (a folder may exist while the legacy file does not), producing a dead markdown link in the report.\n  Suggestion: Link to the folder only if it is non-empty, or list the drop files it contains.\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/tools/events_replay_gate.py (`mode_checks`)\n  Finding: The zero-selection guard only fires for `check` with *no* `--root`; a `--root` argument whose pattern matches zero files still passes vacuously, which is exactly the \"renamed pattern\" failure the new test's docstring claims to cover \u2014 but the test only exercises the no-root case.\n  Suggestion: Either extend the guard to fail on `--root` selections matching zero files (with an opt-out flag), or tighten the test/docstring to match the actual coverage.\n\n**Positive notes (not defects):** the fail-closed handling of vanished/unreadable drops (`_gone`, the post-read `path.exists()` check), the `instant` OverflowError fix, the unborn-HEAD staged-drop fix with its regression test, and the real end-to-end `ensure_current` integration test (including the negative case and the damaged-sibling-drop case) are all concrete and well-pinned. The reference guard's STALE check preventing registry rot is a nice touch.\n\nOverall assessment: a careful, well-tested migration; the findings above are refinements rather than blockers \u2014 ship-with-fixes at most for the `read_events_at` fixture-widening and the campaign-status drops-only test.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-11-06-events-drop-files-s3-readers-guards",
+    "at": "2026-11-06T10:50:50.487824+00:00"
+  },
+  "verdicts": {
+    "openai": "revise",
+    "glm": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

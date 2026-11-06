@@ -112,9 +112,7 @@ def test_pass_record_fencing_and_skip_reason_compose(tmp_path):
     assert code == 0 and skipped["phase_task"]["status"] == "skipped"
     assert _task(project, plan["phaseTaskId"])["skipReason"] == \
         "planned by hand outside the run"
-    events = [json.loads(line) for line in
-              (project / "shipwright_events.jsonl").read_text(encoding="utf-8").splitlines()
-              if line.strip()]
+    events = mvp.read_events(project)
     skips = [e for e in events if e["type"] == "phase_skipped"]
     assert len(skips) == 1 and skips[0]["phase"] == "plan"
     detail = json.loads(skips[0]["detail"])

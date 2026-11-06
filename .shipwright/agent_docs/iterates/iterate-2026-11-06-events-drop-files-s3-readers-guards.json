@@ -1,0 +1,98 @@
+{
+  "run_id": "iterate-2026-11-06-events-drop-files-s3-readers-guards",
+  "date": "2026-11-06T11:51:58.626046Z",
+  "event_at": "2026-11-06T08:34:11.773284+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "prior_source": "history",
+  "branch": "iterate/campaign-events-drop-files--S3",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-11-06-events-drop-files-s3-readers-guards",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "AC1 readers: every reader and alias goes through the assembling reader; legacy trees read byte-identically (fingerprint, lines, order)",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "shared/tests/test_events_read.py::test_event_context_source_splits_concatenated_records_of_a_drop, ::test_event_lines_at_tolerant_decoding_is_the_callers_choice; shared/scripts/tests event_context suite PASSED"
+      },
+      {
+        "behavior": "AC2 classifiers: each of the ten classifiers treats .d/.archive/.quarantine as event files (bookkeeping, uncounted, generated, blocking in churn, no merge driver, not skip-safe)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_events_reference_guard.py::test_every_classifier_knows_the_folder[3 folders], ::test_phase_boundary_gates_allow_the_event_folders PASSED"
+      },
+      {
+        "behavior": "AC3 KC2 reference guard: unclassified, stale, bad reader, bad classifier, derived alias and renaming import are all found; the repo is clean",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_events_reference_guard.py::test_kc2_no_unclassified_occurrence_of_the_event_log_name and the negative cases PASSED"
+      },
+      {
+        "behavior": "AC4 real ensure_current on a behind-main branch with its own drop keeps both runs, is idempotent, refuses when the run's own event is gone, tolerates another run's damaged drop; campaign status regenerates from a drop",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "integration-tests/test_events_drops_ensure_current.py (6 tests) PASSED"
+      },
+      {
+        "behavior": "KC8: only the run's own damaged drop blocks the absence verdict (own damaged, other damaged with own absent, odd name, present)",
+        "disposition": "tested",
+        "evidence": "integration-tests/test_events_drops_ensure_current.py::test_validate_event_folders_scopes_blocking_to_the_runs_own_drop PASSED"
+      },
+      {
+        "behavior": "S2 follow-ups: OverflowError in instant, vanished drop reads unreadable, deleted-between-checks never reads empty",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_events_read.py fail-closed tests PASSED"
+      },
+      {
+        "behavior": "S0 follow-ups: unborn-HEAD staged drop counts as closed; replay gate fails on zero selected files",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_events_layout.py, shared/scripts/tools/tests/test_events_replay_gate.py PASSED"
+      },
+      {
+        "behavior": "events_read loads standalone by path with no package around it (sentinel and flat contexts)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_events_read.py::test_the_reader_loads_standalone_by_path_with_no_package_around_it PASSED"
+      },
+      {
+        "behavior": "unreadable drop fails closed in FR history; grade staleness reads the newest drop",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tests/test_fr_change_history_reading.py::test_an_unreadable_drop_is_not_read_as_nothing_touched_this, plugins/shipwright-grade/tests/test_routing.py::test_events_path_prefers_a_newer_drop_over_a_frozen_legacy_log PASSED"
+      },
+      {
+        "behavior": "AC5 replay gate ratchet: the 12 S3 entries plus one now-passing entry left the known set (85 to 72, all S4)",
+        "disposition": "tested",
+        "evidence": "events_replay_gate.py check --strict-stale: 72 drops-only failures all known; tighten removed 1 stale entry"
+      }
+    ],
+    "counts": {
+      "testable": 10,
+      "tested": 10,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 5,
+      "covered_acs": 5
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run --extra dev pytest integration-tests/test_events_drops_ensure_current.py -q -p no:cacheprovider",
+    "exit_code": 0,
+    "tests_run": 6,
+    "evidence_path": ".shipwright/runs/iterate-2026-11-06-events-drop-files-s3-readers-guards/surface_verification.log",
+    "timestamp": "2026-11-06T11:30:42.338Z",
+    "attempts": 1,
+    "run_id": "iterate-2026-11-06-events-drop-files-s3-readers-guards"
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": [
+    "cross_component",
+    "touches_migrations"
+  ]
+}

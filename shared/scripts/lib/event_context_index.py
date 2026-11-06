@@ -14,6 +14,7 @@ from .area_catalog import SCHEMA_VERSION as CATALOG_SCHEMA_VERSION
 from .area_catalog import load_catalog, match_area, normalize_path
 from .commit_trailers import build_run_id_commit_map, resolve_base_ref
 from .event_context_coverage import aggregate_field_coverage
+from .event_context_source import iter_event_lines, source_stats
 
 INDEX_SCHEMA_VERSION = 3
 INDEX_RELATIVE_PATH = Path(".shipwright/runtime/events-context-index.json")
@@ -66,20 +67,16 @@ def _sanitize_full_value(value: Any) -> Any:
 
 def load_full_events(project_root: Path | str) -> list[dict[str, Any]]:
     """Return every valid raw event as redacted, control-safe untrusted data."""
-    path = Path(project_root) / EVENT_LOG_NAME
     records: list[dict[str, Any]] = []
-    if not path.exists():
-        return records
-    with path.open("rb") as handle:
-        for sequence, raw in enumerate(handle, start=1):
-            try:
-                event = json.loads(raw.decode("utf-8"))
-            except (UnicodeError, json.JSONDecodeError):
-                continue
-            if isinstance(event, dict):
-                record = _sanitize_full_value(event)
-                record["_shipwright_source_sequence"] = sequence
-                records.append(record)
+    for sequence, raw in iter_event_lines(project_root):
+        try:
+            event = json.loads(raw.decode("utf-8"))
+        except (UnicodeError, json.JSONDecodeError):
+            continue
+        if isinstance(event, dict):
+            record = _sanitize_full_value(event)
+            record["_shipwright_source_sequence"] = sequence
+            records.append(record)
     return records
 
 
@@ -185,28 +182,11 @@ def _event_entry(event: dict[str, Any], sequence: int, line_hash: str,
 
 
 def event_log_stats(project_root: Path | str) -> dict[str, Any]:
-    path = Path(project_root) / EVENT_LOG_NAME
-    if not path.exists():
-        return {"bytes": 0, "count": 0, "estimated_tokens": 0, "fingerprint": "missing"}
-    digest = hashlib.sha256()
-    count = 0
-    size = 0
-    try:
-        with path.open("rb") as handle:
-            for raw in handle:
-                digest.update(raw)
-                size += len(raw)
-                if raw.strip():
-                    count += 1
-    except OSError:
-        return {"bytes": 0, "count": 0, "estimated_tokens": 0, "fingerprint": "unreadable"}
-    return {"bytes": size, "count": count, "estimated_tokens": (size + 3) // 4,
-            "fingerprint": digest.hexdigest()}
+    return source_stats(project_root)  # legacy bytes + archive/drop files (lib/event_context_source.py)
 
 
 def build_index(project_root: Path | str, *, persist: bool = True) -> dict[str, Any]:
     root = Path(project_root)
-    log_path = root / EVENT_LOG_NAME
     catalog, catalog_state = load_catalog(root)
     stats = event_log_stats(root)
     base_ref_pin = resolve_base_ref(root)
@@ -214,21 +194,19 @@ def build_index(project_root: Path | str, *, persist: bool = True) -> dict[str, 
     commit_map = commit_scan["map"]
     entries: list[dict[str, Any]] = []
     invalid_lines = 0
-    if log_path.exists():
-        with log_path.open("rb") as handle:
-            for sequence, raw in enumerate(handle, start=1):
-                if not raw.strip():
-                    continue
-                line_hash = hashlib.sha256(raw).hexdigest()
-                try:
-                    decoded = json.loads(raw.decode("utf-8"))
-                except (UnicodeError, json.JSONDecodeError):
-                    invalid_lines += 1
-                    continue
-                if not isinstance(decoded, dict):
-                    invalid_lines += 1
-                    continue
-                entries.append(_event_entry(decoded, sequence, line_hash, catalog, commit_map))
+    for sequence, raw in iter_event_lines(root):
+        if not raw.strip():
+            continue
+        line_hash = hashlib.sha256(raw).hexdigest()
+        try:
+            decoded = json.loads(raw.decode("utf-8"))
+        except (UnicodeError, json.JSONDecodeError):
+            invalid_lines += 1
+            continue
+        if not isinstance(decoded, dict):
+            invalid_lines += 1
+            continue
+        entries.append(_event_entry(decoded, sequence, line_hash, catalog, commit_map))
     coverage_summary = aggregate_field_coverage(entries, PROVENANCE_FIELDS)
     payload = {
         "catalog_state": catalog_state,

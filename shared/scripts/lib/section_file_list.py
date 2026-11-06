@@ -72,6 +72,9 @@ FRAMEWORK_BOOKKEEPING: tuple[str, ...] = (
     ".shipwright/agent_docs/triage_inbox.md",
     ".shipwright/triage.jsonl",
     "shipwright_events.jsonl",
+    "shipwright_events.d/",
+    "shipwright_events.archive/",
+    "shipwright_events.quarantine/",
     "shipwright_build_config.json",
     "design-fidelity-report.json",
 )

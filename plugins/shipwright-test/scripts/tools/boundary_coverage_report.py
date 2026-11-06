@@ -40,7 +40,7 @@ from typing import Iterable
 # owns the sys.path bootstrap; no path-walk or `sys.path.insert` here.
 # ---------------------------------------------------------------------------
 from shared.contracts.iterate import is_io_boundary_change  # noqa: E402
-from shared.scripts.lib.jsonl_records import read_jsonl_records  # noqa: E402
+from shared.scripts.lib.events_read import read_events_at  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -245,10 +245,8 @@ def _load_events(events_path: Path) -> list[dict]:
     bare JSON scalar entered the list as a non-dict and crashed the first
     downstream ``.get()``. Only JSON objects are records.
     """
-    if not events_path.exists():
-        return []
-    try:
-        return list(read_jsonl_records(events_path).records)
+    try:  # the canonical tree log is read with its archive/drop folders (S3); any other path alone
+        return list(read_events_at(events_path).records)
     except OSError:
         return []
 
