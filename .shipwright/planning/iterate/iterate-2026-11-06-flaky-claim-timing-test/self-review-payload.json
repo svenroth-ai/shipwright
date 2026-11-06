@@ -1,0 +1,10 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"Only the timing bound of one test changed (0.2 s to 0.6 s); no logic change."},
+{"name":"Error Handling","verdict":"n/a","note":"Test-only change."},
+{"name":"Security Basics","verdict":"pass","note":"No input, secrets or auth touched."},
+{"name":"Test Quality","verdict":"pass","note":"0.6 s still sits well below the 1.0 s wait, so a real wait is still caught; the CI failure was 0.297 s."},
+{"name":"Performance Basics","verdict":"n/a","note":"Test-only change."},
+{"name":"Naming & Structure","verdict":"pass","note":"Same file and style; a two-line comment explains the bound."},
+{"name":"Affected Boundaries","verdict":"n/a","note":"No serialized format touched."},
+{"name":"Test Hygiene Probe","verdict":"n/a","note":"Advisory at trivial; no skip added."}
+]}
