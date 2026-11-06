@@ -1,0 +1,8 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"S5 bullets, fold order, cap 20 plus N more, folded+pending checks, conventions-reviewed, prompt scan, docs and release note all present"},
+{"name":"Error Handling","verdict":"pass","note":"fold keeps files on write error or anchor conflict; aggregate fails closed on a failed bullet fold"},
+{"name":"Security Basics","verdict":"pass","note":"bullet names validated by grammar, single-line enforced, prompt scan without allowlist marker, O_EXCL writes"},
+{"name":"Test Quality","verdict":"pass","note":"real git merge-tree, real fold bytes, by-path loader, base-side pending, conflicts"},
+{"name":"Performance Basics","verdict":"pass","note":"pending scan is one directory listing; base side costs one ls-tree plus one git show per base bullet"},
+{"name":"Naming & Structure","verdict":"pass","note":"files under 300 LOC, bloat baselines not raised"},
+{"name":"Affected Boundaries","verdict":"pass","note":"producer write_doc_bullet to consumers fold/effective_text proven by byte-equal round trip and the compliance by-path loader test"}]}

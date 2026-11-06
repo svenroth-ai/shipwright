@@ -1,0 +1,5 @@
+{"section":"S5-bullets","verdict":"PASS","review":[
+{"severity":"medium","category":"correctness","file":"shared/scripts/tools/aggregate_decisions.py","line":169,"finding":"aggregate dropped fold conflicts so a kept same-anchor bullet was silent on the release path; fixed after review (conflicts reported in errors, test added)."},
+{"severity":"low","category":"correctness","file":"shared/scripts/tools/write_doc_bullet.py","line":80,"finding":"duplicate-anchor refusal checks pending files only; accepted. ADR- anchor exception and parse_bullet trailing whitespace fixed after review."},
+{"severity":"low","category":"performance","file":"shared/scripts/tools/check_agent_doc_budget.py","line":83,"finding":"one git show per base bullet per doc; accepted."},
+{"severity":"low","category":"readability","file":"shared/tests/test_doc_bullets.py","line":132,"finding":"no-op replace removed after review."}]}

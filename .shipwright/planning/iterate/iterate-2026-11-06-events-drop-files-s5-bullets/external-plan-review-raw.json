@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "1. **Category: dependency | Severity: high**  \n   **Finding:** A release note mentioning S5b does not enforce the external release gate. Updated writers could expose bullet drops to consumers before the WebUI release is available.  \n   **Suggestion:** Make S5b availability an explicit prerequisite for enabling or releasing bullet writers, and identify how that prerequisite is verified.\n\n2. **Category: risk | Severity: medium**  \n   **Finding:** Release staging mentions only the two destination documents. Folding also removes consumed bullet files; leaving those deletions unstaged could cause subsequent readers or releases to apply the same bullets again.  \n   **Suggestion:** Stage destination updates and consumed-drop deletions together. Test that a second aggregation is a no-op and that a failed fold retains recoverable drops.\n\n3. **Category: edge-case | Severity: medium**  \n   **Finding:** \u201cPending bullet counts as the update\u201d leaves the `check_conventions_reviewed` adaptation underspecified. An unrelated or stale pending bullet could satisfy the check, while filesystem mtimes change across checkouts.  \n   **Suggestion:** Define which target and run qualify, preserve the existing freshness requirement, and test stale drops, unrelated targets, and checkout-induced mtime changes.\n\n4. **Category: edge-case | Severity: medium**  \n   **Finding:** \u201c20 newest\u201d and shared insertion logic do not fully establish deterministic rendering. Ordering must remain stable across branches and checkouts, and the summary cap must not truncate validation input.  \n   **Suggestion:** Define a stable ordering with a tie-breaker independent of filesystem mtime. Test multiple drops targeting the same section in different discovery orders, and verify budget, shape, architecture, and injection checks process every pending file beyond the display cap.\n\nThe drop-file approach is sound and fits parallel branch workflows without unnecessary abstraction. The release gate, fold lifecycle, and reader semantics need explicit treatment before implementation proceeds.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "## Findings\n\n**Category: edge-case | Severity: medium**\nThe plan says readers see \"folded + pending,\" but `check_conventions_reviewed` switches from a mtime-based check to \"pending bullet counts as the update.\" What happens after fold at release? Once bullets are folded into the target doc, the mtime signal the old check relied on may or may not change \u2014 if fold rewrites the target doc, mtime updates naturally and the \"pending counts as update\" adaptation is only needed pre-fold. If fold does NOT rewrite the target (e.g., no-op fold for empty pending), the check semantics differ pre/post release. The plan should state explicitly: does fold always touch the target doc, and is the mtime-adaptation logic identical in both windows?\n\n**Category: edge-case | Severity: medium**\n`insert_bullets()` shared between fold and effective-text rendering is good for the \"pending == folded bytes\" criterion, but the criterion says \"render identical pending vs folded\" \u2014 verify this is byte-identical including ordering guarantees. \"20 newest\" by what? Mtime is unreliable under checkouts/merges; the `<wt8>` wallclock token in the filename is presumably the sort key \u2014 state it, and define tie-breaking (two bullets same second, different runs). Otherwise the cap-overflow \"20 + N more\" and fold order are nondeterministic across machines, which will flake tests.\n\n**Category: risk | Severity: medium**\nTwo parallel PRs each adding bullets must be merge-tree clean \u2014 that's guaranteed by O_EXCL + nonce8, but only if the nonce is genuinely per-run unique (what entropy source?). A collision on the same `<target>--<key>` from two agents in the same second should be handled by the nonce, but idempotency is \"per run+text\" \u2014 if the same run retries and writes a different nonce, you get near-duplicate files that both fold. Clarify: is `<nonce8>` derived from content/run-id so a retry is a no-op, or random so a retry adds a second file?\n\n**Category: dependency | Severity: medium**\n`check_decision_drop_committed` now requires the run's bullets in-branch, but bullets are written to `.shipwright/agent_docs/decision-drops/bullets/` \u2014 confirm that path is actually committed (not gitignored like some drop/scratch dirs often are) and that the check runs against the working branch, not post-fold. Also: what happens to a bullet written mid-run but the run fails before commit? Does the check fail the whole run for an orphan bullet, or ignore it?\n\n**Category: risk | Severity: low**\n\"Old-plugin aggregate_decisions and old WebUI show no bullet as an ADR\" \u2014 old consumers iterate `decision-drops/` (or the ADR dir). Putting bullets in a sibling `bullets/` subdir achieves isolation only if the old glob isn't `decision-drops/**`. Worth one explicit test that the old consumer's directory scan doesn't recurse into `bullets/`.\n\n**Category: security | Severity: low**\n`prompt_injection_scan` on bullet files with \"high -> critical\" escalation is right, but bullets are agent-written markdown rendered into context \u2014 the *filename* (target/key, up to ~16+ chars each) also flows into prompts via `render_pending_summary`. Name grammar should validate target/key as `[a-z0-9-]` or similar so a crafted key can't smuggle formatting/newlines into the summary.\n\n**Category: approach | Severity: low**\nFold happening \"before ADRs\" in `aggregate_decisions.aggregate` changes the byte output of release docs. Any golden-file tests or downstream consumers of the aggregate output (the WebUI changelog pipeline, S5b) need to be checked \u2014 this is the one place legacy bytes are touched, contradicting \"legacy bytes untouched\" in the risks section. That risk note should be scoped to event-log only, or the aggregate change needs its own baseline-update note.\n\n**Category: edge-case | Severity: low**\nCap behavior: warn > 40 but cap 20 in summary \u2014 is there any pressure mechanism if pending bullets grow unbounded because a branch never reaches a release fold? A long-lived branch accumulating 200 pending bullets silently degrades context quality. At minimum the `N more pending` warning should escalate (hard fail or agent-facing nudge) past some threshold.\n\n## Overall assessment\n\nSound approach \u2014 additive-only drop files with shared insert logic is the right shape and the old-consumer isolation is well handled. Main revisions needed: deterministic ordering (sort key + tiebreak), nonce/idempotency semantics on retry, and clarifying the mtime/fold interaction for `check_conventions_reviewed`.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-11-06-events-drop-files-s5-bullets",
+    "at": "2026-11-06T17:59:06.601049+00:00"
+  },
+  "verdicts": {
+    "openai": "revise",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

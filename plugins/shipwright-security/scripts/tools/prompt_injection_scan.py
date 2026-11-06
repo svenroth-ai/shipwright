@@ -53,7 +53,7 @@ SHARED_ROOT = PLUGIN_ROOT.parent.parent / "shared"
 sys.path.insert(0, str(SHARED_ROOT / "scripts"))
 sys.path.insert(0, str(SCRIPT_DIR))
 from py_token_filter import blank_noncode_spans  # noqa: E402  (SCRIPT_DIR on path)
-from prompt_injection_decision_drops import scan_decision_drop  # noqa: E402
+from prompt_injection_decision_drops import is_bullet_path, scan_decision_drop, scan_decision_drop_bullet  # noqa: E402
 
 try:
     from lib.errors import structured_error, structured_success  # type: ignore
@@ -533,7 +533,7 @@ def scan_file(
     suffix = path.suffix.lower()
 
     if suffix == ".md":
-        return scan_markdown(path, rel_path)
+        return scan_decision_drop_bullet(path, rel_path, scan_markdown, make_finding) if is_bullet_path(rel_path) else scan_markdown(path, rel_path)
     if suffix == ".json" and rel_path.startswith(".shipwright/agent_docs/decision-drops/"):
         return scan_decision_drop(path, rel_path, scan_markdown, make_finding)
     if name == "hooks.json":
