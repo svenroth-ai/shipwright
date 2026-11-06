@@ -68,7 +68,16 @@ uv run --project {plugin_root} {plugin_root}/scripts/checks/check-plan-gates.py 
 Fails if this session's own uncommitted changes touch anything outside
 `.shipwright/`, `shipwright_run_config.json`, `shipwright_project_config.json`,
 `shipwright_plan_config.json`, or `CHANGELOG-unreleased.d/`. A non-git project
-passes trivially — nothing to check against.
+passes trivially — nothing to check against. "This session's own" is measured
+against the baseline `setup-planning-session.py` records when the session starts
+(`.shipwright/plan-boundary-baseline-<split>.json`, one per split, output `boundary_baseline`): files an
+earlier phase (Project, Design, an earlier split's Build) left uncommitted are not
+this session's change while their content is unchanged. **With a baseline
+(`written`/`kept`) never ask to commit earlier phases' output to clear this gate** —
+in any mode; a red gate then means this session wrote outside planning: a real STOP.
+On `not_written` (the project root is not the git top level) the gate judges the
+whole dirty tree and cannot tell earlier output from this session's, so a red gate
+is handled as before (put to the operator), in every mode.
 
 ---
 

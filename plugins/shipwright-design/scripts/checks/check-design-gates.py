@@ -67,6 +67,7 @@ for _p in (_SHARED_LIB, _SHARED_SCRIPTS):
     if str(_p) not in sys.path:
         sys.path.append(str(_p))
 
+from autonomous_rules import standalone_findings  # noqa: E402
 from design_gate_extras import (  # noqa: E402
     chip_nav_class_violations,
     chrome_nav_targets_consistent,
@@ -74,7 +75,6 @@ from design_gate_extras import (  # noqa: E402
     iteration_touched_flagged_screens,
     parse_feedback_round,
     screen_declares_nav,
-    standalone_html_violations,
     uploads_preserved,
     visual_tokens_present,
 )
@@ -176,14 +176,12 @@ def chrome_gate(designs_dir: Path) -> dict:
 
 
 def standalone_gate(designs_dir: Path) -> dict:
-    """FR-01.04 #6."""
+    """FR-01.04 #6. Autonomous brief runs keep the approved package's own links (lib ``autonomous_rules``)."""
     inventory = scan_designs_dir(designs_dir)
-    problems = []
     files = [s["file"] for s in inventory["screens"]] + [f["file"] for f in inventory["flows"]]
-    for rel in files:
-        violations = standalone_html_violations(_read(designs_dir / rel))
-        problems += [f"{rel}: external reference {v}" for v in violations]
-    return _gate("standalone", not problems, f"{len(files)} file(s) checked, {len(problems)} external ref(s)", problems)
+    problems, kept, unverified = standalone_findings(designs_dir.parent.parent, files)
+    gate = _gate("standalone", not problems, f"{len(files)} file(s) checked, {len(problems)} external ref(s)", problems)
+    return {**gate, **({"kept_approved_links": kept} if kept else {}), **({"package_unverified": unverified} if unverified else {})}
 
 
 def uploads_gate(project_root: Path, designs_dir: Path) -> dict:

@@ -14,7 +14,8 @@ Output (JSON):
         "plugin_root": "/path/to/plugin",
         "branch_name": "build/01-auth-a1b2c3d4",
         "config": { ... },
-        "session_id": "<id>"
+        "session_id": "<id>",
+        "boundary_baseline": "written" | "kept" | "not_written"
     }
 """
 
@@ -52,6 +53,26 @@ def check_branch_exists(branch_name: str) -> bool:
         return branch_name in result.stdout
     except (FileNotFoundError, OSError):
         return False
+
+
+def record_boundary_baseline(project_root: Path, section_name: str) -> str:
+    """Snapshot the dirty tree at section start (``.shipwright/build-boundary-baseline-<section>.json``):
+    ``written`` | ``kept`` | ``not_written``. An autonomous run installs declared dev tooling only while
+    the manifest is unchanged since this snapshot (``record_autonomous_decision.py --kind dev-tooling``).
+    The shared module is loaded privately (ADR-045): this script already binds ``lib`` to the plugin's own."""
+    scripts = str(Path(__file__).resolve().parents[4] / "shared" / "scripts")
+    added = scripts not in sys.path
+    if added:
+        sys.path.append(scripts)
+    try:
+        from shared_lib_loader import load_shared_lib
+        pbb = load_shared_lib("phase_boundary_baseline", prefer_private=True)
+    except ImportError:  # an install without the shared module: no baseline, so dev tooling asks
+        return "not_written"
+    finally:
+        if added and scripts in sys.path:
+            sys.path.remove(scripts)
+    return pbb.record(project_root, pbb.BUILD_BASELINE_REL, section_name)
 
 
 def main() -> int:
@@ -118,6 +139,7 @@ def main() -> int:
         "branch_exists": branch_exists,
         "config": config,
         "session_id": args.session_id or "",
+        "boundary_baseline": record_boundary_baseline(project_root, section_name),
         "message": f"{'Resuming' if branch_exists else 'Starting'} build for section: {section_name}",
     }
 

@@ -157,7 +157,12 @@ Repeat until a terminal signal:
   The mechanism is inert (every gate `interactive`) for any config that is not an
   explicit `mode: single_session` run — a standalone or adopted project is
   unaffected. The loop just
-  dispatches; a stopping gate surfaces as the phase pausing. When a phase pauses
+  dispatches; a stopping gate surfaces as the phase pausing. In an autonomous run
+  (brief package, or autonomy autonomous/unattended) the master does not put to the
+  person what a phase rule decides (`record_autonomous_decision.py`: approved package
+  links, a brief-only requirement, an explicit brief value, a hard requirement over a
+  visible extra, a declared dev-tooling install; the plan boundary baseline for earlier
+  phases' files) — and never briefs a phase-runner "install nothing without asking". When a phase pauses
   at an `orchestrator-approve` / `hard-stop` gate, record it for observability +
   loop-state:
   ```bash

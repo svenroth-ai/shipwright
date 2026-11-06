@@ -157,3 +157,24 @@ outcome depend on which reviewer happened to run.
 300-line file guideline outrank it. When the behaviour does not fit, split it into further modules inside the section's scope (each within the guideline,
 declared as attributed extras at Step 10b) and log the decision; never cut required behaviour or raise a limit to get past the spec-reviewer
 (its size-target carve-out passes the split). Ask only when no split is possible. Interactive runs behave as before.
+
+**Explicit brief value and hard requirements (autonomous runs).** Same scope as above (a brief
+package, or autonomy `autonomous`/`unattended`); interactive runs behave as before. Two more
+conflicts are settled by rule, not put to a person (e2e run 22 asked both):
+
+- *An explicit brief value* (the brief's own words, e.g. "the cap is shown") wins over plan text
+  and over screens that do not show it. "Shown" is visible without hovering, not a tooltip.
+  Implement the brief value and run `record_autonomous_decision.py --kind brief-wins --what ...
+  --brief-quote "<the brief's words>"` (the quote must occur in the package's `brief.md`, else
+  exit 1 = ask). It logs the ADR and adds a `KD-NN` entry to `.shipwright/designs/known-differences.md`.
+  A Plan `Design decision: <what> -> brief, "<quote>"` is recorded the same way before you implement
+  it (it re-checks the quote; exit 1 = no brief value, stop and ask; `already_recorded` = done).
+- *Two stated constraints that cannot both hold* (a width band where "add no height" and "show the
+  mode and count" collide): keep the hard requirement (no layout shift, no height change, no
+  horizontal scroll, nothing moves) and let the visible extra give way (a short form, hide what
+  does not fit). Measure the result on the built page, then run `--kind hard-constraint --what ...
+  --keep ... --yields ... --measurements "<widths in px and what shows>"` (exit 1 without a
+  `NNN px` measurement). Only when no ranking is possible (both hard, or both extras) ask.
+
+The spec-reviewer applies the same two rules (its item 6). `section-builder.md` carries no copy,
+as with the size-target rule above.
