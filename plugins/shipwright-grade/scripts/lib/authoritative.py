@@ -89,8 +89,8 @@ def _eventlog_over_cap(root: Path) -> bool:
             if not (root / d).is_dir() or (root / d).is_symlink():
                 continue
             for p in islice((root / d).glob("*.jsonl"), _MAX_AUTHORITATIVE_EVENT_FILES + 1 - seen):
+                seen += 1  # EVERY entry spends budget: folders/symlinks named *.jsonl must not dodge the cap
                 if p.is_file() and not p.is_symlink():
-                    seen += 1
                     total += p.stat().st_size
         return seen > _MAX_AUTHORITATIVE_EVENT_FILES or total > _MAX_AUTHORITATIVE_EVENTLOG_BYTES
     except OSError:  # pragma: no cover - defensive
