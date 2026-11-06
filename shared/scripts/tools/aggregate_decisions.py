@@ -166,7 +166,7 @@ def aggregate(
         return result
     bullets = doc_bullets.fold(project_root, dry_run=dry_run)
     result["bullets_folded"] = bullets["folded"]
-    result["errors"].extend(bullets["errors"] + [f"bullets/{n}: kept, anchor already in doc with different text" for n in bullets["conflicts"]])
+    result["errors"].extend(bullets["errors"] + [f"bullets/{n}: kept, anchor already in doc with different text" for n in bullets["conflicts"]] + [f"bullets/{n}: ignored, not a parseable bullet file (BOM, wrapped or misnamed?)" for n in bullets.get("skipped", [])])
     if bullets["errors"]:  # never fold ADRs over an unfolded bullet
         result["bullets_failed"] = True
         _refresh_index()

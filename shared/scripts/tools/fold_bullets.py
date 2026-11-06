@@ -21,6 +21,7 @@ if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
 from lib.doc_bullets import fold, render_pending_summary  # noqa: E402
+from tools.verifiers.stdio import ensure_utf8_stdout  # noqa: E402
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -29,6 +30,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--dry-run", action="store_true")
     p.add_argument("--summary", action="store_true", help="print the context-load view and exit")
     a = p.parse_args(argv)
+    ensure_utf8_stdout()  # bullets carry '—' / '→'; a piped cp1252 stdout would crash
     if a.summary:
         text = render_pending_summary(a.project_root)
         if text:
