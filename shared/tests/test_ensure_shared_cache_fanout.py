@@ -134,7 +134,7 @@ def test_healthy_completed_claim_skips_without_waiting(tmp_path: Path):
     assert isinstance(done, Path) and healer._complete_session(done)
     started = time.monotonic()
     assert _claim(tmp_path, "same-session", wait_seconds=1.0) is False
-    assert time.monotonic() - started < 0.2
+    assert time.monotonic() - started < 0.6  # a real wait is 1.0 s; 0.2 flaked at 0.297 on Windows CI
 
 
 def test_only_a_completed_expired_claim_can_be_rearmed(tmp_path: Path):
