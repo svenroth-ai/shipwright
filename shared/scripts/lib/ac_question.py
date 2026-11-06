@@ -1,92 +1,85 @@
-"""The question text and pick list the operator sees for an AC decision, and what the record keeps about a model's display suggestion.
+"""The question the operator sees for an AC decision, and what the record keeps about a model's proposal.
 
-The agent's ORIGINAL promise is always shown first, word for word. Under it, only when code finds it meaningfully different, a model's
-plain wording ("In plain words: ..."); then two context lines computed by code (Affects, Already in the catalog). The text is display
-only: an answer is bound to the stable content, not to this text (:mod:`lib.ac_hold`). Every question offers "I do not understand this".
+Fixed shape, no wording of ours or a model's: why it is asked (the finding), the part, the exact acceptance-criterion wording the
+agent wrote, and the exact text of the requirement from the spec. The options are numbered in order and "Don't understand, need
+help" is always last. The text is display only: an answer is bound to the stable content, not to this text (:mod:`lib.ac_hold`).
+A model may only propose WHICH requirement a new AC belongs to (:mod:`lib.ac_suggest`); code checks the id and fetches its text.
 """
 
 from __future__ import annotations
 
-from lib.ac_catalog import area_blurb, candidates
-from lib.ac_context import affects_line, differs, is_cross_cutting, related_titles
-from lib.ac_gloss import gloss
+from lib.ac_catalog import candidates, fr_text
+from lib.ac_context import part_line
 
-__all__ = ["question_options", "render_question", "suggestion_meta"]
+__all__ = ["best_fr", "question_options", "render_question", "suggestion_meta"]
 
-CROSS = "Applies to several areas: make it its own requirement."
-EXPLAIN = "I do not understand this, please explain."
+INTRO = ("Shipwright keeps a list of requirements (FRs). Before building, it checks how\n"
+         "this change fits that list: it changes a requirement, adds to one, or creates\n"
+         "a new one. Please check that Shipwright made the correct selection.")
+HELP = "Don't understand, need help."
+_NO = "No. (You tell the agent in the chat what you want instead.)"
 
 
 def _norm(text: object) -> str:
     return " ".join(str(text if text is not None else "").split())
 
 
-def _context(item: dict, cat: dict, paths: object) -> str:
-    """The code-computed lines under the promise: where the change reaches and what the catalog already says (each omitted when unknown)."""
-    lines = [affects_line(paths)]
-    related = related_titles(_norm(item.get("new_text")), cat) if item.get("kind") == "add" else []
-    lines.append("Already in the catalog: " + "; ".join(related) + "." if related else "")
-    return "".join(f"\n{ln}" for ln in lines if ln)
+def best_fr(item: dict, cat: dict, sugg: dict | None = None) -> str:
+    """The single requirement a new AC is recorded under: the model's proposal when it names a real one, else the best match by shared words, else ``""``."""
+    fr = sugg.get("fr_id") if isinstance(sugg, dict) else None
+    if isinstance(fr, str) and fr in cat.get("frs", ()):
+        return fr
+    found = candidates(_norm(item.get("new_text")), cat, 1)
+    return found[0][0] if found else ""
+
+
+def _plan(item: dict, cat: dict, sugg: dict | None) -> tuple[str, list[str], str, list[tuple[str, dict]]]:
+    """``(finding, ac lines, requirement id, [(option text, machine answer)])`` for one item; the help option is appended by the caller."""
+    new, old, kind = _norm(item.get("new_text")), _norm(item.get("old_text")), item.get("kind")
+    if kind in ("change", "remove"):
+        fr = _norm(item.get("ac")).rsplit(".AC", 1)[0]
+        if kind == "remove":
+            return ("this change removes an acceptance criterion.", [f'Acceptance criterion that no longer holds: "{old}"'], fr,
+                    [("Yes, that is intended.", {"choice": "yes"}), ("No, keep it. (The change is then reworked.)", {"choice": "no"})])
+        return ("this change changes an existing acceptance criterion.", [f'Acceptance criterion today: "{old}"', f'Acceptance criterion after this change: "{new}"'], fr,
+                [("Yes, change it.", {"choice": "yes"}), (_NO, {"choice": "no"})])
+    ac = [f'New acceptance criterion: "{new}"']
+    declared = item.get("new_fr")
+    if isinstance(declared, dict):
+        return "this change needs a requirement that does not exist yet.", ac, "", [("Yes, create it.", {"choice": "yes"}), (_NO, {"choice": "no"})]
+    fr = best_fr(item, cat, sugg)
+    if not fr:
+        return "this change needs a requirement that does not exist yet.", ac, "", [("Yes, create it.", {"choice": "new_fr"}), (_NO, {"choice": "no"})]
+    return ("this change adds a new acceptance criterion to an existing requirement.", ac, fr,
+            [("Yes, add it there.", {"choice": "yes", "text": fr}), ("No, wrong requirement. (You tell the agent in the chat which one.)", {"choice": "no"}),
+             ("No requirement fits, create a new one.", {"choice": "new_fr"})])
+
+
+def _options(item: dict, cat: dict, sugg: dict | None) -> list[tuple[str, dict]]:
+    return [*_plan(item, cat, sugg)[3], (HELP, {"choice": "explain"})]
 
 
 def render_question(item: dict, cat: dict | None = None, sugg: dict | None = None, paths: object = None) -> str:
-    """The plain-language question the operator answers (what the product promises, not how it is built)."""
-    new, old, cat = _norm(item.get("new_text")), _norm(item.get("old_text")), cat or {}
-    ctx = _context(item, cat, paths)
-    if item.get("kind") == "remove":
-        return (f"This change removes a promise. Until now this held: {old}{gloss(old)}. After this change it no longer holds.{ctx}\n"
-                f"1 Yes, that is intended.\n2 No, keep the promise (the change is then reworked).\n3 {EXPLAIN}")
-    if item.get("kind") == "change":
-        return (f"This change alters a promise the product makes. Until now: {old}. After this change: {new}{gloss(f'{old} {new}')}. Should it hold like this?{ctx}\n"
-                f"1 Yes, change it.\n2 No, instead: <your wording>\n3 {EXPLAIN}")
-    if isinstance(item.get("new_fr"), dict):
-        return (f"This is a new area of the product: {_norm(item['new_fr'].get('title'))}. It would promise: {new}. Is it OK to add this area?{ctx}\n"
-                f"1 Yes, add it.\n2 No, do not add it (the change is then reworked).\n3 {EXPLAIN}")
-    lines = "\n".join(f"{letter} {text}" for letter, (text, _) in _area_options(new, cat, sugg, paths).items())
-    plain = _norm(sugg["plain_promise"]).rstrip(".") if _is_model(sugg) else ""
-    shown = plain if plain and differs(new, plain) else ""  # a gloss that only swaps a word or two says nothing new: the glossary explains the jargon instead
-    head = f"This change adds a new promise: {new.rstrip('.')}{'' if shown else gloss(new)}."  # the agent's own words come first
-    if shown:
-        head += f"\nIn plain words: {shown}."
-    return f"{head}{ctx}\nWhich requirement would this promise belong to?\n{lines}"
-
-
-def _is_model(sugg: dict | None) -> bool:
-    """True for a validated model suggestion (:mod:`lib.ac_suggest`); anything else uses the deterministic wording."""
-    return isinstance(sugg, dict) and sugg.get("source") == "model" and isinstance(sugg.get("plain_promise"), str) and isinstance(sugg.get("areas"), list)
-
-
-def _area_options(new: str, cat: dict, sugg: dict | None = None, paths: object = None) -> dict[str, tuple[str, dict]]:
-    """The pick list of a no-owner question: ``{letter: (printed text, machine answer)}``; area ids stay in the machine answer only."""
-    out: dict[str, tuple[str, dict]] = {}
-    rows = ([(a["fr_id"], cat.get("titles", {}).get(a["fr_id"], ""), _norm(a["plain_description"])) for a in sugg["areas"]] if _is_model(sugg) and sugg["areas"]
-            else [(fr, title, area_blurb(fr, cat)) for fr, title in candidates(new, cat)])
-
-    def add(text: str, answer: dict) -> None:
-        out[chr(ord("A") + len(out))] = (text, answer)
-    if is_cross_cutting(paths) or not rows:  # several plugins, or no single owning area: its own requirement comes first
-        add(CROSS, {"choice": "cross_cutting"})
-    for fr, title, blurb in rows:
-        add(f"{title or 'An existing area'}" + (f": {blurb}" if blurb else ""), {"choice": "yes", "text": fr})
-    if not rows:
-        add("An area that already exists (tell us which).", {"choice": "yes"})
-    for text, ans in (("Somewhere new (tell us the name).", {"choice": "other"}), ("It is not a promise, only how it is built.", {"choice": "not_a_promise"}),
-                      ("Not wanted: <your wording>", {"choice": "no"}), (EXPLAIN, {"choice": "explain"})):
-        add(text, ans)
-    return out
+    """The question the operator answers: the finding, the part, the exact acceptance-criterion wording and the exact requirement text."""
+    cat = cat or {}
+    finding, ac_lines, fr, _ = _plan(item, cat, sugg)
+    declared = item.get("new_fr") if isinstance(item.get("new_fr"), dict) else None
+    req = f'Requirement {_norm(declared["id"])}: "{_norm(declared.get("title"))}"' if declared else (f'Requirement {fr}: "{fr_text(fr, cat)}"' if fr and fr_text(fr, cat) else "")
+    part = part_line([fr] if fr else [], cat, paths)
+    lines = "\n".join(f"{n} {text}" for n, (text, _) in enumerate(_options(item, cat, sugg), 1))
+    body = "\n".join(x for x in (f"Finding: {finding}", part, *ac_lines, req) if x)
+    return f"{INTRO}\n\n{body}\n\nDoes this fit?\n{lines}"
 
 
 def question_options(item: dict, cat: dict | None = None, sugg: dict | None = None, paths: object = None) -> dict:
-    """``{letter: {choice, text?}}`` for the pick list of a no-owner question (empty for every other question)."""
-    if item.get("kind") != "add" or isinstance(item.get("new_fr"), dict):
-        return {}
-    return {k: v for k, (_, v) in _area_options(_norm(item.get("new_text")), cat or {}, sugg, paths).items()}
+    """``{"1": {choice, text?}, ...}``: the numbered answers of the question, help last."""
+    return {str(n): ans for n, (_, ans) in enumerate(_options(item, cat or {}, sugg), 1)}
 
 
 def suggestion_meta(sugg: dict | None) -> dict:
-    """What the record keeps about a display suggestion: its source and, for a model, both wordings, the model id and the prompt sha."""
+    """What the record keeps about a model's proposal: its source and, for a model, the requirement it named, the model id and the prompt sha."""
     if not isinstance(sugg, dict) or "source" not in sugg:
         return {}
-    if not _is_model(sugg):
+    if sugg.get("source") != "model":
         return {"suggestion_source": "fallback", **({"suggestion_reason": sugg["reason"]} if sugg.get("reason") else {})}
-    return {"suggestion_source": "model", **{f"suggestion_{k}": sugg[k] for k in ("original_promise", "plain_promise", "model", "prompt_sha") if k in sugg}}
+    return {"suggestion_source": "model", **{f"suggestion_{k}": sugg[k] for k in ("fr_id", "model", "prompt_sha") if k in sugg}}

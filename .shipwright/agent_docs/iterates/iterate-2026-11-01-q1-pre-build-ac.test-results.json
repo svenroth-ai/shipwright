@@ -4,9 +4,9 @@
     "date": "2026-11-01",
     "unit": {
       "status": "passed",
-      "passed": 16583,
+      "passed": 16562,
       "skipped": 77,
-      "total": 16660
+      "total": 16639
     },
     "integration": {
       "status": "passed",
@@ -24,7 +24,7 @@
       "status": "not_run"
     },
     "degraded": [
-      "unit counts cover the three roots this round touches (shared/tests 13762, shared/scripts/tools/tests 1462, plugins/shipwright-iterate/tests 1359); the other plugin roots were not re-run (nothing under them changed)"
+      "unit counts cover the three roots this round touches (shared/tests 13741, shared/scripts/tools/tests 1462, plugins/shipwright-iterate/tests 1359); the other plugin roots were not re-run (nothing under them changed)"
     ],
     "test_completeness": {
       "status": "complete",
@@ -93,7 +93,7 @@
         {
           "behavior": "only an operator-signed answer is recorded answered_via operator; a via field or a missing/mismatching signature is self-reported; the answer tool creates the key, signs, and a pick-list letter never exposes an area id",
           "disposition": "tested",
-          "evidence": "shared/tests/test_ac_round3.py::test_only_a_signed_answer_is_operator_and_the_signature_covers_question_choice_and_text PASSED; shared/tests/test_ac_round3.py::test_the_answer_tool_creates_the_key_signs_and_a_letter_never_exposes_an_area_id PASSED"
+          "evidence": "shared/tests/test_ac_round3.py::test_only_a_signed_answer_is_operator_and_the_signature_covers_question_choice_and_text PASSED"
         },
         {
           "behavior": "an add may only claim a new id; undeclared edits and freeze differences use the base catalog",
@@ -132,69 +132,44 @@
           "evidence": "shared/tests/test_ac_questions.py::test_unchanged_needs_an_existing_ac_and_a_file_list_and_has_its_own_bucket PASSED; shared/tests/test_ac_questions.py::test_the_unchanged_record_is_checked_against_the_diff_and_a_test_naming_the_ac PASSED"
         },
         {
-          "behavior": "a no-owner question is a lettered pick list of areas by title in everyday words with a deterministic gloss of at most two jargon terms; picking new area, not-a-promise or a name resolves or explains",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_ac_questions.py::test_a_no_owner_question_is_a_lettered_pick_list_in_everyday_words PASSED; shared/tests/test_ac_questions.py::test_picking_new_area_or_not_a_promise_or_a_name_resolves_or_explains PASSED; shared/tests/test_ac_questions.py::test_the_gloss_explains_at_most_two_jargon_terms_once_and_only_from_the_data_file PASSED; shared/tests/test_ac_questions.py::test_candidate_areas_rank_by_shared_words_and_the_blurb_is_one_short_line PASSED"
-        },
-        {
-          "behavior": "the question shows the agent's ORIGINAL promise first and a model's plain wording only as a gloss; a reply that drops, changes or adds a number (whole tokens, number words), negation, limit or quantifier falls back; equivalent spellings pass; an empty area list keeps the plain wording with the deterministic areas",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_ac_suggest.py::test_a_good_reply_is_a_gloss_under_the_original_and_the_record_keeps_both_the_model_and_the_prompt_sha PASSED; shared/tests/test_ac_suggest.py::test_a_reply_that_drops_changes_or_adds_a_number_negation_or_limit_falls_back PASSED; shared/tests/test_ac_suggest.py::test_equivalent_spellings_of_the_same_numbers_and_negations_are_accepted PASSED; shared/tests/test_ac_suggest.py::test_bad_areas_fall_back_with_their_reason PASSED; shared/tests/test_ac_suggest.py::test_a_non_json_reply_falls_back PASSED; shared/tests/test_ac_suggest.py::test_an_empty_area_list_keeps_the_plain_wording_with_the_deterministic_area_list PASSED"
-        },
-        {
-          "behavior": "the model is pinned, a ZDR-namespace model is refused, the transport module is loaded once and registered before it runs, and a missing file is a fallback that is never cached",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_ac_suggest.py::test_the_model_is_pinned_and_a_model_that_needs_a_zero_retention_rule_is_refused PASSED; shared/tests/test_ac_suggest.py::test_the_transport_module_is_loaded_once_registered_before_it_runs_and_a_missing_file_is_a_fallback_never_cached PASSED"
-        },
-        {
-          "behavior": "the suggestion cache is one file per key, atomic, re-validated on every hit; a corrupt, foreign or malformed entry is a miss; timeouts and a missing key are never cached",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_ac_suggest.py::test_the_cache_is_one_file_per_key_revalidated_on_every_hit_and_a_bad_entry_is_a_miss PASSED; shared/tests/test_ac_suggest.py::test_a_timeout_and_a_missing_key_fall_back_and_are_never_cached PASSED"
-        },
-        {
-          "behavior": "every opt-out fails closed (SHIPWRIGHT_AC_SUGGEST=0, external_review.ac_suggest false, feedback_iterations 0, a gateway, an unreadable config); one 30 s budget per decide call; the model is asked only for a rendered where-does-it-belong question",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_ac_suggest_flow.py::test_every_opt_out_sends_nothing_and_an_unreadable_config_fails_closed PASSED; shared/tests/test_ac_suggest_flow.py::test_the_suggester_has_one_time_budget_and_skips_what_is_not_a_where_does_it_belong_question PASSED; shared/tests/test_ac_suggest_flow.py::test_decide_asks_the_suggester_only_for_a_question_it_renders_and_never_for_an_invalid_or_auto_item PASSED"
-        },
-        {
-          "behavior": "the decide tool records the suggestion, resumes without asking the model again, and a different campaign nonce does not inherit an old answer",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_ac_suggest_flow.py::test_the_decide_tool_uses_the_suggestion_records_it_and_the_flags_and_nonce_work PASSED"
-        },
-        {
           "behavior": "an answer is bound to stable content (id, nonce, item, kind, original promise, options): a moved base still accepts a signed answer without calling the model; a tampered or forged options map is refused or never operator-signed",
           "disposition": "tested",
           "evidence": "shared/tests/test_ac_questions.py::test_a_signed_answer_survives_a_moved_base_and_never_calls_the_model_again PASSED; shared/tests/test_ac_questions.py::test_a_tampered_options_map_is_refused_and_a_forged_one_never_becomes_operator_signed PASSED; shared/tests/test_ac_decision_answers.py::test_the_answer_is_bound_to_run_item_promise_and_options_not_to_the_rendered_text PASSED; shared/tests/test_ac_decision_answers.py::test_the_hold_needs_a_well_formed_escalation PASSED"
         },
         {
-          "behavior": "the signing key is created exclusively (0600), never regenerated, and a bad key file is a clear error; Somewhere new works through a new area; no spec or any unreadable spec is skipped; the F11 unsigned warning is for unattended runs only",
+          "behavior": "the signing key is created exclusively (0600), never regenerated, and a bad key file is a clear error; no spec or any unreadable spec is skipped; the F11 unsigned warning is for unattended runs only",
           "disposition": "tested",
-          "evidence": "shared/tests/test_ac_round3.py::test_the_signing_key_is_created_exclusively_never_regenerated_and_a_bad_file_is_a_clear_error PASSED; shared/tests/test_ac_questions.py::test_picking_new_area_or_not_a_promise_or_a_name_resolves_or_explains PASSED; shared/tests/test_ac_catalog_shapes.py::test_no_spec_at_all_or_any_spec_with_text_but_no_readable_fr_is_skipped PASSED; shared/tests/test_ac_f11_check.py::test_check_warns_about_an_unsigned_asked_decision_only_in_an_unattended_run PASSED; shared/tests/test_ac_decision_answers.py::test_unattended_is_read_from_state_the_agent_does_not_type PASSED"
+          "evidence": "shared/tests/test_ac_round3.py::test_the_signing_key_is_created_exclusively_never_regenerated_and_a_bad_file_is_a_clear_error PASSED; shared/tests/test_ac_catalog_shapes.py::test_no_spec_at_all_or_any_spec_with_text_but_no_readable_fr_is_skipped PASSED; shared/tests/test_ac_f11_check.py::test_check_warns_about_an_unsigned_asked_decision_only_in_an_unattended_run PASSED; shared/tests/test_ac_decision_answers.py::test_unattended_is_read_from_state_the_agent_does_not_type PASSED"
         },
         {
-          "behavior": "[round 8] the question names what the change touches in plain words (Affects, from the changed paths; omitted, never guessed, when a plugin has no plain name), and lists requirements that already use the same key phrase (omitted when none)",
+          "behavior": "[final] the question has one fixed shape: why it is asked (Finding), Part, the agent's exact acceptance-criterion wording, and the requirement's exact text from the spec; no gloss, brackets or area list; the options are numbered with 'Don't understand, need help' always last",
           "disposition": "tested",
-          "evidence": "shared/tests/test_ac_context.py::test_affects_names_the_touched_plugins_in_plain_words_and_is_omitted_when_unknown PASSED; shared/tests/test_ac_context.py::test_the_catalog_lines_list_requirements_with_the_same_key_phrase_and_are_omitted_when_none PASSED"
+          "evidence": "shared/tests/test_ac_questions.py::test_a_new_ac_without_an_owner_is_one_best_fitting_requirement_with_numbered_options_help_last PASSED; shared/tests/test_ac_questions.py::test_a_changed_or_removed_ac_shows_the_exact_old_and_new_wording_and_the_requirements_own_text PASSED; shared/tests/test_ac_questions.py::test_a_requirement_that_does_not_exist_yet_is_created_from_a_declared_area_or_when_nothing_fits PASSED; shared/tests/test_ac_context.py::test_every_question_ends_with_the_help_option_and_the_numbers_run_in_order PASSED"
         },
         {
-          "behavior": "[round 8] a change across 2+ plugins, or with no owning area, offers 'applies to several areas' first; picking it mints a cross-cutting requirement recorded on the decision",
+          "behavior": "[final] an answer yes/new_fr records the item, 'no' hands the work back to the chat, and the removed answers are gone",
           "disposition": "tested",
-          "evidence": "shared/tests/test_ac_context.py::test_a_change_across_two_plugins_or_with_no_owning_area_offers_its_own_requirement_first PASSED; shared/tests/test_ac_context.py::test_picking_its_own_requirement_mints_a_cross_cutting_requirement_in_the_record PASSED"
+          "evidence": "shared/tests/test_ac_questions.py::test_answers_resolve_decline_or_name_a_requirement_and_no_hands_the_work_back_to_the_chat PASSED; shared/tests/test_ac_decision_answers.py::test_a_bound_answer_closes_the_question_and_keeps_the_owner_on_no PASSED"
         },
         {
-          "behavior": "[round 8] every question asks 'Which requirement would this promise belong to?' and offers 'I do not understand this'; that answer makes the agent reword and the new wording is asked again (exit 11), without calling the model on resume",
+          "behavior": "[final] 'Part:' is the spec's own grouping, else the top-level directory of the changed paths, else omitted - never a hard-coded word; the catalog carries the exact requirement text and grouping",
           "disposition": "tested",
-          "evidence": "shared/tests/test_ac_context.py::test_every_question_offers_i_do_not_understand_and_asks_which_requirement PASSED; shared/tests/test_ac_context.py::test_i_do_not_understand_asks_the_agent_to_reword_and_the_new_wording_is_asked_again PASSED; shared/tests/test_ac_context.py::test_the_decide_tool_exits_11_on_explain_and_accepts_the_letter PASSED"
+          "evidence": "shared/tests/test_ac_context.py::test_the_part_is_the_specs_own_grouping_then_the_top_level_directory_then_nothing PASSED; shared/tests/test_ac_context.py::test_the_catalog_gives_the_exact_requirement_text_and_the_grouping_the_project_already_has PASSED; shared/tests/test_ac_context.py::test_the_question_carries_the_part_from_the_spec_or_the_paths PASSED"
         },
         {
-          "behavior": "[round 8] the model's plain wording is shown only when it differs meaningfully from the original; the glossary explains Claude review, outside reviewers and command, and the prompt demands explained jargon",
+          "behavior": "[final] 'Don't understand, need help' makes the agent explain and ask again as a new question (exit 11), a resume calls no model, and the tool takes an option number",
           "disposition": "tested",
-          "evidence": "shared/tests/test_ac_context.py::test_the_plain_wording_is_shown_only_when_it_differs_meaningfully PASSED; shared/tests/test_ac_context.py::test_the_glossary_explains_claude_review_outside_reviewers_and_command_and_the_prompt_demands_explained_jargon PASSED"
+          "evidence": "shared/tests/test_ac_context.py::test_dont_understand_asks_the_agent_to_explain_and_the_new_wording_is_asked_again PASSED; shared/tests/test_ac_context.py::test_the_decide_tool_exits_11_on_help_and_takes_an_option_number PASSED"
+        },
+        {
+          "behavior": "[final] the model only proposes ONE requirement id: code validates it, a bad reply falls back, the model is pinned, ZDR namespaces refused, every opt-out fails closed, one 30 s budget",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_ac_suggest.py::test_a_reply_naming_a_real_requirement_is_used_and_the_request_carries_the_text_as_data PASSED; shared/tests/test_ac_suggest.py::test_a_reply_that_names_no_real_requirement_falls_back_with_its_reason PASSED; shared/tests/test_ac_suggest.py::test_the_model_is_pinned_and_a_model_that_needs_a_zero_retention_rule_is_refused PASSED; shared/tests/test_ac_suggest.py::test_every_opt_out_sends_nothing_and_an_unreadable_config_fails_closed PASSED; shared/tests/test_ac_suggest.py::test_the_suggester_has_one_time_budget_and_skips_what_is_not_a_new_ac_without_an_owner PASSED; shared/tests/test_ac_questions.py::test_a_signed_answer_survives_a_moved_base_and_never_calls_the_model_again PASSED"
         }
       ],
       "counts": {
-        "testable": 32,
-        "tested": 32,
+        "testable": 27,
+        "tested": 27,
         "untestable": 0,
         "untested_testable": 0
       }

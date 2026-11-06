@@ -80,7 +80,7 @@ def test_the_signing_key_is_created_exclusively_never_regenerated_and_a_bad_file
 
 
 @pytest.mark.covers("FR-01.11/AC49")
-def test_the_answer_tool_creates_the_key_signs_and_a_letter_never_exposes_an_area_id(tmp_path, capsys, monkeypatch):
+def test_the_answer_tool_creates_the_key_signs_and_an_option_number_never_makes_the_operator_type_an_id(tmp_path, capsys, monkeypatch):
     monkeypatch.chdir(tmp_path)  # hermetic: a unit-worktree cwd would make `answer` refuse as unattended
     root = _repo(tmp_path)
     ask = tmp_path / "ask.json"
@@ -88,14 +88,14 @@ def test_the_answer_tool_creates_the_key_signs_and_a_letter_never_exposes_an_are
     out = tmp_path / "decided.json"
     assert cli.main(["--project-root", str(root), "--from-json", str(ask), "--base-ref", "HEAD", "--run-id", "r", "--out", str(out)]) == 10
     q = json.loads(out.read_text(encoding="utf-8"))["questions"][0]
-    assert q["options"]["A"] == {"choice": "yes", "text": "FR-01.03"} and "FR-" not in q["question"]
+    assert q["options"]["1"] == {"choice": "yes", "text": "FR-01.03"} and 'Requirement FR-01.03: "' in q["question"]
     assert not Path(ac_hold.key_path()).exists()
     answers = tmp_path / "a.json"
-    assert cli.main(["answer", "--decided", str(out), "--item", "0", "--choice", "A", "--answers", str(answers)]) == 0
+    assert cli.main(["answer", "--decided", str(out), "--item", "0", "--choice", "1", "--answers", str(answers)]) == 0
     entry = json.loads(answers.read_text(encoding="utf-8"))["answers"][0]
     assert entry["choice"] == "yes" and entry["text"] == "FR-01.03" and ac_hold.signature_ok(ac_hold.load_key(), entry)
     assert entry["options"] == q["options"]                                # the options come from the STORED question the operator saw
-    assert cli.main(["answer", "--decided", str(out), "--item", "0", "--choice", "Z", "--answers", str(answers)]) == 2
+    assert cli.main(["answer", "--decided", str(out), "--item", "0", "--choice", "9", "--answers", str(answers)]) == 2
     assert cli.main(["--project-root", str(root), "--from-json", str(ask), "--base-ref", "HEAD", "--run-id", "r", "--answers", str(answers)]) == 0
 
 

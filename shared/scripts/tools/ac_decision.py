@@ -1,9 +1,9 @@
 """Decide the pre-build acceptance-criterion declaration of an iterate: ask or auto.
 
     uv run shared/scripts/tools/ac_decision.py --project-root . --from-json ac.json --base-ref {base_branch} \
-        --run-id RID [--bind-id STABLE_ID] [--nonce CAMPAIGN_CREATED_AT] [--answers answers.json] [--autonomous --sub-iterate-id Q1] [--out decided.json] [--no-suggest] [--no-cache]
+        --run-id RID [--bind-id STABLE_ID] [--nonce CAMPAIGN_CREATED_AT] [--answers answers.json] [--autonomous --sub-iterate-id Q1] [--out decided.json] [--no-suggest]
 
-    uv run shared/scripts/tools/ac_decision.py answer --decided decided.json|result.json --item 0 --choice yes|no|other \
+    uv run shared/scripts/tools/ac_decision.py answer --decided decided.json|result.json --item 0 --choice 1|2|3 \
         [--text-file wording.txt] --answers answers.json        # the OPERATOR's channel
 
     uv run shared/scripts/tools/ac_decision.py verify --project-root . --run-id RID --base-ref {base_branch}
@@ -19,7 +19,7 @@
 
 ``--base-ref`` is required: it is resolved to merge-base(base-ref, HEAD) and the catalog is read there (git), never from
 the working tree. ``--bind-id`` is the run's STABLE id (for a campaign unit ``{campaign_slug}--{unit_id}``, never an
-attempt id), so a re-dispatched unit gets the same question hashes; it defaults to ``--run-id``. An answer is bound to that id (plus ``--nonce``, the campaign's created_at), the item index, the kind, the ORIGINAL promise text and the options map - never to the rendered question, so a moved base cannot invalidate it. The question shows your own wording first; a model's "In plain words" gloss (``--no-suggest`` skips it) is display only. AC text must read as an outcome (exit 2
+attempt id), so a re-dispatched unit gets the same question hashes; it defaults to ``--run-id``. An answer is bound to that id (plus ``--nonce``, the campaign's created_at), the item index, the kind, the ORIGINAL promise text and the options map - never to the rendered question, so a moved base cannot invalidate it. The question shows your own AC wording unchanged and the requirement's exact text from the spec; a small model only proposes which requirement a new AC belongs to (``--no-suggest`` skips it; code checks the id). AC text must read as an outcome (exit 2
 otherwise). The operator is asked only when an existing AC is changed or removed, no single FR owns a new AC,
 or a new area (``new_fr``) is proposed. Before the build the diff is empty: ``exempt`` is then only a claim, and
 F11 tests it against the committed diff (a warning).
@@ -101,7 +101,7 @@ def run_answer(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(prog="ac_decision.py answer")
     ap.add_argument("--decided", required=True, help="decided.json (--out) or the held unit's result.json")
     ap.add_argument("--item", type=int, required=True)
-    ap.add_argument("--choice", required=True, help="yes | no | other | not_a_promise | cross_cutting | explain, or the LETTER the operator picked from a pick-list question")
+    ap.add_argument("--choice", required=True, help="the option NUMBER the operator picked (1, 2, ...), or yes | no | new_fr | explain")
     ap.add_argument("--text-file", default="", help="the operator's wording / owning FR id (a file, never a command line)")
     ap.add_argument("--answers", required=True, help="answer file to create or extend")
     args = ap.parse_args(argv)
@@ -114,11 +114,11 @@ def run_answer(argv: list[str]) -> int:
         raise _Fail(f"{args.decided} holds no open question for item {args.item}")
     text = read_text(args.text_file).strip() if args.text_file else ""
     choice = args.choice
-    picked = (qs[0].get("options") or {}).get(choice.upper()) if len(choice) == 1 and choice.isalpha() else None
-    if picked:  # a letter of the pick list: the area id stays in the machine record, the operator never types it
+    picked = (qs[0].get("options") or {}).get(choice)
+    if isinstance(picked, dict):  # an option NUMBER of the question: the requirement id stays in the machine record, the operator never types it
         choice, text = picked["choice"], picked.get("text") or text
     elif choice not in ANSWERS:
-        raise _Fail(f"--choice must be {', '.join(ANSWERS)} or a letter of the question's pick list, not {choice!r}")
+        raise _Fail(f"--choice must be {', '.join(ANSWERS)} or an option number of the question, not {choice!r}")
     prior = _load(args.answers, "--answers") if Path(args.answers).exists() else {"answers": []}
     sha = qs[0]["question_sha256"]
     kept = [a for a in (prior.get("answers", []) if isinstance(prior, dict) else []) if isinstance(a, dict) and (a.get("item") != args.item or a.get("question_sha256") != sha)]
@@ -163,7 +163,6 @@ def run_decide(argv: list[str]) -> int:
     ap.add_argument("--nonce", default="", help="a campaign nonce (the campaign's created_at) added to the bind id, so a recreated campaign with the same slug cannot reuse an old signed answer")
     ap.add_argument("--sub-iterate-id", default="")
     ap.add_argument("--no-suggest", action="store_true", help="do not call the model; the deterministic wording and candidates are used")
-    ap.add_argument("--no-cache", action="store_true", help="ask the model again instead of reusing the stored suggestion (the question text, and so its sha, may change)")
     ap.add_argument("--out", default="", help="also write the decision JSON to this file")
     args = ap.parse_args(argv)
     unattended = args.autonomous or is_unattended(Path(args.project_root))
@@ -190,7 +189,7 @@ def run_decide(argv: list[str]) -> int:
     except (RuntimeError, OSError) as exc:
         print(f"ac_decision: diff unavailable ({exc}); the exemption can only be tested at F11", file=sys.stderr)
     bind_id = (args.bind_id or args.run_id) + (f"@{args.nonce}" if args.nonce else "")
-    suggester = make_suggester(catalog, args.project_root, idents, not args.no_cache, not args.no_suggest)
+    suggester = make_suggester(catalog, args.project_root, not args.no_suggest)
     result = decide(data.get("items"), catalog, unattended, surface, idents, answers, bind_id, suggester, list(changes))
     result["exemption_check"] = (f"tested against the current diff ({len(changes)} file(s), {surface['ignored']} not observable)" if surface and changes else
                                  "a claim only: the diff is empty before the build; F11 tests it against the committed diff (a warning)")

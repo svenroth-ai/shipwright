@@ -20,6 +20,7 @@ _CLI = _ROOT / "shared" / "scripts" / "tools" / "ac_decision.py"
 _OUTCOME = "A person who loses a connection sees a clear message instead of a blank page"
 _OLD = "Given a draft, when saved, then it is kept."
 _CAT = {"acs": {"FR-01.03.AC05": "- (E) [AC05] " + _OLD}, "frs": {"FR-01.03", "FR-01.04"}, "titles": {"FR-01.03": "Saving drafts", "FR-01.04": "Sharing drafts"}, "unparsed": False}
+_FITS = "A draft is kept for a year"  # shares words with an existing requirement, so the question names it
 
 
 def _add(**kw) -> dict:
@@ -51,21 +52,14 @@ def test_a_bound_answer_closes_the_question_and_keeps_the_owner_on_no():
     yes = ad.decide([_change()], _CAT, answers=[ans(q, "yes")])
     assert yes["status"] == "ok" and yes["ac_decisions"][0]["mode"] == "asked" and yes["counts"]["asked"] == 1
     assert yes["ac_decisions"][0]["answered_via"] == "self-reported"  # an unsigned file answer is never "operator"
-    item = {"kind": "add", "owner_fr": "FR-09.99", "new_text": _OUTCOME}
+    item = {"kind": "add", "owner_fr": "FR-09.99", "new_text": _FITS}
     q0 = _ask(item)
-    sha = q0["question_sha256"]
-    first = ans(q0, "no", "Drafts are kept")
-    again = ad.decide([item], _CAT, answers=[first])
-    # "no, instead" without an owner is not an answer to the ownership question: it is asked again about the new wording
-    assert again["status"] == "ask" and "Drafts are kept" in again["questions"][0]["question"] and again["questions"][0]["question_sha256"] != sha
-    second = ans(again["questions"][0], "yes", "FR-01.03")  # a file answer must be one of the options it was shown
-    done = ad.decide([item], _CAT, answers=[first, second])
-    assert done["status"] == "ok" and done["resolved_items"][0]["new_text"] == "Drafts are kept" and done["resolved_items"][0]["owner_fr"] == "FR-01.03"
-    kept = ad.decide([_add()], _CAT)  # a change with an owner keeps it when the operator rewords it
-    assert kept["status"] == "ok"
+    declined = ad.decide([item], _CAT, answers=[ans(q0, "no")])
+    assert declined["status"] == "invalid" and "ask them in the chat" in declined["errors"][0]   # "No" hands the work back to the chat; nothing is reworded here
+    chosen = ad.decide([item], _CAT, answers=[ans(q0, "yes", q0["options"]["1"]["text"])])
+    assert chosen["status"] == "ok" and chosen["resolved_items"][0]["owner_fr"] == q0["options"]["1"]["text"] and chosen["resolved_items"][0]["new_text"] == _FITS
     owned = {"kind": "change", "ac": "FR-01.03.AC05", "old_text": _OLD, "new_text": "A saved draft is kept for 30 days", "owner_fr": "FR-01.03"}
-    reworded = ad.decide([owned], _CAT, answers=[ans(_ask(owned), "no", "A saved draft is kept for a year")])
-    assert reworded["resolved_items"][0]["new_text"] == "A saved draft is kept for a year" and reworded["resolved_items"][0]["owner_fr"] == "FR-01.03"
+    assert ad.decide([owned], _CAT, answers=[ans(_ask(owned), "no")])["status"] == "invalid"    # a changed promise the operator declines is not recorded
 
 
 @pytest.mark.covers("FR-01.11/AC49")
@@ -236,7 +230,7 @@ def test_text_files_are_read_with_or_without_a_byte_order_mark(tmp_path, encodin
 @pytest.mark.covers("FR-01.11/AC49")
 def test_the_answer_subcommand_is_an_operator_channel_that_works_from_a_held_result(tmp_path, capsys, monkeypatch):
     _tree(tmp_path)
-    payload = {"items": [{"kind": "add", "new_text": _OUTCOME}]}
+    payload = {"items": [{"kind": "add", "new_text": _FITS}]}
     code, _ = _call(tmp_path, payload, capsys, "--autonomous", "--sub-iterate-id", "Q1", "--run-id", "r1", "--out", str(tmp_path / "decided.json"))
     assert code == 10
     held = tmp_path / "result.json"  # what the held unit wrote

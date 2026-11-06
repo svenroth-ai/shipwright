@@ -13,13 +13,14 @@ from pathlib import Path
 
 from lib.ac_surface import read_blobs, run_git
 
-__all__ = ["ac_body", "area_blurb", "candidates", "catalog_texts", "load_catalog", "norm", "parse_catalog"]
+__all__ = ["ac_body", "candidates", "catalog_texts", "fr_text", "load_catalog", "norm", "parse_catalog", "parse_fr_table", "words"]
 
 _FR_HEAD = re.compile(r"^#{2,4}\s+(FR-\d+\.\d+)\s*[—–:-]*\s*(.*)$")  # "### FR-01.03 - Title" (this repo, adopted repos)
 _FR_BOLD = re.compile(r"^\*\*(FR-\d+\.\d+)\s*[:—–-]\s*(.*?)\*\*\s*$")  # "**FR-01.03: Title**" (the greenfield generator)
 _FR_ROW = re.compile(r"^\|\s*(FR-\d+\.\d+)\s*\|([^|]*)\|?")  # a requirements table row
 _AC_MARKED = re.compile(r"^-\s+(?:\([A-Z]\)\s+)?\[AC(\d+)\]")
 _AC_PLAIN = re.compile(r"^-\s+(?:\[[ xX]\]|\([A-Z]\))\s")  # "- [ ] text" (greenfield) or "- (E) text" (adopted, not yet minted)
+_GENERIC_GROUPS = frozenset({"adopted"})  # what the adopt command writes for every FR of a brownfield repo: it names no part
 _STOP = frozenset("this that with from when then given have been will into than their there which what where while must does each also only more some such over under after before about other without within".split())
 
 
@@ -75,8 +76,13 @@ def catalog_texts(spec_text: str) -> dict[str, str]:
     return parse_catalog(spec_text)[0]
 
 
-def _spec_texts(root: Path, base_ref: str | None) -> list[str]:
-    """Every ``.shipwright/planning/*/spec.md``: from ``base_ref`` when given (one ``git cat-file --batch``), else from the working tree."""
+def _split_name(rel: str) -> str:
+    """``.shipwright/planning/02-web-ui/spec.md`` -> ``web-ui`` (the split the spec belongs to)."""
+    return re.sub(r"^\d+-", "", rel.split("/")[-2])
+
+
+def _spec_texts(root: Path, base_ref: str | None) -> list[tuple[str, str]]:
+    """``[(split name, text)]`` for every ``.shipwright/planning/*/spec.md``: from ``base_ref`` when given (one ``git cat-file --batch``), else from the working tree."""
     if base_ref:
         names = run_git(root, "ls-tree", "-r", "--name-only", base_ref, ".shipwright/planning").decode("utf-8", "replace").splitlines()
         rels = sorted(n for n in names if re.fullmatch(r"\.shipwright/planning/[^/]+/spec\.md", n))
@@ -84,11 +90,11 @@ def _spec_texts(root: Path, base_ref: str | None) -> list[str]:
         missing = [r for r in rels if blobs[r] is None]
         if missing:
             raise RuntimeError(f"cannot read {missing[0]} at {base_ref}")
-        return [blobs[r] or "" for r in rels]
+        return [(_split_name(r), blobs[r] or "") for r in rels]
     out = []
     for spec in sorted((root / ".shipwright" / "planning").glob("*/spec.md")):
         try:
-            out.append(spec.read_text(encoding="utf-8"))
+            out.append((_split_name(spec.as_posix()), spec.read_text(encoding="utf-8")))
         except (OSError, ValueError):
             continue
     return out
@@ -101,14 +107,42 @@ def load_catalog(project_root: str | Path, base_ref: str | None = None) -> dict:
     """
     acs: dict[str, str] = {}
     titles: dict[str, str] = {}
+    fr_texts: dict[str, str] = {}
+    groups: dict[str, str] = {}
     texts = _spec_texts(Path(project_root), base_ref)
     unreadable = not texts  # no spec.md at all
-    for text in texts:
+    for split, text in texts:
         a, f = parse_catalog(text)
         acs.update(a)
         titles.update(f)
+        for fr, row in parse_fr_table(text).items():
+            fr_texts[fr] = row["description"]
+            groups[fr] = row["area"] if row["area"].lower() not in _GENERIC_GROUPS else ""
+        for fr in f:
+            if not groups.get(fr) and split.lower() not in _GENERIC_GROUPS:
+                groups[fr] = split  # no area column: the split the spec lives in is the project's own grouping
         unreadable = unreadable or (bool(text.strip()) and not f)  # ANY spec with text but no readable FR
-    return {"acs": acs, "frs": set(titles), "titles": titles, "unparsed": unreadable}
+    return {"acs": acs, "frs": set(titles), "titles": titles, "fr_text": fr_texts, "groups": {k: v for k, v in groups.items() if v}, "unparsed": unreadable}
+
+
+def parse_fr_table(spec_text: str) -> dict[str, dict[str, str]]:
+    """``{"FR-01.03": {"area": ..., "description": ...}}`` from the requirements table (its header row names the columns: ID, Area, Description)."""
+    cols: dict[str, int] = {}
+    out: dict[str, dict[str, str]] = {}
+    for line in (spec_text or "").splitlines():
+        if not line.startswith("|"):
+            continue
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        if cells[0].lower() == "id":
+            cols = {c.lower(): i for i, c in enumerate(cells)}
+        elif cols and re.fullmatch(r"FR-\d+\.\d+", cells[0]):
+            out[cells[0]] = {k: _norm(cells[cols[k]]) if k in cols and cols[k] < len(cells) else "" for k in ("area", "description")}
+    return out
+
+
+def fr_text(fr: str, cat: dict) -> str:
+    """The requirement's own text from the spec: the table's Description when there is one, else its heading title; empty when unknown."""
+    return _norm((cat.get("fr_text") or {}).get(fr)) or _norm((cat.get("titles") or {}).get(fr))
 
 
 def words(text: str) -> set[str]:
@@ -127,17 +161,3 @@ def candidates(text: str, cat: dict, limit: int = 3) -> list[tuple[str, str]]:
         if score:
             scored.append((-score, fr, title))
     return [(fr, title) for _, fr, title in sorted(scored)[:limit]]
-
-
-def area_blurb(fr: str, cat: dict, width: int = 110) -> str:
-    """A one-line description of an area: the OUTCOME clause (after ", then") of its first criterion, kept only when it is short and complete (otherwise empty: the area is then shown by name alone)."""
-    first = next((body for ac, body in sorted(cat.get("acs", {}).items()) if ac.rsplit(".AC", 1)[0] == fr), "")
-    text = re.sub(r"\s*\(iterate-[^)]*\)", "", re.sub(r"^-?\s*(?:\[[ xX]\]\s*)?(?:\([A-Z]\)\s*)?(?:\[AC\d+\]\s*)?(?:\*\*\(iterate-[^)]*\)\*\*\s*)?", "", _norm(first))).strip()
-    text = text.split(", then ", 1)[1] if ", then " in text else re.sub(r"^given\s+", "", text, flags=re.IGNORECASE)
-    text = text.strip().rstrip(".")
-    if not text:
-        return ""
-    text = re.split(r"\s+[—–]\s+", text, maxsplit=1)[0].strip()
-    if not text or len(text) > width:
-        return ""  # a half-sentence would read worse than the area's name alone
-    return text[0].upper() + text[1:] + "."

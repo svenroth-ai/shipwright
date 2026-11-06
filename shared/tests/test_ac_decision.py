@@ -95,11 +95,11 @@ def test_ask_when_an_ac_changes_has_no_single_owner_or_opens_a_new_area(item, ro
 def test_a_new_area_is_asked_once_and_can_be_approved_or_refused():
     item = _add(owner_fr=None, new_fr={"id": "FR-01.30", "title": "Offline drafts"})
     q = _ask(item)
-    assert "new area of the product: Offline drafts" in q["question"]
+    assert "Finding: this change needs a requirement that does not exist yet." in q["question"] and 'Requirement FR-01.30: "Offline drafts"' in q["question"]
     yes = ad.decide([item], _CAT, answers=[ans(q, "yes")])
     assert yes["status"] == "ok" and yes["resolved_items"][0]["owner_fr"] == "FR-01.30" and yes["ac_decisions"][0]["ac"] == "FR-01.30.new"
     no = ad.decide([item], _CAT, answers=[ans(q, "no")])
-    assert no["status"] == "invalid" and "did not approve" in no["errors"][0]
+    assert no["status"] == "invalid" and "ask them in the chat" in no["errors"][0]
     for bad in ({"id": "FR-01.03", "title": "x"}, {"id": "nope", "title": "x"}, {"id": "FR-01.30", "title": ""}, "x", {"id": "FR-01.30", "title": "uses plan_writer"}):
         assert ad.decide([_add(owner_fr=None, new_fr=bad)], _CAT)["status"] == "invalid"
     assert ad.decide([_add(new_fr={"id": "FR-01.30", "title": "Offline drafts"})], _CAT)["status"] == "invalid"  # owner AND new area
@@ -156,4 +156,4 @@ def test_catalog_loading_reads_acs_and_frs(tmp_path):
     cat = ad.load_catalog(tmp_path)
     assert cat["frs"] == {"FR-01.03", "FR-01.04"} and "continues here" in cat["acs"]["FR-01.03.AC05"]
     assert ad.ac_body(cat["acs"]["FR-01.03.AC05"]).endswith("continues here")
-    assert ad.load_catalog(tmp_path / "nope") == {"acs": {}, "frs": set(), "titles": {}, "unparsed": True}  # no spec at all: skipped, never asked
+    assert ad.load_catalog(tmp_path / "nope") == {"acs": {}, "frs": set(), "titles": {}, "fr_text": {}, "groups": {}, "unparsed": True}  # no spec at all: skipped, never asked

@@ -89,259 +89,211 @@ That design (lexical HOW test as an ask trigger, hash as the freeze, how-only an
 
 **Not measured.** There is no control arm: the deterministic design has nothing to beat except the label-based Step 2 text, and a model replay of that text is the measure the operator dropped. The ask rate on real runs is reported after the merge (section c).
 
-## (b) Question sheet for the operator: operator verdicts recorded, new wording PENDING
+## (b) Question sheet for the operator: final shape, PENDING
 
-Ten cases, each question exactly as the tool prints it now. Cases 1 and 2 are changed ACs, case 3 a removed AC; cases 4 to 10 are a new promise with no single owning area.
+**Verdict history (short).** Round 1: the area pick list and the model rewording were unclear for cases 4-9. Round 2 added context lines, a gloss and extra options: the operator judged that too much, and the glosses made it worse. What the operator wants: why the question is asked, the exact text of the requirement from the spec, the exact acceptance-criterion wording, and a help option that is always last. This is that, and nothing more.
 
-**The operator's verdicts on the previous sheet (recorded, not re-asked):** cases 1 and 2 clear; case 3 almost clear (the term "Claude review" was not explained); cases 4 and 9 not clear (a horizontal promise: it applies across parts of the product); case 5 not clear (touches the build phase and iterate, should become its own Review requirement); cases 6 and 7 not clear (should become a new stack-profile requirement); case 8 not clear ("the command is typed" was not understood); case 10 clear (the operator would pick B). The mix: the not-clear cases lacked CONTEXT and offered wrong area lists more than they lacked wording.
+**The final question** (one fixed shape, English): an intro sentence pair, `Finding:` (why it is asked; four findings: changes an existing criterion / removes one / adds a new one to an existing requirement / needs a requirement that does not exist yet), `Part:`, the acceptance-criterion lines with the agent's wording unchanged, `Requirement FR-xx.yy: "<exact text from the spec>"`, `Does this fit?` and numbered options with `Don't understand, need help.` always last. No gloss, no brackets, no model wording, no area list.
 
-**What changed in the question (all computed by code; the model only words):**
+**`Part:`** is never a hard-coded word. It is the spec's own grouping of the requirement (the requirements table's `Area` column, else the name of the split the spec lives in; this repo's `Adopted` is what `adopt` writes for every requirement and names nothing, so it is skipped), else the top-level directory of the changed paths (a container such as `plugins/` names its child), else no line. On this sheet the paths are the full file lists of the recorded cases' commits (`git show --name-only`); a real run passes the paths it will change in the add item's `files`.
 
-1. An `Affects:` line from the changed paths (`plugins/<name>/` becomes a plain name such as "Build phase, Iterate"; omitted when no path maps or one plugin has no plain name). The paths on this sheet are the full file lists of the recorded cases' commits (`git show --name-only`); before a build the diff is empty, so a real run passes the paths it will change in the add item's `files`.
-2. Cross-cutting: when the change touches 2 or more plugins, or no existing area fits, the FIRST choice is "Applies to several areas: make it its own requirement" (recorded as a new requirement with `cross_cutting: true`). The area list is no longer the only choice.
-3. The question is "Which requirement would this promise belong to?".
-4. Every question has "I do not understand this, please explain." The agent then rewords the promise in plainer words and asks again (tool exit 11; the new wording is a new question; a resume reuses the stored question and calls no model).
-5. "In plain words:" is shown only when the model's wording shares fewer than 3 in 4 words with the original (otherwise the glossary explains the jargon in a bracket). The prompt now forbids copying jargon (reviewer, stack profile, command, merged, deployment, coordinator) and demands everyday explanations.
-6. An `Already in the catalog:` line lists requirements that contain the same two-word phrase as the promise (omitted when none; a phrase found in more than 4 areas is ignored).
-7. The glossary explains "Claude review", "outside reviewers" and "command", and changed or removed promises now get the same bracket explanations as new ones (this is what case 3 needed).
+**The model's only job** is to pick ONE requirement id for a new criterion; code checks the id exists and fetches the exact text. One live run, cases 4 to 10, model `anthropic/claude-haiku-5.5` (pinned), 7 short calls (a few cents at most, not metered): **7 of 7 named a real requirement, 0 fell back** to the best match by shared words. Cases 1 to 3 and the fallback need no model. The "until now" criterion texts of cases 1 to 3 are reconstructed from the recorded cases, not copied from the catalog.
 
-**Live run (the only live use of this round):** model `anthropic/claude-haiku-5.5` (pinned in the tool), 7 calls, one per case 4 to 10, on the real agent-recorded wording and the new prompt. Cost: 7 short calls on a small model, a few cents at most (not metered here). **Validation: 6 of 7 passed, 1 fell back** (the tightened validator may reject more: case 8 fell back because the model's wording added "each" and "no"; the deterministic wording with the glossary brackets is shown instead). The plain wording was shown in 5 of the 7 cases and left out in 2: it is left out when it only swaps a word or two (case 9) or when it fell back (case 8).
+Reading it honestly:
 
-Reading the result honestly:
+- The model picks by meaning; whether each pick is right is for the operator to judge (the option "No, wrong requirement" and the help option exist for exactly that). The requirement text is exact and long for the broad requirements (FR-01.01, FR-01.17); it is not shortened because shortening would stop it being the spec's text.
+- The acceptance-criterion wording is shown as recorded, including its jargon ("coordinator", "outside reviewers", "however the command was typed"). The fix for that is on the agent side: Step 2a now tells the agent to name things by their real names and avoid role nouns; the help option is the backstop. It is an instruction, not a code check, because a word list would reject valid wording.
+- Real gap for non-Shipwright projects: the spec has no component per requirement. A project with a requirements table gets the `Area` column; a project with several splits gets the split name; a single-split project without an `Area` column gets no grouping, so `Part:` falls back to directories (or is omitted). A web app's screens and an API's services appear only if the project's spec or directory layout already says so.
+- The bar (10 of 10 clear) is NOT claimed; the operator has not seen this sheet.
 
-- The context lines do what the operator asked for in cases 4, 5, 6 and 7: each now opens with "Applies to several areas: make it its own requirement" and names the parts touched. Whether that makes them clear is the operator's call; the bar (10 of 10 clear) is NOT claimed.
-- Case 9 stays a gap: the real change touches only the design plugin, so code sees one area and offers no cross-cutting choice, although the operator calls the promise horizontal. Code cannot know a promise is horizontal from paths alone; the operator can pick "Somewhere new" or "I do not understand this".
-- Case 6 lists 5 parts under `Affects:` (the real change touched many); the line is long but true. "Already in the catalog" is a plain phrase match and can be noisy (case 5 lists "Mockups from requirements"; case 7 lists "End-to-end delivery pipeline"); it never blocks anything.
-- The plain wording is more useful than before where it is shown: it replaces "coordinator" with "work manager", "stack profile" with "ready-made set of technology choices", "merged" with "added to the main version" (cases 4, 6, 7, 10). Some replacements are clumsy ("needs no putting live on a hosting service").
-- The "until now" texts in cases 1 to 3 are reconstructed from the recorded cases, not copied from the catalog.
-
-### Case 1: #839 an existing promise is changed
-
-Operator's verdict on the previous sheet: clear.
-
-What the operator sees now:
+### Case 1 (#839)
 
 ```
-This change alters a promise the product makes. Until now: A commit is held back when the build progress line shows less than the required share of work done. After this change: A commit is held back when too few requirements are covered by passing tests (commit: a saved snapshot of the work, kept in the project history; build: the stage where the software is actually written). Should it hold like this?
-Affects: Compliance evidence.
+Shipwright keeps a list of requirements (FRs). Before building, it checks how
+this change fits that list: it changes a requirement, adds to one, or creates
+a new one. Please check that Shipwright made the correct selection.
+
+Finding: this change changes an existing acceptance criterion.
+Part: plugins/shipwright-compliance
+Acceptance criterion today: "A commit is held back when the build progress line shows less than the required share of work done"
+Acceptance criterion after this change: "A commit is held back when too few requirements are covered by passing tests"
+Requirement FR-01.17: "Re-check every proposed change on the code host before it can merge — the project's tests, its lint, its security scans and the host's own code analysis — independently of whatever already ran on the author's machine, and have the change reviewed there automatically rather than on request. A local pass is never accepted in place of the host's."
+
+Does this fit?
 1 Yes, change it.
-2 No, instead: <your wording>
-3 I do not understand this, please explain.
+2 No. (You tell the agent in the chat what you want instead.)
+3 Don't understand, need help.
 ```
 
-Operator: clear / not clear (PENDING - on this new wording)
-
-### Case 2: #923 an existing promise is changed
-
-Operator's verdict on the previous sheet: clear.
-
-What the operator sees now:
+### Case 2 (#923)
 
 ```
-This change alters a promise the product makes. Until now: The stack profile is guessed from the kind of storage the project uses. After this change: A stack profile named in the project brief is used as given, and an unusable name stops the run with a clear message (stack profile: the ready-made set of technology choices a project starts from). Should it hold like this?
-Affects: Orchestrator.
+Shipwright keeps a list of requirements (FRs). Before building, it checks how
+this change fits that list: it changes a requirement, adds to one, or creates
+a new one. Please check that Shipwright made the correct selection.
+
+Finding: this change changes an existing acceptance criterion.
+Part: plugins/shipwright-run, shared
+Acceptance criterion today: "The stack profile is guessed from the kind of storage the project uses"
+Acceptance criterion after this change: "A stack profile named in the project brief is used as given, and an unusable name stops the run with a clear message"
+Requirement FR-01.02: "Turn a project description into well-scoped, individually deliverable requirements, and write the starting guidance an assistant needs to work inside that project."
+
+Does this fit?
 1 Yes, change it.
-2 No, instead: <your wording>
-3 I do not understand this, please explain.
+2 No. (You tell the agent in the chat what you want instead.)
+3 Don't understand, need help.
 ```
 
-Operator: clear / not clear (PENDING - on this new wording)
-
-### Case 3: #887 an existing promise is removed
-
-Operator's verdict on the previous sheet: almost clear: the term "Claude review" was not explained.
-
-What the operator sees now:
+### Case 3 (#887)
 
 ```
-This change removes a promise. Until now this held: Adopting a project sets up the automatic Claude review on every pull request (claude review: a check of the work by the Claude AI, done inside the working session before anything is shared; pull request: a proposal to add finished work to the main version, which others can review first). After this change it no longer holds.
-Affects: Adopting an existing project.
+Shipwright keeps a list of requirements (FRs). Before building, it checks how
+this change fits that list: it changes a requirement, adds to one, or creates
+a new one. Please check that Shipwright made the correct selection.
+
+Finding: this change removes an acceptance criterion.
+Part: plugins/shipwright-adopt, shared
+Acceptance criterion that no longer holds: "Adopting a project sets up the automatic Claude review on every pull request"
+Requirement FR-01.17: "Re-check every proposed change on the code host before it can merge — the project's tests, its lint, its security scans and the host's own code analysis — independently of whatever already ran on the author's machine, and have the change reviewed there automatically rather than on request. A local pass is never accepted in place of the host's."
+
+Does this fit?
 1 Yes, that is intended.
-2 No, keep the promise (the change is then reworked).
-3 I do not understand this, please explain.
+2 No, keep it. (The change is then reworked.)
+3 Don't understand, need help.
 ```
 
-Operator: clear / not clear (PENDING - on this new wording)
-
-### Case 4: #869 no owner named
-
-Operator's verdict on the previous sheet: not clear: a horizontal promise (it applies across parts of the product).
-
-Agent's original wording: "A coordinator repeats a review unless the earlier one is shown to cover exactly the code that is merged"
-
-Model wording (model anthropic/claude-haiku-5.5): "The automated work manager runs a check again unless the earlier check is shown to have covered exactly the code being added to the main version." - SHOWN (meaningfully different).
-
-What the operator sees now:
+### Case 4 (#869)
 
 ```
-This change adds a new promise: A coordinator repeats a review unless the earlier one is shown to cover exactly the code that is merged.
-In plain words: The automated work manager runs a check again unless the earlier check is shown to have covered exactly the code being added to the main version.
-Affects: Build phase, Iterate.
-Which requirement would this promise belong to?
-A Applies to several areas: make it its own requirement.
-B Independent re-check on the code host: Re-checks each proposed change on the code hosting site before it can be added to the main version.
-C Recovery of a broken shared branch: Finds which recent change broke the shared main version when it stops working, and reports what failed.
-D Somewhere new (tell us the name).
-E It is not a promise, only how it is built.
-F Not wanted: <your wording>
-G I do not understand this, please explain.
+Shipwright keeps a list of requirements (FRs). Before building, it checks how
+this change fits that list: it changes a requirement, adds to one, or creates
+a new one. Please check that Shipwright made the correct selection.
+
+Finding: this change adds a new acceptance criterion to an existing requirement.
+Part: plugins/shipwright-build, plugins/shipwright-iterate, shared
+New acceptance criterion: "A coordinator repeats a review unless the earlier one is shown to cover exactly the code that is merged"
+Requirement FR-01.17: "Re-check every proposed change on the code host before it can merge — the project's tests, its lint, its security scans and the host's own code analysis — independently of whatever already ran on the author's machine, and have the change reviewed there automatically rather than on request. A local pass is never accepted in place of the host's."
+
+Does this fit?
+1 Yes, add it there.
+2 No, wrong requirement. (You tell the agent in the chat which one.)
+3 No requirement fits, create a new one.
+4 Don't understand, need help.
 ```
 
-Operator: clear / not clear (PENDING - on this new wording)
-
-### Case 5: #884 no owner named
-
-Operator's verdict on the previous sheet: not clear: touches the build phase and iterate; should become its own Review requirement.
-
-Agent's original wording: "The build phase asks outside reviewers to read the code of each section unless the owner turns this off"
-
-Model wording (model anthropic/claude-haiku-5.5): "When the product builds each section of a project, it asks outside reviewers to read that section's code, unless the owner turns this off." - SHOWN (meaningfully different).
-
-What the operator sees now:
+### Case 5 (#884)
 
 ```
-This change adds a new promise: The build phase asks outside reviewers to read the code of each section unless the owner turns this off.
-In plain words: When the product builds each section of a project, it asks outside reviewers to read that section's code, unless the owner turns this off.
-Affects: Build phase, Iterate.
-Already in the catalog: Implementation planning with independent review; Mockups from requirements; Test-driven build of planned sections.
-Which requirement would this promise belong to?
-A Applies to several areas: make it its own requirement.
-B Test-driven build of planned sections: Building each planned section of a project into working code, checked against what that section was meant to do.
-C Implementation planning with independent review: Turning requirements into a step-by-step plan, which independent outside reviewers then check before work starts.
-D Somewhere new (tell us the name).
-E It is not a promise, only how it is built.
-F Not wanted: <your wording>
-G I do not understand this, please explain.
+Shipwright keeps a list of requirements (FRs). Before building, it checks how
+this change fits that list: it changes a requirement, adds to one, or creates
+a new one. Please check that Shipwright made the correct selection.
+
+Finding: this change adds a new acceptance criterion to an existing requirement.
+Part: plugins/shipwright-build, plugins/shipwright-iterate
+New acceptance criterion: "The build phase asks outside reviewers to read the code of each section unless the owner turns this off"
+Requirement FR-01.05: "Turn one planned section into working code that does what the section specified and matches its design mockup — one section at a time, on its own branch. The engineering discipline it works under — test-first, code review, safe conventional commits — is the framework's, applied here rather than owned here."
+
+Does this fit?
+1 Yes, add it there.
+2 No, wrong requirement. (You tell the agent in the chat which one.)
+3 No requirement fits, create a new one.
+4 Don't understand, need help.
 ```
 
-Operator: clear / not clear (PENDING - on this new wording)
-
-### Case 6: #897 owner is not in the catalog
-
-Operator's verdict on the previous sheet: not clear: should become a new stack-profile requirement.
-
-Agent's original wording: "A team can keep its own stack profile in its project and it is used instead of the shipped one"
-
-Model wording (model anthropic/claude-haiku-5.5): "A team can keep its own ready-made set of technology choices, the starting point a project is built on, inside its project, and that set is used instead of the built-in one." - SHOWN (meaningfully different).
-
-What the operator sees now:
+### Case 6 (#897)
 
 ```
-This change adds a new promise: A team can keep its own stack profile in its project and it is used instead of the shipped one.
-In plain words: A team can keep its own ready-made set of technology choices, the starting point a project is built on, inside its project, and that set is used instead of the built-in one.
-Affects: Adopting an existing project, Design mockups, Requirements breakdown, Orchestrator, Test phase.
-Already in the catalog: Project decomposition into scoped units.
-Which requirement would this promise belong to?
-A Applies to several areas: make it its own requirement.
-B Project decomposition into scoped units: Splitting a project into smaller pieces that can each be delivered, including how its starting technology choices are picked.
-C Somewhere new (tell us the name).
-D It is not a promise, only how it is built.
-E Not wanted: <your wording>
-F I do not understand this, please explain.
+Shipwright keeps a list of requirements (FRs). Before building, it checks how
+this change fits that list: it changes a requirement, adds to one, or creates
+a new one. Please check that Shipwright made the correct selection.
+
+Finding: this change adds a new acceptance criterion to an existing requirement.
+Part: plugins/shipwright-adopt, plugins/shipwright-design, plugins/shipwright-project, plugins/shipwright-run, plugins/shipwright-test, shared
+New acceptance criterion: "A team can keep its own stack profile in its project and it is used instead of the shipped one"
+Requirement FR-01.02: "Turn a project description into well-scoped, individually deliverable requirements, and write the starting guidance an assistant needs to work inside that project."
+
+Does this fit?
+1 Yes, add it there.
+2 No, wrong requirement. (You tell the agent in the chat which one.)
+3 No requirement fits, create a new one.
+4 Don't understand, need help.
 ```
 
-Operator: clear / not clear (PENDING - on this new wording)
-
-### Case 7: #919 two areas could own it
-
-Operator's verdict on the previous sheet: not clear: should become a new stack-profile requirement.
-
-Agent's original wording: "An app that is a chat window starts from a ready-made setup that needs no deployment"
-
-Model wording (model anthropic/claude-haiku-5.5): "An app that is a chat window starts from a ready-made set of technology choices and needs no putting live on a hosting service." - SHOWN (meaningfully different).
-
-What the operator sees now:
+### Case 7 (#919)
 
 ```
-This change adds a new promise: An app that is a chat window starts from a ready-made setup that needs no deployment.
-In plain words: An app that is a chat window starts from a ready-made set of technology choices and needs no putting live on a hosting service.
-Affects: Adopting an existing project, Build phase, Requirements breakdown, Test phase.
-Already in the catalog: End-to-end delivery pipeline.
-Which requirement would this promise belong to?
-A Applies to several areas: make it its own requirement.
-B Project decomposition into scoped units: Works out which ready-made set of technology choices a project starts from, based on how it stores its data.
-C Deployment and rollback: Covers sending a project live to a hosting service and undoing a release if it goes wrong.
-D Somewhere new (tell us the name).
-E It is not a promise, only how it is built.
-F Not wanted: <your wording>
-G I do not understand this, please explain.
+Shipwright keeps a list of requirements (FRs). Before building, it checks how
+this change fits that list: it changes a requirement, adds to one, or creates
+a new one. Please check that Shipwright made the correct selection.
+
+Finding: this change adds a new acceptance criterion to an existing requirement.
+Part: plugins/shipwright-adopt, plugins/shipwright-build, plugins/shipwright-project, plugins/shipwright-test, shared
+New acceptance criterion: "An app that is a chat window starts from a ready-made setup that needs no deployment"
+Requirement FR-01.12: "Start the project locally and hand back the address to open in a browser."
+
+Does this fit?
+1 Yes, add it there.
+2 No, wrong requirement. (You tell the agent in the chat which one.)
+3 No requirement fits, create a new one.
+4 Don't understand, need help.
 ```
 
-Operator: clear / not clear (PENDING - on this new wording)
-
-### Case 8: #866 no owner named
-
-Operator's verdict on the previous sheet: not clear: "the command is typed" was not understood.
-
-Agent's original wording: "A commit is checked for enough tested requirements at the moment it is recorded, however the command was typed"
-
-Model wording: none, used the deterministic wording (fallback: negations or limits differ: original [], plain ['each', 'no']).
-
-What the operator sees now:
+### Case 8 (#866)
 
 ```
-This change adds a new promise: A commit is checked for enough tested requirements at the moment it is recorded, however the command was typed (commit: a saved snapshot of the work, kept in the project history; command: a typed instruction, such as /shipwright-iterate, that tells the tool to do one specific job).
-Affects: Compliance evidence.
-Which requirement would this promise belong to?
-A Guided requirement elicitation: What exists is a requirement its author has confirmed and whose context is completely covered.
-B Ongoing change at the depth it deserves: That change exists in the product.
-C Mockups from requirements: Every one of them has at least one screen.
-D Somewhere new (tell us the name).
-E It is not a promise, only how it is built.
-F Not wanted: <your wording>
-G I do not understand this, please explain.
+Shipwright keeps a list of requirements (FRs). Before building, it checks how
+this change fits that list: it changes a requirement, adds to one, or creates
+a new one. Please check that Shipwright made the correct selection.
+
+Finding: this change adds a new acceptance criterion to an existing requirement.
+Part: plugins/shipwright-compliance
+New acceptance criterion: "A commit is checked for enough tested requirements at the moment it is recorded, however the command was typed"
+Requirement FR-01.10: "Produce audit-ready evidence — which requirement is covered by which test, what changed when, and what the project depends on — and run an on-demand cross-check that reports where that evidence disagrees with reality."
+
+Does this fit?
+1 Yes, add it there.
+2 No, wrong requirement. (You tell the agent in the chat which one.)
+3 No requirement fits, create a new one.
+4 Don't understand, need help.
 ```
 
-Operator: clear / not clear (PENDING - on this new wording)
-
-### Case 9: #936 no owner named
-
-Operator's verdict on the previous sheet: not clear: a horizontal promise (it applies across the design).
-
-Agent's original wording: "Every colour set keeps text easy to read, also when the page is enlarged"
-
-Model wording (model anthropic/claude-haiku-5.5): "Every colour scheme keeps text easy to read, also when the page is enlarged." - NOT shown (too close to the original).
-
-What the operator sees now:
+### Case 9 (#936)
 
 ```
-This change adds a new promise: Every colour set keeps text easy to read, also when the page is enlarged.
-Affects: Design mockups.
-Which requirement would this promise belong to?
-A Mockups from requirements: Turns the product's requirements into screen designs, including the colours and text styles a build needs.
-B Somewhere new (tell us the name).
-C It is not a promise, only how it is built.
-D Not wanted: <your wording>
-E I do not understand this, please explain.
+Shipwright keeps a list of requirements (FRs). Before building, it checks how
+this change fits that list: it changes a requirement, adds to one, or creates
+a new one. Please check that Shipwright made the correct selection.
+
+Finding: this change adds a new acceptance criterion to an existing requirement.
+Part: plugins/shipwright-design
+New acceptance criterion: "Every colour set keeps text easy to read, also when the page is enlarged"
+Requirement FR-01.04: "Turn requirements into clickable mockups — standalone screens and the flows between them — that can be refined by conversation before any production code is written."
+
+Does this fit?
+1 Yes, add it there.
+2 No, wrong requirement. (You tell the agent in the chat which one.)
+3 No requirement fits, create a new one.
+4 Don't understand, need help.
 ```
 
-Operator: clear / not clear (PENDING - on this new wording)
-
-### Case 10: #843 no owner named
-
-Operator's verdict on the previous sheet: clear: the operator would pick B.
-
-Agent's original wording: "The pull request gate is run by a different reviewer model, and what it checks stays the same"
-
-Model wording (model anthropic/claude-haiku-5.5): "The check that decides whether a proposed change is accepted is now carried out by a different AI reviewer, and what that check looks for stays the same." - SHOWN (meaningfully different).
-
-What the operator sees now:
+### Case 10 (#843)
 
 ```
-This change adds a new promise: The pull request gate is run by a different reviewer model, and what it checks stays the same.
-In plain words: The check that decides whether a proposed change is accepted is now carried out by a different AI reviewer, and what that check looks for stays the same.
-Affects: Security checks.
-Already in the catalog: Ongoing change at the depth it deserves; Independent re-check on the code host.
-Which requirement would this promise belong to?
-A Independent re-check on the code host: Re-checks each proposed change on the code host with tests and safety checks before it is added to the main version.
-B Implementation planning with independent review: Has independent outside reviewers check each implementation plan before planning is considered finished.
-C Somewhere new (tell us the name).
-D It is not a promise, only how it is built.
-E Not wanted: <your wording>
-F I do not understand this, please explain.
-```
+Shipwright keeps a list of requirements (FRs). Before building, it checks how
+this change fits that list: it changes a requirement, adds to one, or creates
+a new one. Please check that Shipwright made the correct selection.
 
-Operator: clear / not clear (PENDING - on this new wording)
+Finding: this change adds a new acceptance criterion to an existing requirement.
+Part: plugins/shipwright-security
+New acceptance criterion: "The pull request gate is run by a different reviewer model, and what it checks stays the same"
+Requirement FR-01.17: "Re-check every proposed change on the code host before it can merge — the project's tests, its lint, its security scans and the host's own code analysis — independently of whatever already ran on the author's machine, and have the change reviewed there automatically rather than on request. A local pass is never accepted in place of the host's."
+
+Does this fit?
+1 Yes, add it there.
+2 No, wrong requirement. (You tell the agent in the chat which one.)
+3 No requirement fits, create a new one.
+4 Don't understand, need help.
+```
 
 ## (c) Ask rate: reported after the merge, never before
 

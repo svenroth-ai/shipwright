@@ -132,7 +132,7 @@ def test_check_warns_about_an_unsigned_asked_decision_only_in_an_unattended_run(
     root, commit = branch
     head = commit({"shared/scripts/a.py": "x = 1\n", _SPEC: _spec_with("A saved draft survives a restart")})
     base = {"kind": "add", "new_text": "A saved draft survives a restart"}
-    cat = {"acs": {}, "frs": {"FR-01.03"}, "titles": {}}
+    cat = {"acs": {}, "frs": {"FR-01.03"}, "titles": {"FR-01.03": "Saving drafts"}}
     q = ad.decide([base], cat, bind_id="r")["questions"][0]
     key = ac_hold.load_key(create=True)
     signed = {**ans(q, "yes", "FR-01.03"), "via": "operator", "signature": ac_hold.sign(key, q["question_sha256"], "yes", "FR-01.03")}

@@ -255,7 +255,7 @@
         "bind_id": { "type": "string", "description": "The unit's stable id (campaign slug and unit id, never an attempt id) the question hashes are bound to; the hold recomputes every question_sha256 from bind_id (with the campaign nonce), item index, kind, promise and options - never from the rendered question text." },
         "ac_questions": {
           "type": "array",
-          "description": "The plain-language questions of an ac_question_requires_operator stop, inline (the per-unit worktree may be gone by the time an operator reads this). Required and non-empty for that reason_code. `row` is the ask rule that fired (1 = an existing AC changed or removed, 2 = no single area owns the new AC, 3 = a new area of the product); `question_sha256` is the sha256 of the stable content (bind_id, item, kind, promise, options) the operator's answer is bound to; the question text is display only.",
+          "description": "The plain-language questions of an ac_question_requires_operator stop, inline (the per-unit worktree may be gone by the time an operator reads this). Required and non-empty for that reason_code. `row` is the ask rule that fired (1 = an existing AC changed or removed, 2 = no single requirement owns the new AC, 3 = a new requirement); `question_sha256` is the sha256 of the stable content (bind_id, item, kind, promise, options) the operator's answer is bound to; the question text is display only.",
           "items": {
             "type": "object",
             "required": ["item", "row", "question", "question_sha256", "kind", "promise", "options"],
@@ -266,7 +266,7 @@
               "question_sha256": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
               "kind": { "type": "string", "description": "The kind of the item (add, change, remove)." },
               "promise": { "type": "object", "description": "The original promise text the answer is bound to: {old, new, title}." },
-              "options": { "type": "object", "description": "A no-owner question is a lettered pick list; this maps each letter to the machine answer (the area id stays here, never in the question text)." }
+              "options": { "type": "object", "description": "The numbered answers of the question (numbered 1, 2, ... with the help option last), each mapped to its machine answer (the requirement id stays here)." }
             }
           }
         },

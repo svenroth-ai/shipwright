@@ -13,7 +13,7 @@ change), the id of the AC a fix restores, or an exemption. Code decides everythi
   observable (:mod:`lib.ac_surface`); the real check is F11, against the committed diff, as a warning.
 * **A restore** must name an AC that exists in the catalog; otherwise it is a catalog gap (kind add).
 * **Answers** come through ``ac_decision.py answer``, bound to the sha256 of the run's stable id + item index +
-  question text and signed (HMAC, per-user key: a guard against accident and casual forgery, NOT authentication).
+  kind + promise + the numbered options (never the rendered text) and signed (HMAC, per-user key: a guard against accident and casual forgery, NOT authentication).
   Every decision records ``answered_via`` (none, inline, operator, self-reported - both of the last two self-reported
   unless the signature verifies). An unattended run (:func:`lib.ac_hold.is_unattended`) refuses anything unsigned.
 
@@ -119,8 +119,7 @@ def _decision(it: dict, mode: str, answer: str, via: str) -> dict:
         return {"ac": "none", "mode": mode, "answer": answer, "kind": "exempt", "outcome": "no-observable-change", "answered_via": via}
     ac = _norm(it.get("restores_ac") if it["kind"] == "restore" else it.get("ac")) or (
         f"{_norm(it.get('owner_fr') or (it.get('new_fr') or {}).get('id'))}.new" if (it.get("owner_fr") or it.get("new_fr")) else "new")
-    cross = isinstance(it.get("new_fr"), dict) and it["new_fr"].get("cross_cutting") is True
-    return {"ac": ac, "mode": mode, "answer": answer, "kind": it["kind"], "answered_via": via, **({"cross_cutting": True} if cross else {})}
+    return {"ac": ac, "mode": mode, "answer": answer, "kind": it["kind"], "answered_via": via}
 
 
 def _answers_by_item(answers: object) -> dict:
@@ -186,7 +185,7 @@ def decide(items: object, catalog: dict, unattended: bool = False, surface: dict
     """Decide every item. ``status``: ``ok`` (all decided), ``ask`` (questions for the operator), ``explain`` (reword and run again), ``invalid`` (``errors``), ``skipped`` (catalog unreadable).
 
     ``suggest`` is ``(item index, item) -> suggestion | None`` (:func:`lib.ac_suggest.make_suggester`); it is called only when a question must be rendered.
-    ``paths`` are the changed paths (the diff); the files the items declare are added. They only feed the question's context lines and cross-cutting option.
+    ``paths`` are the changed paths (the diff); the files the items declare are added. They only feed the question's ``Part:`` line (when the spec names no grouping).
     ``explain``: the operator did not understand an item; ``explain`` lists them, the agent rewords each promise and runs the tool again.
     """
     base = {"unattended": unattended}
@@ -222,7 +221,7 @@ def decide(items: object, catalog: dict, unattended: bool = False, surface: dict
         elif question:
             questions.append(question)
         elif ans is not None and _norm(ans.get("choice")).lower() == "explain":
-            explain.append({"item": n, "message": f"item {n}: the operator did not understand this promise - reword it in plainer words (same meaning, short sentences, everyday words, no technical terms) in new_text and run this tool again; the new wording is asked again"})
+            explain.append({"item": n, "message": f"item {n}: the operator did not understand the question - explain it to them in everyday words in the chat, reword the acceptance criterion with the real names of things and no role nouns, and run this tool again; the new wording is asked again as a new question"})
         elif done:
             errs = _check(it, n, catalog, surface, identifiers)
             if errs:
@@ -244,7 +243,7 @@ def frozen_fields(it: dict) -> dict:
     if isinstance(it.get("files"), list):
         out["files"] = sorted(str(f).strip() for f in it["files"] if str(f).strip())
     if isinstance(it.get("new_fr"), dict):
-        out["new_fr"] = {"id": _norm(it["new_fr"].get("id")), "title": _norm(it["new_fr"].get("title")), **({"cross_cutting": True} if it["new_fr"].get("cross_cutting") is True else {})}
+        out["new_fr"] = {"id": _norm(it["new_fr"].get("id")), "title": _norm(it["new_fr"].get("title"))}
     return out
 
 
