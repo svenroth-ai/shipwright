@@ -31,15 +31,13 @@ serialize on the lock, so they share the one open file and every recorded event 
 readable exactly once.
 
 UNSUPPORTED before the flip unit (S9a): setting ``events_layout: drops`` in a real
-repo today splits the log -- writers use drops while ``attach_commit_to_event``,
-``latest_event_dt``/``finalized_run_ids`` and the compliance twin still read the
-legacy file only. The key is honoured now because S0 owns reading it. The order
-inside the assembled read is (parsed instant, id); the per-file append-order
-contract belongs to S2.
+repo today splits the log -- writers use drops while ``attach_commit_to_event`` and
+the compliance twin (S3/S4) still read the legacy file only. The key is honoured
+now because S0 owns reading it. READING is ``lib/events_read.py`` (S2): the one
+assembling reader with per-file status, layout independent.
 
-Not in S0 (owned by later units, see the BRIEF): the ``run`` stamp and 16-hex ids
-(S4), the single live key-precedence writer module (S4), per-file read status
-(S2), fold/archive tooling (S6). The key rule below is the minimum a dormant
+Not here (owned by later units, see the BRIEF): the ``run`` stamp and 16-hex ids
+(S4), the single live key-precedence writer module (S4), fold/archive tooling (S6). The key rule below is the minimum a dormant
 writer needs. The advisory lock is ``events_lock_path`` -- the SAME untracked file
 the legacy path already locks, so it lives OUTSIDE the tracked drops folder.
 """
@@ -52,22 +50,17 @@ import os
 import re
 import subprocess
 import uuid
-from datetime import datetime, timezone
 from pathlib import Path
 
-from .events_log import resolve_events_path
-from .jsonl_records import RecordRead, read_jsonl_records
+from .events_log import DROPS_DIR, resolve_events_path
+from .events_read import read_events_assembled, sanitize_key  # noqa: F401 -- re-exports
 
-DROPS_DIR = "shipwright_events.d"
-ARCHIVE_DIR = "shipwright_events.archive"
 SYNC_CONFIG = "shipwright_sync_config.json"
 LAYOUTS = ("legacy", "drops")
 
 ENV_LAYOUT = "SHIPWRIGHT_EVENTS_LAYOUT"
 ENV_LAYOUT_TEST = "SHIPWRIGHT_EVENTS_LAYOUT_TEST"
 
-KEY_MAX = 80
-_BAD_KEY_CHARS = re.compile(r"[^A-Za-z0-9._-]")
 _DROP_NAME = re.compile(r"^[A-Za-z0-9._-]{1,120}$")
 _NONCE = re.compile(r"^[0-9a-f]{8}$")
 
@@ -123,12 +116,6 @@ def _wt8(git_dir: str) -> str:
 def worktree_id(project_root: Path | str) -> str:
     """``wt8``: first 8 hex of sha256 of the writing worktree's OWN git dir."""
     return _wt8(_git_identity(Path(project_root))[0])
-
-
-def sanitize_key(raw: str) -> str:
-    """Make ``raw`` a path-safe key (``[A-Za-z0-9._-]``, 1..80). Never empty."""
-    key = _BAD_KEY_CHARS.sub("-", raw).lstrip(".") or "_run"
-    return key[:KEY_MAX]
 
 
 def drop_key(project_root: Path | str, identity: tuple[str, bool, str] | None = None) -> str:
@@ -204,35 +191,3 @@ def resolve_events_write_path(project_root: Path | str) -> Path:
     if not _DROP_NAME.match(name):  # structurally impossible after sanitize_key
         raise ValueError(f"refusing unsafe drop file name: {name!r}")
     return drops / name
-
-
-def _instant(ts: object) -> datetime:
-    """Parsed UTC instant; unparseable sorts first (a total order is all we need)."""
-    if isinstance(ts, str):
-        try:
-            dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
-            return dt.replace(tzinfo=timezone.utc) if dt.tzinfo is None else dt.astimezone(timezone.utc)
-        except ValueError:
-            pass
-    return datetime.min.replace(tzinfo=timezone.utc)
-
-
-def read_events_assembled(project_root: Path | str) -> RecordRead:
-    """Legacy file in FILE order, then archive + drops by (parsed instant, id).
-
-    Byte-for-byte the plain legacy read when no drops/archive folder exists.
-    """
-    root = Path(project_root)
-    result = read_jsonl_records(resolve_events_path(root))
-    folders = [root / d for d in (ARCHIVE_DIR, DROPS_DIR) if (root / d).is_dir()]
-    if not folders:
-        return result
-    extra: list[dict] = []
-    corrupt = list(result.corrupt)
-    for folder in folders:
-        for path in sorted(folder.glob("*.jsonl")):
-            part = read_jsonl_records(path)
-            extra.extend(part.records)
-            corrupt.extend(part.corrupt)
-    extra.sort(key=lambda e: (_instant(e.get("ts")), str(e.get("id", ""))))
-    return RecordRead(records=list(result.records) + extra, corrupt=corrupt)

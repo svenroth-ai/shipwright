@@ -17,8 +17,7 @@ from pathlib import Path
 from typing import Any
 
 from .events_amend import apply_amendments  # noqa: F401 — re-exported SSOT
-from .events_layout import read_events_assembled
-from .jsonl_records import RecordRead
+from .events_read import AssembledRead, read_events_assembled
 
 CONFIG_FILES = {
     "run": "shipwright_run_config.json",
@@ -138,7 +137,7 @@ def collect_all_build_sections(project_root: str | Path) -> dict[str, Any]:
 # Event log
 # ---------------------------------------------------------------------------
 
-def read_events_result(project_root: str | Path) -> RecordRead:
+def read_events_result(project_root: str | Path) -> AssembledRead:
     """Read events plus the explicit corrupt-fragment side channel.
 
     Callers that make an absence-based decision must inspect ``corrupt``: a
@@ -149,7 +148,7 @@ def read_events_result(project_root: str | Path) -> RecordRead:
     for frag in result.corrupt:
         # ASCII-only: surfaces on Windows cp1252 consoles.
         warnings.warn(
-            f"Corrupt event at {EVENT_FILE}:{frag.line_no} "
+            f"Corrupt event at {Path(frag.path).name}:{frag.line_no} "
             f"({len(frag.text)} bytes unrecoverable), skipping that fragment; "
             f"the rest of the line was recovered.",
             stacklevel=2,

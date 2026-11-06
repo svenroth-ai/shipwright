@@ -14,10 +14,8 @@ F6 stages it and the PR carries it to ``main``.
 History (iterate-2026-05-29-events-jsonl-worktree-commit)
 ---------------------------------------------------------
 This resolver used to redirect to the **main** repo via ``git rev-parse
---git-common-dir`` so a worktree-local copy would not be lost to
-``git worktree remove``. That was wrong for the worktree-commit flow: the
-``work_completed`` event landed as an **uncommitted line in the main tree**,
-never entered the iterate PR, and required a manual ``chore(events)`` backfill.
+--git-common-dir``; that orphaned the ``work_completed`` event outside the iterate
+PR (an uncommitted main-tree line needing a manual ``chore(events)`` backfill).
 The redirect is gone; the event now rides the PR.
 
 ``resolve_main_repo_root`` relocated
@@ -48,29 +46,17 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from pathlib import Path
 
-# Record-boundary SSoT, imported to survive THREE load contexts (each verified
-# empirically; full rationale in the iterate spec's Mini-plan, AC15):
-#
-#   1. package member ``lib.events_log`` — relative import works.
-#   2. by file location under a sentinel name (``audit_adapters.load_shared_lib``,
-#      Group F) — no parent package.
-#   3. flat, ``shared/scripts/lib`` on sys.path (``backfill_test_links.py`` ->
-#      ``backfill_scan`` -> flat ``from events_log import …``); no package either.
-#
-# Contexts 2+3 share the by-path fallback. Two by-NAME fallbacks were tried and
-# both broke production: ``from lib.jsonl_records`` binds ``sys.modules['lib']``
-# to shared during the sentinel exec (``load_shared_lib`` never restores it, so
-# later compliance-local ``from lib.X`` raises — the same trap
-# ``resolve_main_repo_root`` below documents), and ``from jsonl_records`` needs
-# ``shared/scripts/lib`` itself on sys.path, which no loader inserts, taking the
-# F5 detective dark. By-path touches no namespace and reads no sys.path state, so
-# it can neither pollute a caller nor go dark — and it resolves COPY-LOCALLY, so
-# a plugin-cache copy binds its own sibling instead of reaching into the repo.
-#
-# ONE SOURCE FILE, SEVERAL RUNTIME OBJECTS: this object differs from
-# ``lib.jsonl_records``, ``shared.scripts.lib.jsonl_records`` and
-# ``audit_adapters``' copy. Consumers duck-type, so that is safe — but
-# ``isinstance(x, RecordRead)`` across the boundary is silently False.
+# Record-boundary SSoT, imported to survive THREE load contexts (full rationale:
+# the iterate spec's Mini-plan AC15, pinned by test_events_log_load_contexts):
+#   1. package member ``lib.events_log`` -- relative import works.
+#   2. by file location under a sentinel name (``audit_adapters.load_shared_lib``)
+#      -- no parent package.
+#   3. flat, ``shared/scripts/lib`` on sys.path -- no package either.
+# Contexts 2+3 share the by-path fallback. By-NAME fallbacks (``from
+# lib.jsonl_records`` / ``from jsonl_records``) both broke production: the first
+# rebinds ``sys.modules['lib']`` to shared's package, the second needs a sys.path
+# entry no loader inserts. By-path touches no namespace and resolves COPY-LOCALLY.
+# ONE SOURCE, SEVERAL RUNTIME OBJECTS: cross-boundary ``isinstance(x, RecordRead)`` is False.
 try:
     from .jsonl_records import read_jsonl_records
 except ImportError:  # contexts 2 + 3 — see above.
@@ -113,6 +99,8 @@ except ImportError:  # contexts 2 + 3 — see above.
     read_jsonl_records = _jr_mod.read_jsonl_records
 
 EVENT_FILE = "shipwright_events.jsonl"
+DROPS_DIR = "shipwright_events.d"
+ARCHIVE_DIR = "shipwright_events.archive"
 
 
 def resolve_main_repo_root(project_root: Path | str) -> Path | None:
@@ -161,6 +149,21 @@ def resolve_events_path(project_root: Path | str) -> Path:
     repo, which orphaned the work_completed event outside the iterate PR).
     """
     return Path(project_root) / EVENT_FILE
+
+
+def event_files(project_root: Path | str) -> list[Path]:
+    """Legacy file (listed even if absent), then archive and drop files by name; folders are read whatever the layout."""
+    root = Path(project_root)
+    files = [resolve_events_path(root)]
+    for folder in (ARCHIVE_DIR, DROPS_DIR):
+        if (root / folder).is_dir() and not (root / folder).is_symlink():
+            files += sorted(p for p in (root / folder).glob("*.jsonl") if p.is_file() and not p.is_symlink())
+    return files
+
+
+def _all_records(project_root: Path | str) -> list[dict]:
+    """Records of every event file (order is irrelevant to the two callers below)."""
+    return [r for p in event_files(project_root) for r in read_jsonl_records(p).records]
 
 
 def latest_event_dt(project_root: Path | str) -> datetime | None:
@@ -220,20 +223,16 @@ def latest_event_dt(project_root: Path | str) -> datetime | None:
       Naive ``ts`` (no offset suffix) is interpreted as UTC, matching
       the event-log convention used by ``record_event.py``.
     """
-    path = resolve_events_path(project_root)
-    if not path.exists():
-        return None
-
     latest: datetime | None = None
     try:
-        result = read_jsonl_records(path)
+        records = _all_records(project_root)
     except OSError:
         return None
     # PARTIAL recovery is the right policy for THIS caller: the value drives a
     # rendered "data as of" banner, so a stale-but-present timestamp beats a
     # blank one, and skipping corrupt input silently is already the documented
     # contract above. `finalized_run_ids` deliberately differs — see there.
-    for event in result.records:
+    for event in records:
         ts_raw = event.get("ts")
         if not isinstance(ts_raw, str):
             continue
@@ -282,17 +281,16 @@ def finalized_run_ids(project_root: Path | str) -> set[str] | None:
     and REJECTED here as a policy change riding along in a defect repair — it
     belongs in its own iterate, reasoned about on its own terms.
     """
-    path = resolve_events_path(project_root)
-    if not path.exists():
+    if not any(p.exists() for p in event_files(project_root)):
         return None
     try:
-        result = read_jsonl_records(path)
+        records = _all_records(project_root)
     except OSError:
-        return None  # unreadable → undeterminable, same as absent → fail open
+        return None  # any file unreadable → undeterminable, same as absent → fail open
     run_ids: set[str] = set()
     # `read_jsonl_records` yields only JSON objects, so the historical
     # `isinstance(event, dict)` guard is now structurally guaranteed.
-    for event in result.records:
+    for event in records:
         for key in ("adr_id", "run_id"):
             val = event.get(key)
             if isinstance(val, str) and val:
