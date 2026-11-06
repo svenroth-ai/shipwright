@@ -1,0 +1,8 @@
+{"items": [
+ {"name": "Spec compliance (AC1-AC9)", "verdict": "pass", "note": "spec re-reviewed on the final tree"},
+ {"name": "Tests added and green", "verdict": "pass", "note": "test_ci_parallel_jobs 22, coverage-data-set 8, wiring 6, PR-verification 16, parity 16, main-health 24"},
+ {"name": "Lint", "verdict": "pass", "note": "ruff 0.15.15 clean"},
+ {"name": "Docs updated", "verdict": "pass", "note": "hooks-and-pipeline.md topology + gate table + guard counts"},
+ {"name": "No secrets / debug leftovers", "verdict": "pass", "note": "none"},
+ {"name": "Design correction recorded", "verdict": "pass", "note": "first design had the gather job needing the test job and still running the other tiers (no parallelism); fixed with tests-main and recorded in the spec"}
+]}
