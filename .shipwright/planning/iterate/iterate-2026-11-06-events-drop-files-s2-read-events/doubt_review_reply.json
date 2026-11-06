@@ -1,0 +1,4 @@
+{"stage":"doubt","gating":"advisory-must-address","doubts":[
+{"severity":"low","lens":"hidden coupling","claim_under_doubt":"latest_event_dt keeps stale-but-present beats blank","disposition":"rejected-with-reason: one unreadable event file makes the data-as-of banner blank, the same unknown outcome as before for the legacy file; per-file skipping would hide damage; finalized_run_ids fails open by design"},
+{"severity":"low","lens":"hidden coupling","claim_under_doubt":"KC1 parity holds for real logs with historical double-appended identical lines","disposition":"accepted: handed to S6 (scan the real log for duplicate ids before any fold); the archive is unpopulated while dormant"}
+],"summary":"Round 2: round-1 fixes hold; no high or medium doubts remain."}

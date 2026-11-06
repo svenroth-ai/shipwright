@@ -208,3 +208,4 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [E6: harness and fixture for the skill-backed app class](iterate-2026-10-29-e6-e2e-harness-skill-app-board-fixture-and-checks.md)
 - [Plan copies design-defined detail; build gate unchanged](iterate-2026-11-01-plan-design-detail-and-screenshot-gap-plan-design-detail.md)
 - [Dormant per-run event drops layout, bare-origin harness and standing replay gate](iterate-2026-11-05-s0-harness-dormant-writer-dormant-event-drops-layout.md)
+- [One assembling event reader with per-file status](iterate-2026-11-06-events-drop-files-s2-read-events-assembling-event-reader.md)
