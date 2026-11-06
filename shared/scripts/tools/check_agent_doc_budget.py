@@ -75,14 +75,15 @@ def _read(project_root: Path, filename: str) -> str | None:
 def _base_text(project_root: Path, base: str, filename: str) -> str:
     """The agent-doc file as it was at ``base`` ("" if absent / git failure), with the bullet
     drops that were still pending AT ``base`` folded in -- the same view ``_read`` gives the branch."""
-    rc, out, _ = _run_git(project_root, "show", f"{base}:{_AGENT_DOCS_REL}/{filename}")
+    # cat-file, not show: `show <rev>:<path>` also stats the arg as a file and dies "Filename too long" on Windows
+    rc, out, _ = _run_git(project_root, "cat-file", "blob", f"{base}:{_AGENT_DOCS_REL}/{filename}")
     text = out if rc == 0 else ""
     bdir = f"{_AGENT_DOCS_REL}/decision-drops/bullets"
     # Tree-ish form ``<base>:<dir>`` lists bare names: no pathspec / trailing-slash handling to differ per platform.
     rc, names, _ = _run_git(project_root, "ls-tree", "--name-only", "-z", f"{base}:{bdir}")
     items = []
     for name in (n for n in names.split(chr(0)) if rc == 0 and n):
-        rc2, content, _ = _run_git(project_root, "show", f"{base}:{bdir}/{name}")
+        rc2, content, _ = _run_git(project_root, "cat-file", "blob", f"{base}:{bdir}/{name}")
         if rc2 == 0:
             items.append((name, content))
     return fold_named(text, filename, items) if items else text
