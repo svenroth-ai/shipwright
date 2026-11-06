@@ -2,21 +2,6 @@
   "budget_note": "budget_seconds was measured on Windows (--jobs 3); CI runs ubuntu with --jobs 3 and needs confirming on the first run. It may be raised only with a non-empty budget_reason.",
   "budget_seconds": 1306,
   "known": {
-    "integration-tests/test_gate_honesty_cli_integration.py::test_pass_record_fencing_and_skip_reason_compose": {
-      "unit": "S3"
-    },
-    "integration-tests/test_phase_gate_real_skill_canon.py::test_a_phase_that_writes_no_audit_entry_is_still_rejected": {
-      "unit": "S3"
-    },
-    "integration-tests/test_phase_gate_real_skill_canon.py::test_a_second_split_needs_its_own_entry_under_the_runs_id": {
-      "unit": "S3"
-    },
-    "integration-tests/test_phase_gate_real_skill_canon.py::test_real_skill_finalization_passes_the_enforced_gate[runner-exports-the-run-id]": {
-      "unit": "S3"
-    },
-    "integration-tests/test_phase_gate_real_skill_canon.py::test_real_skill_finalization_passes_the_enforced_gate[skill-mints-its-own-id]": {
-      "unit": "S3"
-    },
     "integration-tests/test_single_session_sole_mode.py::test_loop_emits_one_tracked_start_end_pair_per_split": {
       "unit": "S4"
     },
@@ -61,12 +46,6 @@
     },
     "plugins/shipwright-compliance/tests/test_grade_snapshot_dirty.py::TestDirtyDescribesTheTreeBeforeTheProducerWrote::test_run_id_falls_back_to_the_environment": {
       "unit": "S4"
-    },
-    "plugins/shipwright-run/tests/test_phase_skip_reason.py::test_recover_phase_task_cli_records_reason_and_one_event": {
-      "unit": "S3"
-    },
-    "plugins/shipwright-run/tests/test_phase_skip_reason.py::test_single_session_recover_cli_records_reason_event_and_loop_event": {
-      "unit": "S3"
     },
     "plugins/shipwright-run/tests/test_single_session_phase_started.py::test_single_session_apply_emits_paired_phase_completed": {
       "unit": "S4"
@@ -113,17 +92,8 @@
     "shared/tests/test_completion_writers.py::test_a_phase_rerun_that_records_no_new_event_still_passes": {
       "unit": "S4"
     },
-    "shared/tests/test_compliance_input_state.py::test_a_left_alone_input_reaches_the_operator": {
-      "unit": "S3"
-    },
     "shared/tests/test_compliance_refresh_real_producer.py::test_the_append_only_logs_keep_every_line_they_started_with": {
       "unit": "S4"
-    },
-    "shared/tests/test_compliance_refresh_real_producer.py::test_the_inputs_left_alone_are_exactly_the_two_logs_that_moved": {
-      "unit": "S3"
-    },
-    "shared/tests/test_compliance_refresh_real_producer.py::test_the_producers_own_appends_do_not_break_the_fixpoint": {
-      "unit": "S3"
     },
     "shared/tests/test_events_newline_integrity.py::test_append_onto_missing_and_empty_log_injects_no_leading_newline": {
       "unit": "S4"
@@ -145,9 +115,6 @@
     },
     "shared/tests/test_finalize_bundle_integration.py::test_whole_bundle_retry_is_idempotent": {
       "unit": "S4"
-    },
-    "shared/tests/test_finalize_campaign_status.py::test_run_regenerates_campaign_status_with_byte_parity": {
-      "unit": "S3"
     },
     "shared/tests/test_finalize_event_self_id.py::test_cli_manual_flag_path_stamps_event": {
       "unit": "S4"
@@ -250,9 +217,6 @@
     },
     "shared/tests/test_record_event_test_evidence.py::TestFrGateTestEvidenceCli::test_main_passes_with_no_tests_reason": {
       "unit": "S4"
-    },
-    "shared/tests/test_requirement_gate_spec_impact.py::test_the_cli_refuses_an_unclassified_bug_and_accepts_the_reason_code": {
-      "unit": "S3"
     },
     "shared/tests/test_verify_iterate_finalization.py::test_boundary_roundtrip_worktree_producer_to_verifier": {
       "unit": "S4"

@@ -46,6 +46,13 @@ TEMPLATE_PATH = "shared/templates/gitattributes-union.template"
 #: This is also the "is this a managed repo?" signal for the self-heal sibling.
 UNION_PATHS: tuple[str, ...] = ("shipwright_events.jsonl", ".shipwright/triage.jsonl")
 
+#: The drops-layout event folders are DELIBERATELY absent from every union list below: a
+#: drop is an immutable, ADD-only file, so two branches never touch the same one and a
+#: line-union driver could only ever hide a forbidden modify. Pinned by a test against the template.
+EVENT_FOLDERS_NO_UNION: tuple[str, ...] = (
+    "shipwright_events.d", "shipwright_events.archive", "shipwright_events.quarantine",
+)
+
 #: Curated agent-docs whose ``## …Updates`` / ``## Learnings`` append-sections
 #: collide when parallel iterates each prepend a bullet (a DISTINCT category from
 #: the JSONL logs: curated prose, NOT in ``CHURN_ALLOWLIST``, never regenerated).

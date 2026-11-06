@@ -156,7 +156,7 @@ def test_group_loaders_return_none_on_an_unreadable_log(tmp_path: Path, monkeypa
     (tmp_path / "shipwright_events.jsonl").write_text(
         json.dumps(_A) + "\n", encoding="utf-8"
     )
-    shared = _events_read._jsonl_records()
+    shared = _events_read.load_shared_lib("events_read")  # the assembling reader the loaders use (S3)
 
     def _boom(_path):
         raise OSError("permission denied")

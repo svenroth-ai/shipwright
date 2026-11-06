@@ -36,6 +36,10 @@ _MODE_AUTHORITATIVE = "authoritative"
 # heuristic projection (whose reads are byte-bounded). A real Shipwright log is a
 # few hundred KB per year of history, so 10 MB is a generous ceiling.
 _MAX_AUTHORITATIVE_EVENTLOG_BYTES = 10_000_000
+# The per-run layout adds a folder a hostile clone can fill: bound the TOTAL bytes and the file COUNT
+# of the readable event folders too (quarantine holds raw damaged bytes and is never read).
+_MAX_AUTHORITATIVE_EVENT_FILES = 5_000
+_EVENT_FOLDERS = ("shipwright_events.d", "shipwright_events.archive")
 
 # Per-dimension authoritative provenance sources (replace the heuristic
 # "deferred to G2" placeholders in report_model._DIM_META). ``disabled`` is empty:
@@ -77,7 +81,13 @@ def _eventlog_over_cap(root: Path) -> bool:
                 return True
         except OSError:  # pragma: no cover - defensive
             continue
-    return False
+    files = [p for d in _EVENT_FOLDERS if (root / d).is_dir() and not (root / d).is_symlink()
+             for p in (root / d).glob("*.jsonl") if p.is_file() and not p.is_symlink()]
+    try:
+        return (len(files) > _MAX_AUTHORITATIVE_EVENT_FILES
+                or sum(p.stat().st_size for p in files) > _MAX_AUTHORITATIVE_EVENTLOG_BYTES)
+    except OSError:  # pragma: no cover - defensive
+        return True
 
 
 def try_authoritative_grade(

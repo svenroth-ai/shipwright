@@ -43,7 +43,7 @@ from lib.adr_headers import (  # noqa: E402
     find_gaps_in_adr_ids,
     parse_adr_headers,
 )
-from lib.jsonl_records import read_jsonl_records  # noqa: E402
+from lib.events_read import read_events_assembled  # noqa: E402
 
 
 # Canonical home of the agent_docs artifact set, relative to project_root.
@@ -149,11 +149,10 @@ def read_events_jsonl(project_root: Path) -> list[dict[str, Any]]:
     happened read as one that never did — and these records feed the F11
     verifiers.
     """
-    path = project_root / "shipwright_events.jsonl"  # G5 (iterate-2026-06-13-shc-read-events): NOT unified with record_event/lib.config read_events — verifiers read this LITERAL path (no resolve_events_path worktree redirect) + stay silent so corruption surfaces as a CheckResult, not a warning.
-    if not path.exists():
-        return []
+    # G5: stays SILENT (no warning side channel) so corruption surfaces as a CheckResult. S3: reads the
+    # whole log -- legacy file, then archive and drop files -- through the one assembling reader.
     try:
-        result = read_jsonl_records(path)
+        result = read_events_assembled(project_root)
     except OSError:
         return []
     # G5, second half: `result.corrupt` is DISCARDED deliberately. The shared

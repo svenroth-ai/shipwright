@@ -32,6 +32,7 @@ from pathlib import Path
 from typing import Iterable
 
 from lib.campaign_paths import campaign_spec_path, relativize_spec_path  # repo-relative spec_path (N1)
+from lib.events_read import event_lines_at
 
 #: The monotonic status ladder. ``failed`` / ``escalated`` are deliberately
 #: off-ladder (explicit terminal states handled separately in :func:`merge_status`).
@@ -400,10 +401,7 @@ def regenerate_campaign_status(campaign_dir, events_log) -> tuple[dict, dict]:
 
     slug = slug_from_md(md_text) or (committed or {}).get("campaign") or campaign_dir.name
 
-    events_lines: list[str] = []
-    events_log = Path(events_log)
-    if events_log.exists():
-        events_lines = events_log.read_text(encoding="utf-8").splitlines()
+    events_lines = event_lines_at(events_log)  # legacy lines + archive/drop records
 
     status, summary = project_campaign_status(md_text, committed, events_lines, slug)
     if committed_warning:

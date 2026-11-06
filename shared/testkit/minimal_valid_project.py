@@ -258,6 +258,22 @@ def _append_event(root: Path, event: dict[str, Any]) -> None:
         fh.write(json.dumps({**event, "ts": _now()}) + "\n")
 
 
+def read_events(root: Path) -> list[dict[str, Any]]:
+    """Every event of the tree, layout independent: the legacy file, then the archive and drop files.
+
+    Standalone on purpose (the testkit imports no product code), so a test asserting on events
+    reads them the same way under ``legacy`` and ``drops``.
+    """
+    paths = [root / "shipwright_events.jsonl"]
+    for folder in ("shipwright_events.archive", "shipwright_events.d"):
+        paths += sorted((root / folder).glob("*.jsonl")) if (root / folder).is_dir() else []
+    rows: list[dict[str, Any]] = []
+    for path in paths:
+        if path.is_file():
+            rows += [json.loads(ln) for ln in path.read_text(encoding="utf-8").splitlines() if ln.strip()]
+    return rows
+
+
 def _git(root: Path, *args: str) -> None:
     # A clean git environment: a GIT_DIR inherited from a hook or CI step must not
     # point these commands at another repository.

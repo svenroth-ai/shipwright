@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Any
 
 from .events_amend import apply_amendments  # noqa: F401 — re-exported SSOT
+from .events_log import EVENT_FILE
 from .events_read import AssembledRead, read_events_assembled
 
 CONFIG_FILES = {
@@ -26,10 +27,8 @@ CONFIG_FILES = {
     "build": "shipwright_build_config.json",
     "security": "shipwright_security_config.json",
     "compliance": "shipwright_compliance_config.json",
-    "events": "shipwright_events.jsonl",
+    "events": EVENT_FILE,
 }
-
-EVENT_FILE = "shipwright_events.jsonl"
 
 
 def get_config_path(skill: str, project_root: str | Path) -> Path:

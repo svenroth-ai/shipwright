@@ -172,6 +172,10 @@ def _within_root(path: Path, root: Path) -> bool:
         return False
 
 
+#: Event folders of the per-run layout that hold readable events; quarantine holds raw damaged bytes, never read.
+_EVENT_FOLDERS = ("shipwright_events.d", "shipwright_events.archive")
+
+
 def _events_path(root: Path) -> Path | None:
     """The target's event log, at its REAL location (within-root), or ``None``.
 
@@ -181,7 +185,9 @@ def _events_path(root: Path) -> Path | None:
     is accepted as a fallback so routing and the authoritative ingestion agree on
     what "has an event log" means. A symlink escaping the root is ignored.
     """
-    for cand in (root / "shipwright_events.jsonl", root / ".shipwright" / "events.jsonl"):
+    folders = [p for d in _EVENT_FOLDERS if (root / d).is_dir() and not (root / d).is_symlink()
+               for p in sorted((root / d).glob("*.jsonl"))]  # the drops layout leaves no legacy file
+    for cand in (root / "shipwright_events.jsonl", root / ".shipwright" / "events.jsonl", *folders):
         if cand.is_file() and _within_root(cand, root):
             return cand
     return None

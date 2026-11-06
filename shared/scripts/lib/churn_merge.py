@@ -112,6 +112,14 @@ CHURN_ALLOWLIST: frozenset[str] = DERIVED_MDS | {
 CAMPAIGN_STATUS_GLOB = ".shipwright/planning/iterate/campaigns/*/status.json"
 
 
+#: The drops-layout event folders hold immutable, ADD-only evidence (``lib.events_log.EVENT_FOLDERS``).
+#: They are deliberately NOT churn: a conflict inside one is a modify/delete the integrity
+#: rule forbids, so ``classify`` reports it as blocking and a human decides.
+EVENT_FOLDERS_NOT_CHURN: tuple[str, ...] = (
+    "shipwright_events.d", "shipwright_events.archive", "shipwright_events.quarantine",
+)
+
+
 def norm(rel: str) -> str:
     """Normalise a git path to forward-slash POSIX form."""
     return rel.strip().replace("\\", "/")
@@ -158,6 +166,8 @@ def is_derived_churn(rel: str) -> bool:
     (external plan review, openai #8).
     """
     rel = norm(rel)
+    if rel.startswith(tuple(f + "/" for f in EVENT_FOLDERS_NOT_CHURN)):
+        return False
     return rel in CHURN_ALLOWLIST or is_campaign_status(rel)
 
 

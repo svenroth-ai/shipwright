@@ -41,8 +41,37 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable
 
-from .events_log import ARCHIVE_DIR, event_files, resolve_events_path
-from .jsonl_records import RecordRead, read_jsonl_records
+try:
+    from .events_log import ARCHIVE_DIR, EVENT_FILE, event_files, resolve_events_path
+    from .jsonl_records import RecordRead, read_jsonl_records
+except ImportError:  # sentinel / flat load (``audit_adapters.load_shared_lib``): no parent package
+    import hashlib as _hashlib
+    import importlib.util as _importlib_util
+    import sys as _sys
+
+    def _sibling(name: str):
+        """A sibling module by file location (same recipe as ``events_log``'s fallback)."""
+        path = Path(__file__).resolve().parent / f"{name}.py"
+        sentinel = f"_shipwright_events_read_{name}_" + _hashlib.sha256(
+            str(path.parent).encode("utf-8")).hexdigest()[:12]
+        mod = _sys.modules.get(sentinel)
+        if mod is None:
+            spec = _importlib_util.spec_from_file_location(sentinel, path)
+            if not path.is_file() or spec is None or spec.loader is None:
+                raise ImportError(f"cannot locate the shared sibling: {path}")
+            mod = _importlib_util.module_from_spec(spec)
+            _sys.modules[sentinel] = mod  # BEFORE exec: dataclasses resolve their module
+            try:
+                spec.loader.exec_module(mod)
+            except Exception:
+                _sys.modules.pop(sentinel, None)
+                raise
+        return mod
+
+    _log, _jr = _sibling("events_log"), _sibling("jsonl_records")
+    ARCHIVE_DIR, EVENT_FILE = _log.ARCHIVE_DIR, _log.EVENT_FILE
+    event_files, resolve_events_path = _log.event_files, _log.resolve_events_path
+    RecordRead, read_jsonl_records = _jr.RecordRead, _jr.read_jsonl_records
 
 KEY_MAX = 80
 _BAD_KEY_CHARS = re.compile(r"[^A-Za-z0-9._-]")
@@ -113,7 +142,7 @@ def instant(ts: object) -> datetime:
         try:
             dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
             return dt.replace(tzinfo=timezone.utc) if dt.tzinfo is None else dt.astimezone(timezone.utc)
-        except ValueError:
+        except (ValueError, OverflowError):  # OverflowError: year-1 instant + offset under astimezone
             pass
     return datetime.min.replace(tzinfo=timezone.utc)
 
@@ -150,14 +179,23 @@ def _status(records: list[dict], fragments: int, kind: str) -> str:
 def _read_one(path: Path, kind: str) -> tuple[RecordRead, FileStatus] | None:
     match = _DROP_NAME.match(path.name) if kind == "drop" else None
     key = match.group("key") if match else None
+
+    def _gone() -> tuple[RecordRead, FileStatus] | None:
+        # Listed, then deleted before/while reading (a fold, a checkout). A vanished
+        # LEGACY log reads as absent; a vanished archive/drop is "unreadable" -- non-ok,
+        # so an absence gate for its run fails closed instead of concluding "absent"
+        # from a file it could not read (and it must never read as a clean "empty").
+        return None if kind == "legacy" else (RecordRead(), FileStatus(str(path), kind, key, "unreadable"))
+
     try:
         part = read_jsonl_records(path)
     except OSError as exc:
         if kind == "legacy":
             raise  # unchanged: an unreadable legacy log never reads as "no events"
-        if isinstance(exc, FileNotFoundError):
-            return None  # deleted between the existence check and the open (a fold)
-        return RecordRead(), FileStatus(str(path), kind, key, "unreadable")
+        return _gone() if isinstance(exc, FileNotFoundError) else (
+            RecordRead(), FileStatus(str(path), kind, key, "unreadable"))
+    if not part.records and not part.corrupt and not path.exists():
+        return _gone()  # read_jsonl_records maps a missing file to "empty": deleted in between
     return part, FileStatus(str(path), kind, key, _status(part.records, len(part.corrupt), kind),
                             len(part.records), len(part.corrupt))
 
@@ -188,21 +226,17 @@ def _dedup_extra(extra: list[dict]) -> tuple[list[dict], list[str]]:
     return kept, flagged
 
 
-def read_events_assembled(project_root: Path | str) -> AssembledRead:
-    """Legacy file in FILE order, then archive + drops by (parsed instant, id)."""
+def read_events_assembled(project_root: Path | str, *, include_legacy: bool = True) -> AssembledRead:
+    """Legacy file in FILE order, then archive + drops by (parsed instant, id); ``include_legacy=False``: folders only."""
     root = Path(project_root)
     legacy_path = resolve_events_path(root)
     result = AssembledRead()
     extra: list[dict] = []
     for path in event_files(root):
-        if path == legacy_path:
-            if not path.exists():
-                continue
-            kind = "legacy"
-        elif not path.exists():
-            continue  # deleted between listing and reading (a fold, a checkout)
-        else:
-            kind = "archive" if path.parent.name == ARCHIVE_DIR else "drop"
+        kind = "legacy" if path == legacy_path else (
+            "archive" if path.parent.name == ARCHIVE_DIR else "drop")
+        if kind == "legacy" and (not include_legacy or not path.exists()):
+            continue
         one = _read_one(path, kind)
         if one is None:
             continue
@@ -217,7 +251,44 @@ def read_events_assembled(project_root: Path | str) -> AssembledRead:
     return result
 
 
+def read_events_at(events_path: Path | str) -> AssembledRead:
+    """Assembled read for a caller that holds the legacy log's PATH (``--events`` flags).
+
+    The tree's canonical log (``.../shipwright_events.jsonl``) is read with its archive
+    and drop folders; any other file (a fixture, a copy) is read alone, as one legacy file.
+    """
+    path = Path(events_path)
+    if path.name == EVENT_FILE:
+        return read_events_assembled(path.parent)
+    part, result = read_jsonl_records(path), AssembledRead()
+    result.records, result.corrupt = part.records, part.corrupt
+    result.files.append(FileStatus(str(path), "legacy", None, _status(part.records, len(part.corrupt), "legacy"),
+                                   len(part.records), len(part.corrupt)))
+    return result
+
+
+def events_text(project_root: Path | str) -> str:
+    """The raw text of every event file (legacy first), for substring probes. Unreadable files read empty."""
+    out = []
+    for path in event_files(project_root):
+        try:
+            out.append(path.read_text(encoding="utf-8", errors="ignore") if path.exists() else "")
+        except OSError:
+            out.append("")
+    return "\n".join(out)
+
+
+def event_lines_at(events_path: Path | str) -> list[str]:
+    """Raw legacy lines (exactly ``read_text().splitlines()``), then archive/drop records as JSON lines (campaign status)."""
+    path = Path(events_path)
+    lines = path.read_text(encoding="utf-8").splitlines() if path.exists() else []
+    if path.name == EVENT_FILE and len(event_files(path.parent)) > 1:
+        read = read_events_assembled(path.parent, include_legacy=False)  # one legacy read: no count/slice race
+        lines += [json.dumps(r, ensure_ascii=False, separators=(",", ":")) for r in read.records]
+    return lines
+
+
 __all__ = [
-    "AssembledRead", "EventLogNotReadable", "FileStatus", "instant",
-    "latest_by_ts", "read_events_assembled", "sanitize_key", "sorted_by_ts", "require_readable_for_absence",
+    "AssembledRead", "EventLogNotReadable", "FileStatus", "event_lines_at", "events_text", "instant", "latest_by_ts",
+    "read_events_assembled", "read_events_at", "require_readable_for_absence", "sanitize_key", "sorted_by_ts",
 ]

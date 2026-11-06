@@ -139,23 +139,28 @@ def _names_in_head(root: Path) -> set[str] | None:
     append between ``git add`` and ``git commit`` would edit a file that is then
     committed with N lines while the working copy holds N+1.
 
-    ``set()`` for an unborn HEAD / no repo (nothing is committed). ``None`` when the
+    ``set()`` for no repo; an unborn HEAD still honours the index (nothing is in a tree yet). ``None`` when the
     probe itself failed: the caller must then NOT reuse any existing file (a new
     file is always safe, a reused closed one is not).
     """
     try:
         head = subprocess.run(["git", "-C", str(root), "rev-parse", "--verify", "-q", "HEAD"],
                               capture_output=True, text=True, timeout=15)
-        if head.returncode != 0:
-            return set()
-        out = subprocess.run(
-            ["git", "-C", str(root), "ls-tree", "--name-only", "HEAD", DROPS_DIR + "/"],
-            capture_output=True, text=True, timeout=15, check=True,
-        ).stdout
-        out += "\n" + subprocess.run(
-            ["git", "-C", str(root), "ls-files", "--", DROPS_DIR + "/"],
-            capture_output=True, text=True, timeout=15, check=True,
-        ).stdout
+        out = ""
+        if head.returncode == 0:
+            out = subprocess.run(
+                ["git", "-C", str(root), "ls-tree", "--name-only", "HEAD", DROPS_DIR + "/"],
+                capture_output=True, text=True, timeout=15, check=True,
+            ).stdout
+        # The index is read whether or not HEAD exists: on an UNBORN HEAD a staged drop is
+        # still closed (S0 follow-up). No repo at all fails here and reads as "nothing committed".
+        staged = subprocess.run(["git", "-C", str(root), "ls-files", "--", DROPS_DIR + "/"],
+                                capture_output=True, text=True, timeout=15)
+        if staged.returncode != 0:
+            if head.returncode != 0:
+                return set()
+            raise subprocess.CalledProcessError(staged.returncode, "git ls-files")
+        out += "\n" + staged.stdout
     except FileNotFoundError:
         return set()  # git not installed: not a repo, nothing committed
     except (OSError, subprocess.SubprocessError):

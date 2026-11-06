@@ -28,6 +28,7 @@ if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
 from lib.events_log import resolve_events_path  # noqa: E402
+from lib.events_read import event_lines_at  # noqa: E402
 
 from verifiers._baseline_touch_core import evaluate_hold, touched_set  # noqa: E402
 from verifiers._baseline_touch_git import GitRev  # noqa: E402
@@ -38,9 +39,7 @@ _RUN_ID = re.compile(r"\.shipwright/agent_docs/iterates/(iterate-[\w.-]+?)(?:\.t
 
 def _events_by_run(path: Path) -> dict[str, dict]:
     out: dict[str, dict] = {}
-    if not path.is_file():
-        return out
-    for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+    for line in event_lines_at(path):  # legacy lines + archive/drop records; [] when absent
         try:
             event = json.loads(line)
         except ValueError:
