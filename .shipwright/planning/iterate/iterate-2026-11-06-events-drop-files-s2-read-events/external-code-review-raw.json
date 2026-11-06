@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: spec\n- Severity: high\n- File: shared/scripts/lib/events_read.py:98\n- Finding: `require_readable_for_absence()` is added but never wired into a production absence gate in this diff. Existing gates therefore still conclude that an event is absent when the run\u2019s own drop file is corrupt, empty, or unreadable. The KC8 tests call the helper directly, so they pass without verifying the required gate behavior.\n- Suggestion: Update each absence gate to inspect the assembled read with the run\u2019s key before concluding absence, and propagate blockers as gate failures. Add integration tests invoking real gates with damaged matching drops and damaged unrelated drops.\n\nShip-with-fixes: the reader and status API provide the necessary foundation, but KC8 remains unimplemented at the production call sites.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "## Findings\n\n**1. KC8 is not wired into any production gate**\n- Category: spec | Severity: high\n- File: shared/scripts/lib/events_read.py (~line 118, `require_readable_for_absence`)\n- Finding: The spec's KC8 says \"absence gates fail on a non-ok drop file of the run's key.\" The diff provides the mechanism (`absence_blockers`, `require_readable_for_absence`) and tests it directly, but no production caller of either exists. The only consumer change is `record_event.py:452`, which uses `skipped_files` to force a prior of `[]` \u2014 that is a fail-open *append* heuristic, not the spec's \"gate must refuse to conclude absent.\" Actual absence-based gates (finalized_run_ids, dedup, compliance checks) are unchanged, so a corrupt drop of the run's key still lets gates conclude \"absent.\"\n- Suggestion: Wire `require_readable_for_absence` into the gates that make absence decisions (or, if that belongs to S3, say so explicitly in the spec context \u2014 as shipped, KC8 is only satisfied at the unit level, not end-to-end).\n\n**2. `events_layout` loses its load-context independence**\n- Category: regression | Severity: medium\n- File: shared/scripts/lib/events_layout.py (top imports) and shared/scripts/lib/events_read.py:43\n- Finding: `events_layout` previously defined `sanitize_key`, `read_events_assembled`, `KEY_MAX` locally and only needed the documented try/except fallback for `jsonl_records` to survive the three load contexts (package-member, sentinel by-path, flat sys.path). The diff replaces that with a bare relative `from .events_read import \u2026`, and `events_read.py` itself says it supports only the package-member context. Any sentinel/flat loader that imports `events_layout` by path (the exact trap `events_log` documents at length, and that `audit_adapters.load_shared_lib` creates) now raises ImportError where it previously worked.\n- Suggestion: Either give `events_layout` (or `events_read`) the same by-path fallback `events_log` uses, or verify and document that nothing loads `events_layout`/`events_read` outside package context. The existing `test_events_log_load_contexts` does not cover the new module.\n\n**3. Drop files with non-writer-shaped names silently fail open for KC8**\n- Category: edge-case | Severity: low\n- File: shared/scripts/lib/events_read.py (~`_read_one`)\n- Finding: `_read_one` sets `key=None` when the file name doesn't match `key--wt8--nonce8.jsonl`; `absence_blockers` requires `f.key == key`, so a hand-named, damaged drop file belonging to this run (e.g. a partially migrated or older-format writer) is classified `kind=\"drop\", key=None, status=\"corrupt\"` and never blocks, and never matches any run key. The gate then concludes absent over its own damaged file.\n- Suggestion: For non-ok drop files with `key is None`, either block conservatively (any non-ok unparseable drop blocks all keys) or surface them in a dedicated field the gates can see.\n\n**4. `test_layout_does_not_matter_for_reading` is partly vacuous**\n- Category: test | Severity: low\n- File: shared/tests/test_events_read.py (`test_layout_does_not_matter_for_reading`)\n- Finding: The reader is already layout-independent by construction (it never consults the env vars the test sets), so the test proves the env vars are ignored rather than that reading works under each layout. It would pass against an implementation that crashed on `SHIPWRIGHT_EVENTS_LAYOUT=weird` only if the crash happened to occur \u2014 actually it *would* catch a crash, so this is weak-but-not-vacuous; the real gap is no negative case asserting an invalid layout value doesn't change file enumeration. Low priority.\n\n**Positive notes:** the KC1 tests (`test_kc1_renderers_are_byte_identical...`, plus the shuffled-order variant) genuinely validate order-independence rather than fixture-sortedness; the corrupt/empty/unreadable status test forces real recovery; the dedup tests cover same-content collapse, differing-content flagging, and the `run`-stamp exemption. The known-failing ratchet removals are consistent with the S2 items.\n\n## Overall assessment\n\nThe reader itself is solid and well-tested, but KC8's acceptance criterion is only half-delivered \u2014 the mechanism exists but no production gate consumes it \u2014 and `events_layout`'s new package-only dependency risks breaking the sentinel/flat load contexts the codebase explicitly guards against.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-11-06-events-drop-files-s2-read-events",
+    "at": "2026-11-06T07:57:59.249800+00:00"
+  },
+  "verdicts": {
+    "openai": "revise",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

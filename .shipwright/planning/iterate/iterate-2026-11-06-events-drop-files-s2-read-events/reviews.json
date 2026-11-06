@@ -1,0 +1,314 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-06-events-drop-files-s2-read-events",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-06T07:55:08.418445+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The legacy-vs-archive/drop ordering asymmetry (legacy in raw FILE order, archive/drops by parsed instant) is stated but not justified against KC1. If a run's events span legacy and archive files, the assembled stream is not globally time-ordered — a legacy line with a later instant than an archive line will still sort first. Any consumer that assumes the merged stream is chronological (dedup, \"latest event\" pickers) will see inconsistency between the two halves.",
+          "suggestion": "Either sort legacy lines by parsed instant too (with file order as tiebreak), or explicitly document and test that the stream is only \"approximately ordered\" and verify every consumer of read_events tolerates interleaving violations. The KC1 byte-identical fixture pair should include a fixture where legacy and archive overlap in time to catch this.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The duplicate rule (\"same id+content collapses, different content kept and flagged\") has an ambiguity for the legacy/archive boundary: legacy files have no id, or the id namespace may collide with drop-file ids. If a legacy event and a drop file share an id with different content, the \"flagged\" branch fires — is that intended for legacy, where tolerance is the stated policy?",
+          "suggestion": "Specify id-collision behavior across source types explicitly (legacy exempt from the dup rule, or same rule) and add a test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "\"Parsed instant\" ordering implies parsing every line's timestamp before merging. Malformed timestamps in drop files (a corrupt-but-parseable-prefix line, or a valid-content line with a bad ts) need a defined status and ordering slot — \"corrupt\" status covers content, but is a bad-timestamp line ok/corrupt, and where does it sort?",
+          "suggestion": "Define: bad timestamp ⇒ corrupt status, sorted last within its file (or excluded from merge and reported via per-file status). Test it.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Behavior change to existing functionality is acknowledged (\"legacy behaviour for out-of-order legacy logs changes only in the newest pickers\") but this is a silent semantic change for position readers switching from list position to newest-by-ts. Ties (equal ts, different ids) need a deterministic tiebreak or renders may flip between environments, breaking KC1 byte-identity.",
+          "suggestion": "Use (ts, id, file-origin) as the full ordering key everywhere including tiebreaks, and add a fixture with timestamp ties to the KC1 test set.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan touches record_event.py, event_dedup.py, config.py, and a compliance test helper, but the change spec's scope is the reader. The \"compliance test helper (layout-agnostic read)\" in particular is shared infrastructure — if other tests rely on the current layout-specific reads, this is a broader blast radius than \"net -2 lines\" suggests.",
+          "suggestion": "Verify no other test/consumer depends on the moved reader's exact import path or behavior in events_layout.py; a deprecation shim for one release is cheap insurance if unsure.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "events_log.py` constrained to \"stays <= 300\" while gaining event_files() and drop-aware latest_event_dt/finalized_run_ids is a self-imposed constraint that may force awkward factoring. Not a correctness issue, but if it drives the design, it's over-production pressure in the other direction.",
+          "suggestion": "Treat the 300-line cap as soft; correctness and clarity of the new module boundary take precedence.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "No specific concerns — no new external input surfaces beyond existing event files. Absence-gate key matching (\"run's key\") should be exact-match to avoid a drop file from a similarly-named run blocking a gate; the plan says \"exact key\" is tested, which is good. Just ensure the match is not prefix/substring based in implementation.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "dependency ·",
+          "file": null,
+          "line": null,
+          "finding": "The plan adds an absence-gate primitive but does not identify the gate callers that will use it. KC8 requires those callers to retain file-status information; checking only recovered events would allow a corrupt DROP file to appear complete or absent.",
+          "suggestion": "Name and update the affected absence-gate callers in S2. Add a caller-level test showing that a matching DROP file blocks the gate even when recovery yields usable records, while legacy, archive, and other-run failures remain tolerated.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk ·",
+          "file": null,
+          "line": null,
+          "finding": "KC1 requires “every renderer” to remain byte-identical, but the plan tests three renderers and explicitly defers other independent read paths. Those deferred readers could lose visibility of events moved out of the legacy log.",
+          "suggestion": "Reconcile that boundary with the binding brief. Identify every renderer covered by KC1 and include it in the split/unsplit comparison; migrate any reader needed for parity in S2, or document an explicit scope exception from the brief.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "Ordering by parsed instant and selecting “newest-by-ts” leave malformed timestamps and ties unspecified. The duplicate rule deliberately retains conflicting records with the same id, so `(instant, id)` is not necessarily a total order. This can change which snapshot or status wins.",
+          "suggestion": "Define timestamp-failure behavior and deterministic tie-breaking, preserving legacy file order. Test equivalent timestamps with different offsets, invalid timestamps, and conflicting same-id records at the same instant.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "Recovery and per-file status need an explicit relationship. A partially corrupt DROP file must remain non-ok after `split_records` recovers valid records, or KC8 can be bypassed. Its run key must also remain identifiable when its contents cannot be read.",
+          "suggestion": "Specify that recovery never upgrades a damaged file to `ok`, and derive DROP ownership from the file-layout contract independently of successful parsing. Test unreadable, empty, and partially recovered files for the exact run key.  The centralized reader is a sound, proportionate approach. The plan needs clearer gate integration, renderer coverage, and failure semantics before implementation.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-06T07:54:44.592492+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n**Category: approach**\n**Severity: medium**\n**Finding:** The legacy-vs-archive/drop ordering asymmetry (legacy in raw FILE order, archive/drops by parsed instant) is stated but not justified against KC1. If a run's events span legacy and archive files, the assembled stream is not globally time-ordered — a legacy line with a later instant than an archive line will still sort first. Any consumer that assumes the merged stream is chronological (dedup, \"latest event\" pickers) will see inconsistency between the two halves.\n**Suggestion:** Either sort legacy lines by parsed instant too (with file order as tiebreak), or explicitly document and test that the stream is only \"approximately ordered\" and verify every consumer of read_events tolerates interleaving violations. The KC1 byte-identical fixture pair should include a fixture where legacy and archive overlap in time to catch this.\n\n**Category: edge-case**\n**Severity: medium**\n**Finding:** The duplicate rule (\"same id+content collapses, different content kept and flagged\") has an ambiguity for the legacy/archive boundary: legacy files have no id, or the id namespace may collide with drop-file ids. If a legacy event and a drop file share an id with different content, the \"flagged\" branch fires — is that intended for legacy, where tolerance is the stated policy?\n**Suggestion:** Specify id-collision behavior across source types explicitly (legacy exempt from the dup rule, or same rule) and add a test.\n\n**Category: edge-case**\n**Severity: medium**\n**Finding:** \"Parsed instant\" ordering implies parsing every line's timestamp before merging. Malformed timestamps in drop files (a corrupt-but-parseable-prefix line, or a valid-content line with a bad ts) need a defined status and ordering slot — \"corrupt\" status covers content, but is a bad-timestamp line ok/corrupt, and where does it sort?\n**Suggestion:** Define: bad timestamp ⇒ corrupt status, sorted last within its file (or excluded from merge and re […truncated]\n\n[openai] 1. **Category: dependency · Severity: high**  \n   **Finding:** The plan adds an absence-gate primitive but does not identify the gate callers that will use it. KC8 requires those callers to retain file-status information; checking only recovered events would allow a corrupt DROP file to appear complete or absent.  \n   **Suggestion:** Name and update the affected absence-gate callers in S2. Add a caller-level test showing that a matching DROP file blocks the gate even when recovery yields usable records, while legacy, archive, and other-run failures remain tolerated.\n\n2. **Category: risk · Severity: medium**  \n   **Finding:** KC1 requires “every renderer” to remain byte-identical, but the plan tests three renderers and explicitly defers other independent read paths. Those deferred readers could lose visibility of events moved out of the legacy log.  \n   **Suggestion:** Reconcile that boundary with the binding brief. Identify every renderer covered by KC1 and include it in the split/unsplit comparison; migrate any reader needed for parity in S2, or document an explicit scope exception from the brief.\n\n3. **Category: edge-case · Severity: medium**  \n   **Finding:** Ordering by parsed instant and selecting “newest-by-ts” leave malformed timestamps and ties unspecified. The duplicate rule deliberately retains conflicting records with the same id, so `(instant, id)` is not necessarily a total order. This can change which snapshot or status wins.  \n   **Suggestion:** Define timestamp-failure behavior and deterministic tie-breaking, preserving legacy file order. Test equivalent timestamps with different offsets, invalid timestamps, and conflicting same-id records at the same instant.\n\n4. **Category: edge-case · Severity: medium**  \n   **Finding:** Recovery and per-file status need an explicit relationship. A partially corrupt DROP file must remain non-ok after `split_records` recovers valid records, or KC8 can be bypassed. Its run key must also remain identifia […truncated]",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/events_layout.py",
+          "line": 111,
+          "finding": "Reflowed docstring line exceeds the wrap width",
+          "suggestion": "Re-wrap (cosmetic, not changed)",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/scripts/lib/events_log.py",
+          "line": 270,
+          "finding": "_all_records duplicates the file-listing read of events_read; justified by the three load contexts",
+          "suggestion": "Add a one-line comment (not changed)",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_events_read_consumers.py",
+          "line": 1017,
+          "finding": "json and sorted_by_ts imported inside functions",
+          "suggestion": "Hoist imports (cosmetic, not changed)",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-06T08:09:12.907939+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "cb66fe3fb0c48f6b00fc5b45e43bcd65d7fed75b"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "hidden coupling",
+          "file": null,
+          "line": null,
+          "finding": "latest_event_dt keeps stale-but-present beats blank",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling",
+          "file": null,
+          "line": null,
+          "finding": "KC1 parity holds for real logs with historical double-appended identical lines",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-06T08:09:13.066238+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "cb66fe3fb0c48f6b00fc5b45e43bcd65d7fed75b"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "spec |",
+          "file": "shared/scripts/lib/events_read.py (~line 118, `require_readable_for_absence`)",
+          "line": null,
+          "finding": "The spec's KC8 says \"absence gates fail on a non-ok drop file of the run's key.\" The diff provides the mechanism (`absence_blockers`, `require_readable_for_absence`) and tests it directly, but no production caller of either exists. The only consumer change is `record_event.py:452`, which uses `skipped_files` to force a prior of `[]` — that is a fail-open append heuristic, not the spec's \"gate must refuse to conclude absent.\" Actual absence-based gates (finalized_run_ids, dedup, compliance checks) are unchanged, so a corrupt drop of the run's key still lets gates conclude \"absent.\"",
+          "suggestion": "Wire `require_readable_for_absence` into the gates that make absence decisions (or, if that belongs to S3, say so explicitly in the spec context — as shipped, KC8 is only satisfied at the unit level, not end-to-end).  2. `events_layout` loses its load-context independence",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "regression |",
+          "file": "shared/scripts/lib/events_layout.py (top imports) and shared/scripts/lib/events_read.py",
+          "line": 43,
+          "finding": "events_layout` previously defined `sanitize_key`, `read_events_assembled`, `KEY_MAX` locally and only needed the documented try/except fallback for `jsonl_records` to survive the three load contexts (package-member, sentinel by-path, flat sys.path). The diff replaces that with a bare relative `from .events_read import …`, and `events_read.py` itself says it supports only the package-member context. Any sentinel/flat loader that imports `events_layout` by path (the exact trap `events_log` documents at length, and that `audit_adapters.load_shared_lib` creates) now raises ImportError where it previously worked.",
+          "suggestion": "Either give `events_layout` (or `events_read`) the same by-path fallback `events_log` uses, or verify and document that nothing loads `events_layout`/`events_read` outside package context. The existing `test_events_log_load_contexts` does not cover the new module.  3. Drop files with non-writer-shaped names silently fail open for KC8",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": "shared/scripts/lib/events_read.py (~`_read_one`)",
+          "line": null,
+          "finding": "_read_one` sets `key=None` when the file name doesn't match `key--wt8--nonce8.jsonl`; `absence_blockers` requires `f.key == key`, so a hand-named, damaged drop file belonging to this run (e.g. a partially migrated or older-format writer) is classified `kind=\"drop\", key=None, status=\"corrupt\"` and never blocks, and never matches any run key. The gate then concludes absent over its own damaged file.",
+          "suggestion": "For non-ok drop files with `key is None`, either block conservatively (any non-ok unparseable drop blocks all keys) or surface them in a dedicated field the gates can see.  4. `test_layout_does_not_matter_for_reading` is partly vacuous",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test |",
+          "file": "shared/tests/test_events_read.py (`test_layout_does_not_matter_for_reading`)",
+          "line": null,
+          "finding": "The reader is already layout-independent by construction (it never consults the env vars the test sets), so the test proves the env vars are ignored rather than that reading works under each layout. It would pass against an implementation that crashed on `SHIPWRIGHT_EVENTS_LAYOUT=weird` only if the crash happened to occur — actually it would catch a crash, so this is weak-but-not-vacuous; the real gap is no negative case asserting an invalid layout value doesn't change file enumeration. Low priority.  Positive notes: the KC1 tests (`test_kc1_renderers_are_byte_identical...`, plus the shuffled-order variant) genuinely validate order-independence rather than fixture-sortedness; the corrupt/empty/unreadable status test forces real recovery; the dedup tests cover same-content collapse, differing-content flagging, and the `run`-stamp exemption. The known-failing ratchet removals are consistent with the S2 items.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "shared/scripts/lib/events_read.py",
+          "line": 98,
+          "finding": "require_readable_for_absence()` is added but never wired into a production absence gate in this diff. Existing gates therefore still conclude that an event is absent when the run’s own drop file is corrupt, empty, or unreadable. The KC8 tests call the helper directly, so they pass without verifying the required gate behavior.",
+          "suggestion": "Update each absence gate to inspect the assembled read with the run’s key before concluding absence, and propagate blockers as gate failures. Add integration tests invoking real gates with damaged matching drops and damaged unrelated drops.  Ship-with-fixes: the reader and status API provide the necessary foundation, but KC8 remains unimplemented at the production call sites.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-06T08:09:13.211069+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n**1. KC8 is not wired into any production gate**\n- Category: spec | Severity: high\n- File: shared/scripts/lib/events_read.py (~line 118, `require_readable_for_absence`)\n- Finding: The spec's KC8 says \"absence gates fail on a non-ok drop file of the run's key.\" The diff provides the mechanism (`absence_blockers`, `require_readable_for_absence`) and tests it directly, but no production caller of either exists. The only consumer change is `record_event.py:452`, which uses `skipped_files` to force a prior of `[]` — that is a fail-open *append* heuristic, not the spec's \"gate must refuse to conclude absent.\" Actual absence-based gates (finalized_run_ids, dedup, compliance checks) are unchanged, so a corrupt drop of the run's key still lets gates conclude \"absent.\"\n- Suggestion: Wire `require_readable_for_absence` into the gates that make absence decisions (or, if that belongs to S3, say so explicitly in the spec context — as shipped, KC8 is only satisfied at the unit level, not end-to-end).\n\n**2. `events_layout` loses its load-context independence**\n- Category: regression | Severity: medium\n- File: shared/scripts/lib/events_layout.py (top imports) and shared/scripts/lib/events_read.py:43\n- Finding: `events_layout` previously defined `sanitize_key`, `read_events_assembled`, `KEY_MAX` locally and only needed the documented try/except fallback for `jsonl_records` to survive the three load contexts (package-member, sentinel by-path, flat sys.path). The diff replaces that with a bare relative `from .events_read import …`, and `events_read.py` itself says it supports only the package-member context. Any sentinel/flat loader that imports `events_layout` by path (the exact trap `events_log` documents at length, and that `audit_adapters.load_shared_lib` creates) now raises ImportError where it previously worked.\n- Suggestion: Either give `events_layout` (or `events_read`) the same by-path fallback `events_log` uses, or verify and document that nothing lo […truncated]\n\n[openai] - Category: spec\n- Severity: high\n- File: shared/scripts/lib/events_read.py:98\n- Finding: `require_readable_for_absence()` is added but never wired into a production absence gate in this diff. Existing gates therefore still conclude that an event is absent when the run’s own drop file is corrupt, empty, or unreadable. The KC8 tests call the helper directly, so they pass without verifying the required gate behavior.\n- Suggestion: Update each absence gate to inspect the assembled read with the run’s key before concluding absence, and propagate blockers as gate failures. Add integration tests invoking real gates with damaged matching drops and damaged unrelated drops.\n\nShip-with-fixes: the reader and status API provide the necessary foundation, but KC8 remains unimplemented at the production call sites.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-06T08:09:12.756556+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "c7222d1fa48cd84cfac712bc9156812ff3716beb"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-06T08:09:13.377630+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-06T07:54:44.746561+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

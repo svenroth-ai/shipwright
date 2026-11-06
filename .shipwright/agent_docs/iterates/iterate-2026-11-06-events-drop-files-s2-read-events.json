@@ -1,0 +1,92 @@
+{
+  "run_id": "iterate-2026-11-06-events-drop-files-s2-read-events",
+  "date": "2026-11-06T08:34:33.851454Z",
+  "event_at": "2026-11-06T08:34:11.773284+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "prior_source": "history",
+  "branch": "iterate/campaign-events-drop-files--S2",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-11-06-events-drop-files-s2-read-events",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "AC1 reader: legacy in file order, then archive and drops by (instant, id); a tree without folders reads as before; layout independent",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_events_read.py::test_no_folders_is_byte_for_byte_the_legacy_read, ::test_legacy_first_then_archive_and_drops_by_instant_then_id, ::test_layout_does_not_matter_for_reading PASSED"
+      },
+      {
+        "behavior": "per-file status ok/corrupt/empty/unreadable, record recovery, legacy unreadable keeps raising, vanished drop skipped",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_events_read.py::test_status_ok_corrupt_empty_unreadable, ::test_an_unreadable_legacy_log_still_raises_it_never_reads_as_no_events, ::test_a_drop_removed_at_open_time_is_skipped_not_reported_unreadable PASSED"
+      },
+      {
+        "behavior": "archive/drop duplicate rule (same id+content collapse, different content flagged, run stamp ignored, legacy never deduplicated)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_events_read.py::test_identical_archive_and_drop_duplicates_collapse_different_content_is_flagged, ::test_run_stamp_is_not_content_for_the_duplicate_rule PASSED"
+      },
+      {
+        "behavior": "AC2 KC8: only a non-ok DROP file of the run key (sanitized like the writer, or unattributable name) blocks an absence gate; legacy, archive, other runs tolerated",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_events_read.py::test_kc8_* (5 tests) PASSED"
+      },
+      {
+        "behavior": "position readers mean newest by ts: last grade snapshot, handoff Last Events, dashboard iterate/test/build tables",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "shared/tests/test_events_read_consumers.py::test_recent_tables_list_by_ts_when_legacy_holds_a_newer_event_than_a_drop, ::test_build_history_lists_by_ts_in_a_mixed_layout, ::test_last_grade_snapshot_is_the_newest_not_the_last_listed PASSED"
+      },
+      {
+        "behavior": "latest_event_dt and finalized_run_ids read archive and drops, unreadable still unknown",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_events_read_consumers.py::test_latest_event_dt_and_finalized_run_ids_see_drops_and_archive, ::test_finalized_run_ids_is_none_when_nothing_exists_or_a_file_is_unreadable PASSED"
+      },
+      {
+        "behavior": "AC1 KC1: handoff, dashboard and throughput report byte-identical on the unsplit fixture vs the split log, also with a shuffled legacy log",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "shared/tests/test_events_read_consumers.py::test_kc1_renderers_are_byte_identical_on_unsplit_vs_split, ::test_kc1_newest_pickers_agree_when_legacy_is_out_of_ts_order PASSED"
+      },
+      {
+        "behavior": "AC3 replay gate ratchet shrinks by the 8 S2 entries and the tightened set has no new or stale entry",
+        "disposition": "tested",
+        "evidence": "events_replay_gate.py --strict-stale full run exit 0 (101 -> 85 known); shared/tests/test_iterate_ledger_anchor.py and plugins/shipwright-compliance/tests/test_grade_snapshot_regen.py PASSED under the drops override"
+      },
+      {
+        "behavior": "ADR-045 load contexts of events_log unchanged",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_events_log_load_contexts.py PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 9,
+      "tested": 9,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 3,
+      "covered_acs": 3
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run --with pytest --with pytest-mock pytest shared/tests/test_events_read.py shared/tests/test_events_read_consumers.py -q",
+    "exit_code": 0,
+    "tests_run": 34,
+    "evidence_path": ".shipwright/runs/iterate-2026-11-06-events-drop-files-s2-read-events/surface_verification.json",
+    "timestamp": "2026-11-06T08:33:35.638Z",
+    "attempts": 1,
+    "run_id": "iterate-2026-11-06-events-drop-files-s2-read-events"
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": [
+    "cross_component"
+  ]
+}

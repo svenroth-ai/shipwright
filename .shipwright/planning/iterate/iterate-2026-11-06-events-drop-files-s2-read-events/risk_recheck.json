@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-06-events-drop-files-s2-read-events",
+  "risk_recheck": {
+    "changed_file_count": 11,
+    "diff_loc": 727,
+    "risk_flags": [
+      "cross_component"
+    ],
+    "diff_risk_flags": [
+      "cross_component"
+    ],
+    "complexity_floor": "medium",
+    "stage1_complexity": "small",
+    "effective_complexity": "medium",
+    "upgraded": true,
+    "plan_review_required": true,
+    "ci_ack_recorded": false,
+    "escalate": {
+      "required": false,
+      "reason_code": null,
+      "paths": []
+    }
+  }
+}

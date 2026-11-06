@@ -449,7 +449,7 @@ def append_event_idempotent(
             try:
                 read_result = read_events_result(project_root)
                 prior = (
-                    [] if read_result.corrupt
+                    [] if read_result.corrupt or read_result.skipped_files
                     else apply_amendments(read_result.records)
                 )
             except Exception:  # noqa: BLE001 - never lose a snapshot to read/fold

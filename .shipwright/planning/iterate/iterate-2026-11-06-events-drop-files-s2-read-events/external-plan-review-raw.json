@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "## Findings\n\n**Category: approach**\n**Severity: medium**\n**Finding:** The legacy-vs-archive/drop ordering asymmetry (legacy in raw FILE order, archive/drops by parsed instant) is stated but not justified against KC1. If a run's events span legacy and archive files, the assembled stream is not globally time-ordered \u2014 a legacy line with a later instant than an archive line will still sort first. Any consumer that assumes the merged stream is chronological (dedup, \"latest event\" pickers) will see inconsistency between the two halves.\n**Suggestion:** Either sort legacy lines by parsed instant too (with file order as tiebreak), or explicitly document and test that the stream is only \"approximately ordered\" and verify every consumer of read_events tolerates interleaving violations. The KC1 byte-identical fixture pair should include a fixture where legacy and archive overlap in time to catch this.\n\n**Category: edge-case**\n**Severity: medium**\n**Finding:** The duplicate rule (\"same id+content collapses, different content kept and flagged\") has an ambiguity for the legacy/archive boundary: legacy files have no id, or the id namespace may collide with drop-file ids. If a legacy event and a drop file share an id with different content, the \"flagged\" branch fires \u2014 is that intended for legacy, where tolerance is the stated policy?\n**Suggestion:** Specify id-collision behavior across source types explicitly (legacy exempt from the dup rule, or same rule) and add a test.\n\n**Category: edge-case**\n**Severity: medium**\n**Finding:** \"Parsed instant\" ordering implies parsing every line's timestamp before merging. Malformed timestamps in drop files (a corrupt-but-parseable-prefix line, or a valid-content line with a bad ts) need a defined status and ordering slot \u2014 \"corrupt\" status covers content, but is a bad-timestamp line ok/corrupt, and where does it sort?\n**Suggestion:** Define: bad timestamp \u21d2 corrupt status, sorted last within its file (or excluded from merge and reported via per-file status). Test it.\n\n**Category: risk**\n**Severity: medium**\n**Finding:** Behavior change to existing functionality is acknowledged (\"legacy behaviour for out-of-order legacy logs changes only in the newest pickers\") but this is a silent semantic change for position readers switching from list position to newest-by-ts. Ties (equal ts, different ids) need a deterministic tiebreak or renders may flip between environments, breaking KC1 byte-identity.\n**Suggestion:** Use (ts, id, file-origin) as the full ordering key everywhere including tiebreaks, and add a fixture with timestamp ties to the KC1 test set.\n\n**Category: dependency**\n**Severity: low**\n**Finding:** The plan touches record_event.py, event_dedup.py, config.py, and a compliance test helper, but the change spec's scope is the reader. The \"compliance test helper (layout-agnostic read)\" in particular is shared infrastructure \u2014 if other tests rely on the current layout-specific reads, this is a broader blast radius than \"net -2 lines\" suggests.\n**Suggestion:** Verify no other test/consumer depends on the moved reader's exact import path or behavior in events_layout.py; a deprecation shim for one release is cheap insurance if unsure.\n\n**Category: approach**\n**Severity: low**\n**Finding:** `events_log.py` constrained to \"stays <= 300\" while gaining event_files() and drop-aware latest_event_dt/finalized_run_ids is a self-imposed constraint that may force awkward factoring. Not a correctness issue, but if it drives the design, it's over-production pressure in the other direction.\n**Suggestion:** Treat the 300-line cap as soft; correctness and clarity of the new module boundary take precedence.\n\n**Category: security**\n**Severity: low**\n**Finding:** No specific concerns \u2014 no new external input surfaces beyond existing event files. Absence-gate key matching (\"run's key\") should be exact-match to avoid a drop file from a similarly-named run blocking a gate; the plan says \"exact key\" is tested, which is good. Just ensure the match is not prefix/substring based in implementation.\n\n## Overall assessment\n\nThe approach is sound and well-scoped, with the main real risk being ordering/tiebreak determinism at the legacy\u2013archive boundary and for equal timestamps \u2014 both are testable now and would surface as flaky or non-byte-identical renders later if left vague. Tighten the ordering spec and add the overlap/tie fixtures before implementation.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Category: dependency \u00b7 Severity: high**  \n   **Finding:** The plan adds an absence-gate primitive but does not identify the gate callers that will use it. KC8 requires those callers to retain file-status information; checking only recovered events would allow a corrupt DROP file to appear complete or absent.  \n   **Suggestion:** Name and update the affected absence-gate callers in S2. Add a caller-level test showing that a matching DROP file blocks the gate even when recovery yields usable records, while legacy, archive, and other-run failures remain tolerated.\n\n2. **Category: risk \u00b7 Severity: medium**  \n   **Finding:** KC1 requires \u201cevery renderer\u201d to remain byte-identical, but the plan tests three renderers and explicitly defers other independent read paths. Those deferred readers could lose visibility of events moved out of the legacy log.  \n   **Suggestion:** Reconcile that boundary with the binding brief. Identify every renderer covered by KC1 and include it in the split/unsplit comparison; migrate any reader needed for parity in S2, or document an explicit scope exception from the brief.\n\n3. **Category: edge-case \u00b7 Severity: medium**  \n   **Finding:** Ordering by parsed instant and selecting \u201cnewest-by-ts\u201d leave malformed timestamps and ties unspecified. The duplicate rule deliberately retains conflicting records with the same id, so `(instant, id)` is not necessarily a total order. This can change which snapshot or status wins.  \n   **Suggestion:** Define timestamp-failure behavior and deterministic tie-breaking, preserving legacy file order. Test equivalent timestamps with different offsets, invalid timestamps, and conflicting same-id records at the same instant.\n\n4. **Category: edge-case \u00b7 Severity: medium**  \n   **Finding:** Recovery and per-file status need an explicit relationship. A partially corrupt DROP file must remain non-ok after `split_records` recovers valid records, or KC8 can be bypassed. Its run key must also remain identifiable when its contents cannot be read.  \n   **Suggestion:** Specify that recovery never upgrades a damaged file to `ok`, and derive DROP ownership from the file-layout contract independently of successful parsing. Test unreadable, empty, and partially recovered files for the exact run key.\n\nThe centralized reader is a sound, proportionate approach. The plan needs clearer gate integration, renderer coverage, and failure semantics before implementation.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-11-06-events-drop-files-s2-read-events",
+    "at": "2026-11-06T07:53:39.902831+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

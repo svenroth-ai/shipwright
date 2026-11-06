@@ -1,0 +1,5 @@
+{"section":"S2-read-events-contract (round 2)","review":[
+{"severity":"low","category":"readability","file":"shared/scripts/lib/events_layout.py","line":111,"finding":"Reflowed docstring line exceeds the wrap width","suggestion":"Re-wrap (cosmetic, not changed)"},
+{"severity":"low","category":"architecture","file":"shared/scripts/lib/events_log.py","line":270,"finding":"_all_records duplicates the file-listing read of events_read; justified by the three load contexts","suggestion":"Add a one-line comment (not changed)"},
+{"severity":"low","category":"readability","file":"shared/tests/test_events_read_consumers.py","line":1017,"finding":"json and sorted_by_ts imported inside functions","suggestion":"Hoist imports (cosmetic, not changed)"}
+]}

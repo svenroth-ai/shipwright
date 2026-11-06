@@ -62,21 +62,6 @@
     "plugins/shipwright-compliance/tests/test_grade_snapshot_dirty.py::TestDirtyDescribesTheTreeBeforeTheProducerWrote::test_run_id_falls_back_to_the_environment": {
       "unit": "S4"
     },
-    "plugins/shipwright-compliance/tests/test_grade_snapshot_regen.py::TestComplianceRegenComposition::test_a_second_regen_over_unchanged_data_adds_nothing": {
-      "unit": "S2"
-    },
-    "plugins/shipwright-compliance/tests/test_grade_snapshot_regen.py::TestComplianceRegenComposition::test_dashboard_regen_emits_snapshot": {
-      "unit": "S2"
-    },
-    "plugins/shipwright-compliance/tests/test_grade_snapshot_regen.py::TestEmitGradeSnapshot::test_a_regen_that_changes_nothing_appends_nothing": {
-      "unit": "S3"
-    },
-    "plugins/shipwright-compliance/tests/test_grade_snapshot_regen.py::TestEmitGradeSnapshot::test_a_regen_whose_grade_changed_still_appends": {
-      "unit": "S3"
-    },
-    "plugins/shipwright-compliance/tests/test_grade_snapshot_regen.py::TestEmitGradeSnapshot::test_appends_exactly_one_event": {
-      "unit": "S3"
-    },
     "plugins/shipwright-run/tests/test_phase_skip_reason.py::test_recover_phase_task_cli_records_reason_and_one_event": {
       "unit": "S3"
     },
@@ -126,21 +111,6 @@
       "unit": "S4"
     },
     "shared/tests/test_completion_writers.py::test_a_phase_rerun_that_records_no_new_event_still_passes": {
-      "unit": "S4"
-    },
-    "shared/tests/test_completion_writers.py::test_a_split_that_skips_the_marker_write_is_still_caught": {
-      "unit": "S4"
-    },
-    "shared/tests/test_completion_writers.py::test_the_hand_built_shape_matches_the_writer": {
-      "unit": "S4"
-    },
-    "shared/tests/test_completion_writers.py::test_the_marker_and_the_completion_land_on_one_clock": {
-      "unit": "S4"
-    },
-    "shared/tests/test_completion_writers.py::test_the_written_entry_reads_back_as_an_instant": {
-      "unit": "S4"
-    },
-    "shared/tests/test_completion_writers_iterate_ledger.py::test_the_iterate_ledger_writer_produces_a_readable_completion": {
       "unit": "S4"
     },
     "shared/tests/test_compliance_input_state.py::test_a_left_alone_input_reaches_the_operator": {
@@ -250,24 +220,6 @@
     },
     "shared/tests/test_grade_snapshot_dedup_never_raises.py::TestTheComparisonNeverRaises::test_a_malformed_amendment_fails_open": {
       "unit": "S4"
-    },
-    "shared/tests/test_iterate_ledger_anchor.py::test_an_in_place_f5c_rerun_after_a_new_event_is_now_caught": {
-      "unit": "S2"
-    },
-    "shared/tests/test_iterate_ledger_anchor.py::test_main_stamps_and_omits_the_anchor_in_process": {
-      "unit": "S2"
-    },
-    "shared/tests/test_iterate_ledger_anchor.py::test_the_hand_built_ledger_fixture_matches_the_writer": {
-      "unit": "S2"
-    },
-    "shared/tests/test_iterate_ledger_anchor.py::test_the_ledger_writer_stamps_the_anchor_c3_reads": {
-      "unit": "S2"
-    },
-    "shared/tests/test_iterate_ledger_anchor.py::test_the_marker_and_the_ledger_entry_land_on_one_clock": {
-      "unit": "S2"
-    },
-    "shared/tests/test_iterate_ledger_anchor.py::test_the_real_f5c_before_f5b_ordering_still_passes": {
-      "unit": "S2"
     },
     "shared/tests/test_iterate_tests_block.py::TestFinalizeIterateWiring::test_finalize_keeps_an_explicit_extras_block": {
       "unit": "S4"

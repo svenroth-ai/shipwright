@@ -10,6 +10,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from lib.config import collect_all_build_sections, read_config, read_events
 from lib.events_log import latest_event_dt
+from lib.events_read import sorted_by_ts
 from lib.handoff_phase_status import FAILED_STATUSES, FINISHED_STATUSES, INTERRUPTED_STATUSES, status_of
 from event_classification import normalize_intent
 from markdown_table import escape_cell
@@ -444,12 +445,11 @@ def _generate_from_events(project_root: Path, session_id: str | None = None,
 
     now = _deterministic_now(project_root)
     sid = session_id or os.environ.get("SHIPWRIGHT_SESSION_ID", "unknown")
-
     work_events = [e for e in events if e.get("type") == "work_completed"]
-    build_events = [e for e in work_events if e.get("source") == "build"]
-    iterate_events = [e for e in work_events if e.get("source") == "iterate"]
+    build_events = sorted_by_ts(e for e in work_events if e.get("source") == "build")
+    iterate_events = sorted_by_ts(e for e in work_events if e.get("source") == "iterate")
     phase_events = [e for e in events if e.get("type") == "phase_completed"]
-    test_runs = [e for e in events if e.get("type") == "test_run"]
+    test_runs = sorted_by_ts(e for e in events if e.get("type") == "test_run")
 
     lines = ["# Project Activity Dashboard", _dashboard_header(now, sid, run_id), ""]
 
