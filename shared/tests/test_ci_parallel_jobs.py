@@ -72,6 +72,7 @@ def _runs_tests(job: dict) -> bool:
     return False
 
 
+@pytest.mark.covers("FR-01.17/AC02")
 def test_the_test_detector_ignores_names_and_dependency_provisioning():
     plan = {"steps": [{"name": "Plan", "run": "uv run --with pytest shared/scripts/tools/ci_junit_plan.py plan"}]}
     renamed = {"steps": [{"name": "Lint more", "run": "uv run pytest shared/tests"}]}
@@ -179,6 +180,7 @@ def test_all_needed_jobs_green_passes():
 
 # ---------------------------------------------------------------- AC3 serial
 
+@pytest.mark.covers("FR-01.17/AC02")
 def test_no_pytest_step_runs_with_a_worker_count():
     """The text-level xdist ban lives in test_f0_ci_parity.py::test_ci_stays_SERIAL; this
     pins the parsed-step form for every job (continuations joined, whole step body)."""
@@ -233,6 +235,7 @@ def test_a_lost_coverage_file_cannot_be_skipped_past():
 
 # ---------------------------------------------------------------- AC7 setup
 
+@pytest.mark.covers("FR-01.17/AC02")
 def test_scanners_install_once_where_the_plugin_tests_run_and_lint_once_in_the_gather_job():
     names = [s.get("name") for job in _jobs().values() for s in job["steps"]]
     for n in ("Install Semgrep", "Install Trivy", "Install Gitleaks"):
@@ -267,6 +270,7 @@ def test_the_test_jobs_have_no_needs_so_they_start_together():
         assert not _jobs()[job_id].get("needs"), job_id
 
 
+@pytest.mark.covers("FR-01.17/AC02")
 def test_the_shared_job_prepares_its_coverage_dir_before_first_use():
     order = _order(SHARED)
     assert order["Prepare coverage data dir"] < order["Run shared tests"]
@@ -274,6 +278,7 @@ def test_the_shared_job_prepares_its_coverage_dir_before_first_use():
     assert "rm -rf .cov-data" in prep and "mkdir -p .cov-data" in prep
 
 
+@pytest.mark.covers("FR-01.17/AC02")
 def test_all_jobs_share_one_pinned_setup_sequence():
     def setup(job):
         steps = _steps(job)
@@ -288,6 +293,7 @@ def test_all_jobs_share_one_pinned_setup_sequence():
 
 # ---------------------------------------------------------------- AC8 advisory
 
+@pytest.mark.covers("FR-01.17/AC02")
 def test_the_new_check_is_declared_advisory_not_required():
     cfg = json.loads((REPO_ROOT / "shipwright_run_config.json").read_text(encoding="utf-8"))
     advisory = cfg.get("required_checks_advisory") or []

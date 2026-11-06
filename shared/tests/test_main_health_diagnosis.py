@@ -53,6 +53,7 @@ def test_reduction_keeps_the_assertion_lines_and_drops_the_setup_noise():
     assert "collected 3441 items" not in body
 
 
+@pytest.mark.covers("FR-01.19/AC02")
 def test_a_failure_in_the_parallel_shared_job_is_diagnosed_like_any_other():
     """Since iterate-2026-11-06-ci-parallel-jobs the shared tier runs in `Tests (shared)`, so the
     failing lines carry that job prefix and the required check's own log only shows the

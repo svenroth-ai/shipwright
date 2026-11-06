@@ -40,6 +40,7 @@ def _run(name: str, job: str = "python-checks") -> str:
     return _step(name, job).get("run", "")
 
 
+@pytest.mark.covers("FR-01.17/AC02")
 def test_plugin_step_measures_per_plugin_coverage():
     run = _run("Run plugin tests", "tests-main")
     assert "--cov=scripts" in run
@@ -50,6 +51,7 @@ def test_plugin_step_measures_per_plugin_coverage():
     assert "rm -rf .cov-data" in run
 
 
+@pytest.mark.covers("FR-01.17/AC02")
 def test_shared_step_writes_shared_tier_datafile():
     # The shared tier runs in its own parallel job since iterate-2026-11-06-ci-parallel-jobs;
     # its data file travels to python-checks by artifact.
@@ -58,6 +60,7 @@ def test_shared_step_writes_shared_tier_datafile():
     assert "--cov=shared" in run and "--cov-append" in run
 
 
+@pytest.mark.covers("FR-01.17/AC02")
 def test_integration_step_measures_coverage():
     run = _run("Run integration tests", "tests-main")
     assert "--cov=shared" in run
@@ -107,6 +110,7 @@ def test_diff_coverage_step_is_hard_gate():
     assert step.get("if") == "hashFiles('coverage.xml') != ''"
 
 
+@pytest.mark.covers("FR-01.17/AC02")
 def test_combine_runs_before_diff_after_all_tiers():
     names = [s.get("name") for s in _steps()]
     order = {n: i for i, n in enumerate(names) if n}
