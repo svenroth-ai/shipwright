@@ -263,6 +263,7 @@ def test_an_unimportable_gate_collector_degrades_to_unverifiable(tmp_path, monke
     )
 
 
+@pytest.mark.covers("FR-01.11")
 def test_an_unreadable_drop_is_not_read_as_nothing_touched_this(tmp_path, monkeypatch):
     import lib.events_read as er
     from lib._fr_history_events import EventLogUnreadable

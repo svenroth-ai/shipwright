@@ -178,6 +178,7 @@ class TestStaleness:
         assert d.detected_mode == "authoritative"
 
 
+@pytest.mark.covers("FR-01.11")
 def test_events_path_prefers_a_newer_drop_over_a_frozen_legacy_log(tmp_path):
     import os
     from routing import _events_path

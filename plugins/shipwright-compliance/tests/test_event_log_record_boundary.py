@@ -24,6 +24,8 @@ is the load-bearing case in this file.
 
 from __future__ import annotations
 
+import pytest
+
 import json
 import sys
 import warnings
@@ -149,6 +151,7 @@ def test_group_loaders_stay_silent_on_corruption(tmp_path: Path) -> None:
         assert caught == [], f"{loader} must stay silent, emitted {[str(w.message) for w in caught]}"
 
 
+@pytest.mark.covers("FR-01.11")
 def test_group_loaders_return_none_on_an_unreadable_log(tmp_path: Path, monkeypatch) -> None:
     """AC11 — ``None`` on OSError, not only on absence. Both groups relied on
     this branch before the delegation; an unreadable log must stay

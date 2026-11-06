@@ -92,9 +92,6 @@
     "shared/tests/test_completion_writers.py::test_a_phase_rerun_that_records_no_new_event_still_passes": {
       "unit": "S4"
     },
-    "shared/tests/test_compliance_refresh_real_producer.py::test_the_append_only_logs_keep_every_line_they_started_with": {
-      "unit": "S4"
-    },
     "shared/tests/test_events_newline_integrity.py::test_append_onto_missing_and_empty_log_injects_no_leading_newline": {
       "unit": "S4"
     },

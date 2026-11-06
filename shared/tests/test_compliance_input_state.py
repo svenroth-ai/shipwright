@@ -125,6 +125,7 @@ def test_a_CONCURRENT_append_during_a_pass_is_never_destroyed(compliance_refresh
     )
 
 
+@pytest.mark.covers("FR-01.11")
 def test_a_left_alone_input_reaches_the_operator(compliance_refresh_repo):
     """Recording it on the function and never reporting it is how the first
     version of this guard went unnoticed."""
