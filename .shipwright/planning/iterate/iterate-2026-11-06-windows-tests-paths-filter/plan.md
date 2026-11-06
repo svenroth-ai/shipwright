@@ -1,0 +1,1 @@
+Goal: Run the slow, non-required Windows test job on pull requests only when they touch what it tests | Reason: CI wall-clock: the Windows job takes 27-30 min vs ~20 min for the required Linux job and ran on every PR | Reference: CI-duration iterate 1/3

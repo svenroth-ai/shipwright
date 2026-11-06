@@ -1,0 +1,11 @@
+{
+  "run_id": "iterate-2026-11-06-windows-tests-paths-filter",
+  "date": "2026-11-06T11:09:32.551396Z",
+  "event_at": "2026-11-06T08:34:11.773284+00:00",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/windows-tests-paths-filter",
+  "spec": ".shipwright/planning/iterate/iterate-2026-11-06-windows-tests-paths-filter/plan.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-11-06-windows-tests-paths-filter"
+}

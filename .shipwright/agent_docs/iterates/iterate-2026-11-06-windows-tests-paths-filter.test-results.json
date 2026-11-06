@@ -1,0 +1,84 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-06-windows-tests-paths-filter",
+    "date": "2026-11-06",
+    "unit": {
+      "status": "passed",
+      "passed": 24182,
+      "skipped": 108,
+      "total": 24290
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 658,
+      "skipped": 0,
+      "total": 658
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "none",
+      "exit_code": 0,
+      "tests_run": 0,
+      "justification": "CI trigger filter on windows-tests.yml; no startable surface. Behavior pinned by test_windows_tests_pr_is_path_filtered_but_every_merge_still_runs (passed).",
+      "reason_code": "build-config-only",
+      "evidence_path": ".shipwright/runs/iterate-2026-11-06-windows-tests-paths-filter/surface_verification.json",
+      "timestamp": "2026-11-06T00:00:00Z"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "windows-tests.yml pull_request trigger is path-filtered (shared/**, scripts/**, root env files, the workflow itself)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_main_attribution_workflows.py::test_windows_tests_pr_is_path_filtered_but_every_merge_still_runs PASSED"
+        },
+        {
+          "behavior": "push-to-main and workflow_dispatch stay unfiltered so a skipped PR is still run post-merge",
+          "disposition": "tested",
+          "evidence": "same test asserts push.branches==[main], no paths/paths-ignore/branches-ignore, workflow_dispatch present"
+        },
+        {
+          "behavior": "GitHub actually skips the run for a non-matching PR",
+          "disposition": "untestable",
+          "reason_code": "requires-external-nondeterministic-service",
+          "reason": "path-filter evaluation happens inside GitHub Actions; observable only on the first real PR after merge"
+        }
+      ],
+      "counts": {
+        "testable": 2,
+        "tested": 2,
+        "untestable": 1,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 0,
+        "covered_acs": 0
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-11-06-windows-tests-paths-filter",
+    "commit": "91402c8124f6c025b173452b43f048e131c97aad",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
