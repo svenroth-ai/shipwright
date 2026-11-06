@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "## Review Findings\n\n**Category: edge-case \u2014 Severity: medium**\n**Finding:** Cancelled-run behavior. `python-checks` carries job-level `if: always()`, so when the concurrency group cancels an in-progress run (new push), the gather job still runs, tries to download artifacts from cancelled sibling jobs, and turns the required check red on runs nobody will ever look at. AC2's explicit prohibition of `!cancelled()` suggests this is intentional, but the spec never states the tradeoff.\n**Suggestion:** Confirm this is deliberate and note it in `docs/hooks-and-pipeline.md`; if branch-protection treats cancelled-run results as noise, reconsider whether the pin should allow `always() && !cancelled()` \u2014 otherwise at least verify branch protection isn't polluted by cancelled-run failures.\n\n**Category: edge-case \u2014 Severity: medium**\n**Finding:** Artifact filename collisions on merge. Each test job uploads `.ci-junit/` and `.cov-data/` separately, and `python-checks` merges with `merge-multiple: true` into `.`. Since junit paths are absolute and identical on every runner, this is only safe because the test roots are partitioned across jobs. If a root is ever added to two jobs (or `tests-shared` and `tests-integration` ever emit a same-named junit/`.coverage.*` file), the merge silently overwrites. AC4's verify gate would catch missing roots, but not overwritten ones.\n**Suggestion:** Add a shape-test assertion that the per-job root lists are disjoint, so the invariant the merge depends on is pinned rather than assumed.\n\n**Category: risk \u2014 Severity: medium**\n**Finding:** `events-replay` uploads nothing, but the plan doesn't verify that `events_replay_gate`'s step currently produces no files consumed by downstream gates (manifest/evidence/provenance steps live in `python-checks`). If the replay gate writes anything into `.ci-junit/` or the workspace that a later gate reads, moving it to a separate job with no artifact silently breaks that consumer.\n**Suggestion:** Step 1 of the work breakdown should explicitly confirm (grep the gate script for output writes) that `events_replay_gate` is side-effect-free with respect to the gather job's gates; record the answer in the findings list.\n\n**Category: edge-case \u2014 Severity: low**\n**Finding:** Upload steps run `if: always()` with `if-no-files-found: error`. A job that dies before its first pytest (e.g., `uv sync` failure) produces no junit, so the upload step itself errors \u2014 doubling the red steps and obscuring the root cause. This is cosmetic but adds PR-debugging friction.\n**Suggestion:** Acceptable as-is (fail-closed is the stated philosophy); alternatively scope the upload's `if:` to job-failure-after-tests, or just note it in the docs so triage knows the upload error can be ignored.\n\n**Category: dependency \u2014 Severity: low**\n**Finding:** `include-hidden-files: true` requires a recent `actions/upload-artifact` (v4.4+). The plan doesn't mention pinning/updating the action version; if the workflow pins an older v4 tag, the flag is silently ignored and `.ci-junit/`/`.cov-data/` never upload \u2014 the coverage-set gate would catch it, but only after a confusing full CI run.\n**Suggestion:** Check the pinned action version supports the input during step 1; add it to the shape test if cheap.\n\n**Category: risk \u2014 Severity: low**\n**Finding:** Per-job setup duplication (`fetch-depth: 0`, full `uv sync`, plan regen \u00d75) may erode the wall-clock win if sync is slow; also `tests-plugins` additionally installs three scanners and may become the critical path, capping gains regardless of the other three jobs finishing fast. The ~10-11 min push target is asserted but not budgeted.\n**Suggestion:** Measure the per-job setup time on the probe PR run; if `tests-plugins` dominates, splitting scanners into their own parallel job (or accepting the cap) should be a conscious decision, not a surprise.\n\n**Category: security \u2014 Severity: low (informational)**\nNo new security surface: artifacts are internal to the same workflow run, `merge-multiple` cannot pull cross-run data, and no secrets flow into the new jobs. `retention-days: 2` is fine (coverage/junit contain no secrets, and Gitleaks already scans the tree).\n\n## Overall Assessment\n\nThis is a well-scoped, unusually well-instrumented change \u2014 the fail-closed `needs` check, the coverage-set gate, and the reverse-drift YAML tests address the classic fan-in failure modes proactively. The findings above are refinements: confirm `events_replay_gate` is side-effect-free and pin the disjoint-roots invariant, and the approach is solid.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** The proposed end-to-end probe does not establish the central failure guarantee. A successful PR run plus YAML-shape assertions cannot demonstrate that a failed or skipped dependency actually produces a red `Python (lint + test)` check. The confidence section mentions a deliberately failing job, but the work breakdown does not explicitly schedule that probe.  \n   **Suggestion:** Before merge, run a temporary branch revision with one needed job deliberately failing and confirm that `python-checks` executes and fails while naming that job\u2019s result. Also test the result-checking logic against synthetic `failure`, `cancelled`, and `skipped` results; YAML assertions alone do not verify its behavior.\n\nThe approach is sound and appropriately scoped. The binding revisions address the important artifact, coverage-completeness, and setup-order risks; the remaining change is to make failure-path verification an explicit prerequisite for merge.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-11-06-ci-parallel-jobs",
+    "at": "2026-11-06T12:19:14.866561+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

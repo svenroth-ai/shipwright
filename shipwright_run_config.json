@@ -1,4 +1,8 @@
 {
+  "required_checks_advisory": [
+    "Tests (shared)",
+    "Tests (plugins + integration + replay)"
+  ],
   "pipeline": [
     "project",
     "design",

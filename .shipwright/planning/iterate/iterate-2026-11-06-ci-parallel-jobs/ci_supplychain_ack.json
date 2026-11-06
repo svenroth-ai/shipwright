@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-06-ci-parallel-jobs",
+  "ci_supplychain_ack": {
+    "run_id": "iterate-2026-11-06-ci-parallel-jobs",
+    "paths_fingerprint": "d88a99d890f27756d971516fcedd1f2a7b68fea7a6c315cce31ea843b220121e",
+    "consistent_with": "iterate-2026-08-07-windows-ci-perf",
+    "statement": "Splits ci.yml's single test job into two parallel test jobs (tests-shared, tests-main) plus the existing required check python-checks as gather job; adds actions/download-artifact@v7 (GitHub-owned, mutable major tag per the standing pinning decision; upload-artifact@v7 was already used) for same-run hand-off between jobs. Top-level token stays contents: read, no secret or permission added, no third-party action added or re-pinned (setup-uv stays SHA-pinned). Required check name 'Python (lint + test)' unchanged; python-checks fails closed when a needed job is not success. Does not widen the trust boundary.",
+    "ci_paths": [
+      ".github/workflows/ci.yml"
+    ],
+    "provenance": "worktree",
+    "provenance_ref": null
+  }
+}

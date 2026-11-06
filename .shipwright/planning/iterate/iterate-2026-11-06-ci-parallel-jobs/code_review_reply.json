@@ -1,0 +1,5 @@
+{"section": "ci-parallel-jobs", "verdict": "PASS", "review": [
+ {"finding": "setup-sequence and upload-shape tests did not cover tests-main (fixed: parametrized over both test jobs)", "severity": "low", "category": "test-coverage", "file": "shared/tests/test_ci_parallel_jobs.py", "suggestion": "assert setup(SHARED)==setup(MAIN)==setup(GATHER); parametrize the upload test"},
+ {"finding": "stale comment on the download step and two stale module docstrings still described python-checks as running plugins/integration (fixed)", "severity": "low", "category": "docs", "file": ".github/workflows/ci.yml", "suggestion": "update comments"},
+ {"finding": "double blank line before python-checks and extra trailing blank line (fixed)", "severity": "info", "category": "style", "file": ".github/workflows/ci.yml", "suggestion": "remove"}
+]}

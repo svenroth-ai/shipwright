@@ -1,0 +1,11 @@
+{
+  "run_id": "iterate-2026-11-06-ci-parallel-jobs",
+  "date": "2026-11-06T13:15:55.207314Z",
+  "event_at": "2026-11-06T11:09:32.802211+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/ci-parallel-jobs",
+  "spec": ".shipwright/planning/iterate/2026-11-06-ci-parallel-jobs.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-11-06-ci-parallel-jobs"
+}

@@ -24,24 +24,24 @@ _REPO_ROOT = Path(__file__).resolve().parents[2]
 _CI = _REPO_ROOT / ".github" / "workflows" / "ci.yml"
 
 
-def _steps() -> list[dict]:
+def _steps(job: str = "python-checks") -> list[dict]:
     data = yaml.safe_load(_CI.read_text(encoding="utf-8"))
-    return data["jobs"]["python-checks"]["steps"]
+    return data["jobs"][job]["steps"]
 
 
-def _step(name: str) -> dict:
-    for s in _steps():
+def _step(name: str, job: str = "python-checks") -> dict:
+    for s in _steps(job):
         if s.get("name") == name:
             return s
-    raise AssertionError(f"ci.yml step {name!r} not found")
+    raise AssertionError(f"ci.yml step {name!r} not found in job {job!r}")
 
 
-def _run(name: str) -> str:
-    return _step(name).get("run", "")
+def _run(name: str, job: str = "python-checks") -> str:
+    return _step(name, job).get("run", "")
 
 
 def test_plugin_step_measures_per_plugin_coverage():
-    run = _run("Run plugin tests")
+    run = _run("Run plugin tests", "tests-main")
     assert "--cov=scripts" in run
     assert "COVERAGE_FILE=" in run and ".cov-data/.coverage.$name" in run
     # relative_files is honoured from the plugin dir only via the root config.
@@ -51,13 +51,15 @@ def test_plugin_step_measures_per_plugin_coverage():
 
 
 def test_shared_step_writes_shared_tier_datafile():
-    run = _run("Run shared tests")
+    # The shared tier runs in its own parallel job since iterate-2026-11-06-ci-parallel-jobs;
+    # its data file travels to python-checks by artifact.
+    run = _run("Run shared tests", "tests-shared")
     assert ".cov-data/.coverage.shared" in run
     assert "--cov=shared" in run and "--cov-append" in run
 
 
 def test_integration_step_measures_coverage():
-    run = _run("Run integration tests")
+    run = _run("Run integration tests", "tests-main")
     assert "--cov=shared" in run
     assert ".cov-data/.coverage.integration" in run
 
@@ -108,8 +110,7 @@ def test_diff_coverage_step_is_hard_gate():
 def test_combine_runs_before_diff_after_all_tiers():
     names = [s.get("name") for s in _steps()]
     order = {n: i for i, n in enumerate(names) if n}
-    # Every tier is measured, THEN combined, THEN diff-covered.
-    assert order["Run plugin tests"] < order["Combine coverage"]
-    assert order["Run shared tests"] < order["Combine coverage"]
-    assert order["Run integration tests"] < order["Combine coverage"]
+    # Every tier is measured, THEN combined, THEN diff-covered. The shared tier is measured in
+    # `tests-shared`; python-checks must have downloaded its data before it combines.
+    assert order["Download test-job evidence (JUnit + coverage data)"] < order["Combine coverage"]
     assert order["Combine coverage"] < order["Diff coverage (gate)"]

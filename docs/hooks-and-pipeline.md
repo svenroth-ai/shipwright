@@ -4605,8 +4605,26 @@ This complements `gh pr merge --merge --delete-branch` in `/shipwright-changelog
 ## Merge gates in this repo's own CI
 
 `ci.yml`'s `Python (lint + test)` job is a Required Check, so every step in it
-blocks the merge. Besides lint and the test tiers, it runs seven guards — four
-tabulated here in full (three of those four mirrored locally, the fourth not),
+blocks the merge.
+
+**Job topology (iterate-2026-11-06-ci-parallel-jobs).** The 8-minute `shared/` test tier
+runs in its own parallel job, `tests-shared` (`Tests (shared)`), and plugins + integration +
+the events replay gate (with the scanner installs the security plugin's smoke tests need) run
+in a second one, `tests-main`; neither is a Required Check (both are declared in
+`required_checks_advisory`) and both stay internally serial (no xdist, one pytest root per
+process). They start together because neither has `needs`. Their `.ci-junit/` and `.cov-data/`
+reach `python-checks` as the artifacts `ci-tests-shared` / `ci-tests-main` (both dirs are
+hidden, hence `include-hidden-files`). `python-checks` holds no tests on purpose: a job with
+`needs` starts only after they finish, so a test left in it would run after the parallel
+tiers instead of beside them. It lints, collects and gates, `needs: [tests-shared, tests-main]`
+and runs **`if: always()`**: a job whose `needs` failed is *skipped*,
+and GitHub counts a skipped required check as passing, so the step
+`Test jobs finished green (fail-closed on needs)` turns every `needs` result other than
+`success` (failure, cancelled, skipped) into a failure. `always()` rather than
+`!cancelled()` is deliberate: a manually cancelled or superseded run still ends with a red
+`Python (lint + test)` instead of a skipped one, at the price of a short red gather job on
+runs nobody will read. Besides lint, it runs eight guards — five
+tabulated here in full (three of those five mirrored locally, the other two not),
 plus three more (also deliberately unmirrored) described just below the table:
 
 | Step | Script | What it proves |
@@ -4614,6 +4632,7 @@ plus three more (also deliberately unmirrored) described just below the table:
 | `Run CI-gate guard` | `shared/scripts/tools/check_ci_gate_coverage.py` | no test dir is unreferenced by CI, no quality gate has gone loose (`\|\| true` / `continue-on-error`) outside the documented `LOOSE_GATE_ALLOWLIST`, and `security.yml`'s critical gate still fails closed |
 | `Contract surface (gate)` | `scripts/verify_contract_surface.py` | the bytes `grade.py --format json` and `analyze_codebase.py` actually emit still match the cross-repo contract this repo publishes |
 | `Sweep delivery surface (gate)` | `scripts/verify_sweep_delivery_surface.py` | an operator's triage dismiss survives the outbox sweep to origin instead of being quarantined away |
+| `Coverage data set (gate)` | `shared/scripts/tools/check_ci_coverage_data_set.py` | every `.cov-data/.coverage.*` file the test tiers produce (`shared`, `integration`, one per plugin that has `scripts/`) arrived in the gather job — the tiers are measured in the parallel test jobs and travel by artifact, and without this step a lost file would leave that tier's changed lines unmeasured while `Diff coverage (gate)` is skipped or passes |
 | `Verify test-root JUnit coverage (gate)` | `shared/scripts/tools/ci_junit_plan.py verify` | every one of the 18 test roots the earlier `Plan test-root JUnit outputs` step discovered actually produced its planned `--junit-xml` — a silently-dropped root would otherwise read as false structural drift (or a masked platform-selection difference) in the manifest-drift step that follows it |
 
 The first three are mirrored locally by `scripts/verify_local.py`, so a push
@@ -4630,8 +4649,9 @@ importing it would bind `lib` for the whole interpreter and resolve differently
 under the plugin-vs-shared root split (ADR-045): green locally, red in CI. A
 lazy import only defers *which* `lib` binds; it does not make it safe.
 
-Four of `ci.yml`'s seven guards are deliberately **not** mirrored, each recorded
-with its reason in `CI_ONLY_GATES`: `Repair-PR safety (gate)` materialises its
+Five of `ci.yml`'s eight guards are deliberately **not** mirrored, each recorded
+with its reason in `CI_ONLY_GATES`: `Coverage data set (gate)` checks the artifacts
+the parallel test jobs handed over, which only exist in CI, `Repair-PR safety (gate)` materialises its
 checker from the PR's *base* revision precisely so a branch cannot vouch for
 itself, `Diff coverage (gate)` belongs in the F0 suite runner that already
 produces coverage (tracked as `trg-392dc923`), `Verify test-root JUnit

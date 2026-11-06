@@ -53,6 +53,19 @@ def test_reduction_keeps_the_assertion_lines_and_drops_the_setup_noise():
     assert "collected 3441 items" not in body
 
 
+def test_a_failure_in_the_parallel_shared_job_is_diagnosed_like_any_other():
+    """Since iterate-2026-11-06-ci-parallel-jobs the shared tier runs in `Tests (shared)`, so the
+    failing lines carry that job prefix and the required check's own log only shows the
+    needs-result step failing. The reduction keys on the assertion lines, not the job name."""
+    log = LOG.replace("Python (lint + test)", "Tests (shared)") + (
+        "Python (lint + test)\tTest jobs finished green (fail-closed on needs)\t2026 tests-shared: failure\n"
+    )
+    out = dx.reduce_failure_log(log)
+    body = "\n".join(out["excerpt"])
+    assert "FAILED shared/tests/test_x.py::test_five_entries" in body
+    assert "assert 6 == 5" in body
+
+
 def test_the_excerpt_is_always_labelled_untrusted():
     assert dx.reduce_failure_log(LOG)["untrusted"] is True
     assert dx.reduce_failure_log("")["untrusted"] is True

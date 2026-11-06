@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: test\n- Severity: medium\n- File: shared/tests/test_ci_parallel_jobs.py:83\n- Finding: AC1\u2019s reverse-drift protection is incomplete. This assertion accepts any additional test-running job provided it is added to `needs`, although AC1 permits tests only in `tests-shared` and `tests-main`. The gather job is also explicitly excluded, while the separate \u201cjob with needs\u201d test checks only existing step names; a new step named differently could run pytest there without failing either test.\n- Suggestion: Detect actual pytest/replay invocations across every job and require their job IDs to belong to `{tests-shared, tests-main}` and appear in `python-checks.needs`. Add mutation cases proving that an extra test job and a differently named pytest step in the gather job are rejected.\n\nOverall assessment: ship-with-fixes. The workflow and artifact hand-off appear consistent with the specification, but the explicitly required reverse-drift tests leave concrete gaps.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "## Findings\n\n**1. AC1 reverse-drift test exempts the gather job from pytest detection**\n- Category: test\n- Severity: medium\n- File: shared/tests/test_ci_parallel_jobs.py \u2014 `test_every_job_that_runs_tests_is_gathered` (`if job_id == GATHER: continue`)\n- Finding: AC1 says \"A job that runs pytest or `events_replay_gate` and **is not one of the test jobs** \u2026 fails a test (reverse drift)\". `python-checks` is not one of the test jobs, yet the test skips it entirely. Combined with `test_a_job_with_needs_runs_no_tests`, which only checks step *names* against a four-marker allowlist, a step named e.g. `Run docs tests` running `pytest shared/...` inside `python-checks` would pass every new test \u2014 exactly the \"tests after the needs barrier\" topology failure AC1 was written to catch.\n- Suggestion: drop the `GATHER` exemption and assert `runs_tests` is false for any job with `needs` (or at least for `python-checks`), instead of keying only on step names.\n\n**2. `test_a_job_with_needs_runs_no_tests` is name-based only**\n- Category: test\n- Severity: low (same root cause as #1)\n- File: shared/tests/test_ci_parallel_jobs.py\n- Finding: The test checks `n.startswith(marker)` on step names, so a renamed or new-named test step in a `needs` job escapes. The body-based detection already written in `test_every_job_that_runs_tests_is_gathered` is the right tool; it's just pointed at the wrong jobs.\n- Suggestion: Reuse the `runs_tests` body scan for all jobs with `needs`.\n\n**3. Coverage-data gate derives its plugin expectation from directory shape, not from the actual CI loop**\n- Category: edge-case\n- Severity: low\n- File: shared/scripts/tools/check_ci_coverage_data_set.py:32-46 (`expected_files`)\n- Finding: The gate expects `.coverage.<plugin>` only for plugins with `pyproject.toml` + `tests/` + `scripts/`. This mirrors a comment's description of the CI loop, but nothing in the tests (or the diff) proves the ci.yml plugin loop uses the same predicate \u2014 the loop lives in `tests-main` and isn't shown. If the CI loop measures a plugin with a different condition (e.g., no `scripts/` requirement, or a pyproject-keyed name), the gate either false-fails the required check or silently under-gates. The repo-fixture test (`test_this_repos_expected_set\u2026`) only checks a prefix, not parity.\n- Suggestion: Add a test that parses the `Run plugin tests` loop in ci.yml and asserts its measured-plugin predicate equals `expected_files`' predicate (or extract the predicate into one shared function both use).\n\n**4. `_result_check` doesn't simulate the `id:`/env plumbing, so the step could still break in CI while tests pass**\n- Category: test\n- Severity: low\n- File: shared/tests/test_ci_parallel_jobs.py \u2014 `_result_check`\n- Finding: The subprocess harness executes the step's `run` body with `NEEDS` injected, which is good, but the actual step also depends on `${{ toJSON(needs) }}` resolving at the env-mapping level and on the step having `id: needs_ok` (the `id` is asserted elsewhere but never exercised). This is acceptable given the spec's \"proven against synthetic results\" wording, but note the harness passes `env={**os.environ, \"NEEDS\": ...}` \u2014 on a machine where a stray `NEEDS` is exported, nothing breaks, fine; on Windows the skip guard covers it. No defect, only flagging that GitHub's actual `needs` JSON shape (`result`, `outputs`, `reason`?) isn't pinned \u2014 if GitHub adds fields the jq logic is unaffected (it only reads `.result`), so this is sound.\n- Suggestion: None required; optionally assert the jq filter tolerates extra keys (it does \u2014 no fix needed).\n\n**5. Docs/test arithmetic: \"eight guards\", \"five tabulated\"**\n- Category: spec\n- Severity: low\n- File: docs/hooks-and-pipeline.md (diff hunk)\n- Finding: The docs now say eight guards / five tabulated / \"other two not\" mirrored locally, and `CI_ONLY_GATES` gains `Coverage data set (gate)`. The table shown adds exactly one row (four \u2192 five tabulated), and the unmirrored paragraph goes four \u2192 five. The numbers are internally consistent in the visible text, but the claim \"three of those five mirrored locally\" isn't verifiable from the diff \u2014 verify_local.py only shows additions. A miscount here would be caught by whatever ratchets the docs table; if no test pins the guard count, this can silently drift.\n- Suggestion: Confirm a test pins the guard count/table against ci.yml; if none exists, that's pre-existing, not this diff's problem.\n\n## Verified-clean items worth noting\n\n- The fail-closed jq (`length > 0 and all(.[]; .result == \"success\")`) is correct for failure/cancelled/skipped/empty, and the synthetic-result tests exercise the real script body via bash+jq \u2014 a genuine behavioral test, not a string match.\n- Artifact collision on `.ci-junit/plan.json` (both artifacts contain it) is handled: deterministic plan + `merge-multiple` last-writer-wins, and the download is ordered before `Combine coverage` and the JUnit verify gate, per AC4/AC5.\n- The needs-result step ordering (Lint \u2192 needs check \u2192 download \u2192 coverage gate \u2192 Combine) preserves AC6's relative gate order in the visible steps.\n- `check_ci_coverage_data_set.py` fails closed on a missing `.cov-data/` dir and on empty files \u2014 the empty-file and no-dir paths are both tested.\n- No security issues: no untrusted input reaches a sink; the `NEEDS` env is GitHub-controlled JSON parsed by jq; artifact names are run-scoped.\n\n## Overall assessment\n\nThe implementation matches the corrected two-job shape and the ACs closely, with strong fail-closed semantics and unusually good structural tests. The one substantive gap is that the reverse-drift safety net deliberately exempts `python-checks` from body-based test detection, which is exactly the job AC1 says must never run tests \u2014 fix that (and ideally tie the coverage-gate's plugin predicate to the CI loop) before merge. Ship-with-fixes.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-11-06-ci-parallel-jobs",
+    "at": "2026-11-06T13:00:40.097730+00:00"
+  },
+  "verdicts": {
+    "openai": "revise",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

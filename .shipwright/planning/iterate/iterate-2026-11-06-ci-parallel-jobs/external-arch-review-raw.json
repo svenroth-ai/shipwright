@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "1. **The question, answered in one sentence.** Splitting CI into parallel jobs is justified \u2014 a 16-minute serial required check is a real, daily tax \u2014 but four test jobs is more standing machinery than the problem needs; moving the single 8-minute `shared/tests` step into one parallel job buys nearly all the time for a fraction of the surface.\n\n2. **The smallest thing that would do.** Two jobs: `Python (lint + test)` unchanged in name and gates, plus one `tests-shared` job carrying the three `shared/` roots and their single `.coverage.shared`. The `needs`-result fail-closed step and the one-artifact handoff are needed either way; the coverage-set gate shrinks to \"one file present\" and the scanner/setup-duplication questions (AC7) mostly disappear.\n\n3. **What it costs to keep.** A needs graph every future workflow change must reason about; artifact upload/download conventions with hidden-file and merge semantics; a coverage-set gate whose plugin derivation must track the test loop forever; five pinned YAML-shape tests to keep honest; per-job setup duplication; advisory-checks declarations so the drift detector stays quiet. That is a lot of invariants for a mechanism whose only output is minutes.\n\n4. **What it forecloses.** Mostly `none identified` \u2014 it composes with the planned sharding of `shared/tests` (iterate 3/3), which is a point in its favor. It does make the \"CI stays serial as the independent check\" posture slightly harder to explain, since the CI run is no longer one serial process even before sharding.\n\n5. **Findings**\n\n- Category: proportionality\n  - Severity: medium\n  - Finding: The serial time is dominated by `shared/tests` (~8 of ~15 min). Splitting that one step out yields ~11\u201312 min push; the full four-way split yields ~10\u201311. The extra ~1 minute is bought with three more jobs, three more artifact sets, a plugin-deriving coverage-set gate (AC5), scanner consolidation rules (AC7), and four more names in the drift/advisory surfaces \u2014 permanent reasoning cost recurring on every future CI change.\n  - Suggestion: Ship iterate 2/3 as `python-checks` + `tests-shared` only. Keep the same fail-closed `needs` step and single-artifact convention so the pattern is established, and let iterate 3/3 (sharding `shared/tests`) decide whether to fan out further using evidence from a real run rather than the current estimate.\n\n- Category: existence\n  - Severity: low\n  - Finding: Within the chosen shape, nothing here is gratuitous \u2014 the fail-closed result check is genuinely required (GitHub treats a skipped required check as passing), and `always()` rather than `!cancelled()` is the correct, load-bearing detail. The mechanism should exist; it is the width that is off.\n  - Suggestion: Accept the result-check and artifact mechanics as designed; apply them to one test job now.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Four separate test jobs are not justified yet; move only the shared tests into a parallel job.**\n\n2. **Smallest thing that would do:** Keep plugins, integration, events replay, and all gates in `python-checks`; move the shared test group into one internally serial job. Transfer its JUnit and coverage outputs through one artifact and explicitly check its result. Shared takes ~8 minutes; the other three groups total ~7.1 minutes, so this split offers roughly the same current critical path as four parallel jobs, before setup and gate overhead.\n\n3. **What it costs to keep:** One additional job and setup sequence, one artifact hand-off, and explicit result and report-completeness checks. The proposal multiplies job wiring and setup without demonstrating a corresponding wall-clock benefit.\n\n4. **What it forecloses:** Artifact transfer becomes part of the verification contract. The smaller split still permits later shared-test sharding; additional parallel jobs can accompany that change when they shorten the critical path.\n\n5. **Findings**\n\nCategory: simpler-alternative\nSeverity: medium\nFinding: Four parallel test jobs add permanent coordination around workloads that already fit within the ~8-minute shared-test bottleneck. Their additional complexity buys little demonstrated improvement over extracting shared tests alone.\nSuggestion: Extract only the shared test group now, retain the remaining tests and gates in the required job, and reconsider further separation alongside shared-test sharding.\n\nSHIPWRIGHT_VERDICT: reject",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "architecture",
+  "capture": {
+    "run_id": "iterate-2026-11-06-ci-parallel-jobs",
+    "at": "2026-11-06T12:19:55.850709+00:00"
+  },
+  "verdicts": {
+    "glm": "revise",
+    "openai": "reject"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=reject"
+  }
+}
