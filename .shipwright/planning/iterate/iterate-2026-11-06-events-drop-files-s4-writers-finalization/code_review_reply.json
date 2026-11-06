@@ -1,0 +1,7 @@
+{"section":"S4-writers-finalization","verdict":"PASS","review":[
+{"severity":"medium","category":"correctness","file":"shared/scripts/lib/events_stage.py","line":102,"finding":"Stage, absorb and seal ran without the writers lock; fixed after review (writer_lock across list, validate, add, commit) with a test."},
+{"severity":"medium","category":"correctness","file":"plugins/shipwright-changelog/skills/changelog/SKILL.md","line":347,"finding":"Release event commit lost its path restriction; fixed after review (commit restricted to the event paths staged)."},
+{"severity":"medium","category":"readability","file":"shared/scripts/lib/events_write.py","line":57,"finding":"_monotonic_ts was never called; fixed after review (wired into the drops append, test added)."},
+{"severity":"low","category":"correctness","file":"shared/scripts/lib/events_write.py","line":104,"finding":"Drops appends wrote CRLF on Windows; fixed (newline LF for drops only, test added)."},
+{"severity":"low","category":"correctness","file":"shared/scripts/lib/events_stage.py","line":116,"finding":"One torn drop blocked the whole absorb; fixed (valid files are absorbed). Also fixed: own_drops implicit key only for a per-unit identity, subfolder files ignored."},
+{"severity":"low","category":"correctness","file":"shared/scripts/tools/record_event.py","line":468,"finding":"attach-commit is not idempotent under drops; deferred (extra event_amended is harmless, folds to the same commit)."}]}

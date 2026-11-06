@@ -8,7 +8,6 @@ conflict as a branch write and dates a deleted file.
 
 from __future__ import annotations
 
-import json
 import os
 import subprocess
 import sys
@@ -27,6 +26,10 @@ from lib import evidence_drop  # noqa: E402
 from lib.change_type_diff import change_type_diff_error  # noqa: E402
 from lib.change_type_paths import SHAPE_GENERIC, SHAPE_SHIPWRIGHT_MONOREPO, unclassified_paths  # noqa: E402
 from test_requirement_gate_change_type_diff import _event, _git, _repo, _write  # noqa: E402
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "testkit"))
+from event_log_probe import event_records  # noqa: E402
+
 
 LABELS = ("docs", "tooling", "infra", "compliance")
 CATALOGS = [".shipwright/planning/01-adopted/spec.md", ".shipwright/planning/02-api/spec.md"]
@@ -74,7 +77,7 @@ def test_a_finalize_rerun_with_unclassified_extras_is_refused_not_short_circuite
         _record_event(tmp_path, "", "iterate-2026-10-08-probe", "d", event_extras={"intent": "feature"})
     # the Stop-hook repair pass supplies no claims: nothing to judge, the recorded id comes back
     assert _record_event(tmp_path, "", "iterate-2026-10-08-probe", "d") == first
-    assert len([json.loads(line) for line in log.read_text(encoding="utf-8").splitlines() if line]) == 1
+    assert len(event_records(tmp_path)) == 1
 
 
 # --- (3) stacked unit -----------------------------------------------------------

@@ -126,6 +126,8 @@ class AssembledRead(RecordRead):
 class EventLogNotReadable(RuntimeError):
     """An absence gate cannot decide: a drop file of the run's key is non-ok."""
 
+    code = "event_log_not_readable"
+
 
 def require_readable_for_absence(read: AssembledRead, run_key: str) -> None:
     """Raise :class:`EventLogNotReadable` when ``run_key``'s own drop files are damaged."""

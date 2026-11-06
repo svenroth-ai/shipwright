@@ -36,9 +36,8 @@ the compliance twin (S3/S4) still read the legacy file only. The key is honoured
 now because S0 owns reading it. READING is ``lib/events_read.py`` (S2): the one
 assembling reader with per-file status, layout independent.
 
-Not here (owned by later units, see the BRIEF): the ``run`` stamp and 16-hex ids
-(S4), the single live key-precedence writer module (S4), fold/archive tooling (S6). The key rule below is the minimum a dormant
-writer needs. The advisory lock is ``events_lock_path`` -- the SAME untracked file
+The ``run`` stamp, 16-hex ids and the atomic append live in ``events_write`` (S4); fold/archive
+tooling is S6. The advisory lock is ``events_lock_path`` -- the SAME untracked file
 the legacy path already locks, so it lives OUTSIDE the tracked drops folder.
 """
 
@@ -118,14 +117,36 @@ def worktree_id(project_root: Path | str) -> str:
     return _wt8(_git_identity(Path(project_root))[0])
 
 
-def drop_key(project_root: Path | str, identity: tuple[str, bool, str] | None = None) -> str:
-    """The minimum S0 key rule: explicit run id, else branch, else detached/main."""
-    explicit = os.environ.get("SHIPWRIGHT_RUN_ID", "").strip()
+def _unit_identity(git_dir: str, is_main: bool, root: Path) -> str:
+    """Tier 2: a campaign per-unit worktree names itself (``.worktrees/campaign-<slug>--<unit>``)."""
+    if is_main:
+        return ""
+    folder = Path(os.path.realpath(root))
+    return folder.name if folder.parent.name == ".worktrees" and "--" in folder.name else ""
+
+
+def drop_key(project_root: Path | str, identity: tuple[str, bool, str] | None = None,
+             run_id: str | None = None) -> str:
+    """THE live key rule (DESIGN 4.1/10.2); one function for every writer.
+
+    1. an explicit run id (``run_id`` argument, else ``SHIPWRIGHT_RUN_ID``) -- wins also in the main tree;
+    2. the per-unit worktree's own identity; 3. ``_branch-<slug>``; 4. ``_detached-<wt8>``;
+       ``_main`` only for main-tree writers. Always ``sanitize_key``-clean (<= 80 chars).
+    """
+    explicit = (run_id or os.environ.get("SHIPWRIGHT_RUN_ID", "")).strip()
     if explicit:
         return sanitize_key(explicit)
+    return implicit_key(project_root, identity)
+
+
+def implicit_key(project_root: Path | str, identity: tuple[str, bool, str] | None = None) -> str:
+    """Tiers 2-4 of :func:`drop_key` (no explicit run id): what an event written WITHOUT one lands under."""
     git_dir, is_main, branch = identity or _git_identity(Path(project_root))
     if is_main:
         return "_main"
+    unit = _unit_identity(git_dir, is_main, Path(project_root))
+    if unit:
+        return sanitize_key(unit)
     if branch and branch != "HEAD":
         return sanitize_key("_branch-" + branch)
     return "_detached-" + _wt8(git_dir)
@@ -168,7 +189,7 @@ def _names_in_head(root: Path) -> set[str] | None:
     return {line.rsplit("/", 1)[-1] for line in out.splitlines() if line}
 
 
-def resolve_events_write_path(project_root: Path | str) -> Path:
+def resolve_events_write_path(project_root: Path | str, run_id: str | None = None) -> Path:
     """Where the next event is appended. Call it INSIDE ``events_lock_path``'s lock.
 
     ``legacy``: ``resolve_events_path`` (today's behaviour).
@@ -181,7 +202,7 @@ def resolve_events_write_path(project_root: Path | str) -> Path:
     if events_layout(root) != "drops":
         return resolve_events_path(root)
     git_dir, is_main, branch = _git_identity(root)
-    key, wt8 = drop_key(root, (git_dir, is_main, branch)), _wt8(git_dir)
+    key, wt8 = drop_key(root, (git_dir, is_main, branch), run_id), _wt8(git_dir)
     prefix = f"{key}--{wt8}--"
     drops = root / DROPS_DIR
     drops.mkdir(exist_ok=True)

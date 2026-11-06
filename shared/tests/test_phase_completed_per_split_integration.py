@@ -30,6 +30,10 @@ import subprocess
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "testkit"))
+from event_log_probe import event_records  # noqa: E402
+
+
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _RECORD_EVENT = _REPO_ROOT / "shared" / "scripts" / "tools" / "record_event.py"
 
@@ -58,8 +62,7 @@ def _record(project_root: Path, event_type: str, phase: str,
 
 
 def _events_of(project_root: Path, event_type: str, phase: str) -> list[dict]:
-    path = project_root / "shipwright_events.jsonl"
-    events = [json.loads(ln) for ln in path.read_text("utf-8").splitlines() if ln.strip()]
+    events = event_records(project_root)
     return [e for e in events if e.get("type") == event_type and e.get("phase") == phase]
 
 

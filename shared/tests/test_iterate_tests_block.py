@@ -19,6 +19,10 @@ from pathlib import Path
 
 import pytest
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "testkit"))
+from event_log_probe import event_lines  # noqa: E402
+
+
 _SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(_SCRIPTS))
 
@@ -278,8 +282,7 @@ class TestFinalizeIterateWiring:
         (tmp_path / "shipwright_events.jsonl").touch()
         finalize_iterate._record_event(
             tmp_path, "", RUN, "iterate: wiring probe", event_extras=extras)
-        lines = [ln for ln in (tmp_path / "shipwright_events.jsonl")
-                 .read_text(encoding="utf-8").splitlines() if ln.strip()]
+        lines = event_lines(tmp_path)
         assert lines, "no event was appended"
         return json.loads(lines[-1])
 

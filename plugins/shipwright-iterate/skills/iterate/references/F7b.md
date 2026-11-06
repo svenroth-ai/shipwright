@@ -29,6 +29,12 @@ The tool prints a JSON status to stdout: `committed` / `clean` /
 the new commit SHA. Only the `committed` path produces a new commit
 on the branch; all other statuses are noops.
 
+> **Drops layout.** The tool also seals every UNTRACKED drop written from the main tree
+> (`shipwright_events.d/_main--*` and any file whose worktree id is the main git dir's): it lists them
+> with `git ls-files --others`, validates each is whole, and commits exactly those paths
+> (`chore(events): seal event drops for <run_id>`). The `committed` status then carries a `sealed`
+> list. A non-empty index (`staged_changes`) or a torn file (`invalid_drop`) skips instead.
+
 > **Why this exists.** SKILL.md historically documented F7 as
 > "writes only to a gitignored event log" — incorrect for
 > self-tracking repos. On 2026-05-22 a `git reset --hard origin/main`

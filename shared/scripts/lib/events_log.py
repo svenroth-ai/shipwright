@@ -261,7 +261,10 @@ def latest_event_dt(project_root: Path | str) -> datetime | None:
         if dt.tzinfo is None:
             dt = dt.replace(tzinfo=timezone.utc)
         else:
-            dt = dt.astimezone(timezone.utc)
+            try:
+                dt = dt.astimezone(timezone.utc)
+            except OverflowError:  # year-1 instant + offset: unparseable, like any bad ts
+                continue
         if latest is None or dt > latest:
             latest = dt
 

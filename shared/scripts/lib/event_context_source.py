@@ -14,12 +14,24 @@ from __future__ import annotations
 import hashlib
 import io
 import json
+import re
 from pathlib import Path
 from typing import Iterator
 
 from .events_log import event_files
 from .events_read import instant
 from .jsonl_records import split_records
+
+
+_RUN_MEMBER = re.compile(rb',"run":"[^"\\]*"(?=\}\s*$)')
+
+
+def strip_run(raw: bytes) -> bytes:
+    """``raw`` without the stamped ``"run":"<key>"`` member: the stamp is routing metadata, not content (DESIGN 10.2).
+
+    Textual and exact otherwise, so a legacy line (never stamped) is returned byte for byte.
+    """
+    return _RUN_MEMBER.sub(b"", raw)
 
 
 def _sort_key(raw: bytes) -> tuple:
@@ -52,7 +64,26 @@ def _extra_lines(files: list[Path]) -> list[bytes]:
             if raw.strip():
                 out.extend(_one_record_per_line(raw))
     out.sort(key=_sort_key)
-    return out
+    return _collapse_duplicates(out)
+
+
+def _collapse_duplicates(lines: list[bytes]) -> list[bytes]:
+    """Archive/drop duplicates (a fold racing a fold): the same id with the same content -- the ``run`` stamp
+    aside -- is ONE event, exactly as the assembled reader sees it. A differing body under one id keeps both."""
+    seen: set[tuple[bytes, bytes]] = set()
+    kept: list[bytes] = []
+    for raw in lines:
+        try:
+            ident = json.loads(raw.decode("utf-8")).get("id")
+        except (UnicodeError, ValueError, AttributeError):
+            ident = None
+        body = strip_run(raw).strip()
+        if isinstance(ident, str) and ident:
+            if (ident.encode(), body) in seen:
+                continue
+            seen.add((ident.encode(), body))
+        kept.append(raw)
+    return kept
 
 
 def iter_event_lines(project_root: Path | str) -> Iterator[tuple[int, bytes]]:

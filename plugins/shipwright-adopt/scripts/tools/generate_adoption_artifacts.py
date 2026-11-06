@@ -216,7 +216,7 @@ def generate(
     from config_writer import write_all  # type: ignore
     from agents_md_renderer import write_agents_md  # type: ignore
     from artifact_writer import _resolve_retroactive_adrs, write_agent_docs, write_claude_md, write_spec  # type: ignore
-    from event_seeder import seed_adopted_event, seed_backfill_events  # type: ignore
+    from event_seeder import events_target, seed_adopted_event, seed_backfill_events  # type: ignore
     from fr_id_sequence import canonical_fr_id  # type: ignore
     # suggest_iterate hook is plugin-owned (registered in
     # plugins/shipwright-iterate/hooks/hooks.json under UserPromptSubmit);
@@ -506,7 +506,7 @@ def generate(
     )
     if backfill_events:
         seed_backfill_events(events_path, git.get("major_refactor_commits", []))
-    results["written"].append(str(events_path))
+    results["written"].append(str(events_target(events_path)))
 
     # Hook is plugin-owned (registered in plugins/shipwright-iterate/hooks/hooks.json);
     # no per-project install. Result key kept so that any external tool that

@@ -22,6 +22,10 @@ import subprocess
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "testkit"))
+from event_log_probe import event_text  # noqa: E402
+
+
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _BUNDLE = _REPO_ROOT / "shared" / "scripts" / "tools" / "finalize_bundle.py"
 
@@ -106,7 +110,7 @@ def _changelog_drops(root: Path) -> list[Path]:
 
 
 def _work_events(root: Path) -> list[dict]:
-    text = (root / "shipwright_events.jsonl").read_text(encoding="utf-8")
+    text = event_text(root)
     events = [json.loads(ln) for ln in text.splitlines() if ln.strip()]
     return [e for e in events if e.get("type") == "work_completed"]
 

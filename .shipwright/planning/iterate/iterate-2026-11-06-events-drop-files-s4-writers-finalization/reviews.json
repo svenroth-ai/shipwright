@@ -1,0 +1,440 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-06-events-drop-files-s4-writers-finalization",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-06T17:08:52.734814+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 13,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "Step 3 bundles F6 staging, ensure_current ABSORB, F7b seal, and the F11 committed-check into one step, but per the campaign the \"read-side\" gate items must be cleared in S3 before the writer work lands (`ensure_current` on a behind branch with a drop is an S3 done-when). The mini-plan doesn't state its S3 prerequisite explicitly, so landing S4 against an S2-only tree would put the ratchet in an ambiguous state (write-side failures mixed with read-side failures it doesn't own).",
+          "suggestion": "Add \"prerequisite: S3 merged, read-side ratchet empty\" as an explicit precondition, and split step 3's checklist so each F-item maps to its own kill criterion (KC4 12-writer test, \"F6 forgets to stage → F11 fails after absorb\", seal).",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The ABSORB step in `ensure_current` runs before the F11 committed-check, but absorb mutates state by pulling in another run's drop files. If absorb re-writes/moves a drop that a concurrent writer (another Stop hook in a parallel branch of the same tree) is mid-append to, the \"one lock per tree\" in the risks line doesn't obviously cover absorb — the lock is presumably held per run/own-key, while absorb touches files of other keys.",
+          "suggestion": "Specify whether absorb takes the same lock (and at what scope: per-tree vs per-key), and add a test for absorb racing a concurrent append of a foreign key. If absorb is read-only for foreign keys, say so in the plan.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "dedup_event_lines`/`event_context_index` \"ignore the run member\" — but under legacy these compare exact bytes and the bytes must not change. If the shared implementations are changed to a run-ignoring comparison unconditionally, legacy lines that previously deduped by exact bytes could behave differently (e.g. two lines differing only in whitespace now compare equal, or vice versa if run-ignoring is implemented as JSON-parse-and-drop). The spike already showed byte-identity tests exist; the plan says \"pinned by tests\" but doesn't say the comparison itself is layout-conditional.",
+          "suggestion": "Make the run-ignoring comparison apply only under the drops layout; under legacy keep the exact-line comparison untouched.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Rotate-on-commit \"with the ls-tree/HEAD-marker probe (never git status)\" — the ls-tree probe answers \"is this path in HEAD\", but the F6 staging bug mode is \"staged but not committed\" and \"committed in a squash-merge\" (the design's own evidence shows squash merges are the normal flow). After a squash merge, the file is in HEAD with a different commit than the one the event claims. The plan doesn't state whether the probe validates content/marker at HEAD or just path presence, and the squash case is exactly where naive ls-tree passes and F11 should still be satisfied — but a `attach_commit`/`event_amended` recorded against the pre-squash sha will be stale.",
+          "suggestion": "Spell out the probe semantics (path-in-HEAD plus marker match) and decide explicitly that a squash-rewritten commit sha in `event_amended` is acceptable or is refreshed by absorb.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "\"Same-id dedup rule\" and \"16-hex ids\" — the plan doesn't state the collision behavior when two concurrent writers generate the same id for different content (allowed to collide, or regenerate?). Also, id width change means legacy 8-hex (presumably) ids coexist with 16-hex in a split log during migration.",
+          "suggestion": "State that the dedup rule treats same-id-different-content as a hard error, and that readers/validators accept both id widths during migration.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "Name validation \"cap 80\" is mentioned but no character whitelist. Since drop filenames derive from run keys and appear in git paths traversed by plugin classifiers and the S6 path validator, unvalidated characters (spaces, `..`, unicode) become a later S6 problem.",
+          "suggestion": "Pin the validation now (e.g. `[a-z0-9-]`, reject traversal outright) rather than deferring to S6.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Step 1 puts drop_key/implicit_key in `events_layout.py` and writers in `events_write.py` — fine, no over-production; but `stage_event_drops.py` as a separate entry from `events_stage.py` may be a single-use wrapper. If staging is only called from one site, fold it in.",
+          "suggestion": "Only split into two modules if both have independent callers or independent test seams; otherwise one module.  Overall assessment: The approach is sound and well-scoped — dormant-by-default with pinned legacy bytes is the right shape. The main gap is concurrency semantics around the absorb step and under-specified probe behavior under squash merges; both need one paragraph of decision before implementation, not a redesign.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "dependency ·",
+          "file": null,
+          "line": null,
+          "finding": "Step 2 does not account for all S4 write paths: `append_phase_history`, `append_iterate_entry`, `write_decision_drop`, duplicate `EVENT_FILE` users, and `verifiers/common.read_events_jsonl`. Leaving any direct append behind can split a run across layouts or bypass locking and deduplication.",
+          "suggestion": "Add an explicit migration checklist covering the S4 inventory and a guard against remaining direct event writes. State that the S2/S3 reader contract and real `ensure_current` integration test are prerequisites.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach ·",
+          "file": null,
+          "line": null,
+          "finding": "The plan omits `attach_commit_to_event` becoming `event_amended`, plus drop validation in `validate_event_log`, `integrate_main`, and `integrate_merge`. These are necessary to preserve immutable committed drops and reject invalid incoming files.",
+          "suggestion": "Include these changes explicitly. Verify that attaching a commit creates an amendment without modifying the original drop, and that both integration paths validate incoming drops.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "“Absorb,” “seal,” and “committed state” name components but leave the critical finalization ordering unspecified. In particular, staging must not accidentally include another run’s files, and absorption must not conceal a missing F6 stage operation.",
+          "suggestion": "Define the F6 → ABSORB → F11 → F7b transitions and their failure behavior. Include the required test where F6 omits staging and F11 still fails after absorption, plus a concurrent append/seal test. Preserve the explicit legacy no-op behavior for the new ordering.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "“Atomic create, dedup” does not distinguish same-ID replay from semantic deduplication. A fresh run ID can otherwise produce a second `phase_completed`; overly broad deduplication can suppress legitimate events.",
+          "suggestion": "Specify the design 10.2 dedup scopes and key precedence, including the treatment of conflicting records sharing an ID. Verify both 12 parallel writers and a repeated `plan` with a fresh run ID.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security ·",
+          "file": null,
+          "line": null,
+          "finding": "The new key-derived filesystem paths lack an explicit validation requirement. Path-restricted Git operations do not protect file creation from malformed keys.",
+          "suggestion": "Validate keys before constructing paths, enforce the specified 80-character name cap, and reject traversal and path separators. Keep the lock outside the drops folder and perform rotation decisions under that lock using the required HEAD-marker/`ls-tree` probe.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk ·",
+          "file": null,
+          "line": null,
+          "finding": "Step 4 says deduplication and fingerprints will ignore `run` without limiting that behavior to drops. Applying it globally could change legacy comparisons despite preserving writer bytes.",
+          "suggestion": "Scope normalization to the drops contract and retain exact legacy-line comparisons. Test legacy behavior alongside split-log replay equivalence.  The approach is directionally sound and appropriately keeps the writer dormant. It needs explicit coverage of the remaining write paths, immutable amendments, and finalization invariants before implementation.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-06T17:08:53.445212+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] **Findings**\n\n- **Category: dependency — Severity: medium**\n  **Finding:** Step 3 bundles F6 staging, ensure_current ABSORB, F7b seal, and the F11 committed-check into one step, but per the campaign the \"read-side\" gate items must be cleared in S3 before the writer work lands (`ensure_current` on a behind branch with a drop is an S3 done-when). The mini-plan doesn't state its S3 prerequisite explicitly, so landing S4 against an S2-only tree would put the ratchet in an ambiguous state (write-side failures mixed with read-side failures it doesn't own).\n  **Suggestion:** Add \"prerequisite: S3 merged, read-side ratchet empty\" as an explicit precondition, and split step 3's checklist so each F-item maps to its own kill criterion (KC4 12-writer test, \"F6 forgets to stage → F11 fails after absorb\", seal).\n\n- **Category: risk — Severity: high**\n  **Finding:** The ABSORB step in `ensure_current` runs *before* the F11 committed-check, but absorb mutates state by pulling in another run's drop files. If absorb re-writes/moves a drop that a concurrent writer (another Stop hook in a parallel branch of the same tree) is mid-append to, the \"one lock per tree\" in the risks line doesn't obviously cover absorb — the lock is presumably held per run/own-key, while absorb touches files of *other* keys.\n  **Suggestion:** Specify whether absorb takes the same lock (and at what scope: per-tree vs per-key), and add a test for absorb racing a concurrent append of a foreign key. If absorb is read-only for foreign keys, say so in the plan.\n\n- **Category: edge-case — Severity: medium**\n  **Finding:** `dedup_event_lines`/`event_context_index` \"ignore the run member\" — but under legacy these compare exact bytes and the bytes must not change. If the shared implementations are changed to a run-ignoring comparison unconditionally, legacy lines that previously deduped by exact bytes could behave differently (e.g. two lines differing only in whitespace now compare equal, or vice versa if r […truncated]\n\n[openai] 1. **Category: dependency · Severity: high**  \n   **Finding:** Step 2 does not account for all S4 write paths: `append_phase_history`, `append_iterate_entry`, `write_decision_drop`, duplicate `EVENT_FILE` users, and `verifiers/common.read_events_jsonl`. Leaving any direct append behind can split a run across layouts or bypass locking and deduplication.  \n   **Suggestion:** Add an explicit migration checklist covering the S4 inventory and a guard against remaining direct event writes. State that the S2/S3 reader contract and real `ensure_current` integration test are prerequisites.\n\n2. **Category: approach · Severity: high**  \n   **Finding:** The plan omits `attach_commit_to_event` becoming `event_amended`, plus drop validation in `validate_event_log`, `integrate_main`, and `integrate_merge`. These are necessary to preserve immutable committed drops and reject invalid incoming files.  \n   **Suggestion:** Include these changes explicitly. Verify that attaching a commit creates an amendment without modifying the original drop, and that both integration paths validate incoming drops.\n\n3. **Category: edge-case · Severity: high**  \n   **Finding:** “Absorb,” “seal,” and “committed state” name components but leave the critical finalization ordering unspecified. In particular, staging must not accidentally include another run’s files, and absorption must not conceal a missing F6 stage operation.  \n   **Suggestion:** Define the F6 → ABSORB → F11 → F7b transitions and their failure behavior. Include the required test where F6 omits staging and F11 still fails after absorption, plus a concurrent append/seal test. Preserve the explicit legacy no-op behavior for the new ordering.\n\n4. **Category: edge-case · Severity: medium**  \n   **Finding:** “Atomic create, dedup” does not distinguish same-ID replay from semantic deduplication. A fresh run ID can otherwise produce a second `phase_completed`; overly broad deduplication can suppress legitimate events.  \n   **Suggesti […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/events_stage.py",
+          "line": 102,
+          "finding": "Stage, absorb and seal ran without the writers lock; fixed after review (writer_lock across list, validate, add, commit) with a test.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
+          "line": 347,
+          "finding": "Release event commit lost its path restriction; fixed after review (commit restricted to the event paths staged).",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "readability",
+          "file": "shared/scripts/lib/events_write.py",
+          "line": 57,
+          "finding": "_monotonic_ts was never called; fixed after review (wired into the drops append, test added).",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/events_write.py",
+          "line": 104,
+          "finding": "Drops appends wrote CRLF on Windows; fixed (newline LF for drops only, test added).",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/events_stage.py",
+          "line": 116,
+          "finding": "One torn drop blocked the whole absorb; fixed (valid files are absorbed). Also fixed: own_drops implicit key only for a per-unit identity, subfolder files ignored.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/record_event.py",
+          "line": 468,
+          "finding": "attach-commit is not idempotent under drops; deferred (extra event_amended is harmless, folds to the same commit).",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-06T17:08:53.018323+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "a241a25756797e59cc06bdc178ab4cf3da4306b8"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "high",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: one run cannot commit another run's drops — Absorb was wt8-scoped. Fixed: it leaves every file holding a work_completed to its owner's F6, own_drops adds the implicit key only for a per-unit identity; tests added.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: closed files are never edited, torn files never committed — Stagers ran outside the writers lock. Fixed: writer_lock around list, validate, add, commit in stage, absorb and seal.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: legacy behaviour is unchanged — Changelog release step lost its path restriction. Fixed. Absorb and seal now return early unless the layout is drops.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: legacy readers unchanged — latest_by_ts replaces last-in-file in two position readers; accepted, stated in the ADR (clock order is the spec's rule).",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: run stamp stripped exactly — Fixed: only the last top-level member is stripped; the adopt seeder writes compact separators; nested test added.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: seal commits only own events — Seal takes the main tree's untracked drops; foreign explicit-key drops are mis-attributed in the commit trailer; deferred (rare).",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-06T17:08:53.156263+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "a241a25756797e59cc06bdc178ab4cf3da4306b8"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/tools/stage_event_drops.py, `stage()` (~line 33)",
+          "line": null,
+          "finding": "The \"nothing to stage: take no lock\" fast path races with a concurrent writer. `own_drops()` is checked BEFORE the lock; if empty, `_stage_locked` is called unlocked — but it re-lists `own_drops` and will stage any drop that a concurrent Stop hook appended in between, i.e. it can `git add` a file mid-append (the exact interleaving `writer_lock`'s docstring says must not happen: a line landing after the add sits in a now-staged, about-to-be-closed file). The absorb path (`absorb_wt_drops`) has the same early-exit but always re-lists inside the lock, so only staging is affected.",
+          "suggestion": "Take the lock whenever a drops folder exists (or re-check emptiness under the lock and return before any `_git add`).",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec / regression",
+          "file": "shared/scripts/lib/churn_merge.py:194 and shared/scripts/lib/event_context_source.py:26 (`_RUN_MEMBER` / `strip_run`)",
+          "line": null,
+          "finding": "The spec pins \"under legacy the bytes written stay exactly as today (old `dedup_event_lines` compares exact lines)\" and the external review explicitly warned to scope the run-ignoring comparison to drops. Both `dedup_event_lines` and the context-index hash now strip `\"run\":\"…\"` unconditionally — including legacy-layout lines. Any legacy event that legitimately carries a member literally named `run` (events accept arbitrary extras/detail keys) now dedups/fingerprints differently than before the change. Low likelihood, but it is a silent behavioral change on the legacy path the spec forbids.",
+          "suggestion": "Gate the strip on the repo's layout (or apply it only to files under the drops/archive folders, which these functions can distinguish since `iter_event_lines`/`dedup_event_lines` know their sources).",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/commit_event_followup.py, `_seal_drops` / `commit_followup` (~line 176)",
+          "line": null,
+          "finding": "When the drops layout has something to seal, `commit_followup` returns the seal result and never runs the legacy follow-up. During the S9a flip window a repo can have BOTH a tracked legacy log with an uncommitted event AND new drops (the spec keeps legacy interpretation \"forever\"); in that mixed state the legacy event-commit path is silently skipped. Also, `wt_drops` filters by `wt8` only, so a drop written from the main tree under an explicit foreign run-id key is sealed under this run's message — acceptable per the F7b doc, but the mixed-layout skip is not.",
+          "suggestion": "After a successful/`nothing` seal outcome, fall through to the legacy tracked-file logic rather than returning unconditionally when a legacy `shipwright_events.jsonl` exists.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "shared/scripts/tools/convert_configs_to_events.py (~line 204, error branch)",
+          "line": null,
+          "finding": "Under drops the existence check is `out_path.exists() or (drops and any(p.exists() for p in event_files(...)))`, but the printed error still says the legacy `shipwright_events.jsonl` exists. On a drops repo with only drop files, the operator is told to delete a file that isn't there. Cosmetic-but-real operational confusion in a refusal path.",
+          "suggestion": "Mention `shipwright_events.d` in the message when the layout is drops.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_events_writers_drops.py, `test_stage_and_absorb_wait_for_the_writers_lock",
+          "line": null,
+          "finding": "The `_Spy` lock stub records only that the constructor was called and enforces no mutual exclusion, and the test performs no concurrent append — it would pass even if the lock were dropped entirely (as long as the call remains). It pins \"the function calls writer_lock\", not \"staging/absorb are atomic w.r.t. writers\". The KC4 integration test covers append-vs-append, but nothing covers append-vs-add.",
+          "suggestion": "Add a test that holds a real writer append (or the FileLock) and asserts `stage()`/`absorb_wt_drops()` block, or run a stage concurrently with an appending thread and assert no torn/staged-mid-append outcome.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/verifiers/_events_committed.py, `drops_committed_state` (~line 50)",
+          "line": null,
+          "finding": "The `legacy_state is True` early-return fires whenever the legacy check passed, even if the run's `work_completed` is in a working-copy drop that is NOT committed. In a mixed tree (legacy log carrying an older committed event for the same `run_id`/commit hash, plus a fresh drop) the unstaged drop is let through — the exact F6-failure mode the check exists to catch. The `_carries` match by `commit_hash` makes this reachable: a drop whose event matches the commit hash but the legacy file already had one.",
+          "suggestion": "When `working` is non-empty, verify those specific drop files in HEAD (as the loop below does) before accepting `legacy_state is True`.  Positive notes: the drops-only format gating, atomic first write, KC8 absence gates, the emptied ratchet file, and the \"F6 forgot → F11 fails after absorb\" integration test all match the S4 done-when criteria; the adopt seeder duplicate is well-fenced by parity tests.  Overall: ship-with-fixes — the staging fast-path race and the unconditional run-stripping on legacy comparisons should be corrected (or explicitly justified) before this lands; the rest are refinements.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "plugins/shipwright-adopt/scripts/lib/event_seeder.py",
+          "line": 99,
+          "finding": "The seeder reuses its cached drop whenever the file exists, even after that file has been staged or committed. A subsequent seed call in the same process appends to the closed file, violating S4’s immutable-drop rule and potentially leaving events outside the staged snapshot.",
+          "suggestion": "Apply the shared writer’s index/HEAD rotation probe before reusing a target, and coordinate appends with the same writer lock.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/lib/events_write.py",
+          "line": 96,
+          "finding": "Same-ID deduplication checks only the currently selected writable file. After staging or committing the original drop, rotation selects a new path, so replaying the identical event writes it again. If that file already contains a later timestamp, `_monotonic_ts` also changes the replay’s content, preventing the assembling reader from collapsing the duplicate.",
+          "suggestion": "Check identical IDs and content across the assembled history before selecting or modifying the writable file. Add replay tests after staging and committing, including a new open file containing later events.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": "shared/scripts/lib/churn_merge.py",
+          "line": 227,
+          "finding": "The regex removes matching `run` members anywhere in the JSON text, including nested event payloads. Two records differing in a legitimate nested `detail.run` value can therefore compare equal and one is silently discarded. The same problem affects `strip_run` and context-index duplicate collapsing.",
+          "suggestion": "Remove only the top-level routing stamp while preserving all other bytes. Test nested `run` members and events containing both nested and top-level members.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/tools/stage_event_drops.py",
+          "line": 34,
+          "finding": "The staging tool never checks the active layout. With `events_layout: legacy` and leftover drops present—for example during rollback—it still stages matching drops, despite the specified legacy no-op behavior. The new legacy test covers only a tree without a drops folder.",
+          "suggestion": "Return an empty successful result before discovery when the layout is legacy. Test legacy configuration with existing untracked drops.  Overall assessment: ship-with-fixes. The approach fits S4, but immutable-file handling and duplicate comparison need correction before shipping.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-06T17:08:53.272478+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] Findings:\n\n- Category: bug\n  Severity: medium\n  File: shared/scripts/tools/stage_event_drops.py, `stage()` (~line 33)\n  Finding: The \"nothing to stage: take no lock\" fast path races with a concurrent writer. `own_drops()` is checked BEFORE the lock; if empty, `_stage_locked` is called unlocked — but it re-lists `own_drops` and will stage any drop that a concurrent Stop hook appended in between, i.e. it can `git add` a file mid-append (the exact interleaving `writer_lock`'s docstring says must not happen: a line landing after the add sits in a now-staged, about-to-be-closed file). The absorb path (`absorb_wt_drops`) has the same early-exit but always re-lists inside the lock, so only staging is affected.\n  Suggestion: Take the lock whenever a drops folder exists (or re-check emptiness under the lock and return before any `_git add`).\n\n- Category: spec / regression\n  Severity: medium\n  File: shared/scripts/lib/churn_merge.py:194 and shared/scripts/lib/event_context_source.py:26 (`_RUN_MEMBER` / `strip_run`)\n  Finding: The spec pins \"under legacy the bytes written stay exactly as today (old `dedup_event_lines` compares exact lines)\" and the external review explicitly warned to scope the run-ignoring comparison to drops. Both `dedup_event_lines` and the context-index hash now strip `\"run\":\"…\"` unconditionally — including legacy-layout lines. Any legacy event that legitimately carries a member literally named `run` (events accept arbitrary extras/detail keys) now dedups/fingerprints differently than before the change. Low likelihood, but it is a silent behavioral change on the legacy path the spec forbids.\n  Suggestion: Gate the strip on the repo's layout (or apply it only to files under the drops/archive folders, which these functions can distinguish since `iter_event_lines`/`dedup_event_lines` know their sources).\n\n- Category: edge-case\n  Severity: medium\n  File: shared/scripts/tools/commit_event_followup.py, `_seal_drops` / `commit_followup` (~line 176)\n  […truncated]\n\n[openai] - Category: spec\n- Severity: high\n- File: plugins/shipwright-adopt/scripts/lib/event_seeder.py:99\n- Finding: The seeder reuses its cached drop whenever the file exists, even after that file has been staged or committed. A subsequent seed call in the same process appends to the closed file, violating S4’s immutable-drop rule and potentially leaving events outside the staged snapshot.\n- Suggestion: Apply the shared writer’s index/HEAD rotation probe before reusing a target, and coordinate appends with the same writer lock.\n\n- Category: bug\n- Severity: medium\n- File: shared/scripts/lib/events_write.py:96\n- Finding: Same-ID deduplication checks only the currently selected writable file. After staging or committing the original drop, rotation selects a new path, so replaying the identical event writes it again. If that file already contains a later timestamp, `_monotonic_ts` also changes the replay’s content, preventing the assembling reader from collapsing the duplicate.\n- Suggestion: Check identical IDs and content across the assembled history before selecting or modifying the writable file. Add replay tests after staging and committing, including a new open file containing later events.\n\n- Category: bug\n- Severity: high\n- File: shared/scripts/lib/churn_merge.py:227\n- Finding: The regex removes matching `run` members anywhere in the JSON text, including nested event payloads. Two records differing in a legitimate nested `detail.run` value can therefore compare equal and one is silently discarded. The same problem affects `strip_run` and context-index duplicate collapsing.\n- Suggestion: Remove only the top-level routing stamp while preserving all other bytes. Test nested `run` members and events containing both nested and top-level members.\n\n- Category: spec\n- Severity: medium\n- File: shared/scripts/tools/stage_event_drops.py:34\n- Finding: The staging tool never checks the active layout. With `events_layout: legacy` and leftover drops present—for example du […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-06T17:08:52.879232+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "a241a25756797e59cc06bdc178ab4cf3da4306b8"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-06T17:08:58.141673+00:00",
+      "disposition": "plan arms ran after build; the runner reviewed the diff with the code cascade instead",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "no-spawn-site"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-06T17:08:58.265816+00:00",
+      "disposition": "architecture external review ran (revise/revise, campaign-scope findings only); internal arm not spawned",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "no-spawn-site"
+    }
+  }
+}

@@ -142,7 +142,7 @@ def _emit_session_id_fallback_warning(
 
         append_event(project_root, {
             "v": 1,
-            "id": generate_event_id(),
+            "id": generate_event_id(project_root),
             "ts": datetime.now(timezone.utc).isoformat(),
             "type": "hook_warning",
             "source": "session_id_fallback",

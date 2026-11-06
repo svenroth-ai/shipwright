@@ -18,12 +18,15 @@ import pytest
 _TOOLS = Path(__file__).resolve().parents[1] / "scripts" / "tools"
 if str(_TOOLS) not in sys.path:
     sys.path.insert(0, str(_TOOLS))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "testkit"))
+from event_log_probe import effective_records, event_log_exists, event_text  # noqa: E402
 
 from record_event import (  # noqa: E402
     _fr_or_change_type_gate_error,
     build_event,
     parse_args,
 )
+pytestmark = pytest.mark.covers("FR-01.11")
 
 
 def _args_for_test_run(**kwargs) -> list[str]:
@@ -283,7 +286,6 @@ class TestFrOrChangeTypeGate:
     def test_main_exits_1_when_gate_rejects(self, tmp_path, capsys):
         """CLI integration: rejecting events return exit 1, write nothing."""
         from record_event import main
-        log = tmp_path / "shipwright_events.jsonl"
         rc = main([
             "--project-root", str(tmp_path),
             "--type", "work_completed",
@@ -293,7 +295,7 @@ class TestFrOrChangeTypeGate:
         assert rc == 1
         captured = capsys.readouterr()
         assert "fr_gate_unclassified" in captured.out
-        assert not log.exists()
+        assert not event_log_exists(tmp_path)
 
     def test_main_passes_with_affected_frs(self, tmp_path, capsys, monkeypatch):
         """CLI integration: events with affected_frs + test evidence land on disk."""
@@ -310,7 +312,7 @@ class TestFrOrChangeTypeGate:
         assert rc == 0
         captured = capsys.readouterr()
         assert "fr_gate_unclassified" not in captured.out
-        assert (tmp_path / "shipwright_events.jsonl").exists()
+        assert event_log_exists(tmp_path)
 
     def test_main_passes_with_change_type(self, tmp_path, capsys):
         """CLI integration: change_type + none_reason path also passes.
@@ -332,9 +334,8 @@ class TestFrOrChangeTypeGate:
         assert "success" in captured.out
         # The event file MUST exist and contain a work_completed line
         # with our classification serialized (compact JSON, no spaces).
-        log = tmp_path / "shipwright_events.jsonl"
-        assert log.exists()
-        content = log.read_text(encoding="utf-8")
+        assert event_log_exists(tmp_path)
+        content = event_text(tmp_path)
         assert '"type":"work_completed"' in content
         assert '"change_type":"tooling"' in content
         assert '"none_reason":"fix flaky CI"' in content
@@ -483,8 +484,8 @@ class TestWorktreeEventLogRoundTrip:
         assert returned == "evt-rt000042"
 
         # Written to the worktree's OWN copy, NOT the main tree.
-        assert (wt / "shipwright_events.jsonl").exists()
-        assert not (work / "shipwright_events.jsonl").exists()
+        assert event_log_exists(wt)
+        assert not event_log_exists(work)
 
         # Reader from the same worktree sees exactly the one event back.
         events = read_events(wt)
@@ -492,7 +493,7 @@ class TestWorktreeEventLogRoundTrip:
         assert events[0]["adr_id"] == "iterate-rt"
 
     def test_attach_commit_patches_worktree_log_in_place(self, git_origin_repo, make_worktree):
-        from record_event import append_event, attach_commit_to_event, read_events
+        from record_event import append_event, attach_commit_to_event
 
         work, _ = git_origin_repo
         wt = make_worktree(work, "rt2")
@@ -502,6 +503,5 @@ class TestWorktreeEventLogRoundTrip:
         ok = attach_commit_to_event(wt, "evt-rt000099", "feedc0de")
         assert ok is True
         # Patched in the worktree copy; main tree still clean.
-        events = read_events(wt)
-        assert events[0]["commit"] == "feedc0de"
-        assert not (work / "shipwright_events.jsonl").exists()
+        assert effective_records(wt)[0]["commit"] == "feedc0de"
+        assert not event_log_exists(work)
