@@ -123,6 +123,8 @@ REGISTRY: dict[str, tuple[str, ...]] = {
         "plugins/shipwright-compliance/scripts/lib/data_collector.py",
         "plugins/shipwright-iterate/scripts/tools/campaign_progress.py",
         "shared/scripts/lib/campaign_status_io.py",
+        "shared/scripts/lib/events_fold_full.py",
+        "shared/scripts/lib/events_integrity.py",
         "shared/scripts/lib/event_context_query.py",
         "shared/scripts/tools/events_replay_gate.py",
         "shared/scripts/tools/measure_baseline.py",

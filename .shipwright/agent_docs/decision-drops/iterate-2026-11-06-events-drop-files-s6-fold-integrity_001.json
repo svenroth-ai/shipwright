@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-06-events-drop-files-s6-fold-integrity",
+  "date": "2026-11-06",
+  "section": "Iterate — feat: events fold and integrity",
+  "title": "Fold, quarantine and integrity check for event drop files",
+  "context": "Per-run event drops need a bounded-growth fold and a merge-time guard that nothing existing is rewritten or forged.",
+  "decision": "Add fold/emergency/full-fold/quarantine plus a merge-base integrity checker (KC6), a vanish-retrying assembling reader, and an F11 claim check.",
+  "consequences": "Layout stays dormant; folds are recognised by per-event hash coverage in an added archive, quarantines by byte-identical twin.",
+  "rationale": "Judging at the merge-base keeps parallel folds and rollbacks valid while still refusing edits, deletions and forged run ids.",
+  "rejected": "Trusting commit messages for fold detection; blind folding without a duplicate-id scan; folding in place.",
+  "commit": "",
+  "architecture_impact": "data-flow",
+  "spec_ref": ""
+}

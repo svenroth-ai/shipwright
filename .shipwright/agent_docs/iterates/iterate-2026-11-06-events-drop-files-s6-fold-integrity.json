@@ -1,0 +1,94 @@
+{
+  "run_id": "iterate-2026-11-06-events-drop-files-s6-fold-integrity",
+  "date": "2026-11-06T22:06:27.845390Z",
+  "event_at": "2026-11-06T18:41:50.028547+00:00",
+  "type": "feature",
+  "complexity": "medium",
+  "prior_source": "default",
+  "branch": "iterate/campaign-events-drop-files--S6",
+  "spec": ".shipwright/planning/iterate/campaigns/events-drop-files/sub-iterates/S6-fold-integrity.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-11-06-events-drop-files-s6-fold-integrity",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "fold moves aged drops into a hash-named archive and leaves recent ones; publish verified before unlink",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_events_fold.py::fold tests PASSED"
+      },
+      {
+        "behavior": "emergency fold and full fold (rollback to legacy) leave no duplicates and require a writable config",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_events_fold.py::emergency/full-fold tests PASSED"
+      },
+      {
+        "behavior": "quarantine of a corrupt zero-record drop is lock-time rechecked and CRLF tolerant",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_events_fold.py::quarantine tests PASSED"
+      },
+      {
+        "behavior": "duplicate event ids in the REAL log shape are scanned before folding",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_events_fold.py::real-log-shape tests PASSED"
+      },
+      {
+        "behavior": "integrity checker refuses edit, delete, forged run id, foreign key, case collision, archive injection judged at the merge-base",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_events_integrity.py PASSED"
+      },
+      {
+        "behavior": "fold and quarantine commits are recognised and pass the checker; overlapping parallel folds pass",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_events_integrity.py::fold/overlap tests PASSED"
+      },
+      {
+        "behavior": "reader retries when a drop vanishes mid-read and fails closed with an unreadable status",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_events_read_fold_race.py PASSED"
+      },
+      {
+        "behavior": "a real parallel fold race on git merges cleanly (directory-rename guard .keep)",
+        "disposition": "tested",
+        "evidence": "integration-tests/test_events_drops_fold_race.py PASSED",
+        "category": "integration"
+      },
+      {
+        "behavior": "CLIs fold_events.py and check_events_integrity.py print UTF-8 and exit codes",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_events_fold.py::cli tests PASSED"
+      },
+      {
+        "behavior": "F11 claim check event folders only grow is registered and skips on git errors",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_events_integrity.py::verifier tests PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 10,
+      "tested": 10,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 0,
+      "covered_acs": 0
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run --extra dev pytest integration-tests/test_events_drops_fold_race.py -q -p no:cacheprovider",
+    "exit_code": 0,
+    "tests_run": 2,
+    "evidence_path": ".shipwright/runs/iterate-2026-11-06-events-drop-files-s6-fold-integrity/surface_verification.log",
+    "timestamp": "2026-11-06T22:04:02.130Z",
+    "attempts": 1
+  },
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": [
+    "cross_component"
+  ]
+}
