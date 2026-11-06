@@ -176,3 +176,17 @@ class TestStaleness:
         d = decide_routing(tmp_path, head_sha="feedface0000")
         assert d.state == STATE_VALID
         assert d.detected_mode == "authoritative"
+
+
+def test_events_path_prefers_a_newer_drop_over_a_frozen_legacy_log(tmp_path):
+    import os
+    from routing import _events_path
+    legacy = tmp_path / "shipwright_events.jsonl"
+    legacy.write_text('{"id":"old"}\n', encoding="utf-8")
+    drop = tmp_path / "shipwright_events.d" / "run-a--aaaaaaaa--00000001.jsonl"
+    drop.parent.mkdir()
+    drop.write_text('{"id":"new"}\n', encoding="utf-8")
+    os.utime(legacy, (1_000_000, 1_000_000))
+    assert _events_path(tmp_path) == drop
+    os.utime(drop, (500_000, 500_000))
+    assert _events_path(tmp_path) == legacy

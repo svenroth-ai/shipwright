@@ -140,6 +140,9 @@ def read_work_events(project_root: Path | str) -> tuple[list[dict], int]:
         raise EventLogUnreadable(
             f"the event log at {path} exists but could not be read: {exc}"
         ) from exc
+    unreadable = [Path(f.path).name for f in result.files if f.status == "unreadable"]
+    if unreadable:  # a file that cannot be read is NOT "nothing touched this requirement"
+        raise EventLogUnreadable(f"event file(s) of the log could not be read: {', '.join(unreadable)}")
     events = [
         e for e in apply_amendments(list(result.records))
         if e.get("type") == "work_completed"

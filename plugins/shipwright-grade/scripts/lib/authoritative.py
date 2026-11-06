@@ -17,6 +17,7 @@ raises and never grades authoritatively off degenerate data.
 from __future__ import annotations
 
 import dataclasses
+from itertools import islice
 from pathlib import Path
 from typing import Any
 
@@ -75,17 +76,25 @@ def _authoritative_provenance() -> dict[str, dict]:
 
 def _eventlog_over_cap(root: Path) -> bool:
     """True when the target's event log exceeds the authoritative size ceiling."""
+    total = 0
     for cand in (root / "shipwright_events.jsonl", root / ".shipwright" / "events.jsonl"):
         try:
-            if cand.is_file() and cand.stat().st_size > _MAX_AUTHORITATIVE_EVENTLOG_BYTES:
-                return True
+            if cand.is_file():
+                total += cand.stat().st_size
+                if cand.stat().st_size > _MAX_AUTHORITATIVE_EVENTLOG_BYTES:
+                    return True
         except OSError:  # pragma: no cover - defensive
             continue
-    files = [p for d in _EVENT_FOLDERS if (root / d).is_dir() and not (root / d).is_symlink()
-             for p in (root / d).glob("*.jsonl") if p.is_file() and not p.is_symlink()]
+    seen = 0
     try:
-        return (len(files) > _MAX_AUTHORITATIVE_EVENT_FILES
-                or sum(p.stat().st_size for p in files) > _MAX_AUTHORITATIVE_EVENTLOG_BYTES)
+        for d in _EVENT_FOLDERS:  # lazy: a hostile clone with millions of files costs at most cap+1 entries
+            if not (root / d).is_dir() or (root / d).is_symlink():
+                continue
+            for p in islice((root / d).glob("*.jsonl"), _MAX_AUTHORITATIVE_EVENT_FILES + 1 - seen):
+                if p.is_file() and not p.is_symlink():
+                    seen += 1
+                    total += p.stat().st_size
+        return seen > _MAX_AUTHORITATIVE_EVENT_FILES or total > _MAX_AUTHORITATIVE_EVENTLOG_BYTES
     except OSError:  # pragma: no cover - defensive
         return True
 

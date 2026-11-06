@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import sys
 from dataclasses import dataclass
+from itertools import islice
 from pathlib import Path
 
 
@@ -186,11 +187,14 @@ def _events_path(root: Path) -> Path | None:
     what "has an event log" means. A symlink escaping the root is ignored.
     """
     folders = [p for d in _EVENT_FOLDERS if (root / d).is_dir() and not (root / d).is_symlink()
-               for p in sorted((root / d).glob("*.jsonl"))]  # the drops layout leaves no legacy file
-    for cand in (root / "shipwright_events.jsonl", root / ".shipwright" / "events.jsonl", *folders):
+               for p in islice((root / d).glob("*.jsonl"), 5_001)]  # bounded: an untrusted clone
+    newest = [p for p in folders if p.is_file() and _within_root(p, root)]
+    newest.sort(key=lambda p: p.stat().st_mtime, reverse=True)
+    for cand in (root / "shipwright_events.jsonl", root / ".shipwright" / "events.jsonl"):
         if cand.is_file() and _within_root(cand, root):
-            return cand
-    return None
+            # drops hold the newest events: a frozen legacy log must not make a live repo read as stale
+            return newest[0] if newest and newest[0].stat().st_mtime > cand.stat().st_mtime else cand
+    return newest[0] if newest else None
 
 
 def _has_rtm(sw_dir: Path) -> bool:
