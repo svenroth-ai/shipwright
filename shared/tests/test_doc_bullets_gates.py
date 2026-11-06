@@ -184,13 +184,15 @@ def test_committed_check_covers_the_runs_bullets(repo: Path) -> None:
     assert check_decision_drop_committed(repo, "iterate-2026-11-06-a", head).ok is True
 
 
-def test_base_side_includes_bullets_pending_at_the_base(repo: Path) -> None:
-    """A non-compliant bullet already pending on main must not read as NEW in every later PR."""
+@pytest.mark.parametrize("eol", ["\n", "\r\n"], ids=["lf-blob", "crlf-blob"])
+def test_base_side_includes_bullets_pending_at_the_base(repo: Path, eol: str) -> None:
+    """A non-compliant bullet already pending on main must not read as NEW in every later PR,
+    whatever line endings the committed blob carries (autocrlf differs between machines)."""
     bd = doc_bullets.bullets_dir(repo)
     bd.mkdir(parents=True)
     long_bullet = "- **iterate-2026-11-05-big** (2026-11-05): Convention — " + "x" * 700 + ". → decision_log (y)"
-    (bd / "conventions--iterate-2026-11-05-big--aaaaaaaa--bbbbbbbb.md").write_text(long_bullet + "\n", encoding="utf-8")
-    _git(repo, "add", "-A")
+    (bd / "conventions--iterate-2026-11-05-big--aaaaaaaa--bbbbbbbb.md").write_bytes((long_bullet + eol).encode("utf-8"))
+    _git(repo, "-c", "core.autocrlf=false", "add", "-A")  # the blob keeps exactly these bytes
     _git(repo, "commit", "-qm", "pending bullet on main")
     _git(repo, "push", "-q", "origin", "main")
     _git(repo, "checkout", "-q", "-b", "feat")

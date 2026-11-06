@@ -195,7 +195,9 @@ def test_context_cap_20_newest_then_n_more_then_warning(repo: Path) -> None:
     assert "more pending" not in few and "WARNING" not in few
 
 
-@pytest.mark.parametrize("summary", ["see planning/iterate/ for it", "reads shared/profiles/python.json", "uses agent_docs/ files"])
+@pytest.mark.parametrize(
+    "summary", ["see planning/iterate/ for it", "reads shared/profiles/python.json", "uses agent_docs/ files"],  # artifact-path-canon: legacy
+)
 def test_writer_rejects_text_that_repo_wide_prose_guards_would_flag(repo: Path, summary: str) -> None:
     with pytest.raises(DocBulletError):
         _bullet(repo, "iterate-2026-11-06-a", summary=summary)

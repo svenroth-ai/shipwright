@@ -78,12 +78,13 @@ def _base_text(project_root: Path, base: str, filename: str) -> str:
     rc, out, _ = _run_git(project_root, "show", f"{base}:{_AGENT_DOCS_REL}/{filename}")
     text = out if rc == 0 else ""
     bdir = f"{_AGENT_DOCS_REL}/decision-drops/bullets"
-    rc, names, _ = _run_git(project_root, "ls-tree", "--name-only", base, f"{bdir}/")
+    # Tree-ish form ``<base>:<dir>`` lists bare names: no pathspec / trailing-slash handling to differ per platform.
+    rc, names, _ = _run_git(project_root, "ls-tree", "--name-only", "-z", f"{base}:{bdir}")
     items = []
-    for rel in (r.strip() for r in names.split("\n") if rc == 0 and r.strip()):
-        rc2, content, _ = _run_git(project_root, "show", f"{base}:{rel}")
+    for name in (n for n in names.split(chr(0)) if rc == 0 and n):
+        rc2, content, _ = _run_git(project_root, "show", f"{base}:{bdir}/{name}")
         if rc2 == 0:
-            items.append((rel.rsplit("/", 1)[-1], content))
+            items.append((name, content))
     return fold_named(text, filename, items) if items else text
 
 
