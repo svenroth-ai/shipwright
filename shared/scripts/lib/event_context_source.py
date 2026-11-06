@@ -19,6 +19,7 @@ from typing import Iterator
 
 from .events_log import event_files
 from .events_read import instant
+from .jsonl_records import split_records
 
 
 def _sort_key(raw: bytes) -> tuple:
@@ -30,6 +31,16 @@ def _sort_key(raw: bytes) -> tuple:
     return instant(event.get("ts")), str(event.get("id", ""))
 
 
+def _one_record_per_line(raw: bytes) -> list[bytes]:
+    """A physical line holding several concatenated records becomes one line each (shared recovery)."""
+    try:
+        json.loads(raw.decode("utf-8"))
+        return [raw]
+    except (UnicodeError, ValueError):
+        records, _remainder = split_records(raw.decode("utf-8", errors="replace"))
+        return [json.dumps(r, ensure_ascii=False, separators=(",", ":")).encode("utf-8") + b"\n" for r in records] or [raw]
+
+
 def _extra_lines(files: list[Path]) -> list[bytes]:
     out: list[bytes] = []
     for path in files:
@@ -37,7 +48,9 @@ def _extra_lines(files: list[Path]) -> list[bytes]:
             data = path.read_bytes()
         except OSError:
             continue  # vanished or unreadable: the fingerprint below says so
-        out.extend(raw for raw in io.BytesIO(data) if raw.strip())
+        for raw in io.BytesIO(data):
+            if raw.strip():
+                out.extend(_one_record_per_line(raw))
     out.sort(key=_sort_key)
     return out
 

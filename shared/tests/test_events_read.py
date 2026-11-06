@@ -293,3 +293,22 @@ def test_the_reader_loads_standalone_by_path_with_no_package_around_it(tmp_path)
     out = subprocess.run([sys.executable, "-I", "-c", code], capture_output=True, text=True, timeout=60)
     assert out.returncode == 0, out.stderr[-800:]
     assert out.stdout.strip() == "a,b"
+
+
+def test_event_lines_at_tolerant_decoding_is_the_callers_choice(tmp_path):
+    from lib.events_read import event_lines_at
+    log = tmp_path / "shipwright_events.jsonl"
+    log.write_bytes(_line(id="a").encode("utf-8") + b'\n{"id":"b","x":"\xff"}\n')
+    with pytest.raises(UnicodeDecodeError):
+        event_lines_at(log)
+    assert len(event_lines_at(log, errors="replace")) == 2
+
+
+def test_event_context_source_splits_concatenated_records_of_a_drop(tmp_path):
+    from lib.event_context_source import iter_event_lines
+    _write(tmp_path / "shipwright_events.jsonl", _line(id="a", ts="2026-01-01T00:00:00Z"))
+    path = tmp_path / DROPS_DIR / "run-c--aaaaaaaa--00000001.jsonl"
+    path.parent.mkdir()
+    path.write_text(_line(id="b", ts="2026-01-02T00:00:00Z").strip() + _line(id="c", ts="2026-01-03T00:00:00Z"), encoding="utf-8")
+    import json
+    assert [json.loads(raw)["id"] for _seq, raw in iter_event_lines(tmp_path)] == ["a", "b", "c"]

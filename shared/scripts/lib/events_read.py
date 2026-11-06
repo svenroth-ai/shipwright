@@ -278,10 +278,10 @@ def events_text(project_root: Path | str) -> str:
     return "\n".join(out)
 
 
-def event_lines_at(events_path: Path | str) -> list[str]:
+def event_lines_at(events_path: Path | str, errors: str = "strict") -> list[str]:
     """Raw legacy lines (exactly ``read_text().splitlines()``), then archive/drop records as JSON lines (campaign status)."""
     path = Path(events_path)
-    lines = path.read_text(encoding="utf-8").splitlines() if path.exists() else []
+    lines = path.read_text(encoding="utf-8", errors=errors).splitlines() if path.exists() else []
     if path.name == EVENT_FILE and len(event_files(path.parent)) > 1:
         read = read_events_assembled(path.parent, include_legacy=False)  # one legacy read: no count/slice race
         lines += [json.dumps(r, ensure_ascii=False, separators=(",", ":")) for r in read.records]

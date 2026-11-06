@@ -94,6 +94,8 @@ def load_events(project_root: Path) -> list[dict] | None:
         result = reader.read_events_assembled(project_root)
     except OSError:
         return None
+    if not result.records and any(f.status == "unreadable" for f in result.files):
+        return None  # evidence exists but cannot be read: "unavailable", never an empty log
     return list(result.records)
 
 

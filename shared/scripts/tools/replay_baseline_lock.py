@@ -39,7 +39,7 @@ _RUN_ID = re.compile(r"\.shipwright/agent_docs/iterates/(iterate-[\w.-]+?)(?:\.t
 
 def _events_by_run(path: Path) -> dict[str, dict]:
     out: dict[str, dict] = {}
-    for line in event_lines_at(path):  # legacy lines + archive/drop records; [] when absent
+    for line in event_lines_at(path, errors="replace"):  # legacy lines + archive/drop records; [] when absent
         try:
             event = json.loads(line)
         except ValueError:

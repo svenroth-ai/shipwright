@@ -29,7 +29,10 @@ def validate_event_folders(project_root: Path | str, run_id: str | None) -> list
     """Errors for this run's own drop files; ``run_id`` is looked up across the whole tree."""
     if not run_id:
         return []
-    read = read_events_assembled(Path(project_root))
+    try:
+        read = read_events_assembled(Path(project_root))
+    except OSError as exc:  # an unreadable legacy log: a structured refusal, never a traceback
+        return [f"the event log cannot be read ({exc.__class__.__name__}); the absence of this run's event cannot be concluded"]
     if any(e.get("type") == "work_completed" and e.get("adr_id") == run_id for e in read.records):
         return []
     # A damaged drop of THIS run's own key means "absent" cannot be concluded (KC8).
