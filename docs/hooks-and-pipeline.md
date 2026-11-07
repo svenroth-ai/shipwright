@@ -1080,7 +1080,7 @@ one function (`events_layout.drop_key`: explicit run id from `--run-id` / `--adr
 only for the main tree; at most 80 characters; the adopt seeder's duplicate is a decided exception: `SHIPWRIGHT_RUN_ID`, else the fixed key `_adopt`, because adoption runs once in the main tree before any run exists), a drop is created atomically (written to a hidden temp
 name, then renamed — never an empty `*.jsonl`) and a closed file (one in HEAD's tree or the index, probed
 with `ls-tree`/`ls-files`, never `git status`) is never edited: the next write starts a new file.
-`attach_commit_to_event` becomes an `event_amended {commit}` written to a drop. Dedup (`phase_completed`,
+`attach_commit_to_event` becomes an `event_amended {commit}` written to a drop (once per event and commit: a repeat call adds nothing). A repeated event (same id, same content apart from the `run` stamp and the `ts` the writer may have bumped) is written once. Dedup (`phase_completed`,
 by-commit) reads the WHOLE log while holding the own-key lock, so a re-run of a phase with a fresh run id
 does not duplicate; it concludes "absent" only when this run's own drop files are readable (KC8).
 
@@ -1090,7 +1090,7 @@ does not duplicate; it concludes "absent" only when this run's own drop files ar
 | F6 | `stage_event_drops.py` | stages exactly this run's untracked drops by name (key + this worktree's `wt8`), never the folder |
 | F11 | `ensure_current.py` | ABSORB: commits the untracked drops of this worktree (validated, folder-scoped) before any merge, EXCEPT the file carrying this run's own `work_completed` — shipping that one is F6's job |
 | F11 | `verify_iterate_finalization.py` | `events.jsonl has commit` runs AFTER the absorb; a drop only in the working copy FAILS it |
-| F7b | `commit_event_followup.py` | seals the main tree's untracked `_main--*` drops |
+| F7b | `commit_event_followup.py` | seals the main tree's untracked `_main--*` drops; a torn drop stays behind (`left_behind`) while the whole ones ship, and only when every drop is torn is nothing sealed (`invalid_drop`) |
 | merge | `integrate_merge` / `resolve_churn_conflicts` | validate the legacy log and the drops a merge brought in; `dedup_event_lines` / `event_context_index` ignore the stamped `run` in byte comparison |
 | any | `validate_event_log.py` | checks the legacy log, the archive and every drop file (a non-ok drop is an error) |
 

@@ -1,0 +1,1 @@
+Goal: Harden the per-run event file writer before the layout is switched on | Reason: A retry could double an event, a repeat attach doubled amendments, one damaged file blocked the whole seal | Reference: events-drop-files flip readiness follow-ups
