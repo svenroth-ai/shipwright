@@ -50,6 +50,7 @@ must be categorized into exactly one axis.
 - SQL injection, XSS risks (parameterized queries, framework escaping)
 - Hardcoded secrets, API keys, or tokens in source
 - Outputs encoded, external data treated as untrusted
+- A test of delete/cleanup/reset code runs only in a temp copy: reject a test that hands such code `.`, the project root, `os.getcwd()` or a real project folder ([safe-delete-tests](../skills/build/references/safe-delete-tests.md))
 
 ### Axis 5: Performance
 - N+1 queries
