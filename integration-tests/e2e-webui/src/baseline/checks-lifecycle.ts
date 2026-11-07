@@ -51,7 +51,7 @@ const pidOf = (dataDir: string): number | null => {
     } catch {
       // not JSON: fall through to the text forms
     }
-    const m = /pid\D{0,3}(\d+)/i.exec(text) ?? /^\s*(\d+)\s*$/.exec(text);
+    const m = /pid\D{0,3}(\d+)/i.exec(text) ?? /^\s*(\d+)\s*$/m.exec(text); // bare number, or first line of "pid, port, token"
     return m ? Number(m[1]) : null;
   } catch {
     return null;

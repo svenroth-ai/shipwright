@@ -1,0 +1,1 @@
+Build: a test of delete, cleanup or reset code now runs only in a temp copy, never on `.`, the project root or a real project folder (run 23 lost `backend/` and part of `.git` to a red-phase test); the code reviewer rejects such a test.
