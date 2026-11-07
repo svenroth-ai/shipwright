@@ -1,1 +1,0 @@
-Event layout sentinel: plugins refuse to write events or produce release evidence for an unknown layout, a merge-base CI check stops legacy writes after the flip, and init/adopt write events_layout explicitly (layout still dormant)

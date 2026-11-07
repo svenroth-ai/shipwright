@@ -7519,3 +7519,1445 @@ shipwright/
 - **Consequences:** Stricter gates fail closed: old unstamped envelopes and entries without risk_flags are refused or read as fired. Limits: the stamp binds a run, not a provider; masking runs at record time for unavailable rows only; risk_flags is self-reported; commits without the trailer are not counted.
 - **Rejected:** Stripping stderr (loses the evidence the claim needs); adapter-side masking and F11 re-masking checks (out of scope); an F11 rule on stage-1-rejected (the campaign STRICT-STOP is the gate).
 - **Details:** [iterate-2026-10-09-u-review-followups-widened.md](../planning/iterate/iterate-2026-10-09-u-review-followups-widened.md)
+
+---
+
+### ADR-563: Harden JUnit parse without a new dependency; bump urllib3 to 2.8.0
+- **Date:** 2026-10-10
+- **Section:** Iterate — bug: clear the 5 open High security findings
+- **Run-ID:** iterate-2026-10-09-security-findings-triage
+- **Context:** Release scan showed 5 High (Semgrep use-defused-xml-parse in suite_failed_only.py; urllib3 CVE-2026-97687/88/89 in plan+security lockfiles), grading the repo F.
+- **Decision:** _parse now reads bounded UTF-8 text, refuses DOCTYPE/ENTITY, and uses ET.fromstring; urllib3 raised to 2.8.0 via uv lock --upgrade-package in both plugin lockfiles.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Precedent in compliance _evidence_readers (size cap, no defusedxml dep); shared scripts run in consumer projects that lack defusedxml. No suppression comment added.
+- **Consequences:** A malformed, oversized or DTD-bearing report falls back to the whole-unit retry. No new dependency.
+- **Rejected:** defusedxml dependency (breaks consumer envs); inline nosemgrep (ratcheted, hides the finding).
+
+---
+
+### ADR-564: The Stop guard releases a run whose PR is already MERGED
+- **Date:** 2026-10-10
+- **Section:** Iterate — bug: stop-guard blocked a run whose PR was already merged
+- **Run-ID:** iterate-2026-10-09-stop-guard-merged-pr
+- **Context:** A PR merged by auto-merge (or by hand) leaves the run pointer live because deliver_pr.py never retires it, so the guard blocked every Stop until its 40-block cap and flooded the operator with Stop hook errors.
+- **Decision:** Before blocking, ask gh pr list --head <branch> once per 2 minutes (8 s timeout) and release when a PR merged after the run started and none is open; record delivered. A gh failure or unknown start counts as not merged. SHIPWRIGHT_ITERATE_STOP_GUARD_GH=0 skips the call.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The first design avoided gh at Stop time; a live pointer alone cannot tell an out-of-band merge from an open run, and the run pointer age bound only cleared it after 48 h.
+- **Consequences:** The guard now has a network dependency on a would-be block, bounded to one 8 s call per 2 minutes and never able to release on error. A merge is matched to the run by mergedAt after the pointer's created_at, so a reused branch name cannot release a new run.
+- **Rejected:** Checking whether the branch is an ancestor of origin/main (a squash merge is not an ancestor); trusting the pointer alone.
+
+---
+
+### ADR-565: Adopted repos no longer get the Claude-Code-Review workflows
+- **Date:** 2026-10-10
+- **Section:** Iterate — change: adopt stops scaffolding Claude-Review workflows
+- **Run-ID:** iterate-2026-10-10-adopt-drop-claude-review
+- **Context:** Adopt wrote claude-review.yml + claude-review-run.yml, active on every PR but needing an ANTHROPIC_API_KEY secret most adopted repos lack, leaving a red/pending check on every PR; AUTOMERGE_SETUP.md told adopters to require it, so merges could hang.
+- **Decision:** Remove Step E.15/E.15a: scaffolder, both templates, CLAUDE_REVIEW_* constants, the Required-Check entry and docs. Keep a LEGACY posted-status entry so required-checks drift still understands repos that kept the files. Already-adopted repos are untouched.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Operator decision 2026-10-10; CI setup beyond the shipped security chain is individual; reviews already run in each iterate.
+- **Consequences:** Adopted repos get only ci/security/codeql (dormant). Independent review stays inside each iterate. Adopters who want to remove the old files drop the required check first, then delete the files (CHANGELOG note). Optional dormant gateway PR review is a deferred follow-up.
+- **Rejected:** Ship the workflows dormant (workflow_dispatch only): still ships a template needing a secret nobody asked for. Internal plan, architecture and doubt reviews all confirmed pure removal.
+
+---
+
+### ADR-566: Build Step 6c external code review is default-on (opt-out), matching iterate
+- **Date:** 2026-10-10
+- **Section:** Iterate — change: build 6c external code review default on
+- **Run-ID:** iterate-2026-10-10-build-review-record-external
+- **Context:** Build documented 6c as opt-in/default off while the shared helper is_external_code_review_enabled defaults to True and iterate runs the external pass by default; a known SKILL-vs-code drift.
+- **Decision:** Build 6c now runs after the internal spec/code/doubt cascade unless external_code_review.enabled is false. Missing keys and empty diffs still skip with a marker. Docs and a pin test updated.
+- **Commit:** (assigned post-merge)
+- **Rationale:** One default across build and iterate; the opt-out and the diff-exposure warning remain documented.
+- **Consequences:** Build users with review keys now send the section diff to the external providers by default; projects with sensitive diffs must set enabled:false. Order stays internal first, external second.
+- **Rejected:** Keeping build opt-in (drift with the helper); making the pass mandatory (iterate itself is opt-out, not mandatory).
+
+---
+
+### ADR-567: Layer promotion never touches the advisory adopted spec
+- **Date:** 2026-10-10
+- **Section:** Iterate — bug: layer promotion skips the advisory adopted spec
+- **Run-ID:** iterate-2026-10-10-layer-promotion-advisory-spec
+- **Context:** PR #876 (auto layer promotion) rewrote 16 live FR Layers cells from (inferred) to explicit; four integration guards pin them advisory per SPEC 6.2/ADR-108 because explicit provenance hard-aborts the layer-coverage gate on any gap.
+- **Decision:** evaluate_fr returns the named skip advisory_spec_never_promoted for any FR in a 01-adopted split (lib/layer_promotion_policy.is_advisory_spec). Operator chose this over per-FR guards or relaxed guards (2026-10-10). Other specs promote as before.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The evidence was real (12-845 bound unit tests per FR), so this is a policy collision, not a predicate bug; the lenient catalog is the smaller, safer side.
+- **Consequences:** The sweep no longer opens a promotion PR the guards reject. The 16 adopted FRs are never strictly enforced by promotion; revisiting needs a guard redesign.
+- **Rejected:** Per-FR guards (bigger rewrite, CI flake could hard-block builds); relaxing guards (drops the protection, also widens FR-01.10/11 to integration).
+
+---
+
+### ADR-568: Phases honor the project's profile and deploy_target none
+- **Date:** 2026-10-10
+- **Section:** Iterate — change: profile-aware preview/test/dev-server and deploy_target none
+- **Run-ID:** iterate-2026-10-10-profile-aware-phases
+- **Context:** Preview, test runner and dev_server hardcoded supabase-nextjs/npm assumptions; profiles without a web server crashed; deploy_target none was never read.
+- **Decision:** Resolve the profile from the run config everywhere; NoDevServerError gives a clear no_dev_server result; test_runner reads the profile testing block and skips undeclared layers; deploy_target none ends the pipeline after changelog and skips Jelastic validation.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Single source of truth is the profile JSON and run_config.
+- **Consequences:** supabase-nextjs pgTAP now runs the profile's bare 'supabase test db' instead of npx; vite-hono integration is skipped when undeclared.
+- **Rejected:** Reading deploy from the profile (deploy: null): the run config deploy_target stays the sole switch.
+
+---
+
+### ADR-569: Per-finding security cards that can be re-raised
+- **Date:** 2026-10-10
+- **Section:** Iterate - bug: security findings reach the Triage
+- **Run-ID:** iterate-2026-10-10-security-triage-reraise
+- **Context:** All GitHub security findings of a repo shared one dedup key and the importer's own auto-close counted as a durable human decision, so one closed item hid every later finding while the compliance grade read F.
+- **Decision:** Raise one card per critical/high finding keyed by feed, rule and path; treat the importer's githubResolved close of such a card as non-durable; never close cards on a failed card pass or a code-scanning outage; refresh early when a newer security scan exists.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Per-finding keys isolate findings from each other; limiting non-durability to cards keeps the blast radius small.
+- **Consequences:** Findings that return are raised again as new cards; a parked card is closed by a blip like any open one (existing operator decision). Roll-up and other GitHub sources keep durable closes.
+- **Rejected:** A CI write step in security.yml (needs workflow permissions, adds a second writer); making every importer close non-durable (re-raises gh-ci churn).
+
+---
+
+### ADR-570: The Stop guard stays silent while a launched background task is unfinished
+- **Date:** 2026-10-10
+- **Section:** Iterate — bug: stop-guard noise while a reviewer or background task runs
+- **Run-ID:** iterate-2026-10-10-stop-guard-delivery-throttle
+- **Context:** The guard's own advice, end the turn without tool calls and resume on the notification, triggered the very block it warns about, so sessions waiting on a reviewer subagent or a background shell showed a stream of Stop hook errors.
+- **Decision:** Track background launches and their terminal notifications in the transcript scan (structured toolUseResult isAsync / backgroundTaskId / non-persistent monitor taskId, paired per tool-use-id with a terminal status) and let the Stop through, counting nothing, while one is unfinished; bounded to 2 h for an agent and 30 min for a shell.
+- **Commit:** (assigned post-merge)
+- **Rationale:** A silent Stop is only safe when a completion notice will wake the agent again; reviewers and delivery watches always end, and the age bound caps every other case.
+- **Consequences:** A reviewer wait no longer produces hook errors. A background shell that never ends combined with an agent that stops early is an accepted gap of up to 30 minutes, because nothing wakes the agent and so no later Stop exists to block. A blocker recorded meanwhile is preserved by one write helper.
+- **Rejected:** Throttling blocks while the run's own PR is open: a Stop that is not blocked ends the turn and nothing wakes the agent, so it would be a permanent release. Detecting launches by launch text alone: ordinary tool output that quotes the sentence would silence the guard.
+
+---
+
+### ADR-571: Changelog phase_completed event ships in the release PR
+- **Date:** 2026-10-18
+- **Section:** Iterate — bug: changelog event ships in release PR
+- **Run-ID:** iterate-2026-10-18-changelog-event-ships-in-pr
+- **Context:** The changelog skill appended the release phase_completed event to shipwright_events.jsonl after the release PR merged and never committed it (webui v0.28.0, monorepo v0.34.0), leaving a stray line that needed a manual follow-up PR and later blocked a fast-forward.
+- **Decision:** Step 7 now records the event on the release branch right after gh pr create, commits it path-scoped (no-op when the log is ignored/unchanged), pushes, and only then merges; the on-main case records before the tag push.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Writing into the release PR needs no extra PR and keeps the PR URL in the detail.
+- **Consequences:** The event line merges with the release PR; no post-merge main-checkout writes remain. The event is recorded before the merge completes.
+- **Rejected:** Follow-up PR after merge: a second PR per release and still racy; commit_event_followup.py: hardcoded iterate wording and main-root redirect.
+
+---
+
+### ADR-572: Ignore a cancelled check run once a later same-named run exists
+- **Date:** 2026-10-18
+- **Section:** Iterate — bug: superseded cancelled check runs raised false gh-pr-ci cards
+- **Run-ID:** iterate-2026-10-18-dependabot-prepare-review-fail
+- **Context:** PR 888/889 (Dependabot) produced gh-pr-ci triage cards naming Prepare review request, which was green. pr-review.yml cancel-in-progress cancels the earlier runs of Dependabot's opened/labeled/synchronize burst, and filter=latest still lists those cancelled runs.
+- **Decision:** github_pr_api._failing_check_names drops a cancelled run when a later-started run with the same name exists. Only cancelled is discounted; real failures are never masked.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Narrow by design: only cancelled is discounted, so a genuine failure is never hidden by a later same-named run. A cancelled run may be discounted by a same-named run of another workflow; accepted, a cancel is not a verdict.
+- **Consequences:** No more false cards from concurrency-superseded runs. The PR Review commit status (the real blocker on workflow-file PRs) is still not read by the producer.
+- **Rejected:** Per-name newest-wins for all conclusions: could mask a failure behind a same-named job from another workflow.
+
+---
+
+### ADR-573: Bump certifi to 2026.10.23 in three uv.lock files
+- **Date:** 2026-10-23
+- **Section:** Iterate — change: certifi lock bump
+- **Run-ID:** iterate-2026-10-23-fix-certifi-ghsa-6q48
+- **Context:** Trivy reported GHSA-6q48-6c7w-9gw2 (critical, emSign root CAs with compromised intermediate keys) in uv.lock, plugins/shipwright-plan/uv.lock and plugins/shipwright-security/uv.lock, failing the required Shipwright Security Scan on every PR.
+- **Decision:** uv lock --upgrade-package certifi in the three directories: 2026.2.25 -> 2026.10.23 (fix version 2026.10.19).
+- **Commit:** (assigned post-merge)
+- **Rationale:** Fix the vulnerability instead of suppressing it.
+- **Consequences:** Only the certifi entries changed. No other lock pins certifi and no pyproject caps it.
+- **Rejected:** Accepting the risk in the scanner register: a fix version exists.
+
+---
+
+### ADR-574: Worktree gate also arms for adopted projects
+- **Date:** 2026-10-23
+- **Section:** Iterate — bug: worktree gate never armed on adopted projects
+- **Run-ID:** iterate-2026-10-23-stophook-session-e4597741-diagnosis
+- **Context:** An autonomous iterate in the shipwright-webui repo edited the main checkout because iterate_worktree_gate._iterate_eligible only accepted status complete or a non-empty iterate_history; an adopted repo drops back to in_progress with an empty history.
+- **Decision:** _iterate_eligible also accepts a non-empty adoption object (same rule as project_facts.is_adopted_run_config); SKILL.md step B and the hooks doc state the same rule.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Gate and skill step B must agree, and adoption is the existing signal for an onboarded project.
+- **Consequences:** Adopted repos get the worktree gate. Empty or non-object adoption, in_progress alone, empty config and invalid JSON still do not arm. suggest_iterate still branches on status alone (advisory only).
+- **Rejected:** Setting status complete in the webui run_config: fixes one repo, leaves every adopted repo ungated.
+
+---
+
+### ADR-575: Brief package manifest hash lives in one shared library
+- **Date:** 2026-10-24
+- **Section:** Iterate — feat: brief package library and dry-mode harness
+- **Run-ID:** iterate-2026-10-24-a1-harness-and-package-lib
+- **Context:** Brief-driven unattended runs need a way to prove a committed Brief package is unchanged since approval, and CI needs to exercise the flow without model calls.
+- **Decision:** Add shared/scripts/lib/brief_package.py (layout validator plus manifest hash over NFC POSIX paths, content-sniffed CRLF->LF, brief.json canonical minus approval fields) and a test-side dry-mode harness with a schema-pinned report.
+- **Commit:** (assigned post-merge)
+- **Rationale:** One implementation prevents diverging hashes; consent fields (autonomy, parallel builders, deploy target) stay protected because only the approval trio is excluded.
+- **Consequences:** Deferred to B2/U3 (obligations, not A1 code): anchor approval and the expected hash outside the package (approved_by/at are unhashed by design); hand phases a snapshot copy (no TOCTOU protection); CRLF/LF of NUL-free files is unprotected; casefold fails closed; .gitattributes drift and a portable file-name charset are out of scope.
+- **Rejected:** JSON-schema-only validation (cannot detect post-approval edits); deferring the hash to the first consuming unit (risks several diverging copies).
+
+---
+
+### ADR-576: Extract renderer, late validators, phase-task transitions and design gates behind re-exports
+- **Date:** 2026-10-24
+- **Section:** Iterate - change: extraction for headroom (campaign A2)
+- **Run-ID:** iterate-2026-10-24-a2-extraction-for-headroom
+- **Context:** gate_policy (301), design_gate_extras (300), phase_validators (495) and phase_task_lifecycle (725) were at or over the 300-line cap while later campaign units must add code to them.
+- **Decision:** Move cohesive chunks into repo-unique sibling modules (gate_catalog_render, phase_validators_canon/late, phase_task_core/lookup/planning/recovery, design_gate_result/html/feedback); originals re-export every name. Bodies verbatim; one source-text test (test_multi_session_removal_residue) now reads the sibling files.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Planned code motion with zero behaviour change is cheaper than per-unit baseline exceptions. F2: no route/schema/service/write-surface/convention added, so no architecture.md edit.
+- **Consequences:** All four files now 165-258 lines; three baseline entries removed (downward only). Old import paths and monkeypatch targets keep working; new modules rely on the lib dir being on sys.path via their parent module.
+- **Rejected:** Do nothing (later units ratchet the baseline); convert lifecycle into a package (changes every import path); move only renderer and late validators (leaves lifecycle at 725).
+
+---
+
+### ADR-577: Phase validators share the freeze_splits split authority and never pass a canon check that did not run
+- **Date:** 2026-10-24
+- **Section:** Iterate - bug: phase validator fixes (campaign A3)
+- **Run-ID:** iterate-2026-10-24-a3-validator-fixes
+- **Context:** Before A4 wires the validators into the driven apply path: design looked for per-split mockups the design skill never writes, failed non-UI runs and passed vacuously with no splits; plan checked build_config.current_split; smoke/e2e ignored skip_reason; the canon bridge swallowed ImportError and read the run id only from the environment.
+- **Decision:** Design/plan move to phase_validators_split.py and resolve splits via _resolve_splits_with_fallback. Design passes on global screens, else per-split mockups; no-UI = scope=library only, which skips the screen check but not canon (a skipped design task is no exemption). Plan uses the task split (archived split_NN_sections). validate_phase takes split_id/run_id. Canon: absent package/no run id = inform kind=canon_degraded; broken package or empty explicit run id = ask.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Gates cannot be made blocking (A4/A5) while they misjudge valid runs or report unrun checks as passes. Reviews: external plan revise (ImportError narrowed, consumer test added), opus plan + architecture-internal (self-recorded design skip removed, archived splits, find_spec rule), external code revise (split_id with no splits).
+- **Consequences:** v1 update-step without SHIPWRIGHT_RUN_ID now records a canon_degraded inform note until A4 passes runId; design with no screens and no splits now asks. A4 must decide how an enforcing gate treats kind=canon_degraded and pass config.get('runId') (not a truthy fallback).
+- **Rejected:** Ask-level for every degraded canon outcome; trusting a skipped flag in shipwright_design_config.json; reading ux_shape/ui_host now (deferred to the B units, same single no-UI rule).
+
+---
+
+### ADR-578: Driven single-session apply gains an off-by-default phase gate and a human-only override
+- **Date:** 2026-10-24
+- **Section:** Iterate - feature: phase gate seam, rejection mechanics, v2 override (campaign A4)
+- **Run-ID:** iterate-2026-10-24-a4-gate-seam-and-override
+- **Context:** single-session-apply completed a phase task without running the phase validators, so a driven run could advance past a phase whose artifacts fail its gate. v1 had update-step --force with a recorded override; v2 had nothing. Campaign brief D4 asks for a real gate with bounded retries and an auditable override.
+- **Decision:** New phase_gate module evaluates run_phase_gate(split_id, run_id) before completion when enforcement is on (default OFF in A4). A failed gate is a non-mutating phase_gate_failed rejection; after MAX_GATE_RETRIES=2 the autonomy decides: guided asks a human, autonomous/unattended mark the task failed. --override-reason completes via a lifecycle hook that writes validation_overrides[] under the lock; unattended runs cannot override.
+- **Commit:** (assigned post-merge)
+- **Rationale:** A completion hook keeps the override record and the done transition atomic under one lock without adding a lifecycle entrypoint; a function-parameter seam keeps tests deterministic.
+- **Consequences:** Enforcement off keeps existing behaviour byte-identical. Degraded canon and gate crashes count as ASK and are non-retryable. A failed task can no longer be re-applied to done. gate_result gains a degraded value. A5 flips the default and migrates stub-artifact tests.
+- **Rejected:** A new lifecycle entrypoint for overrides (widens the completion surface); enforcing on by default now (about a dozen tests use stub artifacts); retrying degraded canon (it cannot change between dispatches).
+
+---
+
+### ADR-579: Brief-driven unattended run planned as three campaigns
+- **Date:** 2026-10-24
+- **Section:** Iterate — change: campaign brief for real gates and unattended runs
+- **Run-ID:** iterate-2026-10-24-campaign-a-brief
+- **Context:** Existing apps should become Shipwright apps via a Brief package, but phase validators never run in driven runs and no unattended mode exists.
+- **Decision:** Split the work into campaign A (real gates, harness), B (brief intake, design, SC profile) and U (unattended mode), with cross-campaign order as operator start conditions.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Two Opus plan reviews showed gates must be fixed before they are enforced and that depends_on cannot cross campaigns.
+- **Consequences:** Campaign A can start now; B waits for A and the stack-profile resolver; U waits for B and a WebUI tolerance card.
+- **Rejected:** One large campaign with cross-campaign edges; enforcing gates before migrating the stub-artifact tests.
+
+---
+
+### ADR-580: Driven phase-runner can spawn reviewers and reports review_status
+- **Date:** 2026-10-24
+- **Section:** Iterate — change: phase-runner reviewer spawn + review_status
+- **Run-ID:** iterate-2026-10-24-phase-runner-review-status
+- **Context:** A driven phase-runner had no Agent tool, so build Step 6 review cascades were skipped silently and the master could not see it.
+- **Decision:** Add Agent to phase-runner tools (reviewers only, enforced in the prompt), a not_run delegated-to-orchestrator branch in build code-review.md, and an optional review_status field in the result contract.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Agent(type) allowlists are ignored in subagent definitions, so the reviewers-only limit lives in the prompt; the field is optional for backward compatibility.
+- **Consequences:** The master sees deferred or partial cascades and runs them; older runners without review_status still validate.
+- **Rejected:** Spawning section-builder fan-out from the runner (operator's call); a required review_status field (breaks older runners).
+
+---
+
+### ADR-581: One resolver for stack profiles: project, user, bundled
+- **Date:** 2026-10-24
+- **Section:** Iterate - feature: stack-profile resolver core (S1)
+- **Run-ID:** iterate-2026-10-24-s1-resolver-core
+- **Context:** Stack profiles lived only in the plugin tree and every phase hard-coded that path, so user profiles were lost on update and a broken profile silently became another stack's defaults.
+- **Decision:** Add a stdlib-only resolver (first file wins, no fall-through), a list/resolve/validate CLI, a lax stack_profile schema, a committable .shipwright/profiles dir and a shared test-isolation fixture. No loader changes in this unit.
+- **Commit:** (assigned post-merge)
+- **Rationale:** One implementation avoids six drifting copies; a hand checker plus a jsonschema parity test keeps runtime stdlib-only without two definitions of valid.
+- **Consequences:** Later units (S2-S5) rewire loaders and prose onto it. A project or user profile that shadows a bundled name carries a prominent warning; ~/.shipwright/profiles commands run in every project (accepted residual).
+- **Rejected:** Per-loader custom-dir lookups (multiplies silent fallbacks); documenting re-copy after updates; doing nothing.
+- **Details:** [iterate-2026-10-24-s1-resolver-core-stack-profile-resolver.md](../planning/adr/iterate-2026-10-24-s1-resolver-core-stack-profile-resolver.md)
+
+---
+
+### ADR-582: Loaders resolve profiles through the resolver, no silent fallback
+- **Date:** 2026-10-24
+- **Section:** Iterate - feature: Python loaders use the stack-profile resolver (S2)
+- **Run-ID:** iterate-2026-10-24-s2-python-loaders
+- **Context:** Five Python loaders opened the bundled profile file themselves and, on a broken file or unknown name, silently carried on with another stack's defaults; user profiles were invisible to them.
+- **Decision:** Route dev_server, validate_env, test_runner, performance_check and setup-design-session through the S1 resolver via a thin profile_consumer glue; unknown, corrupt or too-new profiles fail loud (exit 2/3); name-keyed defaults apply only to bundled profiles (D9).
+- **Commit:** (assigned post-merge)
+- **Rationale:** One shared cutover keeps five loaders from drifting; lookup stays in the resolver. Edits to S1-owned resolver files were handed to S2 by the dispatch and are escalated for the D2 hot-file ruling.
+- **Consequences:** A custom profile works in every loader and is reported as profile_source; a typo in a name is an error. Design setup: a null or empty profile now means supabase-nextjs. Commands run only inside invoked phases; residuals: user-dir profiles in untrusted clones, _expand_env.
+- **Rejected:** Per-loader copies of the cutover rules; keeping silent fallbacks with a warning; leaving loaders unchanged.
+- **Details:** [iterate-2026-10-24-s2-python-loaders-python-loaders-use-the-resolver.md](../planning/adr/iterate-2026-10-24-s2-python-loaders-python-loaders-use-the-resolver.md)
+
+---
+
+### ADR-583: Adopt and the project writers resolve profiles through the resolver
+- **Date:** 2026-10-24
+- **Section:** Iterate - feature: adopt uses the stack-profile resolver (S3)
+- **Run-ID:** iterate-2026-10-24-s3-adopt-scaffolding
+- **Context:** Adopt matched only bundled profiles, silently fell back to generic, picked CI and CodeQL templates by name and could crash after a partial write on an unknown profile.
+- **Decision:** The matcher discovers through the resolver, the effective profile is resolved and validated before any write, CI and CodeQL templates follow provenance (D9), the project writers reject unresolvable names, and the snapshot gains additive profile source and warnings (1.1).
+- **Commit:** (assigned post-merge)
+- **Rationale:** All lookup stays in the resolver; adopt only adds a small glue module, so discovery and selection cannot drift.
+- **Consequences:** A custom profile is matched and marked source project; an unknown or invalid selected profile aborts with nothing written; a same-name shadow never gets a bundled template. The WebUI snapshot contract moves to 1.1 (S6 note).
+- **Rejected:** Adopt-specific directory scanning; copying custom profiles into the bundled tree; leaving adopt bundled-only.
+- **Details:** [iterate-2026-10-24-s3-adopt-scaffolding-adopt-uses-the-profile-resolver.md](../planning/adr/iterate-2026-10-24-s3-adopt-scaffolding-adopt-uses-the-profile-resolver.md)
+
+---
+
+### ADR-584: Skill prose uses the stack-profile resolver
+- **Date:** 2026-10-24
+- **Section:** Iterate - change: skill prose through the resolver
+- **Run-ID:** iterate-2026-10-24-s4-skill-prose
+- **Context:** Skill prose built the bundled profile path by hand, so project and user profiles were invisible to read-only sites and a mistyped name looked like a missing file.
+- **Decision:** Read-only sites call resolve_profile.py --path-only, command-running test layers pass the profile NAME, preview gates on the exit code, and a markdown guard test plus a snippet-runner test pin it.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Prose is runtime code; the CLI already exists, so the smallest fix is to call it and guard against regression.
+- **Consequences:** A new hand-built bundled profile path in prose fails the guard unless allowlisted; docs/ is allowlisted until S5.
+- **Rejected:** Keep paths and rely on name_over_bundled_path (custom profiles stay invisible); warn only; do nothing.
+- **Details:** [iterate-2026-10-24-s4-skill-prose-skill-prose-uses-the-resolver.md](../planning/adr/iterate-2026-10-24-s4-skill-prose-skill-prose-uses-the-resolver.md)
+
+---
+
+### ADR-585: Custom stack profiles reach the interview, docs and an end-to-end proof
+- **Date:** 2026-10-24
+- **Section:** Iterate - change: custom stack profiles end to end
+- **Run-ID:** iterate-2026-10-24-s5-interview-docs-e2e
+- **Context:** Campaign S1-S4 made loaders resolve custom stack profiles, but the project interview, user docs and an end-to-end proof were missing, and nothing stopped hand-built paths or swallowed resolver errors in python.
+- **Decision:** Interview lists and accepts custom profiles; a lookup-only --profile-root reaches write-project-config; docs/stack-profiles.md; an AST guard for *.py; an integration test from a git worktree.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The guard prevents hard-wired bundled paths silently ignoring custom profiles; the operator kept it over an OpenAI architecture reject (BRIEF rev 3 acceptance criterion).
+- **Consequences:** A python module that builds a profile path or swallows a resolver ValueError fails CI unless allowlisted; the config-location defect stays unchanged on purpose.
+- **Rejected:** Relocating the project config via --project-root (adopted-repo and hook risk); no python guard (option C); extending the regex markdown guard to python.
+- **Details:** [iterate-2026-10-24-s5-interview-docs-e2e-custom-profiles-end-to-end.md](../planning/adr/iterate-2026-10-24-s5-interview-docs-e2e-custom-profiles-end-to-end.md)
+
+---
+
+### ADR-586: Custom stack profiles: resolver with project, user, bundled lookup and no silent fallback
+- **Date:** 2026-10-24
+- **Section:** Iterate — change: stack-profile resolver campaign brief
+- **Run-ID:** iterate-2026-10-24-stack-profile-resolver-campaign
+- **Context:** Stack profiles load only from the installed plugin tree, which an update replaces, and several loaders silently substitute other behaviour for a broken or unknown profile.
+- **Decision:** Campaign stack-profile-resolver (S1-S5): one stdlib resolver with project, user, bundled lookup, D5 schema validation, a CLI for skill prose, fail-loud loaders; project profiles made committable via a gitignore negation.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Reviewed by internal Opus plan and architecture reviewers and external GPT and GLM in two rounds; all high and medium findings are integrated in the brief.
+- **Consequences:** Named profiles that fail to resolve become errors instead of silent defaults; a project or user profile may shadow a bundled name and runs commands from the repo, accepted as the same trust class as package.json scripts with a prominent shadow warning.
+- **Rejected:** User-directory-only lookup, per-project profile copies, and documenting re-adding after each update.
+
+---
+
+### ADR-587: Driven single-session apply enforces the phase gate by default
+- **Date:** 2026-10-25
+- **Section:** Iterate - feature: phase gate enforced by default, tests on real minimal artifacts (campaign A5)
+- **Run-ID:** iterate-2026-10-25-a5-test-migration-and-flip
+- **Context:** A4 shipped the driven-run phase gate off by default because about a dozen tests completed phases with stub artifacts no real validator accepts; docs said enforcement was off. Campaign brief D4 step 3 asks for the flip once the tests use real artifacts and the canon verifiers resolve in every install layout.
+- **Decision:** ENFORCE_PHASE_GATE_DEFAULT is True. All stub-artifact applies in both test roots use one shared builder, shared/testkit/minimal_valid_project.py, with no assertion weakened. A layout test proves the verifiers resolve in the Claude cache, mirror, Codex bundle and checkout, and an end-to-end test shows a broken artifact stopping a driven run.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Real minimal artifacts keep every migrated test exercising the production gate. A bare-module builder outside lib/scripts/tools is importable from both roots without an ADR-044 collision. C1 uses the phase_history outcome because a fixture phase_completed event would be deduped against the loop's own.
+- **Consequences:** Every driven apply runs the validators and canon checks; no config or env off switch, and an AST test keeps shipped code from bypassing it. The canon phase_history check counts only an entry recorded during this task for its split, even under runId. Unknown retry state is terminal. Missing verifiers fail closed with an install hint. Rollback is a code change.
+- **Rejected:** Tests passing enforce_gate=False (weakens them); per-run opt-in (unsafe unattended default); a builder under shared/scripts/lib (ADR-044); verifying phase_history by runId alone (every real skill mints its own id); relying only on the runner exporting the id (prose, one shell per call).
+- **Details:** [iterate-2026-10-25-a5-test-migration-and-flip-gate-on-by-default.md](../planning/adr/iterate-2026-10-25-a5-test-migration-and-flip-gate-on-by-default.md)
+
+---
+
+### ADR-588: ux_shape and ui_host are optional plain strings in the profile schema
+- **Date:** 2026-10-25
+- **Section:** Iterate — change: declare ux_shape and ui_host in the stack profile schema
+- **Run-ID:** iterate-2026-10-25-b1-profile-keys
+- **Context:** Brief-driven runs need per-profile ux_shape and ui_host; the D6 registry tests pin read keys to schema properties, so they must be declared before a loader reads them.
+- **Decision:** Declare both as optional plain string properties in stack_profile.schema.json: no enum, no resolver code, no PROFILE_KEYS_READ change.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Value sets are unknown until a consumer exists; validation of ux_shape lives in brief preflight (BRIEF D7). Plain strings can be tightened later.
+- **Consequences:** Profiles without the keys validate unchanged; non-string values are rejected; the first unit that reads a key adds it to its loader's PROFILE_KEYS_READ.
+- **Rejected:** Enum in the schema (over-commits before a consumer exists); do nothing (leaves keys undocumented).
+
+---
+
+### ADR-589: Brief package intake lives in sibling modules; hash anchored in run_config; brief content checked in the project gate
+- **Date:** 2026-10-25
+- **Section:** Iterate — feature: brief intake from a package directory and Project brief mode
+- **Run-ID:** iterate-2026-10-25-b2-brief-intake-project-brief-mode
+- **Context:** A Brief package directory was read as plain text, brief_dir was not stored, the approved hash was never re-checked, and the shape-only grill gate accepted evidence pointing at empty text.
+- **Decision:** brief_dir_intake.py (verify, approval, record, resume check) and brief_project_mode.py (artifacts) are new siblings; brief_intake.py only routes (opt-in); brief_mode_checks.py adds anchor and FR-name checks to run_project_checks.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The operator dropped the brief_intake extraction (both architecture reviewers rejected it), so a routing hook plus siblings keeps adopt and the file route unchanged at 295 lines.
+- **Consequences:** First hash comes from brief.json (trust on first use), taken only on a fresh run; resume/next/apply are code-checked, gate answers stay agent-instructed until U1/U2. Deferred to U3: no run-scoped verified snapshot, evidence/ outside the hash (residual TOCTOU). Accepted: a replaced config on a fresh run ends brief mode with a warning only. Fixture approval needs SHIPWRIGHT_ACCEPT_FIXTURE_APPROVAL=1.
+- **Rejected:** Extract brief_intake first (dropped by the operator); read the package only in the unattended unit (leaves a silent misroute); verify only at intake (no protection on resume).
+
+---
+
+### ADR-590: A profile named in the brief wins over inference and is resolver-checked
+- **Date:** 2026-10-25
+- **Section:** Iterate — feature: wizard brief keeps the stack profile it names
+- **Run-ID:** iterate-2026-10-25-b2b-wizard-brief-explicit-profile
+- **Context:** The WebUI wizard writes the chosen stack profile into the brief line, but brief_intake read no profile and derived it only from persistence, so a named profile was lost.
+- **Decision:** brief_profile.py finds the name (profile field or Stack profile: item), asks profile_resolver, and map_brief lets it win; an unusable name stays null with profile_error and exit 3.
+- **Commit:** (assigned post-merge)
+- **Rationale:** One sibling module keeps brief_intake.py below its size at no growth, and the resolver stays the only authority on which file a name means.
+- **Consequences:** Additive keys only when a profile is named; the Stack profile: wording becomes a WebUI compatibility commitment; no WebUI change needed for the current output; adopt unchanged.
+- **Rejected:** Validate only in write-config (no early warning); ask the WebUI to write JSON first (does not fix intake ignoring profiles).
+- **Details:** [iterate-2026-10-25-b2b-wizard-brief-explicit-profile-contract.md](../planning/adr/iterate-2026-10-25-b2b-wizard-brief-explicit-profile-contract.md)
+
+---
+
+### ADR-591: Design copies package mockups to screens/ and links FRs by slug
+- **Date:** 2026-10-25
+- **Section:** Iterate — feature: Design takes the Brief package (B3a)
+- **Run-ID:** iterate-2026-10-25-b3a-design-takes-the-package
+- **Context:** A Brief package ships approved mockups and screen-map.json; Design must reach registry, FR-coverage and flow gates without hand-typed FR ids or a human mapping step.
+- **Decision:** New apply-brief-package.py re-verifies the package hash, keeps mockups byte-identical in uploads/, writes screens/NN-id.html with a Requirements comment resolved from capability slugs against Project-minted spec.md rows; all checks precede any write and a differing file is never overwritten.
+- **Commit:** (assigned post-merge)
+- **Rationale:** A script is repeatable and testable where prose depends on agent discipline; it reuses the B2 verifier by file path (ADR-045) and the registry helper rather than a second hash or comment format.
+- **Consequences:** Mapping comes from screen-map.json; bad slugs stop the run. Accepted: Windows case-insensitive names; foreign material in screens/uploads/flows can satisfy fr-coverage (the tool lists it as foreign_existing for the agent to report). Package-change recovery is deferred (follow-up U-series): the tool refuses. Attributed extras beyond the touch set: verifiers/brief_design_checks.py + wiring, brief_mode_checks.verified_package, tools/brief_design_plan.py, fixture-1 headings + re-pinned hash.
+- **Rejected:** Prose-only upload-mode steps (cannot guarantee byte identity or minted ids); folding placement into screen_registry/setup script (second responsibility in a checker; architecture reviewer called this low severity).
+
+---
+
+### ADR-592: Bundle a data-only chat-first-json stack profile
+- **Date:** 2026-10-25
+- **Section:** Iterate — change: bundled chat-first-json stack profile
+- **Run-ID:** iterate-2026-10-25-b4-chat-first-profile-sc
+- **Context:** A chat-first app (chat plus a served pane, local JSON, no deploy) had no bundled profile, so dev server, smoke and Browser Verify fell back to npm defaults on port 3000.
+- **Decision:** Add shared/profiles/chat-first-json.json declaring its own dev_server, pytest, Playwright and deploy null; split test_runner.py (command_runner.py) to get under its cap; no loader branches on ux_shape.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Every key needed is already consumed by existing loaders; an empty stack.backend keeps adopt from preferring this profile over python-plugin-monorepo for FastAPI repos.
+- **Consequences:** Chat-first projects build, test and preview from the profile alone; no CI or CodeQL template exists for it by design; adopt scoring of existing fixtures is unchanged.
+- **Rejected:** Loader special cases keyed on ux_shape; registering a bloat baseline instead of splitting test_runner.py; listing fastapi under stack.backend.
+- **Details:** [iterate-2026-10-25-b4-chat-first-profile-sc-chat-first-json-profile.md](../planning/adr/iterate-2026-10-25-b4-chat-first-profile-sc-chat-first-json-profile.md)
+
+---
+
+### ADR-593: Resolve npx per platform and pass the profile URL to Browser Verify
+- **Date:** 2026-10-25
+- **Section:** Iterate - bug: Windows-safe npx spawn and Browser Verify URL
+- **Run-ID:** iterate-2026-10-25-b4b-windows-npx-browser-verify-url
+- **Context:** B4 doubt review found bare npx spawns fail on Windows (npx.cmd), the Browser Verify command omitted --url, smoke and Browser Verify disagreed on URL precedence, and localhost can resolve to ::1 for Node while uvicorn listens on IPv4.
+- **Decision:** playwright_runner and browser_verify resolve npx via the shared resolve_executable (argv arrays, no shell). browser-verify.md carries --url in its code block. Precedence is profile dev_server, then build_config dev_url. chat-first-json and step-7 guidance use 127.0.0.1 everywhere.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Same resolver playwright_setup.py already uses; no shell=True keeps profile strings out of a shell.
+- **Consequences:** Windows runs (campaign B7) no longer fail at spawn. playwright_runner loads the shared helper by file path (plugin has its own lib package, ADR-045) with a shutil.which fallback.
+- **Rejected:** shell=True (injection surface); import lib.cmd_resolver from the plugin (lib name collision).
+
+---
+
+### ADR-594: Campaign B gets a real end-to-end run through the WebUI instead of the optional Supabase profile
+- **Date:** 2026-10-25
+- **Section:** Iterate — change: campaign B plan, real end-to-end unit
+- **Run-ID:** iterate-2026-10-25-campaign-b-brief
+- **Context:** Campaign B had no end-to-end proof that a Brief package becomes a working chat-first application, and its optional Supabase profile was not wanted.
+- **Decision:** Drop the Supabase profile unit, create the chat-first fixture in B3b, and add unit B7: an operator-started Playwright run through a second WebUI instance with a temporary HOME, documented with a screenshot per step.
+- **Commit:** (assigned post-merge)
+- **Rationale:** An Opus review against the merged code and the WebUI checkout found the fixture autonomy value invalid, the temp HOME unprovisioned, and the WebUI unable to apply a permission mode, so the plan now states how each is handled.
+- **Consequences:** The real run is operator acceptance outside the campaign DAG; CI only checks what needs no model. Permission mode and budget are explicit operator inputs without defaults.
+- **Rejected:** Running the real agent inside the campaign; reusing the WebUI's fake plugin cache; a CI type check that needs a new Node job.
+
+---
+
+### ADR-595: Bind state before the retry loop in retry_state
+- **Date:** 2026-10-25
+- **Section:** Iterate — bug: CodeQL uninitialized local in phase_gate.retry_state
+- **Run-ID:** iterate-2026-10-25-codeql-uninit-phase-gate-state
+- **Context:** CodeQL alert 1433 (py/uninitialized-local-variable) flagged `state` in phase_gate.retry_state: it was only assigned inside the two-attempt read loop, which always breaks or returns.
+- **Decision:** Initialise `state: Any = None` before the loop. A hypothetical fall-through now yields None through the existing isinstance check, i.e. the documented 'unknown' answer.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Fixing the code keeps the scanner signal honest; a false positive in practice is still a defect for a reader who must prove the loop cannot fall through.
+- **Consequences:** Behavior unchanged; the alert closes at the next CodeQL run on main. No suppression comment or baseline entry was added.
+- **Rejected:** Inline suppression or dismissing the alert as false positive: both hide the pattern instead of removing it.
+
+---
+
+### ADR-596: Driven-run gate leftovers: cap held in code, archived splits judged, one version default
+- **Date:** 2026-10-25
+- **Section:** Iterate — change: gate hardening leftovers
+- **Run-ID:** iterate-2026-10-25-gate-hardening-leftovers
+- **Context:** Leftovers of campaign brief-driven-run-a-real-gates: a guided cap that held only if the master stopped, a build gate that refused every correct non-final split after archive_split, a 0-vs-1 task version default, a class-name refusal check, stale docs and FR tags.
+- **Decision:** Persist a version-keyed gateTerminal marker read by the resolver (ask_human from single-session-next); judge the task's split via sections_for_split (exact completed_splits name, archived asks non-retryable); one DEFAULT_TASK_VERSION=1; catch OverrideRefused by type. Override provenance and raw claim-phase-task rotation documented only.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The counters cannot tell a crash-resumed dispatch from a capped one; a marker keyed to run, task and version needs no reset path. Rotating in claim_phase_task would double-bump single-session-next and break the idempotent same-session re-claim; no production caller re-claims raw.
+- **Consequences:** A guided or uncounted ask_human terminal is held until a person overrides, recovers or fails the task; non-final driven builds pass their gate; an old shared verifier on an archived split is an ask-level canon_degraded note. Not covered: plan canon split, v1 update-step split, WebUI ask_human.
+- **Rejected:** Deriving the cap from attempt/gateRejections; moving archive_split to the next split (changes the build skill and the v1 path); rotating the version on a raw claim; a counter-corroborated marker.
+- **Details:** [iterate-2026-10-25-gate-hardening-leftovers-gate-hardening-leftovers.md](../planning/adr/iterate-2026-10-25-gate-hardening-leftovers-gate-hardening-leftovers.md)
+
+---
+
+### ADR-597: Skip reason, gate pass record and re-dispatch fencing for driven runs
+- **Date:** 2026-10-25
+- **Section:** Iterate — change: gate honesty follow-ups
+- **Run-ID:** iterate-2026-10-25-gate-honesty-followups
+- **Context:** The A5 review left three gaps: a forced skip recorded no reason or event, a passed gate left nothing durable, and a gate retry re-claimed the task with the same version so the earlier dispatch's result still passed the CAS.
+- **Decision:** A skip requires --reason (stored as phase_tasks[].skipReason, one phase_skipped event); every gated completion writes phase_tasks[].gate in the completion lock; every re-dispatch bumps version, and the design freeze moved into the completion's locked write.
+- **Commit:** (assigned post-merge)
+- **Rationale:** version is already the CAS counter every apply path checks and recover bumps, so rotating it needs no second token; writing the freeze inside the lock that checks the CAS leaves no window.
+- **Consequences:** Three new optional phase_tasks[] keys and a new tracked event type; the master must apply with the latest single-session-next descriptor. A stale runner that reads the newer version itself is fenced only by the phase-runner contract.
+- **Rejected:** A second fencing token field; requiring a reason only after a gate rejection; persisting inform notes; a separately fenced freeze before the completion (two locks leave a window).
+- **Details:** [iterate-2026-10-25-gate-honesty-followups-skip-reason-pass-record-and-redispatch-fencing.md](../planning/adr/iterate-2026-10-25-gate-honesty-followups-skip-reason-pass-record-and-redispatch-fencing.md)
+
+---
+
+### ADR-598: Fold a JUnit parametrization suffix from the first bracket
+- **Date:** 2026-10-25
+- **Section:** Iterate - bug: parametrized tests with bracketed values read as never run
+- **Run-ID:** iterate-2026-10-25-junit-nested-param-ids
+- **Context:** The traceability join folds a pytest JUnit case such as test_x[a] to the function id test_x. The fold regex stopped at the first closing bracket, so a case whose parameter VALUE holds brackets (test_x[branches: [main]-main-True]) stayed unfolded. The bound function id then had no evidence and its link read not_run although every case passed. FR-01.17 (AC06 is bound only to such a test) therefore showed no executed test and the layer-promotion sweep escalated it.
+- **Decision:** The suffix regex now runs from the first opening bracket to the final closing bracket (DOTALL). A function name holds no bracket, so the first one always starts the parameter id. The merge of cases stays fail-closed, so a failing case still wins over passing siblings.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Reproduced with the CI evidence of the stack-profile campaign (one link not_run for a passing parametrized test), root cause found in the regex, red test first, independent code review approved with two lows.
+- **Consequences:** Parametrized tests with bracketed values get their evidence joined, FR-01.17 can leave the escalated state at the next evidence run. Ids without nested brackets fold exactly as before. The resume module keeps its own first-bracket split; the two now agree on every real id.
+- **Rejected:** (1) Promoting or demoting FR-01.17 by hand to get past the escalation: it would have hidden a defect that affects every parametrized test with bracketed values. (2) Sharing one fold helper with the resume module: a refactor outside this bug.
+- **Details:** [iterate-2026-10-25-junit-nested-param-ids-junit-nested-param-ids.md](../planning/adr/iterate-2026-10-25-junit-nested-param-ids-junit-nested-param-ids.md)
+
+---
+
+### ADR-599: Decide the advisory-spec skip before evidence-based escalation
+- **Date:** 2026-10-25
+- **Section:** Iterate â€” bug: advisory-spec check ran after the escalation branches in evaluate_fr
+- **Run-ID:** iterate-2026-10-25-layer-promotion-advisory-first
+- **Context:** evaluate_fr returned SKIP_ADVISORY_SPEC only after the unrecognised_ok and bound_test_absent escalations. FR-01.17 in the advisory adopted spec has a bound unit test that did not run in CI, so it escalated on every sweep and every worktree setup warned that an operator decision was needed.
+- **Decision:** Move the is_advisory_spec check directly after the already_explicit skip, ahead of the escalation branches. Ledger handling and collision handling stay first.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The adopted spec keeps Layers cells (inferred) by decision (SPEC 6.2), so no operator decision can change the outcome; asking for one is noise that trains people to ignore the sweep warning.
+- **Consequences:** Advisory-spec requirements now report advisory_spec_never_promoted regardless of evidence quality; the recurring escalation warning for FR-01.17 disappears. Other specs still escalate on ambiguous evidence (pinned by a regression test).
+- **Rejected:** Recording a promoted decision via record_layer_promotion_decision.py contradicts SPEC 6.2; recording demoted writes a permanent ledger veto for a requirement that is never promoted anyway.
+
+---
+
+### ADR-600: Derive the project root above .shipwright when only --planning-dir is passed
+- **Date:** 2026-10-25
+- **Section:** Iterate - bug: write-project-config wrote the project config to the wrong folder
+- **Run-ID:** iterate-2026-10-25-project-config-location
+- **Context:** The project skill calls write-project-config.py with only --planning-dir <project>/.shipwright/planning. The project root was derived as planning_dir.parent, so shipwright_project_config.json landed in <project>/.shipwright/ with planning_dir stored as planning, while every reader (lib.config, the phase verifier, the stop-hook handoff, the gate manifest) looks at <project>/shipwright_project_config.json. The S5 test pinned the wrong location as pre-existing.
+- **Decision:** When --project-root is absent and the planning dir sits directly under a .shipwright folder, the project root is the folder above .shipwright, derived once from the unresolved path (a linked .shipwright stays valid) and also used for the profile lookup. An explicit --project-root stays authoritative; any other planning dir keeps planning_dir.parent. planning_dir is stored as a posix path relative to the project.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Reproduced first (file landed in .shipwright/), root cause confirmed against adopt's writer which emits the project-root location, fix covered by three unit tests and a round trip through the real readers, red without the fix.
+- **Consequences:** New projects get the config where the readers look and the canonical planning_dir. Projects scaffolded earlier may keep a stale, unread .shipwright/shipwright_project_config.json. Requirements-file mode (planning dir outside the project) is unchanged and tracked as a follow-up.
+- **Rejected:** (1) Passing --project-root at the skill call sites: in requirements-file mode the planning dir lies outside the project and the complete scaffold would raise in relative_to. (2) Deleting the stale file in the writer: nothing reads it.
+- **Details:** [iterate-2026-10-25-project-config-location-write-project-config-location.md](../planning/adr/iterate-2026-10-25-project-config-location-write-project-config-location.md)
+
+---
+
+### ADR-601: A skip that clears the last open task completes a blocked driven run
+- **Date:** 2026-10-25
+- **Section:** Iterate — bug: run completes after the last needs_validation blocker is skipped
+- **Run-ID:** iterate-2026-10-25-run-completion-after-skips
+- **Context:** complete_phase_task parks a driven run in needs_validation when deploy completes with other tasks open; the documented recovery skips them, but nothing re-checked the run afterwards, so single-session-next answered needs_validation forever and the run never finished.
+- **Decision:** recover_phase_task re-checks the lifecycle completion invariant in its own locked write after a skip (needs_validation, no validation_issues key, pipeline-terminal task done, every task terminal) and sets status complete with run_status in the result; both recover CLIs then stamp the loop pointer complete, after every skip so a lost loop write heals.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The skip is the only command that can clear the lifecycle's blocker, so it is where the invariant must be re-evaluated; resolve_next_dispatch is read-only by contract.
+- **Consequences:** A blocked run finishes once its open tasks are skipped; skipped tasks stay skipped; a failed recover never completes the run by itself, but an already-failed task counts as terminal exactly as in complete_phase_task (follow-up question). The v1 update-step pause is never lifted.
+- **Rejected:** Re-checking in resolve_next_dispatch (read-only contract); a separate finish-run command (one more step for the operator); requiring no failed task (diverges from complete_phase_task).
+- **Details:** [iterate-2026-10-25-run-completion-after-skips-skip-completes-a-blocked-run.md](../planning/adr/iterate-2026-10-25-run-completion-after-skips-skip-completes-a-blocked-run.md)
+
+---
+
+### ADR-602: Harden the S5 Python guard and settle the S5 hand-offs
+- **Date:** 2026-10-25
+- **Section:** Iterate - change: stack-profile-resolver follow-up cleanup
+- **Run-ID:** iterate-2026-10-25-stack-profile-followup
+- **Context:** The stack-profile-resolver campaign (S1-S5) merged with documented leftovers: seven low findings in the S5 *.py guard, a misleading comment about the early-call degrade in write-project-config.py, stale not-started lines in the S2 ADR, and two BRIEF points the operator had to decide (the swallow-allowlist scope and the generated-render case of the S4 prose guard).
+- **Decision:** Seed module_wrappers with the pinned wrappers, treat signed int returns as failure codes, share one error-name predicate between handlers and suppress(), decode utf-8-sig and name an unreadable file, scrub every GIT_* variable in the e2e environment, replace the always-true exclusion assertion. Correct the write-project-config comment instead of removing the degrade (a test pins it). Amend the BRIEF: the swallow allowlist is the S3 matcher family; the prose guard reads the git index.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The operator decided both BRIEF points; each guard change has a planted red or green case, and an independent opus code review approved with three lows, all fixed.
+- **Consequences:** The heuristic guard catches suppress(Profile*) and local helpers around pinned wrappers, and no longer reds on return -1. Blind spots stay as documented in stack_profile_py_rules.py. The config-location defect of write-project-config.py is left for its own iterate.
+- **Rejected:** (1) A GENERATED exemption in the prose guard - the S4 spec review rejected it and the index read already aligns dev tree and CI. (2) Removing the in_progress ImportError degrade - test_profile_name_check pins it. (3) More heuristic hardening rounds - the guard is documented as a heuristic.
+- **Details:** [iterate-2026-10-25-stack-profile-followup-stack-profile-follow-up-cleanup.md](../planning/adr/iterate-2026-10-25-stack-profile-followup-stack-profile-follow-up-cleanup.md)
+
+---
+
+### ADR-603: Stop-guard counts a resumed agent as pending work
+- **Date:** 2026-10-25
+- **Section:** Iterate — bug: stop-guard tracks resumed agents
+- **Run-ID:** iterate-2026-10-25-stop-guard-resumed-agent
+- **Context:** The iterate Stop-guard blocked three Stops while a runner it had woken with SendMessage was still working: that result carries resumedAgentId but no isAsync, so it was never tracked as a background task.
+- **Decision:** Count a resume result (resumedAgentId/revivedAgentId, unless success or isAsync say otherwise) as an agent launch keyed by the SendMessage tool-use-id; reword the block message and print a resolved record_hard_blocker path.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Found by replaying the real transcript through the scanner (pending was empty at 06:28:04). The opus code review tightened the check against failed/synchronous shapes and widened the path fallback to RuntimeError; GLM and GPT approved with no findings.
+- **Consequences:** A resumed runner no longer triggers futile blocks; the residual risk is a resume whose notice never arrives, bounded by the existing 2 h agent limit.
+- **Rejected:** Allowing the Stop on any queued SendMessage (too broad: silences a plain message to a running agent); hiding the error display (not possible from a plugin, the UI shows every block).
+
+---
+
+### ADR-604: Chat-first Brief packages: chat-map.json, generated flows, Layout D, chip rule
+- **Date:** 2026-10-26
+- **Section:** Iterate - feature: Chat-first design (B3b)
+- **Run-ID:** iterate-2026-10-26-b3b-chat-first-design
+- **Context:** A chat-first Brief package (chat plus pane) had no layout, no link from typed commands to pane-state screens, and no flow mockups for the flows gate.
+- **Decision:** apply-brief-package.py checks chat-map.json against screen-map.json by one rule (capability screen exists and lists the capability's requirements) and writes one flow mockup per golden path; verifier brief_chat_first_applied; chrome gate refuses a chip with nav-item/topnav-link; Layout D snippet; references/chat-first.md holds the agent's STOP table.
+- **Commit:** (assigned post-merge)
+- **Rationale:** A script and a verifier are repeatable where prose depends on agent discipline; flows are generated so the unattended agent never authors or edits them; reuses B3a's plan module and the existing gates.
+- **Consequences:** Pane-state screens live in screen-map.json. Accepted: the chip rule applies to every project and reads comments; a chat-only FR absent from chat-map.json is undetected (follow-up); unmapped_frs stays informational; TOCTOU stays with U3. Review findings fixed: re-entry flow check, FR-count check, flows inline the pane mockup.
+- **Rejected:** Prose-only flows; a separate chat-first design tool; no-op (fails the chat-first acceptance).
+
+---
+
+### ADR-605: Blocking screenshot check, Brief-package projects only
+- **Date:** 2026-10-26
+- **Section:** Iterate — feature: Screenshot check in the Test phase (B3c)
+- **Run-ID:** iterate-2026-10-26-b3c-screenshot-check-in-test
+- **Context:** An unattended run approves designs before the build, but the Test phase had no gate proving the built screens still look like the approved mockups; the structural fidelity step is non-blocking.
+- **Decision:** New screenshot_check.py captures mockup and built route in Chromium and compares a luminance+content grid (tolerance 0.15); fail or error blocks. Applies only with a Brief package marker.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Separation was measured on real Chromium (right 0.02, wrong 0.30-0.99). Luminance alone failed on blank pages, so a content flag was added. No third-party dependency.
+- **Consequences:** Layout-level only: wrong wording or hue-only changes pass. Tolerance is one constant, tuned in the end-to-end procedure. Needs Playwright and a running app; a missing one is an error, never a pass.
+- **Rejected:** Make design_fidelity_check blocking (compares source text, not the screen); extend that grandfathered file; per-project tolerance knob; leave to human review.
+- **Details:** [iterate-2026-10-26-b3c-screenshot-check-in-test-screenshot-check.md](../planning/adr/iterate-2026-10-26-b3c-screenshot-check-in-test-screenshot-check.md)
+
+---
+
+### ADR-606: Opt-in unattended_answer per gate; unattended behaves as autonomous
+- **Date:** 2026-10-26
+- **Section:** Iterate - feature: gate catalog unattended answers and autonomy plumbing
+- **Run-ID:** iterate-2026-10-26-b5-catalog-autonomy
+- **Context:** A Brief-package run needs to finish with nobody present, but the catalog could not say which stops may be answered automatically, autonomy knew only guided and autonomous, and test and changelog had no cataloged gates.
+- **Decision:** Optional reviewed unattended_answer on exactly three design gates; validate_catalog rejects it on denylisted, locked, hard-stop and non-orchestrator-approve gates (lib/gate_unattended.py, denylist pinned by test). The resolver only reports it under unattended; the master applies it. test and changelog join COVERED_PHASES. Every autonomy consumer treats unattended as autonomous.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The catalog is already the reviewed SSoT with a validator; one optional key plus one rule is the smallest change that keeps locked gates unreachable.
+- **Consequences:** Adding an auto-approvable gate needs a catalog line plus the pin test change. Override still refuses unattended. The answer is applied in U3 (resolver reports it only for an explicit --autonomy). Driven-run changelog now auto-accepts version and entry preview (also guided driven runs); release PR stays open. Follow-ups: refuse write-config --autonomy unattended without a package (U3); validator-level allowlist.
+- **Rejected:** A second catalog file (second source of policy); hard-coding the three gates in the master (unvalidated); resolver unblocking the gate itself (bypasses the master checks).
+
+---
+
+### ADR-607: Operator-run Playwright spec project beside a hashed package
+- **Date:** 2026-10-26
+- **Section:** Iterate - feature: operator-started real end-to-end run through the WebUI
+- **Run-ID:** iterate-2026-10-26-b7-real-e2e-webui
+- **Context:** No test shows whether a Brief package becomes a working chat-first app when a person drives it through the WebUI; a real run costs tokens and varies, so it cannot gate CI.
+- **Decision:** A Node/Playwright project at integration-tests/e2e-webui drives a second WebUI instance and writes a screenshot report; CI checks only package validation, the dry harness and structure rules. The answer key sits beside the package.
+- **Commit:** (assigned post-merge)
+- **Rationale:** A screenshot report from a real run is the only evidence a package works end to end; a key inside the package would change its hash and let the builder read it.
+- **Consequences:** The operator keeps the WebUI test ids current; npm run typecheck and test:unit are its only guards. The first real run is operator acceptance. Openai architecture reject overridden (scope fixed by the brief).
+- **Rejected:** Manual procedure only (no repeatable report); doing nothing (question stays open); answer key inside the package.
+- **Details:** [iterate-2026-10-26-b7-real-e2e-webui-operator-run.md](../planning/adr/iterate-2026-10-26-b7-real-e2e-webui-operator-run.md)
+
+---
+
+### ADR-608: Deterministic-first programme, changelog pilot and baseline-protection briefs on main
+- **Date:** 2026-10-27
+- **Section:** Iterate — change: land the deterministic-first and baseline-protection briefs
+- **Run-ID:** iterate-2026-10-27-dfp-bp-briefs
+- **Context:** Three reviewed campaign briefs existed only untracked in the main checkout, so no campaign worktree could read them (programme brief §2.3).
+- **Decision:** Commit the programme brief (rev 4), the changelog pilot brief (rev 4) and the baseline-protection brief (rev 3) unchanged under .shipwright/planning/campaigns/. No code, spec or gate changes.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Planning documents reach main through an iterate so the commit carries a work_completed event and a Run-ID footer.
+- **Consequences:** The baseline-protection campaign can start from main; the programme and pilot wait for it. The design decisions and review logs live in the briefs themselves.
+
+---
+
+### ADR-609: Q2 reads archived split sections; F4 bounds an ADR at the next heading
+- **Date:** 2026-10-27
+- **Section:** Iterate — bug: Q2 archived splits and F4 ADR bounds
+- **Run-ID:** iterate-2026-10-27-q2-archived-splits-f4-adr-bounds
+- **Context:** GitHub #930/#931: after archive_split.py Q2 reported a finished split's sections as missing, and F4 counted any block after an ADR (## sections, DR-NNN blocks) as that ADR's body.
+- **Decision:** Q2 merges every split_<prefix>_sections list (current sections win on a name clash). F4 closes an ADR at any level 1-3 heading that is not an ADR header, ignoring heading-like lines inside code fences.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Both defects were read-side: the writers (archive_split.py, decision-log layout) are correct and already shared by other readers.
+- **Consequences:** No false Q2 FAIL in multi-split projects; short ADRs are no longer reported as bloat. F4 now ignores trailing non-ADR blocks, so ADR size is measured by the ADR's own lines.
+- **Rejected:** Changing archive_split.py to keep entries in sections[] (breaks the per-split reset the build skill relies on).
+
+---
+
+### ADR-610: The on-main changelog event block never pushes, and both blocks are run by tests
+- **Date:** 2026-10-27
+- **Section:** Iterate — change: changelog event blocks split and tested
+- **Run-ID:** iterate-2026-10-27-release-event-on-main-block
+- **Context:** PR #890 records the release changelog event before the merge, but with one block that ends in git push origin HEAD and tells the reader to delete that line on main, where it would push main without the tag. The tests only compared text positions.
+- **Decision:** Step 7 now has a PR-flow block (record, add, commit only if something is staged, push) and a separate on-main block with no push, chained with &&. A new test extracts the fenced blocks and runs them against a temp clone with a bare remote.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Step 7 is autonomous release automation that pushes to origin, so the commands themselves are executed in a test instead of only pinning their order in the text.
+- **Consequences:** A failing record_event stops the release before commit and push, a recorded-nothing run (dedup, exit 0) still pushes, and the on-main block cannot push main untagged. The test needs bash and uv-free stubs, and hard-fails in CI when bash is missing.
+- **Rejected:** Keeping one block and asking the reader to drop the push line by hand; keeping the unconditional git commit (it fails on a dedup no-op and blocks the push retry).
+
+---
+
+### ADR-611: Sibling plugins are resolved for the repo AND the plugin cache layout
+- **Date:** 2026-10-27
+- **Section:** Iterate — bug: sibling plugin lookup in the plugin cache
+- **Run-ID:** iterate-2026-10-27-sibling-plugin-resolver-cache
+- **Context:** GitHub #932: finalize_security_compliance looked for the compliance plugin at <security plugin>.parent/shipwright-compliance, which only holds in the repo; in the cache plugins live at <cache>/shipwright/<plugin>/<version>, so the compliance refresh after a security scan never ran.
+- **Decision:** New stdlib-only shared/scripts/lib/sibling_plugin.py finds the sibling in the repo or as the newest usable cached version (release above pre-release, orphaned and partly reaped versions skipped). Callers load it by path (ADR-045) and fall back to the old guess: security finalize, run constants, grade sibling_bridge.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Plugins cannot import the shared lib normally (ADR-045 namespace collision), and the plugin cache has a fixed layout the helper can rely on.
+- **Consequences:** Compliance refresh after a security scan and the orchestrator's compliance update now work from the installed plugin cache. The by-path loader block exists in three plugins and must be kept in step.
+- **Rejected:** Matching the caller's own version (plugins version independently); importing the resolver via lib (ADR-045).
+
+---
+
+### ADR-612: Untitled UI is a token-only CSS kit; a look is a token set
+- **Date:** 2026-10-27
+- **Section:** Iterate - feature: Untitled UI kit for the design plugin
+- **Run-ID:** iterate-2026-10-27-untitled-ui-kit
+- **Context:** Screens built from copy-paste snippets looked plain, and brand guidelines could restyle components. The operator wants one complete kit and guidelines that carry only tokens.
+- **Decision:** kit/untitled-ui/kit.css holds every component using var(--token) only; tokens/*.css (warm, clean, bold) decide the look; tokens-contract.md lists the tokens; examples are generated by build_kit_examples.py and checked by tests, including WCAG contrast.
+- **Commit:** (assigned post-merge)
+- **Rationale:** One CSS file whose values are all tokens keeps the look controllable and testable; contrast and solid colours are enforced by tests rather than by review.
+- **Consequences:** A project's visual guidelines supply tokens only; a component change is a kit.css change. Design docs route untitled-ui screens to the kit; other flavors keep the snippets. The kit has no chat UI and no charts.
+- **Rejected:** Per-flavor snippet copies (drift, no tests); transparent primary tints (uncontrolled colours); a chat layout in the kit (the Claude app is the chat).
+
+---
+
+### ADR-613: Baseline touched-set: measure first
+- **Date:** 2026-10-28
+- **Section:** Iterate — feature: baseline touched-set library and replay
+- **Run-ID:** iterate-2026-10-28-bl0-touch-library-and-replay
+- **Context:** BP needs measured base rates before any gate; nothing compares a diff with an approved scope today.
+- **Decision:** Build the touched-set library and a manual replay CLI, run them over 100 PRs, report, and stop for the operator.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Precedent ADR-266: measure false holds on real history before anything blocks.
+- **Consequences:** 39 of 100 PRs held under an empty scope; operator decides N, class rules and scope_frs at stop 1.
+- **Rejected:** Extend keystone/test-tag gates with a report; do nothing and design from the brief alone.
+- **Details:** [iterate-2026-10-28-bl0-touch-library-and-replay-baseline-touched-set.md](../planning/adr/iterate-2026-10-28-bl0-touch-library-and-replay-baseline-touched-set.md)
+
+---
+
+### ADR-614: Measure BP on independent labels before it goes further
+- **Date:** 2026-10-29
+- **Section:** Iterate — feature: BL0b broader baseline measurement
+- **Run-ID:** iterate-2026-10-28-bl0b-broader-measurement
+- **Context:** BL0's replay used the authors' own affected_frs as truth and ran T-code on 20 PRs only; the operator asked for a broader, blind measurement before BL1/BL2.
+- **Decision:** One HEAD context run of 18 roots mapped to 100 PRs, a path-ownership baseline, 50 blind probes and 35 blind label packs judged by two labelers; five pre-registered rules evaluated unchanged.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Decide from independent evidence; ADR-266 precedent: measure false holds before anything blocks.
+- **Consequences:** R-benefit and R-recall pass; R-T-code-value, R-precision and R-cost fail (43 of 100 held); recommendation SHADOW-ONLY, the operator decides at stop 1.
+- **Rejected:** Spending BL2 on the BL0 evidence alone; using affected_frs as ground truth.
+- **Details:** [iterate-2026-10-28-bl0b-broader-measurement-broader-measurement-before-bp-goes-further.md](../planning/adr/iterate-2026-10-28-bl0b-broader-measurement-broader-measurement-before-bp-goes-further.md)
+
+---
+
+### ADR-615: Changelog version bump comes from suggest_version_bump, not the model
+- **Date:** 2026-10-28
+- **Section:** Iterate — bug: changelog version bump follows AC04
+- **Run-ID:** iterate-2026-10-28-changelog-ac04-version-bump
+- **Context:** SKILL.md Step 3 told the model to compute the bump itself (BREAKING CHANGE -> major), contradicting FR-01.09 AC04 (a break before 1.0 raises the second number); the skill never called suggest_version_bump.
+- **Decision:** setup-changelog.py returns suggested_version and version_reason from suggest_version_bump; Step 3 tells the model to use them verbatim; AC04-bound tests cover 0.x and >=1.0 breaks; ledger row 4 points at the wired code.
+- **Commit:** (assigned post-merge)
+- **Rationale:** A deterministic function already encoded AC04; making the skill consume it removes the judgement step that drifted.
+- **Consequences:** A breaking change on 0.x now proposes 0.(x+1).0 instead of 1.0.0. The setup JSON gains two additive fields.
+- **Rejected:** Leaving the prompt rule and fixing its wording: still relies on the model applying the rule.
+
+---
+
+### ADR-616: Keep deliver_pr importable without PyYAML; carry the skipped count into events
+- **Date:** 2026-10-28
+- **Section:** Iterate - bug: deliver_pr without PyYAML, skipped in event tests
+- **Run-ID:** iterate-2026-10-28-deliver-pr-yaml-tests-skipped
+- **Context:** F11 runs deliver_pr.py in consumer projects under a bare uv run. lib.automerge_readiness imported yaml at module level for one function, so importing its POSTED_STATUS_CONTEXTS constant crashed delivery. Separately the F7 template and F5 layer shape never recorded skipped tests, so events failed passed+skipped==total.
+- **Decision:** Import yaml locally inside workflow_report (module stays stdlib-only at load, ADR-045 safe). Guard with a test importing every documented F-phase script with yaml blocked. Add --tests-skipped to F7 and skipped to the F5 layer shape; the finalize fold omits tests.skipped when a layer has an unexplained gap.
+- **Commit:** (assigned post-merge)
+- **Rationale:** A lazy import removes the dependency at its source; a --with pyyaml workaround would need repeating at every call site. Rejecting passed<total in record_event would break the documented host-gated-skips reading of existing events.
+- **Consequences:** Delivery works in any consumer project. Events from layers reporting skipped satisfy the consumer ratchet. record_event.py is unchanged, so legacy passed<total events stay valid.
+- **Rejected:** uv run --with pyyaml in the F11 command (workaround, per call site); moving POSTED_STATUS_CONTEXTS to a new module (needless churn); making record_event reject passed<total without skipped.
+
+---
+
+### ADR-617: A brand comes from the user's claude.ai Design System, not from a token file in the plugin
+- **Date:** 2026-10-28
+- **Section:** Iterate - feature: brand from a claude.ai Design System for the design phase
+- **Run-ID:** iterate-2026-10-28-design-claudeai-brand-source
+- **Context:** The operator keeps their brand (svenroth.ai) in a Design System on claude.ai and wanted the design phase to use it. A brand-specific token set in the plugin would impose one person's brand on every user of the framework.
+- **Decision:** Design Step 2.5 and Step 3 offer a claude.ai Design System as brand source. brand-from-design-system.md lists the artifacts, reads tokens.json, maps it to the kit contract and lays the result over warm, clean or bold. scripts/tools/check_brand_tokens.py checks the contract rules (the same pairs the tests use) and prints the nearest passing colour for each weak pair; Claude applies the fixes and tells the user what changed.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Names in a Design System do not match the contract one to one, so the mapping needs judgement, while the contrast arithmetic is exact and belongs in a tested tool that the shipped sets share.
+- **Consequences:** The Design System stays the single source of truth and nothing brand-specific ships in the plugin. Brand colours that fail the readability rules are corrected and reported, never silently kept. The mapping itself remains Claude's judgement; only the check and the fixes are deterministic.
+- **Rejected:** A shipped svenroth token set (imposes one brand, one more set to build and test); a default token set (changes the skill's behaviour for everyone); prose-only contrast checks (can miss pairs and cannot be tested).
+
+---
+
+### ADR-618: Design boundary gate judges the session, not the whole dirty tree
+- **Date:** 2026-10-28
+- **Section:** Iterate - change: design boundary gate baseline
+- **Run-ID:** iterate-2026-10-28-e1-boundary-gate-uncommitted-output
+- **Context:** The project phase leaves its output uncommitted, so the FR-01.04 #11 boundary gate flagged it and Design asked to commit earlier output first in every brief run (finding F1).
+- **Decision:** setup-design-session.py records the dirty set (salted content hashes, HEAD) in .shipwright/design-boundary-baseline.json; the gate reports only paths new or changed since, strict without a baseline.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Only option that keeps the rule strict without the agent committing another phase's work; arch review: GLM revise (commit first), openai approve, internal approve.
+- **Consequences:** Earlier-phase output no longer trips the gate or prompts the agent; the baseline is self-attested inside the allowed prefix; the plan gate keeps whole-tree semantics.
+- **Rejected:** Agent commits earlier output (breaks nothing-commits-before-build); widen allowed prefixes (weakens the rule); do nothing.
+
+---
+
+### ADR-619: Bundled profile skill-companion-app, no new schema keys
+- **Date:** 2026-10-28
+- **Section:** Iterate — feature: bundled stack profile for skill-backed apps
+- **Run-ID:** iterate-2026-10-28-e2-skill-app-stack-profile
+- **Context:** Shipwright had no profile for the skill-backed app class (Claude app = chat, app = skill/plugin, companion = served HTML board + Python backend + JSON data folder); chat-first-json describes the wrong product.
+- **Decision:** Ship bundled profile skill-companion-app (deploy null, deploy_target none skips the phase: no plugin-shaped deploy target exists). Keys host/delivery/companion/data_folder were DELIBERATELY NOT added to the schema; they sit under the comment key _skill_companion and in docs.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Architecture review: openai reject (project-level profile only), glm revise (hold the unread keys); the operator chose glm's trim. Re-run on the trimmed plan: glm approve, openai reject on the same bundling point, internal reviewer approve.
+- **Consequences:** Nothing reads host/delivery/companion/data_folder. A future iterate adds them to the schema only in the unit that introduces their reader, with tests, and must not delete the bundled profile. Dev server uses port 3911, real companion 3901.
+- **Rejected:** Typed schema keys with no reader; editing chat-first-json in place; a project-level profile only (openai option C); enum enforcement before any reader exists.
+- **Details:** [iterate-2026-10-28-e2-skill-app-stack-profile-skill-companion-app-profile.md](../planning/adr/iterate-2026-10-28-e2-skill-app-stack-profile-skill-companion-app-profile.md)
+
+---
+
+### ADR-620: The e2e-run-findings campaign brief and its report live on main
+- **Date:** 2026-10-28
+- **Section:** Iterate - change: land the e2e-run-findings campaign brief
+- **Run-ID:** iterate-2026-10-28-e2e-run-findings-brief
+- **Context:** The follow-up campaign to the first operator end-to-end run needs a brief BP can read: BP reads scope_frs from main, not from a worktree.
+- **Decision:** The campaign brief (units E1-E8, operator stops, scope_frs campaign-wide and per unit) and the findings report it builds on are committed under .shipwright/planning/campaigns/.
+- **Commit:** (assigned post-merge)
+- **Rationale:** A brief that exists only in a checkout cannot be read by BP or by a campaign runner started from a worktree.
+- **Consequences:** BP can read scope_frs from main before the first unit runs; the campaign can start once the operator confirms the list and the admin-merge policy.
+- **Rejected:** Committing by hand outside an iterate (planning docs go through an iterate).
+
+---
+
+### ADR-621: Brief-package Design recomposes from the kit, prose only (Option B)
+- **Date:** 2026-10-29
+- **Section:** Iterate — change: Design composes Brief-package screens from the kit
+- **Run-ID:** iterate-2026-10-28-e3-design-composes-from-kit
+- **Context:** In Brief-package mode Design adopted mockups unchanged and built a chat layout for skill-backed apps. Attempt 0 architecture review: openai reject, glm revise, both naming prose-only as the smaller alternative.
+- **Decision:** Option B: instructions only. brief-compose.md tells Design to recompose each mockup copy from the Untitled UI kit and package tokens, no chat layout for the skill-backed class; chat-first marked retired for it; run-gate wording says approved design screens; docs updated.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Both external reviewers converged and the internal architecture reviewer approved. Nothing shows prose is insufficient, and byte-equality detection is fragile.
+- **Consequences:** No tool check detects a screen left as the mockup copy; only the instruction self-check does. Existing packages and apply-brief-package.py are unchanged. A detector may follow if a later run shows prose is insufficient.
+- **Rejected:** uncomposed_screens signal in the apply tool (fragile, unevidenced); chat_first_retired refusal (could strand packages); a kit generator; removing chat-first everywhere.
+
+---
+
+### ADR-622: Harden junit_failures XML parse without a new dependency
+- **Date:** 2026-10-29
+- **Section:** Iterate — bug: harden BL0b JUnit parse
+- **Run-ID:** iterate-2026-10-29-baseline-b-probes-junit-hardening
+- **Context:** Semgrep use-defused-xml-parse flagged ET.parse in shared/scripts/tools/verifiers/_baseline_b_probes.py (BL0b, #946), the same finding class cleared in suite_failed_only.py on 2026-10-09.
+- **Decision:** junit_failures now reads a bounded (8 MB) strict-UTF-8 report, refuses DOCTYPE/ENTITY and parses with ET.fromstring; an unreadable, garbled or DTD-bearing report yields an empty failure set.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Precedent suite_failed_only._parse; shared scripts run in consumer projects without defusedxml. No suppression comment added.
+- **Consequences:** A malformed report reads as no failures instead of raising. No new dependency.
+- **Rejected:** defusedxml dependency (breaks consumer envs); inline nosemgrep (ratcheted, hides the finding).
+
+---
+
+### ADR-623: Reply-board parts go into kit.css, derived from Untitled UI
+- **Date:** 2026-10-29
+- **Section:** Iterate — feature: design kit reply-board components
+- **Run-ID:** iterate-2026-10-29-design-kit-reply-board
+- **Context:** Judging the kit against the social-engagement-real mockups found five gaps: no post/comment tree, no master-detail layout, no count on tabs, no draft callout with copy, no mono eyebrow.
+- **Decision:** Add token-only classes to kit.css and the gallery: thread/comment-tree, master-detail with a picker below 900px, count slot, callout with copy-btn, eyebrow. Parts follow Untitled UI (tab badge, feed item, code snippet); master-detail and eyebrow are built from the kit's own tokens.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The kit owns how components look; projects only supply tokens. A second optional file or per-project CSS would split that contract.
+- **Consequences:** A composed screen can now look like the real reply board without per-project CSS. The kit grows by about 45 lines; the 16px base-size floor and font reach (G6) stay open findings.
+- **Rejected:** Per-project CSS in each screen; a separate optional kit extension file; lowering the 16px floor.
+
+---
+
+### ADR-624: Boundary baseline: carry forward on HEAD move, key to the run, fail closed off the repo root
+- **Date:** 2026-10-29
+- **Section:** Iterate - change: harden the design boundary baseline (E1 follow-ups)
+- **Run-ID:** iterate-2026-10-29-e1-boundary-baseline-followups
+- **Context:** The design phase's session-start boundary baseline (FR-01.04 #11) had five open gaps: a HEAD move started a fresh baseline that absorbed the session's own earlier writes, nothing tied a baseline to its run, a subdirectory --project-root passed silently, dirty_paths rewrote backslashes legal in POSIX names, and the brief integration test excluded the boundary gate.
+- **Decision:** On a HEAD move within the same run the old entries and salt are kept and nothing new is added; the file records SHIPWRIGHT_SESSION_ID and another run's baseline is rewritten on write and strict on read; at_repo_root() gates write, read, CLI and setup so a non-toplevel root stays strict (not_written); the backslash replace is gone; the integration test runs the gate against a real repo with a baseline.
+- **Commit:** (assigned post-merge)
+- **Rationale:** All defects failed toward permissive; each fix moves toward strict. Review round 1 showed that adding newly dirty paths on a HEAD move re-opened the laundering, so only old entries are carried.
+- **Consequences:** The run key is the Claude session id, so a restarted session at the same HEAD records a fresh baseline (accepted, self-attested trust level, documented). A single-session pipeline re-entering design after build may see a carried entry reported as changed, which fails strict. Monorepo subdirectory roots can never pass the gate.
+- **Rejected:** (1) Mapping a subdirectory root via git rev-parse --show-prefix - larger change, fail-closed was requested. (2) A restart-stable run id - none exists to this phase. (3) Returning a state string from write_baseline - deferred as low readability.
+
+---
+
+### ADR-625: Second E2E fixture shaped like the real social-engagement skill, selected by environment variable
+- **Date:** 2026-10-29
+- **Section:** Iterate — feature: e2e fixture variant social-engagement-real
+- **Run-ID:** iterate-2026-10-29-e2e-fixture-real-skill-variant
+- **Context:** The run-12 comparison showed the simplified board fixture exercises less than the real skill: no master-detail page, neutral tokens, a local seed instead of an external source, keywords as a board tab.
+- **Decision:** Add social-engagement-real beside the default fixture, chosen with SHIPWRIGHT_E2E_FIXTURE; hits come through a replaceable fetch_items() adapter that replays recorded Syften and Apify answers by default; S02, S04 and S05 run in variant form behind one Variant interface.
+- **Commit:** (assigned post-merge)
+- **Rationale:** A second fixture keeps the stable one as a baseline, an opt-in selector that refuses unknown names cannot silently run the wrong app, and replay as the default keeps tests free of network and keys even when tokens are in the environment.
+- **Consequences:** The default fixture and its checks are unchanged. The variant is unproven against a live run; font loading, the Design composition and the live claude flags of the soft check S09 are verified only by the first operator run.
+- **Rejected:** Replacing the existing fixture (loses the baseline and the 48 specs built on it); branching on the fixture name inside the spec; making the adapter go live whenever a token is present.
+
+---
+
+### ADR-626: Screenshot capture injects nothing; board states via steps
+- **Date:** 2026-10-29
+- **Section:** Iterate — fix: screenshot check for a served board
+- **Run-ID:** iterate-2026-10-29-e2e-run-findings-e5-board-screenshot
+- **Context:** The capture injected an inline style tag, which a page CSP (style-src without unsafe-inline) blocks; a board tab has no route of its own (findings F2, F3).
+- **Decision:** Use Playwright's own animations:disabled and caret:hide screenshot options, inject nothing, and let a screen-routes entry carry optional steps (click, fill, wait_for) run on the built page before the shot.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Smallest change in the existing tool; the cause (the injected tag) is removed, not masked.
+- **Consequences:** A CSP-restricted board is captured as users see it; states of one page are comparable; a step that cannot run fails that screen with its number. The steps vocabulary is a small contract to keep.
+- **Rejected:** bypassCSP:true (renders the board unlike what users see, hides the cause); a separate capture tool for boards.
+
+---
+
+### ADR-627: Guard bare python - in Bash; carry mockup initial state through Plan; clarify build attribution repair
+- **Date:** 2026-10-29
+- **Section:** Iterate — change: E2E run-12 learnings
+- **Run-ID:** iterate-2026-10-29-e2e-run12-learnings
+- **Context:** The second E2E run showed harness false results (S05, S06), a Plan that dropped the mockup's default tab, and a build that asked whether a finished section could be reopened. Runner agents also left bare python - processes spinning for 15 and 17 hours.
+- **Decision:** Fix the harness checks, require an Initial state line in every section Design Reference, document the identical-invocation attribution repair, and add a fail-open PreToolUse Bash guard that denies python - with no stdin source.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Reviewers traced false denies in a first, regex-only guard; masking quoted text and heredoc bodies removed them. The Plan fix lives where the detail is lost: the section-writer only linked the mockup.
+- **Consequences:** One extra hook spawn per Bash call. The guard blanks quotes and heredoc bodies before matching, so its known miss is a variable as interpreter. The hang mechanism and the item-6 cause are inferred, not reproduced.
+- **Rejected:** Moving Step 10b before Step 10 and a leftover-process check at campaign close were left out as larger changes.
+
+---
+
+### ADR-628: Package intake runs the Project content check and an advisory kit-token check
+- **Date:** 2026-10-29
+- **Section:** Iterate — feature: Brief-package intake content check and kit-token warning (E4)
+- **Run-ID:** iterate-2026-10-29-e4-package-intake-content-check
+- **Context:** A thin brief.md was accepted at package intake and rejected only in the Project phase (F6, 42 empty dimensions, ~70 min in); visual guidelines lacking kit tokens went unnoticed until Design.
+- **Decision:** intake_dir calls lib/brief_intake_checks.py: brief_project_mode.py check (same check_capabilities as apply, own interpreter per ADR-045) refuses invalid_content; the design kit's check_brand_tokens.py yields advisory warnings, fail-open.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Reuses both existing rule sets instead of copying them; smallest option approved by GLM, OpenAI and the internal architecture reviewer.
+- **Consequences:** A thin brief now fails at intake and needs fix plus re-approval; guidelines must declare --color-*/--font-size-* lines to be judged; the check couples shared to the sibling design plugin's kit module (found next to shared, skipped when absent).
+- **Rejected:** Documentation-only pre-check (relies on agent discipline); moving contrast code into shared (larger, touches the design plugin FR-01.04).
+
+---
+
+### ADR-629: End-to-end run builds the skill-backed board app; S01-S08 except S03 become hard checks
+- **Date:** 2026-10-29
+- **Section:** Iterate - feature: e2e harness and fixture for the skill-backed app (E6)
+- **Run-ID:** iterate-2026-10-29-e6-e2e-harness-skill-app
+- **Context:** The operator e2e run built and checked a chat-first app, the wrong product for a skill-backed app whose chat is the Claude app; soft items were never evaluated and a stopped run could not resume.
+- **Decision:** New board fixture (profile skill-companion-app, kit tokens declared as lines) and harness checks of the companion API, the served board and project files; S01, S02, S04-S08 hard, S03 soft; resume from an identity-checked run folder.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Hard checks make the report a verdict instead of an opinion; the identity manifest keeps a resumed run from mixing commits or packages.
+- **Consequences:** Legacy chat-first fixture stays for design tests only. Playwright unit specs run by hand (local: tsc clean, 40 pass); CI runs only fixture and structure tests. Resumed run fails S08 by design. Follow-ups: resume identity hash of uncommitted changes and package hash; S05 breadth; test dedupe; skipStartPipeline from run-config presence; no liveness/PID lock; S02 badges document-wide; S08 passes with zero gates; BP: CI step for npm ci, typecheck, test:unit. WebUI parts proven only by E8.
+- **Rejected:** Keeping the chat harness with only soft items hardened; rewriting the old fixture in place; no resume.
+- **Details:** [iterate-2026-10-29-e6-e2e-harness-skill-app-board-fixture-and-checks.md](../planning/adr/iterate-2026-10-29-e6-e2e-harness-skill-app-board-fixture-and-checks.md)
+
+---
+
+### ADR-630: E2E harness resume identity, lock and stricter checks
+- **Date:** 2026-10-29
+- **Section:** Iterate — change: E6 e2e harness follow-ups
+- **Run-ID:** iterate-2026-10-29-e6-followups
+- **Context:** E6 code and doubt review left eight follow-ups: resume trusted a recorded hash and ignored uncommitted plugin edits, no liveness check, inferred pipeline start, narrow S05, document-wide S02, S08 passing empty, duplicate tests, old wording.
+- **Decision:** Run identity is computed (HEAD plus digest of uncommitted plugins/shared changes; package hash from the files). run.lock holds the spec and WebUI server pids. A manifest flag records the pipeline start. S05 scans all project code incl. scheme-less URLs; S02 counts badges per open panel; S08 needs at least one answered gate.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Recorded values prove nothing about the files actually used.
+- **Consequences:** A resume after any plugin edit is refused; a hard-killed run blocks resume until its processes end. Boards without tabpanel markup still count badges document-wide.
+- **Rejected:** Hashing the whole repo (too broad: unrelated edits would refuse resume).
+
+---
+
+### ADR-631: Grill-trace gate requires a recorded interview or signed-off equivalent for every entry channel
+- **Date:** 2026-10-29
+- **Section:** Iterate — change: harden the grill-trace gate for every entry channel
+- **Run-ID:** iterate-2026-10-29-grill-trace-gate-hardening
+- **Context:** The gate SKIPPED when no interview transcript existed and a missing per-FR trace was only a WARNING, so a brief or seed that bypassed the interview passed. An unsupported --brief file also fell back silently to the interview.
+- **Decision:** Past the interview (FR rows or status complete) no transcript+no traces now fails; traces need a transcript or brief-mode pointer; a pointer or brief: trace needs a recorded brief_dir and confirmed_by must not be self-attested; fr_trace_coverage is ERROR (WARNING only for non-interview rows in Extension scope); the run-CLI brief_intake refuses an unusable brief file (exit 3).
+- **Commit:** (assigned post-merge)
+- **Rationale:** Every entry channel owes the same two artifacts (transcript or pointer, and a trace per requirement); the Brief package route is the one with a verified approval.
+- **Consequences:** Projects with untraced interview FRs now block until traced. human_signoff is a structural screen, not proof of a person. A requirement split into several FRs still has no trace-key identity contract (follow-up).
+- **Rejected:** Keeping fr_trace_coverage as a WARNING (lets a partial interview pass); changing adopt's degrade-to-interview (adopt shares load_brief and wants it).
+- **Details:** [iterate-2026-10-29-grill-trace-gate-hardening-grill-trace-gate-hardening.md](../planning/adr/iterate-2026-10-29-grill-trace-gate-hardening-grill-trace-gate-hardening.md)
+
+---
+
+### ADR-632: Baseline-package campaign brief and measurement reports on main
+- **Date:** 2026-10-31
+- **Section:** Iterate — change: land the baseline-package campaign brief and its evidence
+- **Run-ID:** iterate-2026-10-31-baseline-package-campaign
+- **Context:** The baseline-package campaign (successor of the stopped baseline-protection campaign) was approved as a brief, and its two measurement reports existed only outside the repository, so no campaign worktree could read them.
+- **Decision:** Commit the brief unchanged plus the MEASURE and REPLAY2 reports under .shipwright/planning/campaigns/, each report with one note line marking it as AI-made evidence for the brief. No code, spec or gate changes.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Planning documents reach main through an iterate so the commit carries a work_completed event and a Run-ID footer.
+- **Consequences:** The baseline-package campaign (P1, P2, P3, P5, P4) can be started by the operator from main; its local board under .shipwright/planning/iterate/campaigns/ stays gitignored by design.
+
+---
+
+### ADR-633: affected_acs declaration, presence-only F11 check
+- **Date:** 2026-10-31
+- **Section:** Iterate - change: affected_acs on runtime-touching iterates
+- **Run-ID:** iterate-2026-10-31-p1-affected-acs-on-events
+- **Context:** Iterates changing runtime behaviour recorded spec_impact none without saying which acceptance criteria they checked; 11 of 17 behaviour-adding PRs left no AC behind.
+- **Decision:** Runtime-touching feature/change/bug iterates carry affected_acs (or catalog_gap with the nearest FR) on the work_completed event; an F11 claim check enforces presence only.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Presence-only keeps the field from holding a PR on content; the check lives in the claims registry because iterate_checks.py is at its cap.
+- **Consequences:** Every such iterate states its AC position; wrong declarations are not caught here (a later AI gap check does that). A replay tool measures the rule over past iterates.
+- **Rejected:** A write-time refusal at F5b (harder gate, same safety); no check and rely on reviewers (what failed before).
+
+---
+
+### ADR-634: A declared catalog gap is closed by an AC or one allowed reason; 13 ACs added
+- **Date:** 2026-10-31
+- **Section:** Iterate - change: close catalog gaps in the same PR, backfill 11 holes
+- **Run-ID:** iterate-2026-10-31-p2-close-gaps-and-backfill
+- **Context:** P1 let an iterate declare a catalog gap but nothing asked it to close the gap, so 11 merged PRs left behaviour out of the catalog.
+- **Decision:** gap_closed (presence only): catalog_gap needs catalog_gap_acs or catalog_gap_reason how-only, else an advisory F11 warning; 11 backfill ACs plus AC47/AC48 added to the catalog and bound to existing tests.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The F5b repair path cannot rewrite a recorded event, so an error would be an unfixable block; same call as P1.
+- **Consequences:** Open gaps show a warning, never a block. The 11 backfill ACs are drafted by the runner and checked by an Opus reader; the operator reads them in the PR before merge.
+- **Rejected:** A blocking F11 error (unfixable); a new required CI check (brief: nothing holds a PR).
+
+---
+
+### ADR-635: plan_path on the event, plan stubs, AC lookup
+- **Date:** 2026-10-31
+- **Section:** Iterate - change: spec chain
+- **Run-ID:** iterate-2026-10-31-p3-spec-chain
+- **Context:** Plans came in five shapes, 45 of 192 runs had none, the event carried no plan or PR and AC history existed for about 13% of ACs.
+- **Decision:** Runs leave plan.md at one path, F5b stamps plan_path, pr stays optional (found from the Run-ID commit); a read-only lookup joins events, catalog text, plans and git; a warning-only F11 check.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Computed on demand cannot go stale; warning-only because nothing may newly block a PR and recorded events cannot be rewritten.
+- **Consequences:** Which runs shaped an AC is one command; older runs are answered by labelled fallbacks. Stub quality is not judged; a missing stub only warns.
+- **Rejected:** A tracked index file (goes stale like the RTM); a hard F11 error for the stub; requiring pr on the event (unknown before the push).
+
+---
+
+### ADR-636: ACs state the promise, FR titles name a capability
+- **Date:** 2026-10-31
+- **Section:** Iterate — change: tidy mixed ACs and FR titles
+- **Run-ID:** iterate-2026-10-31-p5-tidy-mixed-acs-and-fr-titles
+- **Context:** Model, vendor, threshold and format detail inside MIXED ACs, and slash-command FR titles, tie the catalog to todays tools.
+- **Decision:** Moved that detail to a plan file; rewrote 12 ACs as promise-only; renamed FR-01.01 to FR-01.13 to capability names.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Brief P5 of baseline-package: the HOW may change freely while the WHAT/WHY stays stable.
+- **Consequences:** A rebuild keeps stable anchors; IDs and AC numbering unchanged so no re-mint; derived artifacts refresh at release.
+- **Rejected:** Deleting AC32 (would orphan its tests); renaming FR-01.18 (outside the brief's 13).
+
+---
+
+### ADR-637: Bump transitive pyasn1 0.6.4 to 0.6.5 in shipwright-plan lockfile
+- **Date:** 2026-10-31
+- **Section:** Iterate — bug: pyasn1 0.6.5 security bump
+- **Run-ID:** iterate-2026-10-31-pyasn1-0-6-5-bump
+- **Context:** Trivy reported CVE-2026-119194..119197 (code-scanning alerts 1454-1457, high) for pyasn1 0.6.4 in plugins/shipwright-plan/uv.lock. pyasn1 is only transitive: google-genai -> google-auth -> pyasn1-modules -> pyasn1.
+- **Decision:** Run uv lock --upgrade-package pyasn1 to move the lockfile to 0.6.5, the fixed release. No pyproject.toml change and no direct pin; no other uv.lock in the repo pins pyasn1.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Fix the vulnerable version rather than suppress the finding. Lock-only keeps the change minimal and reversible.
+- **Consequences:** The four alerts close once Security Scan runs on main. Only a lock refresh: no runtime code changed, and F0 stayed fully green.
+- **Rejected:** Dismissing the alerts as accepted risk (low exposure but a fix exists); adding a direct pyasn1 pin to pyproject (needless coupling to a transitive dependency).
+
+---
+
+### ADR-638: Harness does not reload the task page after the modal launched it
+- **Date:** 2026-11-01
+- **Section:** Iterate — change: e2e launch race
+- **Run-ID:** iterate-2026-11-01-e2e-launch-race
+- **Context:** The modal's Launch hands the start command to the task page through sessionStorage; the harness then reloaded that page, lost it, and never saw the Launch button (runs 14 and 15).
+- **Decision:** Go to the task page only when not already on it; if the modal already launched, watch 60 s, hand the captured command over again (sessionStorage + reload) up to twice, else fail with state and terminal text.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Keeps the real flow and the operator-visible report; the decision is a pure helper so it is unit-tested without a browser.
+- **Consequences:** A lost hand-over (the page has no button for awaiting_external_start) is recovered or fails fast with evidence instead of idling 20 min; one extra state read per poll.
+- **Rejected:** Writing the start command ourselves (bypasses the page under test); a longer wait (the dispatch is lost, not late).
+
+---
+
+### ADR-639: S05 compares seed/recorded/ with the package, byte for byte
+- **Date:** 2026-11-01
+- **Section:** Iterate — change: S05 proves the build kept the shipped recorded answers
+- **Run-ID:** iterate-2026-11-01-e2e-s05-shipped-recorded
+- **Context:** A build that ignored the recordings the package ships and wrote its own still passed S05, which only validated whatever sat in the built project's seed/recorded/.
+- **Decision:** S05 (source-adapter variant) also fails unless seed/recorded/ equals the package's recorded files byte for byte with no extra file; evidence names the file and missing, changed or extra.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Extending S05 keeps the answer key small and adds no item id; comparing against the repo copy means a build cannot tamper with its own reference.
+- **Consequences:** Faithful copies pass; a changed, missing, extra or line-ending-only different file fails. The tabs variant is untouched. The reference is read from the repo, never from the build.
+- **Rejected:** A new item id (larger answer key); normalizing line endings (operator asked for byte-identical, no tolerance).
+
+---
+
+### ADR-640: E2E harness: S02 click on a visible row, S05 scope, fixture from env file, launch retry
+- **Date:** 2026-11-01
+- **Section:** Iterate - bug: e2e-webui harness fixes
+- **Run-ID:** iterate-2026-11-01-e2e-webui-harness-fixes
+- **Context:** Run 14 gave false S02 and S05 failures; the fixture env-file line was ignored; the launch button was sometimes missing.
+- **Decision:** S02 clicks the first visible non-option match and records diagnostics; S05 (adapter variant) skips e2e/ and reserved TLDs; SHIPWRIGHT_E2E_FIXTURE is read from the env file; startTaskSession reloads up to 2x.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The preserved app proved the hidden .master-picker option precedes the list, so the check, not the app, was at fault.
+- **Consequences:** S02 can no longer be failed by the hidden thread-picker option; the retry is not proven by a passing run.
+- **Rejected:** Weakening S02; exempting reserved TLDs for the tabs fixture too.
+
+---
+
+### ADR-641: The social-engagement-real package ships its recorded answers and states the summary rule and reply template
+- **Date:** 2026-11-01
+- **Section:** Iterate - change: social-engagement-real ships its recordings, summary rule and draft template
+- **Run-ID:** iterate-2026-11-01-fixture-real-ship-data
+- **Context:** The package only described the recorded answers, the summary rule and the draft template, so each build invented its own and the mockup text matched the built page only by chance.
+- **Decision:** The package ships seed/recorded/syften.json and apify_linkedin.json (12 items, 4 per platform, 3 old) that the build copies unchanged; brief.md states the rule, angle line and template verbatim with named-thread fit criteria; the build adds no further recorded data; tests recompute the mockup text; tolerance, metric, check and plugins are unchanged.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Shipping the data removes the chance agreement between mockups and builds without touching the calibrated screenshot gate.
+- **Consequences:** The same package now yields the same twelve threads and the mockup text if the build copies the files; no harness item enforces the copy, so only the next real run proves it.
+- **Rejected:** Raising the 0.15 tolerance; a new hard answer-key item comparing the built project with the package (out of scope, left to the operator).
+- **Details:** [iterate-2026-11-01-fixture-real-ship-data.md](../planning/iterate/iterate-2026-11-01-fixture-real-ship-data.md)
+
+---
+
+### ADR-642: Mockup sample text matches the length of the recorded answers
+- **Date:** 2026-11-01
+- **Section:** Iterate — change: social-engagement-real mockup sample text at recorded length
+- **Run-ID:** iterate-2026-11-01-mockup-text-length-parity
+- **Context:** Run 14's screenshot check failed 02-thread (0.1766) and 03-reply-draft (0.175) because the approved mockups held short sample text while the built page showed long recorded thread text.
+- **Decision:** The five social-engagement-real mockups now carry four Reddit threads with run 14's recorded titles, posts, comments, summary and draft, the same on every screen; tolerance, metric, check and plugins are unchanged; the package hash and the e2e-webui unit data are re-pinned.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The metric counts per-cell text occupancy, so text length moves it; matching the length makes it measure layout without touching a gate calibrated on one run.
+- **Consequences:** The text matches a later build only if it records similar data or copies the mockup text; brief.md does not pin it. Only the next real run shows whether the check passes.
+- **Rejected:** Raising the 0.15 tolerance from two screens of one run; pinning the recordings in brief.md (changes the product brief, left to the operator).
+- **Details:** [iterate-2026-11-01-mockup-text-length-parity.md](../planning/iterate/iterate-2026-11-01-mockup-text-length-parity.md)
+
+---
+
+### ADR-643: Plan copies design-defined detail; contradictions stay with a person
+- **Date:** 2026-11-01
+- **Section:** Iterate - change: plan carries design-defined detail
+- **Run-ID:** iterate-2026-11-01-plan-design-detail-and-screenshot-gap
+- **Context:** E2E runs 12-14: sections restated screen values from memory (768 vs 900px, posted view, extra field), so Build's spec-reviewer stopped for a person each time.
+- **Decision:** section-writer copies breakpoints, per-state content and declares extras as Design extension with an FR/AC id; spec-reviewer accepts only a declared extension whose FR/AC names it. A true contradiction is not settled by Plan.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Opus doubt/code review showed a Plan-time 'screen wins' would bypass the person-decides rule and the requirement write-back.
+- **Consequences:** Fewer false conflicts reach Build; FR-01.05 AC05 (person decides, requirement corrected) is unchanged.
+- **Rejected:** Letting Plan resolve contradictions (screen wins); changing the screenshot tolerance or fonts from one run.
+- **Details:** [iterate-2026-11-01-plan-design-detail-and-screenshot-gap-plan-design-detail.md](../planning/adr/iterate-2026-11-01-plan-design-detail-and-screenshot-gap-plan-design-detail.md)
+
+---
+
+### ADR-644: Harness reads the modal's launch command inside a route
+- **Date:** 2026-11-02
+- **Section:** Iterate — fix: e2e launch capture
+- **Run-ID:** iterate-2026-11-02-e2e-capture-launch
+- **Context:** Run 17 stalled but captured no command: the response body is unavailable once the modal has navigated to the task page.
+- **Decision:** A page route fetches POST /launch, reads the commands and fulfills with the untouched response; installed before the modal click.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The route sees the body before any navigation and the page gets the identical response.
+- **Consequences:** The hand-over can be repeated; the report step says whether the command was captured.
+- **Rejected:** Wrapping sessionStorage.setItem with an init script (the key is removed on read and needs a page-side copy).
+
+---
+
+### ADR-645: Say that merge=union only works in local merges
+- **Date:** 2026-11-02
+- **Section:** Iterate - bug: merge=union is not applied by GitHub's server-side merge
+- **Run-ID:** iterate-2026-11-02-gitattributes-union-comment
+- **Context:** Comments in .gitattributes, its template and several docs claimed GitHub's server-side merge honors merge=union. It does not: GitHub's mergeability check and merge button ignore it, so parallel PRs appending at the same place show CONFLICTING (issue 978, reproduced with plain git 2.55.0).
+- **Decision:** Correct the wording in every live file that repeated the claim: .gitattributes, the template, the union module docstring, the adopt step-E doc, three passages in hooks-and-pipeline.md and one test comment. Historical records stay as written. The driver itself is unchanged.
+- **Commit:** (assigned post-merge)
+- **Rationale:** A wrong comment misled the design of the auto-merge flow; correcting it first is cheap and independent of the larger change.
+- **Consequences:** Readers no longer expect auto-merge to resolve these files. The real fix (per-run drop files for events, F2/F3a bullets and triage) is tracked separately after an architecture review. Already scaffolded managed repos keep the old comment until their block changes.
+- **Rejected:** (1) Rewriting past decision-log entries and iterate specs: they record what was believed then. (2) Dropping merge=union: it still helps local merges via integrate_main. (3) Re-scaffolding the new comment into managed repos: harmless wording, not worth a churn commit.
+
+---
+
+### ADR-646: Plan validation reads plan-side sections when the build config is unseeded
+- **Date:** 2026-11-02
+- **Section:** Iterate — bug: plan validator false ask
+- **Run-ID:** iterate-2026-11-02-plan-validator-unseeded-sections
+- **Context:** At plan completion the validator asked a person 'No sections found in build config' because sections[] is Build-owned state, unseeded until Build starts.
+- **Decision:** When the build config lists no sections, _validate_plan takes the section list from the plan's own .shipwright/planning/<split>/sections/*.md; the ask stays when neither side has sections.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Plan's output is the section files; validating them needs no Build state, and Plan must not seed Build-owned config.
+- **Consequences:** Guided runs are no longer asked a false question after a complete plan; completeness against the manifest remains with the plan_checks canon.
+- **Rejected:** Making Plan seed sections[] in the build config: crosses ownership (Build writes it) and would invite stale state.
+
+---
+
+### ADR-647: read_playwright derives its path base from the report's own config.rootDir
+- **Date:** 2026-11-02
+- **Section:** Iterate - bug: Playwright evidence honours config.rootDir
+- **Run-ID:** iterate-2026-11-02-playwright-rootdir-base
+- **Context:** Playwright writes each spec file relative to config.rootDir (the testDir), not the project root. With the config in a sub-folder (client/playwright.config.ts, testDir ./e2e) the evidence id read flows/board.spec.ts while the manifest knew client/e2e/flows/board.spec.ts, so the ids never joined and every passing E2E test counted as missing for the cross-layer coverage gate. Reported in GitHub issue 969.
+- **Decision:** With no explicit base, read_playwright takes the project-relative path of the report's absolute config.rootDir as the base and joins it to each spec file unconditionally. An explicit base still wins, an already absolute file gets no prefix, and a missing, relative, outside-root or malformed rootDir keeps the old behaviour.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The report already carries the information; deriving it needs no new input from callers, and building the fix inside the reader keeps both callers (layer coverage evidence, surface runner) correct without changes. The derived base is joined without norm_path's already-prefixed heuristic because a repeated directory name would otherwise key a different file (a false pass).
+- **Consequences:** E2E tests in a sub-folder join the manifest on the machine that produced the report. A report made elsewhere (CI path, Windows path read on Linux) still does not join, and nothing flags it; a --playwright-base CLI option would close that and is left as a follow-up.
+- **Rejected:** (1) Threading a playwright base through every build_index caller: the info is in the report itself and callers would each need to know the layout. (2) Rewriting file paths in the report before staging, as the reporter did by hand: pushes the workaround onto every user. (3) Reusing norm_path's heuristic for the derived base: can skip the prefix and join the wrong test.
+
+---
+
+### ADR-648: Let a stack profile name the folders that hold its tests
+- **Date:** 2026-11-02
+- **Section:** Iterate - change: stack profiles declare their test roots
+- **Run-ID:** iterate-2026-11-02-profile-declared-test-roots
+- **Context:** A vite-hono project keeps tests below server/ and client/, so none of the conventional top-level test folders exists and the collector scanned nothing; the only remedy was a hand-written traceability.test_roots (GitHub issue 972).
+- **Decision:** The stack profile may carry traceability.test_roots. The collector resolves config, else profile, else defaults (each replacing the next); the profile is the one named in shipwright_run_config.json, looked up in the project and bundled profile folders only. Profile entries go through the same expansion loop as config entries. vite-hono declares its nested layout plus tests and integration-tests.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The profile already describes the stack layout and the resolver already exists; the change adds one optional key instead of a new mechanism, and keeps manifests reproducible by ignoring the per-machine user profile folder.
+- **Consequences:** New vite-hono projects get their tests linked with no setting; an existing one sees a one-time larger link set. The merge gate matches a local run only when shipwright_run_config.json is committed (its failure text says so), and a user-level profile never influences test roots.
+- **Rejected:** (1) Widening default discovery to any depth: changes every project's manifest. (2) Scaffolding writes the compliance config: freezes a profile default into a per-project override. (3) Union of profile folders and defaults: contradicted the approved precedence. (4) Consulting the user-level profile folder: the manifest would differ between machines and in the gate archives.
+
+---
+
+### ADR-649: Warn on empty test roots and let the cross-layer gate name the real cause
+- **Date:** 2026-11-02
+- **Section:** Iterate - bug: say when the test collector finds no test folder
+- **Run-ID:** iterate-2026-11-02-test-roots-empty-note
+- **Context:** A project laid out like the vite-hono profile (server/ and client/ with tests nested below them) has none of the conventional top-level test folders, so the test_links collector resolved no root and scanned zero files in silence. The medium+ cross-layer gate then asked the author to add tests that already existed, pointing at the wrong fix (GitHub issue 972).
+- **Decision:** configured_test_roots now writes one stderr line per real project root when it resolves no folder, naming traceability.test_roots and the config file; the resolution itself is unchanged. The gate, only when its head manifest links no test and records no orphan, untagged or badly tagged test, prefixes its advice with a note that points at traceability.test_roots, keeping the add-a-test advice for a project that really has none. The gate's archive roots resolve with warn=False.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The diagnostic is cheap, changes no manifest and needs no profile coupling; declaring roots per profile touches the profile schema, the resolver import rules and the plugin boundary and deserves its own reviewed plan.
+- **Consequences:** A nested layout no longer fails mysteriously. The fix for the layout itself, a profile declaring its own test roots, is deliberately not part of this change and remains open on issue 972. The note cannot tell a wrong folder from a right but empty one, so it is phrased conditionally.
+- **Rejected:** (1) Falling back to the project root when no root resolves, as backfill_test_links does: widens every project's scan and changes manifests. (2) Replacing the gate advice outright: an existing but empty test folder would then be blamed on configuration. (3) Warning from the gate's archive roots: the line would name a deleted temp directory and repeat per rebuild.
+
+---
+
+### ADR-650: Baseline harness checks corrected after run 20; re-check command
+- **Date:** 2026-11-03
+- **Section:** Iterate - bug: baseline fixture harness checks
+- **Run-ID:** iterate-2026-11-03-baseline-harness-fixes
+- **Context:** Run 20 of the baseline fixture reported red hard items that were harness bugs: a text click hitting a hidden picker option, JSON-escaped quotes, uppercase innerText, adapter scope, a mandated 409 sentence.
+- **Decision:** Click the visible [data-k] row by key, count visible text only, compare error texts unescaped, accept hosts anywhere in backend/services/, ignore only the brief's lessons.md sentence. Add npm run recheck against a built project.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The checks are written from the brief; the app followed the brief. Real violations stay red, covered by negative unit tests.
+- **Consequences:** Run-phse68 re-checks green on all B items and the tour reaches all states; a re-check takes about 1.5 minutes instead of a 6.5 hour run.
+- **Rejected:** Treat the lessons.md sentence as an app defect (the brief mandates it); keep per-file host checks (the brief puts hosts in the adapter package).
+
+---
+
+### ADR-651: Third e2e fixture social-engagement-baseline with brief-derived checklist
+- **Date:** 2026-11-03
+- **Section:** Iterate - feature: e2e baseline fixture
+- **Run-ID:** iterate-2026-11-03-e2e-baseline-fixture
+- **Context:** The e2e harness had a board fixture and the real-skill fixture. The finished Briefing package (21 capabilities, 7 mockups, recorded service answers) needs its own checklist so a run reports per capability.
+- **Decision:** Add src/baseline/ (17 small modules): fake Syften/Apify/HN servers replaying seed/recorded, a companion launcher with clean env, checks B01-B46 from the brief Fit criteria, state-reaching screen tour. Approval is stamped into the run copy only.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Stamping approval in the copy keeps the protected package hash; per-item probes let one item report every broken rule.
+- **Consequences:** social-engagement-board and -real run unchanged. The dynamic checks were exercised only against a stub backend; the first real run is the empirical test. Unknowns: linkedin-queries.json format, helper flags, board hash format.
+- **Rejected:** Hand-writing approved_by into the package (breaks the protected hash); one large checks module (300-line cap).
+
+---
+
+### ADR-652: surface=native accepts Jest results of a provably native package
+- **Date:** 2026-11-03
+- **Section:** Iterate - change: F0.5 surface=native for Expo / React Native projects
+- **Run-ID:** iterate-2026-11-03-native-surface-f05
+- **Context:** GitHub #989: every .tsx change counts as ui and the F0.5 gate demands a Playwright report for it, which a native Expo / React Native project cannot produce. Only surface=none (a fabricated justification) could pass.
+- **Decision:** New --surface native. The package that owns each touched UI path is read from package.json at the verified commit and at the merge-base (tools/verifiers/_surface_native.py); only a package with react-native/expo and no web framework qualifies, web-only files and web consumers refuse it, and only passing JS/TS test results from a tracked test file inside those packages count. All other evidence rules (tests_run, exit_code, provenance, counting) are unchanged.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Derive nativeness from the diff's own manifests instead of trusting the agent's label, so native cannot become a way around the browser run; reuse the existing evidence pipeline instead of a second one.
+- **Consequences:** Native projects can pass F0.5 without a browser. Disclosed limits: nearest manifest only, universal Expo apps with a real web build must still use --surface web, evidence is per package not per file, transitive web consumers and new manifests in a non-JS web tree are not detected. Narrowing the src/ frontend rule stays a follow-up.
+- **Rejected:** (1) Auto-detecting native from the repo and skipping the surface: not fail-closed. (2) Accepting surface=none with a justification: invites fabricated reasons. (3) Narrowing the src/ rule now: shared with browser verify, separate run.
+
+---
+
+### ADR-653: OSS scan ignores only its own reports folder
+- **Date:** 2026-11-03
+- **Section:** Iterate - bug: security scan must not ignore the whole .shipwright/ directory
+- **Run-ID:** iterate-2026-11-03-oss-scan-gitignore-scope
+- **Context:** GitHub #985: the OSS backend of /shipwright-security appended /.shipwright/ to the project .gitignore. Shipwright projects track ADRs, specs and triage under .shipwright/, so every NEW file there was silently skipped by git add -A and only showed up later as a missing ADR or plan in a commit.
+- **Decision:** run_scan_and_report.py appends only /.shipwright/securityreports/ (derived from REPORTS_DIR, the only folder the script writes to). A pre-existing broad /.shipwright/ entry is never rewritten: the scan warns on stderr and reports status present_broad, even when it sits next to the canonical /.shipwright/* block. The canonical wildcard and the legacy /securityreports/ entry still count as present.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Ignoring the output folder is all the scan needs. Deleting a line from a user-owned .gitignore is not safe to automate, so detect-and-warn is the safe repair path.
+- **Consequences:** New projects stop losing new tracked files. Projects already hit by the old scan keep the damaging line until the operator removes it; the scan now tells them on every run. The gitignore tests moved to a new file because test_run_scan_and_report.py is over the size limit and may not grow.
+- **Rejected:** (1) Auto-removing the broad entry: rewrites a user-owned file and may break a deliberate choice. (2) Trying to model all .gitignore semantics (negations, spellings): out of scope for a best-effort helper; recorded as a known gap.
+
+---
+
+### ADR-654: W3 SKIPs when the audited id is a session id, not an iterate run
+- **Date:** 2026-11-03
+- **Section:** Iterate - bug: phase-quality W3 must not audit a session id as an iterate run
+- **Run-ID:** iterate-2026-11-03-phase-quality-session-id-skip
+- **Context:** GitHub #984: when no iterate run resolves, resolve_run_id falls back to the Claude session UUID (or 'unknown'). W3 then looked for a work_completed event under that id, found none and FAILed for a run that does not exist; the FAIL was saved as a snapshot and repeated in every later SessionStart notice although the project's finished iterates all recorded work_completed. W2 already had unresolvable_run_id_skip; W3 had no guard.
+- **Decision:** New session_id_run_skip in tools/verifiers/_iterate_run_id.py: for an id that is a bare UUID or 'unknown' it delegates to unresolvable_run_id_skip with the run's matching work_completed events as candidates. W3 calls it before its 'no work_completed' FAIL. The guard is deliberately narrower than W2's: it applies only to session-shaped ids, so a real-looking run id with no event, and stale test-evidence for a real run, keep FAILing.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The bug is specifically that a session id is treated as a run. Skipping every unknown id would have made 'W3 fails for a missing completion' untestable and would hide genuine misses, and an existing test pins that a made-up run id still FAILs.
+- **Consequences:** New sessions audited without an active iterate get a SKIP (reason_code unresolvable_run_id) instead of a false FAIL. Session-id W3 FAILs saved before this fix are not rewritten; they age out through gc_old_findings. C4/C5 take no run id, so a run-id guard cannot apply to them and they are unchanged.
+- **Rejected:** (1) Guarding W3 with unresolvable_run_id_skip for every id: hides real misses and breaks test_w3_fails_without_work_event. (2) Fixing resolve_run_id to return no id: it is shared by many checks and changes their input. (3) Extending the staleness predicate to retire old session-id FAILs: separate concern, follow-up.
+
+---
+
+### ADR-655: Autonomous runs resolve screen-vs-section contradictions by rule
+- **Date:** 2026-11-04
+- **Section:** Iterate — feature: autonomous design decision
+- **Run-ID:** iterate-2026-11-04-autonomous-design-decision
+- **Context:** Run 20 asked a person six times about differences between approved screens, sections and the brief; the plan had no rule and no check.
+- **Decision:** Autonomous runs (brief package or autonomy autonomous/unattended): screen beats section text, explicit brief override beats screen, recorded as Design decision; undecidable stays a Design contradiction. Plan gate plan_design_check enforces; Build accepts a recorded decision.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The approved screen is what a person judged; an explicit brief value is a deliberate override.
+- **Consequences:** Fewer gates in unattended runs; interactive runs unchanged; heuristic check is near-miss only so new strings never stop the plan.
+- **Rejected:** Asking the person each time (status quo); failing on any string absent from the screen (false stops).
+
+---
+
+### ADR-656: Autonomous runs decide the remaining Test/Design/Build gates by rule
+- **Date:** 2026-11-04
+- **Section:** Iterate — feature: autonomous run gates
+- **Run-ID:** iterate-2026-11-04-autonomous-run-gates
+- **Context:** Run 20 still asked about a phone screen compared at desktop size, plain CSS and seed-data differences, brief capabilities without a screen, and a size target against required behaviour.
+- **Decision:** Per-screen viewport from the approved package; the Test phase fixes CSS and seed-data deviations itself; record-non-ui-frs.py records unmapped FRs only on an explicit `UI: none` line in the brief section; a size target is soft in autonomous runs. A remaining screenshot failure stays a question.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The approved package decides the viewport and the non-UI marker; an agent-made 'neutralised' screenshot is forgeable, so no by-rule override of a check result.
+- **Consequences:** Fewer questions in autonomous runs; interactive unchanged; a check result is never overridden on evidence the run produced itself; baseline brief carries UI: none.
+- **Rejected:** By-rule screenshot override on agent-produced evidence (reviewers: forgeable); inferring non-UI from a Source line without a mockup; viewport from the built file or screen-routes; asking each time.
+
+---
+
+### ADR-657: Deny python - fed by a closed but empty heredoc
+- **Date:** 2026-11-04
+- **Section:** Iterate - change: bare-python guard denies an empty heredoc
+- **Run-ID:** iterate-2026-11-04-bare-python-empty-heredoc-guard
+- **Context:** A runner subagent ran python - 2>/dev/null <<'E' with an empty body. The existing guard allowed any closed heredoc, but on Windows Git-Bash python never exits on it (reproduced three ways); the process spun at 100 % of a core for ~12 h on 2026-11-03.
+- **Decision:** mask() also reports heredocs closed with an empty or whitespace-only body on an interpreter line; handle_payload denies them. The rule also goes into shared/constitution.md NEVER and the runner prompt, and the hooks doc row.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The failure is silent and costs hours of CPU; the empty-body shape is cheap to detect with the existing masker and was a real incident, not a theory.
+- **Consequences:** One more deny shape in a fail-open hook. Known over-block (safe direction): an empty heredoc on a line that also runs python - is blamed on the interpreter. The fix reaches running sessions only after the plugin cache sync.
+- **Rejected:** Only extending the prompt rule (advisory, did not stop the incident); a timeout wrapper around python (hides the bug, cannot see the heredoc).
+
+---
+
+### ADR-658: Release manifest sync gains a package_lock_json format
+- **Date:** 2026-11-05
+- **Section:** Iterate — feature: package_lock_json release manifest format
+- **Run-ID:** iterate-2026-11-05-package-lock-manifest-format
+- **Context:** package-lock.json carries the project version twice (top-level version and packages[''].version) and could not be declared in published_manifests, so lockfiles stayed on the old version after a release and the next npm install dirtied the tree.
+- **Decision:** Add package_lock_json to SUPPORTED_FORMATS (lib/manifest_sync_lock.py). It writes both fields in one pass by replacing the exact string spans found by a small JSON scanner, and verify compares both fields.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Span replacement keeps CRLF/LF and indentation byte-for-byte and cannot touch dependency entries, which a regex or a json.dumps re-render could not guarantee on a multi-megabyte lockfile.
+- **Consequences:** Projects can declare lockfiles beside package.json. Undeclared projects are unchanged. Other lockfile formats stay unsupported (unsupported_format).
+- **Rejected:** Regex substitution (matches dependency versions); full json.dumps re-render (rewrites the whole lockfile, loses CRLF).
+
+---
+
+### ADR-659: Dormant per-run event drops layout with a ratcheted replay gate
+- **Date:** 2026-11-05
+- **Section:** Iterate — change: dormant event drops layout and replay gate
+- **Run-ID:** iterate-2026-11-05-s0-harness-dormant-writer
+- **Context:** Parallel iterate PRs conflict on the one tracked event log because merge=union is local-only; campaign events-drop-files needs a proven drops path before any writer flips.
+- **Decision:** Land the drops layout dormant (default legacy, test-only env override, config key read at runtime), a bare-origin merge-tree harness, the unsplit/split fixture pair and a CI replay gate with a shrink-only known-failing set.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Architecture review: GLM reject (stop tracking the log) reconciled against DESIGN line 16 (2026-05-29 decision); OpenAI's migration-only gate declined, BRIEF S0 mandates the standing ratchet.
+- **Consequences:** Nothing changes for consumers; later units (S2-S4) must shrink the known set. events_layout: drops is unsupported in a real repo before S9a.
+- **Rejected:** Stop tracking the log (already decided against); rebase on every main move; a migration-only gate retired at cutover.
+- **Details:** [iterate-2026-11-05-s0-harness-dormant-writer-dormant-event-drops-layout.md](../planning/adr/iterate-2026-11-05-s0-harness-dormant-writer-dormant-event-drops-layout.md)
+
+---
+
+### ADR-660: Run the CI test tiers as two parallel jobs behind one fail-closed required check
+- **Date:** 2026-11-06
+- **Section:** Iterate — change: parallel CI test jobs
+- **Run-ID:** iterate-2026-11-06-ci-parallel-jobs
+- **Context:** ci.yml ran every tier in one serial job (~16 min on push, ~20 min on a PR). A first design that moved only the shared tier out while the required check still ran the other tiers could not overlap anything, because a job with needs starts after its needs finish.
+- **Decision:** tests-shared and tests-main (plugins, integration, replay, scanners) have no needs and start together; python-checks (Python (lint + test), still the only required check) needs both, runs if: always(), lints, downloads their artifacts and runs every gate step unchanged. A jq step fails it unless every needed job is success.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Smallest topology that is really parallel; all gate steps keep their names and order so the many step-shape tests, ci_provenance and main_health keep working. Tests live only in the two test jobs, enforced by a body-based drift test.
+- **Consequences:** Expected ~12 min push / ~15 min PR. A skipped or cancelled test job can no longer leave the required check green. New CI-only gate Coverage data set (gate) catches lost coverage files. Lint feedback now arrives after the tests; revisit in iterate 3/3.
+- **Rejected:** Four test jobs (rejected by both external reviewers as disproportionate); moving only shared out (no parallelism); xdist inside one job (CI stays serial by standing decision, test_ci_stays_SERIAL).
+
+---
+
+### ADR-661: One assembling event reader with per-file status
+- **Date:** 2026-11-06
+- **Section:** Iterate - change: one assembling event reader
+- **Run-ID:** iterate-2026-11-06-events-drop-files-s2-read-events
+- **Context:** Per-run drop files need one reader that shows every event as one ordered log before any writer switches (issue 978); absence gates must not conclude absent over a damaged file of their own run.
+- **Decision:** New lib/events_read.py: legacy in file order then archive and drops by instant and id, per-file status, duplicate rule, absence-gate primitive, newest-by-ts position readers; latest_event_dt and finalized_run_ids read the folders.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Architecture review approved option A (one module over existing record recovery); B would reorder legacy, C copies the rules into every reader.
+- **Consequences:** Nothing changes for legacy trees; the replay known set shrinks 101 to 85; own-path renderers and gate wiring of the KC8 primitive stay with S3/S4.
+- **Rejected:** Sort legacy with the rest; each reader opens the folders itself; defer all readers to the migration unit.
+- **Details:** [iterate-2026-11-06-events-drop-files-s2-read-events-assembling-event-reader.md](../planning/adr/iterate-2026-11-06-events-drop-files-s2-read-events-assembling-event-reader.md)
+
+---
+
+### ADR-662: Readers, classifiers and the event-log reference guard
+- **Date:** 2026-11-06
+- **Section:** Iterate - change: readers, classifiers and reference guard
+- **Run-ID:** iterate-2026-11-06-events-drop-files-s3-readers-guards
+- **Context:** Per-run drop files need every reader and path classifier to see them before any writer switches (issue 978); a missing own-run file must never read as absent.
+- **Decision:** All readers use the assembling reader, all classifiers list the three folders, reconcile blocks only on the run's own damaged drop, and a registry-based guard fails on any unclassified mention of the log.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Architecture review approved migrating onto the existing reader; a concatenating shim would hide which file was unreadable.
+- **Consequences:** Nothing changes for legacy trees; the replay known set shrinks 85 to 73; writers, the F11 committed check and an absence-means-pass inventory stay with S4/S9a.
+- **Rejected:** A virtual single-file shim; leaving readers for the flip unit; blocking every refresh on any damaged drop.
+- **Details:** [iterate-2026-11-06-events-drop-files-s3-readers-guards-readers-classifiers-guard.md](../planning/adr/iterate-2026-11-06-events-drop-files-s3-readers-guards-readers-classifiers-guard.md)
+
+---
+
+### ADR-663: One event writer, drops stay dormant
+- **Date:** 2026-11-06
+- **Section:** Iterate - feature: events drop writers and finalization (S4)
+- **Run-ID:** iterate-2026-11-06-events-drop-files-s4-writers-finalization
+- **Context:** Event appends were spread over several writers and finalization knew only the single legacy log (issue 978).
+- **Decision:** One writer module (stamp, 16-hex ids, dedup, atomic create, rotate-on-commit), a live key rule, F6 staging by own key, ensure_current absorb, F7b seal; default stays legacy.
+- **Commit:** (assigned post-merge)
+- **Rationale:** A shared writer lets dedup see the whole log; absorbing everything except gate-event files keeps 'F6 forgot to stage, F11 fails' true.
+- **Consequences:** Legacy bytes unchanged; drops layout needs the S9a flip. Stage, absorb and seal take the writers lock; absorb leaves every work_completed file to its owner's F6.
+- **Rejected:** Per-writer duplicates; absorbing every drop of the worktree (hides a forgotten F6 stage).
+
+---
+
+### ADR-664: Architecture/convention bullets as per-run drop files
+- **Date:** 2026-11-06
+- **Section:** Iterate — feature: bullets as drop files (issue 978 S5)
+- **Run-ID:** iterate-2026-11-06-events-drop-files-s5-bullets
+- **Context:** Parallel PRs adding a line to the same section of conventions.md or architecture.md conflict on GitHub (merge=union is local only), stalling auto-merge.
+- **Decision:** Each bullet is its own file decision-drops/bullets/<target>--<key>--<wt8>--<nonce>.md, written by write_doc_bullet.py and folded into the curated section at release by lib.doc_bullets.fold (before the ADRs). Budget, shape, documented and conventions-reviewed checks read folded plus pending; subfolder plus .md keep old ADR consumers blind to them.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Reuses the existing drop and release-fold lifecycle. Architecture review: openai approve, glm revise (prefers merge=union, but GitHub ignores gitattributes, the very problem) - rejected with that reason.
+- **Consequences:** Two branches only ADD files (merge-tree clean). Live without the layout flag, so the writer must not reach consumers before the WebUI release that reads pending bullets (S5b). Adds a second drop kind plus fold and cap (20 shown, warn above 40).
+- **Rejected:** Option B merge=union or a rebase bot (GitHub mergeability ignores it); option C deriving the docs from ADR drops only (loses curated guidance).
+
+---
+
+### ADR-665: Fold, quarantine and integrity check for event drop files
+- **Date:** 2026-11-06
+- **Section:** Iterate — feat: events fold and integrity
+- **Run-ID:** iterate-2026-11-06-events-drop-files-s6-fold-integrity
+- **Context:** Per-run event drops need a bounded-growth fold and a merge-time guard that nothing existing is rewritten or forged.
+- **Decision:** Add fold/emergency/full-fold/quarantine plus a merge-base integrity checker (KC6), a vanish-retrying assembling reader, and an F11 claim check.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Judging at the merge-base keeps parallel folds and rollbacks valid while still refusing edits, deletions and forged run ids.
+- **Consequences:** Layout stays dormant; folds are recognised by per-event hash coverage in an added archive, quarantines by byte-identical twin.
+- **Rejected:** Trusting commit messages for fold detection; blind folding without a duplicate-id scan; folding in place.
+
+---
+
+### ADR-666: Loosen the no-wait bound of one Windows-flaky claim test
+- **Date:** 2026-11-06
+- **Section:** Iterate — bug: flaky claim timing test
+- **Run-ID:** iterate-2026-11-06-flaky-claim-timing-test
+- **Context:** test_healthy_completed_claim_skips_without_waiting asserted the claim call returned in under 0.2 s. On a loaded Windows CI runner it took 0.297 s and failed, although the code did not wait (a real wait takes the full 1.0 s).
+- **Decision:** Raise the bound to 0.6 s. It still separates returning at once from waiting the full 1.0 s, with a comment saying why.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The failing measurement was far below the wait it guards against, so the logic was right and only the margin was too tight.
+- **Consequences:** The test no longer flakes under runner load; a genuine regression that waits the full second is still caught.
+- **Rejected:** Removing the timing assertion (loses the no-wait guarantee); mocking the clock (changes what the test proves).
+
+---
+
+### ADR-667: Windows Tests runs on a PR only when it touches what it tests
+- **Date:** 2026-11-06
+- **Section:** Iterate — change: windows-tests paths filter
+- **Run-ID:** iterate-2026-11-06-windows-tests-paths-filter
+- **Context:** The non-required Windows shared-tests job takes 27-30 min, longer than the required Linux job, and ran on every PR.
+- **Decision:** Add a pull_request paths filter (shared/**, scripts/**, root env files, the workflow itself). Push to main and workflow_dispatch stay unfiltered.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Saves ~30 min of runner time on most PRs; Linux CI still runs the same roots on every PR.
+- **Consequences:** A plugins/**- or docs/**-only PR no longer runs Windows pre-merge; its post-merge push run is not watched by main_health, so a Windows-only break surfaces late.
+- **Rejected:** Matrix/xdist changes belong to later iterates; watching the push run via MONITORED_WORKFLOWS left to IT-9 Unit 3.
+
+---
+
+### ADR-668: Layout sentinel, evidence refusal and merge-base CI check for mixed plugin versions
+- **Date:** 2026-11-07
+- **Section:** Iterate — feat: events layout sentinel
+- **Run-ID:** iterate-2026-11-07-events-drop-files-s7-mixed-versions
+- **Context:** Teammates run different plugin generations against one repo; an unknown layout must not be written or stamped into release evidence, and a PR must not keep appending to the legacy log after the flip.
+- **Decision:** Add a stdlib sentinel at the single write choke point and in two evidence producers, a merge-base consumer CI check, explicit events_layout in init/adopt, and a conditional gitignore re-include.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Architecture review approve (GLM, OpenAI); write-side only keeps readers working for old writers; judging at the merge-base spares PRs in flight at the flip.
+- **Consequences:** Nothing changes while the layout is legacy and no drops exist; an unknown value refuses writes, an absent key over live drops refuses legacy writes, an explicit legacy key is a deliberate rollback.
+- **Rejected:** Raising in events_layout() for every reader; doing nothing; unconditional refusal over drops (locks out a rollback that leaves unfoldable drops).
+
+---
+
+### ADR-669: Whole-system proof, benchmark and rollback rehearsals before the flip
+- **Date:** 2026-11-07
+- **Section:** Iterate — test: events drops full integration
+- **Run-ID:** iterate-2026-11-07-events-drop-files-s8-full-integration
+- **Context:** The shared event log is about to become one file per run; the flip needs evidence that the parts work together, stay fast at 300 files and roll back losslessly.
+- **Decision:** Add whole-system scenarios, a 300-file benchmark and rollback rehearsals on a copy of the real log; fix what they hit (one-call staging, per-commit layout CI check, end-anchored name regexes).
+- **Commit:** (assigned post-merge)
+- **Rationale:** Architecture review approve; per-unit tests alone would have shipped a Windows staging failure at ~1000 drops and a CI check that blames PRs open at the flip.
+- **Consequences:** Windows numbers: run-scoped 10.6 ms, whole log 143 ms, per write 103 ms. Follow-ups are listed in the flip-readiness note for the operator.
+- **Rejected:** Flipping on the per-unit tests; a one-off manual rehearsal script that guards nothing afterwards.
+
+---
+
+### ADR-670: Event drop folds report a stuck file; F11 checks drop ownership and fails closed
+- **Date:** 2026-11-07
+- **Section:** Iterate â€” change: events drop-files hardening before the flip
+- **Run-ID:** iterate-2026-11-07-events-drop-hardening
+- **Context:** Reviews of the drop-files campaign left seven hardening gaps: a fold stopped halfway on a locked file, F11 skipped on git errors and ignored ownership, the layout CI check blocked a legal rollback and had a side-branch bypass, adopt turned null into legacy, the committed-check failed in subdirectories, the release skill staged absent docs.
+- **Decision:** A file that cannot be deleted is reported (folded_incomplete, exit 1) and the rollbacks keep the layout; F11 passes the run's keys and fails on a git error; the layout check accepts only unfoldable base drops as rollback leftovers and excuses only first-parent commits; adopt keeps an explicit null; the committed-check reads HEAD:./path; the release skill builds BULLET_DOCS.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Each gap was a way for the flip to fail loudly on an honest branch or silently on a dishonest one; the fixes keep the honest shapes the review found (absorb, re-attempt, campaign worktree) passing.
+- **Consequences:** F11 ownership is not enforced on unfinished stacked or single-branch campaigns and never for drops written from the same worktree; a pre-flip side branch merged into a PR now fails the layout check and must be re-recorded as drops.
+- **Rejected:** Dropping F11 ownership entirely (loses the foreign-key guard); enforcing it with the run id alone (false FAIL on stacked units, absorb and re-attempts).
+
+---
+
+### ADR-671: A release states what existing projects must do, and the CI checks stay optional
+- **Date:** 2026-11-07
+- **Section:** Iterate — change: release upgrade notes for the event-file layout
+- **Run-ID:** iterate-2026-11-07-events-drop-upgrade-notes
+- **Context:** The events-drop-files campaign changes how every project records events. The person cutting the release sees only the release, so the action for existing projects must be in it.
+- **Decision:** Add docs/migrations/events-drop-files.md and an upgrade-notes check at the top of the changelog skill's Step 4 (reference release-workflow.md) that turns changed migration pages into a Changed drop before aggregation. The two CI check scripts stay optional and are in no shipped CI template.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Target audience is solo maintainers; the check must run before the real aggregation because that deletes the drops it used.
+- **Consequences:** Solo maintainers are not pushed to GitHub CI. Without the CI check nothing flags a write to the wrong layout from a stale plugin; the page says so and tells mixed-version teams to update first.
+- **Rejected:** Shipping the CI checks in the CI templates by default (binds users to GitHub); placing the check at Step 5 (ships one release late).

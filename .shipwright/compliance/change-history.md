@@ -1,32 +1,74 @@
 # Commit Change Log
 
-Generated: 2026-10-09T22:59:02.124377+00:00
-Source-State: run=iterate-2026-10-10-security-triage-reraise base=3d082d111122
-Consistency-audit: last run 2026-07-28 (73 days earlier) — FAIL
-Total commits: 1651
+Generated: 2026-11-07T12:24:08.955229+00:00
+Source-State: run=iterate-2026-11-07-events-drop-upgrade-notes base=ac194e8ced01 release=v0.35.0
+Consistency-audit: last run 2026-07-28 (102 days earlier) — FAIL
+Total commits: 1773
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 567
-    "feat" : 445
-    "chore" : 284
-    "docs" : 170
-    "refactor" : 100
-    "test" : 52
-    "ci" : 20
-    "other" : 11
+    "fix" : 609
+    "feat" : 494
+    "chore" : 290
+    "docs" : 181
+    "refactor" : 105
+    "test" : 58
+    "ci" : 22
+    "other" : 12
     "perf" : 1
     "build" : 1
 ```
 
 ## Changes by Type
 
-### Fixes (fix) — 567 commits
+### Fixes (fix) — 609 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-11-07 | events | harden the drop-files layout before the flip (#1013) | 544363ffe249 |
+| 2026-11-06 | tests | loosen the no-wait bound of a Windows-flaky claim test (#1006) | 72781dca69cb |
+| 2026-11-04 | iterate | bare-python guard denies python - fed by an empty heredoc (#993) | 1b79e7d35fb9 |
+| 2026-11-03 | e2e | correct the baseline fixture checks after run 20, add npm run recheck (#987) | c152ccc1bbc7 |
+| 2026-11-03 | phase-quality | W3 skips a session id instead of failing it as a missing iterate run (#988) | 6aec85a52cc9 |
+| 2026-11-03 | security | OSS scan ignores only its reports folder, not all of .shipwright/ (#986) | 0d47c2659a6e |
+| 2026-11-02 | gitattributes | say that merge=union only applies to local merges (#982) | e28d27e31b5a |
+| 2026-11-02 | compliance | say when the test collector finds no test folder (#980) | 6a41c2c8d211 |
+| 2026-11-02 | compliance | Playwright evidence honours config.rootDir (#979) | ff07b1150795 |
+| 2026-11-02 | run | plan completion no longer asks a false 'No sections found' when the build config is unseeded (#977) | 239398468fee |
+| 2026-11-02 | e2e | read the modal's launch command inside a route so it survives the navigation (#975) | 6be9a50e1b93 |
+| 2026-11-02 | e2e | the harness no longer reloads the task page after the modal launched the task (#974) | c4a475771949 |
+| 2026-11-01 | e2e-webui | harness fixes from run 14 (S02 visible-row click, S05 scope, fixture from env file, launch retry) (#967) | d8ac458c55c9 |
+| 2026-10-31 | plan | bump transitive pyasn1 0.6.4 to 0.6.5 (Trivy CVE-2026-119194..119197) (#958) | 2fe4c9828a65 |
+| 2026-10-29 | e2e | run-12 learnings - harness checks, Plan initial state, build repair wording, bare python - guard (#954) | 0d7c523a3c98 |
+| 2026-10-29 | project | grill-trace gate requires an interview or signed-off equivalent for every entry channel (#953) | dd4e9a09c664 |
+| 2026-10-29 | security | harden junit_failures XML parse in BL0b probes (#952) | b02625884063 |
+| 2026-10-29 | design | harden the boundary baseline (E1 follow-ups) (#950) | 4c0d1b889cfa |
+| 2026-10-29 | test | screenshot check captures a CSP-restricted board and compares page states (E5) (#947) | 05b100b65346 |
+| 2026-10-28 | iterate | deliver_pr imports without PyYAML; carry skipped count into the event tests block (#942) | c802b6512eb5 |
+| 2026-10-28 | design | boundary gate judges this session's changes, not earlier-phase uncommitted output (E1) (#941) | 2a2c6e6cee9b |
+| 2026-10-28 | changelog | propose the version from suggest_version_bump, per FR-01.09 AC04 (#937) | 79878eaef38e |
+| 2026-10-27 | changelog | never push main untagged when recording the release event, and test the command blocks (#935) | 14d194cc0222 |
+| 2026-10-27 | security,run,grade | find sibling plugins in the plugin cache, not only the repo layout (#934) | 065d2c607842 |
+| 2026-10-27 | quality,audit | Q2 counts archived splits; F4 bounds an ADR at the next heading (#933) | 39bce37b9138 |
+| 2026-10-26 | run | a stack profile named in the wizard brief is validated and taken over (B2b) (#923) | 7fc60e2a32f2 |
+| 2026-10-25 | test | Windows-safe npx spawn, Browser Verify URL and chat-first host spelling (B4b) (#921) | 054d9992de7c |
+| 2026-10-25 | run | gate hardening leftovers (archived-split build gate, typed override refusal, cap marker) (#917) | 3e18563ee20f |
+| 2026-10-25 | layer-promotion | skip the advisory adopted spec before escalating on ambiguous evidence (#915) | eaaea4119ffe |
+| 2026-10-25 | run | complete a blocked run once its last open task is skipped (#913) | 5b6686ae50f7 |
+| 2026-10-25 | compliance | fold nested-bracket JUnit parameter ids to the function id (#914) | 85c1eb1cafc3 |
+| 2026-10-25 | project | write the project config to the project root, not into .shipwright (#910) | 98ce96c97c24 |
+| 2026-10-25 | iterate | stop-guard counts a SendMessage-resumed agent as pending work (#912) | 6625147ee9e4 |
+| 2026-10-25 | run | bind state before the retry loop in phase_gate.retry_state (#911) | 080c7c1c85c3 |
+| 2026-10-24 | run | phase validators use the split authority and surface degraded canon checks (campaign A3) (#904) | f8dcdfe961d7 |
+| 2026-10-24 | iterate | arm the worktree gate for adopted projects (#892) | 35dd16d88b75 |
+| 2026-10-23 | deps | bump certifi to 2026.10.23 (GHSA-6q48-6c7w-9gw2) (#893) | 1611202d63fd |
+| 2026-10-18 | triage | ignore cancelled check runs superseded by a later run (#891) | cd42e187b044 |
+| 2026-10-18 | changelog | ship the release phase_completed event in the release PR (#890) | 837dfda6337b |
+| 2026-10-10 | promotion | layer promotion skips the advisory adopted spec (#886) | 27a9e00fef3c |
+| 2026-10-10 | phases | honor the project's profile and deploy_target none (#883) | 14d5cee59d54 |
+| 2026-10-10 | iterate | stop guard stays silent while a reviewer or background task runs (#882) | d3c2ec8641bb |
 | 2026-10-10 | triage | raise one card per critical/high security finding and re-raise returning ones (#879) | 3d082d111122 |
 | 2026-10-10 | iterate | stop guard releases a run whose PR is already merged (#878) | a1dd883cdff4 |
 | 2026-10-10 | security | clear the 5 open High findings (urllib3 2.8.0, hardened JUnit parse) (#877) | 5accb5d8215b |
@@ -595,10 +637,59 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 445 commits
+### Features (feat) — 494 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-11-07 | run | autonomous runs settle five more run-23 questions by rule (#1012) | dcb9d80b3664 |
+| 2026-11-07 | build | a test of delete code runs only in a temp copy (#1011) | 199e5fbccd49 |
+| 2026-11-07 | events | layout sentinel, evidence refusal and merge-base CI check for mixed versions (S7) (#1008) | bf4260dc7e3e |
+| 2026-11-07 | events | fold, emergency fold, quarantine and merge-base integrity check (S6) (#1007) | 955f7d7a49e7 |
+| 2026-11-06 | events | architecture and convention bullets as per-run drop files (S5) (#1005) | aacc3d002c5a |
+| 2026-11-06 | events | writers and finalization for the per-run drops layout, dormant behind the flag (S4) (#1004) | c44fbd965948 |
+| 2026-11-06 | events | readers, aliases, classifiers and reference guard for the drops layout (S3) (#1001) | a241a2575679 |
+| 2026-11-06 | events | one assembling event reader with per-file status and absence primitive (S2) (#999) | 91402c8124f6 |
+| 2026-11-06 | run | autonomous runs settle six run-22 questions by rule (#998) | 0e19d5c0fe6c |
+| 2026-11-06 | events | dormant per-run event drops layout, harness and replay gate (S0) (#997) | 2e122be86579 |
+| 2026-11-05 | changelog | package_lock_json format for release manifest sync (#996) | e6d00b820f52 |
+| 2026-11-04 | run | autonomous runs decide viewport, seed data and non-UI capabilities by rule (#994) | a8db68748b36 |
+| 2026-11-04 | plan | autonomous runs resolve screen-vs-section contradictions by rule (#992) | e21aec049be6 |
+| 2026-11-04 | iterate | F0.5 surface=native for Expo / React Native projects (#990) | 25cd70303eac |
+| 2026-11-03 | e2e | social-engagement-baseline fixture with brief-derived checklist (#983) | b9022ff72b5b |
+| 2026-11-02 | compliance | stack profiles declare their test roots (#981) | c1e391379018 |
+| 2026-11-01 | plan | copy design-defined detail from the screen; correct screenshot-check prose (#968) | b8673eb7d5a5 |
+| 2026-10-31 | iterate | close catalog gaps in the same PR and backfill 11 ACs (baseline-package P2) (#961) | b560a7966bf9 |
+| 2026-10-31 | iterate | spec chain - plan_path on the event, plan stubs, AC/FR lookup (baseline-package P3) (#962) | 987afe519373 |
+| 2026-10-31 | iterate | affected_acs declaration on runtime-touching iterates (baseline-package P1) (#959) | 23d062456cdf |
+| 2026-10-30 | design | reply-board parts for the Untitled UI kit (#956) | be98cb7389db |
+| 2026-10-29 | e2e | fixture variant social-engagement-real with source adapter and variant checks (#955) | a68813934638 |
+| 2026-10-29 | e2e | harness and fixture for the skill-backed board app class (E6) (#948) | b1aff7c67056 |
+| 2026-10-29 | compliance | BL0b broader baseline measurement on blind labels - SHADOW-ONLY (BL0b) (#946) | 4d13f8dc1144 |
+| 2026-10-29 | project | Brief-package intake runs the Project content check and warns on missing kit tokens (E4) (#945) | 750e104be146 |
+| 2026-10-29 | design | Brief-package screens are composed from the kit and package tokens, prose only (E3) (#944) | 11308f9372bb |
+| 2026-10-28 | profiles | bundled stack profile skill-companion-app (E2) (#943) | fd2aa8a60d9e |
+| 2026-10-28 | compliance | baseline touched-set library and replay over 100 merged PRs (BL0) (#940) | 8f33b58b9829 |
+| 2026-10-28 | design | take the brand from a claude.ai Design System, check it against the kit contract (#938) | 8b3ba79ac59c |
+| 2026-10-28 | design | Untitled UI kit, a token-only component kit with three token sets (#936) | 31434cdb8ade |
+| 2026-10-26 | test | operator-started real end-to-end run through the WebUI with a screenshot report (B7) (#927) | ec88451c32b1 |
+| 2026-10-26 | run | unattended answers in the gate catalog, catalog completion and autonomy consumers (B5) (#926) | c9a1742d57d1 |
+| 2026-10-26 | test | blocking screenshot check compares built screens with approved mockups (B3c) (#925) | 2cbb5f63097d |
+| 2026-10-26 | design | chat-first design from the Brief package (B3b) (#924) | 08ce885960d7 |
+| 2026-10-26 | design | Design takes the Brief package (B3a) (#922) | d53a7ede9876 |
+| 2026-10-25 | run | brief intake from a package directory and Project brief mode (B2) (#920) | ec8091a2d471 |
+| 2026-10-25 | profiles | bundle a chat-first-json stack profile for chat-first apps (#919) | fd42ae7717e8 |
+| 2026-10-25 | profiles | declare optional ux_shape and ui_host in the stack profile schema (#918) | 79ceee6410c7 |
+| 2026-10-25 | run | skip reason, durable gate pass record and re-dispatch fencing (#909) | fa1103679454 |
+| 2026-10-25 | run | enforce the phase gate by default for driven runs (campaign A5) (#907) | 0fa5084334c2 |
+| 2026-10-25 | run | phase gate seam, bounded retries and v2 override (campaign A4) (#906) | 6884c0924449 |
+| 2026-10-25 | profiles | custom stack profiles in the interview, docs, python guard and end-to-end test (campaign S5) (#905) | 4d445f3e424e |
+| 2026-10-24 | profiles | skill prose resolves stack profiles through the resolver (campaign S4) (#902) | 3684e391dadb |
+| 2026-10-24 | adopt | adopt resolves stack profiles through the resolver (campaign S3) (#903) | bbfacca9f736 |
+| 2026-10-24 | run | brief package library and dry-mode harness (campaign A1) (#901) | 59e822f3dc2e |
+| 2026-10-24 | profiles | Python loaders use the stack-profile resolver, no silent fallback (campaign S2) (#899) | 1caabdcc67cc |
+| 2026-10-24 | profiles | stack-profile resolver, schema and CLI (campaign S1) (#897) | 2e71e28f6f59 |
+| 2026-10-24 | run | phase-runner can spawn reviewers and reports review_status (#896) | 6444627bb6c8 |
+| 2026-10-10 | build | external code review (6c) default-on after the internal cascade, like iterate (#884) | 2c201cf0e36d |
 | 2026-10-09 | review | finish the operator-owned review gateway route (#547) (#873) | 0ae5b8bbda15 |
 | 2026-10-09 | iterate | Stop hook keeps an autonomous iterate running until its PR is merged (#871) | 22e633216953 |
 | 2026-10-09 | iterate | campaign runner reviews use the resolved tier; 3f-bis skips a re-review only on a git-verified attestation (#869) | c4287504cd19 |
@@ -1045,10 +1136,16 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 284 commits
+### Chores (chore) — 290 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-11-03 | ci | bump the github-actions-minor-patch group across 2 directories with 1 update (#965) | dfe261d9ff03 |
+| 2026-10-24 | security | accept CVE-2023-54404 (zod, dev-only, no fix exists) (#895) | f72ef20a7469 |
+| 2026-10-18 | ci | bump the github-actions-minor-patch group across 2 directories with 1 update (#888) | 6219c16444ea |
+| 2026-10-18 | ci | bump actions/upload-artifact from 6 to 7 (#889) | d9c633590ac5 |
+| 2026-10-10 | events | record the v0.34.0 changelog phase_completed event (#885) | 07cb6e6833f3 |
+| 2026-10-10 | compliance | refresh evidence documents as of 3d082d111122 (#880) | f7402f5a0510 |
 | 2026-10-09 | release | v0.34.0 (#875) | fc782f611f71 |
 | 2026-10-08 | ci | bump actions/upload-artifact from 4 to 6 (#850) | b0464b6ae0e3 |
 | 2026-10-08 | ci | bump astral-sh/setup-uv (#854) | 590a042effc5 |
@@ -1334,10 +1431,21 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 170 commits
+### Documentation (docs) — 181 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-11-07 | release | tell existing projects what the per-run event files ask of them (#1015) | ac194e8ced01 |
+| 2026-11-04 | planning | campaign brief and design for per-run event files (#978) (#995) | 163d3470ddb3 |
+| 2026-11-01 | planning | ac-at-start campaign brief, outcome note on baseline-package (#966) | 9d54d3dcb9aa |
+| 2026-10-31 | spec | FR-01.05 AC09 states only the promise, detection detail left to the code (#963) | 3bbcacb2d99e |
+| 2026-10-31 | planning | baseline-package campaign brief with its measurement and replay reports (#957) | bcebd899a8fa |
+| 2026-10-29 | planning | baseline-protection campaign stopped after BL0b; notes on brief, replay and BL0b reports (#949) | 3741aa35abe4 |
+| 2026-10-28 | planning | e2e-run-findings campaign brief and the findings report it builds on (#939) | 8d597d85110f |
+| 2026-10-27 | planning | deterministic-first programme, changelog pilot and baseline-protection briefs (#929) | 38a9bd4f2e48 |
+| 2026-10-25 | planning | campaign B plan rev 4 with a real end-to-end run through the WebUI (#916) | 78c1652bc36e |
+| 2026-10-24 | planning | campaign brief for real phase gates and brief-driven unattended runs (#898) | 71d89e14b22d |
+| 2026-10-24 | planning | campaign brief for custom stack profiles that survive updates (#894) | 7a4711af30c0 |
 | 2026-10-08 | finalization | describe each claims-hardening gate once and fix stale finalization sentences (#858) | 2eb08ab286ce |
 | 2026-10-08 | security | describe the live Dependabot setup instead of "dormant" (#857) | 1332e6db7941 |
 | 2026-10-07 | planning | campaign brief to make finalization enforce its documented claims (#836) | 168b7fe01f77 |
@@ -1509,10 +1617,15 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Refactoring (refactor) — 100 commits
+### Refactoring (refactor) — 105 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-10-31 | catalog | tidy mixed ACs and rename command-named FR titles (baseline-package P5) (#960) | 726aa32a758e |
+| 2026-10-29 | e2e | harden resume identity, run lock and board checks (E6 follow-ups) (#951) | c28211ddefc2 |
+| 2026-10-25 | profiles | harden the stack-profile python guard and settle the S5 hand-offs (#908) | f77a4446f61a |
+| 2026-10-24 | run,shared | extraction for headroom (campaign A2, behaviour unchanged) (#900) | cd5a854c16c0 |
+| 2026-10-11 | adopt | stop scaffolding the Claude-Code-Review workflows (#887) | 4b4c85ef621c |
 | 2026-10-09 | iterate | move four long SKILL.md paragraphs into references (#872) | 95766a98568c |
 | 2026-10-09 | finalization | close the accepted limits of the claims-hardening U5/U6 gates (#864) | 2d14307ddc97 |
 | 2026-10-02 | f0 | retry only the red tests of a unit that failed in parallel (#831) | 464b99c8be24 |
@@ -1614,10 +1727,16 @@ pie title Commit Types
 | 2026-03-30 | env | consolidate plugin env vars into single .env.local | 4a9267b522fb |
 | 2026-03-28 | — | unify decision log to shared ADR format across all phases | 2851babbbcfa |
 
-### Tests (test) — 52 commits
+### Tests (test) — 58 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-11-07 | e2e | resume restarts the dead session; pidfile and f-string check defects (#1010) | 4803f7eb898c |
+| 2026-11-07 | events | full-system scenarios, benchmark, rollback rehearsals and flip-readiness note (S8) (#1009) | 221296c0261c |
+| 2026-11-01 | e2e | S05 proves the build kept the shipped recorded answers byte for byte (#973) | b0f15163998c |
+| 2026-11-01 | e2e | social-engagement-real ships its recorded answers, summary rule and reply-draft template (#971) | 0377aae0c53c |
+| 2026-11-01 | e2e | social-engagement-real mockups carry sample text at recorded length (#970) | b4d2cc695d4b |
+| 2026-10-26 | e2e | test harness for automating the Shipwright run (operator E2E through the WebUI) (#928) | c3c1a91678bd |
 | 2026-10-08 | finalization | one integration scenario breaks each finalization gate in isolation (U11) (#856) | 5eb4fe2d20ac |
 | 2026-10-08 | ci | let version-pinning tests accept a newer action major (#855) | a15da2f952ef |
 | 2026-09-16 | iterate | backfill AC-proving tests for FR-01.15/17/19/20 (req3-05 t9, final unit) (#760) | 49a7bd998f8b |
@@ -1671,10 +1790,12 @@ pie title Commit Types
 | 2026-04-11 | — | complete test phase — 299 unit tests, 5 E2E tests, smoke PASS | e843d458942d |
 | 2026-04-11 | e2e | set up Playwright with E2E specs and smoke test results | cba0fd6e9012 |
 
-### CI/CD (ci) — 20 commits
+### CI/CD (ci) — 22 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-11-06 | — | run the test tiers as two parallel jobs behind one fail-closed required check (#1002) | 9066f0d42b7e |
+| 2026-11-06 | windows | run Windows Tests on PRs only when they touch what it tests (#1000) | c05a48634732 |
 | 2026-09-28 | — | remove temporary Ubuntu 26 runner validation workflow (#809) | ae2f2baabb24 |
 | 2026-09-28 | — | add temporary Ubuntu 26 runner validation workflow (#808) | eaaf04685a83 |
 | 2026-07-30 | probe | a deploy key can write to main; probe removes itself | 86a948ac4add |
@@ -1696,10 +1817,11 @@ pie title Commit Types
 | 2026-05-31 | — | run shared/ test suites in CI via per-dir invocations | eb68b567899d |
 | 2026-05-31 | integration | gate integration-tests step on failure; fix F821 in events-log test | 83d68709d125 |
 
-### Other (other) — 11 commits
+### Other (other) — 12 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-11-02 | — | iterate/s05 header read false positive (#976) | 6a3f3d07062f |
 | 2026-09-26 | — | Revert "docs(shared): note held_merge_reconciliation.py is exercised by the R5b merge lane (#801)" (#803) | 2397f8c08e78 |
 | 2026-09-16 | — | iterate/codex light shipwright (#759) | 168a40c79606 |
 | 2026-07-15 | — | fix(phases)!: detect invocation mode from the dispatch token, not the never-advanced v1 current_step (#372) | d76970e82cf4 |
@@ -1728,7 +1850,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1651 |
+| Total commits | 1773 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1651 |
+| Human-authored commits | 1773 |
 

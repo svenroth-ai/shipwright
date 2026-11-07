@@ -1,1 +1,0 @@
-The phase-quality audit no longer reports a failing W3 check for a Claude session id that it mistook for an iterate run; it now skips. A real run with no recorded completion, or with stale test evidence, still fails.

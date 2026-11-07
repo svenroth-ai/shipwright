@@ -1,1 +1,0 @@
-Campaign brief for the e2e-run-findings follow-up (skill-backed app profile, kit-composed design, harness for the new app class, second end-to-end run) with the existing FRs it changes listed as scope_frs, plus the findings report it builds on

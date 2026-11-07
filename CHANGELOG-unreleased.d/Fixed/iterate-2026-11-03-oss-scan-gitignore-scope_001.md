@@ -1,1 +1,0 @@
-The OSS security scan no longer adds `/.shipwright/` to your `.gitignore`, which silently kept new ADRs and plans out of commits. It now ignores only `/.shipwright/securityreports/`, and warns when an older scan already left the broad entry in place.
