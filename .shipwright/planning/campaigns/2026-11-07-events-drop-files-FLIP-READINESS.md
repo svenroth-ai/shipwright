@@ -11,14 +11,14 @@ the operator decides which listed follow-ups must be closed first (the "blocking
 | KC5 whole-log read at 300 files | 143 ms (budget 300) |
 | Per-write cost at 300 files (in-process `append_event`) | 103 ms (dedup scans every drop; plus about 6 git calls per CLI write) |
 | KC3 whole-system scenarios | 8 green (incl. two run ids in one shared worktree, stacked-base branch): wave of 4 units + retried unit + squash sequence + real `ensure_current`; old-writer / PR in flight at the flip / mid-run flip; mid-run rollback; quarantine of a torn drop; mixed versions through the real CLI; fault injection |
-| Rollback rehearsal on a COPY of the real history (1246 events: 400 legacy, rest in about 1000 drops) | emergency fold and full fold both lossless; integrity check accepts the fold commit; a pre-change reader sees every event once; full fold idempotent; the real log was hashed before and after |
+| Rollback rehearsal on a COPY of the real history (1246 events: 400 legacy, rest in 684 drops) | emergency fold and full fold both lossless; integrity check accepts the fold commit; a pre-change reader sees every event once; full fold idempotent; the real log was hashed before and after |
 
 CI runs the benchmark with generous bounds (10x); set `SHIPWRIGHT_BENCH_STRICT=1` for the real bounds and
 `SHIPWRIGHT_BENCH_OUT=<file>` to record the numbers. On the Linux runner the test writes the measured numbers into the GitHub job summary (`GITHUB_STEP_SUMMARY`); no workflow was changed. The 12-writer path is proven correct (KC4) but its timing is not benchmarked.
 
 ## Fixed in S8 because the rehearsals hit them
 
-- `fold_events.py --stage` passed every path to one `git add`: with about 1000 drops Windows failed with
+- `fold_events.py --stage` passed every path to one `git add`: with 684 drops (about 61,000 characters of paths, above the 32,767 Windows command-line limit) Windows failed with
   `WinError 206` (emergency fold unusable at scale). Now one `git add --pathspec-from-file=-` call (paths on stdin), atomic and without a length limit.
 - Consumer CI check (S7 follow-up): a PR open at the flip failed as soon as it merged main in (merge-base moved past the
   flip, the old legacy appends were blamed). Now judged per commit by the layout at the commit's first parent.
@@ -39,6 +39,7 @@ CI runs the benchmark with generous bounds (10x); set `SHIPWRIGHT_BENCH_STRICT=1
 
 ## Known gaps of the S8 changes
 
+- Layout CI check bypass (review finding, not fixed): a non-merge commit is excused when its parent is not on `drops` and it does not descend from the drops merge-base, without requiring that the branch was open at the flip. A side branch started from a pre-flip commit, appending to the legacy log and merged into a branch forked AFTER the flip, passes `check_layout_ci` although `git diff` shows the legacy log changed. Needs an unusual topology; fix before wiring the check into a workflow.
 - The layout CI check judges the PR's own non-merge commits; the content a MERGE commit itself adds to the legacy log is not judged (review finding, not fixed).
 - The rehearsal and the benchmark read the live tracked `shipwright_events.jsonl`; a future event with an unusual shape could break them without a code change (pin to a snapshot if that happens).
 - KC5's run-scoped read is measured with a reader spelled out in the test (own-key glob + raw-text prefiltered legacy log); the product has no dedicated run-scoped reader, production consumers use the whole-log read (143 ms). Ship a run-scoped reader if a hot path needs the 20 ms figure.
@@ -54,13 +55,13 @@ CI runs the benchmark with generous bounds (10x); set `SHIPWRIGHT_BENCH_STRICT=1
 Blocking-class candidates (recommend fixing before or right after S9a, none blocked a rehearsal):
 
 - S4: F11 committed-check false FAIL when `project_root` is a subdirectory of the git repo (`_events_committed.py` ~57-58).
-- S4: absorb can commit sibling runs' drops in a shared worktree (`events_stage.py` ~127).
+- S4: absorb can commit a sibling run's non-gate drops in a shared worktree (`events_stage.py` ~127). Hygiene only, NOT blocking: a sibling's gate event (`work_completed`) is never absorbed (see Known gaps).
 - S4: F7b seal is all-or-nothing on a torn file; `_monotonic_ts` alters `ts` after the dedup comparison; a `run` key in event extras is not
   stripped (`finalize_iterate` ~269-272); `amend_commit` is not idempotent under drops.
 - S6: fold can stop halfway on Windows when a reader holds a file open (PermissionError not caught, `events_fold.py` ~199-203, ~243, `events_fold_full.py` ~85).
 - S6: F11 integrity check passes (skips) when git fails; it does not check drop ownership (`own_keys` not passed); CLI compares the raw `--run-id`
   without `sanitize_key`; a CRLF-corrupt drop cannot be quarantined under autocrlf; a full fold can show events twice briefly.
-- S7: CI check blocks an emergency-fold rollback that the sentinel allows (`events_layout_ci.py` ~377-382 in the S7 numbering; the rollback shape is
+- S7: CI check blocks an emergency-fold rollback that the sentinel allows (`events_layout_ci.py`, the pre-S8 judging of an emergency-fold rollback that leaves unfoldable drops behind; the rollback shape is
   only accepted when the head declares legacy AND no drop is left); adopt `events_layout_key.py` ~49-56 turns an explicit null into legacy;
   the test-only env override can still split silently.
 
