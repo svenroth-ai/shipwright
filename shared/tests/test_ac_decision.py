@@ -77,7 +77,7 @@ def test_wording_covers_every_text_field_and_types_are_checked():
 def test_a_new_ac_with_one_owner_is_decided_alone_and_records_how():
     r = ad.decide([_add(new_text="A saved draft is kept for 30 days", request_open=True)], _CAT)
     assert r["status"] == "ok"
-    assert r["ac_decisions"] == [{"ac": "FR-01.03.new", "mode": "auto", "answer": "auto", "kind": "add", "answered_via": "none", "decided_by": "operator", "confirmed": True}]
+    assert r["ac_decisions"] == [{"ac": "FR-01.03.new", "mode": "auto", "answer": "auto", "kind": "add", "answered_via": "none", "decided_by": "code", "confirmed": False}]
 
 
 @pytest.mark.covers("FR-01.11/AC49")

@@ -17,7 +17,7 @@ _OLD = cat_of(BASE_SPEC)["acs"]["FR-01.03.AC05"]
 # --- decided_by / confirmed on every item ------------------------------------------------------------------------------
 
 @pytest.mark.covers("FR-01.11/AC49")
-def test_every_auto_item_is_decided_by_auto_and_unconfirmed_and_shows_a_created_requirement():
+def test_every_auto_assigned_item_is_decided_by_auto_and_unconfirmed_and_shows_a_created_requirement():
     cat = cat_of(BASE_SPEC)
     items = [{"kind": "add", "new_text": "A saved draft survives a restart"}, {"kind": "add", "new_text": "Orbits remain stable"},
              {"kind": "change", "ac": "FR-01.03.AC05", "old_text": _OLD, "new_text": "A draft is kept for a year"}, {"kind": "remove", "ac": "FR-01.04.AC01", "old_text": cat["acs"]["FR-01.04.AC01"]},
@@ -33,14 +33,16 @@ def test_every_auto_item_is_decided_by_auto_and_unconfirmed_and_shows_a_created_
 
 
 @pytest.mark.covers("FR-01.11/AC49")
-def test_every_ask_item_is_decided_by_the_operator_and_confirmed_including_the_ones_decided_alone_by_code():
+def test_an_answered_item_is_operator_confirmed_and_an_item_code_decided_alone_is_code_unconfirmed():
     cat = cat_of(BASE_SPEC)
     q = _decided([{"kind": "add", "new_text": "A saved draft survives a restart"}], cat, bind_id="b")["questions"][0]
     items = [{"kind": "add", "new_text": "A saved draft survives a restart"}, {"kind": "add", "owner_fr": "FR-01.03", "new_text": "A draft is kept"}, {"kind": "exempt"}]
     r = _decided(items, cat, bind_id="b", answers=[ans(q, "yes", "FR-01.03")])
     assert [d["mode"] for d in r["ac_decisions"]] == ["asked", "auto", "auto"]
-    assert [(d["decided_by"], d["confirmed"]) for d in r["ac_decisions"]] == [("operator", True)] * 3
-    assert all(i["decided_by"] == "operator" and i["confirmed"] is True for i in r["resolved_items"])
+    assert [(d["decided_by"], d["confirmed"]) for d in r["ac_decisions"]] == [("operator", True), ("code", False), ("code", False)]      # no question was shown for the last two
+    assert [(i["decided_by"], i["confirmed"]) for i in r["resolved_items"]] == [("operator", True), ("code", False), ("code", False)]
+    alone = _decided([items[1]], cat, mode="auto")                                                                                    # auto mode: a rule-decided item is code/false, not auto, and is not listed
+    assert (alone["ac_decisions"][0]["decided_by"], alone["ac_decisions"][0]["confirmed"]) == ("code", False) and "unconfirmed_assignments" not in alone
 
 
 @pytest.mark.covers("FR-01.11/AC49")
@@ -105,3 +107,39 @@ def test_a_campaign_unit_work_completed_event_always_has_source_iterate(tmp_path
     assert fin._record_event(root, "", _RUN, "campaign unit", extras)
     event = chk._work_event(root, _RUN)
     assert event["source"] == "iterate" and event["campaign"] == "ac-at-start" and event["sub_iterate_id"] == "Q1"          # the check is never skipped for a unit
+
+
+# --- the mode actually used is durable: a flag reaches F11 -------------------------------------------------------------------
+
+def _off_repo(tmp_path, monkeypatch, marker: bool):
+    from tools import ac_decision as cli
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv("SHIPWRIGHT_AC_MODE", raising=False)                                           # the FLAG is the only source: no variable, no config
+    root = _repo(tmp_path)
+    base = _git(root, "rev-parse", "HEAD")
+    (tmp_path / "ask.json").write_text(json.dumps({"items": [{"kind": "add", "new_text": "A saved draft survives a restart"}]}), encoding="utf-8")
+    if marker:
+        assert cli.main(["--project-root", str(root), "--from-json", str(tmp_path / "ask.json"), "--base-ref", "HEAD", "--run-id", _RUN, "--ac-mode", "off"]) == 0
+    head = _commit(root, {"shared/scripts/a.py": "x = 1"})                                              # git add -A also commits the marker the tool wrote
+    return root, base, head
+
+
+@pytest.mark.covers("FR-01.11/AC49")
+def test_an_off_flag_writes_a_marker_and_f11_skips_with_a_visible_note(tmp_path, monkeypatch):
+    root, base, head = _off_repo(tmp_path, monkeypatch, marker=True)
+    assert json.loads((root / ".shipwright/planning/iterate" / _RUN / "ac-mode.json").read_text(encoding="utf-8")) == {"mode": "off", "run_id": _RUN, "source": "flag"}
+    monkeypatch.setattr(chk, "_work_event", lambda r, rid: {"source": "iterate"})
+    monkeypatch.setattr(chk, "_branch_base_commit", lambda r, c: base)
+    res = chk.check_pre_build_ac_recorded(root, _RUN, head)
+    assert res.ok and "Q1 off: mode=off (source=flag)" in res.detail                                  # an observable diff and no record, yet skipped
+
+
+@pytest.mark.covers("FR-01.11/AC49")
+def test_off_without_a_marker_still_warns_on_an_observable_diff_with_no_record(tmp_path, monkeypatch):
+    root, base, head = _off_repo(tmp_path, monkeypatch, marker=False)
+    monkeypatch.setattr(chk, "_work_event", lambda r, rid: {"source": "iterate"})
+    monkeypatch.setattr(chk, "_branch_base_commit", lambda r, c: base)
+    res = chk.check_pre_build_ac_recorded(root, _RUN, head)
+    assert "no AC record exists" in res.detail and "Q1 off" not in res.detail
+    monkeypatch.setenv("SHIPWRIGHT_AC_MODE", "off")                                                      # the variable alone is still seen without a marker
+    assert "Q1 off: mode=off (source=env)" in chk.check_pre_build_ac_recorded(root, _RUN, head).detail

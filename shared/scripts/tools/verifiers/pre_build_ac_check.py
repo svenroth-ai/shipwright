@@ -32,7 +32,7 @@ if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
 from lib.ac_catalog import load_catalog  # noqa: E402
-from lib.ac_mode import resolve_mode  # noqa: E402
+from lib.ac_mode import read_marker, resolve_mode, source_label  # noqa: E402
 from lib.ac_record import verify  # noqa: E402
 from lib.ac_surface import merge_base  # noqa: E402
 
@@ -54,8 +54,12 @@ def _skip(why: str) -> CheckResult:
 def check_pre_build_ac_recorded(project_root: Path, run_id: str, commit_hash: str = "") -> CheckResult:
     root = Path(project_root)
     try:
-        if resolve_mode(root)[0] == "off":
-            return _skip("the pre-build AC decision is switched off (ac mode off)")
+        marker = read_marker(root, run_id, commit_hash)  # written by ac_decision.py: sees a --ac-mode flag, which the environment and config do not
+        if marker.get("mode") == "off":
+            return _skip(f"Q1 off: mode=off (source={marker.get('source') or 'flag'})")
+        mode, source = resolve_mode(root)
+        if mode == "off":
+            return _skip(f"Q1 off: mode=off (source={source_label(source)})")
         event = _work_event(root, run_id)
         if event is None:
             return _skip(f"no work_completed event for {run_id}")

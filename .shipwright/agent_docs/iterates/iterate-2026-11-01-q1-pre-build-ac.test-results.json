@@ -4,9 +4,9 @@
     "date": "2026-11-01",
     "unit": {
       "status": "passed",
-      "passed": 17222,
+      "passed": 17224,
       "skipped": 77,
-      "total": 17299
+      "total": 17301
     },
     "integration": {
       "status": "passed",
@@ -24,7 +24,7 @@
       "status": "not_run"
     },
     "degraded": [
-      "unit counts cover the four roots this round touches (shared/tests 13758, shared/scripts/tools/tests 1462, plugins/shipwright-iterate/tests 1359, integration-tests 643); the other plugin roots were not re-run (nothing under them changed)"
+      "unit counts cover the four roots this round touches (shared/tests 13760, shared/scripts/tools/tests 1462, plugins/shipwright-iterate/tests 1359, integration-tests 643); the other plugin roots were not re-run (nothing under them changed)"
     ],
     "test_completeness": {
       "status": "complete",
@@ -167,14 +167,14 @@
           "evidence": "shared/tests/test_ac_modes.py::test_the_mode_comes_from_the_flag_then_the_variable_then_the_project_then_the_default PASSED; shared/tests/test_ac_modes.py::test_auto_takes_the_model_pick_or_drafts_a_new_requirement_and_asks_nobody PASSED; shared/tests/test_ac_modes.py::test_auto_without_a_model_uses_the_best_match_by_shared_words_and_two_new_requirements_never_share_an_id PASSED; shared/tests/test_ac_modes.py::test_auto_passes_a_changed_or_removed_ac_through_and_lists_those_first PASSED; shared/tests/test_ac_modes.py::test_an_operator_answer_wins_over_auto_and_an_invalid_item_is_still_refused PASSED; shared/tests/test_ac_modes.py::test_off_does_nothing_and_a_run_without_auto_still_asks PASSED; shared/tests/test_ac_modes.py::test_the_tool_defaults_to_auto_when_unattended_prints_the_list_and_an_explicit_ask_still_holds PASSED; shared/tests/test_ac_modes.py::test_the_tool_off_mode_does_nothing_and_a_bad_value_is_an_error PASSED; shared/tests/test_ac_modes.py::test_an_auto_record_is_appended_and_f11_skips_when_the_decision_is_off PASSED"
         },
         {
-          "behavior": "[final] every record item carries decided_by and confirmed, written by code only (ask operator/true, auto auto/false, a created requirement shown)",
+          "behavior": "[final] every record item carries decided_by (operator | auto | code) and confirmed, written by code only; a created requirement is shown",
           "disposition": "tested",
-          "evidence": "shared/tests/test_ac_source_and_record.py::test_every_auto_item_is_decided_by_auto_and_unconfirmed_and_shows_a_created_requirement PASSED; shared/tests/test_ac_source_and_record.py::test_every_ask_item_is_decided_by_the_operator_and_confirmed_including_the_ones_decided_alone_by_code PASSED; shared/tests/test_ac_source_and_record.py::test_the_fields_are_in_the_frozen_record_and_a_model_cannot_set_them PASSED"
+          "evidence": "shared/tests/test_ac_source_and_record.py::test_every_auto_assigned_item_is_decided_by_auto_and_unconfirmed_and_shows_a_created_requirement PASSED; shared/tests/test_ac_source_and_record.py::test_an_answered_item_is_operator_confirmed_and_an_item_code_decided_alone_is_code_unconfirmed PASSED; shared/tests/test_ac_source_and_record.py::test_the_fields_are_in_the_frozen_record_and_a_model_cannot_set_them PASSED"
         },
         {
           "behavior": "[final] an unchanged AC is satisfied by a test that exists at the base, a restore is not; a skipped source says Q1 did not run; a campaign unit's event has source iterate",
           "disposition": "tested",
-          "evidence": "shared/tests/test_ac_source_and_record.py::test_an_unchanged_ac_named_only_by_an_untouched_test_at_the_base_does_not_warn PASSED; shared/tests/test_ac_source_and_record.py::test_an_unchanged_ac_named_nowhere_warns_and_a_restore_still_needs_a_test_in_the_diff PASSED; shared/tests/test_ac_source_and_record.py::test_a_skipped_source_says_that_the_check_did_not_run PASSED; shared/tests/test_ac_source_and_record.py::test_a_campaign_unit_work_completed_event_always_has_source_iterate PASSED"
+          "evidence": "shared/tests/test_ac_source_and_record.py::test_an_unchanged_ac_named_only_by_an_untouched_test_at_the_base_does_not_warn PASSED; shared/tests/test_ac_source_and_record.py::test_an_unchanged_ac_named_nowhere_warns_and_a_restore_still_needs_a_test_in_the_diff PASSED; shared/tests/test_ac_source_and_record.py::test_a_skipped_source_says_that_the_check_did_not_run PASSED; shared/tests/test_ac_source_and_record.py::test_an_off_flag_writes_a_marker_and_f11_skips_with_a_visible_note PASSED; shared/tests/test_ac_source_and_record.py::test_off_without_a_marker_still_warns_on_an_observable_diff_with_no_record PASSED; shared/tests/test_ac_source_and_record.py::test_a_campaign_unit_work_completed_event_always_has_source_iterate PASSED"
         }
       ],
       "counts": {

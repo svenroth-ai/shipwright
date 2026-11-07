@@ -17,11 +17,43 @@ import json
 import os
 from pathlib import Path
 
-__all__ = ["ENV", "MODES", "resolve_mode"]
+__all__ = ["ENV", "MODES", "marker_path", "read_marker", "resolve_mode", "source_label", "write_marker"]
 
 ENV = "SHIPWRIGHT_AC_MODE"
 MODES = ("ask", "auto", "off")
 CONFIG_FILE = "shipwright_iterate_config.json"
+
+
+def source_label(source: str) -> str:
+    """``flag`` | ``env`` | ``config`` | ``default`` for a source returned by :func:`resolve_mode`."""
+    return {"--ac-mode": "flag", ENV: "env", CONFIG_FILE: "config"}.get(source, "default")
+
+
+def marker_path(project_root: str | Path, run_id: str) -> Path:
+    return Path(project_root) / ".shipwright" / "planning" / "iterate" / run_id / "ac-mode.json"
+
+
+def write_marker(project_root: str | Path, run_id: str, mode: str, source: str) -> Path:
+    """Write the mode the tool actually used for this run beside the AC record (code writes it, committed with the run), so F11 sees a ``--ac-mode`` flag too."""
+    path = marker_path(project_root, run_id)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({"run_id": run_id, "mode": mode, "source": source_label(source)}, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
+    return path
+
+
+def read_marker(project_root: str | Path, run_id: str, commit: str = "") -> dict:
+    """The run's mode marker (read from ``commit`` when given, else the working tree); ``{}`` when absent or unreadable."""
+    rel = f".shipwright/planning/iterate/{run_id}/ac-mode.json"
+    try:
+        if commit:
+            from lib.ac_surface import read_blobs  # a sibling lib import, kept lazy so this module stays stdlib-only at import time
+            text = read_blobs(project_root, commit, [rel]).get(rel) or ""
+        else:
+            text = marker_path(project_root, run_id).read_text(encoding="utf-8")
+        data = json.loads(text)
+    except (OSError, ValueError, RuntimeError):
+        return {}
+    return data if isinstance(data, dict) and data.get("mode") in MODES else {}
 
 
 def _project_mode(project_root: str | Path) -> str:

@@ -184,4 +184,4 @@ def test_an_auto_record_is_appended_and_f11_skips_when_the_decision_is_off(tmp_p
     monkeypatch.setattr(chk, "_branch_base_commit", lambda rt, c: base)
     monkeypatch.setenv("SHIPWRIGHT_AC_MODE", "off")
     res = chk.check_pre_build_ac_recorded(root, "iterate-2026-11-02-auto", base)
-    assert res.ok and "switched off" in res.detail
+    assert res.ok and "Q1 off: mode=off (source=env)" in res.detail

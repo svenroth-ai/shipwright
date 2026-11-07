@@ -11,11 +11,13 @@
 
 ``ac.json`` is written with the Write tool (free text never goes through a shell command line)::
 
-    {"items": [{"kind": "add|change|remove|restore|exempt", "ac": "FR-01.03.AC05", "owner_fr": "FR-01.03",
+    {"items": [{"kind": "add|change|remove|restore|unchanged|exempt", "ac": "FR-01.03.AC05", "owner_fr": "FR-01.03",
                 "new_fr": {"id": "FR-01.30", "title": "one sentence"}, "old_text": "...", "new_text": "outcome wording",
                 "restores_ac": "FR-01.03.AC05",
                 "files": ["plugins/x/scripts/a.py"]}]}      # files: required for kind unchanged (observable files change, promise stays); for an add, the paths this
-                                                                # work will change (before the build the diff is empty) - they only feed the question's "Affects:" line
+                                                                # work will change (before the build the diff is empty) - they only feed the question's "Part:" line
+
+With ``--run-id`` the mode actually used (even ``off``) is written to ``.shipwright/planning/iterate/<run_id>/ac-mode.json`` for F11 - commit it with the run.
 
 ``--base-ref`` is required: it is resolved to merge-base(base-ref, HEAD) and the catalog is read there (git), never from
 the working tree. ``--bind-id`` is the run's STABLE id (for a campaign unit ``{campaign_slug}--{unit_id}``, never an
@@ -31,7 +33,7 @@ takes its own pick (the model's requirement, else the best match, else a drafted
 Unattended runs (both campaign loop variables, or a per-unit campaign worktree, or ``--autonomous``) refuse inline
 answers; answers come from the operator channel: ``answer`` refuses to run unattended unless
 ``SHIPWRIGHT_AC_OPERATOR_CHANNEL`` is set (the orchestrator shell needs it), binds the answer to the sha256 of the
-stable id + item index + question text, and signs it with a per-user key (``~/.shipwright/ac_operator.key``).
+stable id + item index + kind + original promise + options (not the question's wording), and signs it with a per-user key (``~/.shipwright/ac_operator.key``).
 ``answered_via`` and ``unattended`` are self-reported; the signature is a guard against accident and casual forgery,
 not authentication: a determined agent with shell access can read the key. Re-run a held unit: ``loop_claim.py mark
 --status pending --reason ... --operator ...``, then run the unit again with ``--answers`` and the same ``--bind-id``.
@@ -54,7 +56,7 @@ if str(_SCRIPTS_ROOT) not in sys.path:
 from lib.ac_apply import ANSWERS  # noqa: E402
 from lib.ac_catalog import load_catalog  # noqa: E402
 from lib.ac_decision import decide  # noqa: E402
-from lib.ac_mode import MODES, resolve_mode  # noqa: E402
+from lib.ac_mode import MODES, resolve_mode, write_marker  # noqa: E402
 from lib.ac_hold import AC_HOLD_REASON, OPERATOR_ENV, is_unattended, load_key, operator_channel_open, sign  # noqa: E402
 from lib.ac_record import verify  # noqa: E402
 from lib.ac_suggest import make_suggester  # noqa: E402
@@ -180,6 +182,11 @@ def run_decide(argv: list[str]) -> int:
         raise _Fail("--sub-iterate-id is required in an unattended run (the escalation names the unit it holds)")
     if (unattended or args.answers) and not args.run_id:
         raise _Fail("--run-id is required in an unattended run or with --answers (answers are bound to the run)")
+    if args.run_id:  # the mode actually used is written for F11, whatever set it (flag, variable, config); off needs it, because off writes no record
+        try:
+            write_marker(args.project_root, args.run_id, mode, mode_source)
+        except OSError as exc:
+            raise _Fail(f"cannot write the mode marker for {args.run_id}: {exc}") from exc
     if mode == "off":
         print(json.dumps({"status": "skipped", "unattended": unattended, "ac_mode": {"mode": mode, "source": mode_source},
                           "note": "the pre-build AC decision is switched off (ac mode off): nothing is asked, recorded or checked; do not pass --ac-decision to write_plan_stub.py"}, indent=2))

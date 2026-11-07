@@ -248,9 +248,9 @@ def decide(items: object, catalog: dict, unattended: bool = False, surface: dict
             decisions.append({**_decision(it, "asked", _norm(ans.get("choice")).lower(), via), **{k: v for k, v in ans.items() if k.startswith("suggestion_")}})
     if errors:
         return {**base, "status": "invalid", "errors": errors}
-    who = ("auto", False) if mode == "auto" else ("operator", True)  # code writes who decided, never the declaration or a model
-    for i, d in enumerate(decisions):
-        d["decided_by"], d["confirmed"] = ("operator", True) if d.get("mode") == "asked" else who
+    for i, d in enumerate(decisions):  # code writes who decided, never the declaration or a model: operator (asked, answered), auto (Shipwright assigned it), code (decided alone by rule, no question shown)
+        d["decided_by"] = {"asked": "operator", _AUTO: "auto"}.get(d.get("mode"), "code")
+        d["confirmed"] = d["decided_by"] == "operator"
         resolved[i] = {**resolved[i], "decided_by": d["decided_by"], "confirmed": d["confirmed"]}
     out = {**base, "resolved_items": resolved, "ac_decisions": decisions, "counts": count_decisions(decisions), **({"unconfirmed_assignments": unconfirmed_lines(decisions)} if any(d.get("unconfirmed") for d in decisions) else {})}
     if explain:
@@ -261,7 +261,7 @@ def decide(items: object, catalog: dict, unattended: bool = False, surface: dict
 def frozen_fields(it: dict) -> dict:
     keys = ("kind", "ac", "restores_ac", "owner_fr", "old_text", "new_text")
     out = {k: _norm(it.get(k)) for k in keys if _norm(it.get(k))}
-    if it.get("decided_by") in ("operator", "auto") and isinstance(it.get("confirmed"), bool):  # written by decide(), never by the declaration
+    if it.get("decided_by") in ("operator", "auto", "code") and isinstance(it.get("confirmed"), bool):  # written by decide(), never by the declaration
         out.update({"decided_by": it["decided_by"], "confirmed": it["confirmed"]})
     if isinstance(it.get("files"), list):
         out["files"] = sorted(str(f).strip() for f in it["files"] if str(f).strip())
