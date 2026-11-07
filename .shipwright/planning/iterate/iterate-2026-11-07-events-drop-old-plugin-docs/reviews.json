@@ -1,0 +1,109 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-07-events-drop-old-plugin-docs",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-07T18:34:44.981772+00:00",
+      "disposition": null,
+      "recorded_by": "claude-main",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-07T18:34:45.093697+00:00",
+      "disposition": "docs-only diff of 5 lines across 4 markdown files, no risk flags; claims verified by an experiment with v0.34.0 and a grep (no events_layout or shipwright_events.d reference in the v0.34.0 tree)",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "diff-below-threshold"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-07T18:34:45.093697+00:00",
+      "disposition": "docs-only diff of 5 lines across 4 markdown files, no risk flags; claims verified by an experiment with v0.34.0 and a grep (no events_layout or shipwright_events.d reference in the v0.34.0 tree)",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "diff-below-threshold"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-07T18:34:45.093697+00:00",
+      "disposition": "docs-only diff of 5 lines across 4 markdown files, no risk flags; claims verified by an experiment with v0.34.0 and a grep (no events_layout or shipwright_events.d reference in the v0.34.0 tree)",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "diff-below-threshold"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-07T18:34:45.093697+00:00",
+      "disposition": "docs-only diff of 5 lines across 4 markdown files, no risk flags; claims verified by an experiment with v0.34.0 and a grep (no events_layout or shipwright_events.d reference in the v0.34.0 tree)",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "diff-below-threshold"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-07T18:34:45.093697+00:00",
+      "disposition": "docs-only diff of 5 lines across 4 markdown files, no risk flags; claims verified by an experiment with v0.34.0 and a grep (no events_layout or shipwright_events.d reference in the v0.34.0 tree)",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "diff-below-threshold"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-07T18:34:45.093697+00:00",
+      "disposition": "docs-only diff of 5 lines across 4 markdown files, no risk flags; claims verified by an experiment with v0.34.0 and a grep (no events_layout or shipwright_events.d reference in the v0.34.0 tree)",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "diff-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-07T18:34:45.093697+00:00",
+      "disposition": "docs-only diff of 5 lines across 4 markdown files, no risk flags; claims verified by an experiment with v0.34.0 and a grep (no events_layout or shipwright_events.d reference in the v0.34.0 tree)",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "diff-below-threshold"
+    }
+  }
+}

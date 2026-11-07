@@ -1,0 +1,48 @@
+{
+  "run_id": "iterate-2026-11-07-events-drop-old-plugin-docs",
+  "date": "2026-11-07T18:45:51.817579Z",
+  "event_at": "2026-11-07T13:55:56.491089+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "keyword",
+  "branch": "iterate/events-drop-old-plugin-docs",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-11-07-events-drop-old-plugin-docs",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "The three planning documents no longer claim an old plugin fails loudly on a drops repo; they say it appends silently to the legacy log",
+        "disposition": "tested",
+        "evidence": "Experiment with plugin v0.34.0 on a repo with events_layout=drops: record_event.py exit 0, one line appended to shipwright_events.jsonl; grep of the v0.34.0 tree finds no events_layout or shipwright_events.d reference (reader cannot see drop files)"
+      },
+      {
+        "behavior": "docs/hooks-and-pipeline.md states what a pre-campaign plugin does on a drops repo and that every machine must be updated before the flip",
+        "disposition": "tested",
+        "evidence": "docs guards (test_events_reference_guard and the shared/tests docs checks) PASSED in the full F0 run, GREEN 18 units"
+      }
+    ],
+    "counts": {
+      "testable": 2,
+      "tested": 2,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 2,
+      "covered_acs": 2
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "justification": "Documentation-only change (three planning documents and one paragraph in docs/hooks-and-pipeline.md); no UI, API route, message contract or runtime code is touched."
+  },
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}

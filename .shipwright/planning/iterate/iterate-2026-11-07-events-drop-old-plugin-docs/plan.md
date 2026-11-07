@@ -1,0 +1,1 @@
+Goal: Correct the false claim that an old plugin fails loudly on a drops repo | Reason: A test with v0.34.0 showed it silently writes to the legacy log; the flip checklist must say update first | Reference: events-drop-files flip readiness

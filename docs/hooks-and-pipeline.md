@@ -1135,6 +1135,8 @@ rollback commit; a head that declares `legacy` with no `*.jsonl` left in `shipwr
 `git check-ignore --no-index` on a representative FILE path (`shipwright_events.d/x.jsonl`, never the folder) says a
 drops folder (or, in such a repo, the tracked legacy log) is ignored; a legacy-layout repo is never touched.
 
+**A plugin from before this campaign on a drops repo (tested with v0.34.0).** It is NOT fail-closed: it knows neither the layout key nor the sentinel, so `record_event.py` appends silently to the legacy `shipwright_events.jsonl` next to `shipwright_events.d/` (no error, exit 0), and its reader does not read the drop files. Nothing on that machine stops or reports it; only the optional `check_events_layout_ci.py` flags the resulting legacy write. The sentinel above protects only plugins of this generation. So before `events_layout: drops` is set, every machine that works on the repo must run the updated plugin (the flip announcement says so).
+
 ### Pipeline Constants
 
 **File:** `plugins/shipwright-run/scripts/lib/orchestrator_pkg/constants.py`
