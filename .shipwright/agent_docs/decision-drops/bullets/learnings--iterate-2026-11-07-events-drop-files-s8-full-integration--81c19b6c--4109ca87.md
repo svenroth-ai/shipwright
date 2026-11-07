@@ -1,1 +1,0 @@
-- (2026-11-07) iterate — never pass hundreds of paths to one git command on Windows (WinError 206 at ~1000 drops): use --pathspec-from-file=- with NUL on stdin. [→ iterate-2026-11-07-events-drop-files-s8-full-integration]

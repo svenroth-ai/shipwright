@@ -1,1 +1,0 @@
-F0.5 accepts --surface native for Expo / React Native projects: passing Jest results from a provably native package replace the Playwright report; web files, web packages and unreadable manifests are still refused.

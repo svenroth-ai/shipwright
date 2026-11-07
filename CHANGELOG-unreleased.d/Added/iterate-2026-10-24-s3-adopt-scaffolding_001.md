@@ -1,1 +1,0 @@
-feat(adopt): adopt matches custom stack profiles (project, user, bundled), resolves the effective profile before writing anything, picks CI and CodeQL templates by provenance, and the project config writers reject unknown profile names; snapshot schema 1.1 adds profile.source and profile.warnings

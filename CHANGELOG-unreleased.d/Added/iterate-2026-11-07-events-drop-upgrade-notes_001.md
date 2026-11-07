@@ -1,1 +1,0 @@
-The release skill now checks `docs/migrations` for changed upgrade notes before it aggregates the changelog and turns an action-needed page into a `Changed` entry, so a release states what existing projects must do.

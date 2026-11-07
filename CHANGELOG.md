@@ -5,6 +5,166 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.35.0] - 2026-11-07
+
+### Added
+
+- `deploy_target: none` now skips the Deploy phase and the Jelastic credential validation.
+- feat(run): brief package library (layout validator and CRLF-stable manifest hash) and a dry-mode harness with a pinned report schema for brief-driven runs
+- Driven single-session runs check each phase's gate before marking it done: a failed gate is retried a bounded number of times, then the run asks a human or stops, and a human can override with a recorded reason via `single-session-apply --override-reason`.
+- Campaign brief for real phase gates, a brief-package test harness and an unattended run mode (planning document)
+- Optional review_status field in the phase-runner result contract so the master sees a skipped or deferred review cascade.
+- feat(profiles): stack-profile resolver (project > user > bundled), resolve_profile.py list/resolve/validate CLI, stack_profile schema, committable .shipwright/profiles/
+- feat(adopt): adopt matches custom stack profiles (project, user, bundled), resolves the effective profile before writing anything, picks CI and CodeQL templates by provenance, and the project config writers reject unknown profile names; snapshot schema 1.1 adds profile.source and profile.warnings
+- Custom stack profiles end to end: project interview offers them, docs/stack-profiles.md, a python guard against hand-built profile paths and swallowed resolver errors, and an integration test from a git worktree (campaign stack-profile-resolver S5)
+- Campaign brief for user- and project-level stack profiles that survive Shipwright updates (resolver, schema, fail-loud loaders).
+- Stack profile schema declares optional ux_shape and ui_host string keys for brief-driven runs; existing profiles are unaffected
+- feat(run): /shipwright-run --brief accepts a Brief package directory; its hash and approval are verified before write-config and on resume, brief_dir is stored in run_config, and Project brief mode builds the project artifacts from brief.md with content checks in the project gate
+- feat(run): a stack profile named in the wizard brief (profile field or the Stack profile item) wins over inference, is checked by the profile resolver and reaches the run config; an unusable name is reported loudly, never replaced. The fixture-approval refusal now says only the operator may set the switch
+- feat(design): Design takes a Brief package: mockups stay byte-identical in uploads/, screens/ copies carry Linked FRs resolved from Project-minted ids, and screen-map.json answers the upload-screen-mapping question
+- feat(profiles): bundled chat-first-json stack profile for chat-first apps (served pane, local JSON, pytest + Playwright, no deploy)
+- Campaign brief revision 4: a real end-to-end run through the WebUI with a screenshot report is planned for campaign B (planning document)
+- feat(design): Design takes chat-first Brief packages: chat-map.json is checked against the screen-map, a flow mockup is generated per golden path, chat chips may not be navigation, and a complete social engagement desk fixture ships for the real end-to-end run
+- feat(test): blocking screenshot check compares built screens with the approved mockups in the Test phase for Brief-package projects (B3c)
+- Gate catalog: autonomy unattended with reviewed per-gate answers (three design approvals), denylist and validator rules, test and changelog gates, and unattended accepted wherever autonomous is
+- Operator-started end-to-end spec project (integration-tests/e2e-webui) that drives the WebUI with a real agent from the social engagement Brief package, with an answer-key checklist and a screenshot report; CI checks the package and the project's structure
+- Campaign briefs for the deterministic-first plugin programme, its changelog pilot, and the baseline-protection campaign that holds unplanned changes to existing requirements for operator approval
+- Design: a complete token-only Untitled UI kit (components, layouts, three token sets, token contract, UX rules with sources, generated examples) with tests for tokens, WCAG contrast, solid colours and example freshness
+- feat(compliance): baseline touched-set library and a replay over the last 100 merged PRs, with the REPLAY report for operator stop 1 (measurement only, nothing gates)
+- chore(compliance): BL0b measurement of baseline protection on independent blind labels (HEAD context run, path baseline, probes, rule evaluation); nothing gates
+- Design: take the brand from a Design System on claude.ai (Step 2.5 and the Step 3 brand question); the colours are mapped to the Untitled UI kit contract, checked for readability and corrected where they fail
+- Design: check_brand_tokens.py checks a brand override against the kit's contrast, solid-hex and font-size rules and suggests the nearest passing colour for each weak pair
+- feat(profiles): bundled stack profile skill-companion-app for skill-backed apps (skill/plugin front door, served HTML board plus Python backend, JSON data folder, no deploy); no schema keys added until a reader exists
+- Campaign brief for the e2e-run-findings follow-up (skill-backed app profile, kit-composed design, harness for the new app class, second end-to-end run) with the existing FRs it changes listed as scope_frs, plus the findings report it builds on
+- Design kit: post with nested comment tree (`thread`, `comment-tree`) and master-detail layout with a list pane that becomes a picker on narrow screens.
+- Design kit: count slot on tabs and segmented items, highlighted draft callout with copy button state, and a mono uppercase eyebrow label.
+- E2E fixture variant social-engagement-real: a master-detail reply board (svenroth.ai tokens and fonts, platform-like threads, Copy reply, status filter with skipped and expired, sources instead of a keywords tab) whose hits come from an exchangeable fetch_items() adapter replaying recorded Syften and Apify answers; selected with SHIPWRIGHT_E2E_FIXTURE, with variant forms of the checks S02, S04 and S05, a feedback check H14 and an opt-in soft trigger check S09
+- Iterate: a PreToolUse Bash guard denies a bare python - with no heredoc, pipe or redirect (and an unterminated heredoc feeding an interpreter); the sub-iterate-runner prompt requires uv run python.
+- feat(project): Brief-package intake runs the Project phase's content check and refuses a thin brief up front; visual guidelines lacking the design kit's tokens or contrast produce an advisory warning (E4, F6)
+- End-to-end run harness and fixture for the skill-backed board app: companion API, board and project-file checks replace the chat commands, soft items S01, S02 and S04-S08 become hard checks, a screen left as the mockup copy is detected, and a stopped run can resume (E6)
+- Campaign brief for keeping the requirements baseline a complete WHAT/WHY package, with the two AI-made measurement reports it rests on
+- feat(iterate): runtime-touching iterates declare affected_acs (or catalog_gap) on their work_completed event; a presence-only F11 check and a replay tool measure it
+- feat(iterate): a declared catalog gap must be closed by an acceptance criterion or the one allowed reason, shown as a warning when open; 11 missing acceptance criteria added to the catalog
+- feat(iterate): feature/change/bug iterates leave a plan stub named as plan_path on their event, and spec_chain_cli answers which runs, plans and PRs shaped an acceptance criterion
+- e2e harness: third fixture social-engagement-baseline with its own checklist (B01-B46 from the brief), local fake Syften/Apify/HN servers, and a screen tour that reports states it could not reach
+- F0.5 accepts --surface native for Expo / React Native projects: passing Jest results from a provably native package replace the Playwright report; web files, web packages and unreadable manifests are still refused.
+- Release manifest sync supports `package_lock_json`: a declared package-lock.json gets its top-level `version` and `packages[""].version` written together at release, preserving line endings and indentation, and `--verify-commit` checks both.
+- Dormant per-run event-log layout (shipwright_events.d), a bare-origin merge-tree harness and a ratcheted CI replay gate for the events-drop-files campaign; default behaviour is unchanged
+- CI gate Coverage data set (gate) fails when a test job's coverage data did not reach the gather job
+- feat(events): one assembling event reader with per-file status, archive and drop files read as one ordered log, newest-by-timestamp position readers (events-drop-files S2)
+- feat(events): every event-log reader and path classifier understands the per-run event folders, with a reference guard and a real ensure_current test (events-drop-files S3)
+- feat(events): one event writer, F6 staging, absorb and seal for the per-run drops layout (dormant behind the layout flag)
+- Architecture and convention bullets can be written as one small file per run (`write_doc_bullet.py`, `decision-drops/bullets/`) instead of editing the shared sections, so parallel PRs no longer conflict on `conventions.md` / `architecture.md`. `/shipwright-changelog` folds them (before the ADRs); budget, shape, architecture and conventions-reviewed checks, the iterate context load (20 newest plus a pending count) and the prompt-injection scan read them. Old plugins and old WebUI versions never see a bullet as an ADR. RELEASE NOTE: this goes live without the events layout flag, so the bullet writer must not reach consumers before the WebUI release that reads pending bullets (S5b).
+- Event drop files: fold and emergency fold into an archive, quarantine of corrupt drops, a merge-base integrity check, and a race-safe assembling reader (layout still dormant)
+- Event layout sentinel: plugins refuse to write events or produce release evidence for an unknown layout, a merge-base CI check stops legacy writes after the flip, and init/adopt write events_layout explicitly (layout still dormant)
+- test(events): whole-system integration scenarios, 300-file benchmark and rollback rehearsals on a copy of the real history; fold --stage in one call and per-commit layout CI check (S8)
+- The release skill now checks `docs/migrations` for changed upgrade notes before it aggregates the changelog and turns an action-needed page into a `Changed` entry, so a release states what existing projects must do.
+
+### Changed
+
+- Planning: campaign brief for ac-at-start (criterion before the build) and an outcome note on the baseline-package brief
+- Requirement catalog: the dangerous-command guard criterion in FR-01.05 now states only the promise (a forced overwrite of the main branch is stopped, everything else runs) and leaves the detection detail to the code
+- Autonomous runs settle five more run-23 questions by rule instead of asking: plan against brief, the brief against itself, a brief line the approved pictures lack (also in the Test phase), and the Changelog wrap-up defaults (`record_autonomous_choice.py`); the Design and Plan boundary gates no longer flag the pipeline's own CHANGELOG.md line and event-log lines.
+- Build: a test of delete, cleanup or reset code now runs only in a temp copy, never on `.`, the project root or a real project folder (run 23 lost `backend/` and part of `.git` to a red-phase test); the code reviewer rejects such a test.
+- `/shipwright-build` Step 6c external code review now runs by default after the internal spec/code/doubt cascade (opt out with `external_code_review.enabled: false`), matching `/shipwright-iterate`; the diff-exposure warning and docs are updated.
+- The GitHub triage import refreshes at the next session start when a newer security scan exists on main, instead of waiting for the 6-hour throttle.
+- refactor(run,shared): extract the gate-catalog renderer, late-phase validators, phase-task transitions and design gates into sibling modules with re-exports; behaviour unchanged, bloat baseline lowered
+- phase-runner can now spawn the review subagents (reviewers only; fan-out stays the operator's call).
+- feat(profiles): dev_server, validate_env, test_runner, performance_check and the design setup now use the stack-profile resolver (project > user > bundled); unknown, corrupt or too-new profiles are errors (exit 2/3) instead of silent fallbacks, results carry profile_source, and --profile-path pointing at a bundled file now resolves by name. CUTOVER: a profile name that matched nothing used to fall back quietly and now stops the phase.
+- Skill prose resolves stack profiles through resolve_profile.py or by profile name instead of a hand-built bundled path, with a guard test against regressions (campaign stack-profile-resolver S4)
+- Driven pipeline runs now check every phase's work before moving on: single-session-apply runs the phase validators and canon checks by default, a broken artifact stops the run (guided asks you, autonomous fails the phase, recoverable), and a plugin install missing its shared checks fails closed with a fix hint
+- Driven runs: a forced phase skip now requires --reason (recorded on the task and as a phase_skipped event), and every gated phase completion leaves a durable gate record on the task
+- The Python stack-profile guard now also flags `contextlib.suppress(Profile*)`, treats helpers around the pinned resolver wrappers as wrappers, accepts negative exit codes as failures and reads tracked files with a BOM; the end-to-end test scrubs every `GIT_*` variable.
+- The Stop-guard block message now says the iterate is still open and that waiting on a background task is allowed, and prints a runnable record_hard_blocker path instead of a literal {shared_root}.
+- Design docs and the visual guidelines template now compose untitled-ui screens from the kit and list the kit tokens instead of the old snippet variable blocks
+- Spec: FR-01.04 gains AC13, the look and feel can come from the operator's Design System on claude.ai
+- Design in Brief-package mode recomposes the placed screens from the Untitled UI kit and the package tokens instead of keeping the mockups, and no longer builds a chat layout for skill-backed apps; the run phase's screenshot gate names the approved design screens
+- Build: a failed section-attribution check is repaired by re-recording the identical declaration plus the missing --extra entries, without asking whether the section is closed.
+- E2E harness: resume is tied to the exact plugin code and package files, refuses a run whose earlier processes are alive, and records the pipeline start explicitly
+- E2E harness checks: S05 scans the whole project incl. scheme-less URLs, S02 counts badges per tab panel, S08 fails when no gate was answered
+- Test plugin screenshot messages say 'approved design screens' instead of 'approved mockup'
+- Requirement catalog: twelve acceptance criteria that mixed in model, vendor or format detail now state only the promise, and FR-01.01 to FR-01.13 are named for the capability instead of the slash command
+- test(e2e): S05 of social-engagement-real proves the build copied the shipped recorded answers byte for byte, with no extra file or item
+- test(e2e): social-engagement-real ships its recorded answers, the exact summary rule and the reply-draft template inside the package, so builds and mockups agree
+- test(e2e): social-engagement-real mockups carry sample text as long as the recorded answers, so the screenshot check measures layout and not wording
+- Plan sections copy design-defined detail (breakpoints, per-state content) from the approved screen and declare requirement-driven extras as a Design extension
+- A stack profile can now declare `traceability.test_roots`, the folders that hold its tests. The `vite-hono` profile declares its nested layout, so a new vite-hono project has its tests linked without anyone writing `traceability.test_roots` by hand; a setting in `shipwright_compliance_config.json` still replaces the profile's list. Existing vite-hono projects see a one-time larger set of test links on their next regeneration. Reported in #972.
+- feat(plan): in autonomous runs the plan resolves screen-vs-section contradictions by rule (screen wins, explicit brief override wins over screen), checks sections against the approved screens, and Build accepts a recorded Design decision instead of asking
+- feat(run): autonomous runs decide the screenshot viewport per screen, fix CSS and seed-data deviations in the Test phase, record brief capabilities marked `UI: none` as non-UI and treat a size target as soft, instead of asking
+- feat(run): autonomous runs no longer ask six questions a rule can answer: links the approved mockups carry stay in the screens (taken from the package only after it re-verifies against its recorded hash), a brief requirement no mockup shows is built from the brief, the plan boundary check counts only changes since the plan session started (in every mode), declared dev tooling is installed with an ADR (JavaScript installs with --ignore-scripts, and only while the manifest is unchanged since the section started), an explicit brief value wins over plan text and screens, and a hard layout requirement wins over a visible extra (recorded with measurements)
+- CI: the shared tests and the plugin/integration/replay tests now run as two parallel jobs; the required check Python (lint + test) gathers their results and fails closed if either did not succeed
+- Windows Tests workflow now runs on pull requests only when they touch shared/, scripts/, root environment files or the workflow itself; every push to main still runs it.
+- Existing projects: update the Shipwright WebUI to v0.31.0 or newer first (it is the minimum version that shows the new per-run event files and documentation-update files), then update the plugins. Nothing else is required to upgrade: the event layout stays `legacy` until you switch a project yourself, and you should do that only when everyone on it has the new plugins. The two CI check scripts for the new layout are optional and are not part of any CI template. See docs/migrations/events-drop-files.md.
+
+### Removed
+
+- Adopt no longer scaffolds the Claude-Code-Review workflows (`claude-review.yml` + `claude-review-run.yml`, Step E.15/E.15a) and AUTOMERGE_SETUP.md no longer lists "Claude Code Review" as a Required Check: they were active on every PR but needed an `ANTHROPIC_API_KEY` secret most adopted repos lack, and the independent review already runs inside each iterate. Already-adopted repos are untouched. To remove it there: first take "Claude Code Review" out of the branch-protection required checks, then delete the two workflow files (the other order leaves every PR waiting on a check that never reports).
+
+### Fixed
+
+- The autonomous-iterate Stop guard no longer blocks a session whose pull request is already merged, which had caused a stream of Stop hook errors.
+- Automatic Layers promotion no longer rewrites the advisory adopted spec, so it stops re-opening a promotion pull request that the catalog guards reject.
+- Preview, test and dev-server steps use the project's own stack profile instead of assuming supabase-nextjs; profiles without a web dev server report a clear message instead of crashing.
+- Open critical/high GitHub security findings now appear in the Triage as one card each and are raised again if they return, instead of hiding behind one closed per-repo item.
+- The autonomous-iterate Stop guard no longer raises Stop hook errors while a reviewer subagent or a background command it launched is still running.
+- `/shipwright-changelog` now records the release `phase_completed` event on the release branch (committed and pushed before the merge) instead of leaving it uncommitted in the main checkout.
+- Triage no longer raises a failing-check card for a PR check whose cancelled runs were superseded by a later run (Dependabot PRs #888/#889).
+- The iterate worktree gate now arms for projects onboarded with /shipwright-adopt, which keep status in_progress and an empty iterate_history, so an autonomous iterate there can no longer edit the main checkout.
+- fix(run): phase validators check design screens where the design phase writes them, use the same split list as the split loop, judge the plan task's own split, accept `skip_reason` for every test layer, and report canon checks that could not run (missing verifiers or run id) instead of passing silently
+- Build Step 6 records a not_run pass with reason code delegated-to-orchestrator when a reviewer spawn fails instead of skipping silently.
+- Playwright and Browser Verify find npx on Windows, and the chat-first profile is checked at 127.0.0.1 with --url passed explicitly
+- phase_gate.retry_state binds `state` before its retry loop, clearing CodeQL alert py/uninitialized-local-variable (no behavior change)
+- Driven runs: the build gate now judges a non-final split's own (archived) sections instead of refusing every correct non-final build, and an archived-split finding is not retried pointlessly
+- Driven runs: a guided phase past its gate-retry cap is no longer re-dispatched; single-session-next answers ask_human until a person overrides, recovers or fails it
+- Driven runs: a phase task without a stored version is treated as version 1 everywhere, so it is no longer refused stale_version, and the override refusal is recognised by exception type instead of class name
+- Driven runs: a re-dispatched phase now gets a new version, so a late result from the earlier dispatch is refused (stale_version) instead of completing the phase or re-freezing splits
+- Test evidence now joins parametrized tests whose parameter values contain brackets, so such a test no longer reads as never run in the traceability manifest.
+- The layer-promotion sweep now skips requirements in the advisory adopted spec before judging their evidence, so a bound-but-unexecuted test there no longer raises a permanent "escalated, operator decision needed" warning at every worktree setup
+- `/shipwright-project` now writes `shipwright_project_config.json` into the project folder instead of `.shipwright/`, and stores `planning_dir` as `.shipwright/planning`, so the phase verifier and the other readers find it. A stale `.shipwright/shipwright_project_config.json` from an earlier scaffold is unread and can be deleted.
+- A driven run that stopped at 'completion blocked' (deploy finished while other phases were still open) now finishes once the last open phase is skipped with `recover-phase-task --force-status skipped --reason`: the skip completes the run in the same write, `single-session-next` answers `complete`, and the loop status follows; before, the run stayed blocked forever
+- The autonomous-iterate Stop-guard now stays quiet while an agent it resumed with SendMessage is still working, instead of blocking the Stop three times.
+- Phase-quality check Q2 no longer reports the sections of an already-built, archived split as missing (#930).
+- Compliance audit F4 no longer counts a following section or design-decision block as part of a short ADR, so it stops flagging false ADR bloat (#931).
+- The release skill's changelog-event step has its own block for a release made directly on main that commits the event but never pushes main without its tag, and a re-run after a lost push now pushes instead of stopping at 'nothing to commit'; the command blocks are executed by tests.
+- The compliance refresh after a security scan, and the orchestrator's compliance update, now find the compliance plugin when Shipwright is installed from the plugin cache instead of reporting its script as missing (#932).
+- Changelog: the proposed version now comes from the tested bump rule, so a breaking change before 1.0 raises the second number instead of jumping to 1.0.0 (FR-01.09 AC04).
+- Delivering a pull request with `deliver_pr.py` no longer crashes in a project that does not have PyYAML installed.
+- The iterate event now records the skipped-test count, so `passed + skipped` matches `total` and the consumer's event-count check stays green.
+- fix(design): the boundary gate no longer stops the Design phase because the project phase left its output uncommitted; it judges only changes made since the session started
+- The design boundary check keeps what it recorded at session start when commits land during the same run, so changes made earlier in the session are still reported instead of being absorbed.
+- The design boundary check fails strict instead of passing silently when the project root is a subdirectory of the git repository, and ignores a baseline recorded by another run.
+- Changed-file paths containing a backslash are reported as they are, and the brief integration test now runs the boundary check too.
+- fix(test): the screenshot check captures a board served with its own Content-Security-Policy and can compare a board tab or pane state (route plus steps); design output is called approved design screens
+- E2E harness: S05 ignores templated loopback and placeholder URLs, S06 accepts total = passed+failed, the report prints the preview origin, and an agent auth failure stops the run at once.
+- Plan: every section Design Reference now carries an Initial state line copied from the mockup, so the build no longer meets a section/mockup contradiction on the default tab.
+- The grill-trace gate no longer passes a project that skipped the interview: with no transcript and no traces it fails once requirements exist, traces need a transcript or a signed-off brief-mode pointer, and every interview requirement must have a trace.
+- `/shipwright-run --brief` now refuses an unreadable or unsupported brief file (exit 3, `brief_unreadable`) instead of silently starting the old interview.
+- fix(e2e): the harness no longer reloads the task page after the modal launched the task, hands the start command over again when it is lost, and fails fast with state and terminal text
+- e2e-webui harness: S02 no longer fails on the hidden thread-picker option and reports what it clicked; S05 ignores the app's own e2e/ suite and reserved test domains; SHIPWRIGHT_E2E_FIXTURE is read from the env file and shown in the report; the launch button is retried after a reload (not proven by a run)
+- Screenshot-check reference no longer claims it ignores wording; it records that longer real text can push a screen over tolerance and who may override
+- fix(e2e): the harness reads the modal's launch command inside a route, so the hand-over can be repeated after a navigation
+- The comments and docs no longer claim that GitHub's server-side merge applies the `merge=union` driver. It only works in local merges, so two open pull requests that append at the same place can still show CONFLICTING on GitHub. Reported in #978.
+- fix(run): plan completion no longer asks 'No sections found in build config' for a finished plan; the validator counts the plan's own section files when Build has not seeded the build config
+- Playwright end-to-end results from a project whose Playwright config lives in a sub-folder (for example `client/playwright.config.ts`) now join the test manifest. Previously every passing E2E test read as missing and the cross-layer coverage check failed on a green suite. Reported in #969.
+- A project whose tests live in nested folders (for example `server/tests` and `client/src`, as in the `vite-hono` profile) is now told when the test collector resolves no test folder: one warning names the `traceability.test_roots` setting. The cross-layer coverage check no longer asks only for new tests in that situation, it points at the same setting first. Reported in #972.
+- fix(e2e): baseline fixture checks click the visible list row, compare error texts unescaped, accept service hosts in the whole adapter package; add npm run recheck to re-run them against a built project
+- The OSS security scan no longer adds `/.shipwright/` to your `.gitignore`, which silently kept new ADRs and plans out of commits. It now ignores only `/.shipwright/securityreports/`, and warns when an older scan already left the broad entry in place.
+- The phase-quality audit no longer reports a failing W3 check for a Claude session id that it mistook for an iterate run; it now skips. A real run with no recorded completion, or with stale test evidence, still fails.
+- The bare-python guard now also blocks python - fed by an empty heredoc, which hangs forever on Windows Git-Bash; the rule is added to the shared constitution and the runner prompt
+- Test: the no-wait check for an already completed session claim no longer fails on a slow Windows CI runner
+- Event-drop fold, full fold and quarantine now report a file a reader holds open (Windows) instead of stopping halfway, and leave the rollback undone until a re-run finishes.
+- The F11 event-folder check now verifies drop ownership, and fails instead of skipping when git cannot answer.
+- The layout CI check accepts the emergency-fold rollback that leaves unfoldable drops and no longer lets a pre-flip side branch smuggle in a legacy-log append.
+- Adopt keeps an explicit null events layout, the F11 committed-check works in a repo subdirectory, and the release skill stages architecture.md and conventions.md only when the project has them.
+
+### Security
+
+- Raise urllib3 to 2.8.0 in the plan and security plugin lockfiles (CVE-2026-97687, CVE-2026-97688, CVE-2026-97689).
+- The test-suite runner now refuses a JUnit report carrying a DOCTYPE or ENTITY declaration, or larger than 8 MiB, instead of parsing it.
+- Bumped certifi to 2026.10.23 in the three uv.lock files to resolve GHSA-6q48-6c7w-9gw2.
+- BL0b probe harness refuses DTD-bearing, oversized or malformed JUnit reports instead of parsing them unhardened (clears Semgrep use-defused-xml-parse in _baseline_b_probes.py)
+- Updated the transitive dependency pyasn1 from 0.6.4 to 0.6.5 in the shipwright-plan lockfile, fixing four denial-of-service advisories (CVE-2026-119194 to CVE-2026-119197).
+
 ## [0.34.0] - 2026-10-09
 
 ### Added
