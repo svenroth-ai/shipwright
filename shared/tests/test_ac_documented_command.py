@@ -161,7 +161,7 @@ def test_l_a_missing_transport_prints_its_reason_once_on_stderr(monkeypatch, cap
     from lib import ac_suggest as su
     monkeypatch.setattr(su, "_opted_out", lambda root: False)
     monkeypatch.setattr(su, "default_transport", lambda: (_ for _ in ()).throw(FileNotFoundError("no transport here")))
-    monkeypatch.setattr(su, "_WARNED", False, raising=False)
+    su._ANNOUNCED.clear()
     cat = {"frs": {"FR-01.03"}, "titles": {"FR-01.03": "Saving drafts"}, "acs": {}}
     for _ in range(2):
         assert su.propose("A draft is kept", cat, ".")["source"] == "fallback"

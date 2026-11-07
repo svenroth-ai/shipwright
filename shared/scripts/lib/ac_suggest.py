@@ -7,9 +7,13 @@ exist in the base catalog, every line is checked (:func:`_clean`: length, no quo
 plain, and the question shows the requirement's name from the spec. Any failure (no key, opted out, timeout, bad reply, unknown id) gives ``fr_id: None``; the question then
 uses the deterministic best match by shared words (:func:`lib.ac_catalog.candidates`). This module never raises and never blocks
 Step 2a. The model is pinned (:data:`MODEL`); a model in a namespace that needs a zero-data-retention rule is refused.
-Opt-outs, all fail-closed (an unreadable config means nothing is sent): ``SHIPWRIGHT_AC_SUGGEST=0``, the config key
-``external_review.ac_suggest: false``, ``external_review.feedback_iterations: 0``, or an operator gateway. The AC text and
-catalog excerpts go to the external provider, as plan reviews do.
+**What leaves the machine, and when.** Only the acceptance-criterion sentence the agent wrote and, for each requirement, its id and title
+(:func:`_payload`), plus the fixed prompt ``shared/prompts/ac_suggest.md``: no code, no diff, no file paths, no requirement text.
+It is sent to the OpenRouter provider only when an ``OPENROUTER_API_KEY`` is present, a new AC has no single owner, and nothing below
+switched it off. Switch it off with ``ac_decision.model_suggest: false`` in ``shipwright_iterate_config.json`` or
+``SHIPWRIGHT_AC_MODEL_SUGGEST=0``; then the deterministic best match by shared words is used and nothing goes over the network.
+Older switches still work: ``SHIPWRIGHT_AC_SUGGEST=0``, ``external_review.ac_suggest: false``, ``external_review.feedback_iterations: 0``
+and an operator gateway. All fail closed (an unreadable config means nothing is sent).
 """
 
 from __future__ import annotations
@@ -27,9 +31,11 @@ from typing import Callable
 from lib.ac_catalog import fr_text, words
 from lib.ac_wording import wording_violations
 
-__all__ = ["BUDGET", "MODEL", "OFF_ENV", "default_transport", "make_suggester", "prompt_text", "propose"]
+__all__ = ["BUDGET", "MODEL", "OFF_ENV", "SWITCH_ENV", "default_transport", "make_suggester", "prompt_text", "propose"]
 
 OFF_ENV = "SHIPWRIGHT_AC_SUGGEST"
+SWITCH_ENV = "SHIPWRIGHT_AC_MODEL_SUGGEST"
+_OFF_WORDS = ("0", "false", "off", "no")
 MODEL = "anthropic/claude-haiku-5.5"  # pinned: a PR-review model change must not silently change what this sends
 TIMEOUT, BUDGET = 45, 30
 _ROOT = Path(__file__).resolve().parents[3]
@@ -41,7 +47,7 @@ _PAYLOAD_CAP = 24000
 LINE_WORDS, TITLE_WORDS, SENTENCE_WORDS = 12, 12, 30  # the longest a checked model line, a drafted requirement title and its one sentence may be
 
 
-_WARNED = False
+_ANNOUNCED: set[str] = set()  # one-time stderr notices already printed
 
 
 def prompt_text() -> str:
@@ -76,7 +82,16 @@ def default_transport() -> Callable[[list[dict], int], str]:
 
 def _opted_out(project_root: str | Path) -> bool:
     """True when nothing may be sent. Fail-closed: an unreadable or unexpected config also means no send."""
-    if os.environ.get(OFF_ENV, "").strip().lower() in ("0", "false", "off", "no") or os.environ.get("SHIPWRIGHT_REVIEW_GATEWAY_BASE_URL"):
+    if any(os.environ.get(name, "").strip().lower() in _OFF_WORDS for name in (SWITCH_ENV, OFF_ENV)) or os.environ.get("SHIPWRIGHT_REVIEW_GATEWAY_BASE_URL"):
+        return True
+    try:
+        own = json.loads((Path(project_root) / "shipwright_iterate_config.json").read_text(encoding="utf-8-sig"))
+        block = own.get("ac_decision") if isinstance(own, dict) else None
+        if isinstance(block, dict) and block.get("model_suggest") is False:
+            return True
+    except FileNotFoundError:
+        pass
+    except (OSError, ValueError):  # an unreadable own config: fail closed
         return True
     try:
         from lib.external_review_config import load_review_config
@@ -87,12 +102,14 @@ def _opted_out(project_root: str | Path) -> bool:
 
 
 def _payload(promise: str, cat: dict) -> str:
-    """The AC text and the requirements (best word overlap first), capped in size."""
+    """The ONLY data sent to the model: the AC sentence and each requirement's id and title (best word overlap first, capped in size).
+
+    The overlap is ranked locally over the requirement's full text; that text itself never leaves the machine."""
     want = words(promise)
     rows = []
     for fr, title in sorted(cat.get("titles", {}).items()):
-        crit = [re.sub(r"\s+", " ", b)[:140] for ac, b in sorted(cat.get("acs", {}).items()) if ac.rsplit(".AC", 1)[0] == fr][:3]
-        rows.append((-len(want & words(title + " " + fr_text(fr, cat) + " " + " ".join(crit))), fr, {"fr_id": fr, "title": title, "text": fr_text(fr, cat)[:240], "criteria": crit}))
+        crit = [b for ac, b in sorted(cat.get("acs", {}).items()) if ac.rsplit(".AC", 1)[0] == fr][:3]
+        rows.append((-len(want & words(title + " " + fr_text(fr, cat) + " " + " ".join(crit))), fr, {"fr_id": fr, "title": title}))
     rows.sort(key=lambda r: (r[0], r[1]))
     out, size = [], 0
     for _, _, row in rows:
@@ -148,9 +165,8 @@ def propose(promise: str, cat: dict, project_root: str | Path = ".", transport: 
             return {"source": "fallback", "fr_id": None, "reason": why}
         return {"source": "model", **fields, "reason": "", "model": model, "prompt_sha": "sha256:" + hashlib.sha256(prompt.encode("utf-8")).hexdigest()}
     except Exception as exc:  # noqa: BLE001 - no key, missing file, timeout, transport error: a display aid never blocks Step 2a
-        global _WARNED
-        if isinstance(exc, FileNotFoundError) and not _WARNED:  # a missing transport file is an install problem: say so once, not per item
-            _WARNED = True
+        if isinstance(exc, FileNotFoundError) and "transport" not in _ANNOUNCED:  # a missing transport file is an install problem: say so once, not per item
+            _ANNOUNCED.add("transport")
             print(f"ac_suggest: the model transport was not found ({str(exc)[:120]}); proposals fall back to the deterministic match", file=sys.stderr)
         return {"source": "fallback", "fr_id": None, "reason": f"{type(exc).__name__}: {str(exc)[:120]}"}
 

@@ -1,6 +1,6 @@
 {
   "run_id": "iterate-2026-11-01-q1-pre-build-ac",
-  "date": "2026-11-07T12:21:41.762726Z",
+  "date": "2026-11-07T13:31:33.856839Z",
   "event_at": "2026-11-07T07:22:59.423296+00:00",
   "type": "feature",
   "complexity": "medium",
@@ -173,11 +173,16 @@
         "behavior": "[final] the unit variable alone makes a run unattended (a runner cannot sign an answer), a standalone autonomous ask exits 10 with the questions and no escalation, every skipped result carries a machine skip_reason",
         "disposition": "tested",
         "evidence": "shared/tests/test_ac_documented_command.py::test_the_unit_variable_alone_makes_a_run_unattended_so_a_runner_cannot_sign_an_answer PASSED; shared/tests/test_ac_documented_command.py::test_h1_an_unattended_ask_escalates_only_with_a_unit_id_and_a_standalone_one_exits_10_with_the_questions PASSED; shared/tests/test_ac_documented_command.py::test_every_skipped_result_carries_a_machine_skip_reason PASSED"
+      },
+      {
+        "behavior": "[final] the outside-model call sends only the AC sentence and requirement ids and titles, needs a key, and is switched off by ac_decision.model_suggest false or SHIPWRIGHT_AC_MODEL_SUGGEST=0 with nothing sent",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_ac_suggest.py::test_a_reply_naming_a_real_requirement_is_used_and_the_request_carries_the_text_as_data PASSED; shared/tests/test_ac_suggest.py::test_the_model_call_needs_a_key_and_the_documented_switches_send_nothing PASSED"
       }
     ],
     "counts": {
-      "testable": 32,
-      "tested": 32,
+      "testable": 33,
+      "tested": 33,
       "untestable": 0,
       "untested_testable": 0
     }

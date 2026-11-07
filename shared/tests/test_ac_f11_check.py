@@ -78,7 +78,7 @@ def test_check_warns_when_an_observable_change_has_no_record_or_only_an_exemptio
 @pytest.mark.covers("FR-01.11/AC49")
 def test_check_restore_needs_a_base_catalog_ac_and_a_test_that_names_it(branch):
     root, commit = branch
-    head = commit({"shared/scripts/a.py": "x = 1\n"})
+    commit({"shared/scripts/a.py": "x = 1\n"})
     head = _record(root, commit, ad.decide([{"kind": "restore", "restores_ac": "FR-01.03.AC05"}], {"acs": {"FR-01.03.AC05": "t"}, "frs": {"FR-01.03"}}))
     assert "no test file in the diff mentions that AC id" in chk.check_pre_build_ac_recorded(root, _RUN, head).detail
     head = commit({"shared/tests/test_a.py": '@pytest.mark.covers("FR-01.03/AC05")\ndef test_x(): ...\n'})
@@ -94,7 +94,7 @@ def test_check_restore_needs_a_base_catalog_ac_and_a_test_that_names_it(branch):
 @pytest.mark.covers("FR-01.11/AC49")
 def test_check_compares_the_frozen_text_with_the_catalog_in_the_diff(branch):
     root, commit = branch
-    head = commit({"shared/scripts/a.py": "x = 1\n", _SPEC: _spec_with("A saved draft survives a restart")})
+    commit({"shared/scripts/a.py": "x = 1\n", _SPEC: _spec_with("A saved draft survives a restart")})
     head = _record(root, commit, _result())
     assert chk.check_pre_build_ac_recorded(root, _RUN, head).ok
     head = _record(root, commit, _result(new_text="Drafts never vanish"))
@@ -119,7 +119,7 @@ def test_check_warns_on_a_catalog_edit_no_item_names_even_without_an_observable_
 @pytest.mark.covers("FR-01.11/AC49")
 def test_check_reruns_the_wording_check_against_identifiers_of_the_committed_diff(branch):
     root, commit = branch
-    head = commit({"shared/scripts/plan2go.py": "x = 1\n", "shared/scripts/review-gate.py": "y = 1\n", _SPEC: _spec_with("The plan2go keeps a draft")})
+    commit({"shared/scripts/plan2go.py": "x = 1\n", "shared/scripts/review-gate.py": "y = 1\n", _SPEC: _spec_with("The plan2go keeps a draft")})
     head = _record(root, commit, _result(new_text="The plan2go keeps a draft"))
     assert "does not read as an outcome" in chk.check_pre_build_ac_recorded(root, _RUN, head).detail
     # a plain hyphenated file name is ordinary prose, not a banned code name

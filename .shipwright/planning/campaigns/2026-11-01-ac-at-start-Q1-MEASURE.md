@@ -2,7 +2,11 @@
 
 > Date 2026-11-01. Evidence for `2026-11-01-ac-at-start-BRIEF.md` unit Q1, rebuilt as fully deterministic code (operator decision: everything code can decide is decided by code; AI only where code cannot).
 
-## OPERATOR DECISION REQUIRED: the brief's measure bar is not met, and cannot be measured in this design
+## DECISION RECORD 2026-11-07: the brief's measure bar is dropped as not measurable in this design (recorded by the assistant under delegation)
+
+**Decision, plainly.** This is the assistant's recorded decision under delegation, not the operator's own sign-off, and the operator can reverse it at any time. On 2026-11-07 the operator delegated the judgement to the assistant in chat ("ich traue eher deiner Beurteilung") and allowed an admin merge of the PR for this area. Decision taken: (a) the original measure bar (beat a control arm by 3 PRs, miss at most 1 of 12 demand cases, flag at most 1 of 13 other cases, operator finds 10 of 10 questions clear) is **dropped** because it is not measurable in the deterministic design (reasons below); (b) Q1 ships **warning-only** (F11 warns, nothing blocks a PR); (c) success is measured after the **first 20 real iterates**, with the stop rule: ask rate above 30 percent, or the operator rejects more than 3 of 10 sampled ACs. The 10-case question sheet in section (b) was judged by the assistant under the same delegation (it removed the "Add it to FR-xx instead" list because it showed unrelated requirements).
+
+The analysis that led to it, kept as written on 2026-11-01:
 
 Plainly: the brief asked Q1 to beat a control arm by 3 PRs, miss at most 1 of the 12 demand cases, flag at most 1 of the others, and have the operator find 10 of 10 questions clear. **None of that is met, and most of it is not measurable any more.** Whether to merge Q1 as built is the operator's decision, not a result of this measure.
 
@@ -23,7 +27,7 @@ Replay, re-run with the final surface rules (25 PRs, real merged diffs, in-proce
 | restore | 2 | 2 | 0 | 2 observable |
 | no-change | 5 | 3 | 2 (#855, #908) | 5 observable |
 
-Question sheet (b) below is still PENDING the operator's read; the ask-rate report (c) comes only after a merge.
+Question sheet (b) below was read by the assistant under the delegation recorded above; the ask-rate report (c) comes only after a merge.
 
 ## SUPERSEDED: the first measure (lexical HOW design, model classifiers)
 

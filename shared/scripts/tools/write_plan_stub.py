@@ -75,6 +75,7 @@ def main() -> int:
         print(f"write_plan_stub: {target} exists (use --force to replace)", file=sys.stderr)
         return 1
     ac_lines: list[str] = []
+    decided: dict = {}
     if args.ac_decision:
         try:
             decided = json.loads(Path(args.ac_decision).read_text(encoding="utf-8"))

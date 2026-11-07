@@ -55,12 +55,13 @@ def test_the_signing_key_is_created_exclusively_never_regenerated_and_a_bad_file
     assert ac_hold.load_key(create=True) == key                        # an existing key is re-read, never replaced
     real_open = os.open
 
-    def lost_race(p, flags, mode=0o777):                               # another process created it between our read and our create
+    def lost_race(p, flags, mode=0o600):                               # another process created it between our read and our create
         if Path(p) == path and flags & os.O_EXCL:
+            path.write_text(key.hex() + "\n", encoding="ascii")
             raise FileExistsError(p)
         return real_open(p, flags, mode)
     path.unlink()
-    monkeypatch.setattr(os, "open", lambda p, f, m=0o777: (path.write_text(key.hex() + "\n", encoding="ascii"), lost_race(p, f, m))[1])
+    monkeypatch.setattr(os, "open", lost_race)
     assert ac_hold.load_key(create=True) == key
     monkeypatch.undo()                                                 # undoes the fixture too: attended again, from a temp dir
     monkeypatch.chdir(tmp_path)
@@ -180,7 +181,7 @@ def test_the_record_is_read_from_the_commit_and_must_be_append_only_and_not_afte
     detail = chk.check_pre_build_ac_recorded(root, _RUN, head).detail
     assert "committed after the first code commit" in detail
     # the record in the same commit as the code is fine (a squashed iterate)
-    head = _commit(root, {}, amend=True)
+    _commit(root, {}, amend=True)
     _git(root, "reset", "-q", "--soft", base)
     head = _commit(root, {})
     assert chk.check_pre_build_ac_recorded(root, _RUN, head).ok

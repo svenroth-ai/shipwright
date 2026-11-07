@@ -16,7 +16,6 @@ from tools import write_plan_stub as wps
 _RUN = "iterate-2026-11-01-q1-test"
 _SPEC = ".shipwright/planning/01-adopted/spec.md"
 _BASE_SPEC = "### FR-01.03 - Drafts\n\n- (E) [AC05] Given a draft, when saved, then it is kept.\n"
-_SHA = "sha256:" + "b" * 64
 
 
 def _diff(path: str, added=(), removed=(), extra="") -> str:

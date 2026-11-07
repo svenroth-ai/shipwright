@@ -4,9 +4,9 @@
     "date": "2026-11-01",
     "unit": {
       "status": "passed",
-      "passed": 17807,
+      "passed": 17808,
       "skipped": 78,
-      "total": 17885
+      "total": 17886
     },
     "integration": {
       "status": "passed",
@@ -24,7 +24,7 @@
       "status": "not_run"
     },
     "degraded": [
-      "unit counts cover the four roots this round touches (shared/tests 14262, shared/scripts/tools/tests 1496, plugins/shipwright-iterate/tests 1369, integration-tests 680); the other plugin roots were not re-run (nothing under them changed)"
+      "unit counts cover the four roots this round touches (shared/tests 14263, shared/scripts/tools/tests 1496, plugins/shipwright-iterate/tests 1369, integration-tests 680); the other plugin roots were not re-run (nothing under them changed)"
     ],
     "test_completeness": {
       "status": "complete",
@@ -190,11 +190,16 @@
           "behavior": "[final] the unit variable alone makes a run unattended (a runner cannot sign an answer), a standalone autonomous ask exits 10 with the questions and no escalation, every skipped result carries a machine skip_reason",
           "disposition": "tested",
           "evidence": "shared/tests/test_ac_documented_command.py::test_the_unit_variable_alone_makes_a_run_unattended_so_a_runner_cannot_sign_an_answer PASSED; shared/tests/test_ac_documented_command.py::test_h1_an_unattended_ask_escalates_only_with_a_unit_id_and_a_standalone_one_exits_10_with_the_questions PASSED; shared/tests/test_ac_documented_command.py::test_every_skipped_result_carries_a_machine_skip_reason PASSED"
+        },
+        {
+          "behavior": "[final] the outside-model call sends only the AC sentence and requirement ids and titles, needs a key, and is switched off by ac_decision.model_suggest false or SHIPWRIGHT_AC_MODEL_SUGGEST=0 with nothing sent",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_ac_suggest.py::test_a_reply_naming_a_real_requirement_is_used_and_the_request_carries_the_text_as_data PASSED; shared/tests/test_ac_suggest.py::test_the_model_call_needs_a_key_and_the_documented_switches_send_nothing PASSED"
         }
       ],
       "counts": {
-        "testable": 32,
-        "tested": 32,
+        "testable": 33,
+        "tested": 33,
         "untestable": 0,
         "untested_testable": 0
       }
