@@ -20,7 +20,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from .events_fold_io import GitError, blob, git, tree_names  # noqa: F401 -- GitError re-exported for the CLI
+from .events_fold_io import GitError, blob, git, parse_bytes, same_bytes, tree_names  # noqa: F401 -- GitError re-exported for the CLI
 from .events_integrity import Violation
 from .events_log import DROPS_DIR, EVENT_FILE
 from .events_sentinel import SUPPORTED_LAYOUTS, SYNC_CONFIG
@@ -51,15 +51,32 @@ def _legacy_written_on_drops(root: Path, base_ref: str, head_ref: str) -> bool:
         return bool(git(root, "diff", "--name-only", "--no-renames", base_ref + "..." + head_ref, "--", EVENT_FILE).stdout.strip())
     base = git(root, "merge-base", base_ref, head_ref).stdout.decode().strip()
     rows = git(root, "log", "--full-history", "--no-merges", "--format=%H %P", f"{base_ref}..{head_ref}", "--", EVENT_FILE).stdout
+    own = set(git(root, "log", "--first-parent", "--format=%H", f"{base_ref}..{head_ref}").stdout.decode().split())
     for row in rows.decode("utf-8", "replace").splitlines():
         parts = row.split()
-        if len(parts) < 2 or _layout_at(root, parts[1]) == "drops":   # no parent to judge against: fail closed
+        # only the PR's OWN line (first parents) can have been written before the flip; a commit that came in through a merge's
+        # second parent (a side branch from a pre-flip commit) is judged like any other and fails closed
+        if len(parts) < 2 or parts[0] not in own or _layout_at(root, parts[1]) == "drops":   # no parent to judge against: fail closed
             return True
         # written before the flip = its parent is not on drops AND it does not descend from the (drops) merge-base;
         # a PR's own earlier commits flipping the key to legacy and back (drops -> legacy -> append -> drops) cannot excuse it
         if git(root, "merge-base", "--is-ancestor", base, parts[0], check=False).returncode == 0:
             return True
     return False
+
+
+def _only_unfoldable_leftovers(root: Path, base: str, head_ref: str, names: list[str]) -> bool:
+    """True when every drop left at the head is one an emergency fold CANNOT move: it was not ok at the merge-base and is unchanged.
+
+    That is the shape the fold itself leaves behind (``plan_fold`` skips corrupt and empty files); the layout sentinel honours
+    the explicit ``legacy`` declaration there, so a rollback that finishes the job by writing the legacy log is not an old writer.
+    A readable drop at the head, or one this change added, is not that shape.
+    """
+    for n in names:
+        was, now = blob(root, base, f"{DROPS_DIR}/{n}"), blob(root, head_ref, f"{DROPS_DIR}/{n}")
+        if was is None or now is None or not same_bytes(was, now) or parse_bytes(was).status == "ok":
+            return False
+    return True
 
 
 def check_layout_ci(project_root: Path | str, base_ref: str, head_ref: str = "HEAD",
@@ -84,7 +101,8 @@ def check_layout_ci(project_root: Path | str, base_ref: str, head_ref: str = "HE
         left = tree_names(root, head_ref, DROPS_DIR)
         if left is None:
             raise GitError(f"cannot list {DROPS_DIR}/ at {head_ref}")
-        if not any(n.endswith(".jsonl") for n in left):
+        stuck = [n for n in left if n.endswith(".jsonl")]
+        if not stuck or _only_unfoldable_leftovers(root, base, head_ref, stuck):
             return out
     if _legacy_written_on_drops(root, base_ref, head_ref):
         out.append(Violation("legacy_write_after_flip", EVENT_FILE,

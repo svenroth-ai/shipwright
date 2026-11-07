@@ -300,7 +300,7 @@ def test_the_f11_check_catches_a_case_variant_and_passes_a_clean_branch(repo):
     git(repo, "reset", "-q", "--hard", "base")
     drop(repo, "run-mine", ev("n1", NEW))
     commit(repo)
-    assert check_events_integrity(repo, "run-x").ok is True
+    assert check_events_integrity(repo, "run-mine").ok is True      # the run id now decides which keys are the branch's own
 
 
 def test_a_second_fold_of_an_overlapping_set_is_not_an_injection(repo):

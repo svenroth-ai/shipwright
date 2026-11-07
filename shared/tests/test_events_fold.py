@@ -230,7 +230,7 @@ def test_emergency_fold_leaves_non_ok_drops_in_place_and_reports_them(tmp_path):
 
 
 def test_an_interrupted_fold_is_resumable_and_never_loses_an_event(tmp_path, monkeypatch):
-    """Crash after the archive is published but before the sources are gone: a re-run finishes the same fold."""
+    """Nothing can delete the sources after the archive is published (S6 crashed here; the fold now REPORTS it): a re-run finishes."""
     root = _repo_with_drops(tmp_path)
     before = sorted(_hashes(root))
     real_unlink, calls = Path.unlink, []
@@ -240,8 +240,8 @@ def test_an_interrupted_fold_is_resumable_and_never_loses_an_event(tmp_path, mon
         raise OSError("simulated crash")
 
     monkeypatch.setattr(Path, "unlink", dying_unlink)
-    with pytest.raises(OSError):
-        apply_fold(root, plan_fold(root, now=NOW))
+    stuck = apply_fold(root, plan_fold(root, now=NOW))
+    assert stuck["status"] == "folded_incomplete" and sorted(stuck["not_deleted"]) == sorted(set(calls))
     monkeypatch.setattr(Path, "unlink", real_unlink)
     assert len(archive_names(root)) == 1 and sorted(set(_hashes(root))) == sorted(set(before))   # visible twice at worst
     again = apply_fold(root, plan_fold(root, now=NOW))

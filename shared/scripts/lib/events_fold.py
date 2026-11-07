@@ -24,7 +24,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -138,6 +137,23 @@ def plan_fold(root: Path | str, *, mode: str = "fold", base_ref: str = "HEAD", n
     return plan
 
 
+def unlink_all(paths: list[Path]) -> list[str]:
+    """Delete every file; names that could NOT be deleted (a reader holds it open on Windows: PermissionError) come back.
+
+    One stuck file must not abort the loop: the caller has already published the copy (archive / quarantine / legacy log),
+    so a leftover file only duplicates events the reader dedups, while an exception halfway left the rest undone.
+    """
+    kept = []
+    for path in paths:
+        try:
+            path.unlink()
+        except FileNotFoundError:
+            pass  # a concurrent fold got there first
+        except OSError:
+            kept.append(path.name)
+    return kept
+
+
 def ensure_keep(root: Path) -> None:
     """Create the empty ``.keep`` in the drops folder (see ``events_fold_io.KEEP_NAME``); idempotent."""
     keep = root / DROPS_DIR / KEEP_NAME
@@ -196,17 +212,17 @@ def apply_fold(root: Path | str, plan: FoldPlan, *, allow_conflicts: bool = Fals
         missing = [h for s in plan.selected for r in s.parsed.records if (h := event_hash(r)) not in stored]
         if missing:  # never delete a source the archive does not hold
             return {"status": "archive_incomplete", "missing": len(missing)}
-        for item in plan.selected:
-            try:
-                item.path.unlink()
-            except FileNotFoundError:
-                pass  # a concurrent fold got there first
+        kept = unlink_all([s.path for s in plan.selected])
         ensure_keep(root)
-        if plan.mode == "emergency":
+        if plan.mode == "emergency" and not kept:  # a rollback with drops left is not done: the layout stays until a re-run finishes
             set_layout(root, "legacy")
-    return {"status": "folded", "mode": plan.mode, "archive": f"{ARCHIVE_DIR}/{name}",
-            "folded_files": [s.path.name for s in plan.selected], "events": len(plan.records()),
-            "benign_duplicates": plan.benign_duplicates, "skipped": plan.skipped}
+    result = {"status": "folded_incomplete" if kept else "folded", "mode": plan.mode, "archive": f"{ARCHIVE_DIR}/{name}",
+              "folded_files": [s.path.name for s in plan.selected if s.path.name not in kept], "events": len(plan.records()),
+              "benign_duplicates": plan.benign_duplicates, "skipped": plan.skipped}
+    if kept:
+        result.update(not_deleted=kept, error="could not delete (a reader holds it open?): close it and run the same command again (do not commit the partial result); "
+                      "the archive already holds every event, so nothing is lost")
+    return result
 
 
 def plan_quarantine(root: Path | str, *, base_ref: str = "HEAD") -> list[Selected]:
@@ -240,5 +256,8 @@ def apply_quarantine(root: Path | str, items: list[Selected]) -> dict:
             durable_atomic_write(target, item.data)
             if target.read_bytes() != item.data:
                 return {"status": "copy_mismatch", "file": item.path.name}
-            os.unlink(item.path)
+        kept = unlink_all([i.path for i in items])
+    if kept:
+        return {"status": "quarantined_incomplete", "files": [i.path.name for i in items], "not_deleted": kept,
+                "error": "could not delete (a reader holds it open?): close it and run the same command again (do not commit the partial result); the quarantine copy is complete"}
     return {"status": "quarantined", "files": [i.path.name for i in items]}
