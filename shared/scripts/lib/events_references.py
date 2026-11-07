@@ -110,9 +110,12 @@ REGISTRY: dict[str, tuple[str, ...]] = {
         "shared/scripts/tools/record_event.py",
     ),
     "S": (
+        "shared/scripts/lib/events_gitignore.py",
         "shared/scripts/lib/events_layout.py",
+        "shared/scripts/lib/events_layout_ci.py",
         "shared/scripts/lib/events_log.py",
         "shared/scripts/lib/events_read.py",
+        "shared/scripts/lib/events_sentinel.py",
         "shared/scripts/lib/events_references.py",
     ),
     "M": (

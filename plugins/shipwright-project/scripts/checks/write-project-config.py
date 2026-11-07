@@ -46,6 +46,26 @@ def _merge_canonical_gitignore(project_root: Path) -> dict:
     return merge_canonical_block(project_root)
 
 
+def _write_events_layout_key(project_root: Path) -> None:
+    """Write ``events_layout: legacy`` explicitly into a new project's sync config (issue 978, S7).
+
+    "Absent = legacy" stays valid forever, but an explicit key survives a later default change.
+    Never overwrites an existing key; a failure here must not break scaffolding.
+    """
+    repo_root = str(Path(__file__).resolve().parents[4])
+    added = repo_root not in sys.path
+    if added:
+        sys.path.insert(0, repo_root)
+    try:
+        from shared.scripts.lib.events_sentinel import ensure_layout_key  # type: ignore
+        ensure_layout_key(project_root)
+    except (ImportError, OSError) as exc:
+        print(f"[write-project-config] events_layout key skipped: {exc}", file=sys.stderr)
+    finally:
+        if added:
+            sys.path.remove(repo_root)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Write shipwright project config")
     parser.add_argument("--planning-dir", required=True, help="Path to planning directory")
@@ -134,6 +154,7 @@ def main() -> int:
             f"{merge.get('action')} (added {len(merge.get('added', []))} rule(s))",
             file=sys.stderr,
         )
+        _write_events_layout_key(project_root)
 
     print(json.dumps(config, indent=2))
     return 0

@@ -40,6 +40,7 @@ sys.path.insert(0, str(_SCRIPTS_DIR))
 
 from lib.compliance_audit_spawn import spawn_compliance_audit  # noqa: E402
 from lib.compliance_refresh import REFRESH_SET, release_commit_note  # noqa: E402
+from lib.events_sentinel import evidence_refusal  # noqa: E402
 from source_state import parse_banner_line, safe_commit, safe_run_id  # noqa: E402
 from tools.compliance_delivery import deliver_pr, preflight_pr  # noqa: E402
 from tools.compliance_git import (  # noqa: E402
@@ -163,6 +164,11 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("--release-audit requires --verify-commit (it gates the release "
                      "audit on a verified evidence commit)")
     root = Path(args.project_root).resolve()
+
+    refusal = None if args.restore else evidence_refusal(root, "refresh_compliance_docs")
+    if refusal:  # S7 sentinel: no release evidence for a layout this plugin does not understand
+        print(json.dumps(refusal, indent=2))
+        return 1
 
     if args.verify_commit:
         sha = safe_commit(args.verify_commit)

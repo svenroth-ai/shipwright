@@ -53,6 +53,7 @@ from pathlib import Path
 
 from .events_log import DROPS_DIR, resolve_events_path
 from .events_read import read_events_assembled, sanitize_key  # noqa: F401 -- re-exports
+from .events_sentinel import require_writable_layout
 
 SYNC_CONFIG = "shipwright_sync_config.json"
 LAYOUTS = ("legacy", "drops")
@@ -199,7 +200,9 @@ def resolve_events_write_path(project_root: Path | str, run_id: str | None = Non
     to git, so no empty file is ever committed.
     """
     root = Path(project_root)
-    if events_layout(root) != "drops":
+    layout = events_layout(root)
+    require_writable_layout(root, layout)  # S7 sentinel: unknown layout / legacy write over drops fail closed
+    if layout != "drops":
         return resolve_events_path(root)
     git_dir, is_main, branch = _git_identity(root)
     key, wt8 = drop_key(root, (git_dir, is_main, branch), run_id), _wt8(git_dir)

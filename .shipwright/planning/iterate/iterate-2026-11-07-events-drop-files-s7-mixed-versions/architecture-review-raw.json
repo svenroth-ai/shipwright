@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "1. **Yes\u2014choose A:** enforcing layout compatibility at writes and release evidence, with a migration-aware CI check, is proportionate to a repo deliberately supporting mixed plugin versions.\n\n2. **Smallest thing that would do:** one shared layout check used by the existing write choke point and two evidence producers, plus the merge-base CI check to catch legacy writers that cannot consult the sentinel. Keep the gitignore change conditional and all migration enforcement dormant until drops exist.\n\n3. **What it costs to keep:** maintain the recognized-layout policy, its three callers, and CI\u2019s distinction between pre-migration PRs and subsequent changes. These obligations should remain part of the existing layout migration machinery.\n\n4. **What it forecloses:** future layouts require coordinated updates to writers and evidence producers before use. Readers can retain compatibility independently; rollback must retain a supported writing path.\n\n5. No findings.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "1. **The answer:** Yes \u2014 a fail-closed sentinel is warranted here, and Option A is the right shape; Option C (raising in `events_layout()` itself) looks smaller but is actually worse, and B is unacceptable given the silent-corruption failure mode.\n\n2. **The smallest thing that would do:** Option A as described: one stdlib-only sentinel consulted at the single write choke point and the two evidence producers, plus the merge-base CI check. Option C is *not* smaller in effect: making the shared reader raise on unknown values means a rollback (per-run config value + pre-rollback plugin) would lock the repo out of reading *and* writing events, violating the stated rollback constraint; that's why the sentinel has to be write-side only. B fails the \"new plugin fails closed\" criterion outright.\n\n3. **What it costs to keep:** A sentinel module whose layout vocabulary must be updated on every layout change (drift between it and `events_layout()` is the standing risk), a CI check that must stay correct across git history and merge-base edge cases, and a conditional gitignore rule someone must understand when it misbehaves.\n\n4. **What it forecloses:** None identified \u2014 the sentinel is consult-only and write-side, so future readers or layout migrations aren't constrained by it. The CI check mildly raises the cost of any future change to how the repo detects layout state.\n\n5. Findings:\n\n- Category: ownership\n- Severity: low\n- Finding: The CI merge-base check is a gate that fails silently the other way \u2014 if it drifts or its git assumptions break, nobody notices until a bad merge slips through.\n- Suggestion: Have the check emit a visible \"checked, clean\" line in CI output so its absence is noticeable, and note it in the sentinel module's docstring so the two are versioned mentally together.\n\n- Category: proportionality\n- Severity: low\n- Finding: Two parallel sources of layout truth (the sentinel and `events_layout()`'s mapping) is the main permanent cost of A over C.\n- Suggestion: Implement the sentinel as a shared vocabulary (a single tuple/enum) that both `events_layout()` and the sentinel import, so adding a layout requires touching one list, not two.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "architecture",
+  "capture": {
+    "run_id": "iterate-2026-11-07-events-drop-files-s7-mixed-versions",
+    "at": "2026-11-06T23:45:05.138751+00:00"
+  },
+  "verdicts": {
+    "openai": "approve",
+    "glm": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}

@@ -22,6 +22,7 @@ from typing import Any
 # artifact_writer.py for the same pattern).
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from lib.adopted_phase_tasks import build_adopted_phase_task  # noqa: E402
+from lib.events_layout_key import layout_entry  # noqa: E402
 
 
 def _utc_now_iso() -> str:
@@ -160,6 +161,7 @@ def write_sync_config(project_root: Path) -> Path:
         "updated_at": _utc_now_iso(),
     }
     path = project_root / "shipwright_sync_config.json"
+    config.update(layout_entry(project_root, path))  # issue 978, S7
     _write_json(path, config)
     return path
 
