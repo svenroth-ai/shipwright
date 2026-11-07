@@ -208,10 +208,15 @@ def test_cli_never_prints_a_traceback_for_bad_input(tmp_path, capsys):
     ok = tmp_path.parent / f"{tmp_path.name}-ok.json"
     ok.write_text(json.dumps({"items": [_add()]}), encoding="utf-8")
     assert cli.main([*base, "--from-json", str(ok), "--answers", str(bad), "--run-id", "r"]) == 2
+    capsys.readouterr()
     assert cli.main(["answer", "--decided", str(bad), "--item", "0", "--choice", "yes", "--answers", str(tmp_path / "a.json")]) == 2
+    assert "is not valid JSON" in capsys.readouterr().err
     assert cli.main(["answer", "--decided", str(ok), "--item", "0", "--choice", "yes", "--answers", str(tmp_path / "a.json")]) == 2
+    assert "holds no open question for item 0" in capsys.readouterr().err
+    assert cli.main([*base, "--from-json", str(ok), "--run-id", "../../x"]) == 2
     err = capsys.readouterr().err
-    assert "Traceback" not in err and err.count('"error"') >= 6
+    assert "Traceback" not in err and "plain run id" in err                                           # a path-like run id is refused before anything is written
+    assert not (tmp_path.parent.parent / "x").exists()
 
 
 @pytest.mark.covers("FR-01.11/AC49")

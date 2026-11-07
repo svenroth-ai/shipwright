@@ -15,13 +15,19 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from pathlib import Path
 
-__all__ = ["ENV", "MODES", "marker_path", "read_marker", "resolve_mode", "source_label", "write_marker"]
+__all__ = ["ENV", "MODES", "is_safe_run_id", "marker_path", "read_marker", "resolve_mode", "source_label", "write_marker"]
 
 ENV = "SHIPWRIGHT_AC_MODE"
 MODES = ("ask", "auto", "off")
 CONFIG_FILE = "shipwright_iterate_config.json"
+
+
+def is_safe_run_id(run_id: object) -> bool:
+    """A plain run id (letters, digits, ``_ . -``, no ``..``) - the same rule ``write_plan_stub.py`` applies; it is used as a directory name."""
+    return isinstance(run_id, str) and re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]*", run_id) is not None and ".." not in run_id
 
 
 def source_label(source: str) -> str:
@@ -33,12 +39,18 @@ def marker_path(project_root: str | Path, run_id: str) -> Path:
     return Path(project_root) / ".shipwright" / "planning" / "iterate" / run_id / "ac-mode.json"
 
 
-def write_marker(project_root: str | Path, run_id: str, mode: str, source: str) -> Path:
-    """Write the mode the tool actually used for this run beside the AC record (code writes it, committed with the run), so F11 sees a ``--ac-mode`` flag too."""
+def write_marker(project_root: str | Path, run_id: str, mode: str, source: str) -> tuple[Path, bool]:
+    """Write the mode the tool actually used for this run beside the AC record (code writes it, committed with the run), so F11 sees a ``--ac-mode`` flag too.
+
+    The FIRST marker of a run is kept: a later run with another mode returns ``(path, True)`` and changes nothing, so re-running with ``--ac-mode off``
+    cannot silence the F11 check of a run that already decided otherwise.
+    """
     path = marker_path(project_root, run_id)
+    if read_marker(project_root, run_id):
+        return path, True
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps({"run_id": run_id, "mode": mode, "source": source_label(source)}, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
-    return path
+    return path, False
 
 
 def read_marker(project_root: str | Path, run_id: str, commit: str = "") -> dict:

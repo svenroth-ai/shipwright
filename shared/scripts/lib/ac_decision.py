@@ -148,8 +148,8 @@ def _ask_one(it: dict, n: int, cat: dict, bind_id: str, unattended: bool, chain:
     """Walk one item through its questions: ``(final item, answered?, answer, via, question or None, error or None)``.
 
     A signed answer is found by its STABLE content (bind id, item index, kind, original promise, the options it carries), so
-    a resume neither calls the model nor re-renders from a moved catalog. Normally one question; an add answered 'no, instead'
-    without an owner is asked again about the new wording.
+    a resume neither calls the model nor re-renders from a moved catalog. Normally one question; 'create a new one' from a list asks one more
+    about the drafted requirement.
     """
     via, ans, used = "none", None, 0
     while True:
@@ -178,7 +178,7 @@ def _ask_one(it: dict, n: int, cat: dict, bind_id: str, unattended: bool, chain:
         ans = entry
         if err:
             return it, False, None, via, None, f"item {n}: {err}"
-        if not (option_of(entry).get("again") or (_norm(entry.get("choice")).lower() == "no" and _row(it, cat) is not None and it["kind"] == "add")):
+        if not option_of(entry).get("again"):
             return it, True, ans, via, None, None
 
 

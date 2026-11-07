@@ -138,13 +138,19 @@ def test_check_warns_about_an_unsigned_asked_decision_only_in_an_unattended_run(
     signed = {**ans(q, "yes", "FR-01.03"), "via": "operator", "signature": ac_hold.sign(key, q["question_sha256"], "yes", "FR-01.03")}
     forged = {k: v for k, v in signed.items() if k != "signature"}  # "via": "operator" is only a claim
     for answer, unattended, expect_warning in ((signed, True, False), (forged, True, True), (forged, False, False)):
-        monkeypatch.setattr(ar, "is_unattended", lambda root, flag=unattended: flag)
         ar.record_path(root, _RUN).unlink(missing_ok=True)
-        head = _record(root, commit, ad.decide([base], cat, bind_id="r", answers=[answer]))
+        decided = {**ad.decide([base], cat, bind_id="r", answers=[answer]), "unattended": unattended}      # the flag the run RECORDED, not the finalize-time environment
+        head = _record(root, commit, decided)
         detail = chk.check_pre_build_ac_recorded(root, _RUN, head).detail
         assert ("signed operator channel" in detail) is expect_warning
+    monkeypatch.setenv("SHIPWRIGHT_LOOP_ID", "loop-1")                                                 # the environment says unattended at finalize time, the record says attended: no warning
+    monkeypatch.setenv("SHIPWRIGHT_LOOP_UNIT_ID", "Q1")
+    ar.record_path(root, _RUN).unlink(missing_ok=True)
+    head = _record(root, commit, {**ad.decide([base], cat, bind_id="r", answers=[forged]), "unattended": False})
+    assert "signed operator channel" not in chk.check_pre_build_ac_recorded(root, _RUN, head).detail
+    monkeypatch.delenv("SHIPWRIGHT_LOOP_ID")
+    monkeypatch.delenv("SHIPWRIGHT_LOOP_UNIT_ID")
     # inline answers (attended) are counted for the PR body, never warned
-    monkeypatch.setattr(ar, "is_unattended", lambda root: False)
     ar.record_path(root, _RUN).unlink(missing_ok=True)
     inline = ad.decide([{**base, "answer": {"choice": "yes", "text": "FR-01.03"}}], cat, bind_id="r")
     assert inline["counts"]["answered_inline"] == 1

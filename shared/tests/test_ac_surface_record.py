@@ -196,8 +196,15 @@ def test_force_appends_a_superseded_record_and_never_replaces(tmp_path):
 @pytest.mark.covers("FR-01.11/AC49")
 def test_write_plan_stub_force_keeps_the_original_freeze(tmp_path, monkeypatch, capsys):
     decided = tmp_path / "decided.json"
-    decided.write_text(json.dumps(_result()), encoding="utf-8")
+    decided.write_text(json.dumps({**_result(), "run_id": _RUN}), encoding="utf-8")
     base = ["--project-root", str(tmp_path), "--run-id", _RUN, "--goal", "g", "--reason", "r", "--ref", "x", "--ac-decision", str(decided)]
+    other = tmp_path / "other.json"                                                                      # a decided.json made for another run, or an old one without a run id, is refused
+    for body in ({**_result(), "run_id": "iterate-2026-11-02-else"}, _result()):
+        other.write_text(json.dumps(body), encoding="utf-8")
+        monkeypatch.setattr("sys.argv", ["write_plan_stub.py", *base[:-1], str(other)])
+        with pytest.raises(SystemExit) as exc:
+            wps.main()
+        assert exc.value.code == 2 and "made for run" in capsys.readouterr().err
     monkeypatch.setattr("sys.argv", ["write_plan_stub.py", *base])
     assert wps.main() == 0
     monkeypatch.setattr("sys.argv", ["write_plan_stub.py", *base])

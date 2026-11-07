@@ -6,8 +6,8 @@ import pytest
 
 
 @pytest.fixture(autouse=True)
-def _ac_hermetic(request, monkeypatch, tmp_path_factory):
-    """For every ``test_ac_*`` module: remove the review key and operator gateway (no test can reach a provider), and point the signing key and suggestion cache at a temp dir."""
+def _ac_hermetic(request, monkeypatch, tmp_path_factory, tmp_path):
+    """For every ``test_ac_*`` module: remove the review key and operator gateway (no test can reach a provider), point the signing key at a temp dir and run from a temp dir."""
     if not request.module.__name__.rsplit(".", 1)[-1].startswith("test_ac_"):  # the module name is shared.tests.test_ac_* here
         yield
         return
@@ -16,5 +16,5 @@ def _ac_hermetic(request, monkeypatch, tmp_path_factory):
     home = tmp_path_factory.mktemp("ac_home")
     monkeypatch.setenv("SHIPWRIGHT_AC_KEY_FILE", str(home / "ac_operator.key"))
     monkeypatch.setenv("SHIPWRIGHT_AC_MODE", "ask")  # the questions are the subject of most tests; the mode tests set their own
-    monkeypatch.setenv("SHIPWRIGHT_AC_SUGGEST_CACHE", str(home / "ac_suggest"))
+    monkeypatch.chdir(tmp_path)  # the worktree this suite runs in looks like a campaign unit (unattended): every test runs from a temp dir
     yield

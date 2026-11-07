@@ -1,6 +1,6 @@
 {
   "run_id": "iterate-2026-11-01-q1-pre-build-ac",
-  "date": "2026-11-07T08:00:20.744273Z",
+  "date": "2026-11-07T08:43:24.606862Z",
   "event_at": "2026-11-01T15:23:39.946873+00:00",
   "type": "feature",
   "complexity": "medium",
@@ -158,11 +158,16 @@
         "behavior": "[final] an unchanged AC is satisfied by a test that exists at the base, a restore is not; a skipped source says Q1 did not run; a campaign unit's event has source iterate",
         "disposition": "tested",
         "evidence": "shared/tests/test_ac_source_and_record.py::test_an_unchanged_ac_named_only_by_an_untouched_test_at_the_base_does_not_warn PASSED; shared/tests/test_ac_source_and_record.py::test_an_unchanged_ac_named_nowhere_warns_and_a_restore_still_needs_a_test_in_the_diff PASSED; shared/tests/test_ac_source_and_record.py::test_a_skipped_source_says_that_the_check_did_not_run PASSED; shared/tests/test_ac_source_and_record.py::test_an_off_flag_writes_a_marker_and_f11_skips_with_a_visible_note PASSED; shared/tests/test_ac_source_and_record.py::test_off_without_a_marker_still_warns_on_an_observable_diff_with_no_record PASSED; shared/tests/test_ac_source_and_record.py::test_a_campaign_unit_work_completed_event_always_has_source_iterate PASSED"
+      },
+      {
+        "behavior": "[final] the F11 marker wins over the environment, the first marker is kept, off next to a record warns; whole-id AC matching; no raw model id in the fallback reason; atomic answers with a clean error",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_ac_source_and_record.py::test_a_marker_that_says_ask_is_trusted_over_an_environment_that_says_off PASSED; shared/tests/test_ac_source_and_record.py::test_a_marker_that_says_off_does_not_skip_when_an_ac_record_exists PASSED; shared/tests/test_ac_source_and_record.py::test_the_first_marker_of_a_run_is_kept_so_a_later_off_cannot_silence_f11 PASSED; shared/tests/test_ac_source_and_record.py::test_ac05_is_not_found_inside_ac050_in_the_diff_or_at_the_base PASSED; shared/tests/test_ac_source_and_record.py::test_a_model_reply_with_an_unknown_id_never_puts_the_id_into_the_reason PASSED; shared/tests/test_ac_source_and_record.py::test_the_answers_file_is_replaced_atomically_and_a_broken_option_is_a_clean_error PASSED"
       }
     ],
     "counts": {
-      "testable": 29,
-      "tested": 29,
+      "testable": 30,
+      "tested": 30,
       "untestable": 0,
       "untested_testable": 0
     }

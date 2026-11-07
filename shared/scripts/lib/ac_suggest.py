@@ -120,7 +120,7 @@ def _reply(raw: object, cat: dict) -> tuple[dict | None, str]:
         return None, "the reply has no fr_id"
     fr = data["fr_id"]
     if fr is not None and not (isinstance(fr, str) and fr in cat.get("frs", ())):
-        return None, f"unknown requirement id {fr!r}"
+        return None, "unknown requirement id: the reply named an id that is not in the catalog"
     return {"fr_id": fr, "none": fr is None, "line": _clean(data.get("line"), LINE_WORDS) if fr else "",
             "title": _clean(data.get("title"), TITLE_WORDS), "sentence": _clean(data.get("sentence"), SENTENCE_WORDS)}, ""
 

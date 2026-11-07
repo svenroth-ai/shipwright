@@ -22,7 +22,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 import sys
 from pathlib import Path
 
@@ -31,6 +30,7 @@ if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
 from lib.ac_decision import stub_lines  # noqa: E402
+from lib.ac_mode import is_safe_run_id  # noqa: E402
 from lib.ac_record import append_record  # noqa: E402
 from lib.spec_chain import plan_rel_path, render_stub, stub_kind  # noqa: E402
 
@@ -68,7 +68,7 @@ def main() -> int:
     for key in ("run_id", "goal", "reason", "ref"):
         if not getattr(args, key):
             ap.error(f"{key.replace('_', '-')} is required (flag or --from-json)")
-    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]*", args.run_id) or ".." in args.run_id:
+    if not is_safe_run_id(args.run_id):
         ap.error("--run-id must be a plain run id (letters, digits, '_', '.', '-')")
     target = Path(args.project_root) / plan_rel_path(args.run_id)
     if target.exists() and not args.force:
@@ -80,6 +80,8 @@ def main() -> int:
             decided = json.loads(Path(args.ac_decision).read_text(encoding="utf-8"))
             if decided.get("status") != "ok":
                 raise ValueError(f"status is {decided.get('status')!r}, not 'ok' (answer the questions first)")
+            if decided.get("run_id") != args.run_id:
+                raise ValueError(f"it was made for run {decided.get('run_id')!r}, not {args.run_id!r} (run ac_decision.py again with --run-id {args.run_id})")
             ac_lines = stub_lines(decided)
         except (OSError, ValueError, KeyError, AttributeError) as exc:
             ap.error(f"--ac-decision unusable: {exc}")

@@ -44,7 +44,7 @@ def test_only_a_signed_answer_is_operator_and_the_signature_covers_question_choi
 
 
 @pytest.mark.covers("FR-01.11/AC49")
-def test_the_signing_key_is_created_exclusively_never_regenerated_and_a_bad_file_is_a_clear_error(tmp_path, monkeypatch):
+def test_the_signing_key_is_created_exclusively_never_regenerated_and_a_bad_file_is_a_clear_error(tmp_path, monkeypatch, capsys):
     path = tmp_path / "keys" / "k"
     monkeypatch.setenv(ac_hold.KEY_ENV, str(path))
     assert ac_hold.load_key() is None and not path.exists()           # reading never creates
@@ -62,7 +62,9 @@ def test_the_signing_key_is_created_exclusively_never_regenerated_and_a_bad_file
     path.unlink()
     monkeypatch.setattr(os, "open", lambda p, f, m=0o777: (path.write_text(key.hex() + "\n", encoding="ascii"), lost_race(p, f, m))[1])
     assert ac_hold.load_key(create=True) == key
-    monkeypatch.undo()
+    monkeypatch.undo()                                                 # undoes the fixture too: attended again, from a temp dir
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv("SHIPWRIGHT_LOOP_ID", raising=False)
     monkeypatch.setenv(ac_hold.KEY_ENV, str(path))
     for bad in ("", "not hex at all", "abcd"):                         # empty, malformed, too short: never regenerated
         path.write_text(bad, encoding="ascii")
@@ -77,6 +79,7 @@ def test_the_signing_key_is_created_exclusively_never_regenerated_and_a_bad_file
     held = tmp_path / "held.json"
     held.write_text(json.dumps({"questions": [{"item": 0, "question_sha256": "sha256:" + "a" * 64, "options": {}}]}), encoding="utf-8")
     assert cli.main(["answer", "--decided", str(held), "--item", "0", "--choice", "yes", "--answers", str(tmp_path / "a.json")]) == 2
+    assert "the signing key is empty" in capsys.readouterr().err                                      # the reason is named, not just the exit code
 
 
 @pytest.mark.covers("FR-01.11/AC49")

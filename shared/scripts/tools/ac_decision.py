@@ -46,6 +46,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -56,7 +57,7 @@ if str(_SCRIPTS_ROOT) not in sys.path:
 from lib.ac_apply import ANSWERS  # noqa: E402
 from lib.ac_catalog import load_catalog  # noqa: E402
 from lib.ac_decision import decide  # noqa: E402
-from lib.ac_mode import MODES, resolve_mode, write_marker  # noqa: E402
+from lib.ac_mode import MODES, is_safe_run_id, resolve_mode, write_marker  # noqa: E402
 from lib.ac_hold import AC_HOLD_REASON, OPERATOR_ENV, is_unattended, load_key, operator_channel_open, sign  # noqa: E402
 from lib.ac_record import verify  # noqa: E402
 from lib.ac_suggest import make_suggester  # noqa: E402
@@ -64,6 +65,7 @@ from lib.ac_surface import git_changes, merge_base, observable_files  # noqa: E4
 from lib.ac_wording import diff_identifiers  # noqa: E402
 
 EXIT_OK, EXIT_ASK, EXIT_EXPLAIN, EXIT_INVALID = 0, 10, 11, 2
+_BAD_RUN_ID = "--run-id must be a plain run id (letters, digits, '_', '.', '-'; no '..')"
 
 
 class _Fail(Exception):
@@ -123,6 +125,8 @@ def run_answer(argv: list[str]) -> int:
     choice = args.choice
     picked = (qs[0].get("options") or {}).get(choice)
     if isinstance(picked, dict):  # an option NUMBER of the question: the requirement id stays in the machine record, the operator never types it
+        if not isinstance(picked.get("choice"), str):
+            raise _Fail(f"option {choice} of the stored question has no usable choice")
         choice, text = picked["choice"], picked.get("text") or text
     elif choice not in ANSWERS:
         raise _Fail(f"--choice must be {', '.join(ANSWERS)} or an option number of the question, not {choice!r}")
@@ -136,7 +140,10 @@ def run_answer(argv: list[str]) -> int:
     stored = {k: v for k, v in qs[0].items() if k.startswith("suggestion_")}  # the options come from the STORED question the operator saw, never from the caller
     kept.append({"item": args.item, "question_sha256": sha, "choice": choice, "text": text, "options": qs[0].get("options") or {}, **stored,
                  "via": "operator", "signature": sign(key, sha, choice, text)})
-    Path(args.answers).write_text(json.dumps({"answers": kept}, indent=2, ensure_ascii=False) + "\n", encoding="utf-8", newline="\n")
+    target = Path(args.answers)
+    tmp = target.with_name(target.name + ".tmp")  # temp file + replace: a crash never leaves half an answer file
+    tmp.write_text(json.dumps({"answers": kept}, indent=2, ensure_ascii=False) + "\n", encoding="utf-8", newline="\n")
+    os.replace(tmp, target)
     print(json.dumps({"recorded": True, "item": args.item, "question_sha256": qs[0]["question_sha256"]}))
     return EXIT_OK
 
@@ -147,6 +154,8 @@ def run_verify(argv: list[str]) -> int:
     ap.add_argument("--run-id", required=True)
     ap.add_argument("--base-ref", required=True, help="the ref the change branches from; resolved to merge-base(base-ref, HEAD)")
     args = ap.parse_args(argv)
+    if not is_safe_run_id(args.run_id):
+        raise _Fail(_BAD_RUN_ID)
     try:
         base = merge_base(args.project_root, args.base_ref)
         catalog = load_catalog(args.project_root, base)
@@ -173,6 +182,8 @@ def run_decide(argv: list[str]) -> int:
     ap.add_argument("--no-suggest", action="store_true", help="do not call the model; the deterministic wording and candidates are used")
     ap.add_argument("--out", default="", help="also write the decision JSON to this file")
     args = ap.parse_args(argv)
+    if args.run_id and not is_safe_run_id(args.run_id):
+        raise _Fail(_BAD_RUN_ID)
     unattended = args.autonomous or is_unattended(Path(args.project_root))
     try:
         mode, mode_source = resolve_mode(args.project_root, args.ac_mode, unattended)
@@ -184,7 +195,9 @@ def run_decide(argv: list[str]) -> int:
         raise _Fail("--run-id is required in an unattended run or with --answers (answers are bound to the run)")
     if args.run_id:  # the mode actually used is written for F11, whatever set it (flag, variable, config); off needs it, because off writes no record
         try:
-            write_marker(args.project_root, args.run_id, mode, mode_source)
+            _, kept = write_marker(args.project_root, args.run_id, mode, mode_source)
+            if kept:
+                print(f"ac_decision: this run already has a mode marker; the first one is kept (this run used mode={mode})", file=sys.stderr)
         except OSError as exc:
             raise _Fail(f"cannot write the mode marker for {args.run_id}: {exc}") from exc
     if mode == "off":
@@ -213,6 +226,7 @@ def run_decide(argv: list[str]) -> int:
     suggester = make_suggester(catalog, args.project_root, not args.no_suggest)
     result = decide(data.get("items"), catalog, unattended, surface, idents, answers, bind_id, suggester, list(changes), mode)
     result["ac_mode"] = {"mode": mode, "source": mode_source}
+    result["run_id"], result["bind_id"] = args.run_id, bind_id  # write_plan_stub.py refuses a decided.json made for another run
     result["exemption_check"] = (f"tested against the current diff ({len(changes)} file(s), {surface['ignored']} not observable)" if surface and changes else
                                  "a claim only: the diff is empty before the build; F11 tests it against the committed diff (a warning)")
     if surface is not None:

@@ -33,7 +33,7 @@ if str(_SCRIPTS_ROOT) not in sys.path:
 
 from lib.ac_catalog import load_catalog  # noqa: E402
 from lib.ac_mode import read_marker, resolve_mode, source_label  # noqa: E402
-from lib.ac_record import verify  # noqa: E402
+from lib.ac_record import has_record, verify  # noqa: E402
 from lib.ac_surface import merge_base  # noqa: E402
 
 from .affected_acs_check import _work_event  # noqa: E402
@@ -55,11 +55,15 @@ def check_pre_build_ac_recorded(project_root: Path, run_id: str, commit_hash: st
     root = Path(project_root)
     try:
         marker = read_marker(root, run_id, commit_hash)  # written by ac_decision.py: sees a --ac-mode flag, which the environment and config do not
-        if marker.get("mode") == "off":
-            return _skip(f"Q1 off: mode=off (source={marker.get('source') or 'flag'})")
-        mode, source = resolve_mode(root)
-        if mode == "off":
-            return _skip(f"Q1 off: mode=off (source={source_label(source)})")
+        if marker:  # a marker at the head wins: only it is trusted, the environment and config are not looked at
+            if marker["mode"] == "off":
+                if has_record(root, run_id, commit_hash or None):
+                    return _warn("mode off contradicts an existing record: the run's marker says off but an AC record exists")
+                return _skip(f"Q1 off: mode=off (source={marker.get('source') or 'flag'})")
+        else:
+            mode, source = resolve_mode(root)
+            if mode == "off":
+                return _skip(f"Q1 off: mode=off (source={source_label(source)})")
         event = _work_event(root, run_id)
         if event is None:
             return _skip(f"no work_completed event for {run_id}")

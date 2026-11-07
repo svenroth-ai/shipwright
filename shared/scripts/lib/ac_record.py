@@ -15,14 +15,13 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from lib.ac_base_tests import named_in_base_tests
+from lib.ac_base_tests import ac_pattern, named_in_base_tests
 from lib.ac_catalog import ac_body, catalog_texts, load_catalog
 from lib.ac_decision import count_decisions, frozen_fields
-from lib.ac_hold import is_unattended
 from lib.ac_surface import git_changes, is_observable_path, is_test_path, observable_files, read_blobs, run_git
 from lib.ac_wording import diff_identifiers, wording_violations
 
-__all__ = ["append_record", "changed_catalog", "freeze_differences", "read_records", "record_path", "undeclared_edits", "verify"]
+__all__ = ["append_record", "changed_catalog", "freeze_differences", "read_records", "record_path", "has_record", "undeclared_edits", "verify"]
 
 
 def record_path(project_root: str | Path, run_id: str) -> Path:
@@ -66,6 +65,12 @@ def append_record(project_root: str | Path, run_id: str, result: dict) -> dict:
     with path.open("a", encoding="utf-8", newline="\n") as fh:
         fh.write(json.dumps(rec, ensure_ascii=False, sort_keys=True) + "\n")
     return rec
+
+
+def has_record(project_root: str | Path, run_id: str, head: str | None = None) -> bool:
+    """True when the run has a non-empty AC record at ``head`` (None = working tree)."""
+    rel = _rel(run_id)
+    return bool(_texts(Path(project_root), head, [rel])[rel].strip())
 
 
 def _texts(root: Path, ref: str | None, paths: list[str]) -> dict[str, str]:
@@ -129,8 +134,8 @@ def undeclared_edits(items: object, changed: dict[str, str], removed: set[str], 
 
 
 def _mentions(changes: dict[str, dict], ac: str) -> bool:
-    forms = (ac, ac.replace(".AC", "/AC"))
-    return any(is_test_path(p) and any(f in line for line in rec.get("added", []) for f in forms) for p, rec in changes.items())
+    pat = ac_pattern(ac)
+    return any(is_test_path(p) and any(pat.search(line) for line in rec.get("added", [])) for p, rec in changes.items())
 
 
 def _order_problem(root: Path, rel: str, base: str, head: str) -> str:
@@ -222,7 +227,7 @@ def verify(project_root: str | Path, run_id: str, base: str, head: str | None, c
             out.append("the AC record has no usable decisions (one {ac, mode, answer, kind, answered_via} per item)")
         else:
             weak = sorted({str(d.get("answered_via")) for d in decisions if isinstance(d, dict) and d.get("mode") == "asked" and d.get("answered_via") != "operator"})
-            if weak and is_unattended(root):  # an attended run's inline answers are only counted (counts.answered_inline, a PR-body line), never warned
+            if weak and last.get("unattended"):  # the run's OWN recorded flag, not the finalize-time environment; an attended run's inline answers are only counted (counts.answered_inline, a PR-body line), never warned
                 out.append(f"an asked decision in an unattended run was not answered through the signed operator channel (answered_via: {', '.join(weak)})"
                            " - answered_via is self-reported, a guard and not authentication")
     return out
