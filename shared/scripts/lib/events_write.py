@@ -46,7 +46,9 @@ def stamp_run(event: dict, project_root: Path | str, run_id: str | None = None) 
 
 
 def _same_content(a: dict, b: dict) -> bool:
-    strip = lambda e: {k: v for k, v in e.items() if k != "run"}  # noqa: E731 -- run is not content
+    # ``run`` is the writer's stamp and ``ts`` may have been bumped by ``_monotonic_ts`` on the first write, so a
+    # retry carrying the original instant is still the same event (the id is its identity, not its instant).
+    strip = lambda e: {k: v for k, v in e.items() if k not in ("run", "ts")}  # noqa: E731
     return json.dumps(strip(a), sort_keys=True, default=str) == json.dumps(strip(b), sort_keys=True, default=str)
 
 
@@ -89,9 +91,18 @@ def amend_commit(project_root: Path | str, event_id: str, commit_sha: str, run_i
     False when the target event is unknown. The key is the explicit ``run_id``, else the target's ``adr_id``.
     """
     with FileLock(events_lock_path(project_root)):
-        target = next((e for e in read_events(project_root) if e.get("id") == event_id), None)
+        events = read_events(project_root)
+        target = next((e for e in events if e.get("id") == event_id), None)
         if target is None:
             return False
+        # Readers apply ONLY the last amendment of a target (lib/events_amend.apply_amendments), so the effective
+        # commit is that amendment's ``commit`` if it carries one, else the target's own -- a later ``{"pr": N}``
+        # amendment therefore leaves the commit as the target had it, and a retry must restore it.
+        last = next((e for e in reversed(events) if e.get("type") == "event_amended" and e.get("amends") == event_id), None)
+        fields = last.get("fields") if last else None
+        effective = fields["commit"] if isinstance(fields, dict) and "commit" in fields else target.get("commit")
+        if effective == commit_sha:
+            return True  # already the effective commit: a repeat call (re-run, retry) adds nothing
         write_event_line(project_root, {
             "v": 1, "id": new_event_id(project_root), "ts": datetime.now(timezone.utc).isoformat(),
             "type": "event_amended", "amends": event_id, "fields": {"commit": commit_sha}},
