@@ -91,9 +91,9 @@ That design (lexical HOW test as an ask trigger, hash as the freeze, how-only an
 
 ## (b) Question sheet for the operator: approved design, regenerated
 
-**Verdict history (short).** Round 1: the area pick list and the model rewording were unclear for cases 4-9. Round 2 added context lines, a gloss and extra options: too much. Round 3 (reduced): why it is asked, the exact acceptance-criterion wording, the requirement, and a help option that is always last. Round 4 (the operator's go, this sheet): the requirement is shown by its NAME instead of its long text; `Part:` shows bare names; the code's own top three are offered only where they differ from the model's pick; "No requirement fits, create a new one" has a fast path; and the question can be switched off or answered by Shipwright (ask / auto / off). A measurement of "code and AI agree, so skip the question" found it rarely fires (7 / 27 / 0 / 14 percent), and the AI alone beat the vote: that idea is dropped. There is no rule that a requirement is "too broad, so suggest a new one" (the operator's decision; broad requirements are re-sliced separately).
+**Verdict history (short).** Round 1: the area pick list and the model rewording were unclear for cases 4-9. Round 2 added context lines, a gloss and extra options: too much. Round 3 (reduced): why it is asked, the exact acceptance-criterion wording, the requirement, and a help option that is always last. Round 4 (the operator's go, this sheet): the requirement is shown by its NAME instead of its long text; `Part:` shows bare names; "No requirement fits, create a new one" has a fast path; and the question can be switched off or answered by Shipwright (ask / auto / off). A measurement of "code and AI agree, so skip the question" found it rarely fires (7 / 27 / 0 / 14 percent), and the AI alone beat the vote: that idea is dropped. There is no rule that a requirement is "too broad, so suggest a new one" (the operator's decision; broad requirements are re-sliced separately).
 
-**The question** (one fixed shape, English): an intro, `Finding:` (four findings), `Part:`, the acceptance-criterion lines with the agent's wording unchanged, the requirement (`Requirement FR-xx.yy: "<name>"`, plus for a model pick one optional `In plain words:` line of at most 12 words that code checked and drops when it is long, quoted or code-like; a requirement that does not exist yet shows `New requirement:` and `Purpose:`), `Does this fit?` and numbered options, `Don't understand, need help.` always last. When the code's own best match differs from the model's pick, up to three of them follow as `Add it to FR-xx instead`. "No requirement fits, create a new one" asks one more question that shows the drafted requirement: one Yes. When the model says nothing fits, that drafted-requirement question is the first one.
+**The question** (one fixed shape, English): an intro, `Finding:` (four findings), `Part:`, the acceptance-criterion lines with the agent's wording unchanged, the requirement (`Requirement FR-xx.yy: "<name>"`, plus for a model pick one optional `In plain words:` line of at most 12 words that code checked and drops when it is long, quoted or code-like; a requirement that does not exist yet shows `New requirement:` and `Purpose:`), `Does this fit?` and numbered options, `Don't understand, need help.` always last. There is no list of other requirements to pick from (a ranking by the file history is a later follow-up). "No requirement fits, create a new one" asks one more question that shows the drafted requirement: one Yes. When the model says nothing fits, that drafted-requirement question is the first one.
 
 **`Part:`** is never a hard-coded word and never a path prefix. It is the spec's own grouping of the requirement (the requirements table's `Area` column, else the name of the split; this repo's `Adopted` names nothing and is skipped), else the changed paths' top-level parts as bare names (`shipwright-build`, not `plugins/shipwright-build`; `shared`, docs, tests and tooling are no part), else no line. On this sheet the paths are the files of the recorded cases' commits; a real run passes the paths it will change in the add item's `files`.
 
@@ -104,7 +104,7 @@ That design (lexical HOW test as an ask trigger, hash as the freeze, how-only an
 Reading it honestly:
 
 - The model picks by meaning; whether each pick is right is for the operator to judge (the options "wrong requirement" and "need help" exist for that). Case 4 (FR-01.17 for a review-reuse rule in the build and iterate parts) is the pick most open to doubt.
-- The code's "Add it to ... instead" list is weak: it ranks by shared words, so in cases 4, 8 and 10 two or three of the three entries are unrelated requirements (for example "Triage Inbox" in case 10). It is shown because the operator asked for it; a better ranking (the run history) is not built.
+- There is no "Add it to FR-xx instead" list any more. A first version ranked other requirements by shared words and showed unrelated ones (for example "Triage Inbox", "Mockups", "Guided elicitation"), so it was removed from this PR; the options are Yes, No (wrong requirement), No requirement fits (create a new one) and help. A ranking by the measured file history is a later follow-up.
 - The acceptance-criterion wording is shown as recorded, including its jargon ("coordinator", "outside reviewers", "however the command was typed"); the agent-side rule in Step 2a (real names, no role nouns) is the fix, not a code check.
 - Real gap for non-Shipwright projects: the spec has no component per requirement. A requirements table gives the `Area` column and several splits give the split name; a single-split project without an `Area` column gets no grouping, so `Part:` falls back to directories or is omitted.
 - The cases 1 to 3 "until now" texts are reconstructed from the recorded cases. The 10-of-10 bar is NOT claimed; the operator has not seen this sheet.
@@ -180,12 +180,9 @@ In plain words: Independent re-check of proposed changes on the code host before
 
 Does this fit?
 1 Yes, add it there.
-2 Add it to FR-01.11 instead: Ongoing change at the depth it deserves
-3 Add it to FR-01.03 instead: Implementation planning with independent review
-4 Add it to FR-01.05 instead: Test-driven build of planned sections
-5 No, wrong requirement. (You tell the agent in the chat which one.)
-6 No requirement fits, create a new one.
-7 Don't understand, need help.
+2 No, wrong requirement. (You tell the agent in the chat which one.)
+3 No requirement fits, create a new one.
+4 Don't understand, need help.
 ```
 
 ### Case 5 (#884)
@@ -261,12 +258,9 @@ In plain words: Audit-ready evidence linking requirements to the tests covering 
 
 Does this fit?
 1 Yes, add it there.
-2 Add it to FR-01.16 instead: Guided requirement elicitation
-3 Add it to FR-01.04 instead: Mockups from requirements
-4 Add it to FR-01.11 instead: Ongoing change at the depth it deserves
-5 No, wrong requirement. (You tell the agent in the chat which one.)
-6 No requirement fits, create a new one.
-7 Don't understand, need help.
+2 No, wrong requirement. (You tell the agent in the chat which one.)
+3 No requirement fits, create a new one.
+4 Don't understand, need help.
 ```
 
 ### Case 9 (#936)
@@ -304,12 +298,9 @@ In plain words: Independent re-check of proposed changes on the code host before
 
 Does this fit?
 1 Yes, add it there.
-2 Add it to FR-01.11 instead: Ongoing change at the depth it deserves
-3 Add it to FR-01.14 instead: Triage Inbox
-4 Add it to FR-01.01 instead: End-to-end delivery pipeline
-5 No, wrong requirement. (You tell the agent in the chat which one.)
-6 No requirement fits, create a new one.
-7 Don't understand, need help.
+2 No, wrong requirement. (You tell the agent in the chat which one.)
+3 No requirement fits, create a new one.
+4 Don't understand, need help.
 ```
 
 ## (c) Ask rate: reported after the merge, never before

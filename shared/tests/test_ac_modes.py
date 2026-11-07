@@ -1,4 +1,4 @@
-"""The three modes (ask / auto / off), the checked model lines, the code's own alternatives and the unconfirmed list. Hermetic: no provider, no key, temp dirs only."""
+"""The three modes (ask / auto / off), the checked model lines and the unconfirmed list. Hermetic: no provider, no key, temp dirs only."""
 
 from __future__ import annotations
 
@@ -96,7 +96,7 @@ def test_off_does_nothing_and_a_run_without_auto_still_asks():
     assert _decided([_ADD], _CAT, mode="ask", bind_id="b")["status"] == "ask"
 
 
-# --- the checked model lines and the code's own alternatives --------------------------------------------------------
+# --- the checked model lines --------------------------------------------------------
 
 def _reply(**fields) -> dict:
     return su.propose("A draft is kept a year", {**_CAT, "fr_text": {}}, ".", transport=lambda m, t: json.dumps(fields), model="stub/model")
@@ -115,15 +115,15 @@ def test_a_model_line_is_shown_only_when_code_finds_it_plain_and_short():
 
 
 @pytest.mark.covers("FR-01.11/AC49")
-def test_the_question_shows_the_name_a_checked_line_and_the_codes_alternatives_only_when_they_differ():
+def test_the_question_shows_the_name_a_checked_line_and_never_a_list_of_other_requirements():
     sugg = _model("FR-01.04", line="Letting people see a draft")
     q = _decided([_ADD], _CAT, bind_id="b", suggest=lambda n, it: sugg)["questions"][0]
     assert 'Requirement FR-01.04: "Sharing drafts"\nIn plain words: Letting people see a draft\n' in q["question"]
     lines = q["question"].splitlines()
-    assert any(ln.startswith("2 Add it to FR-01.03 instead: Saving drafts") for ln in lines)                      # the code's top choice differs from the model's pick
-    assert q["options"]["2"] == {"choice": "yes", "text": "FR-01.03"} and lines[-1].endswith("need help.") and "create a new one" in lines[-2]
+    assert "instead" not in q["question"] and list(q["options"]) == ["1", "2", "3", "4"]                          # yes / no, wrong requirement / create a new one / help: no alternatives
+    assert q["options"]["1"] == {"choice": "yes", "text": "FR-01.04"} and lines[-1].endswith("need help.") and "create a new one" in lines[-2]
     same = _decided([_ADD], _CAT, bind_id="b", suggest=lambda n, it: _model("FR-01.03"))["questions"][0]
-    assert "instead" not in same["question"] and "In plain words" not in same["question"]                    # they agree, and the model gave no line
+    assert "instead" not in same["question"] and "In plain words" not in same["question"]                    # the model gave no line
     none = _decided([_ADD], _CAT, bind_id="b", suggest=lambda n, it: _NONE)["questions"][0]
     assert "New requirement: How long a draft is kept\nPurpose: Say how long an unused draft stays." in none["question"]
     assert none["options"]["1"] == {"choice": "new_fr", "text": "How long a draft is kept", "summary": "Say how long an unused draft stays."}

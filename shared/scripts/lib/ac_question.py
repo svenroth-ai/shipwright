@@ -4,8 +4,7 @@ Fixed shape, no wording of ours or a model's: why it is asked (the finding), the
 agent wrote, and the name of the requirement from the spec. The options are numbered in order and "Don't understand, need
 help" is always last. The text is display only: an answer is bound to the stable content, not to this text (:mod:`lib.ac_hold`).
 A model may only propose WHICH requirement a new AC belongs to, one plain line about it and a draft of a new requirement
-(:mod:`lib.ac_suggest`); code checks the id and every line, and fetches the name. When the code's own top choices differ
-from the model's pick they are offered as extra "add it to ... instead" options.
+(:mod:`lib.ac_suggest`); code checks the id and every line, and fetches the name. There is no list of other requirements to pick from.
 """
 
 from __future__ import annotations
@@ -45,14 +44,6 @@ def draft_fr(item: dict, sugg: dict | None = None) -> tuple[str, str]:
     return _norm(sugg.get("title")) or _norm(item.get("new_text")), _norm(sugg.get("sentence"))
 
 
-def _alternatives(item: dict, cat: dict, sugg: dict | None, fr: str) -> list[tuple[str, str]]:
-    """The code's own top three by shared words, shown only when the model's pick is not the code's first choice."""
-    if not (isinstance(sugg, dict) and sugg.get("source") == "model" and fr):
-        return []
-    found = candidates(_norm(item.get("new_text")), cat, 4)
-    return [] if not found or found[0][0] == fr else [c for c in found if c[0] != fr][:3]
-
-
 def _create_option(item: dict, sugg: dict | None, again: bool) -> tuple[str, dict]:
     """The "create a new requirement" answer; ``again`` asks one more question that shows the drafted requirement (the operator picked it from a list)."""
     title, summary = draft_fr(item, sugg)
@@ -76,9 +67,8 @@ def _plan(item: dict, cat: dict, sugg: dict | None) -> tuple[str, list[str], str
     fr = best_fr(item, cat, sugg)
     if not fr:
         return "this change needs a requirement that does not exist yet.", ac, "", [_create_option(item, sugg, False), (_NO, {"choice": "no"})]
-    alts = [(f"Add it to {a} instead: {t}", {"choice": "yes", "text": a}) for a, t in _alternatives(item, cat, sugg, fr)]
     return ("this change adds a new acceptance criterion to an existing requirement.", ac, fr,
-            [("Yes, add it there.", {"choice": "yes", "text": fr}), *alts, ("No, wrong requirement. (You tell the agent in the chat which one.)", {"choice": "no"}),
+            [("Yes, add it there.", {"choice": "yes", "text": fr}), ("No, wrong requirement. (You tell the agent in the chat which one.)", {"choice": "no"}),
              _create_option(item, sugg, True)])
 
 
