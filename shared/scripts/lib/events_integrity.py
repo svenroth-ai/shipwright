@@ -38,7 +38,7 @@ from .events_log import ARCHIVE_DIR, DROPS_DIR, EVENT_FILE, QUARANTINE_DIR
 from .events_read import sanitize_key
 
 REGULAR_MODES = ("100644", "100755")
-ARCHIVE_FOLD_NAME = re.compile(r"^fold-[0-9a-f]{12}\.jsonl$")
+ARCHIVE_FOLD_NAME = re.compile(r"^fold-[0-9a-f]{12}\.jsonl\Z")
 
 
 @dataclass(frozen=True)

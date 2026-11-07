@@ -1,0 +1,277 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-07-events-drop-files-s8-full-integration",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-07T01:21:44.095280+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "approach ·",
+          "file": null,
+          "line": null,
+          "finding": "The default benchmark permits 10× the acceptance limits, so S8 could appear green while failing the required ≤20 ms run-scoped read and ≤0.3 s whole-log read. An optional strict flag does not establish a blocking gate on both platforms.",
+          "suggestion": "Make strict benchmarking mandatory for the S8 gate on Windows and Linux. Define the measurement method, repetitions, and cache conditions, and record results separately from the generous regression checks.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "Event-multiset equality, `finalized_run_ids`, and `latest_event_dt` do not establish rollback equivalence if event ordering affects reconstructed state. These checks can pass despite changed ordering among retries or events with identical timestamps.",
+          "suggestion": "Compare the reader’s reconstructed run state before and after each rollback, including retry outcomes and deterministic ordering. Run each rollback independently from a fresh copy; also verify that repeating a completed fold is safe.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk ·",
+          "file": null,
+          "line": null,
+          "finding": "Chunking `fold_events --stage` introduces partial-success behavior: an early chunk can be staged before a later command fails. The proposed fault-injection coverage does not explicitly cover this new failure boundary.",
+          "suggestion": "Inject a failure after a successful staging chunk and verify that the command reports failure, preserves recoverable events, and can be retried without loss or duplication. Size chunks by command-line length, including long Windows paths.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk ·",
+          "file": null,
+          "line": null,
+          "finding": "The first-parent change to `check_layout_ci` needs explicit merge coverage. Exempting inherited pre-flip appends must still detect legacy-log modifications introduced by merge conflict resolution; otherwise this production fix could weaken the layout guard.",
+          "suggestion": "Add paired cases: a merge that merely inherits allowed history passes, while a merge resolution that introduces a prohibited append fails. Include the stacked-base scenario in these assertions.  The approach is well aligned with S8 and appropriately leaves the operational flip to the follow-up campaign. Before using it as the release gate, make the performance thresholds blocking and explicitly verify the failure boundaries introduced by the production fixes.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-07T01:21:28.717153+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] **Findings**\n\n- **Category: edge-case / Severity: medium** — The benchmark uses \"a real legacy log + 300 drops\" but the acceptance criteria specify \"300 files.\" If the real log's size is unbounded or the fixture isn't pinned, CI numbers drift and the \"<= 20 ms / <= 0.3 s\" gate can't be reproducibly verified. Pin an exact fixture (committed or generated deterministically) and assert its file count, so KC5 is a real gate rather than a sample.\n\n- **Category: risk / Severity: medium** — Rollback rehearsal on \"a copy of real history\" depends on there being a sufficiently representative real history at this point (pre-flip, mixed-version appends, a torn drop if quarantine is rehearsed). If the real log is thin, the rehearsal is a happy-path test masquerading as a rehearsal. Explicitly state minimum characteristics the history copy must have (e.g., at least one mid-run flip artifact, at least one non-finalized run) or synthesize the missing states on top of the copy.\n\n- **Category: approach / Severity: medium** — Item 4 bundles three incidental production fixes into a test-gate change (\"fixes the rehearsals force\"). The `check_layout_ci` behavior change (judging layout at first parent) changes blame semantics for *all* PRs, not just flip-era ones — that's a behavioral policy change shipped inside S8. Split it out or at minimum add a dedicated test for the first-parent judgment (a PR that merges main with pre-flip appends must pass), otherwise it's only exercised incidentally.\n\n- **Category: risk / Severity: low** — Fixing `\\Z` in three name regexes is a correctness fix for Python's `re` (where `\\Z` is the true end-anchor; `$` matches before trailing newline). Fine, but verify it's applied consistently across all name-validation paths, not just the three the rehearsal tripped — otherwise validation is inconsistent between paths.\n\n- **Category: edge-case / Severity: low** — Windows-shared-runner timing with 10x bounds plus strict mode behind an env var is reason […truncated]\n\n[openai] 1. **Category: approach · Severity: high**  \n   **Finding:** The default benchmark permits 10× the acceptance limits, so S8 could appear green while failing the required ≤20 ms run-scoped read and ≤0.3 s whole-log read. An optional strict flag does not establish a blocking gate on both platforms.  \n   **Suggestion:** Make strict benchmarking mandatory for the S8 gate on Windows and Linux. Define the measurement method, repetitions, and cache conditions, and record results separately from the generous regression checks.\n\n2. **Category: edge-case · Severity: medium**  \n   **Finding:** Event-multiset equality, `finalized_run_ids`, and `latest_event_dt` do not establish rollback equivalence if event ordering affects reconstructed state. These checks can pass despite changed ordering among retries or events with identical timestamps.  \n   **Suggestion:** Compare the reader’s reconstructed run state before and after each rollback, including retry outcomes and deterministic ordering. Run each rollback independently from a fresh copy; also verify that repeating a completed fold is safe.\n\n3. **Category: risk · Severity: medium**  \n   **Finding:** Chunking `fold_events --stage` introduces partial-success behavior: an early chunk can be staged before a later command fails. The proposed fault-injection coverage does not explicitly cover this new failure boundary.  \n   **Suggestion:** Inject a failure after a successful staging chunk and verify that the command reports failure, preserves recoverable events, and can be retried without loss or duplication. Size chunks by command-line length, including long Windows paths.\n\n4. **Category: risk · Severity: medium**  \n   **Finding:** The first-parent change to `check_layout_ci` needs explicit merge coverage. Exempting inherited pre-flip appends must still detect legacy-log modifications introduced by merge conflict resolution; otherwise this production fix could weaken the layout guard.  \n   **Suggestion:** Add paired cas […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-07T01:21:44.236065+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "bf4260dc7e3e7a82ec079be9460b9c6a66dd187c"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "per-commit rule never lets a PR append legacy after the flip",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Linux benchmark numbers are meaningful for precondition 4",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "shallow checkout verdict; fork-point semantics; empty legacy log; full fold lossless modulo exact duplicates",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-07T01:21:29.496713+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "bf4260dc7e3e7a82ec079be9460b9c6a66dd187c"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "bug / regression",
+          "file": "shared/scripts/lib/events_layout_ci.py` — `_legacy_written_on_drops`, the `git log ... f\"{base_ref}..{head_ref}\"` line",
+          "line": null,
+          "finding": "When the PR head declares `drops` because it merged main in, `base_ref..head_ref` includes all of main's commits reachable through the merge, not just the PR's own commits. Any commit on main that legitimately touched `shipwright_events.jsonl` — most concretely a full-fold rollback commit on main (which writes the legacy log by design and whose first parent is `drops`) — will be attributed to the PR and trigger `legacy_write_after_flip`. Result: after an operator performs a full-fold rollback on main, every open PR that merges main is blocked by CI, with no escape hatch (`allow_full_fold` only covers the head-declares-legacy shape). The same applies to main's own rollback commits generally.",
+          "suggestion": "Restrict the per-commit walk to commits reachable from `head_ref` but NOT from `base_ref` and not first-parent-reachable from main after the merge — e.g. use `git log --no-merges base_ref..head_ref ^main` semantics, or pass the merge-base and use `--ancestry-path`/exclude the main side of the merge, so only the PR's own first-parent history is judged.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/lib/events_layout_ci.py` — the `len(parts) < 2` branch in `_legacy_written_on_drops",
+          "line": null,
+          "finding": "The comment says \"no parent to judge against: fail closed\", but with `--no-merges` every listed commit has exactly one parent, so `len(parts) < 2` can only fire on a malformed `git log` line (e.g. an empty-hash edge). Meanwhile a root commit touching the legacy log (possible in the rehearsal copies and odd histories) is silently judged via `_layout_at(root, parts[1])` on a nonexistent ref — `_layout_at` presumably returns `None`, so the commit is skipped (fail-open), contradicting the comment. Also `git log --format=%H %P` can wrap/misparse if a future git changes output; the split is fragile.",
+          "suggestion": "Explicitly handle the zero-parent case (`len(parts) == 1` → return True) and assert the expected field count; treat any parse anomaly as a violation (fail closed) as the comment claims.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "integration-tests/test_events_drops_benchmark.py` — the `RUN_MS, WHOLE_MS, WRITE_MS = (20, 300, 250) if STRICT else (200, 3000, 4000)` line, and the readiness note's precondition 4",
+          "line": null,
+          "finding": "The acceptance criterion is \"KC5 green: run-scoped read ≤ 20 ms and whole log ≤ 0.3 s at 300 files\" on Windows and the Linux CI runner. In CI the test only asserts 10× bounds; the real Linux numbers are written to `GITHUB_STEP_SUMMARY` for a human to read, and strict mode is opt-in via an env var that CI does not set. So on Linux the gate is never mechanically enforced — S8 could go \"green\" in CI while failing the actual KC5 budgets, and the check depends entirely on the operator remembering precondition 4. The note acknowledges this, but the AC as written (\"green\") is only satisfied by convention, not by the test.",
+          "suggestion": "Either assert the real bounds on the Linux runner (with a documented, generous-but-sub-10× tolerance), or have CI compare the measured numbers against the strict bounds and fail (or at least emit a distinct warning) when they're exceeded — leaving a human-remembers step as the only enforcement is the weakest form of a gate.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/tools/fold_events.py` — `_stage` and `STAGE_CHUNK",
+          "line": null,
+          "finding": "Partial-staging failure mode is real and untested: if a later chunk's `git add` throws, earlier chunks remain staged, `main` catches and returns exit 2 — but nothing un-stages, and the tool's own \"nothing is committed by the tool\" invariant doesn't cover \"nothing is left staged\". A user who then runs `git commit` (thinking the tool finished, or via an alias) commits a partial fold. This new failure boundary has no test, and the fix note in the campaign file only lists it as a known gap rather than addressing it. Also `STAGE_CHUNK = 100` is a magic number tuned to one path-length assumption; a repo with very long paths could still exceed the Windows limit even at 100.",
+          "suggestion": "On exception, run `git reset` (or `git restore --staged`) for the already-staged paths before returning 2, and add a fault-injection test (fail chunk N>1, assert clean index after exit 2). Derive the chunk size from a conservative path-length budget rather than a fixed 100.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "integration-tests/test_events_drops_full_system.py` — `test_two_run_ids_in_one_shared_worktree...`, the `os.environ[\"SHIPWRIGHT_RUN_ID\"] = \"run-a\"` / `del` lines",
+          "line": null,
+          "finding": "The test mutates the process-global `os.environ` directly with a manual try/finally instead of `monkeypatch` (which the other tests in this file use via `_env`). Under pytest-xdist/parallel runs, or if the `own_drops` call raises before `finally` handles it in an unexpected way, environment state can leak between tests; every other subprocess in this suite goes to lengths to strip `SHIPWRIGHT_` from the environment, so this in-process write is inconsistent with the suite's own isolation discipline and can mask leakage bugs in `own_drops`.",
+          "suggestion": "Use `monkeypatch.setenv`/`monkeypatch.delenv` for the `SHIPWRIGHT_RUN_ID` toggle.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "integration-tests/test_events_drops_benchmark.py` — `run_scoped",
+          "line": null,
+          "finding": "The \"run-scoped read\" filters the legacy log by `r.get(\"adr_id\") == RUN_KEY` while drop membership is by filename key. If a run's events in the legacy log carry the key under a different field (e.g. `run` or `session`, which the real bodies use — the fixture only sets `run`), the measured reader silently returns a wrong (empty) legacy slice and the benchmark still passes — the `assert len(...) == PER_FILE` only checks the drops side. A reader bug that drops legacy events entirely would not be caught by this benchmark.",
+          "suggestion": "Add one seeded legacy event carrying the run key and assert it appears in the run-scoped result, so the legacy-side filter is actually validated, not just timed.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "integration-tests/test_events_drops_rollback_rehearsal.py` — `_key",
+          "line": null,
+          "finding": "The rehearsal splits by `adr_id`/`session` and falls back to `\"_legacy\"` — if the real log contains many events without either field (as the fallback name implies), all of them land in ONE giant drop (`_legacy--aaaaaaaa--....jsonl`), which is not the shape a real flip produces (per-run files). The rehearsal's fold/reassemble equality still holds, so this is not a false pass, but the \"rehearsed on a copy of real history\" claim is weaker than stated for that segment, and the folded result's per-run structure is never the one production would see.",
+          "suggestion": "Note the fallback-grouping limitation in the readiness note, or distribute `_legacy` events by timestamp/session bucket so the fixture approximates real per-run granularity.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "integration-tests/test_events_drops_benchmark.py:39 — thresholds",
+          "line": null,
+          "finding": "The default test accepts 200 ms run-scoped reads and 3 seconds whole-log reads, ten times KC5’s limits. The readiness note also leaves Linux verification to a future operator check, so this diff does not establish the required green gate on both platforms.",
+          "suggestion": "Run strict measurements on Windows and Linux and record passing results before declaring S8 complete. Generous regression thresholds can remain separate.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": "shared/scripts/lib/events_layout_ci.py:52 — `git log --no-merges",
+          "line": null,
+          "finding": "Excluding merge commits lets a PR introduce a legacy-log append during merge resolution while its head declares `drops`. With no offending non-merge commit, the guard passes; the previous tree diff detected this modification.",
+          "suggestion": "Check changes introduced by merge resolutions while exempting inherited pre-flip appends. Add a test where merging main introduces a new legacy event and must fail.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": "shared/scripts/lib/events_layout_ci.py:55 — first-parent layout check",
+          "line": null,
+          "finding": "A PR can bypass the guard with three commits: change `drops` to `legacy`, append to the legacy log, then restore `drops`. The append’s parent declares `legacy`, so it is ignored. The added two-commit test only covers a head that remains `legacy` and misses this bypass.",
+          "suggestion": "Validate layout transitions across the PR so temporarily disabling drops cannot authorize legacy writes. Add the three-commit sequence as a failing case while preserving legitimate rollback handling.  Overall assessment: ship-with-fixes. The integration and rollback coverage is substantial, but the CI guard introduces bypasses and the required cross-platform performance gate remains incomplete.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-07T01:21:28.868199+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n**Category: bug / regression**\n- Severity: **high**\n- File: `shared/scripts/lib/events_layout_ci.py` — `_legacy_written_on_drops`, the `git log ... f\"{base_ref}..{head_ref}\"` line\n- Finding: When the PR head declares `drops` because it *merged main in*, `base_ref..head_ref` includes **all of main's commits** reachable through the merge, not just the PR's own commits. Any commit on main that legitimately touched `shipwright_events.jsonl` — most concretely a full-fold rollback commit on main (which writes the legacy log by design and whose first parent is `drops`) — will be attributed to the PR and trigger `legacy_write_after_flip`. Result: after an operator performs a full-fold rollback on main, every open PR that merges main is blocked by CI, with no escape hatch (`allow_full_fold` only covers the head-declares-legacy shape). The same applies to main's own rollback commits generally.\n- Suggestion: Restrict the per-commit walk to commits reachable from `head_ref` but NOT from `base_ref` and not first-parent-reachable from main after the merge — e.g. use `git log --no-merges base_ref..head_ref ^main` semantics, or pass the merge-base and use `--ancestry-path`/exclude the main side of the merge, so only the PR's own first-parent history is judged.\n\n**Category: bug**\n- Severity: **medium**\n- File: `shared/scripts/lib/events_layout_ci.py` — the `len(parts) < 2` branch in `_legacy_written_on_drops`\n- Finding: The comment says \"no parent to judge against: fail closed\", but with `--no-merges` every listed commit has exactly one parent, so `len(parts) < 2` can only fire on a malformed `git log` line (e.g. an empty-hash edge). Meanwhile a *root* commit touching the legacy log (possible in the rehearsal copies and odd histories) is silently judged via `_layout_at(root, parts[1])` on a nonexistent ref — `_layout_at` presumably returns `None`, so the commit is skipped (fail-*open*), contradicting the comment. Also `git log --format=%H %P` can wrap/mispa […truncated]\n\n[openai] - Category: spec\n- Severity: high\n- File: integration-tests/test_events_drops_benchmark.py:39 — thresholds\n- Finding: The default test accepts 200 ms run-scoped reads and 3 seconds whole-log reads, ten times KC5’s limits. The readiness note also leaves Linux verification to a future operator check, so this diff does not establish the required green gate on both platforms.\n- Suggestion: Run strict measurements on Windows and Linux and record passing results before declaring S8 complete. Generous regression thresholds can remain separate.\n\n- Category: bug\n- Severity: high\n- File: shared/scripts/lib/events_layout_ci.py:52 — `git log --no-merges`\n- Finding: Excluding merge commits lets a PR introduce a legacy-log append during merge resolution while its head declares `drops`. With no offending non-merge commit, the guard passes; the previous tree diff detected this modification.\n- Suggestion: Check changes introduced by merge resolutions while exempting inherited pre-flip appends. Add a test where merging main introduces a new legacy event and must fail.\n\n- Category: bug\n- Severity: high\n- File: shared/scripts/lib/events_layout_ci.py:55 — first-parent layout check\n- Finding: A PR can bypass the guard with three commits: change `drops` to `legacy`, append to the legacy log, then restore `drops`. The append’s parent declares `legacy`, so it is ignored. The added two-commit test only covers a head that remains `legacy` and misses this bypass.\n- Suggestion: Validate layout transitions across the PR so temporarily disabling drops cannot authorize legacy writes. Add the three-commit sequence as a failing case while preserving legitimate rollback handling.\n\nOverall assessment: ship-with-fixes. The integration and rollback coverage is substantial, but the CI guard introduces bypasses and the required cross-platform performance gate remains incomplete.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-07T01:21:29.367649+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "bf4260dc7e3e7a82ec079be9460b9c6a66dd187c"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-07T01:21:29.166404+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-07T01:21:29.012540+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}
