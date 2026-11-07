@@ -1,0 +1,10 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"All seven requested fixes exist, each in the file the findings named; nothing else added."},
+{"name":"Error Handling","verdict":"pass","note":"A locked file is reported (not_deleted, exit 1) instead of aborting; a git failure in a work tree fails the F11 check."},
+{"name":"Security Basics","verdict":"pass","note":"Ownership of drops is now enforced at F11; the layout check closes the side-branch bypass; no secrets or new inputs."},
+{"name":"Test Quality","verdict":"pass","note":"17 new tests drive real git repos and the real functions; 15 are red against the old code."},
+{"name":"Performance Basics","verdict":"pass","note":"One extra git log --first-parent per layout check on a flipped head; negligible."},
+{"name":"Naming & Structure","verdict":"pass","note":"New test file is 323 lines (non-blocking guideline); source files stay small."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Boundaries: fold CLI JSON status contract (3 new statuses, exit 1), sync-config events_layout null, SKILL.md shell snippet; each has a test."},
+{"name":"Docs","verdict":"pass","note":"hooks-and-pipeline.md and bullet-folding.md updated in the same diff."}
+]}

@@ -31,13 +31,14 @@ from lib.events_log import DROPS_DIR, QUARANTINE_DIR  # noqa: E402
 from tools.verifiers.stdio import ensure_utf8_stdout  # noqa: E402
 
 DEFAULT_BASE = "origin/main"
-REFUSED = ("conflict", "changed_since_plan", "archive_incomplete", "copy_mismatch")
+REFUSED = ("conflict", "changed_since_plan", "archive_incomplete", "copy_mismatch",
+           "folded_incomplete", "folded_into_legacy_incomplete", "quarantined_incomplete")   # the last three: a file could not be deleted
 
 
 def _stage_paths(result: dict) -> list[str]:
     """Exactly what the tool changed (never a folder-level add: other runs may have untracked drops there)."""
     status, paths = result.get("status", ""), []
-    if status.startswith("folded"):
+    if status.startswith("folded"):   # also *_incomplete: staged as far as it got, the finishing re-run (same command) stages the rest
         paths.append(f"{DROPS_DIR}/{KEEP_NAME}")
         paths += [f"{DROPS_DIR}/{n}" for n in result.get("folded_files", [])]
         paths += [result["archive"]] if result.get("archive") else []
@@ -45,7 +46,7 @@ def _stage_paths(result: dict) -> list[str]:
         if result.get("mode") == "emergency" or status == "folded_into_legacy":
             paths.append("shipwright_sync_config.json")
         paths += [result["legacy_log"]] if result.get("legacy_log") else []
-    if status == "quarantined":
+    if status.startswith("quarantined"):
         paths += [f"{folder}/{n}" for folder in (QUARANTINE_DIR, DROPS_DIR) for n in result.get("files", [])]
     if status == "nothing_to_fold" and result.get("mode") == "emergency":
         paths.append("shipwright_sync_config.json")   # an emergency fold with nothing left still resets the layout

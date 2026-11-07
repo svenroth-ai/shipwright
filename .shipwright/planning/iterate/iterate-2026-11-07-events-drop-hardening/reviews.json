@@ -1,0 +1,219 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-07-events-drop-hardening",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-07T06:43:06.793328+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-07T06:57:36.277046+00:00",
+      "disposition": "small iterate: plan, internal plan/architecture and external code review start at medium",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/events_integrity_check.py",
+          "line": null,
+          "finding": "F11 ownership would fail legitimate stacked / single-branch units that inherit earlier units' drops (fixed: not enforced while such a campaign is on record; parametrized test)",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/events_layout_ci.py",
+          "line": null,
+          "finding": "rollback exemption did not require the leftover to be the unchanged, not-ok base file (fixed; head blob must equal base blob)",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "test-coverage",
+          "file": "shared/tests/test_events_drop_hardening.py",
+          "line": null,
+          "finding": "item 3 test did not exercise the not-ok arm or a corrupted base drop (fixed: two cases added)",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
+          "line": null,
+          "finding": "BULLET_DOCS needs one shell invocation (fixed: stated in the block)",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "docs",
+          "file": "shared/scripts/lib/events_layout_ci.py",
+          "line": null,
+          "finding": "item 6 docs overstated (fixed: stops a side branch merged INTO the PR, not a built history)",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/fold_events.py",
+          "line": null,
+          "finding": "partial fold result was staged (fixed: *_incomplete never staged, error says do not commit)",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-07T06:51:59.132891+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: stacked / single-branch exemption finds the campaign state — campaigns keep loop_state.json in .worktrees/campaign-<slug>, not at the main root; a missing key means single-branch",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: F11 ownership accepts every key an honest branch holds — ensure_current absorb, re-attempts, phase run ids and a rebase's detached key commit drops under other keys",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "concurrency",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: incomplete fold then re-run with --stage commits a consistent rollback — staging only the re-run's paths commits legacy over live drops",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "reversibility",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: a stale loop_state cannot silently disable the guard — leftover state of a past campaign",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: first-parent rule has no false fail — a PR whose local history merged an earlier push as second parent",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "portability",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: snippet is safe under set -e — for loop ending on a missing file returns 1",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-07T06:57:24.777913+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-07T06:57:36.695566+00:00",
+      "disposition": "small iterate: plan, internal plan/architecture and external code review start at medium",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-07T06:44:44.810412+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-07T06:57:36.418008+00:00",
+      "disposition": "small iterate: plan, internal plan/architecture and external code review start at medium",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-07T06:57:36.568013+00:00",
+      "disposition": "small iterate: plan, internal plan/architecture and external code review start at medium",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}

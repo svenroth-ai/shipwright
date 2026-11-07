@@ -19,7 +19,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from .events_fold import ensure_keep, read_sync_config, set_layout
+from .events_fold import ensure_keep, read_sync_config, set_layout, unlink_all
 from .events_fold_io import content_hash, dump_line, parse_bytes, sort_key
 from .events_layout import events_lock_path
 from .events_log import ARCHIVE_DIR, DROPS_DIR, event_files, resolve_events_path
@@ -79,12 +79,15 @@ def apply_full_fold(root: Path | str, *, allow_conflicts: bool = False) -> dict:
                 fp.flush()
                 os.fsync(fp.fileno())
         held = {content_hash(r) for r in parse_bytes(legacy.read_bytes() if legacy.exists() else b"").records}
-        gone = []
-        for path in plan["files"]:
-            if all(content_hash(r) in held for r in parse_bytes(path.read_bytes()).records):
-                path.unlink()
-                gone.append(f"{path.parent.name}/{path.name}")
+        safe = [p for p in plan["files"] if all(content_hash(r) in held for r in parse_bytes(p.read_bytes()).records)]
+        kept = set(unlink_all(safe))   # a file a reader holds open (Windows) stays; its events are in the legacy log already
+        gone = [f"{p.parent.name}/{p.name}" for p in safe if p.name not in kept]
         ensure_keep(root)
-        set_layout(root, "legacy")
-    return {"status": "folded_into_legacy", "appended": len(plan["append"]), "removed_files": gone,
-            "skipped": plan["skipped"], "legacy_log": legacy.relative_to(root).as_posix(), "folders": [DROPS_DIR, ARCHIVE_DIR]}
+        if not kept:  # the rollback is done only when no folder file is left to be read a second time
+            set_layout(root, "legacy")
+    result = {"status": "folded_into_legacy_incomplete" if kept else "folded_into_legacy", "appended": len(plan["append"]),
+              "removed_files": gone, "skipped": plan["skipped"], "legacy_log": legacy.relative_to(root).as_posix(),
+              "folders": [DROPS_DIR, ARCHIVE_DIR]}
+    if kept:
+        result.update(not_deleted=sorted(kept), error="could not delete (a reader holds it open?): close it and run the same command again (do not commit the partial result) (it is idempotent)")
+    return result

@@ -55,7 +55,8 @@ def drops_committed_state(project_root: Path, commit_hash: str, run_id: str,
         return None  # folder ignored: not tracked, the committed-assertion does not apply
     for path in working:
         rel = path.relative_to(project_root).as_posix()
-        rc, blob, _ = _run_git(project_root, "show", f"HEAD:{rel}")
+        # ``./`` makes the path relative to project_root (a repo SUBDIRECTORY); cat-file, not show (Windows long paths)
+        rc, blob, _ = _run_git(project_root, "cat-file", "blob", f"HEAD:./{rel}")
         if rc == 0 and _carries(_parse(blob), commit_hash, run_id):
             return True
     return False  # an unstaged / uncommitted drop FAILS the check

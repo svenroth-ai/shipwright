@@ -99,6 +99,7 @@ def check_integrity(root: Path | str, base_ref: str, head_ref: str = "HEAD", *, 
                     allow_full_fold: bool = False) -> list[Violation]:
     """Every violation of the rules above for the change ``merge-base(base_ref, head_ref)`` .. ``head_ref``."""
     root = Path(root)
+    own_keys = tuple(sanitize_key(k) for k in own_keys)   # a raw run id and the file's key are compared in the one spelling the writer uses
     base = git(root, "merge-base", base_ref, head_ref).stdout.decode().strip()
     head = git(root, "rev-parse", "--verify", f"{head_ref}^{{commit}}").stdout.decode().strip()
     entries = _entries(root, base, head)

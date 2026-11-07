@@ -1,0 +1,1 @@
+{"stage": "spec-compliance", "verdict": "PASS", "spec_citations": [], "summary": "All 7 requested items implemented and pinned by tests; no change outside the 7 items. Two low notes (item 6 also fails a legitimately pre-flip side branch merged into an in-flight PR, matching the spec; outside a work tree the F11 check still skips, pinned by a test)."}

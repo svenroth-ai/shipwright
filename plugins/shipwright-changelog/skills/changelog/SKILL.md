@@ -303,11 +303,12 @@ this project lacks / didn't declare, and a pathspec matching no file aborts
 the whole commit.
 
 ```bash
+BULLET_DOCS=""; for f in architecture conventions; do if [ -f ".shipwright/agent_docs/$f.md" ]; then BULLET_DOCS="$BULLET_DOCS .shipwright/agent_docs/$f.md"; fi; done  # ONE shell invocation for this block ($BULLET_DOCS must be set at `git commit`); only docs the project HAS (a pathspec matching no file aborts the commit)
 git add CHANGELOG.md
-git add .shipwright/agent_docs/decision_log.md .shipwright/agent_docs/decision_log_index.md .shipwright/agent_docs/architecture.md .shipwright/agent_docs/conventions.md  # if Step 4 folded/refreshed (bullets: references/bullet-folding.md)
+git add .shipwright/agent_docs/decision_log.md .shipwright/agent_docs/decision_log_index.md $BULLET_DOCS  # if Step 4 folded/refreshed (bullets: references/bullet-folding.md)
 git add -A .shipwright/agent_docs/decision-drops/ .shipwright/planning/adr/  # stages Step 4's deletions + ADR-dir dirt — see below
 git commit -m "chore(release): v{version}" -- \
-  CHANGELOG.md .shipwright/agent_docs/decision_log.md .shipwright/agent_docs/decision_log_index.md .shipwright/agent_docs/architecture.md .shipwright/agent_docs/conventions.md \
+  CHANGELOG.md .shipwright/agent_docs/decision_log.md .shipwright/agent_docs/decision_log_index.md $BULLET_DOCS \
   .shipwright/agent_docs/decision-drops/ .shipwright/planning/adr/ <every path from evidence_pathspec> \
   <every path from manifest_pathspec> \
   && uv run "{shared_root}/scripts/tools/refresh_compliance_docs.py" \
