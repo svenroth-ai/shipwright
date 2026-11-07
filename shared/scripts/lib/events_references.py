@@ -47,7 +47,7 @@ DERIVED_ALIASES = frozenset({
     "UNION_PATHS", "APPEND_ONLY_INPUTS", "PRODUCER_STATE", "CONFIG_FILES", "CHURN_ALLOWLIST",
     "CONFIG_MARKERS", "MANAGED_MARKER_PATHS", "UNCOUNTED_FILES", "FRAMEWORK_BOOKKEEPING",
     "_BOOKKEEPING", "_GENERATED_BASENAMES", "_SKIP_REVIEW_CANONICAL_BASENAME_PATHS",
-    "_MAIN_TREE_WRITE_EXEMPT", "_EXISTING_ARTIFACT_CANDIDATES",
+    "_MAIN_TREE_WRITE_EXEMPT", "_EXISTING_ARTIFACT_CANDIDATES", "DESIGN_ALLOWED_PREFIXES", "PLAN_ALLOWED_PREFIXES",
 })
 FOLDERS = EVENT_FOLDERS
 READER_MARKERS = (
@@ -85,6 +85,8 @@ REGISTRY: dict[str, tuple[str, ...]] = {
         "shared/scripts/tools/verifiers/iterate_checks.py",
     ),
     "C": (
+        "plugins/shipwright-design/scripts/checks/check-design-gates.py",
+        "plugins/shipwright-plan/scripts/checks/check-plan-gates.py",
         "shared/scripts/tools/compliance_input_state.py",
         "plugins/shipwright-security/scripts/lib/pr_review_generated.py",
         "plugins/shipwright-security/scripts/lib/pr_review_skip_safety.py",
