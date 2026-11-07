@@ -78,11 +78,13 @@ def main() -> int:
     if args.ac_decision:
         try:
             decided = json.loads(Path(args.ac_decision).read_text(encoding="utf-8"))
-            if decided.get("status") != "ok":
+            if decided.get("status") == "skipped":  # off, or an environment fault: no AC stub, no error (F11 still warns for an observable diff)
+                decided = {}
+            elif decided.get("status") != "ok":
                 raise ValueError(f"status is {decided.get('status')!r}, not 'ok' (answer the questions first)")
-            if decided.get("run_id") != args.run_id:
+            if decided and decided.get("run_id") != args.run_id:
                 raise ValueError(f"it was made for run {decided.get('run_id')!r}, not {args.run_id!r} (run ac_decision.py again with --run-id {args.run_id})")
-            ac_lines = stub_lines(decided)
+            ac_lines = stub_lines(decided) if decided else []
         except (OSError, ValueError, KeyError, AttributeError) as exc:
             ap.error(f"--ac-decision unusable: {exc}")
     kind = "full" if ac_lines else stub_kind(args.ac, args.gap_fr, args.tiny)

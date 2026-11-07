@@ -15,7 +15,7 @@ Conclusion: this is mostly tightening and wiring what exists, not a new step.
 ## 2. Principles
 - No new PR check. Rules live inside the iterate (planning step, review cascade, F11 of the iterate itself).
 - The exemption is the audited part. An exemption is defined by outcome ("no user- or operator-observable behaviour changes"), never by a path label, complexity tier or the words bug, trivial, tooling. A fix that restores a promise must NAME the AC it restores; if no AC names it, it is a catalog gap and gets an AC.
-- The agent decides alone where a fixed rule is clear and asks the operator only on a short fixed list. Under `--autonomous` an ask stops that unit with a recorded question; it never auto-approves.
+- The agent decides alone where a fixed rule is clear and asks the operator only on a short fixed list. Under `--autonomous` the default mode is `auto`: changed or removed existing ACs pass through and are listed first in the end list, and `ask` / `off` are explicit opt-ins.
 - Plain language question, one sentence about the outcome. Sonnet builds, Opus reviews. Each unit is measured before the next; a failed measure stops for the operator.
 
 ## 3. Units

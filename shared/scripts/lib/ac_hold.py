@@ -11,9 +11,9 @@ rendered question text is NOT part of the hash: a moved catalog or a model wordi
 invalidate a signed answer. Campaign finalize step 5 prints the open ``ac_questions``.
 
 **What is enforced, plainly.** ``answered_via`` and ``unattended`` are SELF-REPORTED. *Unattended* is read from
-state the agent does not type - ``SHIPWRIGHT_LOOP_ID`` together with ``SHIPWRIGHT_LOOP_UNIT_ID`` (exported by the
-orchestrator), or a per-unit worktree ``<main>/.worktrees/campaign-<slug>--<unit>`` (split at the LAST ``--``; the
-orchestrator worktree ``campaign-<slug>`` and any other folder are attended). An unattended run refuses inline answers,
+state the agent does not type - ``SHIPWRIGHT_LOOP_ID`` together with a non-empty ``SHIPWRIGHT_LOOP_UNIT_ID`` (exported by the
+orchestrator) - or the explicit ``--autonomous`` flag the orchestrator or the iterate skill passes. The folder name of a worktree says
+nothing: guided campaigns use the same ``campaign-<slug>--<unit>`` layout and are attended. An unattended run refuses inline answers,
 and ``ac_decision.py answer`` refuses to run there unless ``SHIPWRIGHT_AC_OPERATOR_CHANNEL`` is set (the orchestrator
 shell needs it to answer). ``answer`` signs each answer with an HMAC under a per-user key
 (``~/.shipwright/ac_operator.key``, created on first use with mode 0600, never regenerated); ``decide`` records
@@ -37,7 +37,6 @@ AC_HOLD_REASON = "ac_question_requires_operator"
 OPERATOR_ENV = "SHIPWRIGHT_AC_OPERATOR_CHANNEL"
 KEY_ENV = "SHIPWRIGHT_AC_KEY_FILE"
 _SHA = re.compile(r"^sha256:[0-9a-f]{64}$")
-_UNIT_WORKTREE = re.compile(r"^campaign-.+--.+$")
 
 
 def question_sha(bind_id: str, index: int, kind: str, promise: dict, options: dict) -> str:
@@ -58,20 +57,11 @@ def is_ac_hold(result: object) -> bool:
         and q["question_sha256"] == question_sha(bind, q["item"], q["kind"], q["promise"], q["options"]) for q in qs))
 
 
-def is_unit_worktree(root: Path) -> bool:
-    """True for ``<main>/.worktrees/campaign-<slug>--<unit>``: split at the LAST ``--``, and the orchestrator worktree ``campaign-<slug>``
-    must exist beside it (an orchestrator whose own slug contains ``--`` has no such sibling, so it stays attended)."""
-    if root.parent.name != ".worktrees" or not _UNIT_WORKTREE.match(root.name):
-        return False
-    slug, _, unit = root.name.rpartition("--")
-    return bool(unit) and slug != "campaign" and (root.parent / slug).is_dir()
-
-
 def is_unattended(project_root: str | Path = "") -> bool:
-    """True when the campaign loop environment is set (both variables) or the root is a per-unit campaign worktree."""
-    if os.environ.get("SHIPWRIGHT_LOOP_ID") and os.environ.get("SHIPWRIGHT_LOOP_UNIT_ID"):
-        return True
-    return bool(project_root) and is_unit_worktree(Path(project_root).resolve())
+    """True when the campaign loop environment is set: ``SHIPWRIGHT_LOOP_ID`` and a non-empty ``SHIPWRIGHT_LOOP_UNIT_ID``.
+
+    ``project_root`` is accepted for the callers' sake and ignored: the worktree's folder name never makes a run unattended."""
+    return bool(os.environ.get("SHIPWRIGHT_LOOP_ID") and os.environ.get("SHIPWRIGHT_LOOP_UNIT_ID", "").strip())
 
 
 def operator_channel_open() -> bool:

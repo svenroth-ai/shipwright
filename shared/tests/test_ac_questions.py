@@ -40,6 +40,7 @@ def test_resume_path_hold_answer_pending_complete(tmp_path, capsys, monkeypatch)
         {"id": "Q1", "status": "running", "attempt": 0, "attempt_id": "A0", "branch": "b", "finished_at": None, "commit": None}]}), encoding="utf-8")
     args = argparse.Namespace(state=str(state), unit="Q1", attempt_id="A0", result=json.dumps(escalation))
     assert cmd_record(args) == 0 and json.loads(state.read_text(encoding="utf-8"))["units"][0]["status"] == "held"
+    assert json.loads(state.read_text(encoding="utf-8"))["units"][0]["reason_code"] == "ac_question_requires_operator"   # the row says why it is held
     held = tmp_path / "result.json"
     held.write_text(json.dumps(escalation), encoding="utf-8")
     answers = tmp_path / "answers.json"

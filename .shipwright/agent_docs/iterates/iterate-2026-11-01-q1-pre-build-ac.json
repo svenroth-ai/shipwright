@@ -1,6 +1,6 @@
 {
   "run_id": "iterate-2026-11-01-q1-pre-build-ac",
-  "date": "2026-11-07T08:43:24.606862Z",
+  "date": "2026-11-07T09:28:01.770681Z",
   "event_at": "2026-11-01T15:23:39.946873+00:00",
   "type": "feature",
   "complexity": "medium",
@@ -163,11 +163,16 @@
         "behavior": "[final] the F11 marker wins over the environment, the first marker is kept, off next to a record warns; whole-id AC matching; no raw model id in the fallback reason; atomic answers with a clean error",
         "disposition": "tested",
         "evidence": "shared/tests/test_ac_source_and_record.py::test_a_marker_that_says_ask_is_trusted_over_an_environment_that_says_off PASSED; shared/tests/test_ac_source_and_record.py::test_a_marker_that_says_off_does_not_skip_when_an_ac_record_exists PASSED; shared/tests/test_ac_source_and_record.py::test_the_first_marker_of_a_run_is_kept_so_a_later_off_cannot_silence_f11 PASSED; shared/tests/test_ac_source_and_record.py::test_ac05_is_not_found_inside_ac050_in_the_diff_or_at_the_base PASSED; shared/tests/test_ac_source_and_record.py::test_a_model_reply_with_an_unknown_id_never_puts_the_id_into_the_reason PASSED; shared/tests/test_ac_source_and_record.py::test_the_answers_file_is_replaced_atomically_and_a_broken_option_is_a_clean_error PASSED"
+      },
+      {
+        "behavior": "[final] the documented command line works where it is documented: no unit id needed unless an unattended run must ask; only --autonomous or the loop env makes a run unattended (never the folder name); standalone autonomous defaults to auto; an unresolvable base ref is skipped with a note; a skipped decision writes no stub lines; a held unit row carries its reason code",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_ac_documented_command.py::test_h1_the_documented_command_in_an_unattended_campaign_unit_decides_under_auto_without_a_sub_iterate_id PASSED; shared/tests/test_ac_documented_command.py::test_h1_an_ask_that_must_be_escalated_still_needs_the_unit_id PASSED; shared/tests/test_ac_documented_command.py::test_h2_an_attended_per_unit_worktree_without_the_loop_environment_asks_and_allows_inline_answers PASSED; shared/tests/test_ac_documented_command.py::test_h2_the_loop_environment_with_a_unit_id_is_what_makes_a_run_unattended PASSED; shared/tests/test_ac_documented_command.py::test_h3_a_standalone_autonomous_run_with_the_documented_command_defaults_to_auto_and_never_stops PASSED; shared/tests/test_ac_documented_command.py::test_h3_the_documented_command_line_passes_autonomous_and_the_brief_matches_the_design PASSED; shared/tests/test_ac_documented_command.py::test_m2_a_base_ref_that_cannot_be_resolved_is_skipped_with_a_note_not_an_error PASSED; shared/tests/test_ac_documented_command.py::test_m2_a_skipped_decision_writes_no_stub_lines_and_no_error PASSED; shared/tests/test_ac_documented_command.py::test_l_a_missing_transport_prints_its_reason_once_on_stderr PASSED; shared/tests/test_ac_questions.py::test_resume_path_hold_answer_pending_complete PASSED"
       }
     ],
     "counts": {
-      "testable": 30,
-      "tested": 30,
+      "testable": 31,
+      "tested": 31,
       "untestable": 0,
       "untested_testable": 0
     }

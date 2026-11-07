@@ -189,8 +189,6 @@ def run_decide(argv: list[str]) -> int:
         mode, mode_source = resolve_mode(args.project_root, args.ac_mode, unattended)
     except ValueError as exc:
         raise _Fail(str(exc)) from exc
-    if unattended and mode != "off" and not args.sub_iterate_id:
-        raise _Fail("--sub-iterate-id is required in an unattended run (the escalation names the unit it holds)")
     if (unattended or args.answers) and not args.run_id:
         raise _Fail("--run-id is required in an unattended run or with --answers (answers are bound to the run)")
     if args.run_id:  # the mode actually used is written for F11, whatever set it (flag, variable, config); off needs it, because off writes no record
@@ -214,8 +212,15 @@ def run_decide(argv: list[str]) -> int:
     try:
         base = merge_base(args.project_root, args.base_ref)
         catalog = load_catalog(args.project_root, base)
-    except (RuntimeError, OSError) as exc:
-        raise _Fail(f"cannot read the catalog at {args.base_ref}: {exc}") from exc
+    except (RuntimeError, OSError) as exc:  # an environment fault (no merge-base, shallow clone, base ref null for the first stacked unit): never a hard stop of a mandatory step
+        note = (f"skipped: cannot read the requirement catalog at base ref {args.base_ref!r} ({str(exc)[:200]}); nothing is asked or recorded, "
+                "and F11 still warns later for an observable diff with no record. Pass the branch you were cut from as --base-ref (for the first stacked sub-iterate, whose base_branch is null, the default-branch remote ref, e.g. origin/main)")
+        skipped = {"status": "skipped", "unattended": unattended, "ac_mode": {"mode": mode, "source": mode_source}, "run_id": args.run_id, "note": note}
+        text = json.dumps(skipped, indent=2, ensure_ascii=False)
+        if args.out:
+            Path(args.out).write_text(text + "\n", encoding="utf-8", newline="\n")
+        print(text)
+        return EXIT_OK
     surface, idents, changes = None, None, {}
     try:
         changes = git_changes(args.project_root, base)
@@ -232,6 +237,8 @@ def run_decide(argv: list[str]) -> int:
     if surface is not None:
         result["surface"] = surface
     if result["status"] == "ask" and unattended:
+        if not args.sub_iterate_id:  # only an escalation names the unit it holds
+            raise _Fail("--sub-iterate-id is required when an unattended run must ask (the escalation names the unit it holds)")
         result["escalation"] = _escalation(result, args.sub_iterate_id, bind_id)
     text = json.dumps(result, indent=2, ensure_ascii=False)
     if args.out:

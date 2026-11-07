@@ -104,17 +104,12 @@ def test_unattended_is_read_from_state_the_agent_does_not_type(monkeypatch, tmp_
     monkeypatch.delenv("SHIPWRIGHT_LOOP_ID")
     monkeypatch.delenv("SHIPWRIGHT_LOOP_UNIT_ID")
     unit = tmp_path / ".worktrees" / "campaign-demo--Q1"
-    orchestrator = tmp_path / ".worktrees" / "campaign-demo"
-    lookalike = tmp_path / "campaign-demo--Q1"  # right name, wrong parent folder
-    for d in (unit, orchestrator, lookalike):
-        d.mkdir(parents=True)
-    assert ac_hold.is_unattended(unit) is True and ac_hold.is_unattended("") is False
-    assert ac_hold.is_unattended(orchestrator) is False and ac_hold.is_unattended(lookalike) is False  # the orchestrator's own worktree is attended
-    dashed = tmp_path / ".worktrees" / "campaign-a--b"  # an orchestrator whose own slug contains "--": no sibling campaign-a, so not a unit
-    dashed.mkdir()
-    assert ac_hold.is_unattended(dashed) is False
-    (tmp_path / ".worktrees" / "campaign-a").mkdir()
-    assert ac_hold.is_unattended(dashed) is True  # split at the LAST "--": campaign-a with unit b
+    (tmp_path / ".worktrees" / "campaign-demo").mkdir(parents=True)
+    unit.mkdir()
+    assert ac_hold.is_unattended(unit) is False  # the folder name of a worktree never makes a run unattended (guided campaigns use it too)
+    monkeypatch.setenv("SHIPWRIGHT_LOOP_ID", "loop-1")
+    monkeypatch.setenv("SHIPWRIGHT_LOOP_UNIT_ID", " ")
+    assert ac_hold.is_unattended(unit) is False  # a blank unit id is not a unit
     assert ac_hold.operator_channel_open() is False
     monkeypatch.setenv(ac_hold.OPERATOR_ENV, "1")
     assert ac_hold.operator_channel_open() is True
@@ -179,7 +174,9 @@ def test_cli_exit_codes_and_the_unit_hold_escalation(tmp_path, capsys):
     assert esc["sub_iterate_id"] == "Q1" and esc["reason_code"] == "ac_question_requires_operator" and ac_hold.is_ac_hold(esc)
     assert _call(tmp_path, {"items": [_add(new_text="Writes to shared/scripts/x.py")]}, capsys)[0] == 2
     capsys.readouterr()
-    assert cli.main(["--project-root", str(tmp_path), "--from-json", str(tmp_path.parent / f"{tmp_path.name}-ac.json"), "--base-ref", "HEAD", "--autonomous"]) == 2  # no --sub-iterate-id
+    ask = tmp_path / "ask-only.json"
+    ask.write_text(json.dumps({"items": [{"kind": "add", "new_text": _OUTCOME}]}), encoding="utf-8")
+    assert cli.main(["--project-root", str(tmp_path), "--from-json", str(ask), "--base-ref", "HEAD", "--autonomous", "--run-id", "r2"]) == 2  # must ask, but no --sub-iterate-id
     assert "--sub-iterate-id" in capsys.readouterr().err
 
 
@@ -190,7 +187,7 @@ def test_cli_reads_the_campaign_environment_not_only_the_flag(tmp_path, capsys, 
     monkeypatch.setenv("SHIPWRIGHT_LOOP_UNIT_ID", "Q1")
     code, out = _call(tmp_path, {"items": [{"kind": "add", "new_text": _OUTCOME}]}, capsys, "--sub-iterate-id", "Q1", "--run-id", "r1")
     assert code == 10 and out["unattended"] is True and out["escalation"]["sub_iterate_id"] == "Q1"
-    assert _call(tmp_path, {"items": [_add()]}, capsys)[0] == 2  # unattended without the unit id
+    assert _call(tmp_path, {"items": [_add()]}, capsys)[0] == 2  # unattended without a run id
 
 
 @pytest.mark.covers("FR-01.11/AC49")

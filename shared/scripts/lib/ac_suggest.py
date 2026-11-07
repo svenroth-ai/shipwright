@@ -41,6 +41,9 @@ _PAYLOAD_CAP = 24000
 LINE_WORDS, TITLE_WORDS, SENTENCE_WORDS = 12, 12, 30  # the longest a checked model line, a drafted requirement title and its one sentence may be
 
 
+_WARNED = False
+
+
 def prompt_text() -> str:
     return PROMPT_PATH.read_text(encoding="utf-8")
 
@@ -145,6 +148,10 @@ def propose(promise: str, cat: dict, project_root: str | Path = ".", transport: 
             return {"source": "fallback", "fr_id": None, "reason": why}
         return {"source": "model", **fields, "reason": "", "model": model, "prompt_sha": "sha256:" + hashlib.sha256(prompt.encode("utf-8")).hexdigest()}
     except Exception as exc:  # noqa: BLE001 - no key, missing file, timeout, transport error: a display aid never blocks Step 2a
+        global _WARNED
+        if isinstance(exc, FileNotFoundError) and not _WARNED:  # a missing transport file is an install problem: say so once, not per item
+            _WARNED = True
+            print(f"ac_suggest: the model transport was not found ({str(exc)[:120]}); proposals fall back to the deterministic match", file=sys.stderr)
         return {"source": "fallback", "fr_id": None, "reason": f"{type(exc).__name__}: {str(exc)[:120]}"}
 
 

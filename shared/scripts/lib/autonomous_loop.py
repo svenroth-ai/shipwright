@@ -38,7 +38,7 @@ from file_lock import LockTimeout, file_lock
 # `file_lock` stay bare-imported above, unchanged — loop_state.py imports
 # `branch_base` the same bare way, so it is never loaded under two names.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from lib.ac_hold import is_ac_hold  # noqa: E402
+from lib.ac_hold import AC_HOLD_REASON, is_ac_hold  # noqa: E402
 from lib.campaign_drain import sweep_never_started  # noqa: E402
 from lib.loop_state import (  # noqa: E402
     STATES,
@@ -351,7 +351,7 @@ def cmd_record(args: argparse.Namespace) -> int:
         for unit in state["units"]:
             if unit is target_unit or (target_unit is None and unit["id"] == args.unit):
                 unit["status"] = resolve_record_status(state.get("kind"), unit, result.get("status", "failed"), is_ac_hold(result))
-                unit["finished_at"] = now_iso()
+                unit.update({"finished_at": now_iso(), **({"reason_code": AC_HOLD_REASON} if is_ac_hold(result) else {})})  # a held row says why
                 unit["commit"] = result.get("commit")
                 unit["branch"] = result.get("branch", unit.get("branch"))
                 unit["failure_reason"] = result.get("error") or (result.get("reason") if result.get("status") != "complete" else None)  # escalated carries `reason`, not `error`; scoped so a complete unit never gains one
