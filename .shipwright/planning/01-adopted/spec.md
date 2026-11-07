@@ -1079,6 +1079,11 @@ _Where the work detail lives_ at the end of this document.
   works and not what it does; a missing answer shows a visible warning and never holds
   the change back, because a finished record cannot be corrected afterwards.
   (iterate-2026-10-31-p2-close-gaps-and-backfill)
+- (E) [AC49] Given a change would alter what a user or operator can see or rely on, when it is planned, then the promise it
+  makes is written down in plain outcome words before it is built, and the person who owns the product is asked only when an
+  existing promise is changed or removed or no single requirement owns the new one; a change that alters nothing anyone can
+  observe needs no new promise.
+  (iterate-2026-11-01-q1-pre-build-ac)
 
 <a id="fr-0112"></a>
 ### FR-01.12 — Local project preview

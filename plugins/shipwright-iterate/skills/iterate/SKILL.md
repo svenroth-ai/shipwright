@@ -137,7 +137,7 @@ Resolve model tiers first (`references/iteration-planning.md` → "Model Tier Re
 
 | Category | Phases | User can skip? |
 |---|---|---|
-| **Mandatory** | Self-review, unit test, commit, ADR, compliance, test results JSON, iterate_history, Confidence Calibration (medium+), Test Completeness Ledger (medium+; trivial → one recorded `n/a` row, `reason_code: trivial-auto`), Review Record (every complexity — `self` completed; a skipped pass closed `not_run`/`not_applicable` with a `--reason-code`, never left unanswered) | Never skippable |
+| **Mandatory** | Pre-build AC record when the diff is observable (computed by `tools/ac_decision.py`; never skipped by a label; the operator is asked only for a changed or removed AC or a new AC with no single owning FR), Self-review, unit test, commit, ADR, compliance, test results JSON, iterate_history, Confidence Calibration (medium+), Test Completeness Ledger (medium+; trivial → one recorded `n/a` row, `reason_code: trivial-auto`), Review Record (every complexity — `self` completed; a skipped pass closed `not_run`/`not_applicable` with a `--reason-code`, never left unanswered) | Never skippable |
 | **Safety-enforced** | Full review (when risk flags), full test suite (when shared infra), down.sql (when migrations), Boundary Probe (when `touches_io_boundary`), Confidence Calibration (small with `touches_io_boundary`), Test Completeness Ledger (small) | Only with explicit risk acknowledgment |
 | **Advisory** | Design check, mini-plan, design fidelity, E2E update, external LLM review, release prompt, Confidence Calibration (trivial / small without `touches_io_boundary`) | Freely skippable |
 | **Complexity-gated** | Iterate spec, context scan depth | Adjustable via "make it medium/small" |
@@ -218,7 +218,7 @@ See `references/campaign-mode.md` for the full protocol: campaign setup, autonom
 | Repo Scout | quick | quick | thorough | → escape hatch |
 | Interview | skip | 1 confirmation Q | FEATURE: 2-3 Q, CHANGE: 1-2 Q | → escape hatch |
 | Iterate Spec | skip | skip | own file in `.shipwright/planning/iterate/` | — |
-| Spec Impact (ADD/MODIFY/REMOVE/NONE) | always (BUG: classify; NONE default) | always (BUG: classify; NONE default) | always (BUG: classify; NONE default) | — |
+| Spec Impact (ADD/MODIFY/REMOVE/NONE) + Pre-build AC record (`references/path-a-feature.md` Step 2a; whether the diff is observable is computed) | always (BUG: classify; NONE default) | always (BUG: classify; NONE default) | always (BUG: classify; NONE default) | — |
 | Mini-Plan | skip | FEATURE only | yes + alternative (all types) | — |
 | User Approval | skip | skip | before build | — |
 | External LLM Review | skip | skip | auto (+ a 2nd `--mode architecture` call over a brief, same step) | — |

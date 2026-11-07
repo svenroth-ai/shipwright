@@ -1,0 +1,8 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"table, lexical test, question, autonomous stop, frozen hash, restore check are code with tests; replay bar recorded FAILED"},
+{"name":"Error Handling","verdict":"pass","note":"invalid declarations return status invalid with fixes; unreadable stubs warn, never raise"},
+{"name":"Security Basics","verdict":"pass","note":"free text only via JSON files; paths validated by existing stub helpers"},
+{"name":"Test Quality","verdict":"pass","note":"40 new tests incl. CLI exit codes, runner-schema validation and F11 branches built with valid hashes"},
+{"name":"Performance Basics","verdict":"pass","note":"one catalog scan per run"},
+{"name":"Naming & Structure","verdict":"pass","note":"new logic in its own lib module; spec_chain untouched; runner prompt net-zero lines"},
+{"name":"Affected Boundaries","verdict":"pass","note":"stub text round-trips through parse_stub_ac; decided.json to write_plan_stub; escalation validated against the runner schema"}]}

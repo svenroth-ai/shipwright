@@ -156,6 +156,8 @@ definition — a behavior-preserving simplify changes no FR; record the one-line
 NONE justification (FR-gate branch: `change_type = tooling`/`infra` only when the
 simplified code is non-FR framework/tooling code).
 
+
+**Pre-build AC.** A simplify that only changes comments or blank lines shows no observable change (per-hunk compare, `lib/ac_surface.py`) and needs no record. A refactor that touches observable files is a behaviour-preserving change, not a restore: record kind `unchanged` with the existing AC it leaves true and the list of files it changes; never invent a `restore`. F11 warns, never blocks, when the files differ from the diff, no test names the AC, or the surface shows more than was listed. A change that alters behaviour is not a simplify: it follows the normal path.
 ---
 
 > Adapted from [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills)

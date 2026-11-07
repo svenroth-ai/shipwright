@@ -46,7 +46,7 @@ TRACKED_DERIVED = frozenset({"UNION_PATHS", "APPEND_ONLY_INPUTS"})
 DERIVED_ALIASES = frozenset({
     "UNION_PATHS", "APPEND_ONLY_INPUTS", "PRODUCER_STATE", "CONFIG_FILES", "CHURN_ALLOWLIST",
     "CONFIG_MARKERS", "MANAGED_MARKER_PATHS", "UNCOUNTED_FILES", "FRAMEWORK_BOOKKEEPING",
-    "_BOOKKEEPING", "_GENERATED_BASENAMES", "_SKIP_REVIEW_CANONICAL_BASENAME_PATHS",
+    "_BOOKKEEPING", "_LEDGERS", "_GENERATED_BASENAMES", "_SKIP_REVIEW_CANONICAL_BASENAME_PATHS",
     "_MAIN_TREE_WRITE_EXEMPT", "_EXISTING_ARTIFACT_CANDIDATES", "DESIGN_ALLOWED_PREFIXES", "PLAN_ALLOWED_PREFIXES",
 })
 FOLDERS = EVENT_FOLDERS
@@ -127,6 +127,7 @@ REGISTRY: dict[str, tuple[str, ...]] = {
         "plugins/shipwright-compliance/scripts/lib/collectors/__init__.py",
         "plugins/shipwright-compliance/scripts/lib/data_collector.py",
         "plugins/shipwright-iterate/scripts/tools/campaign_progress.py",
+        "shared/scripts/lib/ac_surface.py",
         "shared/scripts/lib/campaign_status_io.py",
         "shared/scripts/lib/events_fold_full.py",
         "shared/scripts/lib/events_integrity.py",
