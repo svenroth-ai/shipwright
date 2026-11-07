@@ -54,6 +54,13 @@ def _body(event: dict) -> str:
     return json.dumps({k: v for k, v in event.items() if k != "run"}, sort_keys=True)
 
 
+@pytest.fixture(autouse=True)
+def _own_layout(monkeypatch):
+    """The rehearsal drives the layout through the copy's sync config; the replay gate's forced-drops override must not leak in."""
+    monkeypatch.delenv("SHIPWRIGHT_EVENTS_LAYOUT", raising=False)
+    monkeypatch.delenv("SHIPWRIGHT_EVENTS_LAYOUT_TEST", raising=False)
+
+
 @pytest.fixture(name="rehearsal")
 def _rehearsal(tmp_path):
     from lib.events_read import read_events_assembled
