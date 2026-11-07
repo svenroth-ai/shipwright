@@ -1115,6 +1115,26 @@ no-op while no folder exists. Also blocked: an added archive file not named `fol
 reader lists drops BEFORE the archive and re-reads once if a file vanished mid-read, so a fold racing a read never
 loses an event; the vanished file stays `unreadable` and its run's absence gate still fails closed.
 
+**Mixed versions (S7, issue 978; all no-ops while no drop files exist and the layout is `legacy`/absent).**
+`lib/events_sentinel.py` is the layout sentinel: `SUPPORTED_LAYOUTS = (legacy, drops)`. A plugin of this
+generation fails closed (`UnsupportedEventsLayout`, "update the plugin") when `events_layout` in
+`shipwright_sync_config.json` holds a value it does not know, at the single write choke point
+`events_layout.resolve_events_write_path` and in the legacy `attach_commit_to_event`; the TEST-ONLY env override
+cannot hide an unknown committed value. It also refuses a LEGACY write while `shipwright_events.d/*.jsonl` exists and the key is ABSENT
+(a config that lost its key would split the log); an explicit `events_layout: legacy` is a deliberate rollback and
+is honoured (the folds set it and can leave unfoldable corrupt drops behind). `finalize_iterate` and the
+`record_event` CLI report a refusal as `unsupported_events_layout` (exit 1). The `/shipwright-adopt` baseline seeder
+(`event_seeder.py`, a deliberate ADR-045 duplicate) is NOT behind the sentinel: it only runs on a fresh adoption. Release-evidence producers (`tools/refresh_compliance_docs.py`, `update_compliance.py` write mode via
+`tools/events_sentinel_gate.py`) print `status: refused_unsupported_events_layout` and exit 1 on an unknown layout.
+`/shipwright-project` (full scaffold) and `/shipwright-adopt` write `events_layout: legacy` explicitly and never
+remove or overwrite an existing key ("absent = legacy" stays valid forever). `checks/check_events_layout_ci.py`
+(`lib/events_layout_ci.py`) is the consumer CI check, judged at the MERGE-BASE: once the base declares `drops`, a
+change touching `shipwright_events.jsonl` fails (`legacy_write_after_flip`; `--allow-full-fold` for the full-fold
+rollback commit; a head that declares `legacy` with no `*.jsonl` left in `shipwright_events.d/` is the emergency-fold rollback and passes; a synthetic merge HEAD (GitHub `pull_request`, first parent = base tip) is judged at its second parent, any other merge commit as given; a removed key is `layout_key_removed`; needs `fetch-depth: 0`); a PR in flight at the flip (base still legacy) passes. Wiring it into a workflow is the operator's call
+(CI trust boundary). `self_heal_gitignore` adds `!` re-include lines (`lib/events_gitignore.py`) only when
+`git check-ignore --no-index` on a representative FILE path (`shipwright_events.d/x.jsonl`, never the folder) says a
+drops folder (or, in such a repo, the tracked legacy log) is ignored; a legacy-layout repo is never touched.
+
 ### Pipeline Constants
 
 **File:** `plugins/shipwright-run/scripts/lib/orchestrator_pkg/constants.py`

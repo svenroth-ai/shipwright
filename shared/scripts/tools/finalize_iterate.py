@@ -29,6 +29,7 @@ sys.path.insert(0, str(_SCRIPTS_DIR))
 
 from lib.artifact_paths import runtime_path, tracked_path  # noqa: E402
 from lib.events_read import EventLogNotReadable  # noqa: E402
+from lib.events_sentinel import UnsupportedEventsLayout  # noqa: E402
 from lib.events_write import require_run_drops_readable  # noqa: E402
 from lib.atomic_write import durable_atomic_write  # noqa: E402
 from lib.campaign_status_io import finalize_campaign_status  # noqa: E402
@@ -323,10 +324,8 @@ def _record_event(
             warn_claims_divergence(prior, event, "finalize_iterate")
             return prior.get("id")
         return append_event(project_root, event, run_id)
-    except (FinalizeGateError, EventLogNotReadable):
-        # Fail-closed: propagate so the iterate halts with guidance rather than
-        # silently dropping (or degrading) the work record. NOT swallowed by the
-        # best-effort handler below.
+    except (FinalizeGateError, EventLogNotReadable, UnsupportedEventsLayout):
+        # Fail-closed: propagate so the iterate halts with guidance; NOT swallowed by the handler below.
         raise
     except Exception as exc:
         print(f"[finalize_iterate] event recording failed: {exc}", file=sys.stderr)
@@ -572,10 +571,10 @@ def main(argv: list[str] | None = None) -> int:
             project_root, args.run_id, args.commit, args.reason,
             event_extras=event_extras,
         )
-    except (FinalizeGateError, EventLogNotReadable) as exc:
+    except (FinalizeGateError, EventLogNotReadable, UnsupportedEventsLayout) as exc:
         # Fail-closed: exit 1, nothing written. `error` is the gate's own code.
         print(json.dumps(
-            {"success": False, "error": exc.code, "detail": str(exc)},
+            {"success": False, "error": getattr(exc, "code", "unsupported_events_layout"), "detail": str(exc)},
             indent=2, ensure_ascii=False,
         ))
         return 1

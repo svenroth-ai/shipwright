@@ -34,6 +34,7 @@ if str(_SCRIPTS_ROOT) not in sys.path:
 
 from lib.events_log import resolve_events_path  # noqa: E402
 from lib.events_layout import events_layout, events_lock_path  # noqa: E402
+from lib.events_sentinel import UnsupportedEventsLayout, require_writable_layout  # noqa: E402
 from lib.events_read import EventLogNotReadable  # noqa: E402
 from lib.events_write import amend_commit, new_event_id, require_run_drops_readable, write_event_line  # noqa: E402
 from lib.events_amend import apply_amendments  # noqa: E402
@@ -489,6 +490,7 @@ def attach_commit_to_event(
     Under the DROPS layout a closed file is never edited: this appends an
     ``event_amended {commit}`` to the open drop instead (only when the target exists).
     """
+    require_writable_layout(project_root, events_layout(project_root))  # S7 sentinel
     if events_layout(project_root) == "drops":
         return amend_commit(project_root, event_id, commit_sha, run_id)
     path = resolve_events_path(project_root)
@@ -700,8 +702,9 @@ def main(argv: list[str] | None = None) -> int:
     # append share ONE lock so concurrent phase-Stop firings can't both append.
     try:
         event_id, skipped = _append_checked(project_root, event, args)
-    except EventLogNotReadable as exc:
-        print(json.dumps({"success": False, "error": "event_log_not_readable", "detail": str(exc)}, indent=2))
+    except (EventLogNotReadable, UnsupportedEventsLayout) as exc:
+        err = "event_log_not_readable" if isinstance(exc, EventLogNotReadable) else "unsupported_events_layout"
+        print(json.dumps({"success": False, "error": err, "detail": str(exc)}, indent=2))
         return 1
     if skipped is not None:
         print(json.dumps({"success": True, "skipped": True, **skipped}, indent=2))

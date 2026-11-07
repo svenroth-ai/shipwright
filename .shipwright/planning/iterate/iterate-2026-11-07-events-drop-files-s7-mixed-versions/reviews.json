@@ -1,0 +1,314 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-07-events-drop-files-s7-mixed-versions",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-06T23:57:20.455756+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "approach ·",
+          "file": null,
+          "line": null,
+          "finding": "The sentinel is enforced at write paths, but the acceptance criterion says a new plugin must fail closed on an unknown layout. The plan does not establish what happens when a plugin reads events; a reader could silently interpret an unknown layout as legacy and return incomplete results.",
+          "suggestion": "Gate layout-dependent reads as well as writes, while preserving absent-key legacy compatibility. Add a test showing that a new reader refuses an unknown layout.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency ·",
+          "file": null,
+          "line": null,
+          "finding": "The consumer CI check is delivered without workflow wiring. Registry entries and documentation make it available, but do not establish that it runs or blocks a merge.",
+          "suggestion": "Explicitly define whether S7 delivers an optional check or an enforced consumer safeguard. If enforcement is required, include the existing CI integration or identify the concrete operator prerequisite.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "The merge-base check has consequential failure states that the plan does not specify: unavailable merge-base objects in shallow clones, missing configuration at the base, and failed `cat-file` operations. Treating an unreadable base as “no drops” would bypass the protection.",
+          "suggestion": "Distinguish valid legacy absence from Git inspection failures, report failures explicitly, and document any required history fetch. Test these alongside the in-flight-flip and rollback cases.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk ·",
+          "file": null,
+          "line": null,
+          "finding": "The test plan names a mixed-version test file but does not establish that it exercises an actual old writer against the new reader. Tests using only updated helpers can miss the compatibility failure this change specifically targets.",
+          "suggestion": "Include a frozen legacy-writer fixture or representative legacy output, then verify the new reader consumes its events. Cover unknown-layout refusals through the public plugin and release-evidence entry points.  The approach is sound overall, particularly the centralized write guard and explicit rollback behavior. Clarify reader enforcement and CI delivery, and make the compatibility and Git failure cases concrete before implementation.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-06T23:57:21.109905+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] ## Findings\n\n**Approach — medium — rollback path re-opens the mixed-version hole**\n`require_writable_layout` treats explicit `events_layout: legacy` as a \"declared rollback\" and passes — but that's exactly the configuration where a new-layout log gets legacy writes appended after the flip. If the repo previously flipped and contains new-layout events, a declared rollback to legacy lets new plugins write legacy-format events into a mixed file. The sentinel should either refuse rollback when non-legacy events are detectable in the log, or explicitly document that the CI check is the only guard in that state (see next finding).\n\n**Approach — medium — CI check not wired into any workflow**\nThe plan explicitly defers wiring `check_events_layout_ci.py` into CI (\"the operator's call\"). Until someone wires it, the only protection for in-flight mixed-version scenarios (old plugin + new log) is… nothing — the sentinel can't detect old writers because they predate the sentinel. This change's core acceptance criterion (\"old writer + new reader works\") depends on the check actually running. At minimum, ship the workflow snippet in the docs and record the wiring as a follow-up issue with an owner, or wire it if the repo's workflow is in scope.\n\n**Dependency — medium — CI check must handle drops introduced *by* the PR**\nJudging at the merge-base handles \"PR in flight at the flip,\" but the inverse case — a PR that *adds* a drops folder while declaring legacy — is only caught if the check also inspects the PR head's drops. Confirm the base-drops + head-drops logic covers this; the plan's description (\"base drops + legacy-log change fails\") reads as base-only.\n\n**Risk — medium — duplicated gate logic across two locations**\n`lib/events_sentinel.py` is used by the runtime write path, but `update_compliance.py` uses a \"file-located gate, no shared lib on sys.path.\" Two implementations of \"what layouts are supported / how to detect drops\" will drift. If sys.path is genuinely […truncated]\n\n[openai] 1. **Category: approach · Severity: high**  \n   **Finding:** The sentinel is enforced at write paths, but the acceptance criterion says a new plugin must fail closed on an unknown layout. The plan does not establish what happens when a plugin reads events; a reader could silently interpret an unknown layout as legacy and return incomplete results.  \n   **Suggestion:** Gate layout-dependent reads as well as writes, while preserving absent-key legacy compatibility. Add a test showing that a new reader refuses an unknown layout.\n\n2. **Category: dependency · Severity: medium**  \n   **Finding:** The consumer CI check is delivered without workflow wiring. Registry entries and documentation make it available, but do not establish that it runs or blocks a merge.  \n   **Suggestion:** Explicitly define whether S7 delivers an optional check or an enforced consumer safeguard. If enforcement is required, include the existing CI integration or identify the concrete operator prerequisite.\n\n3. **Category: edge-case · Severity: medium**  \n   **Finding:** The merge-base check has consequential failure states that the plan does not specify: unavailable merge-base objects in shallow clones, missing configuration at the base, and failed `cat-file` operations. Treating an unreadable base as “no drops” would bypass the protection.  \n   **Suggestion:** Distinguish valid legacy absence from Git inspection failures, report failures explicitly, and document any required history fetch. Test these alongside the in-flight-flip and rollback cases.\n\n4. **Category: risk · Severity: medium**  \n   **Finding:** The test plan names a mixed-version test file but does not establish that it exercises an actual old writer against the new reader. Tests using only updated helpers can miss the compatibility failure this change specifically targets.  \n   **Suggestion:** Include a frozen legacy-writer fixture or representative legacy output, then verify the new reader consumes its events. Cover unk […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "shared/scripts/lib/events_sentinel.py",
+          "line": null,
+          "finding": "legacy-write guard could lock a repo out after a fold left unfoldable drops (fixed: explicit legacy key is a deliberate rollback, only an absent key refuses)",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/events_layout_ci.py",
+          "line": null,
+          "finding": "synthetic pull_request merge HEAD judged at the wrong merge-base; unconditional legacy-head exemption (fixed: HEAD^2 only when HEAD^1 is the base tip; exemption needs no drop file left; layout_key_removed)",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-adopt/scripts/lib/config_writer.py",
+          "line": null,
+          "finding": "adopt wrote legacy over live drops / replaced falsy keys (fixed)",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/events_gitignore.py",
+          "line": null,
+          "finding": "legacy-log re-include in legacy repos; earlier re-include not re-appended after a later ignore rule (fixed)",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/events_layout_ci.py",
+          "line": null,
+          "finding": "failed cat-file reads as absent; base moved after merge ref (documented, deferred)",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-06T23:57:20.777711+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "955f7d7a49e729b05751edde39dc19a25538e9c1"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "reversibility",
+          "file": null,
+          "line": null,
+          "finding": "folds leave no drops so a rollback is never refused",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "boundary",
+          "file": null,
+          "line": null,
+          "finding": "refusal fails closed",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary",
+          "file": null,
+          "line": null,
+          "finding": "CI rollback exemption is unconditional",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling",
+          "file": null,
+          "line": null,
+          "finding": "adopt event_seeder is behind the sentinel",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-06T23:57:20.950365+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "955f7d7a49e729b05751edde39dc19a25538e9c1"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/lib/events_layout_ci.py:62-66 (`changed = git(root, \"diff\", \"--name-only\", \"--no-renames\", base, head_ref, \"--\", EVENT_FILE)`)",
+          "line": null,
+          "finding": "legacy_write_after_flip` is judged with a two-tree diff from merge-base to head. That diff includes changes made on the base branch after the merge-base that the PR does not carry (they show up as reverse-differences in the head tree). If the base branch itself touches `shipwright_events.jsonl` after the PR branched — most plausibly via a `--allow-full-fold`-style fold committed to main — every open PR, even one that never touches the legacy log, will be falsely failed with `legacy_write_after_flip`.",
+          "suggestion": "Judge \"did the PR touch the legacy log\" from head-side history, e.g. `git log --oneline base..head -- shipwright_events.jsonl` (or `git diff base...head` semantics via rev-list), so base-side post-merge-base changes are excluded. Add a test where main folds after the PR branches and the PR is clean.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "plugins/shipwright-adopt/... / shared/scripts/tools/record_event.py:495 (`if events_layout(project_root) == \"drops\": return amend_commit(...)`)",
+          "line": null,
+          "finding": "The drops branch of `attach_commit_to_event` bypasses the sentinel entirely. With a committed unknown layout plus the env override forcing `drops` (the override `events_layout()` honors), this path amends a drop file instead of failing closed — asymmetric with `resolve_events_write_path`, which does guard. The `require_writable_layout(root, \"legacy\")` on the next line only fires for the non-drops branch.",
+          "suggestion": "Move `require_writable_layout` (or at least the `unsupported_layout` check) above the layout branch in `attach_commit_to_event` so both paths are guarded.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "plugins/shipwright-compliance/scripts/tools/events_sentinel_gate.py:17-19",
+          "line": null,
+          "finding": "When the sentinel file is missing/broken, the returned refusal record hardcodes `\"producer\": \"update_compliance\"` and a status of `refused_events_sentinel_missing`, ignoring the `producer` parameter and diverging from the documented `refused_unsupported_events_layout` status that `update_compliance.py` consumers (and tests) match on.",
+          "suggestion": "Use the `producer` argument in the missing-sentinel record and document the distinct status in `docs/hooks-and-pipeline.md`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/events_layout_ci.py:20-28 (`_layout_at`) and :48-50",
+          "line": null,
+          "finding": "_layout_at` conflates \"key absent\", \"key explicitly `null`\", and \"config file unparsable\" — all return `None`. A head that commits `\"events_layout\": null` is reported as `layout_key_removed` (if the base had a key) rather than `unsupported_layout`, and a corrupt/unreadable sync config at the head produces no `unsupported_layout` violation at all, failing open on the exact \"garbage declaration\" case the write-side sentinel refuses.",
+          "suggestion": "Distinguish missing-file/absent-key from present-but-null/garbage; treat a non-`None` non-supported value (including explicit `null`) as `unsupported_layout`, and consider flagging an unparsable head config.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_events_sentinel_mixed.py (CI section, whole)",
+          "line": null,
+          "finding": "No test covers merge-base resolution failure (shallow clone / unrelated histories) — the exit-2 path is exercised only via a bogus ref, and `blob`/`merge-base` failures mid-check (e.g., base ref resolves but merge-base fails, producing an empty `base` string fed into `diff`/`blob`) are untested. Also missing: the base-side-changes case from the first finding (a broken implementation of the diff judgment would pass today).",
+          "suggestion": "Add a test where `base_ref` resolves but `head_ref` shares no history with it, asserting exit 2 / a clean `GitError`, not a vacuous pass; add the main-side-fold test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/events_sentinel.py:88-95 (`ensure_layout_key`) / plugins/shipwright-project/scripts/checks/write-project-config.py:56-76",
+          "line": null,
+          "finding": "ensure_layout_key` creates a brand-new minimal config `{\"events_layout\": \"legacy\"}` when no sync config exists. In the `/shipwright-project` flow, if any later scaffold step writes a full sync config from a template (as `write_sync_config`-style writers do), the explicit key can be silently dropped, and `_write_events_layout_key` runs only once at the end of one code path — the ordering guarantee is not established anywhere in the diff.",
+          "suggestion": "Either call `_write_events_layout_key` after all config-writing steps in the scaffold, or make the scaffold's config writer itself include the key.  Overall: the sentinel, refusal paths, and tests are solid and well-matched to the S7 acceptance criteria, but the CI check's two-tree diff judgment can falsely fail clean PRs after a base-side fold, which should be fixed before this gates merges.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/lib/events_sentinel.py",
+          "line": 48,
+          "finding": "An explicit `\"events_layout\": null` is treated as an absent key. Consequently, event writes and release-evidence production proceed instead of refusing an unsupported declaration. `ensure_layout_key` and adopt’s config writer also overwrite this existing key, violating the requirement to preserve existing declarations. The tests omit this distinction because `_cfg(..., None)` removes the key.",
+          "suggestion": "Distinguish key absence from an explicit null value, using a missing-value sentinel or key-membership checks. Add tests with literal JSON null covering write refusal, evidence refusal, and preservation during init/adopt.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/lib/events_gitignore.py",
+          "line": 62,
+          "finding": "Self-healing cannot repair ignore-rule precedence when the required re-include already appears earlier in `.gitignore`. For example, `!/shipwright_events.d/.jsonl` followed by `.jsonl` leaves drops ignored; the probe correctly detects this, but `apply_reinclude` removes the necessary rule from `added` because it already exists somewhere in the file.",
+          "suggestion": "Move the required re-include rules after the overriding rules, or append a corrective block when the probe still reports ignored paths. Test an existing re-include followed by a conflicting ignore rule and verify that a drop becomes trackable.  Overall assessment: ship-with-fixes. The implementation covers the main mixed-version scenarios, but explicit-null declarations bypass refusal and gitignore healing can leave event drops untrackable.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-06T23:57:21.267323+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] - Category: bug\n  Severity: medium\n  File: shared/scripts/lib/events_layout_ci.py:62-66 (`changed = git(root, \"diff\", \"--name-only\", \"--no-renames\", base, head_ref, \"--\", EVENT_FILE)`)\n  Finding: `legacy_write_after_flip` is judged with a two-tree diff from merge-base to head. That diff includes changes made on the **base branch after the merge-base** that the PR does not carry (they show up as reverse-differences in the head tree). If the base branch itself touches `shipwright_events.jsonl` after the PR branched — most plausibly via a `--allow-full-fold`-style fold committed to main — every open PR, even one that never touches the legacy log, will be falsely failed with `legacy_write_after_flip`.\n  Suggestion: Judge \"did the PR touch the legacy log\" from head-side history, e.g. `git log --oneline base..head -- shipwright_events.jsonl` (or `git diff base...head` semantics via rev-list), so base-side post-merge-base changes are excluded. Add a test where main folds after the PR branches and the PR is clean.\n\n- Category: bug\n  Severity: low\n  File: plugins/shipwright-adopt/... / shared/scripts/tools/record_event.py:495 (`if events_layout(project_root) == \"drops\": return amend_commit(...)`)\n  Finding: The drops branch of `attach_commit_to_event` bypasses the sentinel entirely. With a committed unknown layout plus the env override forcing `drops` (the override `events_layout()` honors), this path amends a drop file instead of failing closed — asymmetric with `resolve_events_write_path`, which does guard. The `require_writable_layout(root, \"legacy\")` on the next line only fires for the non-drops branch.\n  Suggestion: Move `require_writable_layout` (or at least the `unsupported_layout` check) above the layout branch in `attach_commit_to_event` so both paths are guarded.\n\n- Category: bug\n  Severity: low\n  File: plugins/shipwright-compliance/scripts/tools/events_sentinel_gate.py:17-19\n  Finding: When the sentinel file is missing/broken, the returned refusal rec […truncated]\n\n[openai] - Category: bug\n- Severity: medium\n- File: shared/scripts/lib/events_sentinel.py:48\n- Finding: An explicit `\"events_layout\": null` is treated as an absent key. Consequently, event writes and release-evidence production proceed instead of refusing an unsupported declaration. `ensure_layout_key` and adopt’s config writer also overwrite this existing key, violating the requirement to preserve existing declarations. The tests omit this distinction because `_cfg(..., None)` removes the key.\n- Suggestion: Distinguish key absence from an explicit null value, using a missing-value sentinel or key-membership checks. Add tests with literal JSON null covering write refusal, evidence refusal, and preservation during init/adopt.\n\n- Category: bug\n- Severity: medium\n- File: shared/scripts/lib/events_gitignore.py:62\n- Finding: Self-healing cannot repair ignore-rule precedence when the required re-include already appears earlier in `.gitignore`. For example, `!/shipwright_events.d/*.jsonl` followed by `*.jsonl` leaves drops ignored; the probe correctly detects this, but `apply_reinclude` removes the necessary rule from `added` because it already exists somewhere in the file.\n- Suggestion: Move the required re-include rules after the overriding rules, or append a corrective block when the probe still reports ignored paths. Test an existing re-include followed by a conflicting ignore rule and verify that a drop becomes trackable.\n\nOverall assessment: ship-with-fixes. The implementation covers the main mixed-version scenarios, but explicit-null declarations bypass refusal and gitignore healing can leave event drops untrackable.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-06T23:57:20.609422+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "955f7d7a49e729b05751edde39dc19a25538e9c1"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-06T23:57:21.436663+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-06T23:57:21.589090+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

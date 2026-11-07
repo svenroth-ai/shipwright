@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: bug\n- Severity: medium\n- File: shared/scripts/lib/events_sentinel.py:48\n- Finding: An explicit `\"events_layout\": null` is treated as an absent key. Consequently, event writes and release-evidence production proceed instead of refusing an unsupported declaration. `ensure_layout_key` and adopt\u2019s config writer also overwrite this existing key, violating the requirement to preserve existing declarations. The tests omit this distinction because `_cfg(..., None)` removes the key.\n- Suggestion: Distinguish key absence from an explicit null value, using a missing-value sentinel or key-membership checks. Add tests with literal JSON null covering write refusal, evidence refusal, and preservation during init/adopt.\n\n- Category: bug\n- Severity: medium\n- File: shared/scripts/lib/events_gitignore.py:62\n- Finding: Self-healing cannot repair ignore-rule precedence when the required re-include already appears earlier in `.gitignore`. For example, `!/shipwright_events.d/*.jsonl` followed by `*.jsonl` leaves drops ignored; the probe correctly detects this, but `apply_reinclude` removes the necessary rule from `added` because it already exists somewhere in the file.\n- Suggestion: Move the required re-include rules after the overriding rules, or append a corrective block when the probe still reports ignored paths. Test an existing re-include followed by a conflicting ignore rule and verify that a drop becomes trackable.\n\nOverall assessment: ship-with-fixes. The implementation covers the main mixed-version scenarios, but explicit-null declarations bypass refusal and gitignore healing can leave event drops untrackable.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "- Category: bug\n  Severity: medium\n  File: shared/scripts/lib/events_layout_ci.py:62-66 (`changed = git(root, \"diff\", \"--name-only\", \"--no-renames\", base, head_ref, \"--\", EVENT_FILE)`)\n  Finding: `legacy_write_after_flip` is judged with a two-tree diff from merge-base to head. That diff includes changes made on the **base branch after the merge-base** that the PR does not carry (they show up as reverse-differences in the head tree). If the base branch itself touches `shipwright_events.jsonl` after the PR branched \u2014 most plausibly via a `--allow-full-fold`-style fold committed to main \u2014 every open PR, even one that never touches the legacy log, will be falsely failed with `legacy_write_after_flip`.\n  Suggestion: Judge \"did the PR touch the legacy log\" from head-side history, e.g. `git log --oneline base..head -- shipwright_events.jsonl` (or `git diff base...head` semantics via rev-list), so base-side post-merge-base changes are excluded. Add a test where main folds after the PR branches and the PR is clean.\n\n- Category: bug\n  Severity: low\n  File: plugins/shipwright-adopt/... / shared/scripts/tools/record_event.py:495 (`if events_layout(project_root) == \"drops\": return amend_commit(...)`)\n  Finding: The drops branch of `attach_commit_to_event` bypasses the sentinel entirely. With a committed unknown layout plus the env override forcing `drops` (the override `events_layout()` honors), this path amends a drop file instead of failing closed \u2014 asymmetric with `resolve_events_write_path`, which does guard. The `require_writable_layout(root, \"legacy\")` on the next line only fires for the non-drops branch.\n  Suggestion: Move `require_writable_layout` (or at least the `unsupported_layout` check) above the layout branch in `attach_commit_to_event` so both paths are guarded.\n\n- Category: bug\n  Severity: low\n  File: plugins/shipwright-compliance/scripts/tools/events_sentinel_gate.py:17-19\n  Finding: When the sentinel file is missing/broken, the returned refusal record hardcodes `\"producer\": \"update_compliance\"` and a status of `refused_events_sentinel_missing`, ignoring the `producer` parameter and diverging from the documented `refused_unsupported_events_layout` status that `update_compliance.py` consumers (and tests) match on.\n  Suggestion: Use the `producer` argument in the missing-sentinel record and document the distinct status in `docs/hooks-and-pipeline.md`.\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/lib/events_layout_ci.py:20-28 (`_layout_at`) and :48-50\n  Finding: `_layout_at` conflates \"key absent\", \"key explicitly `null`\", and \"config file unparsable\" \u2014 all return `None`. A head that commits `\"events_layout\": null` is reported as `layout_key_removed` (if the base had a key) rather than `unsupported_layout`, and a corrupt/unreadable sync config at the head produces no `unsupported_layout` violation at all, failing open on the exact \"garbage declaration\" case the write-side sentinel refuses.\n  Suggestion: Distinguish missing-file/absent-key from present-but-null/garbage; treat a non-`None` non-supported value (including explicit `null`) as `unsupported_layout`, and consider flagging an unparsable head config.\n\n- Category: test\n  Severity: low\n  File: shared/tests/test_events_sentinel_mixed.py (CI section, whole)\n  Finding: No test covers merge-base resolution failure (shallow clone / unrelated histories) \u2014 the exit-2 path is exercised only via a bogus ref, and `blob`/`merge-base` failures mid-check (e.g., base ref resolves but merge-base fails, producing an empty `base` string fed into `diff`/`blob`) are untested. Also missing: the base-side-changes case from the first finding (a broken implementation of the diff judgment would pass today).\n  Suggestion: Add a test where `base_ref` resolves but `head_ref` shares no history with it, asserting exit 2 / a clean `GitError`, not a vacuous pass; add the main-side-fold test.\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/lib/events_sentinel.py:88-95 (`ensure_layout_key`) / plugins/shipwright-project/scripts/checks/write-project-config.py:56-76\n  Finding: `ensure_layout_key` creates a brand-new minimal config `{\"events_layout\": \"legacy\"}` when no sync config exists. In the `/shipwright-project` flow, if any later scaffold step writes a full sync config from a template (as `write_sync_config`-style writers do), the explicit key can be silently dropped, and `_write_events_layout_key` runs only once at the end of one code path \u2014 the ordering guarantee is not established anywhere in the diff.\n  Suggestion: Either call `_write_events_layout_key` after all config-writing steps in the scaffold, or make the scaffold's config writer itself include the key.\n\nOverall: the sentinel, refusal paths, and tests are solid and well-matched to the S7 acceptance criteria, but the CI check's two-tree diff judgment can falsely fail clean PRs after a base-side fold, which should be fixed before this gates merges.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-11-07-events-drop-files-s7-mixed-versions",
+    "at": "2026-11-06T23:54:54.244846+00:00"
+  },
+  "verdicts": {
+    "openai": "revise",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

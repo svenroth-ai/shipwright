@@ -1,0 +1,1 @@
+- (2026-11-07) iterate — git check-ignore skips TRACKED paths unless --no-index; probe a sample FILE path (dir/x.jsonl), a folder name misses *.jsonl rules. [→ iterate-2026-11-07-events-drop-files-s7-mixed-versions]

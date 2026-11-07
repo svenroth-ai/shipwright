@@ -1,0 +1,8 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"sentinel, evidence refusal (refresh_compliance_docs, update_compliance), merge-base CI check, explicit key in project init and adopt, legacy-write guard, conditional gitignore re-include; no-op for legacy/absent without drops; CI workflow wiring left to the operator"},
+{"name":"Error Handling","verdict":"pass","note":"refusals are typed and reported as unsupported_events_layout; CI check exits 2 on git trouble; ensure_layout_key cleans its temp file"},
+{"name":"Security Basics","verdict":"pass","note":"raw config read ignores the test env override; check-ignore probes a file path; blobs via cat-file; no os.open modes"},
+{"name":"Test Quality","verdict":"pass","note":"real git repos, synthetic merge commits, subprocess adopt writer, both refusal producers, rollback with leftover corrupt drop"},
+{"name":"Performance Basics","verdict":"pass","note":"one config read and one folder listing per event write; gitignore probes only when drops adopted"},
+{"name":"Naming & Structure","verdict":"pass","note":"new modules under 300 LOC; update_compliance kept at its baseline via a gate module"},
+{"name":"Affected Boundaries","verdict":"pass","note":"producer (sync config key) to consumer (sentinel, CI check, adopt writer) probed with real files; reader of a legacy-appended log proven"}]}

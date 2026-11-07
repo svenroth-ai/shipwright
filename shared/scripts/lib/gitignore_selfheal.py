@@ -31,6 +31,7 @@ if str(_SCRIPTS_ROOT) not in sys.path:
 
 from lib.atomic_write import durable_atomic_write  # noqa: E402
 from lib.ci_env import ci_active  # noqa: E402
+from lib.events_gitignore import apply_reinclude, reinclude_lines  # noqa: E402
 from lib.gitignore_canon import plan_merge  # noqa: E402
 
 #: Where the canonical block lives in a managed repo (repo root).
@@ -177,6 +178,9 @@ def self_heal_gitignore(
         if gi_path.exists() else None
     )
     merged, changed, added, retracted = plan_merge(existing or "")
+    # S7: re-include the event logs a consumer's own ignore rules would hide (conditional, probe-driven).
+    merged, reincluded = apply_reinclude(merged, reinclude_lines(repo_root))
+    added, changed = added + reincluded, changed or bool(reincluded)
     if not changed:
         return HealResult("no_change")
 
