@@ -1,0 +1,53 @@
+{
+  "run_id": "iterate-2026-11-07-events-drop-upgrade-notes",
+  "date": "2026-11-07T12:24:08.695763Z",
+  "event_at": "2026-11-07T07:22:59.423296+00:00",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/events-drop-upgrade-notes",
+  "spec": "docs/migrations/events-drop-files.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-11-07-events-drop-upgrade-notes",
+  "prior_source": "history",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "the changelog skill runs the upgrade-notes check at the top of Step 4, before any aggregator call, in every mode",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-changelog/tests/test_skill_upgrade_notes_check.py::test_step_4_runs_the_upgrade_notes_check_before_any_aggregator_call PASSED"
+      },
+      {
+        "behavior": "the release check reads changed docs/migrations pages and files an action-needed Changed drop before aggregation",
+        "disposition": "tested",
+        "evidence": "test_skill_upgrade_notes_check.py::test_the_check_reads_changed_migration_pages_and_files_a_changed_drop PASSED"
+      },
+      {
+        "behavior": "the migration page for the event-file layout answers 'do I have to do anything', keeps CI optional and names fetch-depth 0",
+        "disposition": "tested",
+        "evidence": "test_skill_upgrade_notes_check.py::test_the_event_file_migration_page_answers_the_question_and_keeps_ci_optional PASSED"
+      },
+      {
+        "behavior": "the migration page is classified in the events reference registry (KC2 guard)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_events_reference_guard.py (13 tests) PASSED"
+      },
+      {
+        "behavior": "every factual claim on the migration page matches the code and docs",
+        "disposition": "untestable",
+        "reason_code": "requires-manual-visual-judgment",
+        "reason": "prose claims; verified by the spec reviewer in three passes against hooks-and-pipeline.md and the fold, sentinel and layout-CI code"
+      }
+    ],
+    "counts": {
+      "testable": 4,
+      "tested": 4,
+      "untestable": 1,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 4,
+      "covered_acs": 4
+    }
+  }
+}

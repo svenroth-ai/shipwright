@@ -136,7 +136,7 @@ REGISTRY: dict[str, tuple[str, ...]] = {
     ),
     "P": (
         "docs/guide.md", "docs/hooks-and-pipeline.md", "docs/migrations/requirements-catalog-merge.md",
-        "docs/token-cost-controllable.md",
+        "docs/migrations/events-drop-files.md", "docs/token-cost-controllable.md",
         "plugins/shipwright-adopt/scripts/lib/gitattributes_scaffolder.py",
         "plugins/shipwright-adopt/skills/adopt/references/step-e-artifact-generation.md",
         "plugins/shipwright-adopt/skills/adopt/references/step-h-validate-commit-handoff.md",
