@@ -34,7 +34,7 @@ CI runs the benchmark with generous bounds (10x); set `SHIPWRIGHT_BENCH_STRICT=1
 4. Read the Linux CI benchmark numbers from the job summary of the first run of `test_events_drops_benchmark.py` and compare them with the strict bounds (20 ms / 0.3 s); CI itself only asserts 10x. CI runs the root under `--cov`, so the summary carries `traced_by_coverage` and its numbers are inflated: use them as an upper bound, and run `SHIPWRIGHT_BENCH_STRICT=1` on a Linux box for the real figure.
 5. Decide the fold cadence: per-write cost grows with the number of open drop files (about 0.34 ms per file), so run the fold before the
    count approaches 300.
-6. Flip announcement: a plugin from before step 2 running F11 on a drops repo fails loudly; PRs rebased (not merged) across the flip
+6. Flip announcement: a plugin from before this campaign does NOT fail on a drops repo, it silently appends to the legacy log and its reader does not see the drop files (tested with v0.34.0; only the optional layout CI check flags it), so every machine must be updated BEFORE the flip; PRs rebased (not merged) across the flip
    must re-record their events.
 
 ## Known gaps of the S8 changes
