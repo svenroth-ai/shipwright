@@ -153,7 +153,7 @@ Accept or enter custom version:
 
 ## Step 4: Generate Changelog Entry
 
-Since the file-per-iterate refactor, iterate F4 writes one Markdown file
+FIRST run the upgrade-notes check in [release-workflow.md](references/release-workflow.md), in every mode, before any aggregator call: it can add a drop that this release must still pick up. Since the file-per-iterate refactor, iterate F4 writes one Markdown file
 per bullet under `CHANGELOG-unreleased.d/<category>/`. Release time
 reads those drop files, renders a versioned Keep-a-Changelog section,
 inserts it at the structural point in `CHANGELOG.md` (above the first
@@ -440,4 +440,4 @@ Tags + main pushed to origin
 - [changelog-format.md](references/changelog-format.md) — Keep-a-Changelog format
 - [compliance-evidence.md](references/compliance-evidence.md) — The seven evidence documents at release
 - [manifest-sync.md](references/manifest-sync.md) — Published package manifest version sync + verify
-- [release-workflow.md](references/release-workflow.md) — Parallel iterates; why the canon stops at C3
+- [release-workflow.md](references/release-workflow.md) — Parallel iterates; upgrade-notes check; canon stop at C3

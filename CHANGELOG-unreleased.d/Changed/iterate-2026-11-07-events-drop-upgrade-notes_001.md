@@ -1,0 +1,1 @@
+Existing projects need no action to upgrade for the per-run event files: the layout stays `legacy` until you switch it. Update the WebUI first, then the plugins, and switch a project only when everyone on it has the new plugins. See docs/migrations/events-drop-files.md.
