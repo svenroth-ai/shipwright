@@ -190,3 +190,16 @@ export async function pendingPrompt(inboxPage: Page, base: string): Promise<bool
     return false;
   }
 }
+
+/** A resumed run's Claude session died with the earlier run; the task page then offers "Resume". Click it, or nothing runs. */
+export async function resumeInterruptedSession(page: Page, record: (title: string) => Promise<void>): Promise<void> {
+  const btn = page.getByRole("button", { name: /Resume/ }).first();
+  if (!(await btn.isVisible().catch(() => false))) return;
+  await btn.click();
+  // The resumed session sits at its prompt: its background agent died with the old session (run 25 idled here).
+  await page.waitForTimeout(45_000);
+  await page.locator(".xterm").first().click();
+  await page.keyboard.type("Continue the pipeline where it was interrupted. The background agent of the earlier session did not finish, so start that phase again and carry on until the pipeline is complete.");
+  await page.keyboard.press("Enter");
+  await record("Resume: the interrupted Claude session was resumed with the Resume button and told to continue");
+}

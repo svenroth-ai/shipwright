@@ -206,6 +206,7 @@ test("brief package to a working skill-backed board app through the WebUI", asyn
     if ((resume?.skipStartPipeline || launchedByModal) && !hasLaunch) {
       await report.step(launchedByModal ? "No launch button: the modal already launched the task" : "Resume: no launch button on the task page, the task was already launched", page,
         launchedByModal ? `Launch command captured from the modal's request: ${launched?.get() ? "yes" : "no"}.` : undefined);
+      if (resume?.skipStartPipeline) await ui.resumeInterruptedSession(page, async (t) => { await report.step(t, page); }); // run 24 idled without it
       // The modal's hand-over can be lost (the task then waits at an empty prompt and the page has no button): watch, hand it over again, fail fast.
       if (launchedByModal) {
         await ensureLaunched({
