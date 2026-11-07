@@ -161,7 +161,7 @@ If section spec lists npm/pip packages: `npm install {packages}` or `uv add {pac
 
 See [implementation-loop](references/implementation-loop.md) for the TDD cycle and [tdd-tests](references/tdd-tests.md) for Integration / pgTAP / E2E test selection (incl. the decision table).
 
-Red phase: write failing tests, run `npm test` or `uv run pytest`, verify they fail.
+Red phase: write failing tests, run `npm test` or `uv run pytest`, verify they fail. **A red test never runs delete code on real folders:** a test of anything that deletes, cleans or resets (`rmtree`, `rm -rf`, `unlink`, `--fresh`, a cleanup helper) works only in a temp copy, with every path built from that copy, never `.` or the project root; read an unguarded helper, do not run it on real paths ([safe-delete-tests](references/safe-delete-tests.md)).
 
 ---
 
