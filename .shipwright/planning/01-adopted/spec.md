@@ -1084,6 +1084,10 @@ _Where the work detail lives_ at the end of this document.
   existing promise is changed or removed or no single requirement owns the new one; a change that alters nothing anyone can
   observe needs no new promise.
   (iterate-2026-11-01-q1-pre-build-ac)
+- (E) [AC50] Given a finished change added or changed a promise, when the reviewer checks it, then each such promise gets a
+  verdict of matches or diverges against what was built, a divergence names the line that breaks it, and a divergence on a
+  promise nobody confirmed is only a visible warning that never holds the change back.
+  (iterate-2026-11-07-ac-q2-post-build-check)
 
 <a id="fr-0112"></a>
 ### FR-01.12 — Local project preview
