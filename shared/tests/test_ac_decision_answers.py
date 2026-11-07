@@ -176,8 +176,8 @@ def test_cli_exit_codes_and_the_unit_hold_escalation(tmp_path, capsys):
     capsys.readouterr()
     ask = tmp_path / "ask-only.json"
     ask.write_text(json.dumps({"items": [{"kind": "add", "new_text": _OUTCOME}]}), encoding="utf-8")
-    assert cli.main(["--project-root", str(tmp_path), "--from-json", str(ask), "--base-ref", "HEAD", "--autonomous", "--run-id", "r2"]) == 2  # must ask, but no --sub-iterate-id
-    assert "--sub-iterate-id" in capsys.readouterr().err
+    assert cli.main(["--project-root", str(tmp_path), "--from-json", str(ask), "--base-ref", "HEAD", "--autonomous", "--run-id", "r2"]) == 10  # must ask, standalone: the questions and no escalation
+    assert "escalation" not in json.loads(capsys.readouterr().out)
 
 
 @pytest.mark.covers("FR-01.11/AC49")

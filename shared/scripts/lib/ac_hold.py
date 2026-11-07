@@ -11,8 +11,8 @@ rendered question text is NOT part of the hash: a moved catalog or a model wordi
 invalidate a signed answer. Campaign finalize step 5 prints the open ``ac_questions``.
 
 **What is enforced, plainly.** ``answered_via`` and ``unattended`` are SELF-REPORTED. *Unattended* is read from
-state the agent does not type - ``SHIPWRIGHT_LOOP_ID`` together with a non-empty ``SHIPWRIGHT_LOOP_UNIT_ID`` (exported by the
-orchestrator) - or the explicit ``--autonomous`` flag the orchestrator or the iterate skill passes. The folder name of a worktree says
+state the agent does not type - a non-empty ``SHIPWRIGHT_LOOP_UNIT_ID`` (exported by the
+orchestrator; it alone counts) - or the explicit ``--autonomous`` flag the orchestrator or the iterate skill passes. The folder name of a worktree says
 nothing: guided campaigns use the same ``campaign-<slug>--<unit>`` layout and are attended. An unattended run refuses inline answers,
 and ``ac_decision.py answer`` refuses to run there unless ``SHIPWRIGHT_AC_OPERATOR_CHANNEL`` is set (the orchestrator
 shell needs it to answer). ``answer`` signs each answer with an HMAC under a per-user key
@@ -58,10 +58,10 @@ def is_ac_hold(result: object) -> bool:
 
 
 def is_unattended(project_root: str | Path = "") -> bool:
-    """True when the campaign loop environment is set: ``SHIPWRIGHT_LOOP_ID`` and a non-empty ``SHIPWRIGHT_LOOP_UNIT_ID``.
+    """True when ``SHIPWRIGHT_LOOP_UNIT_ID`` is non-empty: it is the one loop variable proven to reach a runner's shell, so it alone counts.
 
     ``project_root`` is accepted for the callers' sake and ignored: the worktree's folder name never makes a run unattended."""
-    return bool(os.environ.get("SHIPWRIGHT_LOOP_ID") and os.environ.get("SHIPWRIGHT_LOOP_UNIT_ID", "").strip())
+    return bool(os.environ.get("SHIPWRIGHT_LOOP_UNIT_ID", "").strip())
 
 
 def operator_channel_open() -> bool:

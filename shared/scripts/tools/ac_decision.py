@@ -30,7 +30,7 @@ Modes (``--ac-mode``, ``SHIPWRIGHT_AC_MODE``, ``ac_decision.mode`` in ``shipwrig
 takes its own pick (the model's requirement, else the best match, else a drafted new requirement), records it ``auto-assigned`` and ``unconfirmed``, and prints the short list "assignments made without you"
 (``unconfirmed_assignments`` in the JSON, stderr), changed or removed criteria first - the DEFAULT when unattended; ``off`` does nothing (``skipped``).
 
-Unattended runs (both campaign loop variables, or a per-unit campaign worktree, or ``--autonomous``) refuse inline
+Unattended runs (a non-empty ``SHIPWRIGHT_LOOP_UNIT_ID``, or ``--autonomous``; never a worktree's folder name) refuse inline
 answers; answers come from the operator channel: ``answer`` refuses to run unattended unless
 ``SHIPWRIGHT_AC_OPERATOR_CHANNEL`` is set (the orchestrator shell needs it), binds the answer to the sha256 of the
 stable id + item index + kind + original promise + options (not the question's wording), and signs it with a per-user key (``~/.shipwright/ac_operator.key``).
@@ -199,7 +199,7 @@ def run_decide(argv: list[str]) -> int:
         except OSError as exc:
             raise _Fail(f"cannot write the mode marker for {args.run_id}: {exc}") from exc
     if mode == "off":
-        print(json.dumps({"status": "skipped", "unattended": unattended, "ac_mode": {"mode": mode, "source": mode_source},
+        print(json.dumps({"status": "skipped", "skip_reason": "mode_off", "unattended": unattended, "ac_mode": {"mode": mode, "source": mode_source},
                           "note": "the pre-build AC decision is switched off (ac mode off): nothing is asked, recorded or checked; do not pass --ac-decision to write_plan_stub.py"}, indent=2))
         return EXIT_OK
     data = _load(args.from_json, "--from-json")
@@ -215,7 +215,7 @@ def run_decide(argv: list[str]) -> int:
     except (RuntimeError, OSError) as exc:  # an environment fault (no merge-base, shallow clone, base ref null for the first stacked unit): never a hard stop of a mandatory step
         note = (f"skipped: cannot read the requirement catalog at base ref {args.base_ref!r} ({str(exc)[:200]}); nothing is asked or recorded, "
                 "and F11 still warns later for an observable diff with no record. Pass the branch you were cut from as --base-ref (for the first stacked sub-iterate, whose base_branch is null, the default-branch remote ref, e.g. origin/main)")
-        skipped = {"status": "skipped", "unattended": unattended, "ac_mode": {"mode": mode, "source": mode_source}, "run_id": args.run_id, "note": note}
+        skipped = {"status": "skipped", "skip_reason": "base_unresolvable", "unattended": unattended, "ac_mode": {"mode": mode, "source": mode_source}, "run_id": args.run_id, "note": note}
         text = json.dumps(skipped, indent=2, ensure_ascii=False)
         if args.out:
             Path(args.out).write_text(text + "\n", encoding="utf-8", newline="\n")
@@ -237,9 +237,8 @@ def run_decide(argv: list[str]) -> int:
     if surface is not None:
         result["surface"] = surface
     if result["status"] == "ask" and unattended:
-        if not args.sub_iterate_id:  # only an escalation names the unit it holds
-            raise _Fail("--sub-iterate-id is required when an unattended run must ask (the escalation names the unit it holds)")
-        result["escalation"] = _escalation(result, args.sub_iterate_id, bind_id)
+        if args.sub_iterate_id:  # a campaign unit is held by its escalation; a standalone --autonomous run has no unit and gets the questions only (hard-blocker case)
+            result["escalation"] = _escalation(result, args.sub_iterate_id, bind_id)
     text = json.dumps(result, indent=2, ensure_ascii=False)
     if args.out:
         Path(args.out).write_text(text + "\n", encoding="utf-8", newline="\n")

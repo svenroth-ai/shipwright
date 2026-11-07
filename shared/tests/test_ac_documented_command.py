@@ -18,12 +18,21 @@ _DOC = Path(__file__).resolve().parents[2] / "plugins/shipwright-iterate/skills/
 _UNOWNED = {"items": [{"kind": "add", "new_text": "A saved draft survives a restart"}]}
 
 
-def _documented(root, tmp_path, *extra, base="HEAD"):
-    """The command of path-a-feature.md Step 2a.3 for a campaign unit (no --sub-iterate-id: the documented line never had one)."""
+def _documented_line() -> str:
+    return next(ln for ln in _DOC.read_text(encoding="utf-8").splitlines() if "scripts/tools/ac_decision.py" in ln and "--from-json" in ln)
+
+
+def _documented(root, tmp_path, *extra, base="HEAD", drop=()):
+    """The command of path-a-feature.md Step 2a.3, PARSED from the document: every `--flag "value"` it shows, placeholders filled in (`drop` omits flags, as outside a campaign)."""
     src = tmp_path / "ac.json"
     src.write_text(json.dumps(_UNOWNED), encoding="utf-8")
-    return cli.main(["--project-root", str(root), "--from-json", str(src), "--base-ref", base, "--run-id", _RUN, "--bind-id", "demo--Q1",
-                     "--nonce", "2026-11-01T00:00:00Z", "--out", str(tmp_path / "decided.json"), "--no-suggest", *extra])
+    values = {"project_root": str(root), "ac_json": str(src), "base_branch": base, "run_id": _RUN, "campaign_slug": "demo", "unit_id": "Q1",
+              "campaign_created_at": "2026-11-01T00:00:00Z", "decided_json": str(tmp_path / "decided.json")}
+    args = []
+    for flag, raw in re.findall(r'(--[a-z-]+) "([^"]*)"', _documented_line()):
+        if flag not in drop:
+            args += [flag, re.sub(r"\{(\w+)\}", lambda m: values[m.group(1)], raw)]
+    return cli.main([*args, "--no-suggest", *extra])
 
 
 def _unit_layout(tmp_path):
@@ -50,13 +59,44 @@ def test_h1_the_documented_command_in_an_unattended_campaign_unit_decides_under_
 
 
 @pytest.mark.covers("FR-01.11/AC49")
-def test_h1_an_ask_that_must_be_escalated_still_needs_the_unit_id(tmp_path, monkeypatch, capsys):
+def test_h1_an_unattended_ask_escalates_only_with_a_unit_id_and_a_standalone_one_exits_10_with_the_questions(tmp_path, monkeypatch, capsys):
     root = _repo(tmp_path)
-    monkeypatch.setenv("SHIPWRIGHT_LOOP_ID", "loop-1")
     monkeypatch.setenv("SHIPWRIGHT_LOOP_UNIT_ID", "Q1")
-    assert _documented(root, tmp_path, "--ac-mode", "ask") == 2
-    assert "--sub-iterate-id is required" in capsys.readouterr().err
-    assert _documented(root, tmp_path, "--ac-mode", "ask", "--sub-iterate-id", "Q1") == 10
+    assert _documented(root, tmp_path, "--ac-mode", "ask") == 10
+    assert "escalation" in json.loads((tmp_path / "decided.json").read_text(encoding="utf-8"))
+    monkeypatch.delenv("SHIPWRIGHT_LOOP_UNIT_ID")
+    capsys.readouterr()
+    assert _documented(root, tmp_path, "--ac-mode", "ask", "--autonomous", drop=("--sub-iterate-id", "--bind-id", "--nonce")) == 10   # standalone: no unit to hold
+    out = json.loads((tmp_path / "decided.json").read_text(encoding="utf-8"))
+    assert out["status"] == "ask" and out["questions"] and "escalation" not in out
+
+
+@pytest.mark.covers("FR-01.11/AC49")
+@pytest.mark.parametrize("unit_id", ["__campaign_wave__", "Q1"])
+def test_the_unit_variable_alone_makes_a_run_unattended_so_a_runner_cannot_sign_an_answer(tmp_path, monkeypatch, capsys, unit_id):
+    root = _repo(tmp_path)
+    assert _documented(root, tmp_path, "--ac-mode", "ask", "--autonomous") == 10
+    decided = tmp_path / "decided.json"
+    monkeypatch.delenv("SHIPWRIGHT_LOOP_ID", raising=False)
+    monkeypatch.delenv("SHIPWRIGHT_AC_OPERATOR_CHANNEL", raising=False)
+    monkeypatch.setenv("SHIPWRIGHT_LOOP_UNIT_ID", unit_id)
+    capsys.readouterr()
+    assert cli.main(["answer", "--decided", str(decided), "--item", "0", "--choice", "1", "--answers", str(tmp_path / "a.json")]) == 2
+    assert "unattended run" in capsys.readouterr().err and not (tmp_path / "a.json").exists()
+    monkeypatch.delenv("SHIPWRIGHT_LOOP_UNIT_ID")
+    assert cli.main(["answer", "--decided", str(decided), "--item", "0", "--choice", "1", "--answers", str(tmp_path / "a.json")]) == 0         # attended: no env, no guard
+
+
+@pytest.mark.covers("FR-01.11/AC49")
+def test_every_skipped_result_carries_a_machine_skip_reason(tmp_path, capsys):
+    root = _repo(tmp_path)
+    assert _documented(root, tmp_path, base="refs/does/not/exist") == 0
+    assert json.loads((tmp_path / "decided.json").read_text(encoding="utf-8"))["skip_reason"] == "base_unresolvable"
+    capsys.readouterr()
+    assert _documented(root, tmp_path, "--ac-mode", "off") == 0
+    assert json.loads(capsys.readouterr().out)["skip_reason"] == "mode_off"
+    from lib import ac_decision as ad
+    assert ad.decide([], {"unparsed": True}, False)["skip_reason"] == "catalog_unparsed" and ad.decide([], {}, False, mode="off")["skip_reason"] == "mode_off"
 
 
 @pytest.mark.covers("FR-01.11/AC49")

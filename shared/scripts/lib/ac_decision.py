@@ -193,9 +193,9 @@ def decide(items: object, catalog: dict, unattended: bool = False, surface: dict
     """
     base = {"unattended": unattended}
     if mode == "off":
-        return {**base, "status": "skipped", "note": "the pre-build AC decision is switched off (ac mode off): nothing is asked, recorded or checked"}
+        return {**base, "status": "skipped", "skip_reason": "mode_off", "note": "the pre-build AC decision is switched off (ac mode off): nothing is asked, recorded or checked"}
     if catalog.get("unparsed"):
-        return {**base, "status": "skipped", "note": "the requirement catalog is missing, or a spec has text but no FR heading this tool can read; the pre-build AC decision is skipped, nothing is asked, refused or held"}
+        return {**base, "status": "skipped", "skip_reason": "catalog_unparsed", "note": "the requirement catalog is missing, or a spec has text but no FR heading this tool can read; the pre-build AC decision is skipped, nothing is asked, refused or held"}
     if not isinstance(items, list) or not items:
         return {**base, "status": "invalid", "errors": ["items must be a non-empty list: every iterate records an AC, an exemption or a restore"]}
     given = _answers_by_item(answers)
