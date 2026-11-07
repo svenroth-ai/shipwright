@@ -15,5 +15,6 @@ def _ac_hermetic(request, monkeypatch, tmp_path_factory):
         monkeypatch.delenv(name, raising=False)
     home = tmp_path_factory.mktemp("ac_home")
     monkeypatch.setenv("SHIPWRIGHT_AC_KEY_FILE", str(home / "ac_operator.key"))
+    monkeypatch.setenv("SHIPWRIGHT_AC_MODE", "ask")  # the questions are the subject of most tests; the mode tests set their own
     monkeypatch.setenv("SHIPWRIGHT_AC_SUGGEST_CACHE", str(home / "ac_suggest"))
     yield

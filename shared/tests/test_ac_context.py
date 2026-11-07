@@ -24,7 +24,8 @@ def test_the_part_is_the_specs_own_grouping_then_the_top_level_directory_then_no
     grouped = {"groups": {"FR-01.03": "Drafts", "FR-01.04": "Sharing"}}
     assert ctx.part_line(["FR-01.03", "FR-01.04"], grouped, ["plugins/x/y.py"]) == "Part: Drafts, Sharing"          # the spec's grouping wins over paths
     assert ctx.part_line(["FR-01.03"], {}, ["web/screens/a.tsx", "api/services/b.py", "README.md", "docs/x.md", "tests/t.py"]) == "Part: api, web"
-    assert ctx.part_line([], {}, ["plugins/shipwright-build/a.py", "plugins\\shipwright-iterate\\b.py", "plugins/shipwright-build/c.py"]) == "Part: plugins/shipwright-build, plugins/shipwright-iterate"
+    assert ctx.part_line([], {}, ["plugins/shipwright-build/a.py", "plugins\\shipwright-iterate\\b.py", "plugins/shipwright-build/c.py"]) == "Part: shipwright-build, shipwright-iterate"      # a bare name, never plugins/...
+    assert ctx.part_line([], {}, ["shared/scripts/lib/a.py", "plugins/shipwright-run/s.py", "plugins/loose.py"]) == "Part: shipwright-run"      # shared code and a file loose in the container are no part
     for unknown in (None, [], ["README.md"], ["docs/guide.md", "tests/t.py", ".github/ci.yml", "CHANGELOG-unreleased.d/feat/x.md"], [7, None], "plugins/x/y.py"):
         assert ctx.part_line(["FR-09.09"], {}, unknown) == ""                                                      # never invented: no line at all
     assert "plugin" not in ctx.part_line(["FR-01.03"], {}, ["web/a.tsx"]).lower()                                  # no hard-coded word
@@ -53,7 +54,7 @@ def test_the_question_carries_the_part_from_the_spec_or_the_paths():
     catalog = cat.parse_catalog(_SPEC)
     full = cat_of(_SPEC) | {"fr_text": {"FR-01.03": "Keep every draft the author has saved, also after a restart."}, "groups": {"FR-01.03": "Drafts"}}
     q = ad.decide([_ADD], full, paths=["web/a.tsx"])["questions"][0]["question"]
-    assert "\nPart: Drafts\nNew acceptance criterion:" in q and 'Requirement FR-01.03: "Keep every draft the author has saved, also after a restart."' in q
+    assert "\nPart: Drafts\nNew acceptance criterion:" in q and 'Requirement FR-01.03: "Saving drafts"' in q and "Keep every draft" not in q      # the requirement's NAME, not its long text
     plain = ad.decide([_ADD], cat_of(_SPEC), paths=["web/a.tsx"])["questions"][0]["question"]
     assert "\nPart: web\n" in plain and catalog
     assert "Part:" not in ad.decide([_ADD], cat_of(_SPEC))["questions"][0]["question"]

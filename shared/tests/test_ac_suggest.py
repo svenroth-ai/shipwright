@@ -38,7 +38,7 @@ def test_a_reply_naming_a_real_requirement_is_used_and_the_request_carries_the_t
 
 @pytest.mark.covers("FR-01.11/AC49")
 @pytest.mark.parametrize("reply, why", [
-    ({"fr_id": "FR-99.99"}, "unknown requirement id"), ({"fr_id": None}, "unknown requirement id"), ({"fr_id": 7}, "unknown requirement id"), ({}, "unknown requirement id"),
+    ({"fr_id": "FR-99.99"}, "unknown requirement id"), ({"fr_id": 7}, "unknown requirement id"), ({}, "no fr_id"),
     ("this is not json", "not a JSON object"), ("[1, 2]", "not a JSON object"), ("", "not a JSON object"), ("null", "not a JSON object"),
 ])
 def test_a_reply_that_names_no_real_requirement_falls_back_with_its_reason(reply, why):

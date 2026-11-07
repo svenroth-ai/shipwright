@@ -108,7 +108,7 @@ def test_a_new_ac_without_an_owner_is_one_best_fitting_requirement_with_numbered
     assert "Finding: this change adds a new acceptance criterion to an existing requirement.\n" in text
     assert 'New acceptance criterion: "A saved draft survives a restart"\nRequirement FR-01.03: "Saving drafts"\n\nDoes this fit?\n' in text      # the agent's wording, unchanged
     assert text.splitlines()[-4:] == ["1 Yes, add it there.", "2 No, wrong requirement. (You tell the agent in the chat which one.)", "3 No requirement fits, create a new one.", "4 Don't understand, need help."]
-    assert q["options"] == {"1": {"choice": "yes", "text": "FR-01.03"}, "2": {"choice": "no"}, "3": {"choice": "new_fr"}, "4": {"choice": "explain"}}
+    assert q["options"] == {"1": {"choice": "yes", "text": "FR-01.03"}, "2": {"choice": "no"}, "3": {"choice": "new_fr", "text": "A saved draft survives a restart", "again": True}, "4": {"choice": "explain"}}
     for gone in ("In plain words", "Somewhere new", "not a promise", "Not wanted", "Where does it belong"):
         assert gone not in text
     assert ad.decide([{"kind": "add", "new_text": "A saved draft survives a restart"}], catalog, bind_id="b")["questions"][0] == q      # deterministic
@@ -122,7 +122,7 @@ def test_a_changed_or_removed_ac_shows_the_exact_old_and_new_wording_and_the_req
     old = catalog["acs"]["FR-01.03.AC05"]
     changed = ad.decide([{"kind": "change", "ac": "FR-01.03.AC05", "old_text": old, "new_text": "A draft is kept for a year"}], catalog)["questions"][0]["question"]
     assert "Finding: this change changes an existing acceptance criterion.\nPart: Drafts\n" in changed and changed.endswith("2 No. (You tell the agent in the chat what you want instead.)\n3 Don't understand, need help.")
-    assert 'Requirement FR-01.03: "Keep every draft the author has saved, also after a restart."' in changed
+    assert 'Requirement FR-01.03: "Saving drafts"' in changed and "Keep every draft" not in changed      # the requirement's name, not its long text
     removed = ad.decide([{"kind": "remove", "ac": "FR-01.03.AC05", "old_text": old}], catalog)["questions"][0]
     assert "Finding: this change removes an acceptance criterion." in removed["question"] and "Acceptance criterion that no longer holds:" in removed["question"]
     assert removed["question"].endswith("1 Yes, that is intended.\n2 No, keep it. (The change is then reworked.)\n3 Don't understand, need help.")
@@ -133,12 +133,12 @@ def test_a_changed_or_removed_ac_shows_the_exact_old_and_new_wording_and_the_req
 def test_a_requirement_that_does_not_exist_yet_is_created_from_a_declared_area_or_when_nothing_fits():
     catalog = cat_of(_AREAS)
     none = ad.decide([{"kind": "add", "new_text": "Orbits remain stable"}], catalog, bind_id="b")["questions"][0]
-    assert "Finding: this change needs a requirement that does not exist yet." in none["question"] and "Requirement FR" not in none["question"]      # nothing fits: no requirement line
+    assert "Finding: this change needs a requirement that does not exist yet." in none["question"] and "Requirement FR" not in none["question"] and "New requirement: Orbits remain stable" in none["question"]      # nothing fits: a drafted name, no existing one
     assert none["question"].splitlines()[-3:] == ["1 Yes, create it.", "2 No. (You tell the agent in the chat what you want instead.)", "3 Don't understand, need help."]
-    made = ad.decide([{"kind": "add", "new_text": "Orbits remain stable"}], catalog, bind_id="b", answers=[ans(none, "new_fr")])
+    made = ad.decide([{"kind": "add", "new_text": "Orbits remain stable"}], catalog, bind_id="b", answers=[ans(none, "new_fr", "Orbits remain stable")])
     assert made["status"] == "ok" and made["resolved_items"][0]["new_fr"] == {"id": "FR-01.06", "title": "Orbits remain stable"} and made["resolved_items"][0]["owner_fr"] == "FR-01.06"
     declared = ad.decide([{"kind": "add", "new_text": "Offline use works", "new_fr": {"id": "FR-01.30", "title": "Offline use"}}], catalog)["questions"][0]
-    assert 'Requirement FR-01.30: "Offline use"' in declared["question"] and "needs a requirement that does not exist yet" in declared["question"]
+    assert "New requirement: Offline use" in declared["question"] and "needs a requirement that does not exist yet" in declared["question"]
     assert declared["options"]["1"] == {"choice": "yes"}
 
 
@@ -151,7 +151,10 @@ def test_answers_resolve_decline_or_name_a_requirement_and_no_hands_the_work_bac
     def go(choice, text=""):
         return ad.decide([item], catalog, bind_id="b", answers=[ans(q, choice, text)])
     assert go("yes", "FR-01.03")["resolved_items"][0]["owner_fr"] == "FR-01.03"
-    assert go("new_fr")["resolved_items"][0]["new_fr"]["id"] == "FR-01.06"
+    again = go("new_fr", _PROMISE)                                                                           # "no requirement fits": one more question shows the drafted requirement
+    assert again["status"] == "ask" and "New requirement: " + _PROMISE in again["questions"][0]["question"] and again["questions"][0]["options"]["1"] == {"choice": "yes"}
+    final = ad.decide([item], catalog, bind_id="b", answers=[ans(q, "new_fr", _PROMISE), ans(again["questions"][0], "yes")])
+    assert final["status"] == "ok" and final["resolved_items"][0]["new_fr"]["id"] == "FR-01.06" and final["resolved_items"][0]["owner_fr"] == "FR-01.06"
     declined = go("no")
     assert declined["status"] == "invalid" and "ask them in the chat" in declined["errors"][0]
     assert go("yes", "No such area")["status"] == "invalid" and "not one of the options" in go("yes", "No such area")["errors"][0]

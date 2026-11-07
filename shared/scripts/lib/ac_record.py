@@ -15,6 +15,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from lib.ac_base_tests import named_in_base_tests
 from lib.ac_catalog import ac_body, catalog_texts, load_catalog
 from lib.ac_decision import count_decisions, frozen_fields
 from lib.ac_hold import is_unattended
@@ -163,7 +164,7 @@ def _record_problems(root: Path, run_id: str, base: str, head: str | None) -> tu
     return _parse_records(now), out + ([order] if order else [])
 
 
-def _item_problems(items: list, catalog: dict, changes: dict, surface: dict, idents: set[str]) -> list[str]:
+def _item_problems(items: list, catalog: dict, changes: dict, surface: dict, idents: set[str], root: Path, base: str) -> list[str]:
     out: list[str] = []
     for i in items:
         if i.get("kind") in ("restore", "unchanged"):
@@ -171,7 +172,10 @@ def _item_problems(items: list, catalog: dict, changes: dict, surface: dict, ide
             if ac not in catalog:
                 out.append(f"{i.get('kind')} names {ac}, which is not in the catalog at the base - that is a catalog gap, so add the AC")
             elif not _mentions(changes, ac):
-                out.append(f"{i.get('kind')} names {ac}, but no test file in the diff mentions that AC id")
+                if i.get("kind") == "restore":
+                    out.append(f"restore names {ac}, but no test file in the diff mentions that AC id")
+                elif not named_in_base_tests(root, base, ac):  # a refactor leaves the promise tests untouched: one that already exists at the base counts
+                    out.append(f"unchanged names {ac}, but no test file in the diff mentions that AC id and none at the base does either")
         if i.get("kind") == "unchanged":
             listed, seen = set(i.get("files") or []), set(surface["files"])
             if seen - listed or listed - seen:
@@ -205,7 +209,7 @@ def verify(project_root: str | Path, run_id: str, base: str, head: str | None, c
         return out + ["the AC record carries no readable items"]
     elif records and surface["observable"] and all(i.get("kind") == "exempt" for i in items):
         out.append(f"recorded as no observable change, but the diff changes observable behaviour ({', '.join(surface['files'][:4])}) - name the AC it restores, or add one")
-    out += _item_problems(items, catalog["acs"], changes, surface, diff_identifiers(changes))
+    out += _item_problems(items, catalog["acs"], changes, surface, diff_identifiers(changes), root, base)
     out += [f"the frozen AC differs from the catalog - {d}" for d in freeze_differences(items, changed, removed, catalog["acs"])]
     undeclared = undeclared_edits(items, changed, removed, catalog["acs"])
     if undeclared:

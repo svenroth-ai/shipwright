@@ -141,9 +141,9 @@ def test_the_hold_needs_a_well_formed_escalation():
 @pytest.mark.covers("FR-01.11/AC49")
 def test_one_counting_producer_has_exempt_restore_and_auto_buckets():
     d = [{"mode": "auto", "kind": "exempt"}, {"mode": "auto", "kind": "add"}, {"mode": "asked", "kind": "change"}, {"mode": "auto", "kind": "restore"}, {"mode": "auto", "kind": "exempt"}]
-    assert ad.count_decisions(d) == {"total": 5, "auto": 1, "asked": 1, "exempt": 2, "restore": 1, "unchanged": 0, "answered_inline": 0, "exempt_share": 0.4, "restore_share": 0.2}
+    assert ad.count_decisions(d) == {"total": 5, "auto": 1, "asked": 1, "exempt": 2, "restore": 1, "unchanged": 0, "answered_inline": 0, "unconfirmed": 0, "exempt_share": 0.4, "restore_share": 0.2}
     assert ad.count_decisions(d + [{"mode": "auto", "kind": "unchanged"}])["unchanged"] == 1
-    empty = {"total": 0, "auto": 0, "asked": 0, "exempt": 0, "restore": 0, "unchanged": 0, "answered_inline": 0, "exempt_share": 0.0, "restore_share": 0.0}
+    empty = {"total": 0, "auto": 0, "asked": 0, "exempt": 0, "restore": 0, "unchanged": 0, "answered_inline": 0, "unconfirmed": 0, "exempt_share": 0.0, "restore_share": 0.0}
     assert ad.count_decisions("junk") == ad.count_decisions(None) == empty
     assert ad.count_decisions([1, "x", {}])["total"] == 1
     assert ad.count_decisions([{"mode": "asked", "kind": "change", "answered_via": "inline"}, {"mode": "asked", "kind": "change", "answered_via": "operator"}])["answered_inline"] == 1

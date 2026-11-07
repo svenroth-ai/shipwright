@@ -4,8 +4,9 @@ Never a name this code made up and never a fixed word such as "plugin" (a web ap
 
 1. the grouping the spec already gives the requirement (the table's ``Area`` column, else the name of the split the spec lives in -
    :func:`lib.ac_catalog.load_catalog` ``groups``; the generic ``adopted`` that ``adopt`` writes names nothing and is skipped);
-2. else the top-level directory of each changed path (a container directory such as ``plugins/`` or ``packages/`` holds the parts, so
-   its child is named: ``plugins/shipwright-build``); documentation, test and tooling directories are not parts of the product;
+2. else the top-level directory of each changed path, as a bare name (a container directory such as ``plugins/`` or ``packages/`` holds
+   the parts, so its child is named: ``shipwright-build``, never ``plugins/shipwright-build``); documentation, test, tooling and
+   ``shared`` directories are not parts of the product;
 3. else no line at all.
 
 Stdlib only.
@@ -16,7 +17,7 @@ from __future__ import annotations
 __all__ = ["part_line", "part_names"]
 
 _CONTAINERS = frozenset({"plugins", "packages", "apps", "services", "libs", "modules", "crates", "workspaces"})
-_NOT_PARTS = frozenset({"docs", "doc", "tests", "test", "integration-tests", ".github", ".shipwright", ".claude", "scripts"})
+_NOT_PARTS = frozenset({"docs", "doc", "tests", "test", "integration-tests", ".github", ".shipwright", ".claude", "scripts", "shared"})
 
 
 def _from_paths(paths: object) -> list[str]:
@@ -25,7 +26,11 @@ def _from_paths(paths: object) -> list[str]:
         parts = [x for x in str(p).replace("\\", "/").strip("/").split("/") if x]
         if len(parts) < 2 or parts[0] in _NOT_PARTS or parts[0].lower().startswith("changelog"):  # a file at the root, or release-note drops, belong to no part
             continue
-        found.add(f"{parts[0]}/{parts[1]}" if parts[0] in _CONTAINERS and len(parts) > 2 else parts[0])
+        if parts[0] in _CONTAINERS:
+            if len(parts) > 2:  # a file directly inside the container belongs to no part
+                found.add(parts[1])
+            continue
+        found.add(parts[0])
     return sorted(found)
 
 

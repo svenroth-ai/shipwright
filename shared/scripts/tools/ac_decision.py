@@ -1,7 +1,7 @@
 """Decide the pre-build acceptance-criterion declaration of an iterate: ask or auto.
 
     uv run shared/scripts/tools/ac_decision.py --project-root . --from-json ac.json --base-ref {base_branch} \
-        --run-id RID [--bind-id STABLE_ID] [--nonce CAMPAIGN_CREATED_AT] [--answers answers.json] [--autonomous --sub-iterate-id Q1] [--out decided.json] [--no-suggest]
+        --run-id RID [--bind-id STABLE_ID] [--nonce CAMPAIGN_CREATED_AT] [--answers answers.json] [--autonomous --sub-iterate-id Q1] [--ac-mode ask|auto|off] [--out decided.json] [--no-suggest]
 
     uv run shared/scripts/tools/ac_decision.py answer --decided decided.json|result.json --item 0 --choice 1|2|3 \
         [--text-file wording.txt] --answers answers.json        # the OPERATOR's channel
@@ -19,10 +19,14 @@
 
 ``--base-ref`` is required: it is resolved to merge-base(base-ref, HEAD) and the catalog is read there (git), never from
 the working tree. ``--bind-id`` is the run's STABLE id (for a campaign unit ``{campaign_slug}--{unit_id}``, never an
-attempt id), so a re-dispatched unit gets the same question hashes; it defaults to ``--run-id``. An answer is bound to that id (plus ``--nonce``, the campaign's created_at), the item index, the kind, the ORIGINAL promise text and the options map - never to the rendered question, so a moved base cannot invalidate it. The question shows your own AC wording unchanged and the requirement's exact text from the spec; a small model only proposes which requirement a new AC belongs to (``--no-suggest`` skips it; code checks the id). AC text must read as an outcome (exit 2
+attempt id), so a re-dispatched unit gets the same question hashes; it defaults to ``--run-id``. An answer is bound to that id (plus ``--nonce``, the campaign's created_at), the item index, the kind, the ORIGINAL promise text and the options map - never to the rendered question, so a moved base cannot invalidate it. The question shows your own AC wording unchanged and the requirement's name from the spec; a small model only proposes which requirement a new AC belongs to, one plain line about it and a draft of a new one (``--no-suggest`` skips it; code checks the id and every line). AC text must read as an outcome (exit 2
 otherwise). The operator is asked only when an existing AC is changed or removed, no single FR owns a new AC,
 or a new area (``new_fr``) is proposed. Before the build the diff is empty: ``exempt`` is then only a claim, and
 F11 tests it against the committed diff (a warning).
+
+Modes (``--ac-mode``, ``SHIPWRIGHT_AC_MODE``, ``ac_decision.mode`` in ``shipwright_iterate_config.json``): ``ask`` asks as above (default for an interactive iterate); ``auto`` asks nothing - Shipwright
+takes its own pick (the model's requirement, else the best match, else a drafted new requirement), records it ``auto-assigned`` and ``unconfirmed``, and prints the short list "assignments made without you"
+(``unconfirmed_assignments`` in the JSON, stderr), changed or removed criteria first - the DEFAULT when unattended; ``off`` does nothing (``skipped``).
 
 Unattended runs (both campaign loop variables, or a per-unit campaign worktree, or ``--autonomous``) refuse inline
 answers; answers come from the operator channel: ``answer`` refuses to run unattended unless
@@ -50,6 +54,7 @@ if str(_SCRIPTS_ROOT) not in sys.path:
 from lib.ac_apply import ANSWERS  # noqa: E402
 from lib.ac_catalog import load_catalog  # noqa: E402
 from lib.ac_decision import decide  # noqa: E402
+from lib.ac_mode import MODES, resolve_mode  # noqa: E402
 from lib.ac_hold import AC_HOLD_REASON, OPERATOR_ENV, is_unattended, load_key, operator_channel_open, sign  # noqa: E402
 from lib.ac_record import verify  # noqa: E402
 from lib.ac_suggest import make_suggester  # noqa: E402
@@ -162,14 +167,23 @@ def run_decide(argv: list[str]) -> int:
     ap.add_argument("--autonomous", action="store_true", help="only ever makes the run stricter; unattended is also read from the campaign environment")
     ap.add_argument("--nonce", default="", help="a campaign nonce (the campaign's created_at) added to the bind id, so a recreated campaign with the same slug cannot reuse an old signed answer")
     ap.add_argument("--sub-iterate-id", default="")
+    ap.add_argument("--ac-mode", default="", choices=("", *MODES), help="ask | auto | off (the campaign's own setting, passed by the orchestrator); default: SHIPWRIGHT_AC_MODE, then shipwright_iterate_config.json ac_decision.mode, then auto when unattended, else ask")
     ap.add_argument("--no-suggest", action="store_true", help="do not call the model; the deterministic wording and candidates are used")
     ap.add_argument("--out", default="", help="also write the decision JSON to this file")
     args = ap.parse_args(argv)
     unattended = args.autonomous or is_unattended(Path(args.project_root))
-    if unattended and not args.sub_iterate_id:
+    try:
+        mode, mode_source = resolve_mode(args.project_root, args.ac_mode, unattended)
+    except ValueError as exc:
+        raise _Fail(str(exc)) from exc
+    if unattended and mode != "off" and not args.sub_iterate_id:
         raise _Fail("--sub-iterate-id is required in an unattended run (the escalation names the unit it holds)")
     if (unattended or args.answers) and not args.run_id:
         raise _Fail("--run-id is required in an unattended run or with --answers (answers are bound to the run)")
+    if mode == "off":
+        print(json.dumps({"status": "skipped", "unattended": unattended, "ac_mode": {"mode": mode, "source": mode_source},
+                          "note": "the pre-build AC decision is switched off (ac mode off): nothing is asked, recorded or checked; do not pass --ac-decision to write_plan_stub.py"}, indent=2))
+        return EXIT_OK
     data = _load(args.from_json, "--from-json")
     if not isinstance(data, dict):
         raise _Fail("--from-json must hold a JSON object")
@@ -190,7 +204,8 @@ def run_decide(argv: list[str]) -> int:
         print(f"ac_decision: diff unavailable ({exc}); the exemption can only be tested at F11", file=sys.stderr)
     bind_id = (args.bind_id or args.run_id) + (f"@{args.nonce}" if args.nonce else "")
     suggester = make_suggester(catalog, args.project_root, not args.no_suggest)
-    result = decide(data.get("items"), catalog, unattended, surface, idents, answers, bind_id, suggester, list(changes))
+    result = decide(data.get("items"), catalog, unattended, surface, idents, answers, bind_id, suggester, list(changes), mode)
+    result["ac_mode"] = {"mode": mode, "source": mode_source}
     result["exemption_check"] = (f"tested against the current diff ({len(changes)} file(s), {surface['ignored']} not observable)" if surface and changes else
                                  "a claim only: the diff is empty before the build; F11 tests it against the committed diff (a warning)")
     if surface is not None:
@@ -201,6 +216,8 @@ def run_decide(argv: list[str]) -> int:
     if args.out:
         Path(args.out).write_text(text + "\n", encoding="utf-8", newline="\n")
     print(text)
+    for line in result.get("unconfirmed_assignments", []):
+        print(line, file=sys.stderr)
     return {"ok": EXIT_OK, "ask": EXIT_ASK, "explain": EXIT_EXPLAIN, "skipped": EXIT_OK}.get(result["status"], EXIT_INVALID)
 
 

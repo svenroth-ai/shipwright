@@ -1,9 +1,10 @@
-"""A small model proposes WHICH existing requirement a new acceptance criterion belongs to - nothing else.
+"""A small model proposes WHICH existing requirement a new acceptance criterion belongs to, and drafts a new one if none does.
 
 When a new AC has no single owning requirement, the operator is asked about ONE best-fitting requirement. Which one fits by
-MEANING is the only job of the model (existing OpenRouter transport, one id back). Code does the rest: the id must exist in
-the base catalog, and the question shows that requirement's exact text from the spec - no model wording of any text ever
-reaches the operator. Any failure (no key, opted out, timeout, bad reply, unknown id) gives ``fr_id: None``; the question then
+MEANING is the job of the model (existing OpenRouter transport, one JSON reply): the id (or null = none fits), an optional
+plain line of at most 12 words, and a drafted title and one sentence for a new requirement. Code does the rest: the id must
+exist in the base catalog, every line is checked (:func:`_clean`: length, no quotes, brackets, code or ids) and dropped if not
+plain, and the question shows the requirement's name from the spec. Any failure (no key, opted out, timeout, bad reply, unknown id) gives ``fr_id: None``; the question then
 uses the deterministic best match by shared words (:func:`lib.ac_catalog.candidates`). This module never raises and never blocks
 Step 2a. The model is pinned (:data:`MODEL`); a model in a namespace that needs a zero-data-retention rule is refused.
 Opt-outs, all fail-closed (an unreadable config means nothing is sent): ``SHIPWRIGHT_AC_SUGGEST=0``, the config key
@@ -24,6 +25,7 @@ from pathlib import Path
 from typing import Callable
 
 from lib.ac_catalog import fr_text, words
+from lib.ac_wording import wording_violations
 
 __all__ = ["BUDGET", "MODEL", "OFF_ENV", "default_transport", "make_suggester", "prompt_text", "propose"]
 
@@ -36,6 +38,7 @@ _TRANSPORT_PATH = _ROOT / "plugins" / "shipwright-security" / "scripts" / "lib" 
 _TRANSPORT_NAME = "_ac_suggest_openrouter"
 _ZDR_NAMESPACES = ("deepseek/", "z-ai/")  # models that need a zero-data-retention provider rule, which this call does not carry
 _PAYLOAD_CAP = 24000
+LINE_WORDS, TITLE_WORDS, SENTENCE_WORDS = 12, 12, 30  # the longest a checked model line, a drafted requirement title and its one sentence may be
 
 
 def prompt_text() -> str:
@@ -97,21 +100,36 @@ def _payload(promise: str, cat: dict) -> str:
     return json.dumps({"acceptance_criterion": promise, "requirements": out}, ensure_ascii=False)
 
 
-def _fr_from(raw: object, cat: dict) -> tuple[str | None, str]:
-    """``(id, "")`` for a reply that names one requirement of the catalog, else ``(None, why)``."""
+def _clean(text: object, max_words: int) -> str:
+    """A short model line, or ``""`` when it is not plain: empty, too long, quotes, brackets, code or an id. Code never shows a line it did not check."""
+    line = " ".join(text.split()) if isinstance(text, str) else ""
+    if not line or len(line.split()) > max_words or re.search(r"[\"`<>\[\]{}]", line) or wording_violations(line, None):
+        return ""
+    return line
+
+
+def _reply(raw: object, cat: dict) -> tuple[dict | None, str]:
+    """``(proposal fields, "")`` for a usable reply, else ``(None, why)``. ``fr_id: None`` with ``none: True`` is the model saying no requirement fits."""
     try:
         data = json.loads(raw) if isinstance(raw, str) else None
     except ValueError:
         data = None
-    fr = data.get("fr_id") if isinstance(data, dict) else None
     if not isinstance(data, dict):
         return None, "the reply is not a JSON object"
-    return (fr, "") if isinstance(fr, str) and fr in cat.get("frs", ()) else (None, f"unknown requirement id {fr!r}")
+    if "fr_id" not in data:
+        return None, "the reply has no fr_id"
+    fr = data["fr_id"]
+    if fr is not None and not (isinstance(fr, str) and fr in cat.get("frs", ())):
+        return None, f"unknown requirement id {fr!r}"
+    return {"fr_id": fr, "none": fr is None, "line": _clean(data.get("line"), LINE_WORDS) if fr else "",
+            "title": _clean(data.get("title"), TITLE_WORDS), "sentence": _clean(data.get("sentence"), SENTENCE_WORDS)}, ""
 
 
 def propose(promise: str, cat: dict, project_root: str | Path = ".", transport: Callable[[list[dict], int], str] | None = None,
             model: str = "", timeout: int = TIMEOUT) -> dict:
-    """``{"source": "model"|"fallback", "fr_id": id or None, "reason", ["model", "prompt_sha"]}``; never raises."""
+    """``{"source": "model"|"fallback", "fr_id": id or None, "none", "line", "title", "sentence", "reason", ["model", "prompt_sha"]}``; never raises.
+
+    ``line`` (at most 12 words) and the drafted ``title`` / ``sentence`` of a new requirement are ``""`` unless code checked them."""
     try:
         if transport is None:
             if _opted_out(project_root):
@@ -122,10 +140,10 @@ def propose(promise: str, cat: dict, project_root: str | Path = ".", transport: 
             return {"source": "fallback", "fr_id": None, "reason": f"model {model!r} needs a zero-data-retention rule this call does not carry"}
         prompt = prompt_text()
         raw = transport([{"role": "system", "content": prompt}, {"role": "user", "content": _payload(promise, cat)}], timeout)
-        fr, why = _fr_from(raw, cat)
-        if fr is None:
+        fields, why = _reply(raw, cat)
+        if fields is None:
             return {"source": "fallback", "fr_id": None, "reason": why}
-        return {"source": "model", "fr_id": fr, "reason": "", "model": model, "prompt_sha": "sha256:" + hashlib.sha256(prompt.encode("utf-8")).hexdigest()}
+        return {"source": "model", **fields, "reason": "", "model": model, "prompt_sha": "sha256:" + hashlib.sha256(prompt.encode("utf-8")).hexdigest()}
     except Exception as exc:  # noqa: BLE001 - no key, missing file, timeout, transport error: a display aid never blocks Step 2a
         return {"source": "fallback", "fr_id": None, "reason": f"{type(exc).__name__}: {str(exc)[:120]}"}
 

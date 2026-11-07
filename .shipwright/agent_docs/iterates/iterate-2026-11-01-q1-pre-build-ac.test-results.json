@@ -4,9 +4,9 @@
     "date": "2026-11-01",
     "unit": {
       "status": "passed",
-      "passed": 16562,
+      "passed": 17222,
       "skipped": 77,
-      "total": 16639
+      "total": 17299
     },
     "integration": {
       "status": "passed",
@@ -24,7 +24,7 @@
       "status": "not_run"
     },
     "degraded": [
-      "unit counts cover the three roots this round touches (shared/tests 13741, shared/scripts/tools/tests 1462, plugins/shipwright-iterate/tests 1359); the other plugin roots were not re-run (nothing under them changed)"
+      "unit counts cover the four roots this round touches (shared/tests 13758, shared/scripts/tools/tests 1462, plugins/shipwright-iterate/tests 1359, integration-tests 643); the other plugin roots were not re-run (nothing under them changed)"
     ],
     "test_completeness": {
       "status": "complete",
@@ -142,34 +142,44 @@
           "evidence": "shared/tests/test_ac_round3.py::test_the_signing_key_is_created_exclusively_never_regenerated_and_a_bad_file_is_a_clear_error PASSED; shared/tests/test_ac_catalog_shapes.py::test_no_spec_at_all_or_any_spec_with_text_but_no_readable_fr_is_skipped PASSED; shared/tests/test_ac_f11_check.py::test_check_warns_about_an_unsigned_asked_decision_only_in_an_unattended_run PASSED; shared/tests/test_ac_decision_answers.py::test_unattended_is_read_from_state_the_agent_does_not_type PASSED"
         },
         {
-          "behavior": "[final] the question has one fixed shape: why it is asked (Finding), Part, the agent's exact acceptance-criterion wording, and the requirement's exact text from the spec; no gloss, brackets or area list; the options are numbered with 'Don't understand, need help' always last",
+          "behavior": "[final] the question has one fixed shape: why it is asked (Finding), Part as bare names, the agent's exact acceptance-criterion wording, and the requirement NAME from the spec (a new one shows its drafted name and purpose); numbered options with 'Don't understand, need help' always last",
           "disposition": "tested",
-          "evidence": "shared/tests/test_ac_questions.py::test_a_new_ac_without_an_owner_is_one_best_fitting_requirement_with_numbered_options_help_last PASSED; shared/tests/test_ac_questions.py::test_a_changed_or_removed_ac_shows_the_exact_old_and_new_wording_and_the_requirements_own_text PASSED; shared/tests/test_ac_questions.py::test_a_requirement_that_does_not_exist_yet_is_created_from_a_declared_area_or_when_nothing_fits PASSED; shared/tests/test_ac_context.py::test_every_question_ends_with_the_help_option_and_the_numbers_run_in_order PASSED"
+          "evidence": "shared/tests/test_ac_questions.py::test_a_new_ac_without_an_owner_is_one_best_fitting_requirement_with_numbered_options_help_last PASSED; shared/tests/test_ac_questions.py::test_a_changed_or_removed_ac_shows_the_exact_old_and_new_wording_and_the_requirements_own_text PASSED; shared/tests/test_ac_questions.py::test_a_requirement_that_does_not_exist_yet_is_created_from_a_declared_area_or_when_nothing_fits PASSED; shared/tests/test_ac_context.py::test_every_question_ends_with_the_help_option_and_the_numbers_run_in_order PASSED; shared/tests/test_ac_context.py::test_the_part_is_the_specs_own_grouping_then_the_top_level_directory_then_nothing PASSED; shared/tests/test_ac_context.py::test_the_question_carries_the_part_from_the_spec_or_the_paths PASSED"
         },
         {
-          "behavior": "[final] an answer yes/new_fr records the item, 'no' hands the work back to the chat, and the removed answers are gone",
+          "behavior": "[final] an answer yes/new_fr records the item, 'no' hands the work back to the chat; 'create a new one' asks one more question showing the drafted requirement",
           "disposition": "tested",
           "evidence": "shared/tests/test_ac_questions.py::test_answers_resolve_decline_or_name_a_requirement_and_no_hands_the_work_back_to_the_chat PASSED; shared/tests/test_ac_decision_answers.py::test_a_bound_answer_closes_the_question_and_keeps_the_owner_on_no PASSED"
         },
         {
-          "behavior": "[final] 'Part:' is the spec's own grouping, else the top-level directory of the changed paths, else omitted - never a hard-coded word; the catalog carries the exact requirement text and grouping",
-          "disposition": "tested",
-          "evidence": "shared/tests/test_ac_context.py::test_the_part_is_the_specs_own_grouping_then_the_top_level_directory_then_nothing PASSED; shared/tests/test_ac_context.py::test_the_catalog_gives_the_exact_requirement_text_and_the_grouping_the_project_already_has PASSED; shared/tests/test_ac_context.py::test_the_question_carries_the_part_from_the_spec_or_the_paths PASSED"
-        },
-        {
-          "behavior": "[final] 'Don't understand, need help' makes the agent explain and ask again as a new question (exit 11), a resume calls no model, and the tool takes an option number",
+          "behavior": "[final] help makes the agent explain and ask again as a new question (exit 11); a resume calls no model; the tool takes an option number",
           "disposition": "tested",
           "evidence": "shared/tests/test_ac_context.py::test_dont_understand_asks_the_agent_to_explain_and_the_new_wording_is_asked_again PASSED; shared/tests/test_ac_context.py::test_the_decide_tool_exits_11_on_help_and_takes_an_option_number PASSED"
         },
         {
-          "behavior": "[final] the model only proposes ONE requirement id: code validates it, a bad reply falls back, the model is pinned, ZDR namespaces refused, every opt-out fails closed, one 30 s budget",
+          "behavior": "[final] the model proposes one requirement id (or none), one plain line and a draft; code checks the id and every line, drops what is not plain, offers the code's own choices only when they differ; the model is pinned, ZDR refused, every opt-out fails closed, one 30 s budget",
           "disposition": "tested",
-          "evidence": "shared/tests/test_ac_suggest.py::test_a_reply_naming_a_real_requirement_is_used_and_the_request_carries_the_text_as_data PASSED; shared/tests/test_ac_suggest.py::test_a_reply_that_names_no_real_requirement_falls_back_with_its_reason PASSED; shared/tests/test_ac_suggest.py::test_the_model_is_pinned_and_a_model_that_needs_a_zero_retention_rule_is_refused PASSED; shared/tests/test_ac_suggest.py::test_every_opt_out_sends_nothing_and_an_unreadable_config_fails_closed PASSED; shared/tests/test_ac_suggest.py::test_the_suggester_has_one_time_budget_and_skips_what_is_not_a_new_ac_without_an_owner PASSED; shared/tests/test_ac_questions.py::test_a_signed_answer_survives_a_moved_base_and_never_calls_the_model_again PASSED"
+          "evidence": "shared/tests/test_ac_suggest.py::test_a_reply_naming_a_real_requirement_is_used_and_the_request_carries_the_text_as_data PASSED; shared/tests/test_ac_suggest.py::test_a_reply_that_names_no_real_requirement_falls_back_with_its_reason PASSED; shared/tests/test_ac_modes.py::test_a_model_line_is_shown_only_when_code_finds_it_plain_and_short PASSED; shared/tests/test_ac_modes.py::test_the_question_shows_the_name_a_checked_line_and_the_codes_alternatives_only_when_they_differ PASSED; shared/tests/test_ac_suggest.py::test_the_model_is_pinned_and_a_model_that_needs_a_zero_retention_rule_is_refused PASSED; shared/tests/test_ac_suggest.py::test_every_opt_out_sends_nothing_and_an_unreadable_config_fails_closed PASSED; shared/tests/test_ac_suggest.py::test_the_suggester_has_one_time_budget_and_skips_what_is_not_a_new_ac_without_an_owner PASSED; shared/tests/test_ac_questions.py::test_a_signed_answer_survives_a_moved_base_and_never_calls_the_model_again PASSED"
+        },
+        {
+          "behavior": "[final] modes ask / auto / off come from the flag, the variable, the project, then the default (auto when unattended); auto asks nobody, takes the pick or drafts a requirement, lists changed or removed ACs first; off does nothing",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_ac_modes.py::test_the_mode_comes_from_the_flag_then_the_variable_then_the_project_then_the_default PASSED; shared/tests/test_ac_modes.py::test_auto_takes_the_model_pick_or_drafts_a_new_requirement_and_asks_nobody PASSED; shared/tests/test_ac_modes.py::test_auto_without_a_model_uses_the_best_match_by_shared_words_and_two_new_requirements_never_share_an_id PASSED; shared/tests/test_ac_modes.py::test_auto_passes_a_changed_or_removed_ac_through_and_lists_those_first PASSED; shared/tests/test_ac_modes.py::test_an_operator_answer_wins_over_auto_and_an_invalid_item_is_still_refused PASSED; shared/tests/test_ac_modes.py::test_off_does_nothing_and_a_run_without_auto_still_asks PASSED; shared/tests/test_ac_modes.py::test_the_tool_defaults_to_auto_when_unattended_prints_the_list_and_an_explicit_ask_still_holds PASSED; shared/tests/test_ac_modes.py::test_the_tool_off_mode_does_nothing_and_a_bad_value_is_an_error PASSED; shared/tests/test_ac_modes.py::test_an_auto_record_is_appended_and_f11_skips_when_the_decision_is_off PASSED"
+        },
+        {
+          "behavior": "[final] every record item carries decided_by and confirmed, written by code only (ask operator/true, auto auto/false, a created requirement shown)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_ac_source_and_record.py::test_every_auto_item_is_decided_by_auto_and_unconfirmed_and_shows_a_created_requirement PASSED; shared/tests/test_ac_source_and_record.py::test_every_ask_item_is_decided_by_the_operator_and_confirmed_including_the_ones_decided_alone_by_code PASSED; shared/tests/test_ac_source_and_record.py::test_the_fields_are_in_the_frozen_record_and_a_model_cannot_set_them PASSED"
+        },
+        {
+          "behavior": "[final] an unchanged AC is satisfied by a test that exists at the base, a restore is not; a skipped source says Q1 did not run; a campaign unit's event has source iterate",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_ac_source_and_record.py::test_an_unchanged_ac_named_only_by_an_untouched_test_at_the_base_does_not_warn PASSED; shared/tests/test_ac_source_and_record.py::test_an_unchanged_ac_named_nowhere_warns_and_a_restore_still_needs_a_test_in_the_diff PASSED; shared/tests/test_ac_source_and_record.py::test_a_skipped_source_says_that_the_check_did_not_run PASSED; shared/tests/test_ac_source_and_record.py::test_a_campaign_unit_work_completed_event_always_has_source_iterate PASSED"
         }
       ],
       "counts": {
-        "testable": 27,
-        "tested": 27,
+        "testable": 29,
+        "tested": 29,
         "untestable": 0,
         "untested_testable": 0
       }

@@ -89,22 +89,25 @@ That design (lexical HOW test as an ask trigger, hash as the freeze, how-only an
 
 **Not measured.** There is no control arm: the deterministic design has nothing to beat except the label-based Step 2 text, and a model replay of that text is the measure the operator dropped. The ask rate on real runs is reported after the merge (section c).
 
-## (b) Question sheet for the operator: final shape, PENDING
+## (b) Question sheet for the operator: approved design, regenerated
 
-**Verdict history (short).** Round 1: the area pick list and the model rewording were unclear for cases 4-9. Round 2 added context lines, a gloss and extra options: the operator judged that too much, and the glosses made it worse. What the operator wants: why the question is asked, the exact text of the requirement from the spec, the exact acceptance-criterion wording, and a help option that is always last. This is that, and nothing more.
+**Verdict history (short).** Round 1: the area pick list and the model rewording were unclear for cases 4-9. Round 2 added context lines, a gloss and extra options: too much. Round 3 (reduced): why it is asked, the exact acceptance-criterion wording, the requirement, and a help option that is always last. Round 4 (the operator's go, this sheet): the requirement is shown by its NAME instead of its long text; `Part:` shows bare names; the code's own top three are offered only where they differ from the model's pick; "No requirement fits, create a new one" has a fast path; and the question can be switched off or answered by Shipwright (ask / auto / off). A measurement of "code and AI agree, so skip the question" found it rarely fires (7 / 27 / 0 / 14 percent), and the AI alone beat the vote: that idea is dropped. There is no rule that a requirement is "too broad, so suggest a new one" (the operator's decision; broad requirements are re-sliced separately).
 
-**The final question** (one fixed shape, English): an intro sentence pair, `Finding:` (why it is asked; four findings: changes an existing criterion / removes one / adds a new one to an existing requirement / needs a requirement that does not exist yet), `Part:`, the acceptance-criterion lines with the agent's wording unchanged, `Requirement FR-xx.yy: "<exact text from the spec>"`, `Does this fit?` and numbered options with `Don't understand, need help.` always last. No gloss, no brackets, no model wording, no area list.
+**The question** (one fixed shape, English): an intro, `Finding:` (four findings), `Part:`, the acceptance-criterion lines with the agent's wording unchanged, the requirement (`Requirement FR-xx.yy: "<name>"`, plus for a model pick one optional `In plain words:` line of at most 12 words that code checked and drops when it is long, quoted or code-like; a requirement that does not exist yet shows `New requirement:` and `Purpose:`), `Does this fit?` and numbered options, `Don't understand, need help.` always last. When the code's own best match differs from the model's pick, up to three of them follow as `Add it to FR-xx instead`. "No requirement fits, create a new one" asks one more question that shows the drafted requirement: one Yes. When the model says nothing fits, that drafted-requirement question is the first one.
 
-**`Part:`** is never a hard-coded word. It is the spec's own grouping of the requirement (the requirements table's `Area` column, else the name of the split the spec lives in; this repo's `Adopted` is what `adopt` writes for every requirement and names nothing, so it is skipped), else the top-level directory of the changed paths (a container such as `plugins/` names its child), else no line. On this sheet the paths are the full file lists of the recorded cases' commits (`git show --name-only`); a real run passes the paths it will change in the add item's `files`.
+**`Part:`** is never a hard-coded word and never a path prefix. It is the spec's own grouping of the requirement (the requirements table's `Area` column, else the name of the split; this repo's `Adopted` names nothing and is skipped), else the changed paths' top-level parts as bare names (`shipwright-build`, not `plugins/shipwright-build`; `shared`, docs, tests and tooling are no part), else no line. On this sheet the paths are the files of the recorded cases' commits; a real run passes the paths it will change in the add item's `files`.
 
-**The model's only job** is to pick ONE requirement id for a new criterion; code checks the id exists and fetches the exact text. One live run, cases 4 to 10, model `anthropic/claude-haiku-5.5` (pinned), 7 short calls (a few cents at most, not metered): **7 of 7 named a real requirement, 0 fell back** to the best match by shared words. Cases 1 to 3 and the fallback need no model. The "until now" criterion texts of cases 1 to 3 are reconstructed from the recorded cases, not copied from the catalog.
+**Modes.** `ask` (default for an interactive iterate), `auto` (nothing is asked: the model's pick, else the best match, else a requirement Shipwright drafts; every decision is recorded `auto-assigned, unconfirmed`; the end list "assignments made without you" puts changed or removed existing criteria first; the default in a hands-off run) and `off`. Set per project (`ac_decision.mode`), per campaign (`--ac-mode`) or per run (`SHIPWRIGHT_AC_MODE`).
+
+**The model** picks ONE requirement id (or null = none fits), writes the optional plain line and drafts a name and sentence for a new requirement; code checks the id exists, checks every line and fetches the name. One live run, cases 4 to 10, `anthropic/claude-haiku-5.5` (pinned), 7 short calls: **7 of 7 replies were valid, 0 fell back**; 6 named an existing requirement and 1 (case 7) said none fits, so that question is the drafted-new-requirement one.
 
 Reading it honestly:
 
-- The model picks by meaning; whether each pick is right is for the operator to judge (the option "No, wrong requirement" and the help option exist for exactly that). The requirement text is exact and long for the broad requirements (FR-01.01, FR-01.17); it is not shortened because shortening would stop it being the spec's text.
-- The acceptance-criterion wording is shown as recorded, including its jargon ("coordinator", "outside reviewers", "however the command was typed"). The fix for that is on the agent side: Step 2a now tells the agent to name things by their real names and avoid role nouns; the help option is the backstop. It is an instruction, not a code check, because a word list would reject valid wording.
-- Real gap for non-Shipwright projects: the spec has no component per requirement. A project with a requirements table gets the `Area` column; a project with several splits gets the split name; a single-split project without an `Area` column gets no grouping, so `Part:` falls back to directories (or is omitted). A web app's screens and an API's services appear only if the project's spec or directory layout already says so.
-- The bar (10 of 10 clear) is NOT claimed; the operator has not seen this sheet.
+- The model picks by meaning; whether each pick is right is for the operator to judge (the options "wrong requirement" and "need help" exist for that). Case 4 (FR-01.17 for a review-reuse rule in the build and iterate parts) is the pick most open to doubt.
+- The code's "Add it to ... instead" list is weak: it ranks by shared words, so in cases 4, 8 and 10 two or three of the three entries are unrelated requirements (for example "Triage Inbox" in case 10). It is shown because the operator asked for it; a better ranking (the run history) is not built.
+- The acceptance-criterion wording is shown as recorded, including its jargon ("coordinator", "outside reviewers", "however the command was typed"); the agent-side rule in Step 2a (real names, no role nouns) is the fix, not a code check.
+- Real gap for non-Shipwright projects: the spec has no component per requirement. A requirements table gives the `Area` column and several splits give the split name; a single-split project without an `Area` column gets no grouping, so `Part:` falls back to directories or is omitted.
+- The cases 1 to 3 "until now" texts are reconstructed from the recorded cases. The 10-of-10 bar is NOT claimed; the operator has not seen this sheet.
 
 ### Case 1 (#839)
 
@@ -114,10 +117,10 @@ this change fits that list: it changes a requirement, adds to one, or creates
 a new one. Please check that Shipwright made the correct selection.
 
 Finding: this change changes an existing acceptance criterion.
-Part: plugins/shipwright-compliance
+Part: shipwright-compliance
 Acceptance criterion today: "A commit is held back when the build progress line shows less than the required share of work done"
 Acceptance criterion after this change: "A commit is held back when too few requirements are covered by passing tests"
-Requirement FR-01.17: "Re-check every proposed change on the code host before it can merge — the project's tests, its lint, its security scans and the host's own code analysis — independently of whatever already ran on the author's machine, and have the change reviewed there automatically rather than on request. A local pass is never accepted in place of the host's."
+Requirement FR-01.17: "Independent re-check on the code host"
 
 Does this fit?
 1 Yes, change it.
@@ -133,10 +136,10 @@ this change fits that list: it changes a requirement, adds to one, or creates
 a new one. Please check that Shipwright made the correct selection.
 
 Finding: this change changes an existing acceptance criterion.
-Part: plugins/shipwright-run, shared
+Part: shipwright-run
 Acceptance criterion today: "The stack profile is guessed from the kind of storage the project uses"
 Acceptance criterion after this change: "A stack profile named in the project brief is used as given, and an unusable name stops the run with a clear message"
-Requirement FR-01.02: "Turn a project description into well-scoped, individually deliverable requirements, and write the starting guidance an assistant needs to work inside that project."
+Requirement FR-01.02: "Project decomposition into scoped units"
 
 Does this fit?
 1 Yes, change it.
@@ -152,9 +155,9 @@ this change fits that list: it changes a requirement, adds to one, or creates
 a new one. Please check that Shipwright made the correct selection.
 
 Finding: this change removes an acceptance criterion.
-Part: plugins/shipwright-adopt, shared
+Part: shipwright-adopt
 Acceptance criterion that no longer holds: "Adopting a project sets up the automatic Claude review on every pull request"
-Requirement FR-01.17: "Re-check every proposed change on the code host before it can merge — the project's tests, its lint, its security scans and the host's own code analysis — independently of whatever already ran on the author's machine, and have the change reviewed there automatically rather than on request. A local pass is never accepted in place of the host's."
+Requirement FR-01.17: "Independent re-check on the code host"
 
 Does this fit?
 1 Yes, that is intended.
@@ -170,15 +173,19 @@ this change fits that list: it changes a requirement, adds to one, or creates
 a new one. Please check that Shipwright made the correct selection.
 
 Finding: this change adds a new acceptance criterion to an existing requirement.
-Part: plugins/shipwright-build, plugins/shipwright-iterate, shared
+Part: shipwright-build, shipwright-iterate
 New acceptance criterion: "A coordinator repeats a review unless the earlier one is shown to cover exactly the code that is merged"
-Requirement FR-01.17: "Re-check every proposed change on the code host before it can merge — the project's tests, its lint, its security scans and the host's own code analysis — independently of whatever already ran on the author's machine, and have the change reviewed there automatically rather than on request. A local pass is never accepted in place of the host's."
+Requirement FR-01.17: "Independent re-check on the code host"
+In plain words: Independent re-check of proposed changes on the code host before merge
 
 Does this fit?
 1 Yes, add it there.
-2 No, wrong requirement. (You tell the agent in the chat which one.)
-3 No requirement fits, create a new one.
-4 Don't understand, need help.
+2 Add it to FR-01.11 instead: Ongoing change at the depth it deserves
+3 Add it to FR-01.03 instead: Implementation planning with independent review
+4 Add it to FR-01.05 instead: Test-driven build of planned sections
+5 No, wrong requirement. (You tell the agent in the chat which one.)
+6 No requirement fits, create a new one.
+7 Don't understand, need help.
 ```
 
 ### Case 5 (#884)
@@ -189,9 +196,9 @@ this change fits that list: it changes a requirement, adds to one, or creates
 a new one. Please check that Shipwright made the correct selection.
 
 Finding: this change adds a new acceptance criterion to an existing requirement.
-Part: plugins/shipwright-build, plugins/shipwright-iterate
+Part: shipwright-build, shipwright-iterate
 New acceptance criterion: "The build phase asks outside reviewers to read the code of each section unless the owner turns this off"
-Requirement FR-01.05: "Turn one planned section into working code that does what the section specified and matches its design mockup — one section at a time, on its own branch. The engineering discipline it works under — test-first, code review, safe conventional commits — is the framework's, applied here rather than owned here."
+Requirement FR-01.05: "Test-driven build of planned sections"
 
 Does this fit?
 1 Yes, add it there.
@@ -208,9 +215,10 @@ this change fits that list: it changes a requirement, adds to one, or creates
 a new one. Please check that Shipwright made the correct selection.
 
 Finding: this change adds a new acceptance criterion to an existing requirement.
-Part: plugins/shipwright-adopt, plugins/shipwright-design, plugins/shipwright-project, plugins/shipwright-run, plugins/shipwright-test, shared
+Part: shipwright-adopt, shipwright-design, shipwright-project, shipwright-run, shipwright-test
 New acceptance criterion: "A team can keep its own stack profile in its project and it is used instead of the shipped one"
-Requirement FR-01.02: "Turn a project description into well-scoped, individually deliverable requirements, and write the starting guidance an assistant needs to work inside that project."
+Requirement FR-01.02: "Project decomposition into scoped units"
+In plain words: Breaks a project into deliverable requirements and writes assistant starting guidance.
 
 Does this fit?
 1 Yes, add it there.
@@ -226,16 +234,16 @@ Shipwright keeps a list of requirements (FRs). Before building, it checks how
 this change fits that list: it changes a requirement, adds to one, or creates
 a new one. Please check that Shipwright made the correct selection.
 
-Finding: this change adds a new acceptance criterion to an existing requirement.
-Part: plugins/shipwright-adopt, plugins/shipwright-build, plugins/shipwright-project, plugins/shipwright-test, shared
+Finding: this change needs a requirement that does not exist yet.
+Part: shipwright-adopt, shipwright-build, shipwright-project, shipwright-test
 New acceptance criterion: "An app that is a chat window starts from a ready-made setup that needs no deployment"
-Requirement FR-01.12: "Start the project locally and hand back the address to open in a browser."
+New requirement: Ready-made starter apps for chat windows
+Purpose: Lets a person start a chat-window app from a prepared template that runs without any deployment step.
 
 Does this fit?
-1 Yes, add it there.
-2 No, wrong requirement. (You tell the agent in the chat which one.)
-3 No requirement fits, create a new one.
-4 Don't understand, need help.
+1 Yes, create it.
+2 No. (You tell the agent in the chat what you want instead.)
+3 Don't understand, need help.
 ```
 
 ### Case 8 (#866)
@@ -246,15 +254,19 @@ this change fits that list: it changes a requirement, adds to one, or creates
 a new one. Please check that Shipwright made the correct selection.
 
 Finding: this change adds a new acceptance criterion to an existing requirement.
-Part: plugins/shipwright-compliance
+Part: shipwright-compliance
 New acceptance criterion: "A commit is checked for enough tested requirements at the moment it is recorded, however the command was typed"
-Requirement FR-01.10: "Produce audit-ready evidence — which requirement is covered by which test, what changed when, and what the project depends on — and run an on-demand cross-check that reports where that evidence disagrees with reality."
+Requirement FR-01.10: "Audit-ready compliance evidence"
+In plain words: Audit-ready evidence linking requirements to the tests covering them
 
 Does this fit?
 1 Yes, add it there.
-2 No, wrong requirement. (You tell the agent in the chat which one.)
-3 No requirement fits, create a new one.
-4 Don't understand, need help.
+2 Add it to FR-01.16 instead: Guided requirement elicitation
+3 Add it to FR-01.04 instead: Mockups from requirements
+4 Add it to FR-01.11 instead: Ongoing change at the depth it deserves
+5 No, wrong requirement. (You tell the agent in the chat which one.)
+6 No requirement fits, create a new one.
+7 Don't understand, need help.
 ```
 
 ### Case 9 (#936)
@@ -265,9 +277,10 @@ this change fits that list: it changes a requirement, adds to one, or creates
 a new one. Please check that Shipwright made the correct selection.
 
 Finding: this change adds a new acceptance criterion to an existing requirement.
-Part: plugins/shipwright-design
+Part: shipwright-design
 New acceptance criterion: "Every colour set keeps text easy to read, also when the page is enlarged"
-Requirement FR-01.04: "Turn requirements into clickable mockups — standalone screens and the flows between them — that can be refined by conversation before any production code is written."
+Requirement FR-01.04: "Mockups from requirements"
+In plain words: Turns requirements into clickable mockups and design tokens before coding
 
 Does this fit?
 1 Yes, add it there.
@@ -284,15 +297,19 @@ this change fits that list: it changes a requirement, adds to one, or creates
 a new one. Please check that Shipwright made the correct selection.
 
 Finding: this change adds a new acceptance criterion to an existing requirement.
-Part: plugins/shipwright-security
+Part: shipwright-security
 New acceptance criterion: "The pull request gate is run by a different reviewer model, and what it checks stays the same"
-Requirement FR-01.17: "Re-check every proposed change on the code host before it can merge — the project's tests, its lint, its security scans and the host's own code analysis — independently of whatever already ran on the author's machine, and have the change reviewed there automatically rather than on request. A local pass is never accepted in place of the host's."
+Requirement FR-01.17: "Independent re-check on the code host"
+In plain words: Independent re-check of proposed changes on the code host before merge.
 
 Does this fit?
 1 Yes, add it there.
-2 No, wrong requirement. (You tell the agent in the chat which one.)
-3 No requirement fits, create a new one.
-4 Don't understand, need help.
+2 Add it to FR-01.11 instead: Ongoing change at the depth it deserves
+3 Add it to FR-01.14 instead: Triage Inbox
+4 Add it to FR-01.01 instead: End-to-end delivery pipeline
+5 No, wrong requirement. (You tell the agent in the chat which one.)
+6 No requirement fits, create a new one.
+7 Don't understand, need help.
 ```
 
 ## (c) Ask rate: reported after the merge, never before

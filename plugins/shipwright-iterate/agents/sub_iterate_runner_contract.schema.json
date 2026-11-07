@@ -33,6 +33,11 @@
           }
         },
         "adr": { "type": "string" },
+        "ac_unconfirmed": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Only in ac mode auto: the lines of the list Assignments made without you that ac_decision.py printed (the heading first, then one line per decision, changed or removed existing criteria first, each ending with decided_by=auto, confirmed=false). The campaign end lists them across units."
+        },
         "reviews": {
           "type": "object",
           "description": "Review-cascade record per ADR-029. Optional for backwards-compat with pre-ADR-029 result.json files; required for runners under the post-ADR-029 contract.",

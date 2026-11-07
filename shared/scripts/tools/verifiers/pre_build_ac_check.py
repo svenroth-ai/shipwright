@@ -32,6 +32,7 @@ if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
 from lib.ac_catalog import load_catalog  # noqa: E402
+from lib.ac_mode import resolve_mode  # noqa: E402
 from lib.ac_record import verify  # noqa: E402
 from lib.ac_surface import merge_base  # noqa: E402
 
@@ -53,11 +54,13 @@ def _skip(why: str) -> CheckResult:
 def check_pre_build_ac_recorded(project_root: Path, run_id: str, commit_hash: str = "") -> CheckResult:
     root = Path(project_root)
     try:
+        if resolve_mode(root)[0] == "off":
+            return _skip("the pre-build AC decision is switched off (ac mode off)")
         event = _work_event(root, run_id)
         if event is None:
             return _skip(f"no work_completed event for {run_id}")
         if event.get("source") != "iterate":
-            return _skip(f"source={event.get('source') or 'unknown'}")
+            return _skip(f"Q1 did not run: source={event.get('source') or 'unknown'}")
         base = _branch_base_commit(root, commit_hash) if commit_hash else None
         if not base:
             return _skip("branch not visible")

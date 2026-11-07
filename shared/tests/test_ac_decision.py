@@ -77,7 +77,7 @@ def test_wording_covers_every_text_field_and_types_are_checked():
 def test_a_new_ac_with_one_owner_is_decided_alone_and_records_how():
     r = ad.decide([_add(new_text="A saved draft is kept for 30 days", request_open=True)], _CAT)
     assert r["status"] == "ok"
-    assert r["ac_decisions"] == [{"ac": "FR-01.03.new", "mode": "auto", "answer": "auto", "kind": "add", "answered_via": "none"}]
+    assert r["ac_decisions"] == [{"ac": "FR-01.03.new", "mode": "auto", "answer": "auto", "kind": "add", "answered_via": "none", "decided_by": "operator", "confirmed": True}]
 
 
 @pytest.mark.covers("FR-01.11/AC49")
@@ -95,7 +95,7 @@ def test_ask_when_an_ac_changes_has_no_single_owner_or_opens_a_new_area(item, ro
 def test_a_new_area_is_asked_once_and_can_be_approved_or_refused():
     item = _add(owner_fr=None, new_fr={"id": "FR-01.30", "title": "Offline drafts"})
     q = _ask(item)
-    assert "Finding: this change needs a requirement that does not exist yet." in q["question"] and 'Requirement FR-01.30: "Offline drafts"' in q["question"]
+    assert "Finding: this change needs a requirement that does not exist yet." in q["question"] and "New requirement: Offline drafts" in q["question"]
     yes = ad.decide([item], _CAT, answers=[ans(q, "yes")])
     assert yes["status"] == "ok" and yes["resolved_items"][0]["owner_fr"] == "FR-01.30" and yes["ac_decisions"][0]["ac"] == "FR-01.30.new"
     no = ad.decide([item], _CAT, answers=[ans(q, "no")])

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import re
 
-__all__ = ["ANSWERS", "FR_ID", "apply_answer", "next_fr_id"]
+__all__ = ["ANSWERS", "FR_ID", "apply_answer", "next_fr_id", "option_of"]
 
 ANSWERS = ("yes", "no", "new_fr", "explain")
 FR_ID = re.compile(r"^FR-\d+\.\d+$")
@@ -26,6 +26,14 @@ def next_fr_id(cat: dict) -> str:
     return f"FR-{major:02d}.{max((p[1] for p in pairs if p[0] == major), default=0) + 1:02d}"
 
 
+def option_of(ans: dict) -> dict:
+    """The option an answer picked, from the options map it carries (``{}`` for an inline answer): it holds what the machine shows but the operator never types."""
+    for v in (ans.get("options") or {}).values():
+        if isinstance(v, dict) and v.get("choice") == ans.get("choice") and _norm(v.get("text")) == _norm(ans.get("text")):
+            return v
+    return {}
+
+
 def apply_answer(it: dict, ans: dict, cat: dict) -> tuple[dict, str]:
     """``(item with the answer applied, error)``; the error is empty when the answer resolves the item."""
     out, choice, text = dict(it), _norm(ans.get("choice")).lower(), _norm(ans.get("text"))
@@ -37,7 +45,8 @@ def apply_answer(it: dict, ans: dict, cat: dict) -> tuple[dict, str]:
     if isinstance(it.get("new_fr"), dict):
         out["owner_fr"] = _norm(it["new_fr"]["id"])
     elif it["kind"] == "add" and choice == "new_fr":
-        out["new_fr"] = {"id": next_fr_id(cat), "title": _norm(it.get("new_text"))}
+        summary = _norm(option_of(ans).get("summary"))
+        out["new_fr"] = {"id": next_fr_id(cat), "title": text or _norm(it.get("new_text")), **({"summary": summary} if summary else {})}
         out["owner_fr"] = out["new_fr"]["id"]
     elif it["kind"] == "add":
         owner = text if text in cat["frs"] else ""

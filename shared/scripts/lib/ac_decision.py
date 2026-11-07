@@ -25,7 +25,8 @@ from __future__ import annotations
 import json
 import re
 
-from lib.ac_apply import FR_ID as _FR_ID, apply_answer as _apply
+from lib.ac_apply import FR_ID as _FR_ID, apply_answer as _apply, option_of
+from lib.ac_auto import MODE as _AUTO, auto_assign, unconfirmed_lines
 from lib.ac_catalog import ac_body, candidates, catalog_texts, load_catalog, parse_catalog
 from lib.ac_hold import load_key, question_sha, signature_ok
 from lib.ac_question import question_options, render_question, suggestion_meta
@@ -43,7 +44,7 @@ def _norm(text: object) -> str:
 
 
 def count_decisions(decisions: object) -> dict:
-    """The one producer of the decision counts: ``{total, auto, asked, exempt, restore, unchanged, answered_inline, exempt_share, restore_share}``.
+    """The one producer of the decision counts: ``{total, auto, asked, exempt, restore, unchanged, answered_inline, unconfirmed, exempt_share, restore_share}``.
 
     ``answered_inline`` counts asked decisions answered inline in an attended run (one count line in the PR body, not a warning).
 
@@ -56,6 +57,7 @@ def count_decisions(decisions: object) -> dict:
     total = len(rows)
     inline = sum(1 for d in rows if d.get("mode") == "asked" and d.get("answered_via") == "inline")
     return {"total": total, "auto": total - sum(n.values()) - asked, "asked": asked, **n, "answered_inline": inline,
+            "unconfirmed": sum(1 for d in rows if d.get("unconfirmed")),
             "exempt_share": round(n["exempt"] / total, 2) if total else 0.0, "restore_share": round(n["restore"] / total, 2) if total else 0.0}
 
 
@@ -176,19 +178,22 @@ def _ask_one(it: dict, n: int, cat: dict, bind_id: str, unattended: bool, chain:
         ans = entry
         if err:
             return it, False, None, via, None, f"item {n}: {err}"
-        if not (_norm(entry.get("choice")).lower() == "no" and _row(it, cat) is not None and it["kind"] == "add"):
+        if not (option_of(entry).get("again") or (_norm(entry.get("choice")).lower() == "no" and _row(it, cat) is not None and it["kind"] == "add")):
             return it, True, ans, via, None, None
 
 
 def decide(items: object, catalog: dict, unattended: bool = False, surface: dict | None = None, identifiers: set[str] | None = None,
-           answers: object = None, bind_id: str = "", suggest=None, paths: object = None) -> dict:
+           answers: object = None, bind_id: str = "", suggest=None, paths: object = None, mode: str = "ask") -> dict:
     """Decide every item. ``status``: ``ok`` (all decided), ``ask`` (questions for the operator), ``explain`` (reword and run again), ``invalid`` (``errors``), ``skipped`` (catalog unreadable).
 
     ``suggest`` is ``(item index, item) -> suggestion | None`` (:func:`lib.ac_suggest.make_suggester`); it is called only when a question must be rendered.
     ``paths`` are the changed paths (the diff); the files the items declare are added. They only feed the question's ``Part:`` line (when the spec names no grouping).
+    ``mode`` (:mod:`lib.ac_mode`): ``ask`` (default), ``auto`` (no question: Shipwright's own pick, recorded as unconfirmed and listed in ``unconfirmed``) or ``off`` (``skipped``).
     ``explain``: the operator did not understand an item; ``explain`` lists them, the agent rewords each promise and runs the tool again.
     """
     base = {"unattended": unattended}
+    if mode == "off":
+        return {**base, "status": "skipped", "note": "the pre-build AC decision is switched off (ac mode off): nothing is asked, recorded or checked"}
     if catalog.get("unparsed"):
         return {**base, "status": "skipped", "note": "the requirement catalog is missing, or a spec has text but no FR heading this tool can read; the pre-build AC decision is skipped, nothing is asked, refused or held"}
     if not isinstance(items, list) or not items:
@@ -199,7 +204,7 @@ def decide(items: object, catalog: dict, unattended: bool = False, surface: dict
     except RuntimeError:
         key = None  # an unreadable key verifies nothing: every file answer is then self-reported
     errors: list[str] = []
-    resolved, decisions, questions, explain = [], [], [], []
+    resolved, decisions, questions, explain, minted = [], [], [], [], set()
     paths = sorted({str(p) for p in paths or []} | {f for it in items if isinstance(it, dict) for f in (it.get('files') or []) if isinstance(f, str)})
     for n, raw in enumerate(items):
         it = {k: v for k, v in raw.items() if k != "answer"} if isinstance(raw, dict) else {}
@@ -215,7 +220,18 @@ def decide(items: object, catalog: dict, unattended: bool = False, surface: dict
             resolved.append(it)
             decisions.append(_decision(it, "auto", "auto", "none"))
             continue
-        it, done, ans, via, question, err = _ask_one(it, n, catalog, bind_id, unattended, given.get(n, []), inline, key, suggest, paths)
+        if mode == "auto" and inline is None and not given.get(n):  # no question: Shipwright's own pick, listed afterwards
+            sg = suggest(n, it) if suggest else None
+            it, extra = auto_assign(it, catalog, sg, minted)
+            errs = _check(it, n, catalog, surface, identifiers)
+            if errs:
+                errors += errs
+                continue
+            resolved.append(it)
+            decisions.append({**_decision(it, _AUTO, "auto", "none"), "unconfirmed": True, **extra, **suggestion_meta(sg)})
+            continue
+        cat_n = {**catalog, "frs": set(catalog["frs"]) | minted} if minted else catalog
+        it, done, ans, via, question, err = _ask_one(it, n, cat_n, bind_id, unattended, given.get(n, []), inline, key, suggest, paths)
         if err:
             errors.append(err)
         elif question:
@@ -228,10 +244,15 @@ def decide(items: object, catalog: dict, unattended: bool = False, surface: dict
                 errors += errs
                 continue
             resolved.append(it)
+            minted.update({_norm(it["new_fr"]["id"])} if isinstance(it.get("new_fr"), dict) else set())
             decisions.append({**_decision(it, "asked", _norm(ans.get("choice")).lower(), via), **{k: v for k, v in ans.items() if k.startswith("suggestion_")}})
     if errors:
         return {**base, "status": "invalid", "errors": errors}
-    out = {**base, "resolved_items": resolved, "ac_decisions": decisions, "counts": count_decisions(decisions)}
+    who = ("auto", False) if mode == "auto" else ("operator", True)  # code writes who decided, never the declaration or a model
+    for i, d in enumerate(decisions):
+        d["decided_by"], d["confirmed"] = ("operator", True) if d.get("mode") == "asked" else who
+        resolved[i] = {**resolved[i], "decided_by": d["decided_by"], "confirmed": d["confirmed"]}
+    out = {**base, "resolved_items": resolved, "ac_decisions": decisions, "counts": count_decisions(decisions), **({"unconfirmed_assignments": unconfirmed_lines(decisions)} if any(d.get("unconfirmed") for d in decisions) else {})}
     if explain:
         return {**out, "status": "explain", "explain": explain, **({"questions": questions} if questions else {})}
     return {**out, "status": "ask", "questions": questions} if questions else {**out, "status": "ok"}
@@ -240,6 +261,8 @@ def decide(items: object, catalog: dict, unattended: bool = False, surface: dict
 def frozen_fields(it: dict) -> dict:
     keys = ("kind", "ac", "restores_ac", "owner_fr", "old_text", "new_text")
     out = {k: _norm(it.get(k)) for k in keys if _norm(it.get(k))}
+    if it.get("decided_by") in ("operator", "auto") and isinstance(it.get("confirmed"), bool):  # written by decide(), never by the declaration
+        out.update({"decided_by": it["decided_by"], "confirmed": it["confirmed"]})
     if isinstance(it.get("files"), list):
         out["files"] = sorted(str(f).strip() for f in it["files"] if str(f).strip())
     if isinstance(it.get("new_fr"), dict):
