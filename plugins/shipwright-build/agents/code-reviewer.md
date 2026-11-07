@@ -53,6 +53,7 @@ must be categorized into exactly one axis.
 - A test of delete/cleanup/reset code runs only in a temp copy: reject a test that hands such code `.`, the project root, `os.getcwd()` or a real project folder ([safe-delete-tests](../skills/build/references/safe-delete-tests.md))
 
 ### Axis 5: Performance
+- A local server's tests use a free port, never a literal one, and its server class sets the listen queue (`request_queue_size` or the stack's backlog) when it serves a page with several assets ([local-server-tests](../skills/build/references/local-server-tests.md))
 - N+1 queries
 - Unbounded data fetching (missing pagination)
 - Unnecessary re-renders or missing memoization

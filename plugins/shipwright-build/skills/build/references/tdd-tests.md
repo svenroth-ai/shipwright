@@ -73,6 +73,8 @@ If this section adds new user-facing routes/pages or modifies existing user flow
 | Component renders with props | Unit |
 | User journey / multi-page flow | E2E (Playwright) |
 
+A section that starts or changes a local server also follows [local-server-tests](local-server-tests.md): free port in every test, a set listen queue, one page-load burst test.
+
 **Checkpoint:** Test files exist and fail for the right reasons.
 
 **Dashboard update:**

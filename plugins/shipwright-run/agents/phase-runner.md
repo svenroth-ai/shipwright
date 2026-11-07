@@ -55,7 +55,9 @@ when two sources disagree (hard requirement > brief > approved screen > plan tex
 against itself, a brief line the approved pictures lack, so a screenshot check that fails only because of it records
 a known difference), and `--kind routine --topic changelog-entry|tag-uncommitted|test-screenshots|decision-log-entry`
 for the wrap-up questions that have one safe default (a missing decision-log entry is written, then the check runs
-again). Do not return those to the master
+again). In the Test phase a bug the tests find in the built app is fixed in that phase, and code that departs from a
+brief value goes back to the brief's own words (`--kind precedence`, brief over plan text); neither is put to a person
+(run 27 asked both). Do not return those to the master
 as "the master decides"; only what the tool answers with exit 1 (`action: ask`) is a
 question.
 
