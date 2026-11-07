@@ -27,9 +27,9 @@ from .events_read import instant
 from .jsonl_records import split_records
 
 #: ``<key>--<wt8>--<nonce8>.jsonl``, key ``[A-Za-z0-9._-]{1,80}`` and not hidden (``sanitize_key`` strips leading dots).
-DROP_NAME = re.compile(r"^(?P<key>[A-Za-z0-9_-][A-Za-z0-9._-]{0,79})--[0-9a-f]{8}--[0-9a-f]{8}\.jsonl$")
+DROP_NAME = re.compile(r"^(?P<key>[A-Za-z0-9_-][A-Za-z0-9._-]{0,79})--[0-9a-f]{8}--[0-9a-f]{8}\.jsonl\Z")
 #: ``fold-<hash>.jsonl`` (and any other single-segment, non-hidden name a person gave an archive file).
-ARCHIVE_NAME = re.compile(r"^[A-Za-z0-9_-][A-Za-z0-9._-]{0,119}\.jsonl$")
+ARCHIVE_NAME = re.compile(r"^[A-Za-z0-9_-][A-Za-z0-9._-]{0,119}\.jsonl\Z")
 FOLDERS = (DROPS_DIR, ARCHIVE_DIR, QUARANTINE_DIR)
 #: The empty, tracked file that keeps the drops folder from ever being EMPTY on any side of a merge. A fold that
 #: removed every drop would otherwise look like a directory rename (drops -> archive) to the merge machinery and

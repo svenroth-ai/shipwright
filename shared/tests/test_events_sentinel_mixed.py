@@ -378,3 +378,56 @@ def test_reinclude_is_reappended_when_a_later_rule_overrides_an_earlier_one(repo
     text, added = apply_reinclude((repo / ".gitignore").read_text(encoding="utf-8"), lines)
     (repo / ".gitignore").write_text(text, encoding="utf-8")
     assert added and reinclude_lines(repo) == []
+
+
+def test_ci_check_two_commit_split_cannot_hide_a_legacy_append_behind_a_legacy_key(repo):
+    # commit 1 only flips the key to legacy; commit 2 appends the legacy log (its parent is "legacy"), drops stay at the head
+    _cfg(repo, "drops")
+    (repo / "shipwright_events.d").mkdir()
+    (repo / "shipwright_events.d" / "r--00000000--00000000.jsonl").write_text(json.dumps(_ev("6" * 16)) + "\n", encoding="utf-8")
+    (repo / "shipwright_events.jsonl").write_text(json.dumps(_ev("f" * 8)) + "\n", encoding="utf-8")
+    _commit(repo, "base state")
+    _git(repo, "branch", "base-ref")
+    _git(repo, "checkout", "-q", "-b", "pr")
+    _cfg(repo, "legacy")
+    _commit(repo, "key only")
+    with (repo / "shipwright_events.jsonl").open("a", encoding="utf-8") as fp:
+        fp.write(json.dumps(_ev("9" * 8)) + "\n")
+    _commit(repo, "legacy append")
+    assert [v.code for v in check_layout_ci(repo, "base-ref")] == ["legacy_write_after_flip"]
+
+
+def test_ci_check_a_pr_that_took_main_in_after_the_flip_is_judged_per_commit(repo):
+    _cfg(repo, None)
+    (repo / "shipwright_events.jsonl").write_text(json.dumps(_ev("f" * 8)) + "\n", encoding="utf-8")
+    _commit(repo, "legacy base")
+    _git(repo, "checkout", "-q", "-b", "pr")
+    with (repo / "shipwright_events.jsonl").open("a", encoding="utf-8") as fp:
+        fp.write(json.dumps(_ev("9" * 8)) + "\n")
+    _commit(repo, "legacy append before the flip")
+    _git(repo, "checkout", "-q", "main")
+    _cfg(repo, "drops")
+    _commit(repo, "flip")
+    _git(repo, "checkout", "-q", "pr")
+    _git(repo, "merge", "-q", "--no-edit", "main")
+    assert check_layout_ci(repo, "main") == []
+    with (repo / "shipwright_events.jsonl").open("a", encoding="utf-8") as fp:
+        fp.write(json.dumps(_ev("a" * 8)) + "\n")
+    _commit(repo, "legacy append after the flip")
+    assert [v.code for v in check_layout_ci(repo, "main")] == ["legacy_write_after_flip"]
+
+
+def test_ci_check_key_flipped_to_legacy_and_back_cannot_excuse_a_legacy_append(repo):
+    _cfg(repo, "drops")
+    (repo / "shipwright_events.jsonl").write_text(json.dumps(_ev("f" * 8)) + "\n", encoding="utf-8")
+    _commit(repo, "base state")
+    _git(repo, "branch", "base-ref")
+    _git(repo, "checkout", "-q", "-b", "pr")
+    _cfg(repo, "legacy")
+    _commit(repo, "key to legacy")
+    with (repo / "shipwright_events.jsonl").open("a", encoding="utf-8") as fp:
+        fp.write(json.dumps(_ev("9" * 8)) + "\n")
+    _commit(repo, "legacy append")
+    _cfg(repo, "drops")
+    _commit(repo, "key back to drops")
+    assert [v.code for v in check_layout_ci(repo, "base-ref")] == ["legacy_write_after_flip"]

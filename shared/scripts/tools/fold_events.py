@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -49,6 +50,19 @@ def _stage_paths(result: dict) -> list[str]:
     if status == "nothing_to_fold" and result.get("mode") == "emergency":
         paths.append("shipwright_sync_config.json")   # an emergency fold with nothing left still resets the layout
     return paths
+
+
+def _stage(root: str, paths: list[str]) -> None:
+    """``git add -A`` of exactly ``paths`` (those that exist or are tracked) in ONE call, paths on stdin (S8: ~1000 drops
+    overflowed a Windows command line; one call also keeps the index all-or-nothing)."""
+    tracked = set(git(root, "ls-files", "-z").stdout.decode("utf-8", "replace").split(chr(0)))
+    known = [p for p in paths if (Path(root) / p).exists() or p in tracked]
+    if not known:
+        return
+    proc = subprocess.run(["git", "-C", str(root), "add", "-A", "--pathspec-from-file=-", "--pathspec-file-nul"],
+                          input=chr(0).join(known).encode("utf-8"), capture_output=True, timeout=120)
+    if proc.returncode:
+        raise GitError("git add failed: " + proc.stderr.decode("utf-8", "replace").strip()[-400:])
 
 
 def _run(a: argparse.Namespace) -> dict:
@@ -87,10 +101,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         result = _run(a)
         if a.stage and not a.dry_run:
-            known = [p for p in _stage_paths(result) if (Path(a.project_root) / p).exists()
-                     or git(a.project_root, "ls-files", "--", p).stdout.strip()]
-            if known:
-                git(a.project_root, "add", "-A", "--", *known)
+            _stage(a.project_root, _stage_paths(result))
     except (GitError, ValueError, TypeError, OSError) as exc:
         print(json.dumps({"status": "error", "error": str(exc)}))
         return 2

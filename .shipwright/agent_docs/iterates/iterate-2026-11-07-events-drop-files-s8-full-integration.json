@@ -1,0 +1,77 @@
+{
+  "run_id": "iterate-2026-11-07-events-drop-files-s8-full-integration",
+  "date": "2026-11-07T01:31:58.333866Z",
+  "event_at": "2026-11-07T01:31:37.886657+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "prior_source": "default",
+  "branch": "iterate/campaign-events-drop-files--S8",
+  "spec": ".shipwright/planning/iterate/campaigns/events-drop-files/sub-iterates/S8-full-integration-rehearsal.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-11-07-events-drop-files-s8-full-integration",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "campaign wave, retried unit, squash sequence and real ensure_current on the drops layout",
+        "disposition": "tested",
+        "evidence": "integration-tests/test_events_drops_full_system.py::test_campaign_wave_squash_sequence_and_retried_unit PASSED"
+      },
+      {
+        "behavior": "old writer, PR in flight at the flip, mid-run flip, toggle and merged-main cases of the layout CI check",
+        "disposition": "tested",
+        "evidence": "test_events_drops_full_system.py::test_old_writer_branch_and_a_pr_in_flight_at_the_flip and shared/tests/test_events_sentinel_mixed.py PASSED"
+      },
+      {
+        "behavior": "mid-run rollback by emergency fold then full fold; quarantine; mixed versions; fault injection; shared worktree hop; stacked base",
+        "disposition": "tested",
+        "evidence": "integration-tests/test_events_drops_full_system.py (8 tests) PASSED"
+      },
+      {
+        "behavior": "both rollbacks lossless on a copy of the real history; real log untouched",
+        "disposition": "tested",
+        "evidence": "integration-tests/test_events_drops_rollback_rehearsal.py (3 tests) PASSED"
+      },
+      {
+        "behavior": "run-scoped read, whole-log read and per-write cost at 300 files",
+        "disposition": "tested",
+        "evidence": "integration-tests/test_events_drops_benchmark.py PASSED (strict run: 10.6 ms / 143 ms / 103 ms)"
+      },
+      {
+        "behavior": "name regexes reject a trailing newline; fold --stage handles ~1000 drops in one call",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_events_integrity.py and the rehearsal PASSED"
+      },
+      {
+        "behavior": "Linux runner timing under coverage",
+        "disposition": "untestable",
+        "reason_code": "requires-prod-credential",
+        "reason": "needs the Linux CI runner; its numbers arrive in the job summary of the PR run"
+      }
+    ],
+    "counts": {
+      "testable": 6,
+      "tested": 6,
+      "untestable": 1,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 3,
+      "covered_acs": 3
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run --extra dev pytest integration-tests/test_events_drops_full_system.py integration-tests/test_events_drops_rollback_rehearsal.py integration-tests/test_events_drops_benchmark.py -q -p no:cacheprovider",
+    "exit_code": 0,
+    "tests_run": 12,
+    "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\campaign-events-drop-files--S8\\.shipwright\\runs\\iterate-2026-11-07-events-drop-files-s8-full-integration\\surface_verification.log",
+    "timestamp": "2026-11-07T01:26:13.052Z",
+    "attempts": 1
+  },
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}

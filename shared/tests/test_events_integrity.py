@@ -106,7 +106,8 @@ def test_the_same_files_are_also_protected_in_archive_and_quarantine(tmp_path):
 
 @pytest.mark.parametrize("name", ["../evil.jsonl", "a/../b.jsonl", "sub/x--aaaaaaaa--00000001.jsonl", "a\\b.jsonl",
                                   ".hidden--aaaaaaaa--00000001.jsonl", ("k" * 81) + "--aaaaaaaa--00000001.jsonl",
-                                  "run--zz--00000001.jsonl", "run.jsonl", "", "..", "x\x00y.jsonl"])
+                                  "run--zz--00000001.jsonl", "run.jsonl", "", "..", "x\x00y.jsonl",
+                                  "run--aaaaaaaa--00000001.jsonl\n"])   # a trailing newline must not slip through ($ would allow it)
 def test_name_validation_refuses_traversal_and_malformed_keys(name):
     assert name_problem(DROPS_DIR, name)
 

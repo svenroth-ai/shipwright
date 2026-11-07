@@ -1,0 +1,8 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"KC3 whole-system scenarios, KC5 benchmark, both rollbacks rehearsed on a copy of the real log, flip-readiness note with the follow-up list"},
+{"name":"Error Handling","verdict":"pass","note":"staging failure raises GitError (exit 2); CI check fails closed on a parentless commit"},
+{"name":"Security Basics","verdict":"pass","note":"real log hashed before/after, all work in temp repos; no workflow touched; end-anchors anchors close the trailing-newline name hole"},
+{"name":"Test Quality","verdict":"pass","note":"real git, real CLIs, regression tests for the toggle bypass and the merged-main case; benchmark bounds generous in CI"},
+{"name":"Performance Basics","verdict":"pass","note":"measured: run-scoped 10.6 ms, whole log 143 ms, per write 103 ms at 300 files"},
+{"name":"Naming & Structure","verdict":"pass","note":"three test modules under 300 LOC each; small product edits only"},
+{"name":"Affected Boundaries","verdict":"pass","note":"producer (split/fold tools) to consumer (assembled reader, plain legacy reader, integrity and layout CI checks) round-tripped on real history"}]}

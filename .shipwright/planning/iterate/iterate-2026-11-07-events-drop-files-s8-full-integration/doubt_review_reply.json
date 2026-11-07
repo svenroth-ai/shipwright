@@ -1,0 +1,5 @@
+{"stage":"doubt","verdict":"pass","gating":"advisory-must-address","doubts":[
+{"severity":"medium","claim_under_doubt":"per-commit rule never lets a PR append legacy after the flip","disposition":"fixed: a commit is excused only if its parent is not on drops AND it does not descend from the drops merge-base; regression test for drops->legacy->append->drops"},
+{"severity":"medium","claim_under_doubt":"Linux benchmark numbers are meaningful for precondition 4","disposition":"fixed: figures record traced_by_coverage; the note says CI numbers are an upper bound under --cov"},
+{"severity":"low","claim_under_doubt":"shallow checkout verdict; fork-point semantics; empty legacy log; full fold lossless modulo exact duplicates","disposition":"documented in the flip note; empty-log assertion added"}],
+"summary":"All doubts fixed or answered in writing."}
