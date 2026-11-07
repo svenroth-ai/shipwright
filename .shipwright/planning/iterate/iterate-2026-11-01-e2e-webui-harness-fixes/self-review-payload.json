@@ -1,0 +1,9 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"All 4 items done; S02 not weakened (root cause is the check: hidden picker option clicked first)."},
+{"name":"Error Handling","verdict":"pass","note":"openRow failures become S02 evidence; onMiss and taskStateText never throw; unknown fixture still refused."},
+{"name":"Security Basics","verdict":"pass","note":"Reserved-TLD exemption opt-in and TLD-anchored; no secrets; harness only."},
+{"name":"Test Quality","verdict":"pass","note":"New unit cases for S05, S02 (hidden option, dropdown-only, hidden Copy reply, null drafted), env-file fixture, launch retry."},
+{"name":"Performance Basics","verdict":"pass","note":"Harness only; the new S02 negative cases wait 8 s each in unit tests."},
+{"name":"Naming & Structure","verdict":"pass","note":"New tests in own file to stay under 300 lines."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Env file to config to spec to report round trip covered by config.spec; no serialized format changed."},
+{"name":"Test Hygiene Probe","verdict":"n/a","note":"No skips added."}]}

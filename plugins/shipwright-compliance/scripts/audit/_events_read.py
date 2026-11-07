@@ -69,7 +69,7 @@ def _jsonl_records() -> ModuleType:
 
 
 def load_events(project_root: Path) -> list[dict] | None:
-    """Read ``shipwright_events.jsonl``, recovering concatenated records.
+    """Read the whole event log (legacy file, then archive and drop files), recovering concatenated records.
 
     Returns ``None`` when the log is absent or unreadable, mirroring the
     contract both groups relied on — they distinguish "no log" from "empty log",
@@ -87,13 +87,15 @@ def load_events(project_root: Path) -> list[dict] | None:
     ``json.loads(line)`` with no ``isinstance`` guard, so a bare scalar entered
     the list as a non-dict and crashed the first downstream ``.get()``.
     """
-    path = project_root / EVENT_FILE
-    if not path.exists():
+    reader = load_shared_lib("events_read")  # the one assembling reader (S3): per-run drops are events too
+    if not any(p.exists() for p in reader.event_files(project_root)):
         return None
     try:
-        result = _jsonl_records().read_jsonl_records(path)
+        result = reader.read_events_assembled(project_root)
     except OSError:
         return None
+    if not result.records and any(f.status == "unreadable" for f in result.files):
+        return None  # evidence exists but cannot be read: "unavailable", never an empty log
     return list(result.records)
 
 

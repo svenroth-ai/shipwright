@@ -17,8 +17,8 @@ from pathlib import Path
 from typing import Any
 
 from .events_amend import apply_amendments  # noqa: F401 — re-exported SSOT
-from .events_log import resolve_events_path
-from .jsonl_records import RecordRead, read_jsonl_records
+from .events_log import EVENT_FILE
+from .events_read import AssembledRead, read_events_assembled
 
 CONFIG_FILES = {
     "run": "shipwright_run_config.json",
@@ -27,10 +27,8 @@ CONFIG_FILES = {
     "build": "shipwright_build_config.json",
     "security": "shipwright_security_config.json",
     "compliance": "shipwright_compliance_config.json",
-    "events": "shipwright_events.jsonl",
+    "events": EVENT_FILE,
 }
-
-EVENT_FILE = "shipwright_events.jsonl"
 
 
 def get_config_path(skill: str, project_root: str | Path) -> Path:
@@ -138,19 +136,18 @@ def collect_all_build_sections(project_root: str | Path) -> dict[str, Any]:
 # Event log
 # ---------------------------------------------------------------------------
 
-def read_events_result(project_root: str | Path) -> RecordRead:
+def read_events_result(project_root: str | Path) -> AssembledRead:
     """Read events plus the explicit corrupt-fragment side channel.
 
     Callers that make an absence-based decision must inspect ``corrupt``: a
     recovered prefix is useful for reporting, but it is not proof that no newer
     record existed in the unreadable remainder.
     """
-    path = resolve_events_path(project_root)
-    result = read_jsonl_records(path)
+    result = read_events_assembled(project_root)
     for frag in result.corrupt:
         # ASCII-only: surfaces on Windows cp1252 consoles.
         warnings.warn(
-            f"Corrupt event at {EVENT_FILE}:{frag.line_no} "
+            f"Corrupt event at {Path(frag.path).name}:{frag.line_no} "
             f"({len(frag.text)} bytes unrecoverable), skipping that fragment; "
             f"the rest of the line was recovered.",
             stacklevel=2,

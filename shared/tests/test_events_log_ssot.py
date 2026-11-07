@@ -53,15 +53,6 @@ _RESOLVER = "lib/events_log.py"
 _MAIN_REPO_ONLY = {
     "tools/convert_configs_to_events.py":
         "one-time config->events migration tool; never run from an iterate worktree",
-    "tools/validate_event_log.py":
-        "manual event-log health-check CLI; run against the main repo",
-    "tools/verifiers/common.py":
-        "generic verifier helper (read_events_jsonl). Primarily build/adopt "
-        "phase verifiers; also reached from the iterate W3 compliance check in "
-        "a worktree — harmless since the raw join now equals the per-tree "
-        "resolver answer (both are project_root / EVENT_FILE).",
-    "tools/verifiers/adopt_compliance.py":
-        "/shipwright-adopt A7 verifier; adopt executes in the main repo",
 }
 
 # A path-join onto the event log: `<expr> / EVENT_FILE` or

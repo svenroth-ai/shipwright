@@ -1,0 +1,332 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-05-s0-harness-dormant-writer",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-05T15:23:58.442270+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The replay gate is specified as \"one root per pytest process\" and a CI step with a \"Windows-measured budget,\" but the mini-plan doesn't state what the gate tool actually replays (which event roots, how results are collected) beyond a known-failing JSON. The baseline pass is described as \"gate run once for baseline\" — but the known-failing set must be split by unit (S2/S3 reader vs S4 writer) before those units exist. That means S0 ships a gate with pre-declared failing sets for code that doesn't exist yet.",
+          "suggestion": "Define the baseline mechanically: run the gate against current tree, record actual failures, tag entries by unit per DESIGN, and freeze. Document that the S2/S3/S4 entries are projections that must be re-validated when those units land — otherwise the ratchet can't \"only shrink\" meaningfully.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "\"Dormant path\" is doing a lot of work: events_layout.py adds a layout switch, rotate-on-commit write path, and assembled read, wired into record_event append paths and lib.config.read_events_result. Wiring into the live append/read paths is not dormant — it's a new runtime code path executed on every event, gated only by a config default. A defect in the switch precedence or the legacy branch degrades the current system even with drops never enabled.",
+          "suggestion": "Make the legacy branch a strict pass-through: in legacy mode, record_event and read_events_result must exercise byte-identical code paths to today (ideally via a thin early-return in events_layout.py, not refactored call sites). Add an explicit test asserting legacy-mode output equals pre-change output on the fixture pair.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "SHIPWRIGHT_EVENTS_LAYOUT honoured only with SHIPWRIGHT_EVENTS_LAYOUT_TEST=1 — but what happens in production if someone sets both? The spec says \"config key events_layout read at runtime,\" implying config-based enablement exists in production. If env+test-flag is the only gate, runtime config reads of `events_layout` are dead code in prod; if config alone can switch layout in prod, that contradicts \"dormant.\"",
+          "suggestion": "Resolve the precedence explicitly: config key ignored unless (env var AND test flag)? Or test flag AND config? Write the precedence table as a unit test (the mini-plan lists \"switch precedence\" tests — make sure this specific interaction is in it, not just env-var ordering).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Rotate-on-commit write path: unhandled cases around rotation failure (partial write, disk full, crash between drop-file write and commit marker) aren't mentioned. Since the drops layout is dormant, this is low-impact now, but the assembled read in S2 will inherit whatever semantics S0 lands.",
+          "suggestion": "At minimum, define (and test) that a partially-written drop file is either ignored or repaired by the assembled read; note the decision for S2.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "ADR-045 import contexts is flagged as a risk but the mitigation is vague (\"events_layout only imported via lib package\"). If events_layout.py sits in shared/scripts/lib/, tests importing it directly could create the dual-import problem ADR-045 presumably prohibits.",
+          "suggestion": "State the concrete rule: all imports are `from lib import events_layout` (or whatever the package path is), and add a lint/test check if ADR-045 violations have bitten before.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The gate \"may only shrink\" ratchet plus \"a red item stops the campaign\" creates a CI stability question: flaky tests will block all future units. No flake policy is stated (retry? quarantine?).",
+          "suggestion": "Decide flake handling up front — a flaky test entering the known-failing set permanently weakens the ratchet's value.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach ·",
+          "file": null,
+          "line": null,
+          "finding": "The plan lists switch-precedence tests but leaves the activation rules unclear. “Config key `events_layout` read at runtime” and “dormant behind the test-only override” need an explicit precedence table; otherwise configuration could activate drops prematurely or reads and writes could select different layouts.",
+          "suggestion": "Define and test the permitted combinations of config, `SHIPWRIGHT_EVENTS_LAYOUT`, and `SHIPWRIGHT_EVENTS_LAYOUT_TEST`. Verify that ordinary execution stays legacy and that both readers and writers use the same runtime resolution.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "risk ·",
+          "file": null,
+          "line": null,
+          "finding": "“Rotate-on-commit” introduces a durability boundary without specifying failure behavior. An interrupted rotation, failed commit, or concurrent append could lose events, duplicate them in assembled reads, or leave a partially written drop.",
+          "suggestion": "Specify the append/rotation sequence and recovery behavior from the DESIGN. Add focused tests for interrupted rotation and concurrent append, checking that every successfully recorded event remains readable exactly once.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "dependency ·",
+          "file": null,
+          "line": null,
+          "finding": "The replay-gate plan omits the required discovery and process-isolation contract: every event-related test root must run in its own pytest process. A single baseline run and a known-failing JSON file also do not establish that the failure set can only shrink.",
+          "suggestion": "Explicitly enumerate or discover the roots, launch one process per root, and enforce that current failures are a subset of the checked-in baseline. Fail on new failures, collection errors, crashes, and timeouts; require removal of resolved baseline entries. Preserve the S2/S3 versus S4 attribution and state the CI budget and timeout behavior.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "The harness assertions could report clean merges even if drops overwrite or omit events. Likewise, assembled-read equality for one fixture does not establish deterministic ordering when timestamps tie or directory enumeration changes.",
+          "suggestion": "For all three harness pairs, verify merged event contents as well as conflict status, and explicitly disable union merging. Give the fixture pair tied timestamps and multiple drops, and assert the DESIGN’s ordering rule independently of filesystem enumeration.  The approach is plausible, but activation, durability, and replay-gate enforcement need concrete commitments before implementation. Repository access was blocked, so this assessment is based on the supplied specification and mini-plan; I could not verify the referenced DESIGN overrides.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "codex",
+      "completed_at": "2026-11-05T15:05:01.574333+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n**Category: approach — Severity: medium**\n**Finding:** The replay gate is specified as \"one root per pytest process\" and a CI step with a \"Windows-measured budget,\" but the mini-plan doesn't state what the gate tool actually replays (which event roots, how results are collected) beyond a known-failing JSON. The baseline pass is described as \"gate run once for baseline\" — but the known-failing set must be split by unit (S2/S3 reader vs S4 writer) *before* those units exist. That means S0 ships a gate with pre-declared failing sets for code that doesn't exist yet.\n**Suggestion:** Define the baseline mechanically: run the gate against current tree, record actual failures, tag entries by unit per DESIGN, and freeze. Document that the S2/S3/S4 entries are projections that must be re-validated when those units land — otherwise the ratchet can't \"only shrink\" meaningfully.\n\n**Category: approach — Severity: medium**\n**Finding:** \"Dormant path\" is doing a lot of work: events_layout.py adds a layout switch, rotate-on-commit write path, and assembled read, wired into record_event append paths and lib.config.read_events_result. Wiring into the live append/read paths is *not* dormant — it's a new runtime code path executed on every event, gated only by a config default. A defect in the switch precedence or the legacy branch degrades the current system even with drops never enabled.\n**Suggestion:** Make the legacy branch a strict pass-through: in legacy mode, record_event and read_events_result must exercise byte-identical code paths to today (ideally via a thin early-return in events_layout.py, not refactored call sites). Add an explicit test asserting legacy-mode output equals pre-change output on the fixture pair.\n\n**Category: edge-case — Severity: medium**\n**Finding:** SHIPWRIGHT_EVENTS_LAYOUT honoured only with SHIPWRIGHT_EVENTS_LAYOUT_TEST=1 — but what happens in production if someone sets both? The spec says \"config key events_layout read at runti […truncated]\n\n[openai] 1. **Category: approach · Severity: high**  \n   **Finding:** The plan lists switch-precedence tests but leaves the activation rules unclear. “Config key `events_layout` read at runtime” and “dormant behind the test-only override” need an explicit precedence table; otherwise configuration could activate drops prematurely or reads and writes could select different layouts.  \n   **Suggestion:** Define and test the permitted combinations of config, `SHIPWRIGHT_EVENTS_LAYOUT`, and `SHIPWRIGHT_EVENTS_LAYOUT_TEST`. Verify that ordinary execution stays legacy and that both readers and writers use the same runtime resolution.\n\n2. **Category: risk · Severity: high**  \n   **Finding:** “Rotate-on-commit” introduces a durability boundary without specifying failure behavior. An interrupted rotation, failed commit, or concurrent append could lose events, duplicate them in assembled reads, or leave a partially written drop.  \n   **Suggestion:** Specify the append/rotation sequence and recovery behavior from the DESIGN. Add focused tests for interrupted rotation and concurrent append, checking that every successfully recorded event remains readable exactly once.\n\n3. **Category: dependency · Severity: high**  \n   **Finding:** The replay-gate plan omits the required discovery and process-isolation contract: every event-related test root must run in its own pytest process. A single baseline run and a known-failing JSON file also do not establish that the failure set can only shrink.  \n   **Suggestion:** Explicitly enumerate or discover the roots, launch one process per root, and enforce that current failures are a subset of the checked-in baseline. Fail on new failures, collection errors, crashes, and timeouts; require removal of resolved baseline entries. Preserve the S2/S3 versus S4 attribution and state the CI budget and timeout behavior.\n\n4. **Category: edge-case · Severity: medium**  \n   **Finding:** The harness assertions could report clean merges even if drops overw […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/events_replay_gate.py",
+          "line": null,
+          "finding": "init could record <pytest-...> sentinels as known entries.",
+          "suggestion": "refuse in init (fixed)",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/tools/events_replay_known_failing.json",
+          "line": null,
+          "finding": "budget_note stale on --jobs.",
+          "suggestion": "update (fixed)",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "performance",
+          "file": "shared/scripts/lib/events_layout.py",
+          "line": null,
+          "finding": "_git_identity starts 3 git processes per call.",
+          "suggestion": "merge git-dir and common-dir queries (follow-up; dormant path)",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/events_replay_gate.py",
+          "line": null,
+          "finding": "per-process timeout default longer than the CI step limit.",
+          "suggestion": "ci passes --timeout 2400 (fixed)",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_events_layout.py",
+          "line": null,
+          "finding": "import os inside the test.",
+          "suggestion": "moved (fixed)",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-05T15:23:16.488413+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "bd73f1d52db87532642f4582786a7d0911da7723"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "concurrency & ordering",
+          "file": null,
+          "line": null,
+          "finding": "a committed drop is never appended to",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling",
+          "file": null,
+          "line": null,
+          "finding": "time budget is a sound standing gate",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "gate cannot be vacuously green",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "reversibility",
+          "file": null,
+          "line": null,
+          "finding": "layout is dormant",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "ordering",
+          "file": null,
+          "line": null,
+          "finding": "assembled read preserves append order",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-05T15:23:16.604560+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "bd73f1d52db87532642f4582786a7d0911da7723"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": "shared/scripts/tools/events_replay_gate.py:113–118",
+          "line": null,
+          "finding": "The gate can report success despite failed tests. `_FAIL_LINE` cannot parse node IDs containing spaces, such as parametrized tests with `[hello world]`. If pytest exits with code 1 and no summary lines match, `_run` returns an empty failure set because exit code 1 is explicitly accepted.",
+          "suggestion": "Collect results through a structured pytest report or plugin. At minimum, fail closed whenever pytest returns a failure code without identifiable failures.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "shared/scripts/tools/events_replay_gate.py:140–149",
+          "line": null,
+          "finding": "Collection and fixture errors can be silently excluded as platform baseline failures. An `ERROR tests/test_x.py` reproduced under legacy is subtracted from the drops failures, allowing the gate to pass even though that file’s tests never ran. This defeats the requirement to replay every event-related root.",
+          "suggestion": "Distinguish test assertion failures from collection, setup, and infrastructure errors. Always fail the gate on errors that prevent the selected tests from executing.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "shared/scripts/tools/events_replay_gate.py:195–196",
+          "line": null,
+          "finding": "The shrink-only ratchet fails open when its comparison base is unavailable. A missing `origin/main`, shallow history without a merge base, or failed `git show` returns `None`; `ratchet_violations` then permits arbitrary additions to the known-failing set. Newly accepted regressions can therefore pass CI.",
+          "suggestion": "Ensure CI fetches the required base history and fail when an established baseline cannot be loaded. Handle the initial introduction of the baseline explicitly.  Overall assessment: ship-with-fixes. The harness and fixture pair address the stated acceptance criteria, but the replay gate has paths that can accept failures or bypass its ratchet; repository execution was blocked, so this assessment is based on the supplied diff.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "codex",
+      "completed_at": "2026-11-05T15:23:16.730899+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] ## Findings\n\n**1. Category: regression — Severity: high**\n`shared/scripts/tools/record_event.py` (append_event / append_event_idempotent) and `shared/scripts/lib/config.py` (read_events_result)\nThe legacy path previously routed through `resolve_events_path(project_root)` for **both** the log file and its derived lock (`path.with_name(path.name + \".lock\")`). The new code replaces that with `resolve_events_write_path` → literal `root / EVENT_FILE`, and `read_events_assembled` reads `root / EVENT_FILE` directly. If `resolve_events_path` ever resolves to something other than `<root>/shipwright_events.jsonl` (its documented job: \"under a /shipwright-iterate run this is the worktree-local copy\"), then in **legacy mode** the diff silently changes (a) where events are written, (b) where events are read from, and (c) where the lock file lives — three behavioral changes in the supposedly byte-identical dormant path, and a lock/file split means concurrent writers could serialize on *different* lock files. The spec constraint \"legacy bytes written by existing plugins must not change\" is only satisfied if `resolve_events_path` is a pure identity function; nothing in the diff proves that, and the removed docstring explicitly said it wasn't. Suggestion: in `legacy` mode, `resolve_events_write_path` must return `resolve_events_path(project_root)` and `events_lock_path` must derive from that resolved path; same for the read side. If identity was verified, add a test asserting `resolve_events_path(root) == root/EVENT_FILE` for all tree shapes.\n\n**2. Category: bug — Severity: medium**\n`shared/scripts/tools/events_replay_gate.py` — `_run` / `run_root`\n`subprocess.run(..., timeout=timeout)` raises `TimeoutExpired` on a per-process timeout; it is not caught, so the gate crashes with a traceback instead of recording a failure. Worse, a single hung root in CI kills the whole step without any report of which root hung. Suggestion: catch `subprocess.TimeoutExpired` in `_run` and […truncated]\n\n[openai] - Category: bug\n- Severity: high\n- File: shared/scripts/tools/events_replay_gate.py:113–118\n- Finding: The gate can report success despite failed tests. `_FAIL_LINE` cannot parse node IDs containing spaces, such as parametrized tests with `[hello world]`. If pytest exits with code 1 and no summary lines match, `_run` returns an empty failure set because exit code 1 is explicitly accepted.\n- Suggestion: Collect results through a structured pytest report or plugin. At minimum, fail closed whenever pytest returns a failure code without identifiable failures.\n\n- Category: spec\n- Severity: high\n- File: shared/scripts/tools/events_replay_gate.py:140–149\n- Finding: Collection and fixture errors can be silently excluded as platform baseline failures. An `ERROR tests/test_x.py` reproduced under legacy is subtracted from the drops failures, allowing the gate to pass even though that file’s tests never ran. This defeats the requirement to replay every event-related root.\n- Suggestion: Distinguish test assertion failures from collection, setup, and infrastructure errors. Always fail the gate on errors that prevent the selected tests from executing.\n\n- Category: spec\n- Severity: high\n- File: shared/scripts/tools/events_replay_gate.py:195–196\n- Finding: The shrink-only ratchet fails open when its comparison base is unavailable. A missing `origin/main`, shallow history without a merge base, or failed `git show` returns `None`; `ratchet_violations` then permits arbitrary additions to the known-failing set. Newly accepted regressions can therefore pass CI.\n- Suggestion: Ensure CI fetches the required base history and fail when an established baseline cannot be loaded. Handle the initial introduction of the baseline explicitly.\n\nOverall assessment: ship-with-fixes. The harness and fixture pair address the stated acceptance criteria, but the replay gate has paths that can accept failures or bypass its ratchet; repository execution was blocked, so this assessment is based  […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-05T15:14:22.209470+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "5d37163a8e0f8f5a35786b05adceda31c9ec8093"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-05T15:05:01.880028+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-05T15:05:01.724937+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

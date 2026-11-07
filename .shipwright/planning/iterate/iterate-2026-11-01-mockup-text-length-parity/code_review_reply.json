@@ -1,0 +1,4 @@
+{"section":"iterate-2026-11-01-mockup-text-length-parity","review":[
+{"severity":"medium","category":"correctness","file":"integration-tests/fixtures/social-engagement-real/mockups/02-thread.html","finding":"Spec and expected-result described the text as copied from fixed recordings; the package ships none, they are run 14's build output.","suggestion":"Reword and add to Not proven. DISPOSITION: accepted-and-fixed (spec, expected-result reworded)."},
+{"severity":"low","category":"readability","file":"integration-tests/e2e-webui/tests/unit/real-variant.spec.ts","finding":"Comment said every id the harness opens points at that title; only fresh and drafted are opened. DISPOSITION: accepted-and-fixed."}
+],"notes":{"html_validity_escaping":"clean","line_endings":"no hazard (hash normalizes CRLF)","stale_references":"none that matter"}}

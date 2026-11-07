@@ -34,6 +34,17 @@ from lib.config import read_events  # noqa: E402
 from lib.events_log import resolve_events_path  # noqa: E402
 from tools.record_event import append_event  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "testkit"))
+from event_log_probe import pin_legacy  # noqa: E402
+
+import pytest  # noqa: E402
+
+
+@pytest.fixture(autouse=True)
+def _legacy_layout(monkeypatch):
+    """The terminator guard of the LEGACY log's bytes; the drops layout creates files whole."""
+    pin_legacy(monkeypatch)
+
 
 def _event(run_id: str, phase: str = "iterate") -> dict:
     return {

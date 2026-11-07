@@ -1,0 +1,232 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-01-e2e-s05-shipped-recorded",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-01T19:19:23.431363+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-01T19:24:38.672513+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "integration-tests/e2e-webui/src/project-checks-adapter.ts",
+          "line": 217,
+          "finding": "Shipped JSON has CRLF in a Windows checkout; a build writing LF fails S05 (correct) but evidence reads 'changed (12 items, the package ships 12)'.",
+          "suggestion": "Report line endings only / first differing byte.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "integration-tests/e2e-webui/src/project-checks-adapter.ts",
+          "line": 209,
+          "finding": "statSync follows symlinks.",
+          "suggestion": "Use lstatSync.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "integration-tests/e2e-webui/tests/unit/shipped-recorded.spec.ts",
+          "line": 59,
+          "finding": "Marker not asserted.",
+          "suggestion": "Assert marker found.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "integration-tests/e2e-webui/tests/unit/real-variant.spec.ts",
+          "line": 161,
+          "finding": "Temp reference folders not removed.",
+          "suggestion": "Clean up.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-01T19:21:34.901363+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "boundary",
+          "file": "integration-tests/e2e-webui/src/project-checks-adapter.ts",
+          "line": null,
+          "finding": "Claim under doubt: a faithful byte-for-byte copy always passes — brief_package hashes text after CRLF->LF, so a resumed run built under another line-ending checkout could fail S05; evidence read misleadingly",
+          "suggestion": "evidence says line endings only (done); strictness kept on purpose: operator asked byte-identical, no tolerance",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden-coupling",
+          "file": "integration-tests/fixtures/social-engagement-real-expected-result.md",
+          "line": null,
+          "finding": "Claim under doubt: the build adds no other recorded data — items hardcoded elsewhere pass S05",
+          "suggestion": "accepted: scope is seed/recorded/, other H-checks pin N=12",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary",
+          "file": "integration-tests/e2e-webui/src/project-checks-adapter.ts",
+          "line": null,
+          "finding": "Claim under doubt: reference is exactly two files — dotfile in reference folder",
+          "suggestion": "accepted, python test pins two files",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden-coupling",
+          "file": "integration-tests/e2e-webui/src/project-checks-adapter.ts",
+          "line": null,
+          "finding": "Claim under doubt: evidence readable — drift uncapped",
+          "suggestion": "capped at 6 (done)",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-01T19:23:43.124553+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "integration-tests/e2e-webui/src/project-checks-adapter.ts — `compareShippedRecorded` / `SHIPPED_RECORDED_DIR",
+          "line": null,
+          "finding": "The reference is read straight from the repo working tree. On a checkout with `core.autocrlf` (Windows), the fixture's `syften.json` can be materialized with CRLF while the built project's copy (produced by whatever the run used) keeps LF, making a faithful build fail S05 purely from checkout configuration. The code detects and reports \"line endings only\" but still fails the check, and this failure mode depends on developer machine settings rather than the build's behaviour.",
+          "suggestion": "Pin the comparison to content the repo guarantees (e.g. `.gitattributes` forcing LF for `seed/recorded/`), or compare against `git show` bytes; otherwise document that Windows checkouts must disable autocrlf for these fixtures.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "integration-tests/e2e-webui/src/project-checks-adapter.ts — `listFiles",
+          "line": null,
+          "finding": "e.isDirectory()` is false for a symlink to a directory (Dirent reports `isSymbolicLink`), so a symlinked subdirectory or file under the built `seed/recorded/` escapes both the shipped-file loop and the extra-file loop. `lstatSync(target).isFile()` has the same blind spot for the reference side.",
+          "suggestion": "Also traverse `e.isSymbolicLink()` entries (or use `fs.statSync` to resolve) so extra content behind symlinks is detected.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "integration-tests/e2e-webui/tests/unit/harness-fixes.spec.ts:36-37 and real-variant.spec.ts — `reference()`/`ref",
+          "line": null,
+          "finding": "The temp reference folders created with `mkdtempSync`/`tmp()` are never removed (only `root` is cleaned in the `finally`). This is the same leak the recorded code review already flags; tests accumulate temp dirs across runs in CI.",
+          "suggestion": "Remove the ref dirs in the existing `finally` blocks.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "integration-tests/e2e-webui/tests/unit/shipped-recorded.spec.ts — extra-item case",
+          "line": null,
+          "finding": "The \"extra item inside a shipped file\" scenario is only exercised on `syften.json`. `apify_linkedin.json` has a different shape (objects with `linkedinUrl`/`postedAt`), so the drift evidence path for that file (`N items, the package ships M` vs the byte-count fallback) is untested.",
+          "suggestion": "Add one case appending an item to `apify_linkedin.json` and assert the named evidence.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "integration-tests/e2e-webui/tests/unit/shipped-recorded.spec.ts:59 area — `marker` assertion",
+          "line": null,
+          "finding": "The marker lookup falls back between `'\"title\": \"'` and `'\"title\":\"'` but the changed-byte write (`0x58/0x59`) is applied only to whichever marker matched; if the first title's first character were not ASCII-safe (e.g. multibyte), writing a single byte would corrupt the JSON and the test would then pass for the wrong reason (invalid data) rather than testing the byte comparison on valid data. Low risk given the fixture is pinned, but the \"still valid data\" assertion would still hold (12 items) even if the write broke a different field elsewhere.",
+          "suggestion": "Assert the byte at `at` is an ASCII letter before flipping, or compare `JSON.parse` of changed vs original for structural equality apart from one title char.",
+          "source": "external-review"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-01T19:24:38.513920+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] ## Findings\n\n- Category: edge-case\n  Severity: medium\n  File: integration-tests/e2e-webui/src/project-checks-adapter.ts — `compareShippedRecorded` / `SHIPPED_RECORDED_DIR`\n  Finding: The reference is read straight from the repo working tree. On a checkout with `core.autocrlf` (Windows), the fixture's `syften.json` can be materialized with CRLF while the built project's copy (produced by whatever the run used) keeps LF, making a faithful build fail S05 purely from checkout configuration. The code detects and reports \"line endings only\" but still fails the check, and this failure mode depends on developer machine settings rather than the build's behaviour.\n  Suggestion: Pin the comparison to content the repo guarantees (e.g. `.gitattributes` forcing LF for `seed/recorded/*`), or compare against `git show` bytes; otherwise document that Windows checkouts must disable autocrlf for these fixtures.\n\n- Category: bug\n  Severity: low\n  File: integration-tests/e2e-webui/src/project-checks-adapter.ts — `listFiles`\n  Finding: `e.isDirectory()` is false for a symlink to a directory (Dirent reports `isSymbolicLink`), so a symlinked subdirectory or file under the built `seed/recorded/` escapes both the shipped-file loop and the extra-file loop. `lstatSync(target).isFile()` has the same blind spot for the reference side.\n  Suggestion: Also traverse `e.isSymbolicLink()` entries (or use `fs.statSync` to resolve) so extra content behind symlinks is detected.\n\n- Category: test\n  Severity: low\n  File: integration-tests/e2e-webui/tests/unit/harness-fixes.spec.ts:36-37 and real-variant.spec.ts — `reference()`/`ref`\n  Finding: The temp reference folders created with `mkdtempSync`/`tmp()` are never removed (only `root` is cleaned in the `finally`). This is the same leak the recorded code review already flags; tests accumulate temp dirs across runs in CI.\n  Suggestion: Remove the ref dirs in the existing `finally` blocks.\n\n- Category: test\n  Severity: low\n  File: integration-tes […truncated]\n\n[openai] No concrete defects found in the diff. The change enforces S05’s byte-for-byte requirement, rejects missing or extra files, and provides useful mismatch evidence. Tests exercise valid copies, changed bytes, line endings, missing files, extra files, and added items.\n\nShip-as-is. This assessment is based on the supplied diff; execution was blocked by the environment’s command policy.\n\nSHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "openai": "approve",
+        "glm": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-01T19:19:28.160609+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-01T19:24:38.804961+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-01T19:24:38.927772+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}

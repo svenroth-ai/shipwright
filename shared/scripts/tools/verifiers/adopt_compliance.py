@@ -41,7 +41,8 @@ from lib.phase_quality import (  # noqa: E402
     make_finding,
 )
 from lib.planning_discovery import iter_spec_files  # noqa: E402
-from lib.jsonl_records import read_jsonl_records  # noqa: E402
+from lib.events_log import event_files  # noqa: E402
+from lib.events_read import read_events_assembled  # noqa: E402
 
 
 REQUIRED_CONFIGS = [
@@ -215,8 +216,7 @@ def check_a5_review_present(project_root: Path) -> dict[str, Any]:
 def check_a7_adopted_event(project_root: Path) -> dict[str, Any]:
     """A7 (Tier-1): shipwright_events.jsonl has exactly 1 'adopted' event."""
     name = "A7 shipwright_events.jsonl has exactly 1 'adopted' event"
-    events = project_root / "shipwright_events.jsonl"
-    if not events.exists():
+    if not any(p.exists() for p in event_files(project_root)):
         return make_finding("A7", STATUS_FAIL, "missing shipwright_events.jsonl",
                             name=name, provenance="adopt_event_check")
     # Record-boundary recovery via the shared SSoT: an 'adopted' event sitting
@@ -225,7 +225,7 @@ def check_a7_adopted_event(project_root: Path) -> dict[str, Any]:
     # iterate-2026-07-20-events-record-boundary-remainder). read_jsonl_records
     # returns only JSON objects, so a bare scalar line no longer crashes .get().
     adopted = sum(
-        1 for ev in read_jsonl_records(events).records if ev.get("type") == "adopted"
+        1 for ev in read_events_assembled(project_root).records if ev.get("type") == "adopted"
     )
     if adopted == 0:
         return make_finding("A7", STATUS_FAIL, "no 'adopted' event found",

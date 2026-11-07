@@ -1,0 +1,164 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-04-bare-python-empty-heredoc-guard",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-04T08:05:34.545900+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-04T08:08:15.463327+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/scripts/hooks/bare_python_stdin_guard.py",
+          "line": 110,
+          "finding": "The empty-body check uses the same per-line runs_interpreter flag as the unterminated check, so every heredoc opened on a line that also runs `python -` is blamed on the interpreter (e.g. `python - < script.py && cat > out.txt <<'E'` + `E`). Rare; failing this way only blocks a command.",
+          "suggestion": "Accept as a documented known miss, or attribute each heredoc to its own segment. At minimum pin the behaviour with a test.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/tests/test_bare_python_stdin_guard.py",
+          "line": 55,
+          "finding": "Allow-list gaps: blank first body line followed by text; two heredocs on one command where only the second is empty; git commit -m \"$(cat <<'EOF' ... EOF)\" regression. Traced by the reviewer: all handled correctly, nothing pins it.",
+          "suggestion": "Add `python - <<'E'\\n\\nprint(1)\\nE`, a git-commit heredoc case, and `cat <<'A'\\nA\\nuv run python - <<'B'\\nprint(1)\\nB` to the allow parametrize.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-iterate/scripts/hooks/bare_python_stdin_guard.py",
+          "line": 53,
+          "finding": "pending is a heterogeneous untyped 4-slot list mutated by magic index (pending[0][3] = True).",
+          "suggestion": "Keep tuples and track head body state in a local, or use a small dataclass.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "docs/hooks-and-pipeline.md",
+          "line": 2808,
+          "finding": "Edited registry row has two incident parentheticals in one sentence; the colon attaches to the wrong clause; the row still says a closed `uv run python - <<'EOF' ... EOF` passes without stating non-empty; dated provenance is not docs content.",
+          "suggestion": "Rewrite: 'Denies a Bash command whose `python -` has no heredoc, pipe or `<` behind it, or whose heredoc feeding that line is never closed or is closed with an empty/whitespace-only body: the interpreter then waits on stdin forever.' Keep one short incident reference; say 'closed, non-empty'.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-iterate/tests/test_bare_python_stdin_guard.py",
+          "line": 140,
+          "finding": "The new integration test duplicates the hooks.json discovery block of the existing integration test and adds no new code path.",
+          "suggestion": "Add the empty-heredoc command as a third subprocess assertion inside test_registered_bash_hook_composes_with_the_worktree_gate, or share a helper.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "performance",
+          "file": "plugins/shipwright-iterate/scripts/hooks/bare_python_stdin_guard.py",
+          "line": 204,
+          "finding": "handle_payload now calls mask(command) three times; negligible next to the uv run spawn.",
+          "suggestion": "Optional: compute mask once.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-04T08:07:36.620865+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-04T08:08:15.305398+00:00",
+      "disposition": "small guard-script change (~60 lines), no migration/concurrency/cross-plugin import/irreversible op; doubt pass is conditional",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "diff-below-threshold"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-04T08:08:15.463327+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-04T08:06:21.287389+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-04T08:08:15.463327+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-04T08:08:15.463327+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}

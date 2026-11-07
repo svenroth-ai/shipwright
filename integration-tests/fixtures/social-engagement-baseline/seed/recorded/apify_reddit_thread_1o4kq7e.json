@@ -1,0 +1,40 @@
+[
+  {
+    "dataType": "post",
+    "id": "1o4kq7e",
+    "parsedId": "1o4kq7e",
+    "url": "https://www.reddit.com/r/SaaS/comments/1o4kq7e/",
+    "communityName": "r/SaaS",
+    "title": "Do you write requirements before prompting, or after?",
+    "body": "Small team, B2B tool. Half of us write a spec first, the other half prompt and then document. Which one held up for you after a few months?",
+    "authorName": "harbor_quill",
+    "ageHours": 528.8,
+    "score": 57,
+    "commentsCount": 2,
+    "createdAt": "2026-10-12T08:15:00Z"
+  },
+  {
+    "dataType": "comment",
+    "id": "mq3c001",
+    "parsedId": "mq3c001",
+    "postId": "1o4kq7e",
+    "parentKind": "post",
+    "parsedParentId": "1o4kq7e",
+    "authorName": "ember_lynx",
+    "body": "Before. After never happens.",
+    "ageHours": 500.0,
+    "score": 12
+  },
+  {
+    "dataType": "comment",
+    "id": "mq3c002",
+    "parsedId": "mq3c002",
+    "postId": "1o4kq7e",
+    "parentKind": "post",
+    "parsedParentId": "1o4kq7e",
+    "authorName": "nimbus_cart",
+    "body": "After, but only for things customers touch.",
+    "ageHours": 499.0,
+    "score": 7
+  }
+]

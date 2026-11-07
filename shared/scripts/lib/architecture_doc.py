@@ -48,12 +48,7 @@ IMPACT_TARGETS: dict[str, tuple[str, str]] = {
 # Invariant: every real impact routes somewhere (pinned by test_impact_targets).
 assert set(IMPACT_TARGETS) == REAL_IMPACTS
 
-# The transitional ``convention`` → architecture.md fallback that bridged the
-# un-migrated backlog (the agent-doc-entry-rules split, 2026-06-12) was RETIRED in
-# iterate-2026-06-12-compress-agent-doc-backlog once every ``convention`` entry was
-# compacted into ``conventions.md ## Convention Updates``. ``convention`` run_ids
-# now route ONLY to conventions.md (per ``IMPACT_TARGETS``); a ``convention``
-# run_id found only in architecture.md no longer counts as documented.
+# ``convention`` run_ids route ONLY to conventions.md (the transitional architecture.md fallback was retired).
 
 
 def target_for_impact(impact: object) -> tuple[str, str] | None:
@@ -157,19 +152,38 @@ def _coerce_texts(texts: dict[str, str] | str) -> dict[str, str]:
 
 
 def impact_documented(impact: str, run_id: str, texts: dict[str, str] | str) -> bool:
-    """True iff ``run_id`` is documented in the doc that ``impact`` routes to.
-
-    ``texts`` maps the target filename (``architecture.md`` / ``conventions.md``)
-    to that doc's content. ``component`` / ``data-flow`` resolve to
-    ``architecture.md``; ``convention`` resolves to ``conventions.md`` — its sole
-    home now that the un-migrated backlog has been compacted there
-    (iterate-2026-06-12-compress-agent-doc-backlog retired the legacy fallback).
-    """
+    """True iff ``run_id`` is documented in the doc ``impact`` routes to (``texts``: filename -> text)."""
     doc = _coerce_texts(texts)
     target = IMPACT_TARGETS.get(normalize_impact(impact))
     if target is None:
         return False
     return run_id_documented(doc.get(target[0], ""), run_id)
+
+
+def _bullet_aware_text(agent_docs_dir: Path, filename: str) -> str:
+    """Folded + pending bullet-drop text (``lib.doc_bullets``). Loaded by file path when this module has
+    no parent package (the compliance ``audit_adapters.load_shared_lib`` sentinel loader)."""
+    try:
+        from .doc_bullets import effective_text
+    except ImportError:
+        import hashlib
+        import importlib.util
+        import sys
+
+        src = Path(__file__).resolve().parent / "doc_bullets.py"
+        name = "_shipwright_arch_doc_bullets_" + hashlib.sha256(str(src.parent).encode("utf-8")).hexdigest()[:12]
+        mod = sys.modules.get(name)
+        if mod is None:
+            spec = importlib.util.spec_from_file_location(name, src)
+            mod = importlib.util.module_from_spec(spec)
+            sys.modules[name] = mod
+            try:
+                spec.loader.exec_module(mod)
+            except BaseException:
+                sys.modules.pop(name, None)
+                raise
+        effective_text = mod.effective_text
+    return effective_text(agent_docs_dir, filename)
 
 
 def read_target_texts(agent_docs_dir: Path) -> dict[str, str]:
@@ -183,12 +197,7 @@ def read_target_texts(agent_docs_dir: Path) -> dict[str, str]:
     agent_docs_dir = Path(agent_docs_dir)
     out: dict[str, str] = {}
     for filename in {target[0] for target in IMPACT_TARGETS.values()}:
-        try:
-            out[filename] = (agent_docs_dir / filename).read_text(
-                encoding="utf-8", errors="ignore"
-            )
-        except OSError:
-            out[filename] = ""
+        out[filename] = _bullet_aware_text(agent_docs_dir, filename)  # folded + pending bullet drops
     return out
 
 
@@ -218,19 +227,11 @@ def records_for_run(records: list[DropRecord], run_id: str) -> list[DropRecord]:
 def records_in_run_set(
     records: list[DropRecord], allowed: set[str]
 ) -> list[DropRecord]:
-    """Records whose ``run_id`` is in ``allowed`` (exact set membership).
+    """Records whose ``run_id`` is in ``allowed`` (the set analogue of :func:`records_for_run`).
 
-    The set-valued analogue of :func:`records_for_run`. Scopes the *whole-set*
-    arch-drift checkers — the Group-F ``F5`` detective and
-    ``test_architecture_md_reflects_arch_impact`` — to drops OWNED by the current
-    tree's lineage, where ``allowed`` is the run_id set from this tree's committed
-    ``shipwright_events.jsonl`` (``events_log.finalized_run_ids``). This excludes
-    cross-branch campaign sibling drops that bleed through the shared main-rooted
-    ``decision-drops`` dir: the sibling's doc entry lives only on its own unmerged
-    branch, so without scoping the drop reads as undocumented drift on every other
-    branch. The F11 finalize gate scopes to ONE run_id via ``records_for_run``;
-    this is its whole-set counterpart. Matching stays in ``missing_entries`` — the
-    "cannot diverge" contract is on matching, not on which drops are in scope.
+    Scopes the whole-set drift checkers (Group-F F5, the arch-md test) to drops owned by this
+    tree's lineage (``shipwright_events.jsonl`` via ``events_log.finalized_run_ids``), excluding cross-branch sibling drops that
+    bleed through the shared ``decision-drops`` dir. Matching stays in ``missing_entries``.
     """
     return [r for r in records if r.run_id in allowed]
 
@@ -238,16 +239,11 @@ def records_in_run_set(
 def run_id_documented_for_impact(
     agent_docs_dir: Path, impact: object, run_id: str
 ) -> bool:
-    """True iff ``run_id`` is the ANCHOR of a bullet in the SECTION ``impact``
-    routes to.
+    """True iff ``run_id`` is the ANCHOR of a ``- **<run_id>**`` bullet in the SECTION ``impact`` routes to.
 
-    Used by the release aggregator to SKIP a duplicate ``ADR-NNN`` bullet when the
-    iterate's F2 run_id bullet is already present. Deliberately **section-scoped**
-    (a ``- **<run_id>**`` bullet under the target ``## …Updates`` header), NOT a
-    whole-file scan — a run_id appearing only in prose (e.g. the Data Flow
-    narrative) is not a bullet, so the aggregator still appends rather than wrongly
-    skipping and leaving the change with no changelog entry (external-review
-    Gemini/OpenAI). Blank run_id / unroutable impact / absent doc → ``False``.
+    Used by the release aggregator to SKIP a duplicate ``ADR-NNN`` bullet. Deliberately
+    section-scoped, not a whole-file scan: a run_id in prose is not a bullet. Blank run_id /
+    unroutable impact / absent doc -> ``False``.
     """
     if not run_id:
         return False

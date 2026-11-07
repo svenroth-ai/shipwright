@@ -1,0 +1,9 @@
+{"verdict": "PASS", "review": [
+{"severity":"medium","category":"correctness","file":"integration-tests/e2e-webui/src/board-dom-real.ts","finding":"Errors escaped snapshotMasterDetail (only the click was in a try)","suggestion":"Wrap all of openRow; FIXED: whole body in try/catch, failures become evidence"},
+{"severity":"low","category":"correctness","file":"integration-tests/e2e-webui/tests/unit/harness-fixes.spec.ts","finding":"Alternation made the diagnostics assertion weak","suggestion":"FIXED: asserts clicked a, 2 visible afterwards"},
+{"severity":"low","category":"correctness","file":"integration-tests/e2e-webui/src/board-dom-real.ts","finding":"Missing title reported as 'no such thread'","suggestion":"FIXED: separate message"},
+{"severity":"low","category":"correctness","file":"integration-tests/e2e-webui/src/board-dom-real.ts","finding":"Failed click overwrote the clicked element","suggestion":"FIXED: kept as 'X then failed'"},
+{"severity":"low","category":"correctness","file":"integration-tests/e2e-webui/src/board-dom-real.ts","finding":"Option branch untested","suggestion":"FIXED: option branch removed, dropdown-only case unit tested"},
+{"severity":"low","category":"readability","file":"integration-tests/e2e-webui/src/env.ts","finding":"Header variable count wrong","suggestion":"FIXED"},
+{"severity":"low","category":"readability","file":"integration-tests/e2e-webui/src/board-dom-real.ts","finding":"describe helper dense/misnamed","suggestion":"FIXED: elementLabel"},
+{"severity":"low","category":"correctness","file":"integration-tests/e2e-webui/src/driver.ts","finding":"onMiss throwing would end retry","suggestion":"FIXED: best-effort catch"}]}

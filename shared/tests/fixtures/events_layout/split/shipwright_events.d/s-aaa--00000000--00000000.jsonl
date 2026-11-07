@@ -1,0 +1,3 @@
+{"ts":"2026-10-01T09:00:00Z","type":"phase_started","session":"s-aaa","phase":"iterate","id":"00000000"}
+{"ts":"2026-10-01T09:30:00Z","type":"task_created","session":"s-aaa","description":"task of iterate-2026-10-01-alpha","id":"00000001"}
+{"ts":"2026-10-01T10:00:00Z","type":"phase_completed","session":"s-aaa","phase":"iterate","id":"00000002"}

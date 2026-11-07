@@ -1,0 +1,106 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-07-events-drop-files-s7-mixed-versions",
+    "date": "2026-11-07",
+    "unit": {
+      "status": "passed",
+      "passed": 20578,
+      "skipped": 95,
+      "total": 20673
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 668,
+      "skipped": 0,
+      "total": 668
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run --extra dev pytest shared/tests/test_events_sentinel_mixed.py -q -p no:cacheprovider",
+      "exit_code": 0,
+      "tests_run": 38,
+      "evidence_path": ".shipwright/runs/iterate-2026-11-07-events-drop-files-s7-mixed-versions/surface_verification.log",
+      "timestamp": "2026-11-07T00:24:24.529Z",
+      "attempts": 1
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "old writer appends the legacy log and the new reader reads both",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_events_sentinel_mixed.py::test_old_writer_appends_legacy_and_new_reader_reads_both PASSED"
+        },
+        {
+          "behavior": "unknown or oddly typed events_layout (incl. explicit null) refuses event writes and the legacy amend; env override cannot hide it",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_events_sentinel_mixed.py::unknown-layout tests PASSED"
+        },
+        {
+          "behavior": "legacy write is refused over drop files only while the key is absent; an explicit legacy key is a deliberate rollback even with leftover drops",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_events_sentinel_mixed.py::legacy-over-drops tests PASSED"
+        },
+        {
+          "behavior": "release-evidence producers refuse an unknown layout (refresh_compliance_docs CLI, update_compliance gate)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_events_sentinel_mixed.py::evidence refusal tests PASSED"
+        },
+        {
+          "behavior": "project init and adopt write events_layout explicitly, keep any existing value, and never write legacy over live drops",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_events_sentinel_mixed.py::ensure_layout_key and adopt tests PASSED"
+        },
+        {
+          "behavior": "gitignore re-include is probe-driven on a sample file path, re-appended after a later ignore rule, and never touches a legacy repo",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_events_sentinel_mixed.py::reinclude tests PASSED"
+        },
+        {
+          "behavior": "consumer CI check judged at the merge-base: legacy append after flip fails; in-flight PR, declared rollback, full fold and synthetic merge HEAD pass; removed key and unknown layout fail",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_events_sentinel_mixed.py::ci_check tests PASSED"
+        },
+        {
+          "behavior": "CI check CLI exit codes (1 violations, 2 unresolved refs)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_events_sentinel_mixed.py::test_ci_check_cli_exit_codes PASSED"
+        },
+        {
+          "behavior": "existing layout precedence matrix, reference guard and gitignore self-heal stay green with the sentinel wired in",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_events_layout.py, test_events_reference_guard.py, test_gitignore_selfheal.py PASSED"
+        },
+        {
+          "behavior": "sentinel and CI check compose over real git history (merge commits, branches)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_events_sentinel_mixed.py::ci_check tests PASSED",
+          "category": "integration"
+        }
+      ],
+      "counts": {
+        "testable": 10,
+        "tested": 10,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 0,
+        "covered_acs": 0
+      }
+    }
+  }
+}

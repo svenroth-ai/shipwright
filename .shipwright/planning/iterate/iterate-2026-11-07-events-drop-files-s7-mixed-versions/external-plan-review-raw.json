@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "## Findings\n\n**Approach \u2014 medium \u2014 rollback path re-opens the mixed-version hole**\n`require_writable_layout` treats explicit `events_layout: legacy` as a \"declared rollback\" and passes \u2014 but that's exactly the configuration where a new-layout log gets legacy writes appended after the flip. If the repo previously flipped and contains new-layout events, a declared rollback to legacy lets new plugins write legacy-format events into a mixed file. The sentinel should either refuse rollback when non-legacy events are detectable in the log, or explicitly document that the CI check is the only guard in that state (see next finding).\n\n**Approach \u2014 medium \u2014 CI check not wired into any workflow**\nThe plan explicitly defers wiring `check_events_layout_ci.py` into CI (\"the operator's call\"). Until someone wires it, the only protection for in-flight mixed-version scenarios (old plugin + new log) is\u2026 nothing \u2014 the sentinel can't detect old writers because they predate the sentinel. This change's core acceptance criterion (\"old writer + new reader works\") depends on the check actually running. At minimum, ship the workflow snippet in the docs and record the wiring as a follow-up issue with an owner, or wire it if the repo's workflow is in scope.\n\n**Dependency \u2014 medium \u2014 CI check must handle drops introduced *by* the PR**\nJudging at the merge-base handles \"PR in flight at the flip,\" but the inverse case \u2014 a PR that *adds* a drops folder while declaring legacy \u2014 is only caught if the check also inspects the PR head's drops. Confirm the base-drops + head-drops logic covers this; the plan's description (\"base drops + legacy-log change fails\") reads as base-only.\n\n**Risk \u2014 medium \u2014 duplicated gate logic across two locations**\n`lib/events_sentinel.py` is used by the runtime write path, but `update_compliance.py` uses a \"file-located gate, no shared lib on sys.path.\" Two implementations of \"what layouts are supported / how to detect drops\" will drift. If sys.path is genuinely unavailable, extract the gate into a tiny self-contained module both load by path (e.g., `importlib` with an explicit file path) rather than copying the logic.\n\n**Risk \u2014 medium \u2014 \"single write choke point\" is actually two-plus**\nThe plan names `resolve_events_write_path` and the legacy `attach_commit_to_event` as sentinel call sites. Before this lands, audit for any other event-write path (ad-hoc scripts, other CLI subcommands, tests that write logs). A missed writer silently bypasses fail-closed.\n\n**Edge-case \u2014 low \u2014 `--restore` mode exempt from release-evidence refusal**\n`refresh_compliance_docs.py --restore` is excluded from the unknown-layout refusal. If restore can rewrite evidence files on an unknown layout, that's an inconsistency; if restore is layout-inert, document why it's exempt in a comment.\n\n**Edge-case \u2014 low \u2014 sample-path probe for gitignore**\n`check-ignore --no-index` on a sample file path works for non-existent paths, but the sample must be representative (a directory-level `!` re-include can behave differently for files at different depths, and a negated dir pattern with a sample at depth 1 vs depth 3 can disagree). Pick a sample path derived from an actual tracked drop if available, falling back to a deterministic depth-2 sample.\n\n**Security \u2014 low \u2014 sentinel ignores the test-only env override**\nThe \"raw read that ignores the test-only env override\" is the right call for production semantics, but make sure the CI check and the sentinel can't be made to disagree by the same override (the CI-side `lib/events_layout_ci.py` re-implements reading logic \u2014 does *it* honor the override?). If tests can flip the layout in one place but not the other, you'll get false greens.\n\n## Overall assessment\n\nThe design is directionally sound \u2014 fail-closed on unknown layouts, merge-base judgment, explicit key writes \u2014 and the dormant-by-default posture is sensible. The blockers are that the consumer CI check isn't wired (so the headline mixed-version protection is inert on merge) and the rollback exemption plus duplicated gate logic leave two paths where mixed layouts can slip through; tighten those and this ships.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Category: approach \u00b7 Severity: high**  \n   **Finding:** The sentinel is enforced at write paths, but the acceptance criterion says a new plugin must fail closed on an unknown layout. The plan does not establish what happens when a plugin reads events; a reader could silently interpret an unknown layout as legacy and return incomplete results.  \n   **Suggestion:** Gate layout-dependent reads as well as writes, while preserving absent-key legacy compatibility. Add a test showing that a new reader refuses an unknown layout.\n\n2. **Category: dependency \u00b7 Severity: medium**  \n   **Finding:** The consumer CI check is delivered without workflow wiring. Registry entries and documentation make it available, but do not establish that it runs or blocks a merge.  \n   **Suggestion:** Explicitly define whether S7 delivers an optional check or an enforced consumer safeguard. If enforcement is required, include the existing CI integration or identify the concrete operator prerequisite.\n\n3. **Category: edge-case \u00b7 Severity: medium**  \n   **Finding:** The merge-base check has consequential failure states that the plan does not specify: unavailable merge-base objects in shallow clones, missing configuration at the base, and failed `cat-file` operations. Treating an unreadable base as \u201cno drops\u201d would bypass the protection.  \n   **Suggestion:** Distinguish valid legacy absence from Git inspection failures, report failures explicitly, and document any required history fetch. Test these alongside the in-flight-flip and rollback cases.\n\n4. **Category: risk \u00b7 Severity: medium**  \n   **Finding:** The test plan names a mixed-version test file but does not establish that it exercises an actual old writer against the new reader. Tests using only updated helpers can miss the compatibility failure this change specifically targets.  \n   **Suggestion:** Include a frozen legacy-writer fixture or representative legacy output, then verify the new reader consumes its events. Cover unknown-layout refusals through the public plugin and release-evidence entry points.\n\nThe approach is sound overall, particularly the centralized write guard and explicit rollback behavior. Clarify reader enforcement and CI delivery, and make the compatibility and Git failure cases concrete before implementation.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-11-07-events-drop-files-s7-mixed-versions",
+    "at": "2026-11-06T23:44:34.478701+00:00"
+  },
+  "verdicts": {
+    "glm": "revise",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

@@ -1,0 +1,1 @@
+Autonomous runs settle five more run-23 questions by rule instead of asking: plan against brief, the brief against itself, a brief line the approved pictures lack (also in the Test phase), and the Changelog wrap-up defaults (`record_autonomous_choice.py`); the Design and Plan boundary gates no longer flag the pipeline's own CHANGELOG.md line and event-log lines.

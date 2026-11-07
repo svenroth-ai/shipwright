@@ -36,6 +36,7 @@ from pathlib import Path
 _SCRIPTS_DIR = Path(__file__).resolve().parent.parent  # shared/scripts
 sys.path.insert(0, str(_SCRIPTS_DIR))
 
+from lib.churn_events import has_event_folders, validate_event_folders  # noqa: E402
 from lib.churn_merge import (  # noqa: E402
     CHURN_ALLOWLIST,
     CI_SECURITY_SUMMARY,
@@ -66,10 +67,8 @@ __all__ = [
 # --- git plumbing -----------------------------------------------------------
 
 def _git(project_root: Path, *args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
-    # encoding="utf-8" STRICT (no errors="replace"): default text=True decodes via
-    # the Windows cp1252 locale, mojibaking/crashing on UTF-8 git output (WP6/F22).
-    # _union_conflict re-serialises this stdout verbatim into the tracked log, so
-    # the round-trip must be byte-identical (errors="replace" would corrupt it).
+    # encoding="utf-8" STRICT (no errors="replace"): cp1252 would mojibake UTF-8 git output and
+    # _union_conflict re-serialises this stdout verbatim into the tracked log (WP6/F22).
     return subprocess.run(
         ["git", "-C", str(project_root), *args],
         capture_output=True,
@@ -94,21 +93,18 @@ def _take_side(project_root: Path, rel: str, side: str) -> None:
 
 
 class _TriageNotUtf8Error(Exception):
-    """A triage.jsonl stage was not valid UTF-8, so the byte-identical union cannot
-    run safely. Translated by ``complete_merge`` into a ``triage_invalid`` status."""
+    """A triage.jsonl stage was not valid UTF-8 (``complete_merge`` -> ``triage_invalid``)."""
 
 
 def _union_conflict(project_root: Path, rel: str) -> None:
     """Union both sides of an append-only-log conflict (ours stage :2: + theirs
     stage :3:) and stage it. ``--ours`` would DROP theirs' items; target projects
-    lack the ``merge=union`` driver so this is the sole safety net there. The
-    duplicate header + shared lines collapse in the subsequent ``_reconcile_*``
-    dedup; the reconcile also validates the union.
+    lack the ``merge=union`` driver so this is the sole safety net there; the
+    subsequent ``_reconcile_*`` dedups and validates the union.
 
     ``_git`` decodes STRICT UTF-8 (WP6/F22) for a byte-identical round-trip. A
     non-UTF-8 byte raises ``UnicodeDecodeError`` synchronously (strict decode runs
-    in the calling thread on every platform), normalised here to a typed error —
-    not a bare traceback. ``stdout is None`` is a defensive guard folded into it.
+    in the calling thread on every platform), normalised here to a typed error.
     """
     def _show(stage: str) -> str:
         try:
@@ -145,21 +141,23 @@ class ResolveResult:
 def _reconcile_events(
     project_root: Path, run_id: str | None, resolved: list[str]
 ) -> tuple[list[str], list[str]]:
-    """Dedup + validate ``events.jsonl`` unconditionally (it is union-resolved
-    silently, so may never appear as unmerged). Mutates ``resolved`` to record a
-    rewrite. Returns ``(errors, warnings)``."""
-    log = project_root / EVENTS_LOG
-    if not log.exists():
+    """Dedup + validate the legacy log, then the drop/archive files and the run's ``work_completed``
+    across ALL of them (S3). Mutates ``resolved``; returns ``(errors, warnings)``."""
+    log, folders = project_root / EVENTS_LOG, has_event_folders(project_root)
+    if not log.exists() and not folders:
         return [], []
-    original = log.read_text(encoding="utf-8")
-    deduped, warnings = dedup_event_lines(original.splitlines())
-    new_text = "\n".join(deduped) + "\n" if deduped else ""
-    if new_text != original:
-        log.write_text(new_text, encoding="utf-8")
-        _git(project_root, "add", "--", EVENTS_LOG)
-        if EVENTS_LOG not in resolved:
-            resolved.append(EVENTS_LOG)
-    return validate_events_text(new_text, require_run_id=run_id), warnings
+    new_text, warnings = "", []
+    if log.exists():
+        original = log.read_text(encoding="utf-8")
+        deduped, warnings = dedup_event_lines(original.splitlines())
+        new_text = "\n".join(deduped) + "\n" if deduped else ""
+        if new_text != original:
+            log.write_text(new_text, encoding="utf-8")
+            _git(project_root, "add", "--", EVENTS_LOG)
+            if EVENTS_LOG not in resolved:
+                resolved.append(EVENTS_LOG)
+    errors = validate_events_text(new_text, require_run_id=None if folders else run_id)
+    return (errors + validate_event_folders(project_root, run_id) if folders else errors), warnings
 
 
 def _reconcile_triage(

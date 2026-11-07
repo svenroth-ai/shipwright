@@ -31,10 +31,11 @@ fails H06. If a Test-phase companion is still listening on 127.0.0.1:3911 (for e
 skill-companion project's dev server), the preview can attach to it and serve stale state: stop it before the run, the
 port is fixed by the profile.
 
-## Two fixtures
+## Three fixtures
 
-`SHIPWRIGHT_E2E_FIXTURE` picks the app the run builds; unset means `social-engagement-board` (above). An unknown name is
-refused. `social-engagement-real` (`../fixtures/social-engagement-real/`, key `../fixtures/social-engagement-real-expected-result.md`)
+`SHIPWRIGHT_E2E_FIXTURE` picks the app the run builds; unset means `social-engagement-board` (above). Like the other
+inputs it is read from the process environment first, then from the env file (a line in `autorune2e/.env` works); the
+report's Operator inputs print the active `fixture` and its `fixture_source`. An unknown name is refused. `social-engagement-real` (`../fixtures/social-engagement-real/`, key `../fixtures/social-engagement-real-expected-result.md`)
 is shaped like the real `social-engagement` skill: a master-detail board (thread list left, one thread right with summary,
 draft and a Copy reply button, feedback, status), the svenroth.ai tokens including Inter and Geist Mono, a status filter
 with skipped and expired, and the keywords as sources (Syften filters, LinkedIn queries), not a board tab. The hits come
@@ -44,11 +45,60 @@ Syften- and Apify-shaped answers in `seed/recorded/`, so a build and its tests n
 The checks that differ run in their variant form (`src/variant.ts`): S02 reads the platform switcher with counts, the
 status filter, a badge per list row, the thread beside the list and Copy reply (`src/board-dom-real.ts`); S04 also compares
 the font families; S05 allows a service name only under `backend/sources/` and needs `fetch_items` and nine recorded items,
-three per platform (`src/project-checks-adapter.ts`); H06-H11 plus H14 (feedback) run against the variant's API
+three per platform, and `seed/recorded/` must equal the package's recorded answers byte for byte with no file or item added (evidence names the file: missing, changed, extra) (`src/project-checks-adapter.ts`); H06-H11 plus H14 (feedback) run against the variant's API
 (`src/board-api-real.ts`). **S09 (soft)**: with `SHIPWRIGHT_E2E_SKILL_TRIGGER=1` a headless `claude -p` session loads the built
 plugin and gets "open the social engagement board" with only the Skill tool allowed; the verdict is whether a skill was
 called (`src/skill-trigger.ts`). It costs one short model call and is skipped otherwise. The variant has not run against a
 live agent yet; its first run also shows whether Design carries the brand fonts.
+
+### The baseline fixture (`social-engagement-baseline`)
+
+The finished Briefing package of the skill companion app, derived from the real `social-engagement` skill
+(`../fixtures/social-engagement-baseline/`: `brief.md` with 21 capabilities, seven approved mockups, synthetic service answers in the real
+shapes in `seed/recorded/` plus `index.json`, the stand-in agent's run in `seed/agent/run-synthetic.json`; `OPEN.md` and `provenance.md`
+travel with it). Its answer key is `../fixtures/social-engagement-baseline-expected-result.md`. The package is kept exactly as delivered
+(its hash is protected; `test_e2e_baseline_fixture.py` pins it). It carries no approval: the spec records
+`approved_by: "fixture:social-engagement-baseline"` in the run's **copy** at `<project>/brief/brief.json` (`src/baseline/approval.ts`;
+approval sits outside the hash), and the run sets `SHIPWRIGHT_ACCEPT_FIXTURE_APPROVAL=1` as always.
+
+Start it with `SHIPWRIGHT_E2E_FIXTURE=social-engagement-baseline` next to the usual inputs (process environment or the env file). The report
+prints the `fixture` and the `checklist` that ran (file, item count, hard/soft) in its Operator inputs.
+
+The checklist is derived item by item from the brief's own Fit criteria; each item is a plain sentence (see the answer key). The shared
+items H01-H05, H12, H13, S03, S06, S08, S09 keep their modules; everything new is in `src/baseline/` as small modules:
+
+| Items | What runs | Module |
+|---|---|---|
+| B01-B05, B27 | the skill's `companion.py start/stop/status` (start, second start reuses, stop, port in use, stale pidfile), data-folder order | `checks-lifecycle.ts` |
+| B06-B09, B24, B25 | the API contract: headers, local-only access, error answers, read routes, config, link refusals | `checks-contract.ts` |
+| B10-B15 | fetching through the service adapter against **local fake servers** (`fake-services.ts`, replaying `seed/recorded/` via `index.json`), tokens are dummy values made up per run, secrecy scan of every answer, log, data file and URL | `checks-fetch.ts`, `checks-secrecy.ts` |
+| B16-B21, B23 | run storage all-or-nothing, draft lint, status rules, derived expiry (clock `SOCIAL_ENGAGEMENT_TODAY=2026-11-03`), feedback, queue, lessons | `checks-runs.ts` |
+| B22, B26, B28 | events stream, files and layout of the data folder, a corrupt file | `checks-layout.ts` |
+| B30, B31, B33 | store module is the only code touching data files, the adapter is the only code naming a service or reading a token, no model API, built SKILL.md | `checks-static.ts` |
+| B35-B46 | the board in a browser: counts, filters, keys, thread view, one comment count, copy and open, feedback (incl. failed save), status actions, 390 px width, tokens, "Claude updated the board" banner, X count above 280, review line | `checks-board.ts`, `checks-board-late.ts`, `board-ui.ts` |
+
+Every dynamic check starts the BUILT `backend/server.py` itself on a free 127.0.0.1 port with a throw-away data folder, a temp HOME and a
+clean environment (`companion.ts`); where a check needs the agent (store a run, put a draft, resolve feedback) the harness plays the agent
+over HTTP with `seed/agent/run-synthetic.json`. No real network and no real key are involved (the harness does not block outbound traffic: an adapter that ignores the base-URL variables is reported by B10-B12 as "no request reached the fake server"). The package does not define the format of
+`linkedin-queries.json`; the harness writes a list of `{query, status: "active"}`. Opening a good link with `POST /api/open` would start
+the OS browser, so only the refusals are checked. `S09` uses the phrase "open the reply board".
+
+**Re-check without a run.** A full run takes hours; the baseline checks themselves need no model. To run B01-B46 and the screen tour again
+against a project that is already built (it starts the project's own `companion.py`/`server.py` on free ports with throw-away data, nothing is written
+into the project, no pipeline, no token):
+
+```bash
+cd integration-tests/e2e-webui
+SHIPWRIGHT_E2E_RECHECK_PROJECT=<built project folder> npm run recheck     # optional SHIPWRIGHT_E2E_RECHECK_OUT=<report folder>
+```
+
+It prints one line per B item (evidence for the ones that fail) and writes `report.md` with the tour screenshots to the report folder
+(default `<os tmp>/e2e-recheck`). The command exits non-zero while a hard B item is red. The non-B items of the checklist stay "not evaluated". A project built from an older brief or answer key shows reds that are not harness bugs: re-check the project that the answer key was written for. Takes about 1.5 minutes (`tests/recheck.spec.ts`).
+
+**Screen tour.** For each screen of `screen-map.json` the harness brings the board into the mockup's state from its own recipe
+(`tour-baseline.ts`: select the first thread, pick the filter, narrow the window, create the feedback of the mockup as the stand-in agent),
+then checks a marker of that state. A state that cannot be reached is written into the report ("STATE NOT REACHED ...") with only the
+mockup attached, never a screenshot of the wrong state.
 
 ## One-time setup
 
@@ -69,6 +119,7 @@ committed; `.env.example` lists the names only. The report records which source 
 | `SHIPWRIGHT_E2E_MAX_MINUTES` | Overall wall-clock budget in whole minutes. |
 | `SHIPWRIGHT_E2E_WORKDIR` | Optional. The temp project, the temp HOME and `e2e-report/` are created under it (use a folder outside the repo). Unset: OS temp directory. |
 | `SHIPWRIGHT_E2E_RESUME_RUN` | Optional. Continue a stopped run: the `run-<id>` folder directly under the workdir. See "Resume" below. |
+| `SHIPWRIGHT_E2E_FIXTURE` | Optional. `social-engagement-board` (default), `social-engagement-real` or `social-engagement-baseline`; see "Three fixtures". |
 | `SHIPWRIGHT_E2E_ENV_FILE` | Optional, process environment only. Env file path. Default `../autorune2e/.env` relative to the repo root (no user path is hard-coded). |
 
 Authentication: set `CLAUDE_CODE_OAUTH_TOKEN` or `ANTHROPIC_API_KEY` in the environment. Otherwise the spec copies

@@ -47,6 +47,22 @@ test("the real environment wins over the env file, and each source is recorded",
 });
 
 // @covers FR-01.04
+test("SHIPWRIGHT_E2E_FIXTURE is read from the env file, the real environment wins, unset stays unset", async () => {
+  const { activeFixture, FIXTURE_NAME, REAL_FIXTURE_NAME } = await import("../../src/fixture.js");
+  const fromFile = loadConfig(repo, all, () => `SHIPWRIGHT_E2E_FIXTURE=${REAL_FIXTURE_NAME}
+`);
+  expect(fromFile.sources.SHIPWRIGHT_E2E_FIXTURE).toBe("env-file");
+  expect(activeFixture({ SHIPWRIGHT_E2E_FIXTURE: fromFile.fixture })).toBe(REAL_FIXTURE_NAME);
+  const fromEnv = loadConfig(repo, { ...all, SHIPWRIGHT_E2E_FIXTURE: FIXTURE_NAME }, () => `SHIPWRIGHT_E2E_FIXTURE=${REAL_FIXTURE_NAME}
+`);
+  expect(fromEnv.sources.SHIPWRIGHT_E2E_FIXTURE).toBe("process-env");
+  expect(activeFixture({ SHIPWRIGHT_E2E_FIXTURE: fromEnv.fixture })).toBe(FIXTURE_NAME);
+  const unset = loadConfig(repo, all, noFile);
+  expect(unset.sources.SHIPWRIGHT_E2E_FIXTURE).toBe("unset");
+  expect(activeFixture({ SHIPWRIGHT_E2E_FIXTURE: unset.fixture })).toBe(FIXTURE_NAME);
+});
+
+// @covers FR-01.04
 test("default env file is ../autorune2e/.env relative to the repo root; parser skips comments", () => {
   expect(defaultEnvFile("/x/repo").replace(/\\/g, "/")).toMatch(/\/x\/autorune2e\/\.env$/);
   expect(parseEnvFile("# a\n\nK=v\nbad line\nQ='x y'\n")).toEqual({ K: "v", Q: "x y" });

@@ -1,0 +1,9 @@
+{"items": [
+  {"name": "Spec Compliance", "verdict": "pass", "note": "All 6 ACs map to code; spec-reviewer PASS."},
+  {"name": "Error Handling", "verdict": "pass", "note": "recheck fails clearly for a missing project folder, skips when unset, and exits non-zero while a hard B item is red."},
+  {"name": "Security Basics", "verdict": "pass", "note": "No new network or credential use; the recheck writes nothing into the project and logs no token."},
+  {"name": "Test Quality", "verdict": "pass", "note": "Three unit specs with negative cases (reworded message, access in another file, host outside the adapter, hidden option); 107 unit specs pass; verified against the real built project."},
+  {"name": "Performance Basics", "verdict": "pass", "note": "A re-check takes about 1.5 minutes."},
+  {"name": "Naming & Structure", "verdict": "pass", "note": "checks-board.ts is 299 lines (cap 300); helpers live in board-ui.ts."},
+  {"name": "Affected Boundaries", "verdict": "pass", "note": "Error list text and board DOM probed by running the checks against run-phse68 before and after each fix."}
+]}

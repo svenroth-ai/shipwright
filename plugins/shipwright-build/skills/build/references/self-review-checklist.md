@@ -17,7 +17,8 @@ Does the code implement what the section spec requires?
   work the section needs to run.
 - **Mockup-vs-spec contradiction:** if the approved mockup and the section
   description disagree, this item is ❌ regardless of which one the code follows
-  — the decision belongs to a person (SKILL.md Step 1).
+  — the decision belongs to a person (SKILL.md Step 1) — unless the section
+  records a covering `Design decision:` line and the code follows its winner.
 
 ### 2. Error Handling
 Are system boundaries properly guarded?

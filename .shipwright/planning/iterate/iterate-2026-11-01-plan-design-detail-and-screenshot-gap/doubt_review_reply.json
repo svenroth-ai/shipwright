@@ -1,0 +1,6 @@
+{"stage": "doubt", "gating": "advisory-must-address", "doubts": [
+{"severity": "high", "lens": "boundary & contract", "claim_under_doubt": "The contradiction gate itself is unchanged", "disproof_attempt": "Plan-time 'screen wins' plus spec-reviewer exemption settles a mockup-vs-FR conflict without a person (FR-01.05 AC05, requirement-writeback.md).", "what_would_resolve_it": "Keep Design extension only; Design contradiction must still reach a person. ADDRESSED: exemption removed, writer takes no side."},
+{"severity": "high", "lens": "hidden coupling", "claim_under_doubt": "The plan review sees the Design contradiction line", "disproof_attempt": "Sections are written after Step 5; nothing reads the line. ADDRESSED: claim removed, Build stops on the line."},
+{"severity": "medium", "lens": "boundary & contract", "claim_under_doubt": "A requirement id makes an extension legitimate", "disproof_attempt": "Reviewer never opens the id. ADDRESSED: reviewer opens the cited FR/AC; FR/AC ids only."},
+{"severity": "low", "lens": "hidden coupling", "claim_under_doubt": "Build reviewers agree", "disproof_attempt": "self-review-checklist not updated. ADDRESSED."}],
+"summary": "Two high doubts, both addressed by removing the contradiction exemption and checking the cited FR/AC."}

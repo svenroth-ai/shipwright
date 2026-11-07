@@ -115,6 +115,11 @@ CI_ONLY_GATES = {
         "wrapper. Cited by triage id on purpose: a reason that names a card no one can "
         "look up reads as accountable without being so."
     ),
+    "Coverage data set (gate)": (
+        "Asserts that every .cov-data/.coverage.* file the CI test tiers produce arrived in the "
+        "gather job - the shared tier is measured in a parallel job and travels by artifact. "
+        "There is no local equivalent: a local tree has no per-job artifact hand-off to lose."
+    ),
     "Verify test-root JUnit coverage (gate)": (
         "Checks that every root named in ci.yml's OWN .ci-junit/plan.json produced its "
         "planned --junit-xml this run. There is no local equivalent of that per-root "

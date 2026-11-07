@@ -57,6 +57,17 @@ For each acceptance criterion / requirement / explicit step in the spec, answer:
      section" would make such a section unbuildable — that was never the intent.
      Reject an *unrecorded* or *oversized* shared change; never a recorded,
      minimal one.
+   - **Size-target carve-out (autonomous runs) -- do NOT reject this.** Applies ONLY
+     when the section contains the line `Size decision: split allowed (soft target)` (Plan writes it in autonomous runs
+     only); without that line the size target is a limit as before. A section's
+     "keep it under ~N lines" is then a soft target; the section's required behaviour and
+     the file-size guideline (300 lines) outrank it. When the required behaviour does
+     not fit, the code MAY be split into further modules inside the section's scope
+     (each within the guideline, recorded as attributed extras): that satisfies the
+     behaviour and the guideline and is PASS. Reject instead code that cut required
+     behaviour to fit the target, or raised the limit, or one oversized file that
+     could have been split. Only when no split is possible is it REJECT `contradiction`
+     for a person to decide.
 4. **Acceptance-test-aligned?** If the spec lists acceptance criteria, would each
    one actually pass against this diff? Walk them concretely, not by vibes.
 5. **Mockup-consistent?** If the section has a `## Design Reference`, does the
@@ -65,6 +76,37 @@ For each acceptance criterion / requirement / explicit step in the spec, answer:
    code took — a silent choice either way discards the reason mockups exist. Say
    which side the code followed and that the decision belongs to a person; the
    expected resolution is that the requirement is corrected to match the mockup.
+   **Exception:** a `Design decision: <what> -> <winner>, <reason>` line in the
+   section's Design Reference covering that exact difference means Plan already
+   resolved it (autonomous rule: screen over section text, explicit brief override
+   over screen). Code that follows the recorded winner PASSES this item; code that
+   follows the other side REJECTS as `unfaithful`. An unresolved `Design contradiction:`
+   line, or a difference no decision covers, is still REJECT `contradiction`.
+6. **Autonomous run: settle by rule, never escalate what a rule decides.** Applies ONLY
+   when `shipwright_run_config.json` has a `brief_package`, or `autonomy` is
+   `autonomous`/`unattended` (read it); an interactive run keeps items 3 and 5 as written.
+   One order decides, top wins: **hard requirement** (no layout shift, no height change,
+   no horizontal scroll, no overlap, nothing moves) > **explicit brief value** > approved
+   screen > plan/section text. A `Design decision:` line Plan recorded (item 5) binds; item 6
+   covers only a conflict no such line covers.
+   - **Explicit brief value.** A value the brief states in its own words ("the cap is
+     shown", "the header shows the mode", a number) wins over plan/section text and over
+     screens, including one no screen shows. "Shown" means visible without hovering; a
+     tooltip-only placement does not satisfy it. Code that follows the plan instead
+     REJECTS as `unfaithful` (never `contradiction`), citing the brief line as the winner;
+     Build implements it and records it (`record_autonomous_decision.py --kind brief-wins`;
+     exit 1 = the words are not in brief.md, so it is no brief value: REJECT `contradiction`).
+   - **Two stated constraints that cannot both hold** (e.g. "the controls add no height"
+     and "show the mode and count" at 945-1069px). A hard requirement (no layout shift, no
+     height change, no horizontal scroll, no overlap, nothing moves) outranks a visible
+     extra (optional text, a label, a count) -- also when the extra is a brief value. Code
+     that keeps the hard requirement and
+     lets the extra give way where it does not fit (a short form, hiding what does not
+     fit) PASSES when `.shipwright/designs/known-differences.md` records it with
+     measurements (`--kind hard-constraint`); unrecorded is REJECT `missing`; code that
+     breaks the hard requirement to show the extra REJECTS as `unfaithful`. Only when no
+     ranking is possible (both hard, or both extras) is it REJECT `contradiction` with
+     `rule cannot decide`, for a person.
 
 ## Anti-rationalization (spec edition)
 

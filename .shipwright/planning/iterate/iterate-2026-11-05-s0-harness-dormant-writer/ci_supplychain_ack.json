@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-05-s0-harness-dormant-writer",
+  "ci_supplychain_ack": {
+    "run_id": "iterate-2026-11-05-s0-harness-dormant-writer",
+    "paths_fingerprint": "52df644e44c419ef50de999c2897556289a4a5c720cc4e677bff78ccc4702121",
+    "consistent_with": "#978",
+    "statement": "Adds one run step to ci.yml that executes this repo's own test tool (events_replay_gate.py) under a test-only env override. No new actions, no third-party code, no permissions/secrets/trigger changes; operator (Sven) authorized the CI step in chat on 2026-11-05.",
+    "ci_paths": [
+      ".github/workflows/ci.yml"
+    ],
+    "provenance": "worktree",
+    "provenance_ref": null
+  }
+}

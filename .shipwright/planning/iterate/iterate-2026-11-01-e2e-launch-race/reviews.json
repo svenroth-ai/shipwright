@@ -1,0 +1,247 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-01-e2e-launch-race",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-01T22:45:45.768892+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-01T22:45:46.470148+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "integration-tests/e2e-webui/src/launch-recovery.ts",
+          "line": 43,
+          "finding": "Only PowerShell prompts counted as quiet; banners and other shells counted as activity.",
+          "suggestion": "Use positive evidence (fixed: launchVerdict now needs the agent in the terminal or a real task state).",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "integration-tests/e2e-webui/src/launch-recovery.ts",
+          "line": 49,
+          "finding": "state unreadable / not reported counted as started.",
+          "suggestion": "Fixed: only a real state word other than awaiting_external_start counts.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "integration-tests/e2e-webui/tests/e2e.spec.ts",
+          "line": 200,
+          "finding": "A resumed run could now fail through the watch.",
+          "suggestion": "Fixed: the watch runs only when the run is not a resume.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "integration-tests/e2e-webui/tests/unit/harness-fixes.spec.ts",
+          "line": 196,
+          "finding": "Backslash in test strings was an identity escape.",
+          "suggestion": "Fixed: escaped.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-01T23:30:07.617794+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "e00d7871a7032c7d3dbcf55e7a19523ba496a31f"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "launchVerdict reports stalled at an empty prompt",
+          "suggestion": "Banners/prompts must not count as activity: fixed with positive evidence and unit cases for pwsh, PowerShell 5.1, cmd and posix.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "reversibility",
+          "file": null,
+          "line": null,
+          "finding": "re-writing the key and reloading types the command",
+          "suggestion": "A reused pty parks it behind the Send to terminal banner: fixed, the harness presses embedded-terminal-manual-send-button when it shows.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "concurrency & ordering",
+          "file": null,
+          "line": null,
+          "finding": "stalled means not typed",
+          "suggestion": "State is re-read before each hand-over: fixed.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-01T23:30:07.757501+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "e00d7871a7032c7d3dbcf55e7a19523ba496a31f"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "integration-tests/e2e-webui/src/launch-recovery.ts:22 (`launchVerdict`)",
+          "line": null,
+          "finding": "The state regex treats every state word except `awaiting_external_start` and `not reported` as \"started\" — including `failed`, `inactive`, `cancelled`, and `error`. A task that failed during launch is reported as \"Launch confirmed\" with the message \"the task left awaiting_external_start\", the run proceeds, and the real failure surfaces much later in a confusing place. Note the spec's own helper `launchedByModal` in driver.ts explicitly excludes `failed` and `inactive`, so the two functions disagree on what counts as launched.",
+          "suggestion": "Use an allow-list of genuinely-launched states (e.g. `active|running|completed` per the actual API vocabulary) rather than \"anything except awaiting/not-reported\", or at minimum exclude `failed|inactive|cancelled|error`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "integration-tests/e2e-webui/tests/unit/harness-fixes.spec.ts:149-155 (`launchVerdict` assertions)",
+          "line": null,
+          "finding": "The unit tests never cover the failure-state case above — `launchVerdict(\"state failed\", ...)` and `launchVerdict(\"state inactive\", ...)` are untested, so the disagreement with `launchedByModal` is invisible to the suite. The tests only assert stalled-vs-started on banners and on `awaiting_external_start`, which is the one negative case the regex handles.",
+          "suggestion": "Add assertions that `failed`/`inactive` are not \"started\"; those tests would fail against the current implementation and pin the intended behavior.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "integration-tests/e2e-webui/src/launch-recovery.ts:14 (`captureLaunchCommands`)",
+          "line": null,
+          "finding": "The captured commands are stored only when the `/launch` response body resolves, and `res.json()` failures are swallowed. If the response is not JSON or arrives after `ensureLaunched` first calls `handOver` (possible with a very fast stall plus a slow body), `handOverCommands` returns false and `ensureLaunched` throws \"no command was captured\" even though the launch response existed. Also, the response listener matches any POST to `/launch` on any origin the page talks to, not just `base`.",
+          "suggestion": "Anchor the URL check to the harness `base` if available, and consider having `handOver` retry once after a short grace period before giving up on the capture.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "integration-tests/e2e-webui/src/launch-recovery.ts:63-70 (`handOverCommands`)",
+          "line": null,
+          "finding": "page.evaluate` will throw if the page navigates or is on `about:blank` at that moment (e.g., the modal's own navigation racing the reload), and that exception propagates out of `ensureLaunched` as an opaque Playwright error instead of the intended \"state + terminal\" diagnostic.",
+          "suggestion": "Wrap the evaluate/reload in a try/catch and treat a failed hand-over as `sent: false` so the caller gets the designed fail-fast message.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "integration-tests/e2e-webui/tests/e2e.spec.ts:186 (`mk` helper in tests)",
+          "line": null,
+          "finding": "The mock shares one counter `i` across `readState` and `readTerminal` and clamps with `Math.min`, so the state/terminal sequences drift out of sync after the arrays differ in length (as in the `retry` case, 5 states vs 1 terminal). The tests pass, but they validate the mock's accidental indexing rather than a guaranteed state/terminal pairing — a real implementation bug in pairing order could slip through.",
+          "suggestion": "Use separate indices (or step both from one index) for state and terminal in the mock.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "integration-tests/e2e-webui/src/driver.ts",
+          "line": 110,
+          "finding": "The no-button path only accepts `awaiting_external_start` and `active`. If the task finishes or fails during the 10-second button wait, it has already launched but falls into `startTaskSession`, waiting for a Launch button that will never appear. This leaves the original timeout problem for fast terminal transitions.",
+          "suggestion": "Recognize already-launched terminal states too, and let the existing follow logic handle completion or failure.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "integration-tests/e2e-webui/src/launch-recovery.ts",
+          "line": 27,
+          "finding": "Any terminal text containing `claude` confirms launch, including `claude: command not found` or a command echoed without successful execution. With the task still `awaiting_external_start`, recovery then exits successfully and the harness can stall again.",
+          "suggestion": "Require evidence of successful agent startup or a corresponding task-state transition. Add a test where the terminal reports a missing `claude` executable while the state remains awaiting launch.  Overall assessment: ship-with-fixes. The navigation guard addresses the reported reload, but launch detection still has paths that produce unnecessary timeouts or falsely confirm success.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "codex",
+      "completed_at": "2026-11-01T23:32:36.210650+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- Category: bug\n  Severity: medium\n  File: integration-tests/e2e-webui/src/launch-recovery.ts:22 (`launchVerdict`)\n  Finding: The state regex treats every state word except `awaiting_external_start` and `not reported` as \"started\" — including `failed`, `inactive`, `cancelled`, and `error`. A task that failed during launch is reported as \"Launch confirmed\" with the message \"the task left awaiting_external_start\", the run proceeds, and the real failure surfaces much later in a confusing place. Note the spec's own helper `launchedByModal` in driver.ts explicitly excludes `failed` and `inactive`, so the two functions disagree on what counts as launched.\n  Suggestion: Use an allow-list of genuinely-launched states (e.g. `active|running|completed` per the actual API vocabulary) rather than \"anything except awaiting/not-reported\", or at minimum exclude `failed|inactive|cancelled|error`.\n\n- Category: test\n  Severity: low\n  File: integration-tests/e2e-webui/tests/unit/harness-fixes.spec.ts:149-155 (`launchVerdict` assertions)\n  Finding: The unit tests never cover the failure-state case above — `launchVerdict(\"state failed\", ...)` and `launchVerdict(\"state inactive\", ...)` are untested, so the disagreement with `launchedByModal` is invisible to the suite. The tests only assert stalled-vs-started on banners and on `awaiting_external_start`, which is the one negative case the regex handles.\n  Suggestion: Add assertions that `failed`/`inactive` are not \"started\"; those tests would fail against the current implementation and pin the intended behavior.\n\n- Category: edge-case\n  Severity: low\n  File: integration-tests/e2e-webui/src/launch-recovery.ts:14 (`captureLaunchCommands`)\n  Finding: The captured commands are stored only when the `/launch` response body resolves, and `res.json()` failures are swallowed. If the response is not JSON or arrives after `ensureLaunched` first calls `handOver` (possible with a very fast stall plus a slow body), `handOverComm […truncated]\n\n[openai] - Category: spec\n- Severity: medium\n- File: integration-tests/e2e-webui/src/driver.ts:110\n- Finding: The no-button path only accepts `awaiting_external_start` and `active`. If the task finishes or fails during the 10-second button wait, it has already launched but falls into `startTaskSession`, waiting for a Launch button that will never appear. This leaves the original timeout problem for fast terminal transitions.\n- Suggestion: Recognize already-launched terminal states too, and let the existing follow logic handle completion or failure.\n\n- Category: bug\n- Severity: medium\n- File: integration-tests/e2e-webui/src/launch-recovery.ts:27\n- Finding: Any terminal text containing `claude` confirms launch, including `claude: command not found` or a command echoed without successful execution. With the task still `awaiting_external_start`, recovery then exits successfully and the harness can stall again.\n- Suggestion: Require evidence of successful agent startup or a corresponding task-state transition. Add a test where the terminal reports a missing `claude` executable while the state remains awaiting launch.\n\nOverall assessment: ship-with-fixes. The navigation guard addresses the reported reload, but launch detection still has paths that produce unnecessary timeouts or falsely confirm success.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-01T23:30:07.454919+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "e00d7871a7032c7d3dbcf55e7a19523ba496a31f"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-01T22:45:46.596655+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-01T22:45:46.738673+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}

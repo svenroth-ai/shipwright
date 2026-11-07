@@ -1,0 +1,10 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"S2 scope covered: one assembling reader, per-file status, recovery, newest-by-ts position readers, KC8 primitive, KC1 renders, ratchet tightened."},
+{"name":"Error Handling","verdict":"pass","note":"OSError per file becomes status unreadable; finalized_run_ids still returns None on unreadable; unparseable ts sorts first, ties keep position."},
+{"name":"Security Basics","verdict":"pass","note":"Symlinked and non-jsonl files are never read; drop key is parsed from the file name and matched exactly, never used to build a path."},
+{"name":"Test Quality","verdict":"pass","note":"Order, status, recovery, duplicate rule, KC8 exact-key/tolerance, position readers, KC1 byte-identical renders with non-vacuity check."},
+{"name":"Performance Basics","verdict":"pass","note":"One read per file; no folders means one read as before. Sort only on archive and drop records."},
+{"name":"Naming & Structure","verdict":"pass","note":"New module events_read.py; events_log stays under 300 lines; handoff and dashboard files not above their bloat baseline."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Jsonl drop files round-trip through the reader; unsplit/split fixture pair compared; ADR-045 load contexts tests pass."},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"scan_test_hygiene --diff: no findings."}
+]}

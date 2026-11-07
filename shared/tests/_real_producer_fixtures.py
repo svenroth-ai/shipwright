@@ -27,6 +27,7 @@ if str(_SCRIPTS) not in sys.path:
 
 from _compliance_refresh_fixtures import git, seed_repo  # noqa: E402
 from lib.churn_merge import EVENTS_LOG, TEST_TRACEABILITY, TRIAGE_LOG  # noqa: E402
+from lib.events_log import EVENT_FILE, event_files, is_event_folder_path  # noqa: E402
 from triage import should_route_to_outbox  # noqa: E402
 
 #: Paths and values the real-producer module asserts about by name.
@@ -107,8 +108,35 @@ def _jsonl(records) -> str:
     return "".join(json.dumps(r) + "\n" for r in records)
 
 
-def read_lines(path: Path) -> list[str]:
+def _plain_lines(path: Path) -> list[str]:
     return path.read_text(encoding="utf-8").splitlines() if path.is_file() else []
+
+
+def read_lines(path: Path) -> list[str]:
+    """Lines of ``path``; for the event log, the LOGICAL log: the legacy file, then every
+    archive/drop file (the drops layout appends to a new file, not to the legacy one)."""
+    lines = _plain_lines(path)
+    if path.name == EVENT_FILE:
+        for extra in event_files(path.parent)[1:]:
+            lines += _plain_lines(extra)
+    return lines
+
+
+def logical_snapshot(root: Path) -> dict[str, bytes | None]:
+    """``snapshot`` of the producer's inputs with the event log read as ONE logical file."""
+    from tools.compliance_input_state import PRODUCER_STATE, snapshot
+    state = snapshot(root, PRODUCER_STATE)
+    extra = [p for p in event_files(root)[1:] if p.is_file()]
+    if extra:
+        head = state[EVENT_FILE] or b""
+        state[EVENT_FILE] = head + b"".join(
+            (b"" if b.endswith(b"\n") else b"\n") + b for b in (p.read_bytes() for p in extra))
+    return state
+
+
+def logical_left_alone(left_alone) -> list[str]:
+    """Event folder files reported as left alone are the (moved) event log itself."""
+    return sorted({EVENT_FILE if is_event_folder_path(rel) else rel for rel in left_alone})
 
 
 def is_ordered_subsequence(needles: list[str], haystack: list[str]) -> bool:

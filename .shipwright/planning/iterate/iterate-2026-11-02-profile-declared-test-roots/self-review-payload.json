@@ -1,0 +1,10 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"Tiers are config, else profile, else defaults, each REPLACING the next, as approved. vite-hono declares its nested folders; a profile whose folders all fail to exist falls back to the defaults with one warning naming the profile."},
+{"name":"Error Handling","verdict":"pass","note":"profile_test_roots catches ValueError and OSError, degrades to no profile roots with one deduped stderr line; a shared dir that cannot be imported yields no profile roots; the gate archives pass warn=False."},
+{"name":"Security Basics","verdict":"pass","note":"The profile name is validated by the resolver (lower case, digits, dashes), the lookup is limited to project and bundled dirs, and profile entries run through the same expansion loop as config entries (no **, absolute, .. or symlink escape; tested)."},
+{"name":"Test Quality","verdict":"pass","note":"17 collector tests (tiers, escape entries, broken/unknown/wrong-typed/user-level profile, dedupe, warn=False, unreachable shared dir, sys.path preservation in a subprocess), 4 schema tests, 2 gate tests on a real temporary git repo incl. the gitignored-run-config limit."},
+{"name":"Performance Basics","verdict":"pass","note":"One run-config read and one profile file read per resolution, only when the compliance config sets no test_roots."},
+{"name":"Naming & Structure","verdict":"pass","note":"New module _test_links_profile_roots.py (110 lines); _test_links_io.py went 295 to 287 lines because the warning moved out; profile entries and config entries share _expand_root_entries."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Stack profile JSON gains an optional traceability.test_roots; the schema types it (array of strings), additionalProperties stay true so older installs ignore it, every bundled profile still validates. The manifest format is unchanged; an existing vite-hono project sees a one-time larger link set on its next regeneration."},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"scan_test_hygiene.py: no findings."}
+]}

@@ -298,7 +298,7 @@ _Where the work detail lives_ at the end of this document.
 
 - (E) [AC01] Given requirements with a user-facing side, when design is declared
   finished, then every one of them has at least one screen — none is left
-  without a mockup.
+  without a mockup. In an autonomous run with a brief package, a capability whose brief section states `UI: none` is recorded as having no screen by rule, not by a question.
 - (E) [AC02] Given screens have been designed, when design is declared finished, then
   the design tokens a build needs — colours, typography, spacing — exist as one
   reusable definition, so the build matches the design instead of guessing at
@@ -368,7 +368,12 @@ _Where the work detail lives_ at the end of this document.
   other, when that is noticed, then building stops and a person decides — because
   the mockup is the thing someone actually looked at and judged against real use,
   the expected outcome is that the requirement is corrected to match it, not that
-  the mockup is quietly overridden or quietly followed.
+  the mockup is quietly overridden or quietly followed. In an autonomous run (a
+  brief package governs it, or autonomy is autonomous) the plan has already decided
+  it by a fixed rule — the approved screen wins over section text, a value the brief
+  explicitly sets to override the screen wins over the screen — and recorded that as
+  a design decision, so building follows it without asking; only a case that rule
+  cannot decide still stops for a person.
 - (E) [AC06] Given a section cannot be built without touching something shared that lies
   outside it, when that change is made, then it is the smallest one the section
   needs and it is recorded as belonging to that section — "nothing outside the
@@ -446,7 +451,7 @@ _Where the work detail lives_ at the end of this document.
 - (E) [AC12] Given a project whose screens were designed as mockups first, when the test
   phase runs, then each screen is compared back to its mockup and every
   divergence is named — and a screen that matched before and diverges now is
-  reported as a regression, distinct from one never checked.
+  reported as a regression, distinct from one never checked. Each screen is compared at the viewport it was designed for (a phone screen at phone width), and in an autonomous run plain CSS deviations are fixed by the test phase itself while a remaining mismatch still stops for the person.
 - (E) [AC13] Given a project with several pages, when the test phase runs, then a
   pattern used one way on most pages and differently on a few is reported as an
   outlier, grouped by what caused it.
@@ -786,6 +791,15 @@ _Where the work detail lives_ at the end of this document.
   counted as uncovered; and a measurement that cannot be made at all shows a visible warning
   instead of silently letting every commit through.
   (iterate-2026-10-08-u9-rtm-80-hook)
+- (E) [AC16] Given a project built from a stack that keeps its tests in nested folders
+  rather than at the top level, when the links between requirements and tests are
+  produced, then the stack description tells the collector where those tests live,
+  so a new project of that stack has its tests linked without anyone writing a
+  setting by hand. A setting the project writes itself replaces the stack's, a stack
+  description that is missing or cannot be read never stops the evidence from being
+  produced (the default folders apply and one line says why), and the merge check
+  looks in the same folders as a local run, provided the file naming the stack is
+  committed. Run `iterate-2026-11-02-profile-declared-test-roots`.
 
 <a id="fr-0111"></a>
 ### FR-01.11 — Ongoing change at the depth it deserves
@@ -825,8 +839,10 @@ _Where the work detail lives_ at the end of this document.
   is never guessed.
 - (E) [AC07] Given a change of medium size or larger, when it is finished, then
   whatever a person can actually see or use — a page, a command, an interface,
-  or an explicitly recorded "none" — is driven through a running system;
-  producing only documents counts as no test and fails the gate.
+  a screen of a mobile app that is provably not a web page, or an explicitly
+  recorded "none" — is driven through a running system; a mobile screen counts
+  only with passing test results from its own native package. Producing only
+  documents counts as no test and fails the gate.
 - (E) [AC08] Given a project that declares how its test suite is laid out, when the
   pre-finish test gate runs, then the test units run as parallel processes and
   return the same pass-or-fail verdict as running them one after another. A unit

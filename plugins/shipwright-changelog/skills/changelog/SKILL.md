@@ -230,7 +230,7 @@ It renders each drop into `decision_log.md` (continuing the ADR
 numbering), embeds a `Run-ID:` line for run-id ↔ ADR traceability, and
 deletes only the drops it aggregated. Run with `--dry-run` first to
 preview the numbers that will be assigned. Drops written after the
-snapshot survive into the next release.
+snapshot survive into the next release. Pending bullet drops fold first: `references/bullet-folding.md`.
 
 Fallback for non-iterate commits: if this release includes bullets that
 weren't produced through iterate F4 (rare — e.g. a cherry-pick from an
@@ -303,11 +303,12 @@ this project lacks / didn't declare, and a pathspec matching no file aborts
 the whole commit.
 
 ```bash
+BULLET_DOCS=""; for f in architecture conventions; do if [ -f ".shipwright/agent_docs/$f.md" ]; then BULLET_DOCS="$BULLET_DOCS .shipwright/agent_docs/$f.md"; fi; done  # ONE shell invocation for this block ($BULLET_DOCS must be set at `git commit`); only docs the project HAS (a pathspec matching no file aborts the commit)
 git add CHANGELOG.md
-git add .shipwright/agent_docs/decision_log.md .shipwright/agent_docs/decision_log_index.md  # if Step 4 folded/refreshed
+git add .shipwright/agent_docs/decision_log.md .shipwright/agent_docs/decision_log_index.md $BULLET_DOCS  # if Step 4 folded/refreshed (bullets: references/bullet-folding.md)
 git add -A .shipwright/agent_docs/decision-drops/ .shipwright/planning/adr/  # stages Step 4's deletions + ADR-dir dirt — see below
 git commit -m "chore(release): v{version}" -- \
-  CHANGELOG.md .shipwright/agent_docs/decision_log.md .shipwright/agent_docs/decision_log_index.md \
+  CHANGELOG.md .shipwright/agent_docs/decision_log.md .shipwright/agent_docs/decision_log_index.md $BULLET_DOCS \
   .shipwright/agent_docs/decision-drops/ .shipwright/planning/adr/ <every path from evidence_pathspec> \
   <every path from manifest_pathspec> \
   && uv run "{shared_root}/scripts/tools/refresh_compliance_docs.py" \
@@ -342,9 +343,9 @@ gh pr create \
 
 **Record changelog event — BEFORE the merge, so it ships in the release PR** (an append after the merge strands uncommitted in the main checkout: webui v0.28.0, monorepo v0.34.0). Needs `{PR_URL}`. `{shared_root}` = `{plugin_root}/../../shared`. Chained with `&&`: a failing step stops the release before anything is pushed.
 ```bash
-uv run "{shared_root}/scripts/tools/record_event.py" --project-root "$(pwd)" --type phase_completed --phase changelog --detail "v{version} — {PR_URL}" \
-&& git add shipwright_events.jsonl \
-&& { git diff --cached --quiet -- shipwright_events.jsonl || git commit -m "chore(release): record changelog event for v{version}" -- shipwright_events.jsonl; } \
+uv run "{shared_root}/scripts/tools/record_event.py" --project-root "$(pwd)" --type phase_completed --phase changelog --run-id "release-v{version}" --detail "v{version} — {PR_URL}" \
+&& uv run "{shared_root}/scripts/tools/stage_event_drops.py" --project-root "$(pwd)" --run-id "release-v{version}" \
+&& { [ ! -f shipwright_events.jsonl ] || git add shipwright_events.jsonl; paths=$(git diff --cached --name-only -- shipwright_events.jsonl shipwright_events.d); [ -z "$paths" ] || git commit -m "chore(release): record changelog event for v{version}" -- $paths; } \
 && git push origin HEAD
 ```
 
@@ -357,9 +358,9 @@ gh pr merge --merge --delete-branch
 
 **If already on main:** skip the PR and record the event with the block below — it commits but never pushes (main is pushed once, with the tag, by the next block; the tag stays on the release commit, not on the event commit).
 ```bash
-uv run "{shared_root}/scripts/tools/record_event.py" --project-root "$(pwd)" --type phase_completed --phase changelog --detail "v{version} — tagged on main" \
-&& git add shipwright_events.jsonl \
-&& { git diff --cached --quiet -- shipwright_events.jsonl || git commit -m "chore(release): record changelog event for v{version}" -- shipwright_events.jsonl; }
+uv run "{shared_root}/scripts/tools/record_event.py" --project-root "$(pwd)" --type phase_completed --phase changelog --run-id "release-v{version}" --detail "v{version} — tagged on main" \
+&& uv run "{shared_root}/scripts/tools/stage_event_drops.py" --project-root "$(pwd)" --run-id "release-v{version}" \
+&& { [ ! -f shipwright_events.jsonl ] || git add shipwright_events.jsonl; paths=$(git diff --cached --name-only -- shipwright_events.jsonl shipwright_events.d); [ -z "$paths" ] || git commit -m "chore(release): record changelog event for v{version}" -- $paths; }
 ```
 
 **Push tags and updated main to remote:**

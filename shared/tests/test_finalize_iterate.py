@@ -5,7 +5,12 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import sys
+
 import pytest
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "testkit"))
+from event_log_probe import effective_records, event_text  # noqa: E402
 
 # C3 (iterate-2026-06-05-fr-linkage-lifecycle): finalize now enforces the
 # FR-gate, so every run() that expects a written event must supply a valid
@@ -27,7 +32,7 @@ def project(tmp_path):
     )
     (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
     (tmp_path / ".shipwright" / "compliance").mkdir(parents=True)
-    (tmp_path / "shipwright_events.jsonl").write_text("", encoding="utf-8")
+    (tmp_path / "shipwright_events.jsonl").write_text("", encoding="utf-8")  # legacy placeholder: readers take both layouts
     return tmp_path
 
 
@@ -79,6 +84,7 @@ def test_run_records_event_even_without_commit_arg(project, monkeypatch):
     assert "skipped" not in result["steps"]["event"]
 
 
+@pytest.mark.covers("FR-01.11")
 def test_run_records_event_with_commit(project, monkeypatch):
     monkeypatch.chdir(project)
     monkeypatch.delenv("SHIPWRIGHT_SESSION_ID", raising=False)
@@ -91,7 +97,7 @@ def test_run_records_event_with_commit(project, monkeypatch):
     event_step = result["steps"]["event"]
     assert event_step.get("id") is not None
 
-    events_content = (project / "shipwright_events.jsonl").read_text(encoding="utf-8")
+    events_content = event_text(project)
     assert "abc123" in events_content
 
 
@@ -118,8 +124,7 @@ def test_run_graceful_without_compliance_dir(tmp_path, monkeypatch):
 
 
 def _read_events_jsonl(project: Path) -> list[dict]:
-    raw = (project / "shipwright_events.jsonl").read_text(encoding="utf-8")
-    return [json.loads(line) for line in raw.splitlines() if line.strip()]
+    return effective_records(project)
 
 
 def test_run_records_event_pre_commit_with_empty_commit(project, monkeypatch):

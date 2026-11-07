@@ -1,0 +1,47 @@
+{
+  "id": 46080002,
+  "created_at": "2026-10-29T15:00:00Z",
+  "created_at_i": 1793286000,
+  "type": "story",
+  "author": "tamsin_w",
+  "title": "Show HN: A tiny tool that diffs requirements against tests",
+  "url": null,
+  "text": "<p>It reads requirement ids from a markdown file and test names from pytest and prints the gaps. Repo: <a href=\"https://github.com/example-synthetic/reqdiff\">github.com/example-synthetic/reqdiff</a></p>",
+  "points": 41,
+  "parent_id": null,
+  "story_id": 46080002,
+  "options": [],
+  "children": [
+    {
+      "id": 46080101,
+      "created_at": "2026-10-29T15:30:00Z",
+      "created_at_i": 1793287800,
+      "type": "comment",
+      "author": "harrow_k",
+      "title": null,
+      "url": null,
+      "text": "<p>Nice. Does it handle requirements that changed after the test was written?</p>",
+      "points": null,
+      "parent_id": 46080002,
+      "story_id": 46080002,
+      "options": [],
+      "children": [
+        {
+          "id": 46080102,
+          "created_at": "2026-10-29T16:00:00Z",
+          "created_at_i": 1793289600,
+          "type": "comment",
+          "author": "tamsin_w",
+          "title": null,
+          "url": null,
+          "text": "<p>Not yet. It only checks presence.</p>",
+          "points": null,
+          "parent_id": 46080101,
+          "story_id": 46080002,
+          "options": [],
+          "children": []
+        }
+      ]
+    }
+  ]
+}

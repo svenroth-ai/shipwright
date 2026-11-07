@@ -1,0 +1,265 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-01-fixture-real-ship-data",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-01T17:41:14.346075+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-01T17:46:28.858034+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "brief.md",
+          "line": null,
+          "finding": "Empty-text rule wording applies the first-sentence regex to the title; summary.py returns the whole title.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "brief.md",
+          "line": null,
+          "finding": "Replay ignoring the source query (every item of an active kind is returned) is implicit; N=12 depends on it.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "brief.md",
+          "line": null,
+          "finding": "points field absent from the Recorded answer schema.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "brief.md",
+          "line": null,
+          "finding": "Cut point wording ambiguous (0-/1-based).",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "test_e2e_real_fixture.py",
+          "line": null,
+          "finding": "Draft check and list-row loop can pass vacuously.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "test_e2e_real_fixture.py",
+          "line": null,
+          "finding": "Old-item oracle uses whole days and >=2; harness uses >14 days and spec says exactly 3.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-01T17:45:25.085823+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "3a0aee7b2e954d68053de46015ac843b2353fe47"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: see disposition — Byte-for-byte copy of the recordings is stated but no harness item enforces it. Disposition: rebutted/deferred - enforcing it means a new or changed hard answer-key item, outside the requested scope (tolerance, metric, check untouched); the next real run's screenshot ratio (S03) and the S05 evidence expose a drifted build; recorded in the spec as Not proven.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: see disposition — Propagation of brief.md details to the Build phase is LLM-mediated and unproven. Disposition: accepted, named in the spec under Not proven.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: see disposition — List order not specified. Disposition: fixed - brief.md View the board now states id-ascending / file order; package re-pinned.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: see disposition — Subreddit, item points and LinkedIn title rule unspecified. Disposition: fixed - brief.md Item entry and list-row text now state them; age format is wording below the metric resolution and left.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: see disposition — Expiry window 13 vs 14 days. Disposition: fixed - the test also asserts exactly 3 items older than 13 days.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-01T17:50:18.601095+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "3a0aee7b2e954d68053de46015ac843b2353fe47"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "integration-tests/test_e2e_real_fixture.py` (~line at `if \"Reply draft\" in text:`)",
+          "line": null,
+          "finding": "The mockup-draft check is conditional on the literal string `Reply draft` appearing in the mockup HTML. If mockup 03's card heading or markup changes (or the draft card is dropped), the assertion is silently skipped and the test still passes — exactly the drift AC3 is meant to catch. There is no assertion that the draft branch executed at least once.",
+          "suggestion": "Track whether any draft was checked (`drafts_checked += 1`) and assert `drafts_checked >= 1` (or assert `\"Reply draft\" in text` for `03-reply-draft` specifically) so the template-vs-mockup guarantee cannot be vacuously satisfied.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "integration-tests/test_e2e_real_fixture.py` (list-row loop at the end of `test_mockup_text_equals_...`)",
+          "line": null,
+          "finding": "The list-row check iterates `re.findall(r'<span>u/(.?)</span></div><div class=\"t\">(.?)</div>', ...)`; if the row markup changes so the regex matches zero rows, the loop body never runs and the test passes vacuously. `checked == 3` also only counts loop iterations for the three screens, not that content was verified.",
+          "suggestion": "Assert a positive row count (e.g. `rows > 0` per mockup, and that the five expected Reddit titles each appear as rows somewhere), so a markup change fails loudly instead of passing.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "integration-tests/test_e2e_real_fixture.py` (`test_shipped_recordings_...`)",
+          "line": null,
+          "finding": "The Python test asserts only `>= 2` items older than 14 days, while the expected-result file and the new `real-variant.spec.ts` test pin `old: 3` exactly. A future edit that drops one old item would pass the Python test and fail the TS test — inconsistent pins. (AC1 only requires >=2, so this is a consistency issue, not an AC violation.)",
+          "suggestion": "Align the Python assertion to `== 3` to match the other pins, or leave a comment explaining why it's deliberately looser.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "spec",
+          "file": "integration-tests/fixtures/social-engagement-real/brief.json` (`package_sha256`)",
+          "line": null,
+          "finding": "The spec says the recordings are \"copied unchanged from run 14\" and AC4 requires the new hash / warning-free package; neither the provenance nor that `package_sha256` matches the new tree can be verified from the diff alone. If the hash was not regenerated after adding the files, package-hash checks elsewhere will fail.",
+          "suggestion": "Confirm the hash was computed over the final tree (including the two new JSON files and updated brief.md/expected-result) — e.g. by running the existing package-hash test.  Non-issues I checked: the shipped data satisfies 12 items, 4/4/4, three items >14 days older than the newest (10-28 vs 10-04, 09-30, 10-02), 12 distinct URLs, all `.example` hosts; the `_summarize`/`_shorten` helpers match the brief's regex, collapse, and 300/400-char cut rules; the named-thread fit criteria in brief.md are consistent with the shipped data (quiet_lantern_42 / copper_fieldmouse); mockups are untouched as required; no security concerns (invented hosts/authors, no secrets, test-only code).  Overall: the change implements the spec and the acceptance criteria; the findings are test-hardening refinements, chiefly that the draft and list-row mockup checks can pass vacuously.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "integration-tests/test_e2e_real_fixture.py",
+          "line": 258,
+          "finding": "The list-row check only validates rows matched by its regex and never checks their count or completeness. Removing every list row from any mockup would still pass this test. It also ignores row points, so those values can drift from the recordings undetected despite AC3 requiring list rows to match the shipped data.",
+          "suggestion": "Extract each screen’s complete row data and compare it with an explicit expected sequence derived from the recordings, including row count, titles, authors and points.  Overall assessment: ship-with-fixes. The recordings and brief implement the requested change, but the mockup test needs to enforce the list-row acceptance criterion.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "codex",
+      "completed_at": "2026-11-01T17:46:28.723071+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- Category: test\n  Severity: medium\n  File: `integration-tests/test_e2e_real_fixture.py` (~line at `if \"Reply draft\" in text:`)\n  Finding: The mockup-draft check is conditional on the literal string `Reply draft` appearing in the mockup HTML. If mockup 03's card heading or markup changes (or the draft card is dropped), the assertion is silently skipped and the test still passes — exactly the drift AC3 is meant to catch. There is no assertion that the draft branch executed at least once.\n  Suggestion: Track whether any draft was checked (`drafts_checked += 1`) and assert `drafts_checked >= 1` (or assert `\"Reply draft\" in text` for `03-reply-draft` specifically) so the template-vs-mockup guarantee cannot be vacuously satisfied.\n\n- Category: test\n  Severity: medium\n  File: `integration-tests/test_e2e_real_fixture.py` (list-row loop at the end of `test_mockup_text_equals_...`)\n  Finding: The list-row check iterates `re.findall(r'<span>u/(.*?)</span></div><div class=\"t\">(.*?)</div>', ...)`; if the row markup changes so the regex matches zero rows, the loop body never runs and the test passes vacuously. `checked == 3` also only counts loop iterations for the three screens, not that content was verified.\n  Suggestion: Assert a positive row count (e.g. `rows > 0` per mockup, and that the five expected Reddit titles each appear as rows somewhere), so a markup change fails loudly instead of passing.\n\n- Category: test\n  Severity: low\n  File: `integration-tests/test_e2e_real_fixture.py` (`test_shipped_recordings_...`)\n  Finding: The Python test asserts only `>= 2` items older than 14 days, while the expected-result file and the new `real-variant.spec.ts` test pin `old: 3` exactly. A future edit that drops one old item would pass the Python test and fail the TS test — inconsistent pins. (AC1 only requires >=2, so this is a consistency issue, not an AC violation.)\n  Suggestion: Align the Python assertion to `== 3` to match the other pins, or leave a comm […truncated]\n\n[openai] - Category: test\n- Severity: medium\n- File: integration-tests/test_e2e_real_fixture.py:258\n- Finding: The list-row check only validates rows matched by its regex and never checks their count or completeness. Removing every list row from any mockup would still pass this test. It also ignores row points, so those values can drift from the recordings undetected despite AC3 requiring list rows to match the shipped data.\n- Suggestion: Extract each screen’s complete row data and compare it with an explicit expected sequence derived from the recordings, including row count, titles, authors and points.\n\nOverall assessment: ship-with-fixes. The recordings and brief implement the requested change, but the mockup test needs to enforce the list-row acceptance criterion.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-01T17:43:15.460036+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "3a0aee7b2e954d68053de46015ac843b2353fe47"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-01T17:46:28.977219+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-01T17:46:29.131181+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}

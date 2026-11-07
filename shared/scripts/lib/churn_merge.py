@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import fnmatch
 import json
+import re
 
 # Triage-log validation lives in lib.triage_validate and the triage dedup in
 # lib.triage_dedup (both extracted so this module stays under the 300-LOC
@@ -112,6 +113,14 @@ CHURN_ALLOWLIST: frozenset[str] = DERIVED_MDS | {
 CAMPAIGN_STATUS_GLOB = ".shipwright/planning/iterate/campaigns/*/status.json"
 
 
+#: The drops-layout event folders hold immutable, ADD-only evidence (``lib.events_log.EVENT_FOLDERS``).
+#: They are deliberately NOT churn: a conflict inside one is a modify/delete the integrity
+#: rule forbids, so ``classify`` reports it as blocking and a human decides.
+EVENT_FOLDERS_NOT_CHURN: tuple[str, ...] = (
+    "shipwright_events.d", "shipwright_events.archive", "shipwright_events.quarantine",
+)
+
+
 def norm(rel: str) -> str:
     """Normalise a git path to forward-slash POSIX form."""
     return rel.strip().replace("\\", "/")
@@ -158,6 +167,8 @@ def is_derived_churn(rel: str) -> bool:
     (external plan review, openai #8).
     """
     rel = norm(rel)
+    if rel.startswith(tuple(f + "/" for f in EVENT_FOLDERS_NOT_CHURN)):
+        return False
     return rel in CHURN_ALLOWLIST or is_campaign_status(rel)
 
 
@@ -178,6 +189,9 @@ def classify(conflicted: object) -> tuple[list[str], list[str]]:
             continue
         (resolvable if is_derived_churn(rel) else blocking).append(rel)
     return sorted(set(resolvable)), sorted(set(blocking))
+
+
+_RUN_MEMBER = re.compile(r',"run":"[^"\\]*"(?=\}\s*$)')  # the drops-layout stamp
 
 
 def dedup_event_lines(lines: list[str]) -> tuple[list[str], list[str]]:
@@ -208,9 +222,12 @@ def dedup_event_lines(lines: list[str]) -> tuple[list[str], list[str]]:
     for line in lines:
         if not line.strip():
             continue
-        if line in seen_lines:
+        # Byte comparison IGNORES the stamped ``run`` field (DESIGN 10.2): the same event, once with and once
+        # without the stamp, is one line. A legacy line carries no stamp, so its comparison is unchanged.
+        key = _RUN_MEMBER.sub("", line)
+        if key in seen_lines:
             continue
-        seen_lines.add(line)
+        seen_lines.add(key)
         out.append(line)
         try:
             ev_id = json.loads(line).get("id")

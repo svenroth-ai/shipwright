@@ -1,0 +1,45 @@
+[
+  {
+    "id": "li-7001",
+    "linkedinUrl": "https://www.linkedin.example/posts/marta-ollendorf_ai-coding-agent-activity-7001",
+    "author": {"name": "Marta Ollendorf"},
+    "points": 26,
+    "content": "We rolled out an AI coding agent to three teams this quarter. The surprise was not the code quality but the onboarding: people needed a clear spec habit first. Curious how others handled it.",
+    "postedAt": {"date": "2026-10-26T10:00:00Z"},
+    "comments": [
+      {"author": "Ben Achterberg", "text": "Same experience. Specs first, agent second.", "depth": 0, "points": 5},
+      {"author": "Marta Ollendorf", "text": "Exactly, the agent amplifies whatever habit you already have.", "depth": 1, "points": 1}
+    ]
+  },
+  {
+    "id": "li-7002",
+    "linkedinUrl": "https://www.linkedin.example/posts/tomasz-wierzba_integrations-activity-7002",
+    "author": {"name": "Tomasz Wierzba"},
+    "points": 51,
+    "content": "Which AI coding agent has the best integrations with existing CI? We are evaluating Shipwright and two others and CI fit is our main criterion.",
+    "postedAt": {"date": "2026-10-22T15:30:00+02:00"},
+    "comments": []
+  },
+  {
+    "id": "li-7003",
+    "linkedinUrl": "https://www.linkedin.example/posts/ines-carvalhal_pricing-activity-7003",
+    "author": {"name": "Ines Carvalhal"},
+    "points": 12,
+    "content": "Pricing for AI coding agents is all over the place. Per seat, per run, per token. What model do you prefer as a buyer?",
+    "postedAt": {"date": "2026-10-19T09:10:00Z"},
+    "comments": [
+      {"author": "Ruairi Delaney", "text": "Per seat, predictable budgets win.", "depth": 0, "points": 8},
+      {"author": "Ines Carvalhal", "text": "That is the most common answer so far.", "depth": 1, "points": 3},
+      {"author": "Ruairi Delaney", "text": "Finance teams like boring numbers.", "depth": 2, "points": 12}
+    ]
+  },
+  {
+    "id": "li-7004",
+    "linkedinUrl": "https://www.linkedin.example/posts/jonas-fehrenbach_shipwright-activity-7004",
+    "author": {"name": "Jonas Fehrenbach"},
+    "points": 88,
+    "content": "Six weeks with Shipwright on a regulated project. The traceability from requirement to test is what got it past our compliance review.",
+    "postedAt": {"date": "2026-10-02T14:45:00Z"},
+    "comments": []
+  }
+]

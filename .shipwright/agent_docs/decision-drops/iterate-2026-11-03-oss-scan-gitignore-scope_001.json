@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-03-oss-scan-gitignore-scope",
+  "date": "2026-11-03",
+  "section": "Iterate - bug: security scan must not ignore the whole .shipwright/ directory",
+  "title": "OSS scan ignores only its own reports folder",
+  "context": "GitHub #985: the OSS backend of /shipwright-security appended /.shipwright/ to the project .gitignore. Shipwright projects track ADRs, specs and triage under .shipwright/, so every NEW file there was silently skipped by git add -A and only showed up later as a missing ADR or plan in a commit.",
+  "decision": "run_scan_and_report.py appends only /.shipwright/securityreports/ (derived from REPORTS_DIR, the only folder the script writes to). A pre-existing broad /.shipwright/ entry is never rewritten: the scan warns on stderr and reports status present_broad, even when it sits next to the canonical /.shipwright/* block. The canonical wildcard and the legacy /securityreports/ entry still count as present.",
+  "consequences": "New projects stop losing new tracked files. Projects already hit by the old scan keep the damaging line until the operator removes it; the scan now tells them on every run. The gitignore tests moved to a new file because test_run_scan_and_report.py is over the size limit and may not grow.",
+  "rationale": "Ignoring the output folder is all the scan needs. Deleting a line from a user-owned .gitignore is not safe to automate, so detect-and-warn is the safe repair path.",
+  "rejected": "(1) Auto-removing the broad entry: rewrites a user-owned file and may break a deliberate choice. (2) Trying to model all .gitignore semantics (negations, spellings): out of scope for a best-effort helper; recorded as a known gap.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

@@ -1,0 +1,5 @@
+{"section":"iterate-2026-11-01-e2e-launch-race","review":[
+{"severity":"medium","category":"correctness","file":"integration-tests/e2e-webui/src/launch-recovery.ts","line":43,"finding":"Only PowerShell prompts counted as quiet; banners and other shells counted as activity.","suggestion":"Use positive evidence (fixed: launchVerdict now needs the agent in the terminal or a real task state)."},
+{"severity":"medium","category":"correctness","file":"integration-tests/e2e-webui/src/launch-recovery.ts","line":49,"finding":"state unreadable / not reported counted as started.","suggestion":"Fixed: only a real state word other than awaiting_external_start counts."},
+{"severity":"medium","category":"correctness","file":"integration-tests/e2e-webui/tests/e2e.spec.ts","line":200,"finding":"A resumed run could now fail through the watch.","suggestion":"Fixed: the watch runs only when the run is not a resume."},
+{"severity":"low","category":"correctness","file":"integration-tests/e2e-webui/tests/unit/harness-fixes.spec.ts","line":196,"finding":"Backslash in test strings was an identity escape.","suggestion":"Fixed: escaped."}]}

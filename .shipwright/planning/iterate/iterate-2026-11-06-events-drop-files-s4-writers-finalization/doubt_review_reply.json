@@ -1,0 +1,7 @@
+{"stage":"doubt","verdict":"PROCEED","doubts":[
+{"severity":"high","claim_under_doubt":"one run cannot commit another run's drops","disproof_attempt":"Absorb was wt8-scoped. Fixed: it leaves every file holding a work_completed to its owner's F6, own_drops adds the implicit key only for a per-unit identity; tests added."},
+{"severity":"medium","claim_under_doubt":"closed files are never edited, torn files never committed","disproof_attempt":"Stagers ran outside the writers lock. Fixed: writer_lock around list, validate, add, commit in stage, absorb and seal."},
+{"severity":"medium","claim_under_doubt":"legacy behaviour is unchanged","disproof_attempt":"Changelog release step lost its path restriction. Fixed. Absorb and seal now return early unless the layout is drops."},
+{"severity":"low","claim_under_doubt":"legacy readers unchanged","disproof_attempt":"latest_by_ts replaces last-in-file in two position readers; accepted, stated in the ADR (clock order is the spec's rule)."},
+{"severity":"low","claim_under_doubt":"run stamp stripped exactly","disproof_attempt":"Fixed: only the last top-level member is stripped; the adopt seeder writes compact separators; nested test added."},
+{"severity":"low","claim_under_doubt":"seal commits only own events","disproof_attempt":"Seal takes the main tree's untracked drops; foreign explicit-key drops are mis-attributed in the commit trailer; deferred (rare)."}]}

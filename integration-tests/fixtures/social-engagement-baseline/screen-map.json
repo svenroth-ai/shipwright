@@ -1,0 +1,11 @@
+{
+  "screens": [
+    {"id": "list-thread", "mockup": "01-list-thread.html", "requirements": ["view-the-board", "read-a-thread-the-way-its-platform-shows-it", "start-and-stop-the-board-from-the-skill", "set-the-posting-mode-and-handles", "watch-the-board-for-changes"]},
+    {"id": "draft-card", "mockup": "02-draft-card.html", "requirements": ["copy-a-draft-and-open-the-thread", "store-the-agent-s-drafts-as-a-run", "track-the-status-of-a-thread"]},
+    {"id": "posted", "mockup": "03-posted.html", "requirements": ["track-the-status-of-a-thread"]},
+    {"id": "feedback-saved", "mockup": "04-feedback-saved.html", "requirements": ["give-feedback-on-a-draft", "work-the-feedback-queue"]},
+    {"id": "expired", "mockup": "05-expired.html", "requirements": ["track-the-status-of-a-thread", "view-the-board"]},
+    {"id": "x-count", "mockup": "06-x-count.html", "requirements": ["copy-a-draft-and-open-the-thread"]},
+    {"id": "phone-picker", "mockup": "07-phone-picker.html", "requirements": ["use-the-board-on-a-phone"]}
+  ]
+}

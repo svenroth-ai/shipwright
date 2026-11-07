@@ -68,7 +68,16 @@ uv run --project {plugin_root} {plugin_root}/scripts/checks/check-plan-gates.py 
 Fails if this session's own uncommitted changes touch anything outside
 `.shipwright/`, `shipwright_run_config.json`, `shipwright_project_config.json`,
 `shipwright_plan_config.json`, or `CHANGELOG-unreleased.d/`. A non-git project
-passes trivially — nothing to check against.
+passes trivially — nothing to check against. "This session's own" is measured
+against the baseline `setup-planning-session.py` records when the session starts
+(`.shipwright/plan-boundary-baseline-<split>.json`, one per split, output `boundary_baseline`): files an
+earlier phase (Project, Design, an earlier split's Build) left uncommitted are not
+this session's change while their content is unchanged. **With a baseline
+(`written`/`kept`) never ask to commit earlier phases' output to clear this gate** —
+in any mode; a red gate then means this session wrote outside planning: a real STOP.
+On `not_written` (the project root is not the git top level) the gate judges the
+whole dirty tree and cannot tell earlier output from this session's, so a red gate
+is handled as before (put to the operator), in every mode.
 
 ---
 
@@ -159,3 +168,12 @@ Next steps:
      ...
 ================================================================================
 ```
+
+**Design check (autonomous runs).** `--gate sections` also compares each section's quoted UI text,
+stated breakpoint widths and named colors with the screens its `## Design Reference` names
+(`shared/scripts/lib/plan_design_check.py`; near-miss only, a new string is a harmless addition) and
+fails an autonomous run (brief package or autonomy `autonomous`/`unattended`) on an unresolved mismatch
+or on a `Design contradiction:` line that does not say `rule cannot decide`. Fix it by writing
+`Design decision: <what> -> <winner>, <reason>` (screen wins; an explicit brief override wins over the
+screen). `uv run --project {plugin_root} {plugin_root}/scripts/checks/check-design-contradictions.py --planning-dir "{planning_dir}" --project-root "$(pwd)" --record-decisions` (run it before the gates; the gate itself never writes the log) writes each decision to the decision log
+(`Plan Design Decision — {split}/{section}`). Interactive runs: notes only, nothing fails.

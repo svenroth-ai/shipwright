@@ -272,8 +272,8 @@ def _prepend_bullet_commit(root: Path, path: str, anchor: str, bullet: str, msg:
 @pytest.mark.parametrize("path,anchor", _CURATED_DOC_CASES)
 def test_union_merges_concurrent_curated_bullets_without_markers(tmp_path, path, anchor):
     # Two iterates each prepend a bullet at a section top. Under union BOTH bullets
-    # survive in order, base preserved, NO markers — and merge=union is honored
-    # server-side, so even pure auto-merge stops cascading DIRTY here.
+    # survive in order, base preserved, NO markers. This is a LOCAL merge: GitHub's
+    # server-side merge does not apply merge=union (issue 978).
     repo = tmp_path / "repo"
     _init_curated_repo(repo, path, anchor, with_union=True)
     _git(repo, "checkout", "-b", "branch-a")

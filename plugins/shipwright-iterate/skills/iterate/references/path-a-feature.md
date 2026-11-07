@@ -96,7 +96,7 @@ If no boundaries touched: write `n/a` with one-line justification.}
 {Mandatory at medium+. The runner that will produce the F0.5
  surface_verification block.
 
-- **Surface:** web | cli | api | none
+- **Surface:** web | native | cli | api | none
 - **Runner command:** {exact command F0.5 will execute}
 - **Evidence path:** {where output lands}
 - **Justification (only if surface=none):** {one line — why no startable

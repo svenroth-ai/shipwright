@@ -1,0 +1,1 @@
+Goal: S05 of the real end-to-end fixture proves the build kept the shipped recorded answers byte for byte, with nothing added | Reason: A build that ignored the shipped recordings and wrote its own still passed S05, which only validated whatever sat in seed/recorded/ | Reference: operator brief (handed directly), follows PR #971

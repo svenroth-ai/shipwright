@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "1. **The question, answered in one sentence.** Yes \u2014 this should exist, and it is not really a new standing mechanism: it is a second fixture plus a checklist inside the e2e harness that already exists, which is the natural home for it.\n\n2. **The smallest thing that would do.** What is proposed: one fixture directory, one checklist file, one keyed module folder `src/baseline/`, and additive hooks on the shared modules. Among the options, this is also the smallest: Option 2 would force the new fixture's concerns into the Variant interface and couple it to the preview-started app's fixed port; Options 3 and 4 stand up a *second* harness (a script or a pytest suite) that duplicates startup, reporting, and the checklist plumbing \u2014 that is the version of this change that adds a real standing mechanism. Fixture-keyed selection inside the existing Playwright spec keeps exactly one harness alive.\n\n3. **What it costs to keep.** The checklist must track the brief: every time the social-engagement skill's capabilities or mockups change, `social-engagement-baseline-expected-result.md`, the state-recipes in `screen-map.json`, and the check modules need to be touched together, and a human has to notice drift \u2014 a checklist that silently stops covering a capability is the main failure mode here. The fake-service replay files (`seed/recorded/`) are a second thing that ages if the real services' shapes change.\n\n4. **What it forecloses.** Little. It commits the harness to fixture-keyed checklists rather than a universal one, so a third fixture costs another checklist \u2014 acceptable, since checklists are per-package by nature. The additive `if (baseline)` branches on shared modules will want pruning if a third variant arrives, but that is ordinary debt, not a foreclosure.\n\n5. **Findings.**\n\n- Category: ownership\n- Severity: low\n- Finding: checklist-vs-brief drift has no mechanical guard; a capability added to the skill later will not fail any test, it will just be uncovered, and nobody notices until the next real e2e run.\n- Suggestion: add a cheap structural check (unit-level, in the existing suite) that every numbered capability/section in the fixture's brief appears as an item in the checklist file \u2014 one small module, no new standing machinery.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Yes.** A fixture-specific conformance suite belongs in the existing operator-started e2e harness because this package makes concrete promises the existing fixtures do not cover.\n\n2. **Smallest thing that would do:** option 1\u2014a fixture-selected checklist and dedicated checks, reusing the existing runner and reporting, with temporary backend and fake-service processes. Extending the shared Variant interface would make every variant carry this fixture\u2019s requirements; a standalone script or pytest suite would introduce another execution path without removing the browser checks.\n\n3. **What it costs to keep:** maintainers must keep the checklist, replay responses and screen recipes aligned with the package\u2019s promises, and investigate failures when the generated app or harness changes. The first real run must establish whether the stub-tested checks provide useful judgments.\n\n4. **What it forecloses:** alternative backend launch conventions and board interactions become more expensive if fixture checks treat incidental implementation choices as requirements. Keep those checks tied to explicit Fit criteria.\n\n5. No findings.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "architecture",
+  "capture": {
+    "run_id": "iterate-2026-11-03-e2e-baseline-fixture",
+    "at": "2026-11-03T08:42:26.146110+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "approve"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}

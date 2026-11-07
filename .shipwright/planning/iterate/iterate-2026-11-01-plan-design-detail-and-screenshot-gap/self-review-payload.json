@@ -1,0 +1,8 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"AC1-3 met; tests pin each."},
+{"name":"Error Handling","verdict":"n/a","note":"Prompt and doc prose; one string in a script."},
+{"name":"Security Basics","verdict":"pass","note":"No new input paths; override stays ASK FIRST."},
+{"name":"Test Quality","verdict":"pass","note":"Needles pin the meaning incl. the no-exemption rule and a no-mockups negative."},
+{"name":"Performance Basics","verdict":"n/a","note":"None."},
+{"name":"Naming & Structure","verdict":"pass","note":"Build SKILL.md held at 300 LOC."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Plan->Build contract (Design extension / contradiction lines) read by spec-reviewer, build SKILL, checklist; probe: batch script run end to end in test."}]}

@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-07-events-drop-files-s8-full-integration",
+  "date": "2026-11-07",
+  "section": "Iterate — test: events drops full integration",
+  "title": "Whole-system proof, benchmark and rollback rehearsals before the flip",
+  "context": "The shared event log is about to become one file per run; the flip needs evidence that the parts work together, stay fast at 300 files and roll back losslessly.",
+  "decision": "Add whole-system scenarios, a 300-file benchmark and rollback rehearsals on a copy of the real log; fix what they hit (one-call staging, per-commit layout CI check, end-anchored name regexes).",
+  "consequences": "Windows numbers: run-scoped 10.6 ms, whole log 143 ms, per write 103 ms. Follow-ups are listed in the flip-readiness note for the operator.",
+  "rationale": "Architecture review approve; per-unit tests alone would have shipped a Windows staging failure at ~1000 drops and a CI check that blames PRs open at the flip.",
+  "rejected": "Flipping on the per-unit tests; a one-off manual rehearsal script that guards nothing afterwards.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

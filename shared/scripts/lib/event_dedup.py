@@ -23,6 +23,7 @@ from pathlib import Path
 from typing import Any
 
 from .config import read_events
+from .events_read import latest_by_ts
 
 LINEAGE_CLASSES = frozenset({"main", "branch"})
 UNCHANGED_GRADE = "unchanged_grade"
@@ -56,15 +57,14 @@ def comparable_grade(event: Any) -> tuple[str, float] | None:
 def last_grade_snapshot(events: list[Any], klass: str) -> dict | None:
     """Return the newest grade snapshot in ``events`` for ``klass``.
 
+    Newest means newest ``ts`` (ties: the later position), not the last in the
+    list: with per-run drop files the list position carries no time meaning.
+
     Taking parsed events binds the reverse scan to the read performed inside the
     append lock; accepting a project root here would allow an unlocked re-read.
     """
-    for event in reversed(events):
-        if (isinstance(event, dict)
-                and event.get("type") == "grade_snapshot"
-                and lineage_class(event) == klass):
-            return event
-    return None
+    return latest_by_ts(
+        events, lambda e: e.get("type") == "grade_snapshot" and lineage_class(e) == klass)
 
 
 def unchanged_grade_skip(event: dict, events: list[dict]) -> dict | None:

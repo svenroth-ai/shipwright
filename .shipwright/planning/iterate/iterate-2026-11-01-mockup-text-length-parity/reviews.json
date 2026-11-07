@@ -1,0 +1,193 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-01-mockup-text-length-parity",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-01T16:45:32.998552+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-01T16:53:06.455413+00:00",
+      "disposition": "small fixture change, no plan review",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "integration-tests/fixtures/social-engagement-real/mockups/02-thread.html",
+          "line": null,
+          "finding": "Spec and expected-result described the text as copied from fixed recordings; the package ships none, they are run 14's build output.",
+          "suggestion": "Reword and add to Not proven. DISPOSITION: accepted-and-fixed (spec, expected-result reworded).",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "integration-tests/e2e-webui/tests/unit/real-variant.spec.ts",
+          "line": null,
+          "finding": "Comment said every id the harness opens points at that title; only fresh and drafted are opened. DISPOSITION: accepted-and-fixed.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-01T16:49:56.761147+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "b1ed464413e4cb622bfc7dac7432d7da1a5ff0a0"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "high",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Recordings, summary rule and drafter template are invented by each run's Build, not pinned by the fixture, so a pass in the next real run is not guaranteed. DISPOSITION: accepted-in-part - the claim was downgraded (spec Not proven, expected-result paragraph); pinning the data in brief.md rejected-with-reason: changes the product brief/requirements, beyond the operator's scope; surfaced to the operator as a decision.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Expected-result paragraph overstated an invariant. DISPOSITION: accepted-and-fixed (reworded).",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "03 age label 4 d should be 3 d. DISPOSITION: accepted-and-fixed, hash re-pinned. Row-meta and eyebrow differences are well under the tolerance, left.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-01T16:52:20.671277+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "b1ed464413e4cb622bfc7dac7432d7da1a5ff0a0"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "test |",
+          "file": "integration-tests/e2e-webui/tests/unit/real-variant.spec.ts:106 (titles map)",
+          "line": null,
+          "finding": "titles: { 1: ..., 2: ..., 3: ... }` maps the fresh id (1) and the drafted id (2) to the same pricing title. The test can no longer detect if the wrong thread is opened for a given status — clicking the \"new\" row (onboarding title) would still pass, because the fresh id is mapped to the drafted thread's title. The old test mapped distinct titles per status and thus actually discriminated. The inline comment acknowledges this (\"id 3 is never opened\") but doesn't justify collapsing fresh and drafted.",
+          "suggestion": "If the static mockup only ever renders one detail thread, restrict the state to what the page can actually show (e.g. only assert the drafted thread) rather than mapping two different status ids to one title, so a regression that opens the wrong row fails loudly.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "spec |",
+          "file": "integration-tests/fixtures/social-engagement-real/mockups/02-thread.html (third comment)",
+          "line": null,
+          "finding": "The spec says \"Layout, CSS and structure are unchanged\", but the comment nesting changed: the old markup was `comment → comment d1 → comment d2` (a nested reply chain); the new markup is `comment → comment d1 → comment` (flat with one indented reply). If the \"comments joined\" rule is genuinely a flat join, this is correct data-driven behavior, but it contradicts the \"structure unchanged\" claim and slightly changes rendered indentation/occupancy.",
+          "suggestion": "Either confirm the recorded data has no nested replies (and note the structure change in the run doc), or keep the nesting classes consistent with what the real backend renders for reply threads.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test |",
+          "file": "integration-tests/e2e-webui/tests/unit/real-variant.spec.ts",
+          "line": 136,
+          "finding": "The S02 state still declares `posted: 1, drafted: 1, fresh: 1` but supplies a title only for id 1. If the harness resolves titles for the other ids when verifying status labels, the missing entries will be `undefined`; if it doesn't, the posted/drafted counts are unverified. Either way the assertion strength is unclear.",
+          "suggestion": "Supply titles for every id the harness will read, or trim the state to the ids actually exercised.",
+          "source": "external-review"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-01T16:53:06.335044+00:00",
+      "disposition": "openai approve; glm medium: test ids 1 and 2 share one title - rejected-with-reason: static page 03 renders one detail thread, old page was inconsistent",
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] ## Findings\n\n- Category: test | Severity: medium\n  File: integration-tests/e2e-webui/tests/unit/real-variant.spec.ts:106 (titles map)\n  Finding: `titles: { 1: ..., 2: ..., 3: ... }` maps the fresh id (1) and the drafted id (2) to the *same* pricing title. The test can no longer detect if the wrong thread is opened for a given status — clicking the \"new\" row (onboarding title) would still pass, because the fresh id is mapped to the drafted thread's title. The old test mapped distinct titles per status and thus actually discriminated. The inline comment acknowledges this (\"id 3 is never opened\") but doesn't justify collapsing fresh and drafted.\n  Suggestion: If the static mockup only ever renders one detail thread, restrict the state to what the page can actually show (e.g. only assert the drafted thread) rather than mapping two different status ids to one title, so a regression that opens the wrong row fails loudly.\n\n- Category: spec | Severity: low\n  File: integration-tests/fixtures/social-engagement-real/mockups/02-thread.html (third comment)\n  Finding: The spec says \"Layout, CSS and structure are unchanged\", but the comment nesting changed: the old markup was `comment → comment d1 → comment d2` (a nested reply chain); the new markup is `comment → comment d1 → comment` (flat with one indented reply). If the \"comments joined\" rule is genuinely a flat join, this is correct data-driven behavior, but it contradicts the \"structure unchanged\" claim and slightly changes rendered indentation/occupancy.\n  Suggestion: Either confirm the recorded data has no nested replies (and note the structure change in the run doc), or keep the nesting classes consistent with what the real backend renders for reply threads.\n\n- Category: test | Severity: low\n  File: integration-tests/e2e-webui/tests/unit/real-variant.spec.ts:136\n  Finding: The S02 state still declares `posted: 1, drafted: 1, fresh: 1` but supplies a title only for id 1. If the harness resolves titles for the o […truncated]\n\n[openai] No concrete defects found. The diff consistently updates all five mockups’ list data, statuses and platform counts, supplies the specified detail text, and updates the test inputs and package hash.\n\nShip-as-is based on the supplied diff. Workspace access was blocked by policy, so I could not independently verify the hash, run the tests, or compare the text against run 14’s recordings.\n\nSHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "openai": "approve",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-01T16:47:46.956308+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "b1ed464413e4cb622bfc7dac7432d7da1a5ff0a0"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-01T16:53:06.602510+00:00",
+      "disposition": "small change",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-01T16:53:06.739628+00:00",
+      "disposition": "small change",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}

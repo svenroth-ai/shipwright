@@ -1,4 +1,4 @@
-// Operator inputs. Four variables, NO defaults: the spec refuses to start without the first three.
+// Operator inputs. Three are required (no defaults: the spec refuses to start without them), three are optional.
 // Each is read from the process environment first, then from an env file outside the repo.
 import fs from "node:fs";
 import os from "node:os";
@@ -9,7 +9,7 @@ export const REQUIRED = [
   "SHIPWRIGHT_E2E_WEBUI_DIR",
   "SHIPWRIGHT_E2E_MAX_MINUTES",
 ] as const;
-export const OPTIONAL = ["SHIPWRIGHT_E2E_WORKDIR", "SHIPWRIGHT_E2E_RESUME_RUN"] as const;
+export const OPTIONAL = ["SHIPWRIGHT_E2E_WORKDIR", "SHIPWRIGHT_E2E_RESUME_RUN", "SHIPWRIGHT_E2E_FIXTURE"] as const;
 
 export type Source = "process-env" | "env-file" | "unset";
 
@@ -20,6 +20,8 @@ export interface E2EConfig {
   workdir: string;
   /** Optional run folder (run-<id> under the workdir) of an earlier, stopped run to continue; null = a new run. */
   resumeRun: string | null;
+  /** Raw SHIPWRIGHT_E2E_FIXTURE (process env first, then the env file); "" = unset. Validated by activeFixture(), not here. */
+  fixture: string;
   /** Which source supplied each variable (never a value that could be a secret). */
   sources: Record<string, Source>;
   envFile: string;
@@ -99,6 +101,7 @@ export function loadConfig(
     webuiDir,
     maxMinutes: minutes,
     workdir,
+    fixture: values.SHIPWRIGHT_E2E_FIXTURE ?? "",
     resumeRun: values.SHIPWRIGHT_E2E_RESUME_RUN ? path.resolve(values.SHIPWRIGHT_E2E_RESUME_RUN) : null,
     sources,
     envFile,

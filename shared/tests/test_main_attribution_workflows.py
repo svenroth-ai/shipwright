@@ -195,8 +195,11 @@ def test_every_monitored_workflow_actually_runs_on_pushes_to_main():
 #: Named here rather than omitted, so adding a workflow forces a decision.
 #:
 #: windows-tests.yml (IT-9 Unit 5, iterate-2026-08-05-windows-ci-tests): also
-#: runs on pull_request, so a red result is visible pre-merge in the PR's own
-#: Checks tab — the detection mechanism this workflow relies on. Reconciling
+#: runs on pull_request when the PR touches what it tests (path-filtered, see
+#: test_windows_tests_pr_is_path_filtered_but_every_merge_still_runs), so a red
+#: result is visible pre-merge in the PR's own Checks tab — the detection
+#: mechanism this workflow relies on. A PR outside that filter is run on
+#: Windows only by the unfiltered push-to-main run, whose result is NOT watched. Reconciling
 #: which checks become branch-protection-required (and, by extension, which
 #: post-merge failures the main-health repair path should watch) is IT-9 Unit
 #: 3's (trg-a089c9f7) explicit remit; registering it in MONITORED_WORKFLOWS
@@ -216,3 +219,27 @@ def test_no_push_to_main_workflow_is_silently_left_out_of_the_policy():
             "nor listed as deliberately unmonitored — decide which, so a new "
             "gate cannot go red on `main` with nobody watching"
         )
+
+
+@pytest.mark.covers("FR-01.19/AC01")
+def test_windows_tests_pr_is_path_filtered_but_every_merge_still_runs():
+    """The Windows job is the slowest check (~30 min) and not a Required Check.
+
+    A PR that cannot change what it tests skips it, which is only safe while
+    the push-to-main trigger stays UNFILTERED — otherwise a Windows-only break
+    from a skipped PR would never be caught by anything.
+    """
+    triggers = _triggers(_load("windows-tests.yml"))
+    pr_paths = (triggers["pull_request"] or {}).get("paths") or []
+    assert "shared/**" in pr_paths, "a shared/ change must run the Windows tests"
+    assert "scripts/**" in pr_paths, "the bash/path-sensitive scripts are tested here"
+    assert ".github/workflows/windows-tests.yml" in pr_paths, (
+        "editing the workflow itself must exercise it before merge"
+    )
+    push = triggers["push"] or {}
+    assert push.get("branches") == ["main"]
+    assert "branches-ignore" not in push
+    assert "paths" not in push and "paths-ignore" not in push, (
+        "push-to-main must always run, or a path-filtered PR is never verified"
+    )
+    assert "workflow_dispatch" in triggers

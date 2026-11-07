@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-07-events-drop-files-s7-mixed-versions",
+  "date": "2026-11-07",
+  "section": "Iterate — feat: events layout sentinel",
+  "title": "Layout sentinel, evidence refusal and merge-base CI check for mixed plugin versions",
+  "context": "Teammates run different plugin generations against one repo; an unknown layout must not be written or stamped into release evidence, and a PR must not keep appending to the legacy log after the flip.",
+  "decision": "Add a stdlib sentinel at the single write choke point and in two evidence producers, a merge-base consumer CI check, explicit events_layout in init/adopt, and a conditional gitignore re-include.",
+  "consequences": "Nothing changes while the layout is legacy and no drops exist; an unknown value refuses writes, an absent key over live drops refuses legacy writes, an explicit legacy key is a deliberate rollback.",
+  "rationale": "Architecture review approve (GLM, OpenAI); write-side only keeps readers working for old writers; judging at the merge-base spares PRs in flight at the flip.",
+  "rejected": "Raising in events_layout() for every reader; doing nothing; unconditional refusal over drops (locks out a rollback that leaves unfoldable drops).",
+  "commit": "",
+  "architecture_impact": "data-flow",
+  "spec_ref": ""
+}

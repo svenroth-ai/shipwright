@@ -39,10 +39,9 @@ def _task(root: Path, ptk: str) -> dict:
 
 
 def _skip_events(root: Path) -> list[dict]:
-    path = root / "shipwright_events.jsonl"
-    if not path.exists():
-        return []
-    rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line]
+    paths = [root / "shipwright_events.jsonl", *sorted((root / "shipwright_events.d").glob("*.jsonl"))]
+    rows = [json.loads(line) for p in paths if p.is_file()
+            for line in p.read_text(encoding="utf-8").splitlines() if line]
     return [r for r in rows if r.get("type") == "phase_skipped"]
 
 

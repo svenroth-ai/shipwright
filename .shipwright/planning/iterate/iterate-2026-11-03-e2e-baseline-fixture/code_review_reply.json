@@ -1,0 +1,55 @@
+{
+ "stage": "code-review",
+ "verdict": "PASS",
+ "summary": "No high findings. Approval stamp writes only to the copy; fixture selection is additive.",
+ "review": [
+  {
+   "severity": "medium",
+   "category": "correctness",
+   "file": null,
+   "line": null,
+   "finding": "no error listener on the spawned companion (bad python path crashes the worker) - fixed",
+   "suggestion": ""
+  },
+  {
+   "severity": "medium",
+   "category": "correctness",
+   "file": null,
+   "line": null,
+   "finding": "forced-failure windows of the fake server not in try/finally - fixed",
+   "suggestion": ""
+  },
+  {
+   "severity": "medium",
+   "category": "correctness",
+   "file": null,
+   "line": null,
+   "finding": "nested tests/ folders scanned as app code by B30/B31 - fixed",
+   "suggestion": ""
+  },
+  {
+   "severity": "medium",
+   "category": "correctness",
+   "file": null,
+   "line": null,
+   "finding": "expired tour marker could not fail - fixed",
+   "suggestion": ""
+  },
+  {
+   "severity": "medium",
+   "category": "correctness",
+   "file": null,
+   "line": null,
+   "finding": "unguarded tour blamed on B44-B46 - fixed",
+   "suggestion": ""
+  },
+  {
+   "severity": "low",
+   "category": "correctness",
+   "file": null,
+   "line": null,
+   "finding": "secrecy scan reads only Authorization header; portInUse cleanup; ctx start outside try; front-matter slice; version check - the last two fixed, rest noted",
+   "suggestion": ""
+  }
+ ]
+}

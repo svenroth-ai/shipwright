@@ -222,7 +222,11 @@ def check_decision_drop_committed(
     """
     name = "decision-drop committed"
     dd = project_root / ".shipwright" / "agent_docs" / "decision-drops"
-    drops = _run_drop_files(dd, run_id)
+    from lib.doc_bullets import bullet_files_for_run
+    from lib.events_read import sanitize_key
+
+    # This run's bullet drops (conventions/architecture) ship the same way (S5).
+    drops = _run_drop_files(dd, run_id) + bullet_files_for_run(project_root, sanitize_key(run_id))
     if not drops:
         return CheckResult(
             name, True, f"no decision-drop for run_id={run_id} in the working "

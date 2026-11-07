@@ -44,6 +44,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 ORCHESTRATOR = REPO_ROOT / "plugins" / "shipwright-run" / "scripts" / "lib" / "orchestrator.py"
 sys.path.insert(0, str(REPO_ROOT / "shared" / "testkit"))
 import minimal_valid_project as mvp  # noqa: E402
+from event_log_probe import event_records  # noqa: E402
 
 CONFIG_NAME = "shipwright_run_config.json"
 PIPELINE_PHASES = ("project", "design", "plan", "build", "test", "changelog", "deploy")
@@ -62,10 +63,7 @@ def _cfg(project_root: Path) -> dict:
 
 
 def _events(project_root: Path) -> list[dict]:
-    path = project_root / "shipwright_events.jsonl"
-    if not path.exists():
-        return []
-    return [json.loads(ln) for ln in path.read_text("utf-8").splitlines() if ln.strip()]
+    return event_records(project_root)
 
 
 SPLITS = ("01-core", "02-ui")

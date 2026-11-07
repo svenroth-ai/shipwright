@@ -2,8 +2,9 @@
 # shipwright_events.jsonl and .shipwright/triage.jsonl are append-only JSONL logs
 # written concurrently by parallel iterates. `merge=union` is git's built-in
 # line-union driver: it keeps BOTH sides' appended lines automatically (no
-# per-clone `git config`; honored by GitHub's server-side PR merge too) instead
-# of emitting conflict markers. The churn resolver (shared/scripts/tools/
+# per-clone `git config`) instead of emitting conflict markers in a LOCAL merge.
+# GitHub's own mergeability check and merge button do NOT apply it, so two open
+# PRs appending at the same place can still show CONFLICTING there. The churn resolver (shared/scripts/tools/
 # resolve_churn_conflicts.py) remains the second-line authority that dedups +
 # validates the union'd log. SSoT: shared/scripts/lib/gitattributes_union.py.
 shipwright_events.jsonl merge=union
@@ -11,8 +12,8 @@ shipwright_events.jsonl merge=union
 # architecture.md + conventions.md are CURATED agent-docs (NOT regenerated churn):
 # parallel iterates each PREPEND a bullet to their `## …Updates` / `## Learnings`
 # sections, which collide at the same anchor. `merge=union` keeps both prepended
-# bullets (server-side too), so these curated docs stop cascading DIRTY / merging
-# stale. Caveat: union is line-based + silent — two iterates editing the SAME
+# bullets in a local merge (not on GitHub's server side), so a local merge of
+# these curated docs does not cascade DIRTY / merge stale. Caveat: union is line-based + silent — two iterates editing the SAME
 # non-append line would merge both silently instead of conflicting; in practice
 # ~all parallel edits are append-section prepends. Escalate to per-run drop-files
 # if that ever bites. See docs/hooks-and-pipeline.md.

@@ -1,0 +1,1 @@
+{"stage": "spec-compliance", "verdict": "PASS", "spec_citations": [], "summary": "All four acceptance criteria covered; recordings identical to run-14 originals (12 items, 4/4/4, 3 old), rule and template match summary.py/drafter.py, mockups equal rule output, pins updated; no plugin touched."}

@@ -1,0 +1,9 @@
+{
+  "data": {
+    "id": "synthRun0001",
+    "actId": "harvestapi~linkedin-post-search",
+    "status": "SUCCEEDED",
+    "defaultDatasetId": "synthDataset0001",
+    "usageTotalUsd": 0.018
+  }
+}

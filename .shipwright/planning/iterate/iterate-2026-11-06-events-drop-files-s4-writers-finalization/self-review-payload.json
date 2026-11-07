@@ -1,0 +1,10 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"One writer module, key precedence, drops-only run stamp and 16-hex ids, rotate-on-commit, F6 staging, absorb, F11 committed-check, F7b seal, event_amended, validators, docs; replay known set empty; KC4 test."},
+{"name":"Error Handling","verdict":"pass","note":"Unreadable own drops fail closed (event_log_not_readable); torn drops are never committed; failed git operations reset the index."},
+{"name":"Security Basics","verdict":"pass","note":"Keys sanitized and capped at 80; git called with argument lists and --; no shell interpolation."},
+{"name":"Test Quality","verdict":"pass","note":"Legacy bytes pinned; real subprocess KC4 and real ensure_current absorb tests; lock, ordering, LF and replay tests."},
+{"name":"Performance Basics","verdict":"pass","note":"Folder work only when the drops folder exists; legacy path takes the old code."},
+{"name":"Naming & Structure","verdict":"pass","note":"New modules under 300 lines; baselined files did not grow."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Producer (writers) and consumers (assembled reader, validator, F11 check, churn dedup, context index) exercised by real-producer replay and integration tests."},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"No skipped or xfail tests added."}
+]}

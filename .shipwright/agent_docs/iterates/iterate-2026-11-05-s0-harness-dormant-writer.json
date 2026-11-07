@@ -1,0 +1,77 @@
+{
+  "run_id": "iterate-2026-11-05-s0-harness-dormant-writer",
+  "date": "2026-11-05T15:44:02.189619Z",
+  "event_at": "2026-11-05T15:43:37.870068+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "prior_source": "keyword",
+  "branch": "iterate/campaign-events-drop-files--S0",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-11-05-s0-harness-dormant-writer",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "AC1: merge-tree without union conflicts on 3/3 pairs under legacy and is clean on 3/3 under drops, merged bytes equal each branch's drop",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "integration-tests/test_events_drops_harness.py::test_legacy_layout_conflicts_on_every_pair, ::test_drops_layout_is_clean_on_every_pair PASSED"
+      },
+      {
+        "behavior": "AC2: the plain env var without the test flag changes nothing; default legacy; config key read at runtime; precedence matrix",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_events_layout.py::test_plain_env_var_without_test_flag_changes_nothing, ::test_layout_precedence_matrix, ::test_config_key_read_at_runtime; integration-tests/test_events_drops_harness.py::test_plain_env_var_without_test_flag_stays_legacy PASSED"
+      },
+      {
+        "behavior": "legacy bytes, lock path and resolver unchanged by the wiring",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_events_layout.py::test_legacy_mode_bytes_are_exactly_todays, ::test_legacy_target_is_the_events_log_resolver PASSED; shared/tests/test_events_log_ssot.py PASSED"
+      },
+      {
+        "behavior": "drops writer: rotate-on-commit (HEAD and index), fail-safe probe, concurrent same-key writers readable exactly once",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_events_layout.py::test_drops_write_path_rotates_on_commit, ::test_staged_but_uncommitted_drop_is_closed, ::test_rotation_probe_failure_never_reuses_an_existing_file, ::test_drops_writes_survive_rotation_and_concurrency_exactly_once PASSED"
+      },
+      {
+        "behavior": "AC3: replay gate is fail-closed, ratcheted (merge-base subset, budget, strict-stale), canary-guarded, and ran green on the full tree",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_events_replay_gate.py (21 tests) PASSED; events_replay_gate.py full run: 285 files, 101 known, exit 0 with --strict-stale"
+      },
+      {
+        "behavior": "AC4: unsplit/split fixture pair equals the content-only splitter output and reads back in unsplit order",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_events_layout.py::test_committed_split_fixture_matches_the_splitter, ::test_split_log_reads_back_in_unsplit_order PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 6,
+      "tested": 6,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 4,
+      "covered_acs": 4
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run --with pytest --with pytest-mock pytest integration-tests/test_events_drops_harness.py -q",
+    "exit_code": 0,
+    "tests_run": 3,
+    "evidence_path": ".shipwright/runs/iterate-2026-11-05-s0-harness-dormant-writer/surface_verification.log",
+    "timestamp": "2026-11-05T15:34:35.715Z",
+    "attempts": 1,
+    "run_id": "iterate-2026-11-05-s0-harness-dormant-writer"
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": [
+    "touches_shared_infra",
+    "touches_ci_supplychain"
+  ]
+}

@@ -15,6 +15,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
+from scripts.tools.events_sentinel_gate import evidence_refusal
 from scripts.lib.audit_freshness import mark_audit_report_stale
 from scripts.lib.data_collector import collect_all
 from scripts.lib.rtm_generator import generate_file as generate_rtm
@@ -129,13 +130,9 @@ def _capture_source_dirty(project_root: Path, run_id: str | None) -> bool | None
     tracked event log before spawning us) this INHERITS that earlier answer instead
     of measuring a tree the parent has already dirtied.
 
-    The ``sys.path`` front-insert is **scoped to the import** and undone in the
-    ``finally``, unlike the emitter's permanent one: this runs at ``main()`` entry,
-    before every generator imports, and ``shared/scripts`` at front-precedence can
-    shadow this plugin's own ``lib`` package (the reason
-    ``collectors/_lib_loader.py`` exists). Leaving it in place would widen that
-    hazard across the whole regen for no gain — the module is in ``sys.modules``
-    after the first import either way (Stage-3 doubt D4).
+    The ``sys.path`` front-insert is scoped to the import and undone in the
+    ``finally``: ``shared/scripts`` at front-precedence can shadow this plugin's
+    own ``lib`` package (see ``collectors/_lib_loader.py``).
     """
     shared = str(Path(__file__).resolve().parents[4] / "shared" / "scripts")
     inserted = shared not in sys.path
@@ -184,9 +181,12 @@ def main() -> int:
 
     phase = args.phase
 
-    # BEFORE anything is written. An explicit --run-id beats the ambient env var:
-    # a caller that names the run knows better than a variable that may have been
-    # exported by an unrelated, longer-lived shell.
+    refusal = evidence_refusal(project_root, "update_compliance")  # S7 sentinel
+    if refusal:
+        print(json.dumps(refusal, indent=2))
+        return 1
+
+    # BEFORE anything is written. An explicit --run-id beats the ambient env var.
     run_id = (args.run_id if args.run_id is not None
               else os.environ.get("SHIPWRIGHT_RUN_ID") or None)
     source_dirty = _capture_source_dirty(project_root, run_id)

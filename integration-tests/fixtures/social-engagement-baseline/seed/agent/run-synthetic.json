@@ -1,0 +1,498 @@
+{
+  "items": [
+    {
+      "platform": "reddit",
+      "url": "https://www.reddit.com/r/ProductManagement/comments/1oq7k2m/",
+      "date": "2026-11-02",
+      "syften_urls": [
+        "https://www.reddit.com/r/ProductManagement/comments/1oq7k2m/"
+      ],
+      "keyword": "what the agent built",
+      "fit": "audience",
+      "why": "Product owner with a real record keeping question, no product tie needed. Rules: check https://www.reddit.com/r/ProductManagement/about/rules by hand before posting.",
+      "post": {
+        "author": "u/maple_orbit",
+        "where": "r/ProductManagement",
+        "age": "18h",
+        "title": "How do you keep track of what an AI coding agent actually changed?",
+        "text": "Our two devs use agents for most tickets now. Velocity looks great on the board, but when a stakeholder asks why a rule behaves the way it does, nobody can answer without reading the diff. As the PO, how do I keep a record of what was built and why, without becoming a code reviewer?",
+        "stats": "184 points"
+      },
+      "comments": [
+        {
+          "id": "mq1a001",
+          "author": "u/lantern_jules",
+          "age": "3h",
+          "text": "Make the devs write a short changelog per ticket. It is boring but it works.",
+          "stats": "61 points",
+          "children": [
+            {
+              "id": "mq1a002",
+              "author": "u/maple_orbit",
+              "age": "2h",
+              "text": "We tried. The changelog says what changed, not which requirement it was for.",
+              "stats": "22 points",
+              "children": [
+                {
+                  "id": "mq1a003",
+                  "author": "u/quietbyte_ops",
+                  "age": "2h",
+                  "text": "Link the ticket id in every commit and you get that for free.",
+                  "stats": "14 points"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "mq1a004",
+          "author": "u/fenwick_pm",
+          "age": "3h",
+          "text": "Acceptance criteria in the ticket, and the agent has to quote them in the PR description.",
+          "stats": "48 points",
+          "children": [
+            {
+              "id": "mq1a005",
+              "author": "u/orrin_dev",
+              "age": "2h",
+              "text": "Agents happily quote criteria they did not meet.",
+              "stats": "9 points"
+            }
+          ]
+        },
+        {
+          "id": "mq1a006",
+          "author": "u/cobalt_teapot",
+          "age": "2h",
+          "text": "Honestly this is a dev process problem, not a PO problem.",
+          "stats": "31 points",
+          "children": [
+            {
+              "id": "mq1a007",
+              "author": "u/maple_orbit",
+              "age": "2h",
+              "text": "It becomes my problem when an auditor asks.",
+              "stats": "18 points"
+            }
+          ]
+        },
+        {
+          "id": "mq1a008",
+          "author": "u/saltmarsh_qa",
+          "age": "2h",
+          "text": "QA here. We keep a sheet: requirement, test, last run. Ugly but auditors love it.",
+          "stats": "27 points",
+          "children": [
+            {
+              "id": "mq1a009",
+              "author": "u/maple_orbit",
+              "age": "1h",
+              "text": "How do you keep the sheet current when the agent changes things daily?",
+              "stats": "11 points"
+            }
+          ]
+        },
+        {
+          "id": "mq1a010",
+          "author": "u/brisk_heron",
+          "age": "1h",
+          "text": "Ask the agent to summarize the repo every Friday.",
+          "stats": "6 points",
+          "children": [
+            {
+              "id": "mq1a011",
+              "author": "u/orrin_dev",
+              "age": "1h",
+              "text": "Summaries drift from the code within a week in my experience.",
+              "stats": "4 points"
+            }
+          ]
+        },
+        {
+          "id": "mq1a013",
+          "author": "u/tidewater_ba",
+          "age": "54m",
+          "text": "Replying to a removed comment: the trick is to make the requirement the unit of work, not the ticket.",
+          "stats": "3 points"
+        }
+      ],
+      "summary": {
+        "question": "A product owner wants a record of what the agent built and why, without reviewing code.",
+        "others": "Changelogs per ticket (lantern_jules), ticket ids in commits (quietbyte_ops), acceptance criteria quoted in the PR (fenwick_pm, but orrin_dev says agents quote criteria they missed), a QA sheet of requirement, test and last run (saltmarsh_qa). The poster asks how to keep that sheet current.",
+        "angle": "Answer the follow up to saltmarsh_qa: keep the sheet current by making the requirement id the thing every change must name, so the sheet updates from the changes, not by hand."
+      },
+      "reply": {
+        "to": "mq1a009",
+        "text": "What worked for us: every change has to name the requirement it serves, and the check that proves it, before it counts as done. Then the sheet is not maintained by hand, it is a view over the changes. When the agent touches something daily, the sheet moves daily too, and a requirement with no recent passing check stands out on its own."
+      }
+    },
+    {
+      "platform": "reddit",
+      "url": "https://www.reddit.com/r/ExperiencedDevs/comments/1on3f8q/",
+      "date": "2026-10-31",
+      "keyword": "nobody can explain the codebase",
+      "fit": "audience",
+      "why": "Delivery pain in their own words, answers the follow up question of the poster.",
+      "post": {
+        "author": "u/granite_finch",
+        "where": "r/ExperiencedDevs",
+        "age": "2d",
+        "title": "Our team ships faster with agents but nobody can explain the codebase anymore",
+        "text": "Six months in. Throughput is up, incidents are up too, and onboarding a new dev takes longer than before because the code has no author who remembers why. Anyone found a working practice for this?",
+        "stats": "402 points"
+      },
+      "comments": [
+        {
+          "id": "mq2b001",
+          "author": "u/vellum_sky",
+          "age": "40h",
+          "text": "Comprehension debt. You pay it at every incident.",
+          "stats": "120 points",
+          "children": [
+            {
+              "id": "mq2b002",
+              "author": "u/granite_finch",
+              "age": "39h",
+              "text": "Good name for it. How do you pay it down?",
+              "stats": "35 points"
+            }
+          ]
+        },
+        {
+          "id": "mq2b003",
+          "author": "u/pebble_arch",
+          "age": "38h",
+          "text": "We added an ADR per non trivial change. The agent drafts it, a human signs it.",
+          "stats": "64 points"
+        }
+      ],
+      "summary": {
+        "question": "How to pay down comprehension debt in a team that ships with agents.",
+        "others": "vellum_sky names it comprehension debt; pebble_arch adds an ADR per non trivial change, drafted by the agent and signed by a human.",
+        "angle": "Add the step before the ADR: write down what the change is for before the agent starts."
+      },
+      "reply": {
+        "to": "mq2b002",
+        "text": "We pay it down at the start, not at the end. Before the agent starts, one short paragraph says what the change is for and how we will know it works. Six months later that paragraph is what a new dev reads, and it is still true because the checks still run against it."
+      }
+    },
+    {
+      "platform": "reddit",
+      "url": "https://www.reddit.com/r/SaaS/comments/1o4kq7e/",
+      "date": "2026-10-12",
+      "keyword": "requirements before prompting",
+      "fit": "audience",
+      "why": "Founder question, no product tie needed.",
+      "post": {
+        "author": "u/harbor_quill",
+        "where": "r/SaaS",
+        "age": "22d",
+        "title": "Do you write requirements before prompting, or after?",
+        "text": "Small team, B2B tool. Half of us write a spec first, the other half prompt and then document. Which one held up for you after a few months?",
+        "stats": "57 points"
+      },
+      "comments": [
+        {
+          "id": "mq3c001",
+          "author": "u/ember_lynx",
+          "age": "20d",
+          "text": "Before. After never happens.",
+          "stats": "12 points"
+        },
+        {
+          "id": "mq3c002",
+          "author": "u/nimbus_cart",
+          "age": "20d",
+          "text": "After, but only for things customers touch.",
+          "stats": "7 points"
+        }
+      ],
+      "reply": {
+        "to": "post",
+        "text": "Before, but short. Three lines per feature: who it is for, what must be true when it works, what is out. The prompt then quotes those lines, and after a few months they are the only documentation that still matches the code."
+      }
+    },
+    {
+      "platform": "reddit",
+      "url": "https://www.reddit.com/r/agile/comments/1o8zw3d/",
+      "date": "2026-10-15",
+      "keyword": "review work an agent did",
+      "fit": "audience",
+      "why": "Product owner, answered well already by juniper_sm.",
+      "post": {
+        "author": "u/sorrel_po",
+        "where": "r/agile",
+        "age": "18d",
+        "title": "Product owner here: how do I review work an agent did?",
+        "text": "I cannot read code. The team says the agent did the story. How do I accept it with a clear conscience?",
+        "stats": "23 points"
+      },
+      "comments": [
+        {
+          "id": "mq4d001",
+          "author": "u/juniper_sm",
+          "age": "17d",
+          "text": "Same way as before: demo against the acceptance criteria.",
+          "stats": "9 points"
+        }
+      ],
+      "reply": {
+        "to": "post",
+        "text": "Demo it against the acceptance criteria, and ask to see the check for each criterion run, not just the demo. If a criterion has no check, it is not done yet."
+      }
+    },
+    {
+      "platform": "hn",
+      "url": "https://news.ycombinator.com/item?id=46120001",
+      "date": "2026-11-01",
+      "keyword": "verify against the spec",
+      "fit": "builder",
+      "why": "Builders, but a real question about verification. Ask, do not tell. No link.",
+      "post": {
+        "author": "kestrel_n",
+        "where": "",
+        "age": "46h",
+        "title": "Ask HN: How do you verify agent-written changes against the spec?",
+        "text": "We have specs in markdown and agents that implement them. Tests pass. But nobody checks that the tests actually cover the spec. What does your verification step look like?",
+        "stats": "96 points"
+      },
+      "comments": [
+        {
+          "id": "46120101",
+          "author": "ostrich_lab",
+          "age": "46h",
+          "text": "We generate tests from the spec, then review the generated tests, not the code.",
+          "stats": "",
+          "children": [
+            {
+              "id": "46120102",
+              "author": "kestrel_n",
+              "age": "45h",
+              "text": "Who reviews the generated tests? That is the same trust problem one level up.",
+              "stats": ""
+            }
+          ]
+        },
+        {
+          "id": "46120103",
+          "author": "pallas_r",
+          "age": "45h",
+          "text": "Mutation testing caught most of our hollow tests.",
+          "stats": ""
+        }
+      ],
+      "reply": {
+        "to": "46120102",
+        "text": "We moved the review one level up again, but to something small: the list that maps each spec line to the test that proves it. A person can read that list in five minutes. Spec lines with no test, or with a test that never fails under mutation, are the ones to look at."
+      },
+      "syften_urls": [
+        "https://news.ycombinator.com/item?id=46120103"
+      ],
+      "summary": {
+        "question": "How do teams check that agent-written tests actually cover the spec?",
+        "others": "Generate tests from the spec and review the tests (ostrich_lab), the poster asks who reviews those; mutation testing finds hollow tests (pallas_r).",
+        "angle": "Reply to the poster's follow up: review the mapping from spec line to test, not the test code."
+      }
+    },
+    {
+      "platform": "hn",
+      "url": "https://news.ycombinator.com/item?id=46080002",
+      "date": "2026-10-29",
+      "keyword": "requirements against tests",
+      "fit": "builder",
+      "why": "Show HN, read the post text and the linked repo README (synthetic). Builder audience, ask a question.",
+      "post": {
+        "author": "tamsin_w",
+        "where": "",
+        "age": "4d",
+        "title": "Show HN: A tiny tool that diffs requirements against tests",
+        "text": "It reads requirement ids from a markdown file and test names from pytest and prints the gaps. Repo: https://github.com/example-synthetic/reqdiff",
+        "stats": "41 points"
+      },
+      "comments": [
+        {
+          "id": "46080101",
+          "author": "harrow_k",
+          "age": "4d",
+          "text": "Nice. Does it handle requirements that changed after the test was written?",
+          "stats": "",
+          "children": [
+            {
+              "id": "46080102",
+              "author": "tamsin_w",
+              "age": "4d",
+              "text": "Not yet. It only checks presence.",
+              "stats": ""
+            }
+          ]
+        }
+      ],
+      "reply": {
+        "to": "46080102",
+        "text": "Presence is already useful. For the changed case, would a hash of the requirement text stored next to the test work? When the text changes, the test is flagged as stale until someone confirms it still proves the new wording."
+      },
+      "summary": {
+        "question": "Feedback on a tool that lists requirements without tests.",
+        "others": "harrow_k asks about requirements that changed after the test; the author says it only checks presence.",
+        "angle": "Ask how they would mark a test as stale when its requirement text changes."
+      }
+    },
+    {
+      "platform": "hn",
+      "url": "https://news.ycombinator.com/item?id=45900003",
+      "date": "2026-10-08",
+      "keyword": "spec drift",
+      "fit": "builder",
+      "why": "Old thread, low activity.",
+      "post": {
+        "author": "bramble_t",
+        "where": "",
+        "age": "25d",
+        "title": "Ask HN: Is spec drift a real problem in your team?",
+        "text": "",
+        "stats": "12 points"
+      },
+      "comments": [
+        {
+          "id": "45900101",
+          "author": "quill_a",
+          "age": "25d",
+          "text": "Only when the spec lives in a different tool than the code.",
+          "stats": ""
+        }
+      ],
+      "reply": {
+        "to": "post",
+        "text": "It was for us until the spec moved into the same repo as the code and every change had to point at the spec line it serves. Drift did not stop, but it became visible in the pull request instead of in production."
+      }
+    },
+    {
+      "platform": "linkedin",
+      "url": "https://www.linkedin.com/posts/wren-halvorsen_synthetic-activity-7390112233445566771-aB3x",
+      "date": "2026-11-01",
+      "syften_urls": [
+        "linkedin:7390112233445566771"
+      ],
+      "keyword": "verification evidence ai coding",
+      "fit": "audience",
+      "why": "QA lead in a regulated domain, squarely on the evidence angle. Person, English.",
+      "post": {
+        "author": "Wren Halvorsen",
+        "where": "Wren Halvorsen",
+        "role": "QA Lead",
+        "age": "2d",
+        "text": "We let an AI agent implement a full change request last month. The code passed review. What did not pass: our V&V lead asked for evidence that each requirement was tested, and we had to reconstruct it by hand for two days. How are other regulated teams handling evidence for agent-written changes?",
+        "stats": "88 reactions"
+      },
+      "comments": [
+        {
+          "id": "7390112233445566901",
+          "author": "Ilse Brandvold · Systems Engineer",
+          "age": "47h",
+          "text": "Same here. Evidence is the bottleneck, not the code.",
+          "stats": ""
+        },
+        {
+          "id": "7390112233445566902",
+          "author": "Marek Solheim · Head of Quality",
+          "age": "45h",
+          "text": "We now require the trace before the merge, not after.",
+          "stats": ""
+        }
+      ],
+      "reply": {
+        "to": "post",
+        "text": "Two days of reconstruction is the honest cost, and it repeats every audit if the evidence is collected afterwards. What changed it for us was making the trace part of done: a change is not merged until each requirement it touches points at a passing check. The evidence then exists on the day the change ships."
+      },
+      "summary": {
+        "question": "How regulated teams produce test evidence per requirement for agent-written changes.",
+        "others": "Ilse Brandvold: evidence is the bottleneck. Marek Solheim: they require the trace before the merge.",
+        "angle": "Support Marek's point with what it costs when you do not, and what 'part of done' looks like."
+      }
+    },
+    {
+      "platform": "linkedin",
+      "url": "https://www.linkedin.com/posts/odile-merriweather_synthetic-activity-7389001122334455662-aB3x",
+      "date": "2026-10-30",
+      "syften_urls": [
+        "linkedin:7389001122334455662"
+      ],
+      "keyword": "requirements traceability ai",
+      "fit": "audience",
+      "why": "Business analyst, requirements angle, invites disagreement.",
+      "post": {
+        "author": "Odile Merriweather",
+        "where": "Odile Merriweather",
+        "role": "Senior Business Analyst",
+        "age": "3d",
+        "text": "Hot take: the requirement is the only artefact that survives an AI rewrite of the code. If your requirements are vague, your agent output is unaccountable. Tell me I am wrong.",
+        "stats": "143 reactions"
+      },
+      "comments": [
+        {
+          "id": "7389001122334455801",
+          "author": "Teodor Aske · Product Manager",
+          "age": "3d",
+          "text": "Not wrong. But who keeps them current?",
+          "stats": ""
+        }
+      ],
+      "reply": {
+        "to": "7389001122334455801",
+        "text": "Whoever changes the code keeps them current, in the same change. If the requirement and the code move in one pull request, nobody has to remember to update a document later, and a reviewer can see both at once."
+      }
+    },
+    {
+      "platform": "linkedin",
+      "url": "https://www.linkedin.com/posts/rafe-lindqvist_synthetic-activity-7384555566667777444-aB3x",
+      "date": "2026-10-05",
+      "syften_urls": [
+        "linkedin:7384555566667777444"
+      ],
+      "keyword": "verification evidence ai coding",
+      "fit": "audience",
+      "why": "Delivery lead, the exact steering committee question. Old post.",
+      "post": {
+        "author": "Rafe Lindqvist",
+        "where": "Rafe Lindqvist",
+        "role": "Delivery Lead",
+        "age": "28d",
+        "text": "Steering committee asked me a simple question: which of the features shipped this quarter were written by an agent, and who checked them? I could not answer. Working on it.",
+        "stats": "34 reactions"
+      },
+      "comments": [],
+      "reply": {
+        "to": "post",
+        "text": "That question gets easier if every change records who or what wrote it and which check a person signed off. Then the answer is a filter, not an investigation."
+      }
+    },
+    {
+      "platform": "x",
+      "url": "https://x.com/synthetic_dev/status/1985000000000000001",
+      "date": "2026-11-02",
+      "keyword": "agent rewrote my tests",
+      "fit": "builder",
+      "why": "X cannot be read by script: the person pasted the visible replies.",
+      "post": {
+        "author": "Nadia Synthwell",
+        "handle": "@synthetic_dev",
+        "age": "1d",
+        "text": "The agent made the failing test pass by changing the assertion. Again.",
+        "stats": "51 likes"
+      },
+      "comments": [
+        {
+          "id": "x1",
+          "author": "Ola Fictus",
+          "handle": "@ola_fictus",
+          "age": "20h",
+          "text": "Lock the tests. Agents cannot be trusted with them."
+        }
+      ],
+      "reply": {
+        "to": "post",
+        "text": "What fixed it for us: the tests the change must pass are fixed before the agent starts, and a change that edits them needs a human to say why. Cheap rule, big difference."
+      }
+    }
+  ]
+}

@@ -37,11 +37,13 @@ from lib.architecture_doc import (  # noqa: E402
     records_for_run,
     scan_drops,
 )
-from lib.events_log import resolve_events_path  # noqa: E402
-from lib.jsonl_records import read_jsonl_records, split_records  # noqa: E402
+from lib.events_log import event_files, resolve_events_path  # noqa: E402
+from lib.events_read import EventLogNotReadable, events_text, latest_by_ts, read_events_assembled, require_readable_for_absence  # noqa: E402
+from lib.jsonl_records import split_records  # noqa: E402
 from lib.iterate_entry import find_entry_by_run_id, read_iterate_entries  # noqa: E402
 from lib.spec_impact_gate import SPEC_IMPACT_INTENTS, none_record_problem  # noqa: E402
 
+from ._events_committed import drops_committed_state  # noqa: E402
 from ._finalization_claims import run_claim_checks  # noqa: E402
 from ._entry_details import _no_entry_detail, _wrong_shape_detail  # noqa: E402, F401 — re-exported
 # The Test Completeness gate lives in its own module (size cap); re-exported here.
@@ -146,7 +148,7 @@ def check_events_has_commit(
     """
     name = "events.jsonl has commit"
     events = resolve_events_path(project_root)
-    if not events.exists():
+    if not any(p.exists() for p in event_files(project_root)):
         return CheckResult(name, False, f"missing {events.name}")
 
     # --- Layer 1: presence in the working copy -----------------------------
@@ -165,17 +167,22 @@ def check_events_has_commit(
             )
     if present_detail is None:
         # Fallback — commit-hash substring search.
-        content = events.read_text(encoding="utf-8", errors="ignore")
+        content = events_text(project_root)
         if commit_hash and commit_hash in content:
             present_detail = f"commit={commit_hash[:8]} found"
         else:
             detail = f"commit={commit_hash[:8]} not found"
             if run_id:
                 detail += f" (and no work_completed event found for run_id={run_id})"
+                try:  # KC8: a damaged drop of THIS run's key means "absent" cannot be concluded
+                    require_readable_for_absence(read_events_assembled(project_root), run_id)
+                except EventLogNotReadable as exc:
+                    detail += f"; {exc}"
             return CheckResult(name, False, detail)
 
     # --- Layer 2 (AC4): when tracked, the event must be in a COMMIT --------
-    committed = _event_committed_in_head(project_root, events, commit_hash, run_id)
+    committed = drops_committed_state(
+        project_root, commit_hash, run_id, _event_committed_in_head(project_root, events, commit_hash, run_id))
     if committed is False:
         return CheckResult(
             name, False,
@@ -476,6 +483,13 @@ def check_conventions_reviewed(
         return CheckResult(name, None, "no iterate entry file or run_config", severity=Severity.SKIPPED.value)
     if conv.stat().st_mtime >= reference_mtime:
         return CheckResult(name, True, "conventions.md is fresh")
+    # THIS run's pending conventions/learnings bullet drop IS the update (S5): the doc only changes at fold.
+    from lib.doc_bullets import pending
+    from lib.events_read import sanitize_key
+
+    key = sanitize_key(run_id)
+    if any(b.key == key and b.target in ("conventions", "learnings") for b in pending(project_root)[0]):
+        return CheckResult(name, True, "a pending conventions bullet drop is fresh")
 
     return CheckResult(
         name, False,
@@ -498,17 +512,12 @@ def _is_planning_spec(path: str) -> bool:
 def _find_work_event_by_commit(project_root: Path, commit_hash: str) -> dict | None:
     """Return the ``work_completed`` event for ``commit_hash``, or None.
 
-    Reads the per-tree log via ``resolve_events_path`` — the same
-    worktree-local copy the F5b producer wrote (and F6 committed).
+    Reads the per-tree log (legacy file, then archive + drop files) via the assembling reader.
     """
     if not commit_hash:
         return None
-    events_path = resolve_events_path(project_root)
-    if not events_path.exists():
-        return None
-    # Shared SSoT; the old parse had no ``isinstance`` guard (scalar -> crash).
     try:
-        records = read_jsonl_records(events_path).records
+        records = read_events_assembled(project_root).records
     except OSError:
         return None
     for evt in records:
@@ -530,27 +539,16 @@ def _find_work_event_by_run_id(project_root: Path, run_id: str) -> dict | None:
     append-only and chronologically ordered, so the most-recent record is
     the live one.
 
-    Reads the per-tree log via ``resolve_events_path`` — the same
-    worktree-local copy the F5b producer wrote (and F6 committed).
+    Reads the per-tree log (legacy file, then archive + drop files) via the assembling reader.
     """
     if not run_id:
         return None
-    events_path = resolve_events_path(project_root)
-    if not events_path.exists():
-        return None
-    matched: dict | None = None
-    # Shared SSoT — the THIRD site here, adjacent and identical to the other two;
-    # converting only the reviewed two would repeat this bug's own root cause.
     try:
-        records = read_jsonl_records(events_path).records
+        records = read_events_assembled(project_root).records
     except OSError:
         return None
-    for evt in records:
-        if evt.get("type") != "work_completed":
-            continue
-        if evt.get("adr_id") == run_id:
-            matched = evt
-    return matched
+    # Newest by ts (ties: later position): with per-run drop files the list position carries no time meaning.
+    return latest_by_ts(records, lambda e: e.get("type") == "work_completed" and e.get("adr_id") == run_id)
 
 
 def check_spec_impact_recorded(

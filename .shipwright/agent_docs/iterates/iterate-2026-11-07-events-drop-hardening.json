@@ -1,0 +1,85 @@
+{
+  "run_id": "iterate-2026-11-07-events-drop-hardening",
+  "date": "2026-11-07T07:22:59.134343Z",
+  "event_at": "2026-11-07T01:31:37.886657+00:00",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/events-drop-hardening",
+  "spec": "docs/hooks-and-pipeline.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-11-07-events-drop-hardening",
+  "prior_source": "history",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "fold, full fold and quarantine report a file that cannot be deleted, keep the rollback layout, and a re-run with --stage commits a consistent rollback",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_events_drop_hardening_fold.py (4 tests) PASSED",
+        "category": "integration"
+      },
+      {
+        "behavior": "F11 integrity check passes the run's keys, accepts same-worktree drops, skips ownership on unfinished stacked/single-branch campaigns (state found in the campaign worktree), and fails when git cannot answer",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_events_drop_hardening.py::test_f11_* PASSED"
+      },
+      {
+        "behavior": "layout CI check accepts the rollback that leaves only unchanged unreadable base drops and rejects readable, added or corrupted leftovers",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_events_drop_hardening.py::test_rollback_* PASSED"
+      },
+      {
+        "behavior": "layout CI check rejects a legacy append that arrives through a side branch merged into a post-flip PR",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_events_drop_hardening.py::test_side_branch_from_before_the_flip_* PASSED"
+      },
+      {
+        "behavior": "adopt keeps an explicit null events_layout",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_events_drop_hardening.py::test_adopt_keeps_an_explicit_null_events_layout PASSED"
+      },
+      {
+        "behavior": "F11 committed-check resolves HEAD:./path in a repo subdirectory",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_events_drop_hardening.py::test_committed_check_* PASSED"
+      },
+      {
+        "behavior": "release skill stages architecture.md/conventions.md only when present (snippet executed in bash for none/one/both)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_events_drop_hardening.py::test_release_skill_* PASSED"
+      },
+      {
+        "behavior": "Linux runner timing and Windows file-lock timing under a real second process",
+        "disposition": "untestable",
+        "reason_code": "requires-physical-device",
+        "reason": "a real reader holding a file open is simulated by a PermissionError injected into Path.unlink"
+      }
+    ],
+    "counts": {
+      "testable": 7,
+      "tested": 7,
+      "untestable": 1,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 7,
+      "covered_acs": 7
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run --extra dev pytest shared/tests/test_events_drop_hardening.py shared/tests/test_events_drop_hardening_fold.py -q -p no:cacheprovider",
+    "exit_code": 0,
+    "tests_run": 23,
+    "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\events-drop-hardening\\.shipwright\\runs\\iterate-2026-11-07-events-drop-hardening\\surface_verification.log",
+    "timestamp": "2026-11-07T07:22:33.094Z",
+    "attempts": 1
+  },
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": [
+    "touches_shared_infra"
+  ]
+}

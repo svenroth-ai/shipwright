@@ -261,3 +261,24 @@ def test_an_unimportable_gate_collector_degrades_to_unverifiable(tmp_path, monke
     assert [c.label for c in history.changes] == ["run-a"], (
         "the query still answers from the log; only existence is unverifiable"
     )
+
+
+@pytest.mark.covers("FR-01.11")
+def test_an_unreadable_drop_is_not_read_as_nothing_touched_this(tmp_path, monkeypatch):
+    import lib.events_read as er
+    from lib._fr_history_events import EventLogUnreadable
+
+    root = project(tmp_path, [work(affected_frs=["FR-01.01"], adr_id="run-a")])
+    drop = root / "shipwright_events.d" / "run-b--aaaaaaaa--00000001.jsonl"
+    drop.parent.mkdir()
+    drop.write_text('{"id": "x"}\n', encoding="utf-8")
+    real = er.read_jsonl_records
+
+    def locked(path, **kw):
+        if "shipwright_events.d" in str(path):
+            raise PermissionError("locked")
+        return real(path, **kw)
+
+    monkeypatch.setattr(er, "read_jsonl_records", locked)
+    with pytest.raises(EventLogUnreadable):
+        change_history_for_fr(root, "FR-01.01")

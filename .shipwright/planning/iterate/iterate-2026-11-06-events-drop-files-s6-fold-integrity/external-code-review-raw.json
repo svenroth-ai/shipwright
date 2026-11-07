@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: bug\n- Severity: high\n- File: shared/scripts/tools/fold_events.py:38\u201343\n- Finding: `full --stage` never stages `shipwright_events.jsonl`, although full fold appends the recovered events there and deletes their source files. Committing the staged result can therefore remove the only committed copies of those events. Ordinary `fold --stage` also stages the sync config despite not changing it, potentially including unrelated edits.\n- Suggestion: Have each operation return exactly the paths it changed. Include the legacy log for full fold and include the config only when the operation writes it.\n\n- Category: bug\n- Severity: high\n- File: shared/scripts/lib/events_fold.py:207\u2013211\n- Finding: Quarantine uses the bytes captured during planning without rechecking the source under the lock. If a writer adds recoverable records between planning and application, quarantine copies the stale corrupt bytes and deletes the updated source, losing those records.\n- Suggestion: Before writing or deleting anything, re-read every selected source under the events lock and refuse the operation if any bytes differ from the plan.\n\n- Category: security\n- Severity: medium\n- File: shared/scripts/tools/verifiers/events_integrity_check.py:39\u201341\n- Finding: The F11 prefilter uses case-sensitive folder pathspecs, so a change containing only `Shipwright_Events.D/...` is skipped before the integrity library can reject it. This bypasses the case-variant protection on case-insensitive checkouts.\n- Suggestion: Remove the prefilter or apply the same whole-tree, case-insensitive folder filtering used by `_entries`. Add a test that exercises the F11 wrapper with only a case-variant path.\n\n- Category: bug\n- Severity: medium\n- File: shared/scripts/lib/events_fold.py:157\u2013159\n- Finding: Emergency rollback returns before resetting `events_layout` when no drops are selected. A repository with only archived events, or only corrupt drops, can remain configured for drops after a supposedly successful emergency rollback.\n- Suggestion: Reset the layout under the lock for emergency mode even when there are no eligible drops. Test both archive-only and corrupt-only states.\n\n- Category: bug\n- Severity: medium\n- File: shared/scripts/lib/events_fold.py:134, 162\n- Finding: Conflict detection happens during planning, outside the events lock. A writer can subsequently append a different event with the same ID to another file; application only rechecks selected files and proceeds despite the newly introduced conflict.\n- Suggestion: Repeat the whole-log conflict scan after acquiring the lock and validating the selected files, before publishing the archive.\n\nOverall assessment: ship-with-fixes. The implementation covers the main fold and integrity rules, but the staging omission and quarantine race can lose committed or newly written events.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "### Findings\n\n- **Category: bug** \u2014 **Severity: medium**\n  **File:** `shared/scripts/tools/fold_events.py` (`_stage_paths`)\n  **Finding:** `_stage_paths` adds `shipwright_sync_config.json` (and `.keep`, which is fine) for *every* status starting with `\"folded\"` \u2014 including plain `fold`, which never writes the config. If the working tree carries unrelated, uncommitted edits to `shipwright_sync_config.json` (a tracked file in real repos), `--stage` sweeps them into the fold commit, violating the stated contract \"stages exactly the paths the tool touched\" and potentially committing someone else's half-finished config change.\n  **Suggestion:** Include `shipwright_sync_config.json` only for `emergency` and `full` (the modes that call `set_layout`); key the condition on `mode`/status pair rather than the `\"folded\"` prefix.\n\n- **Category: bug** \u2014 **Severity: low**\n  **File:** `shared/scripts/tools/verifiers/events_integrity_check.py` (`check_events_integrity`)\n  **Finding:** The `run_id` parameter is accepted and never used; `own_keys` is never passed to `check_integrity`, so the `foreign_key` rule is dead code along the F11 path. The branch knows its own run id but a PR adding a drop under a key the change doesn't own passes F11 silently (only the stamp-vs-key forgery is caught \u2014 the doc explicitly notes this gap, but F11 had the id in hand and dropped it).\n  **Suggestion:** Pass `own_keys=(run_id,)` (or a derived key) when a single-run mapping is valid, or document deliberately why F11 cannot derive the key; at minimum the unused parameter is misleading.\n\n- **Category: edge-case** \u2014 **Severity: low**\n  **File:** `shared/scripts/lib/events_integrity.py` (`added_quarantine` construction)\n  **Finding:** `added_quarantine` is a dict keyed by `new_sha`; two quarantine adds sharing one blob collapse to one entry, and only the surviving name's deletion is recognized as a legal quarantine twin \u2014 the other delete is reported as `deleted_existing` even though it is byte-identical to its twin. (Two different runs whose junk files happen to be byte-identical is rare but possible, e.g. both `\"not json\\n\"`.)\n  **Suggestion:** Key by `new_sha` \u2192 list of entries, or by `(new_sha, name)`.\n\n- **Category: edge-case** \u2014 **Severity: low**\n  **File:** `shared/scripts/lib/events_fold.py` (`plan_quarantine`)\n  **Finding:** `path.read_bytes()` is called without OSError handling; an unreadable (permission-denied) drop file makes the whole quarantine CLI exit 2 instead of skipping/reporting the file, unlike `plan_fold` which catches `OSError` per file.\n  **Suggestion:** Wrap the read and skip with a reported reason, mirroring `plan_fold`.\n\n### Notes on the rest\n\n- KC6 is well covered: modify/delete of a merge-base file, traversal/malformed names, symlinks, forged run-id (both the append-to-existing and the new-file-stamp cases), archive injection, quarantine-twin tampering, CRLF checkouts, case-variant folders \u2014 the integrity tests exercise real git state and assert the specific violation code, so a broken implementation would fail them, not just \"call the function\".\n- The fold-racing-PR acceptance criterion is tested end-to-end with a bare origin, two clones, real `fold_events.py`, real checker, and `git merge-tree` \u2014 the strongest kind of test for that AC.\n- The reader-ordering change (`event_files`) plus the vanished-file retry in `read_events_assembled` look correct: the retry re-reads to a consistent state and preserves `unreadable` so absence gates fail closed; existing callers get an extra retry pass but the returned shape is unchanged.\n- The documented blob-read via `cat-file` (not `git show`) and `same_bytes` CRLF normalization are consistent between the fold tool and the checker.\n\nOverall: ship-with-fixes \u2014 the implementation is solid and the tests are genuinely behavioral, but the `--stage` contract violation (staging an untouched config file) should be fixed before this lands.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-11-06-events-drop-files-s6-fold-integrity",
+    "at": "2026-11-06T20:58:19.945828+00:00"
+  },
+  "verdicts": {
+    "openai": "revise",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

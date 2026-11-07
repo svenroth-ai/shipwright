@@ -1,0 +1,80 @@
+{
+  "run_id": "iterate-2026-11-01-e2e-s05-shipped-recorded",
+  "date": "2026-11-01T19:34:45.590349Z",
+  "event_at": "2026-11-01T18:01:25.407525+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/e2e-s05-shipped-recorded",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-11-01-e2e-s05-shipped-recorded",
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": [],
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "byte-identical shipped recordings with nothing added pass S05",
+        "disposition": "tested",
+        "evidence": "shipped-recorded.spec.ts identical passes PASSED"
+      },
+      {
+        "behavior": "a changed byte fails S05 and names the file",
+        "disposition": "tested",
+        "evidence": "shipped-recorded.spec.ts changed byte PASSED"
+      },
+      {
+        "behavior": "a missing shipped file fails S05 and names the file",
+        "disposition": "tested",
+        "evidence": "shipped-recorded.spec.ts missing file PASSED"
+      },
+      {
+        "behavior": "an extra file (also in a subfolder) fails S05 and names the file",
+        "disposition": "tested",
+        "evidence": "shipped-recorded.spec.ts extra file PASSED"
+      },
+      {
+        "behavior": "an extra item inside a shipped file fails S05 with item counts",
+        "disposition": "tested",
+        "evidence": "shipped-recorded.spec.ts extra item PASSED"
+      },
+      {
+        "behavior": "a line-endings-only difference fails with line endings only evidence",
+        "disposition": "tested",
+        "evidence": "shipped-recorded.spec.ts line endings PASSED"
+      },
+      {
+        "behavior": "an empty reference folder fails closed",
+        "disposition": "tested",
+        "evidence": "shipped-recorded.spec.ts no-such-dir PASSED"
+      },
+      {
+        "behavior": "answer key S05 line and harness reference stay in sync",
+        "disposition": "tested",
+        "evidence": "test_e2e_real_fixture.py::test_s05_compares_seed_recorded_with_the_shipped_files_and_the_key_says_so PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 8,
+      "tested": 8,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 8,
+      "covered_acs": 8
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "node integration-tests/e2e-webui/node_modules/@playwright/test/cli.js test --config integration-tests/e2e-webui/playwright.config.ts --project=unit",
+    "exit_code": 0,
+    "tests_run": 79,
+    "evidence_path": ".shipwright/runs/iterate-2026-11-01-e2e-s05-shipped-recorded/surface_verification.log",
+    "timestamp": "2026-11-01T19:34:17.538Z"
+  }
+}

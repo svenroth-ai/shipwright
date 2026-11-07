@@ -73,6 +73,7 @@ from _real_producer_fixtures import (  # noqa: E402
     assert_seed_is_sound,
     hermetic_gh_env,
     is_ordered_subsequence,
+    logical_left_alone, logical_snapshot,
     read_lines,
     seed_project,
 )
@@ -81,7 +82,6 @@ from lib.compliance_refresh import (  # noqa: E402
     REFRESH_SET, SUCCESS_OUTCOMES, TREE_DERIVED,
 )
 from tools import compliance_refresh_produce as produce_mod  # noqa: E402
-from tools.compliance_input_state import PRODUCER_STATE, snapshot  # noqa: E402
 
 
 @pytest.fixture(scope="module")
@@ -102,7 +102,7 @@ def real_run(tmp_path_factory) -> SimpleNamespace:
         rewrite is observable: after the producer returns, before ``converge``
         rewinds them at the top of the next pass."""
         outcomes = produce_mod.regenerate(*args, **kwargs)
-        per_pass.append(snapshot(root, PRODUCER_STATE))
+        per_pass.append(logical_snapshot(root))
         return outcomes
 
     # `MonkeyPatch.context()`, not the `monkeypatch` fixture, which is
@@ -111,7 +111,7 @@ def real_run(tmp_path_factory) -> SimpleNamespace:
     with pytest.MonkeyPatch.context() as mp:
         hermetic_gh_env(mp, tmp_path_factory.mktemp("gh_config"))
         assert_seed_is_sound(root)
-        inputs_before = snapshot(root, PRODUCER_STATE)
+        inputs_before = logical_snapshot(root)
         started = time.monotonic()
         reached, passes, outcomes = produce_mod.converge(
             root, RUN, regenerate=recording)
@@ -120,11 +120,11 @@ def real_run(tmp_path_factory) -> SimpleNamespace:
     return SimpleNamespace(
         root=root, reached=reached, passes=passes, outcomes=outcomes,
         elapsed=elapsed, per_pass=per_pass,
-        left_alone=list(getattr(produce_mod.converge, "left_alone", [])),
+        left_alone=logical_left_alone(getattr(produce_mod.converge, "left_alone", [])),
         docs_before=docs_before,
         docs_after={rel: (root / rel).read_bytes() if (root / rel).is_file() else None
                     for rel in sorted(REFRESH_SET)},
-        inputs_before=inputs_before, inputs_after=snapshot(root, PRODUCER_STATE),
+        inputs_before=inputs_before, inputs_after=logical_snapshot(root),
     )
 
 

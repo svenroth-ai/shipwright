@@ -1,0 +1,6 @@
+{
+  "budget_note": "budget_seconds was measured on Windows (--jobs 3); CI runs ubuntu with --jobs 3 and needs confirming on the first run. It may be raised only with a non-empty budget_reason.",
+  "budget_seconds": 1306,
+  "known": {},
+  "schema": 1
+}

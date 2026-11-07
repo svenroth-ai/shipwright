@@ -63,7 +63,7 @@ EXIT_ZERO_TESTS = 2
 EXIT_RUNNER_FAILED = 3
 EXIT_NONE_WITHOUT_JUSTIFICATION = 4
 
-VALID_SURFACES = ("web", "cli", "api", "none")
+VALID_SURFACES = ("web", "cli", "api", "none", "native")
 DEFAULT_RETRY_CAP = 3
 
 # Matches ANSI CSI escape sequences (SGR colour, cursor moves). pytest and
@@ -88,10 +88,10 @@ def parse_tests_run(stdout: str, surface: str) -> int:
 
     Surface-specific heuristics — order matters within each block:
 
-    - **cli (pytest)**: ``"N passed"``, ``"N failed"`` in the trailing
-      summary line (``=== 5 passed in 0.32s ===``). Sum passed + failed.
-    - **web (playwright)**: ``"N passed"``, ``"N failed"`` in the
-      Playwright reporter's final line (same shape as pytest).
+    - **cli (pytest) / web (playwright)**: ``"N passed"``, ``"N failed"`` in the
+      trailing summary line (``=== 5 passed in 0.32s ===``). Sum passed + failed.
+    - **native (Jest)**: the same, but only on the ``Tests:`` line; ``Test Suites:``
+      and ``Snapshots:`` count other units.
     - **api**: number of non-empty lines in stdout (caller is expected
       to print one line per assertion); tests can override with
       ``--tests-run`` for full determinism.
@@ -106,7 +106,9 @@ def parse_tests_run(stdout: str, surface: str) -> int:
     # bytes destroy the `\b` word boundary before the digit. See ADR-048.
     stdout = _ANSI_RE.sub("", stdout)
 
-    if surface in ("cli", "web"):
+    if surface == "native":
+        stdout = "\n".join(ln for ln in stdout.splitlines() if ln.lstrip().startswith("Tests:"))
+    if surface in ("cli", "web", "native"):
         passed = 0
         failed = 0
         # Match e.g. "5 passed", "1 failed" — anchor on whole-word number to
@@ -405,7 +407,7 @@ def main(argv: list[str] | None = None) -> int:
         "--surface",
         required=True,
         choices=VALID_SURFACES,
-        help="Behavior surface: web (Playwright) | cli (pytest/CLI) | api (HTTP) | none",
+        help="Behavior surface: web (Playwright) | native (Jest) | cli (pytest/CLI) | api (HTTP) | none",
     )
     parser.add_argument("--runner", default=None,
                         help="Shell command to execute (required unless --surface=none).")

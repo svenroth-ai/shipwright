@@ -39,6 +39,16 @@ reason mockups exist.
 The `spec-reviewer` enforces the same rule from the other side: it returns
 REJECT with `kind: "contradiction"` regardless of which side the code took.
 
+**Recorded `Design decision:` = resolved (autonomous runs).** Plan resolves
+contradictions itself when a brief package governs the run or autonomy is
+`autonomous`/`unattended`: the approved screen wins over section text, an explicit brief
+override wins over the screen, and the section carries
+`Design decision: <what> -> <winner>, <reason>` (also in the decision log). Build
+implements the recorded winner and does NOT stop or ask. Build stops only on a
+`Design contradiction:` line with no covering decision (typically marked
+`rule cannot decide`) or on a difference no line covers. Record the outcome at Step 10b
+with `--contradiction "design decision recorded in plan: <what> -> <winner>"`.
+
 ---
 
 ## Step 10b (build SKILL.md) / Step 15a (section-builder): declare the impact
@@ -142,3 +152,29 @@ The carve-out is stated wherever the scope rule is stated — this file,
 (criterion 3), and `agents/section-builder.md` (Step 10 item 1). A carve-out
 present in one reviewer and absent in another is worse than none: it makes the
 outcome depend on which reviewer happened to run.
+
+**Size target vs required behaviour (autonomous runs).** Only a section carrying the line `Size decision: split allowed (soft target)` (the section-writer adds it in an autonomous run, never in an interactive one) gets this rule; the reviewer and the builder both read the section, so the marker is the one signal. `section-builder.md` needs no copy of it: the rule only widens what the reviewer passes, and that file is at its bloat cap. A section's "keep it under ~N lines" is then a soft target; the required behaviour and the
+300-line file guideline outrank it. When the behaviour does not fit, split it into further modules inside the section's scope (each within the guideline,
+declared as attributed extras at Step 10b) and log the decision; never cut required behaviour or raise a limit to get past the spec-reviewer
+(its size-target carve-out passes the split). Ask only when no split is possible. Interactive runs behave as before.
+
+**Explicit brief value and hard requirements (autonomous runs).** Same scope as above (a brief
+package, or autonomy `autonomous`/`unattended`); interactive runs behave as before. Two more
+conflicts are settled by rule, not put to a person (e2e run 22 asked both):
+
+- *An explicit brief value* (the brief's own words, e.g. "the cap is shown") wins over plan text
+  and over screens that do not show it. "Shown" is visible without hovering, not a tooltip.
+  Implement the brief value and run `record_autonomous_decision.py --kind brief-wins --what ...
+  --brief-quote "<the brief's words>"` (the quote must occur in the package's `brief.md`, else
+  exit 1 = ask). It logs the ADR and adds a `KD-NN` entry to `.shipwright/designs/known-differences.md`.
+  A Plan `Design decision: <what> -> brief, "<quote>"` is recorded the same way before you implement
+  it (it re-checks the quote; exit 1 = no brief value, stop and ask; `already_recorded` = done).
+- *Two stated constraints that cannot both hold* (a width band where "add no height" and "show the
+  mode and count" collide): keep the hard requirement (no layout shift, no height change, no
+  horizontal scroll, nothing moves) and let the visible extra give way (a short form, hide what
+  does not fit). Measure the result on the built page, then run `--kind hard-constraint --what ...
+  --keep ... --yields ... --measurements "<widths in px and what shows>"` (exit 1 without a
+  `NNN px` measurement). Only when no ranking is possible (both hard, or both extras) ask.
+
+The spec-reviewer applies the same two rules (its item 6). `section-builder.md` carries no copy,
+as with the size-target rule above.

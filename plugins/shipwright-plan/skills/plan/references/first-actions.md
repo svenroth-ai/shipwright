@@ -141,8 +141,12 @@ The plugin_root is the directory two levels up from `scripts/checks/`.
 uv run --project {plugin_root} {plugin_root}/scripts/checks/setup-planning-session.py \
   --file "{spec_file_path}" \
   --plugin-root "{plugin_root}" \
-  --session-id "{SHIPWRIGHT_SESSION_ID}"
+  --session-id "{SHIPWRIGHT_SESSION_ID}" \
+  --project-root "$(pwd)"
 ```
+
+It also records the boundary baseline (`boundary_baseline` in the output): what earlier
+phases left uncommitted, so the Step 9 boundary gate judges only this session's changes.
 
 Parse the JSON output. Check for:
 

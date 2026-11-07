@@ -1,0 +1,85 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-03-phase-quality-session-id-skip",
+    "date": "2026-11-03",
+    "unit": {
+      "status": "passed",
+      "passed": 536,
+      "skipped": 2,
+      "total": 538
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run --extra dev pytest shared/tests/test_w3_session_id_skip.py shared/tests/test_w3_source_state.py shared/tests/test_workflow_checks.py shared/tests/test_workflow_w2_run_id_guard.py -q",
+      "exit_code": 0,
+      "tests_run": 71,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\phase-quality-session-id-skip\\.shipwright\\runs\\iterate-2026-11-03-phase-quality-session-id-skip\\surface_verification.log",
+      "timestamp": "2026-11-03T19:25:47.194Z",
+      "attempts": 1
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "W3 SKIPs (reason_code unresolvable_run_id) when the audited id is a session UUID (any case) or 'unknown' with no iterate_history entry and no matching work_completed event",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_w3_session_id_skip.py::TestW3SessionIdFallback::test_session_shaped_id_skips_even_though_other_runs_completed (4 params) PASSED"
+        },
+        {
+          "behavior": "a session id that has its own work_completed event is still audited normally",
+          "disposition": "tested",
+          "evidence": "test_w3_session_id_skip.py::test_session_id_with_its_own_completion_event_is_still_audited PASSED"
+        },
+        {
+          "behavior": "stale test-evidence for a real run (Source-State run=<old> vs latest work_completed run=<new>) still FAILs",
+          "disposition": "tested",
+          "evidence": "test_w3_session_id_skip.py::test_stale_evidence_for_a_real_run_still_fails PASSED"
+        },
+        {
+          "behavior": "a real-looking run id with no completion event still FAILs; empty run id keeps matching every completion",
+          "disposition": "tested",
+          "evidence": "test_w3_session_id_skip.py::test_real_run_without_completion_event_still_fails, ::test_empty_run_id_keeps_matching_every_completion + test_workflow_checks.py::test_w3_fails_without_work_event PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 4,
+        "tested": 4,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 4,
+        "covered_acs": 4
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-24-r5b-merge-lane",
+    "commit": "032d1ebbf0ef9c99eb98f240c8f1110e981a32a5",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

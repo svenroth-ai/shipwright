@@ -165,7 +165,7 @@ git diff HEAD > "$(uv run "{shared_root}/scripts/tools/review_scratch.py" resolv
 
 **If findings exist:**
 
-**Autonomous mode** (`autonomy` is `autonomous` or `unattended` in `shipwright_run_config.json`):
+**Autonomous mode** (a `brief_package` in `shipwright_run_config.json`, or `autonomy` is `autonomous` or `unattended`):
 Fix all findings immediately — no AskUserQuestion. For each finding:
 
 1. Apply the suggested fix

@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: spec\n- Severity: medium\n- File: integration-tests/e2e-webui/src/baseline/tour-baseline.ts:23\n- Finding: `list-thread` now matches without case, but still never selects a platform or opens a thread. AC5 explicitly requires selecting the right platform. If the selected platform has no Open threads, the recipe reports an unreached state even when another platform has suitable threads.\n- Suggestion: Find an eligible Open thread in the fixture items and explicitly select its platform and visible list row before checking the summary marker.\n\n- Category: spec\n- Severity: medium\n- File: integration-tests/e2e-webui/src/baseline/tour-baseline.ts:48\n- Finding: The `expired` recipe selects the platform, but its title comparison still uses case-sensitive `.includes()`. This leaves AC5 partially implemented: a title displayed through uppercase or lowercase `text-transform` can incorrectly produce \u201cSTATE NOT REACHED.\u201d\n- Suggestion: Normalize both the rendered text and expected title to the same case before comparing.\n\nOverall assessment: ship-with-fixes. The diff addresses the reported harness failures, but the tour recipes still miss two explicit requirements.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "- Category: spec\n- Severity: medium\n- File: integration-tests/e2e-webui/src/baseline/checks-board.ts:155 (commentCount)\n- Finding: AC 1 says \"comment-count text counts visible elements only\", but only the second half of the disjunction was fixed. `leafCount(b.page, re) >= 2` still counts hidden elements, so if the phone picker's hidden `<option>`s repeat \"N comments\" text (exactly the bug class this iterate fixes), the check passes via `leafCount` even though neither visible place shows the count \u2014 a false pass the harness was supposed to eliminate.\n- Suggestion: Apply the visible filter to the `leafCount` side too (e.g. pass a visible-only variant of the leaf counter, or drop the `leafCount` half and count with `visibleText` alone), or make the assertion require both the row and the header to be visible matches.\n\n- Category: edge-case\n- Severity: low\n- File: integration-tests/e2e-webui/src/baseline/checks-static.ts:22-24 (checkStoreOnly)\n- Finding: The mandated-text carve-out is applied to *every* file's code text, so any file that happens to contain the sentence \"this lesson is already in lessons.md\" gets that occurrence removed before the FILE_NAME scan. If a real file access elsewhere is documented in a comment that quotes the full sentence, the `lessons.md` mention inside it is also masked. The unit test only probes the sentence alone, not a masked access sharing a line with it.\n- Suggestion: Narrow the carve-out (e.g. only strip occurrences that are not part of a `FILE_NAME` match context), or accept and document the residual risk; at minimum add a unit case with the sentence and a real access in the same file.\n\n- Category: bug\n- Severity: low\n- File: integration-tests/e2e-webui/src/baseline/checks-board.ts:170-171 (copyAndOpen)\n- Finding: `copy.elementHandle()` is grabbed before the click; if the app re-renders the button on click (React-style replace rather than mutate), the stale handle's `innerText` resolves on a detached node and returns `\"\"` via the catch, making the \"Copied\" check fail against a correct app. The old role lookup would at least have re-queried. This is the same fragility the iterate set out to remove, just inverted.\n- Suggestion: After the click, re-query the button by a stable attribute (e.g. within the thread view's action bar) rather than freezing an `elementHandle`, or verify via a locator scoped to the container that keeps identity across re-renders.\n\n- Category: test\n- Severity: low\n- File: integration-tests/e2e-webui/tests/unit/baseline-harness-fixes.spec.ts:17-19\n- Finding: The \"no key\" fallback branch of `listRow` is only exercised on a page with exactly one row, so it doesn't prove the fallback avoids the hidden `<option>` when multiple `[data-k]` rows exist or the fallback itself mis-selects. A broken fallback (e.g. text lookup without the row constraint) would still pass this test as written, since the test page has no hidden-option ambiguity in the fallback path.\n- Suggestion: Add a hidden `<option>` with a *different* thread's title and two rows, then assert the fallback clicks the row whose title matches, not any element containing the text.\n\n- Category: edge-case\n- Severity: low\n- File: integration-tests/e2e-webui/src/baseline/board-ui.ts:60-63 (listRow)\n- Finding: The CSS attribute selector escapes only `\"` and `\\` in the key. Thread keys are platform slugs, so this is fine in practice, but if `str(item.key)` were empty the code silently falls back to the text path even when `item.key` was expected \u2014 combined with `filter({ hasText: rowTitle })` truncating at 60 chars, two threads whose titles share the first 60 characters would make the fallback open the wrong thread (a real hazard for long HN titles that repeat).\n- Suggestion: In the fallback, additionally assert the clicked row's `data-k` equals the expected key after click (or match on the full title), to guard against the 60-char truncation ambiguity.\n\nPositive notes: B17's `plain` join, B31's package-wide host scan with the per-file outside check preserved, the recheck project wiring (non-zero exit on hard reds, `expect(b.some(...))` guard against an empty run), and the tour fixes (case-insensitive marker, platform re-pick for the Expired filter) all match the acceptance criteria and are covered by real-behavior unit tests, not smoke tests.\n\nOverall: the harness fixes are correct in direction and mostly well-tested, but AC 1 is only half-applied to the comment-count check (hidden elements can still produce a false pass), so ship-with-fixes.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-11-03-baseline-harness-fixes",
+    "at": "2026-11-03T18:47:15.163472+00:00"
+  },
+  "verdicts": {
+    "openai": "revise",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

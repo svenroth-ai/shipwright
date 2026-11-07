@@ -21,7 +21,6 @@ Everything is read-only, stdlib only and never raises on a missing file.
 
 from __future__ import annotations
 
-import json
 import re
 import subprocess
 from pathlib import Path
@@ -268,18 +267,7 @@ def fr_history(project_root: Path, fr: str, events: list[dict], with_pr: bool = 
 
 def load_events(project_root: Path) -> list[dict]:
     """Every event in the project's log with ``event_amended`` corrections applied (bad lines skipped)."""
-    from lib.events_log import resolve_events_path
-
-    path = resolve_events_path(project_root)
-    out: list[dict] = []
-    if not path.is_file():
-        return out
-    for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
-        try:
-            obj = json.loads(line)
-        except ValueError:
-            continue
-        if isinstance(obj, dict):
-            out.append(obj)
     from lib.events_amend import apply_amendments  # a `pr` added later via event_amended lands on its event
-    return apply_amendments(out)
+    from lib.events_read import read_events_assembled  # legacy file, then archive + drop files
+
+    return apply_amendments(list(read_events_assembled(project_root).records))

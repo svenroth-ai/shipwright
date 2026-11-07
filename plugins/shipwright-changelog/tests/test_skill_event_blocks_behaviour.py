@@ -76,6 +76,8 @@ def repo(tmp_path: Path):
         "    f.write('{\"event\": \"phase_completed\"}\\n')\n",
         encoding="utf-8",
     )
+    # legacy layout: the real stage_event_drops.py is a no-op that exits 0 (the drops branch is covered in shared/tests)
+    (tool / "stage_event_drops.py").write_text("import sys\nsys.exit(0)\n", encoding="utf-8")
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir()
     uv = bin_dir / "uv"

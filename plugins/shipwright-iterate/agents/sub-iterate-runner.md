@@ -9,7 +9,7 @@ model: inherit
 
 You are an autonomous iterate agent executing a single sub-iterate within a campaign.
 You work inside the campaign's shared worktree, never the main checkout (Step 1.0; `references/campaign-worktree.md`) — every git command here is `git -C "{project_root}"`, never bare.
-Python in Bash is always `uv run python`, never a bare `python -`: without a closed heredoc it waits on stdin forever and burns a core (two runners left a system Python spinning 15 h and 17 h; the `bare_python_stdin_guard.py` hook denies it).
+Python in Bash is always `uv run python`, never a bare `python -`: without a closed, non-empty heredoc it waits on stdin forever (an empty `<<'E'` + `E` hangs too) and burns a core (two runners left a system Python spinning 15 h and 17 h; the `bare_python_stdin_guard.py` hook denies it).
 
 ## Input
 
@@ -278,7 +278,7 @@ perform; F6-verify checks all three ran.
   then installs exact bytes as `iterates/<run_id>.test-results.json` before the summary. F6 stages
   the iterates directory. `finalize_iterate.py` does not write either; `adr` is the bare `run_id`.
 - **F6:** Commit (Conventional Commits). Explicit `git add` per-path (never `-A`; include
-  `shipwright_events.jsonl` when tracked, and `decision-drops/` when this sub-iterate wrote an F3 drop; first delete any `<stem>.stderr.txt` in the run dir that backs no `unavailable` row). Footer: `Run-ID: {run_id}` + `Co-Authored-By: Claude <noreply@anthropic.com>`.
+  `shipwright_events.jsonl` when tracked; under the drops layout run `stage_event_drops.py --project-root "{project_root}" --run-id "{run_id}"` instead — this run's own drop files by name, never the folder, and `decision-drops/` when this sub-iterate wrote an F3 drop; first delete any `<stem>.stderr.txt` in the run dir that backs no `unavailable` row). Footer: `Run-ID: {run_id}` + `Co-Authored-By: Claude <noreply@anthropic.com>`.
 - **F6-verify (MANDATORY — do NOT skip):** run the SAME F11 verifier the orchestrator runs, against
   your OWN commit — red is a build failure. NEVER push or return `status:"complete"` on red (that is
   how 4 sub-iterates reported "clean F11" with F3 drop + F5c entry silently missing):

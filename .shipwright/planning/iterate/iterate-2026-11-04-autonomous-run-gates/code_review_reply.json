@@ -1,0 +1,5 @@
+{"section": "iterate-2026-11-04-autonomous-run-gates", "review": [
+{"severity": "medium", "category": "security", "finding": "neutralised screenshot pair has no provenance (fixed: bound to the check's real pair, no real capture or byte copy of the opposite capture; docs reworded to consistency check)"},
+{"severity": "medium", "category": "correctness", "finding": "UI: none plus a mockup named without NN- prefix recorded as non-UI (fixed: mockup/wireframe/.html/figma contradict)"},
+{"severity": "low", "finding": "dead second UI-none branch (removed); reason text used unstripped source (fixed); quotes hoisted (fixed); brief read errors crashed instead of exit 2 (fixed); _SAFE_REL_RE comment (fixed)"},
+{"severity": "low", "finding": "composed screens (no upload) never consult their own declaration (documented behaviour: viewport is approved side only); string-grep test kept"}]}

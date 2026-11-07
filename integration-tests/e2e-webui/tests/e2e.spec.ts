@@ -10,14 +10,17 @@ import { httpCall } from "../src/board-api.js";
 import { Checklist, parseChecklist } from "../src/checklist.js";
 import * as ui from "../src/driver.js";
 import { ConfigError, loadConfig } from "../src/env.js";
-import { activeFixture, PROFILE, expectedFile as expectedPath, fixtureDir as fixturePath } from "../src/fixture.js";
+import { BASELINE_FIXTURE_NAME, activeFixture, PROFILE, type FixtureName, expectedFile as expectedPath, fixtureDir as fixturePath } from "../src/fixture.js";
 import { follow, waitForTask } from "../src/follow.js";
+import { captureLaunchCommands, ensureLaunched, handOverCommands } from "../src/launch-recovery.js";
 import { appendRecord, loadRecords, wholeRun } from "../src/gate-log.js";
 import { checkGates } from "../src/gates.js";
 import { checkProjectFiles, listHtml, readScreenshotCheck, recordScreenshotCheck } from "../src/progress.js";
 import { checkPluginShape, checkScreensComposed, checkTestsRan } from "../src/project-checks.js";
 import { checkSkillTriggers } from "../src/skill-trigger.js";
 import { variantFor } from "../src/variant.js";
+import { recordFixtureApproval } from "../src/baseline/approval.js";
+import { runBaselineSuite, runStatic } from "../src/baseline/suite.js";
 import { acquireLock, addLockPid, markFinished, markPipelineStarted, planResume, releaseLock, writeManifest, type ResumePlan, type RunIdentity } from "../src/resume.js";
 import { provisionHome } from "../src/provision.js";
 import { Report } from "../src/report.js";
@@ -29,10 +32,6 @@ import { tourBoard } from "../src/tour.js";
 const here = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(here, "..");
 const repoRoot = path.resolve(projectRoot, "..", "..");
-const FIXTURE_NAME = activeFixture(); // SHIPWRIGHT_E2E_FIXTURE; the default is the tabs fixture
-const variant = variantFor(FIXTURE_NAME);
-const fixtureDir = fixturePath(repoRoot, FIXTURE_NAME);
-const expectedFile = expectedPath(repoRoot, FIXTURE_NAME);
 const TEARDOWN_MARGIN_MS = 15 * 60_000; // room after the run budget for the report and the shutdown
 const LOOPBACK = new Set(["127.0.0.1", "localhost", "[::1]"]);
 
@@ -54,14 +53,20 @@ test("brief package to a working skill-backed board app through the WebUI", asyn
   // 1. Refuse to start without the operator inputs and an authentication source (no defaults).
   let cfg;
   let authSource: AuthSource;
+  let FIXTURE_NAME: FixtureName; // SHIPWRIGHT_E2E_FIXTURE from the process env or the env file; the default is the tabs fixture
   const realHome = realHomeDir();
   try {
     cfg = loadConfig(repoRoot);
     authSource = pickAuthSource(process.env, realHome);
+    FIXTURE_NAME = activeFixture({ SHIPWRIGHT_E2E_FIXTURE: cfg.fixture });
   } catch (error) {
     if (error instanceof ConfigError || error instanceof AuthError) throw new Error(error.message);
     throw error;
   }
+  const baseline = FIXTURE_NAME === BASELINE_FIXTURE_NAME; // own checklist and suite (src/baseline/)
+  const variant = baseline ? null : variantFor(FIXTURE_NAME);
+  const fixtureDir = fixturePath(repoRoot, FIXTURE_NAME);
+  const expectedFile = expectedPath(repoRoot, FIXTURE_NAME);
   // MAX_MINUTES is a real limit: the test timeout follows it, with room left for the report and the shutdown.
   test.setTimeout(cfg.maxMinutes * 60_000 + TEARDOWN_MARGIN_MS);
   if (!onPath(["claude", "claude.exe", "claude.cmd"])) throw new Error("Refusing to start: the claude binary is not on PATH.");
@@ -110,6 +115,9 @@ test("brief package to a working skill-backed board app through the WebUI", asyn
         env_file: cfg.envFileFound ? "found" : "not found",
         project: projectPath,
         resume_run_source: cfg.sources.SHIPWRIGHT_E2E_RESUME_RUN,
+        fixture: FIXTURE_NAME,
+        checklist: checklist.describe(path.relative(repoRoot, expectedFile).split(path.sep).join("/")),
+        fixture_source: cfg.sources.SHIPWRIGHT_E2E_FIXTURE === "unset" ? "unset (default)" : cfg.sources.SHIPWRIGHT_E2E_FIXTURE,
       },
     },
     checklist,
@@ -173,26 +181,47 @@ test("brief package to a working skill-backed board app through the WebUI", asyn
     if (!known) await ui.createProject(page, base, `${FIXTURE_NAME}-e2e`, projectPath, PROFILE);
     const projectId = known ?? (await ui.findProjectId(page.request, base, projectPath));
     if (!resume?.skipPackageCopy) fs.cpSync(fixtureDir, path.join(projectPath, "brief"), { recursive: true });
+    if (baseline && !resume?.skipPackageCopy) recordFixtureApproval(path.join(projectPath, "brief")); // the delivered package has no approval; the copy gets it (outside the hash)
     await ui.openBoard(page, base, projectId);
     await report.step("Project ready, Brief package in brief/", page, [resume?.note, housekeeping].filter(Boolean).join(" "));
+    let launched: Awaited<ReturnType<typeof captureLaunchCommands>> | null = null;
     if (resume?.skipStartPipeline) {
       await report.step("Resume: the pipeline was already started, New pipeline not clicked again", null);
     } else {
       await ui.startPipeline(page, "Build the social engagement board", "Build the app from the approved Brief package: /shipwright-run --brief brief/");
       markPipelineStarted(runDir); // the task exists from here on: a resume must not click "New pipeline" again
       await report.step("New pipeline, package handed over", page);
+      launched = await captureLaunchCommands(page);
       await ui.launchPipeline(page);
     }
 
     // 4. Follow the phases, answer gates, until complete, failed, idle or out of budget.
     const taskId = await waitForTask(page, base, projectId);
-    if (taskId) await page.goto(`${base}/tasks/${taskId}`);
+    // The modal's Launch button already opens the task page and hands the start command over in the browser; a hard
+    // reload of that page before the terminal typed it loses the command (task stays awaiting_external_start).
+    if (taskId && !page.url().includes(`/tasks/${taskId}`)) await page.goto(`${base}/tasks/${taskId}`);
     // A resumed task may already be launched (or its pipeline over): no launch button is then not an error.
     const hasLaunch = await page.getByTestId("cta-launch-in-terminal").waitFor({ state: "visible", timeout: 10_000 }).then(() => true, () => false);
-    if (resume?.skipStartPipeline && !hasLaunch) {
-      await report.step("Resume: no launch button on the task page, the task was already launched", page);
+    const launchedByModal = !resume?.skipStartPipeline && ui.launchedByModal(hasLaunch, await ui.taskStateText(page.request, base, taskId));
+    if ((resume?.skipStartPipeline || launchedByModal) && !hasLaunch) {
+      await report.step(launchedByModal ? "No launch button: the modal already launched the task" : "Resume: no launch button on the task page, the task was already launched", page,
+        launchedByModal ? `Launch command captured from the modal's request: ${launched?.get() ? "yes" : "no"}.` : undefined);
+      if (resume?.skipStartPipeline) await ui.resumeInterruptedSession(page, async (t) => { await report.step(t, page); }); // run 24 idled without it
+      // The modal's hand-over can be lost (the task then waits at an empty prompt and the page has no button): watch, hand it over again, fail fast.
+      if (launchedByModal) {
+        await ensureLaunched({
+          readState: () => ui.taskStateText(page.request, base, taskId),
+          readTerminal: () => page.locator(".xterm-rows").first().innerText({ timeout: 2000 }).catch(() => ""),
+          handOver: () => handOverCommands(page, taskId!, launched?.get() ?? null),
+          step: async (title, detail) => { await report.step(title, page, detail); },
+          sleep: (ms) => page.waitForTimeout(ms),
+        });
+      }
     } else {
-      await ui.startTaskSession(page);
+      await ui.startTaskSession(page, async (attempt) => {
+        const state = await ui.taskStateText(page.request, base, taskId);
+        await report.step(`Launch button missing (attempt ${attempt} of 3)`, page, `Task ${taskId ?? "?"}: ${state}.${attempt < 3 ? " Reloading the task page." : " Giving up."}`);
+      });
     }
     await report.step("Task page after launch", page);
     status = await follow(page, base, projectId, projectPath, deadline, cfg.maxMinutes, report);
@@ -206,9 +235,10 @@ test("brief package to a working skill-backed board app through the WebUI", asyn
     const mockups = listHtml(path.join(fixtureDir, "mockups"));
     checkPluginShape(projectPath, checklist);
     checkScreensComposed(projectPath, mockups, checklist);
-    variant.selfContained(projectPath, checklist);
+    if (baseline) await runStatic(projectPath, checklist);
+    else variant!.selfContained(projectPath, checklist);
     checkTestsRan(projectPath, checklist);
-    if (checklist.items.some((i) => i.id === "S09")) checkSkillTriggers(projectPath, checklist, { ...process.env, HOME: tempHome, USERPROFILE: tempHome });
+    if (checklist.items.some((i) => i.id === "S09")) checkSkillTriggers(projectPath, checklist, { ...process.env, HOME: tempHome, USERPROFILE: tempHome }, undefined, baseline ? "open the reply board" : undefined);
     if (status === "complete") {
       await ui.openBoard(page, base, projectId);
       // The Test phase used the throw-away data folder of this fixed port; move it aside so H06-H10 start fresh.
@@ -229,10 +259,15 @@ test("brief package to a working skill-backed board app through the WebUI", asyn
       const call = httpCall(origin);
       const health = await call("GET", "/api/health").then((r) => r.status, () => 0);
       checklist.record("H05", health === 200 ? "pass" : "fail", `GET /api/health -> ${health}`);
-      const { state } = await variant.api(call, checklist);
-      await app.goto(origin, { waitUntil: "domcontentloaded" });
-      await variant.board(app, fs.readFileSync(path.join(fixtureDir, "visual-guidelines.md"), "utf8"), state, checklist);
-      await tourBoard(app, await page.context().newPage(), origin, fixtureDir, state, report);
+      if (baseline) {
+        // The preview only proves the button works; the checks start their own companions on throw-away data (see src/baseline/).
+        await runBaselineSuite({ project: projectPath, fixtureDir, checklist, report, page });
+      } else {
+        const { state } = await variant!.api(call, checklist);
+        await app.goto(origin, { waitUntil: "domcontentloaded" });
+        await variant!.board(app, fs.readFileSync(path.join(fixtureDir, "visual-guidelines.md"), "utf8"), state, checklist);
+        await tourBoard(app, await page.context().newPage(), origin, fixtureDir, state, report);
+      }
     }
     // Earlier part as loaded at start + this run's memory; gates.jsonl is not re-read (the agent can reach it).
     const judged = wholeRun(earlierRun, report.gateList(), report.escalationList());

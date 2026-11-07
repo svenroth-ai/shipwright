@@ -1,0 +1,1 @@
+{"stage": "spec-compliance", "verdict": "PASS", "spec_citations": [], "summary": "Re-review PASS. First pass REJECTed: the reserved-TLD exemption sat in shared HARMLESS_HOSTS and loosened the tabs fixture S05. Fixed: opt-in option reservedTestDomains passed only by checkSelfContainedWithAdapter; HARMLESS_HOSTS restored; unit case asserts the tabs variant stays strict."}

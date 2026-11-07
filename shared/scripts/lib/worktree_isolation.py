@@ -28,7 +28,7 @@ if str(_SCRIPTS_ROOT) not in sys.path:
 
 from lib.atomic_write import durable_atomic_write  # noqa: E402
 from lib.churn_merge import TRIAGE_LOG  # noqa: E402
-from lib.events_log import EVENT_FILE  # noqa: E402
+from lib.events_log import EVENT_FILE, is_event_folder_path  # noqa: E402
 from lib.iterate_entry import sanitize_run_id_for_filename  # noqa: E402
 
 # Low-level git primitives now live in the dependency-free leaf lib.git_base.
@@ -70,9 +70,9 @@ _RUN_INFRA_PREFIXES = (
     f"{WORKTREES_DIRNAME}",
 )
 
-# Tracked append-only logs (shipwright_events.jsonl + .shipwright/triage.jsonl,
-# the latter since campaign 2026-06-05-track-triage-jsonl). A normal iterate writes
-# these PER-TREE (worktree copy, committed via F6); the leak-guard exemption is
+# Tracked append-only logs (shipwright_events.jsonl + .shipwright/triage.jsonl, the latter
+# since campaign 2026-06-05-track-triage-jsonl) and the event folders (``is_event_folder_path``).
+# A normal iterate writes these PER-TREE (worktree copy, committed via F6); the exemption is
 # defense-in-depth for legitimate MAIN-repo durable-log appends — events' legacy
 # F7/F7b seal + replays, and triage's background Stop-hook / on-demand triage_add
 # writes — never a branch leak. EXACT root-relative paths (+ .lock sidecars).
@@ -199,7 +199,7 @@ def _scan_porcelain(out: str) -> tuple[set[str], bool]:
         if norm.rstrip("/") == ".shipwright":
             saw_bare_shipwright = True
             continue
-        if not _is_run_infra(norm) and norm not in _MAIN_TREE_WRITE_EXEMPT:
+        if not _is_run_infra(norm) and norm not in _MAIN_TREE_WRITE_EXEMPT and not is_event_folder_path(norm):
             paths.add(norm)
     return paths, saw_bare_shipwright
 

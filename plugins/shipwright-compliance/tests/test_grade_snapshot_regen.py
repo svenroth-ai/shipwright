@@ -36,11 +36,14 @@ import scripts.tools.update_compliance as update_compliance  # noqa: E402
 
 
 def _read_events(root: Path) -> list[dict]:
-    path = root / "shipwright_events.jsonl"
-    if not path.exists():
-        return []
+    """Every event of the tree, wherever the layout put it (legacy file + per-run drops)."""
+    paths = [root / "shipwright_events.jsonl"]
+    drops = root / "shipwright_events.d"
+    if drops.is_dir():
+        paths += sorted(drops.glob("*.jsonl"))
     return [
         json.loads(ln)
+        for path in paths if path.exists()
         for ln in path.read_text(encoding="utf-8").splitlines()
         if ln.strip()
     ]

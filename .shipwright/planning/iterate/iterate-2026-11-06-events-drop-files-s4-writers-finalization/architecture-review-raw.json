@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "1. **Should it exist?** Yes: per-run event files address a demonstrated parallel-PR conflict, but the campaign should be materially smaller.\n\n2. **Smallest thing that would do:** Use option 2: one shared writer producing distinct run files, consumed through the assembling reader, with the compatibility controls needed for rollout. Keep existing decision-bullet storage and defer folding, archival and quarantine machinery until an observed operational need justifies them.\n\n3. **What it costs to keep:** A versioned on-disk event format, ordered assembly, writer ownership rules and compatibility across plugin and WebUI releases. The proposed campaign additionally requires permanent integrity enforcement and operator-managed rollout milestones; a red gate stops progress but does not supply someone to maintain it.\n\n4. **What it forecloses:** Append-only files enforced by CI make later corrections, deletion and storage changes require special migration paths. Retaining legacy interpretation indefinitely makes future event-format changes more expensive.\n\n5. **Findings**\n\nCategory: proportionality\nSeverity: medium\nFinding: S5 introduces a separate pending-and-folded decision-bullet lifecycle. The demonstrated event-log conflict does not establish a need for that additional storage mechanism or its WebUI release dependency.\nSuggestion: Remove S5 and its bullet-specific WebUI work from this campaign; retain the existing decision storage.\n\nCategory: simpler-alternative\nSeverity: medium\nFinding: S6 establishes folding, archival and quarantine obligations before the brief demonstrates a file-count, read-performance or corruption problem requiring them.\nSuggestion: Ship run files with validation through existing readers and finalization checks. Use the stated benchmarks to determine whether compaction is needed, then add the smallest maintenance operation supported by those results.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "**1. The question, answered in one sentence.** Yes \u2014 some per-run-file mechanism should exist (options 1 and 3 are both worse: 1 keeps the exact conflict that motivated this, 3 is a service to keep alive), but the campaign as scoped builds more standing machinery than the problem buys, and the biggest avoidable cost is the *permanence* of the dual layout.\n\n**2. The smallest thing that would do.** Option 2, writers + assembling readers, with two cuts: (a) a *bounded* dual-mode \u2014 legacy is a migration state with a planned end date, not a dialect supported forever; (b) defer the fold/quarantine/CI-integrity subsystem (S6) until real repos actually approach the read budget, since S8 already measures it.\n\n**3. What it costs to keep.** Every future change to anything that touches events is now implemented and tested twice (legacy path and drops path), forever per the spec. On top of that: the ratchet gate in CI, the layout sentinel and fail-closed logic in every plugin, the tracked-ness probes, the mixed-version guard set, and eventually the fold tool, quarantine rules and the CI integrity checker. This is the most expensive kind of mechanism: one that every later event feature must reason about.\n\n**4. What it forecloses.** Because the config key is never removed, no future change can simplify the reader or writer to a single layout \u2014 every cleanup pays the dual-mode tax permanently. The S6 CI integrity check also forecloses \"just write the file by hand\" workflows by gating PRs on a new rule.\n\n**Findings**\n\n- Category: forecloses\n  - Severity: high\n  - Finding: \"absent = legacy forever\" and \"the key is never removed\" make the dual layout permanent. The brief treats this as safety; it is actually the single largest ongoing cost of the campaign \u2014 every reader, writer, classifier and guard listed in S3/S4 stays dual-mode for the life of the project, and S9c (stop branching on the flag) only stops *writers* from branching, not the code paths themselves.\n  - Suggestion: Make legacy a migration state with an end: once S9c's conditions are met (all supported plugin lines carry the sentinel, minimum WebUI in use), schedule removal of the legacy read/write paths and convert `absent = legacy` to `absent = drops` for repos that have flipped. Keep \"never removed from an existing repo\" only during the migration window.\n\n- Category: proportionality\n  - Severity: medium\n  - Finding: S6 (fold tool, quarantine rules, emergency fold, CI integrity checker) is standing machinery against a problem \u2014 too many drop files \u2014 that may never arrive, and S8's microbenchmark (\u22640.3 s at 300 files) is the natural tripwire.\n  - Suggestion: Ship S0\u2013S5, S7\u2013S9 without the fold/quarantine/CI-integrity subsystem; add it as a follow-up triggered when a real repo approaches the read budget. The quarantine and add-only CI rules can be specified now and built when needed.\n\n- Category: simpler-alternative\n  - Severity: low\n  - Finding: The other structural option \u2014 stop tracking the event log in git, per-worktree untracked \u2014 would remove the conflict with zero reader migration. It is off the table for a real reason (F11's committed-check and the absence gates need the log as committed PR evidence), so option 2 is right; recorded here so the rejection is on the record rather than implicit.\n  - Suggestion: none; keep option 2.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "architecture",
+  "capture": {
+    "run_id": "iterate-2026-11-06-events-drop-files-s4-writers-finalization",
+    "at": "2026-11-06T15:28:40.390127+00:00"
+  },
+  "verdicts": {
+    "openai": "revise",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

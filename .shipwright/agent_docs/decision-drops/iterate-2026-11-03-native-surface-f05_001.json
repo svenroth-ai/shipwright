@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-03-native-surface-f05",
+  "date": "2026-11-03",
+  "section": "Iterate - change: F0.5 surface=native for Expo / React Native projects",
+  "title": "surface=native accepts Jest results of a provably native package",
+  "context": "GitHub #989: every .tsx change counts as ui and the F0.5 gate demands a Playwright report for it, which a native Expo / React Native project cannot produce. Only surface=none (a fabricated justification) could pass.",
+  "decision": "New --surface native. The package that owns each touched UI path is read from package.json at the verified commit and at the merge-base (tools/verifiers/_surface_native.py); only a package with react-native/expo and no web framework qualifies, web-only files and web consumers refuse it, and only passing JS/TS test results from a tracked test file inside those packages count. All other evidence rules (tests_run, exit_code, provenance, counting) are unchanged.",
+  "consequences": "Native projects can pass F0.5 without a browser. Disclosed limits: nearest manifest only, universal Expo apps with a real web build must still use --surface web, evidence is per package not per file, transitive web consumers and new manifests in a non-JS web tree are not detected. Narrowing the src/ frontend rule stays a follow-up.",
+  "rationale": "Derive nativeness from the diff's own manifests instead of trusting the agent's label, so native cannot become a way around the browser run; reuse the existing evidence pipeline instead of a second one.",
+  "rejected": "(1) Auto-detecting native from the repo and skipping the surface: not fail-closed. (2) Accepting surface=none with a justification: invites fabricated reasons. (3) Narrowing the src/ rule now: shared with browser verify, separate run.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

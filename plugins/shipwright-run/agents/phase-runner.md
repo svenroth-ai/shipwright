@@ -43,6 +43,22 @@ call `single-session-apply`, `complete-phase-task`, `mark-phase-failed`,
 override in a run with no human to decide it, but that refusal stops a cooperative
 caller only; this rule is what keeps a phase-runner from waving its own work through.
 
+**Autonomous run: what a rule decides is not handed back as a question.** In a run with
+a `brief_package` or autonomy `autonomous`/`unattended`, the phase skills settle six
+recurring conflicts by rule and record them with
+`shared/scripts/tools/record_autonomous_decision.py` (approved package links, a brief
+requirement no mockup shows, an explicit brief value over plan text, a hard requirement
+over a visible extra, installing dev tooling the project already declares) or by the plan
+boundary baseline (earlier phases' uncommitted files). A second tool,
+`shared/scripts/tools/record_autonomous_choice.py`, settles the rest of what run 23 asked a person: `--kind precedence`
+when two sources disagree (hard requirement > brief > approved screen > plan text: plan against brief, the brief
+against itself, a brief line the approved pictures lack, so a screenshot check that fails only because of it records
+a known difference), and `--kind routine --topic changelog-entry|tag-uncommitted|test-screenshots|decision-log-entry`
+for the wrap-up questions that have one safe default (a missing decision-log entry is written, then the check runs
+again). Do not return those to the master
+as "the master decides"; only what the tool answers with exit 1 (`action: ask`) is a
+question.
+
 ## Step 0: load your prior-phase context
 
 Before running the phase skill, surface the artifacts your phase depends on:

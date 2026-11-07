@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-01-e2e-webui-harness-fixes",
+  "date": "2026-11-01",
+  "section": "Iterate - bug: e2e-webui harness fixes",
+  "title": "E2E harness: S02 click on a visible row, S05 scope, fixture from env file, launch retry",
+  "context": "Run 14 gave false S02 and S05 failures; the fixture env-file line was ignored; the launch button was sometimes missing.",
+  "decision": "S02 clicks the first visible non-option match and records diagnostics; S05 (adapter variant) skips e2e/ and reserved TLDs; SHIPWRIGHT_E2E_FIXTURE is read from the env file; startTaskSession reloads up to 2x.",
+  "consequences": "S02 can no longer be failed by the hidden thread-picker option; the retry is not proven by a passing run.",
+  "rationale": "The preserved app proved the hidden .master-picker option precedes the list, so the check, not the app, was at fault.",
+  "rejected": "Weakening S02; exempting reserved TLDs for the tabs fixture too.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

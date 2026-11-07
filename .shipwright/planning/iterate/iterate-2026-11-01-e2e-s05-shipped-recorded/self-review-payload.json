@@ -1,0 +1,9 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"S05 compares seed/recorded with the package files: changed, missing, extra file, extra item all fail with file-named evidence; tabs variant untouched."},
+{"name":"Error Handling","verdict":"pass","note":"Empty/missing reference folder fails closed; unparsable JSON falls back to byte counts."},
+{"name":"Security Basics","verdict":"pass","note":"Read-only fs comparison, no exec, no network, reference resolved from repo not from the build."},
+{"name":"Test Quality","verdict":"pass","note":"New shipped-recorded.spec.ts covers pass/changed/missing/extra file/extra subfolder file/extra item/no reference; existing synthetic tests pass an explicit reference; python structure test added."},
+{"name":"Performance Basics","verdict":"pass","note":"Two small files compared once."},
+{"name":"Naming & Structure","verdict":"pass","note":"New tests in their own spec to keep real-variant.spec.ts under the 300-line cap."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Consumer of the built project's seed/recorded and the package files; round-trip probe: the real shipped files copied into a temp project pass, a one-byte change fails."}
+]}

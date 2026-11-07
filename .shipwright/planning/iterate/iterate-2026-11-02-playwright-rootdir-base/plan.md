@@ -1,0 +1,1 @@
+Goal: Playwright E2E evidence from a sub-folder config joins the test manifest again, so passing E2E tests count for layer coverage | Reason: Playwright reports spec paths relative to config.rootDir, so tests under client/e2e never matched the manifest ids and the cross-layer coverage gate failed on a green suite | Reference: GitHub issue #969

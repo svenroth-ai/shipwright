@@ -1,0 +1,6 @@
+{"stage":"doubt","verdict":"PROCEED","doubts":[
+{"severity":"medium","claim_under_doubt":"partial views from readers that drop per-file status","disproof_attempt":"Dormant layout; setting drops is unsupported until S9a. Absence-sensitive readers beyond the KC8 sites are an S4/S9a inventory item (deferred)."},
+{"severity":"medium","claim_under_doubt":"reconcile scoping untested","disproof_attempt":"Fixed: validate_event_folders unit cases (own damaged, other damaged with own absent, odd name, present)."},
+{"severity":"medium","claim_under_doubt":"guard R/C substring rules","disproof_attempt":"Narrowed: folder literal and generic words removed from reader markers; two files retagged. Residual raw reads in R files remain a stated limitation."},
+{"severity":"low","claim_under_doubt":"leak guard and classifiers accept non-jsonl under folders","disproof_attempt":"Rebutted/deferred to S4 writer routing; nothing reads non-jsonl files there."},
+{"severity":"low","claim_under_doubt":"grade cap sum","disproof_attempt":"Fixed: per-legacy-file ceiling kept, folder bytes summed separately; stat guarded."}]}

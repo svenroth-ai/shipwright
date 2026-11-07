@@ -8,10 +8,15 @@ contaminate serious RTM metrics.
 
 from __future__ import annotations
 
+import hashlib
 import json
+import os
+import re
+import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
 
 
 def _utc_now_iso() -> str:
@@ -40,7 +45,81 @@ def _ends_without_newline(path: Path) -> bool:
         return False
 
 
+# DROPS LAYOUT (issue 978, S4). DELIBERATE DUPLICATION of ``shared/scripts/lib/events_layout`` +
+# ``events_write`` (same ADR-045 reason as the terminator guard above): layout resolution, the
+# ``<key>--<wt8>--<nonce8>.jsonl`` name, the ``run`` stamp and the atomic first write. One drop file per
+# process (this writer takes no lock). ``test_events_writers_drops`` pins wt8 / name parity with the SSOT.
+_DROPS_DIR = "shipwright_events.d"
+_BAD_KEY = re.compile(r"[^A-Za-z0-9._-]")
+_drop_targets: dict[str, Path] = {}
+
+
+def _drops_layout(root: Path) -> bool:
+    if os.environ.get("SHIPWRIGHT_EVENTS_LAYOUT" + "_TEST") == "1":  # READ only (name split: plugins never set the flag)
+        forced = os.environ.get("SHIPWRIGHT_EVENTS_LAYOUT", "").strip().lower()
+        if forced in ("legacy", "drops"):
+            return forced == "drops"
+    try:
+        cfg = json.loads((root / "shipwright_sync_config.json").read_text(encoding="utf-8-sig"))
+        return isinstance(cfg, dict) and cfg.get("events_layout") == "drops"
+    except (OSError, ValueError):
+        return False
+
+
+def _wt8(root: Path) -> str:
+    try:
+        git_dir = subprocess.run(["git", "-C", str(root), "rev-parse", "--absolute-git-dir"], capture_output=True,
+                                 text=True, timeout=15, check=True).stdout.strip()
+        git_dir = os.path.realpath(git_dir)
+    except (OSError, subprocess.SubprocessError):
+        git_dir = os.path.realpath(root)
+    return hashlib.sha256(os.path.normcase(git_dir).encode("utf-8")).hexdigest()[:8]
+
+
+def _drop_key() -> str:
+    raw = os.environ.get("SHIPWRIGHT_RUN_ID", "").strip() or "_adopt"
+    return (_BAD_KEY.sub("-", raw).lstrip(".") or "_run")[:80]
+
+
+def events_target(events_path: Path) -> Path:
+    """The file/folder a seeded event ends up in: the drop file under the drops layout, else ``events_path``."""
+    root = events_path.parent
+    return _drop_targets.get(str(root.resolve()), events_path) if _drops_layout(root) else events_path
+
+
+def _is_closed(root: Path, target: Path) -> bool:
+    """True when ``target`` is in the index (staged or committed)."""
+    rel = f"{_DROPS_DIR}/{target.name}"
+    try:
+        listed = subprocess.run(["git", "-C", str(root), "ls-files", "--", rel], capture_output=True, text=True, timeout=15)
+        return listed.returncode == 0 and bool(listed.stdout.strip())  # not a repo: nothing can be committed
+    except (OSError, subprocess.SubprocessError):
+        return True
+
+
+def _append_drop(root: Path, event: dict[str, Any]) -> None:
+    key = str(root.resolve())
+    event = {**event, "id": f"evt-{uuid4().hex[:16]}", "run": _drop_key()}
+    line = json.dumps(event, ensure_ascii=False, separators=(",", ":")) + "\n"  # compact: the stamp stays the last member
+    target = _drop_targets.get(key)
+    if target is not None and _is_closed(root, target):
+        target = None  # staged / committed since: a closed file is never edited
+    if target is None or not target.exists():
+        (root / _DROPS_DIR).mkdir(exist_ok=True)
+        target = root / _DROPS_DIR / f"{_drop_key()}--{_wt8(root)}--{uuid4().hex[:8]}.jsonl"
+        tmp = target.with_name("." + target.name + ".tmp")  # invisible to readers until the rename
+        tmp.write_text(line, encoding="utf-8", newline="\n")
+        os.replace(tmp, target)
+        _drop_targets[key] = target
+        return
+    with target.open("a", encoding="utf-8") as f:
+        f.write(line)
+
+
 def _append_jsonl(path: Path, event: dict[str, Any]) -> None:
+    if path.name == "shipwright_events.jsonl" and _drops_layout(path.parent):
+        _append_drop(path.parent, event)
+        return
     path.parent.mkdir(parents=True, exist_ok=True)
     # Termination guard (iterate-2026-07-18-events-jsonl-record-boundary): this
     # writer takes NO lock and appends repeatedly (the adopted event, then N

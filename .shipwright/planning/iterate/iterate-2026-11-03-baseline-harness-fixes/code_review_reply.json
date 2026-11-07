@@ -1,0 +1,12 @@
+{
+  "section": "iterate-2026-11-03-baseline-harness-fixes",
+  "review": [
+    {"severity": "medium", "category": "correctness", "file": "integration-tests/e2e-webui/src/baseline/tour-baseline.ts", "line": 29, "finding": "Hidden-element bug class still open in the draft-card recipe (getByText without a visibility filter).", "suggestion": "Use visibleText for the click and the marker."},
+    {"severity": "medium", "category": "correctness", "file": "integration-tests/e2e-webui/src/baseline/board-ui.ts", "line": 61, "finding": "listRow depends on data-k, a name taken from the mockups; header comment claims never by names the agent chose.", "suggestion": "Name data-k as a mockup contract in the header comment."},
+    {"severity": "medium", "category": "readability", "file": "integration-tests/e2e-webui/src/baseline/tour-baseline.ts", "line": 17, "finding": "Comment says markers match without case but text() adds no i flag; posted recipe is case sensitive.", "suggestion": "Reword the comment and add /i to posted."},
+    {"severity": "low", "category": "correctness", "file": "integration-tests/e2e-webui/src/baseline/checks-board.ts", "line": 168, "finding": "B39 keeps an ElementHandle that a re-rendering framework would detach.", "suggestion": "Look the button up again by role Copy reply or Copied."},
+    {"severity": "low", "category": "correctness", "file": "integration-tests/e2e-webui/src/baseline/checks-board.ts", "line": 128, "finding": "B37 matches the word question anywhere in main, weaker than before.", "suggestion": "Accepted: the other two labels carry the check."},
+    {"severity": "low", "category": "architecture", "file": "integration-tests/e2e-webui/src/baseline/checks-board.ts", "line": 300, "finding": "File sits at the 300-line cap.", "suggestion": "Split on the next touch."},
+    {"severity": "low", "category": "readability", "file": "integration-tests/e2e-webui/tests/recheck.spec.ts", "line": 20, "finding": "Throws instead of skipping without the project variable.", "suggestion": "test.skip when unset."}
+  ]
+}

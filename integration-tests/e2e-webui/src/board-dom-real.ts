@@ -18,6 +18,8 @@ export interface MasterDetailSnapshot extends BoardSnapshot {
   copyReply: boolean;
   /** An entry called Keywords in the switcher or as a tab: the keywords belong to the sources, not to a board tab. */
   keywordsTab: boolean;
+  /** How the two rows were opened (see OpenTrace); evidence for a failed listBesideThread / copyReply. */
+  diagnostics?: string;
 }
 
 function script(tokenNames: string[]): string {
@@ -48,18 +50,67 @@ function script(tokenNames: string[]): string {
 })()`;
 }
 
-/** Switches to the thread's platform and opens its row; returns whether the title is then visible more than once (list + thread). */
-async function openRow(page: Page, platformLabel: string, title: string): Promise<boolean> {
-  const name = new RegExp(`^${platformLabel}`, "i");
-  const roled = page.getByRole("tab", { name }).first();
-  const entry = (await roled.count()) ? roled : page.locator("button, a, [role=button]").filter({ hasText: name }).first();
-  if (await entry.count()) await entry.click({ timeout: 5000 }).catch(() => undefined);
-  await page.waitForTimeout(400);
-  // A list may cut a long title: match on its first words.
-  const head = title.slice(0, 30);
-  await page.getByText(head, { exact: false }).first().click({ timeout: 8000 });
-  await page.waitForTimeout(600);
-  return (await page.getByText(head, { exact: false }).filter({ visible: true }).count()) > 1;
+/** What one openRow call did, so a failed S02 says WHY (the check or the app) instead of only that it failed. */
+export interface OpenTrace {
+  /** Thread id asked for (null = the setup produced none) and the title head searched for. */
+  id: number | null;
+  head: string;
+  /** Elements whose text contains the title head, all and visible ones, before the click. */
+  matches: number;
+  visibleBefore: number;
+  /** What the click landed on (tag#id.class), "none" when nothing visible matched, or the error that stopped it. */
+  clicked: string;
+  /** Visible elements with the title head after the click; more than one = list row + thread. */
+  visibleAfter: number;
+}
+
+export const traceText = (t: OpenTrace): string =>
+  `thread ${t.id ?? "none"} "${t.head}": ${t.matches} matches (${t.visibleBefore} visible), clicked ${t.clicked}, ${t.visibleAfter} visible afterwards`;
+
+const elementLabel = (el: Element): string => {
+  const cls = typeof el.className === "string" && el.className ? "." + el.className.trim().split(/\s+/).join(".") : "";
+  return el.tagName.toLowerCase() + (el.id ? "#" + el.id : "") + cls;
+};
+
+/**
+ * Switches to the thread's platform and opens its row; the verdict is whether the click worked AND the title is then visible
+ * more than once (list row + thread). The title also sits in the thread picker (`<option>`; the select is hidden on a wide
+ * screen) which comes BEFORE the list in the DOM, so the click goes to the first VISIBLE match that is not an option: the first
+ * match overall was that hidden option and waiting for it timed out (run 14: S02 false although the app was right). A visible
+ * dropdown is not a list beside the thread, so options never count. Any failure becomes evidence, never an exception.
+ */
+async function openRow(page: Page, platformLabel: string, id: number | null, title: string): Promise<{ opened: boolean; trace: OpenTrace }> {
+  const head = title.slice(0, 30); // A list may cut a long title: match on its first words.
+  const trace: OpenTrace = { id, head, matches: 0, visibleBefore: 0, clicked: "none", visibleAfter: 0 };
+  if (id === null) return { opened: false, trace: { ...trace, clicked: "nothing to open (no such thread in the setup)" } };
+  if (head === "") return { opened: false, trace: { ...trace, clicked: "nothing to open (the setup has no title for this thread)" } };
+  const shown = () => page.getByText(head, { exact: false }).and(page.locator(":not(option)")).filter({ visible: true });
+  let clickFailed = false;
+  try {
+    const name = new RegExp(`^${platformLabel}`, "i");
+    const roled = page.getByRole("tab", { name }).first();
+    const entry = (await roled.count()) ? roled : page.locator("button, a, [role=button]").filter({ hasText: name }).first();
+    if (await entry.count()) await entry.click({ timeout: 5000 }).catch(() => undefined);
+    await page.waitForTimeout(400);
+    trace.matches = await page.getByText(head, { exact: false }).count();
+    trace.visibleBefore = await shown().count();
+    const target = shown().first();
+    await target.waitFor({ state: "visible", timeout: 8000 });
+    trace.clicked = await target.evaluate(elementLabel);
+    await target.click({ timeout: 8000 });
+  } catch (error) {
+    clickFailed = true;
+    const was = trace.clicked === "none" ? "" : `${trace.clicked} then `;
+    trace.clicked = `${was}failed: ${String((error as Error).message).slice(0, 120)}`;
+  }
+  try {
+    await page.waitForTimeout(600);
+    trace.visibleAfter = await shown().count();
+  } catch (error) {
+    clickFailed = true;
+    trace.clicked += ` (page unreadable afterwards: ${String((error as Error).message).slice(0, 80)})`;
+  }
+  return { opened: !clickFailed && trace.visibleAfter > 1, trace };
 }
 
 const LABEL: Record<string, string> = { reddit: "Reddit", hackernews: "Hacker News", linkedin: "LinkedIn" };
@@ -68,10 +119,15 @@ export async function snapshotMasterDetail(page: Page, tokenNames: string[], sta
   await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => undefined);
   await page.waitForSelector('[role="tab"], button', { timeout: 10_000 }).catch(() => undefined);
   const snap = (await page.evaluate(script(tokenNames))) as MasterDetailSnapshot;
-  const open = async (id: number | null) => (id === null ? false : openRow(page, LABEL[state.platformOf[id]] ?? "Reddit", state.titles[id] ?? "").catch(() => false));
-  snap.listBesideThread = await open(state.fresh);
-  await open(state.drafted);
-  snap.copyReply = (await page.getByRole("button", { name: /copy reply/i }).filter({ visible: true }).count()) > 0;
+  const open = (id: number | null) => openRow(page, LABEL[state.platformOf[id ?? -1]] ?? "Reddit", id, state.titles[id ?? -1] ?? "");
+  const first = await open(state.fresh);
+  snap.listBesideThread = first.opened;
+  const second = await open(state.drafted);
+  // getByRole skips hidden elements by default; includeHidden counts the buttons that exist in the page but are not shown.
+  const inDom = await page.getByRole("button", { name: /copy reply/i, includeHidden: true }).count();
+  const shown = await page.getByRole("button", { name: /copy reply/i }).filter({ visible: true }).count();
+  snap.copyReply = shown > 0;
+  snap.diagnostics = `open fresh: ${traceText(first.trace)}; open drafted: ${traceText(second.trace)}; Copy reply buttons: ${shown} visible of ${inDom} in the page${inDom > shown ? " (some exist but are hidden)" : ""}; state.fresh ${state.fresh ?? "null"}, state.drafted ${state.drafted ?? "null"}`;
   return snap;
 }
 
@@ -100,5 +156,6 @@ export function checkMasterDetailShape(snap: MasterDetailSnapshot, checklist: Ch
     seen.length >= 3 && mustShow.length === 0 && snap.listBesideThread && snap.copyReply && !snap.keywordsTab ? "pass" : "fail",
     `switcher: ${snap.switcher.join(", ") || "none"}; without count: ${uncounted.join(", ") || "none"}; count above API: ${overcounted.join(", ") || "none"}; status filter lacks: ${filterMissing.join(", ") || "none"}; ` +
     `empty lists: ${empty.join(", ") || "none"}; lists with fewer badges than threads: ${short.join(", ") || "none"}; statuses seen: ${seen.join(", ") || "none"}; never rendered although the data has them: ${mustShow.join(", ") || "none"}; ` +
-    `list beside thread: ${snap.listBesideThread}; Copy reply: ${snap.copyReply}; Keywords tab: ${snap.keywordsTab}`);
+    `list beside thread: ${snap.listBesideThread}; Copy reply: ${snap.copyReply}; Keywords tab: ${snap.keywordsTab}` +
+    (snap.diagnostics ? `; diagnostics: ${snap.diagnostics}` : ""));
 }

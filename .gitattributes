@@ -4,8 +4,9 @@
 # shipwright_events.jsonl is an append-only event log: when origin/main and an
 # iterate branch each append events, keep BOTH sides' lines automatically instead
 # of forcing a manual conflict resolution. `union` is git's built-in line-union
-# merge driver (no per-clone `git config` needed) and is honored by GitHub's
-# server-side merge too.
+# merge driver (no per-clone `git config` needed). It applies to LOCAL merges
+# only: GitHub's mergeability check and merge button do NOT apply it, so two
+# open PRs that append at the same place can show CONFLICTING there (#978).
 #
 # Rollout note: a long-lived branch created BEFORE this commit must merge this
 # commit (so .gitattributes is present in its tree) before `union` applies to it.
@@ -28,7 +29,8 @@ shipwright_events.jsonl merge=union
 # `## …Updates` / `## Learnings` sections, which collide at the same anchor — the
 # last piece of the auto-merge cascade the regenerate-at-merge resolver left
 # unsolved (iterate-2026-06-12-union-curated-agent-docs; PRs #207/#208/#210/#211).
-# `merge=union` keeps both prepended bullets (server-side too). Caveat: union is
+# `merge=union` keeps both prepended bullets in a LOCAL merge (not on GitHub's
+# server side, #978). Caveat: union is
 # line-based + silent — two iterates editing the SAME non-append line would merge
 # both silently; in practice ~all parallel edits are append-section prepends.
 # Escalate to per-run drop-files if that ever bites. See docs/hooks-and-pipeline.md.

@@ -1,0 +1,1 @@
+Goal: Full integration, benchmark and rollback rehearsals for the per-run event drop layout (gate for the flip) | Reason: The flip needs proof that the layout works as a whole, is fast at 300 files and rolls back losslessly (issue 978) | Reference: .shipwright/planning/campaigns/2026-11-04-events-drop-files-BRIEF.md unit S8

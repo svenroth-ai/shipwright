@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "## Findings\n\n**Category: approach | Severity: high**\n**Finding:** The spec and the plan contradict each other on precedence. The spec is explicit: profile roots *replace* the conventional defaults (step 2 \"replaces everything below\" analog; vite-hono's list is a complete root set, and the \"Out of scope\" framing frames it as the profile's answer). Revision 5 unilaterally switches to a *union with defaults*. These produce different manifests: a vite-hono project would also scan top-level `tests/`, `test/`, `__tests__/`, etc., which the spec's profile list deliberately does not include.\n**Suggestion:** Resolve this in the spec, not the plan. If union is genuinely safer (never fewer folders than today), amend the spec's precedence section and AC1 to say so, and note that the vite-hono list is additive. If replace is intended, revert revision 5. As written, the implementation will pass its own tests but ship different behavior than the reviewed spec.\n\n**Category: edge-case | Severity: medium**\n**Finding:** Spec says non-existent folders \"are dropped silently, as for the config today\"; the plan adds that a profile whose folders *all* fail to exist, or an empty list, \"behaves like no profile.\" That's a reasonable fallback, but combined with union it creates a subtle state: a partially-matching profile silently union with defaults, so a typo like `server/test` instead of `server/tests` degrades to defaults-only with no signal that the profile contributed nothing.\n**Suggestion:** When the resolved profile list is non-empty in the profile but yields zero existing folders, emit the (already-planned) source-naming warning \u2014 \"profile X declared test_roots but none resolve\" \u2014 instead of falling back silently.\n\n**Category: risk | Severity: medium**\n**Finding:** The disclosed limitation (a) is worse than \"disclosed\": if `shipwright_run_config.json` is commonly gitignored, the F11 gate archive regen uses *default* roots while local runs use *profile* roots, meaning the gate can under-report coverage for exactly the projects this change was made for. A \"known limit\" note doesn't prevent a merge blocking on a manifest discrepancy that doesn't reproduce locally.\n**Suggestion:** At minimum, when the run config is absent from the archive the warning text should name that cause (the plan only says the warning \"points at `traceability.test_roots`\"). Better: have the gate regen read the profile name from the run config *before* archiving, or require the run config be tracked as part of this change's docs.\n\n**Category: dependency | Severity: low**\n**Finding:** `_test_links_profile_roots.py` computes the shared scripts path as `parents[5]` \"like `_lib_loader`\". A hardcoded depth is fine if it mirrors an existing convention, but the plan should state the test covers a moved-file failure (an import error should surface as the broken-profile stderr path, not a crash \u2014 the plan says `profile_test_roots` \"never raises\", so verify the sys.path/append failure is inside the caught region).\n**Suggestion:** Add one unit test: shared dir unreachable \u2192 returns None + one stderr line, no exception.\n\n**Category: edge-case | Severity: low**\n**Finding:** Schema validation gap: the schema accepts any string array; a profile with `\"traceability\": {\"test_roots\": \"server/tests\"}` (string not list) is said to \"break the profile for every phase\" per the docs row. That's a harsh blast radius for a typo in an optional key.\n**Suggestion:** Confirm profile validation treats a type-invalid `traceability` as an unknown/wrong-type *key* (ignored or warned) rather than invalidating the whole profile, or at least confirm that's the existing schema behavior for unknown keys so the docs statement is accurate.\n\n## Overall assessment\n\nThe mechanics (resolver order, guarded sys.path, module-level import, shared entry loop, gate-test placement) are solid and the review trail shows the real traps were caught. The one thing that must be fixed before build is the replace-vs-union contradiction between spec and plan \u2014 it changes observable behavior and AC1 \u2014 plus a warning for the all-folders-missing case.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Category: approach \u00b7 Severity: medium**  \n   **Finding:** The final revisions union profile roots with conventional defaults, contradicting the specification\u2019s replacement precedence. This can scan unrelated folders and change manifests beyond the declared profile roots. Empty or nonexistent profile roots also acquire fallback behavior that the specification does not define.  \n   **Suggestion:** Implement config \u2192 profile \u2192 defaults as replacement tiers. Explicitly define empty-list and zero-existing-folder behavior, and test that defaults are excluded when a profile declares roots.\n\n2. **Category: dependency \u00b7 Severity: medium**  \n   **Finding:** Excluding user-level profiles means this collector may not use the project\u2019s resolved stack profile. A user-level profile can resolve elsewhere in the application while compliance reports it as unknown\u2014or selects a bundled profile with the same name and different roots. Archive consistency alone does not resolve that mismatch.  \n   **Suggestion:** Make the supported resolution contract explicit. If compliance requires project-local or bundled profiles, document that restriction and give an actionable diagnostic when the selected profile is unavailable there. Test name collisions and user-only profiles.\n\n3. **Category: risk \u00b7 Severity: medium**  \n   **Finding:** The proposed archive-like fixture does not verify that the actual gate archive includes the required files. The plan simultaneously relies on a tracked run config and acknowledges that it may be gitignored; a local-tree fixture can pass while real gate regeneration uses defaults.  \n   **Suggestion:** Exercise the actual archive creation and collector-loading path using a temporary Git repository containing a committed run config and project profile. Assert that local and archived regeneration produce identical links. Cover the missing-run-config limitation separately and document it clearly; a \u201cno folder resolved\u201d warning will not explain it when conventional folders exist.\n\nThe implementation structure is reasonable and appropriately scoped, but the root-selection semantics and profile-resolution contract need alignment before implementation. The archive test should verify the prerequisite on which gate parity depends.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-11-02-profile-declared-test-roots",
+    "at": "2026-11-02T20:49:00.343351+00:00"
+  },
+  "verdicts": {
+    "glm": "revise",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

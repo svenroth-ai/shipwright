@@ -1,0 +1,7 @@
+{"stage": "doubt", "gating": "advisory-must-address", "verdict": "proceed-after-addressing", "doubts": [
+{"severity": "medium", "claim_under_doubt": "see disposition", "disproof_attempt": "Byte-for-byte copy of the recordings is stated but no harness item enforces it. Disposition: rebutted/deferred - enforcing it means a new or changed hard answer-key item, outside the requested scope (tolerance, metric, check untouched); the next real run's screenshot ratio (S03) and the S05 evidence expose a drifted build; recorded in the spec as Not proven."},
+{"severity": "medium", "claim_under_doubt": "see disposition", "disproof_attempt": "Propagation of brief.md details to the Build phase is LLM-mediated and unproven. Disposition: accepted, named in the spec under Not proven."},
+{"severity": "medium-low", "claim_under_doubt": "see disposition", "disproof_attempt": "List order not specified. Disposition: fixed - brief.md View the board now states id-ascending / file order; package re-pinned."},
+{"severity": "low", "claim_under_doubt": "see disposition", "disproof_attempt": "Subreddit, item points and LinkedIn title rule unspecified. Disposition: fixed - brief.md Item entry and list-row text now state them; age format is wording below the metric resolution and left."},
+{"severity": "low", "claim_under_doubt": "see disposition", "disproof_attempt": "Expiry window 13 vs 14 days. Disposition: fixed - the test also asserts exactly 3 items older than 13 days."}
+]}

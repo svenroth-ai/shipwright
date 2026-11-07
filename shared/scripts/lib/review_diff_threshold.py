@@ -47,7 +47,10 @@ PLAN_REVIEW_DIFF_LOC_THRESHOLD = DIFF_LOC_THRESHOLD
 
 #: Repo-relative prefixes whose lines are not counted: Shipwright's generated
 #: artifact tree and the per-run changelog drops.
-UNCOUNTED_PREFIXES: tuple[str, ...] = (".shipwright/", "CHANGELOG-unreleased.d/")
+UNCOUNTED_PREFIXES: tuple[str, ...] = (
+    ".shipwright/", "CHANGELOG-unreleased.d/",
+    "shipwright_events.d/", "shipwright_events.archive/", "shipwright_events.quarantine/",  # event folders
+)
 
 #: Root-level ledgers that F5 / F5b rewrite on every run.
 UNCOUNTED_FILES: frozenset[str] = frozenset({

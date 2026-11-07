@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-04-autonomous-run-gates",
+  "date": "2026-11-04",
+  "section": "Iterate \u2014 feature: autonomous run gates",
+  "title": "Autonomous runs decide the remaining Test/Design/Build gates by rule",
+  "context": "Run 20 still asked about a phone screen compared at desktop size, plain CSS and seed-data differences, brief capabilities without a screen, and a size target against required behaviour.",
+  "decision": "Per-screen viewport from the approved package; the Test phase fixes CSS and seed-data deviations itself; record-non-ui-frs.py records unmapped FRs only on an explicit `UI: none` line in the brief section; a size target is soft in autonomous runs. A remaining screenshot failure stays a question.",
+  "consequences": "Fewer questions in autonomous runs; interactive unchanged; a check result is never overridden on evidence the run produced itself; baseline brief carries UI: none.",
+  "rationale": "The approved package decides the viewport and the non-UI marker; an agent-made 'neutralised' screenshot is forgeable, so no by-rule override of a check result.",
+  "rejected": "By-rule screenshot override on agent-produced evidence (reviewers: forgeable); inferring non-UI from a Source line without a mockup; viewport from the built file or screen-routes; asking each time.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

@@ -1,0 +1,101 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-01-fixture-real-ship-data",
+    "date": "2026-11-01",
+    "unit": {
+      "status": "passed",
+      "passed": 24378,
+      "skipped": 107,
+      "total": 24485
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "passed",
+      "passed": 77,
+      "skipped": 0,
+      "total": 77
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "none",
+      "runner": "",
+      "exit_code": 0,
+      "tests_run": 0,
+      "evidence_path": "",
+      "timestamp": "2026-11-01T17:50:27.264Z",
+      "attempts": 0,
+      "justification": "Only E2E fixture data (recorded answers, brief text, pins) and harness tests changed; no startable surface",
+      "reason_code": "test-only"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "the shipped recordings are valid: 12 items, 4 per platform, 3 older than 14 days, invented hosts, 12 distinct urls",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_e2e_real_fixture.py::test_shipped_recordings_are_valid_four_per_platform_with_old_items_and_no_real_hosts PASSED"
+        },
+        {
+          "behavior": "brief.md states the rule, angle line, template, named-thread fit criteria and the copy of the recordings verbatim",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_e2e_real_fixture.py::test_brief_md_states_the_rule_the_angle_the_template_and_the_copy_of_the_recordings_verbatim PASSED"
+        },
+        {
+          "behavior": "mockup summary, post, comments (depth, points), draft, list rows and status labels equal the output of data + rule + template on all five screens",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_e2e_real_fixture.py::test_mockup_text_equals_what_the_shipped_recordings_the_rule_and_the_template_produce PASSED (12 passed in the file)"
+        },
+        {
+          "behavior": "brief.json package_sha256 matches the changed package; package is warning-free and passes the dry harness",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_e2e_real_fixture.py::test_package_declares_the_skill_app_class_and_the_hash_matches PASSED; test_package_passes_the_dry_harness PASSED"
+        },
+        {
+          "behavior": "harness S05 accepts the shipped files copied to seed/recorded/ of a project (findRecorded 12 valid, 4/4/4, 3 old)",
+          "disposition": "tested",
+          "evidence": "integration-tests/e2e-webui tests/unit/real-variant.spec.ts PASSED (npm run test:unit 77 passed, typecheck clean)"
+        },
+        {
+          "behavior": "a model-built project copies the shipped recordings and produces the same text, and passes the Test-phase screenshot check",
+          "disposition": "untestable",
+          "reason_code": "requires-external-nondeterministic-service",
+          "reason": "needs a real end-to-end run (model-built project); the operator decides when to run it"
+        }
+      ],
+      "counts": {
+        "testable": 5,
+        "tested": 5,
+        "untestable": 1,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 4,
+        "covered_acs": 4
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-24-r5b-merge-lane",
+    "commit": "032d1ebbf0ef9c99eb98f240c8f1110e981a32a5",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

@@ -1,0 +1,192 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-02-profile-declared-test-roots",
+    "date": "2026-11-02",
+    "unit": {
+      "status": "passed",
+      "passed": 24455,
+      "skipped": 107,
+      "total": 24562
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [
+      "F0 was a resumed-local run: the first full run was green except one stray-file guard, the second tripped on an env var of my own, the third re-ran only the red unit"
+    ],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run --project plugins/shipwright-compliance --extra dev pytest plugins/shipwright-compliance/tests/test_test_links_profile_roots.py -q",
+      "exit_code": 0,
+      "tests_run": 21,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\profile-test-roots\\.shipwright\\runs\\iterate-2026-11-02-profile-declared-test-roots\\surface_verification.log",
+      "timestamp": "2026-11-02T21:30:34.386Z",
+      "attempts": 1
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "the vite-hono profile's folders are scanned with no compliance config",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_test_links_profile_roots.py::test_vite_hono_profile_roots_are_used_without_any_config PASSED"
+        },
+        {
+          "behavior": "tagged tests in server/tests and client/e2e reach the manifest",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_test_links_profile_roots.py::test_a_tagged_test_in_a_nested_folder_reaches_the_manifest PASSED"
+        },
+        {
+          "behavior": "the compliance config replaces the profile",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_test_links_profile_roots.py::test_the_compliance_config_replaces_the_profile PASSED"
+        },
+        {
+          "behavior": "no profile, an empty name, generic and detecting keep the defaults silently",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_test_links_profile_roots.py::test_no_usable_profile_keeps_the_defaults_silently PASSED"
+        },
+        {
+          "behavior": "a profile without test_roots keeps the defaults",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_test_links_profile_roots.py::test_a_profile_without_test_roots_keeps_the_defaults PASSED"
+        },
+        {
+          "behavior": "an unknown profile warns once and uses the defaults",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_test_links_profile_roots.py::test_an_unknown_profile_warns_once_and_uses_the_defaults PASSED"
+        },
+        {
+          "behavior": "an unknown profile with no default folder writes exactly one line",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_test_links_profile_roots.py::test_an_unknown_profile_with_no_default_folder_writes_exactly_one_line PASSED"
+        },
+        {
+          "behavior": "a user-level profile is never consulted",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_test_links_profile_roots.py::test_a_user_level_profile_is_never_consulted PASSED"
+        },
+        {
+          "behavior": "a corrupt run config degrades with one line naming the run config",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_test_links_profile_roots.py::test_a_corrupt_run_config_degrades_with_one_line PASSED"
+        },
+        {
+          "behavior": "a wrong-typed profile degrades with one line naming the profile",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_test_links_profile_roots.py::test_a_wrong_typed_profile_degrades_with_one_line PASSED"
+        },
+        {
+          "behavior": "profile entries that escape the project are dropped",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_test_links_profile_roots.py::test_profile_entries_that_escape_the_project_are_dropped PASSED"
+        },
+        {
+          "behavior": "declared folders that do not exist warn naming the profile and fall back",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_test_links_profile_roots.py::test_declared_folders_that_do_not_exist_warn_and_fall_back PASSED"
+        },
+        {
+          "behavior": "an empty declared list counts as absent",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_test_links_profile_roots.py::test_an_empty_declared_list_counts_as_absent PASSED"
+        },
+        {
+          "behavior": "warn=False is silent for throwaway trees, also for a non-list config",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_test_links_profile_roots.py::test_warn_false_is_silent_for_throwaway_trees PASSED"
+        },
+        {
+          "behavior": "without profile support the lookup returns nothing",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_test_links_profile_roots.py::test_without_profile_support_the_lookup_returns_nothing PASSED"
+        },
+        {
+          "behavior": "a module where shared/scripts does not exist imports with no profile support and leaves sys.path alone",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_test_links_profile_roots.py::test_a_module_placed_where_shared_scripts_does_not_exist_imports_with_no_profile_support PASSED"
+        },
+        {
+          "behavior": "importing the module leaves sys.path as it found it",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_test_links_profile_roots.py::test_importing_the_module_leaves_sys_path_as_it_found_it PASSED"
+        },
+        {
+          "behavior": "a vite-hono project keeps the links of its top-level tests folder",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_test_links_profile_roots.py::test_a_vite_hono_project_keeps_the_links_of_its_top_level_tests_folder PASSED"
+        },
+        {
+          "behavior": "the schema accepts a list of strings",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_stack_profile_test_roots_schema.py::test_a_string_list_is_accepted PASSED"
+        },
+        {
+          "behavior": "the schema accepts null like its sibling keys",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_stack_profile_test_roots_schema.py::test_null_traceability_is_accepted_like_its_sibling_keys PASSED"
+        },
+        {
+          "behavior": "the schema rejects a wrong type",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_stack_profile_test_roots_schema.py::test_a_wrong_type_is_rejected PASSED"
+        },
+        {
+          "behavior": "every bundled profile still validates",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_stack_profile_test_roots_schema.py::test_every_bundled_profile_still_validates PASSED"
+        },
+        {
+          "behavior": "vite-hono declares the nested layout",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_stack_profile_test_roots_schema.py::test_vite_hono_declares_the_nested_layout PASSED"
+        },
+        {
+          "behavior": "the merge gate sees the profile-declared folder from a committed run config",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_layer_coverage_profile_roots.py::test_gate_sees_the_profile_declared_folder_from_a_committed_run_config PASSED"
+        },
+        {
+          "behavior": "the merge gate falls back to the defaults and says why when the run config is not committed",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_layer_coverage_profile_roots.py::test_gate_falls_back_to_the_defaults_when_the_run_config_is_not_committed PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 25,
+        "tested": 25,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 1,
+        "covered_acs": 1
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-11-02-profile-declared-test-roots",
+    "commit": "6a41c2c8d211974bc548ef82f989434a06a35c61",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

@@ -56,6 +56,18 @@
     "folder_structure": {"type": ["object", "null"]},
     "migrations": {"type": ["object", "null"]},
     "design_system": {"type": ["object", "null"]},
+    "traceability": {
+      "type": ["object", "null"],
+      "additionalProperties": true,
+      "description": "Optional. How the compliance collector links tests to requirements for this stack.",
+      "properties": {
+        "test_roots": {
+          "type": "array",
+          "description": "Folders (or fixed-depth globs) relative to the project root that hold the tests. Used by the test_links collector when the project's shipwright_compliance_config.json sets no traceability.test_roots of its own.",
+          "items": {"type": "string"}
+        }
+      }
+    },
     "ux_shape": {
       "type": "string",
       "description": "Optional. How the app is shaped for the user (for example 'chat-first'). Plain string, no enum; no loader reads it yet."

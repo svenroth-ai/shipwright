@@ -1,0 +1,79 @@
+{
+  "run_id": "iterate-2026-11-02-plan-validator-unseeded-sections",
+  "date": "2026-11-02T10:09:28.574499Z",
+  "event_at": "2026-11-02T10:04:13.596138+00:00",
+  "type": "bug",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/fix-plan-validator-sections",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-11-02-plan-validator-unseeded-sections",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "build config without sections but plan side with section files passes validation",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-run/tests/test_phase_validators_split.py::test_plan_unseeded_build_config_uses_the_plan_side_section_files PASSED"
+      },
+      {
+        "behavior": "no build config file at all, split-less layout, still validates from plan side",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-run/tests/test_phase_validators_split.py::test_plan_unseeded_build_config_without_a_build_config_file PASSED"
+      },
+      {
+        "behavior": "neither side has sections still returns the ask-level issue",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-run/tests/test_phase_validators_split.py::test_plan_without_sections_on_either_side_still_asks PASSED"
+      },
+      {
+        "behavior": "build config sections win over plan side files and missing files still ask",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-run/tests/test_phase_validators_split.py::test_plan_build_config_sections_win_over_plan_side_files PASSED"
+      },
+      {
+        "behavior": "non-markdown entries in sections/ are ignored by the fallback",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-run/tests/test_phase_validators_split.py::test_plan_side_fallback_ignores_non_markdown_entries PASSED"
+      },
+      {
+        "behavior": "fallback uses current_split when no task split is passed",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-run/tests/test_phase_validators_split.py::test_plan_side_fallback_uses_current_split_without_a_task_split PASSED"
+      },
+      {
+        "behavior": "task split's plan-side sections are used when current_split names another split but sections[] is empty",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-run/tests/test_phase_validators_split.py::test_plan_side_fallback_for_task_split_when_current_split_names_another PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 7,
+      "tested": 7,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 3,
+      "covered_acs": 3
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run --project plugins/shipwright-run --extra dev pytest plugins/shipwright-run/tests/test_phase_validators_split.py -q",
+    "exit_code": 0,
+    "tests_run": 30,
+    "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\fix-plan-validator-sections\\.shipwright\\runs\\iterate-2026-11-02-plan-validator-unseeded-sections\\surface_verification.log",
+    "timestamp": "2026-11-02T10:03:45.670Z",
+    "attempts": 1
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": [
+    "touches_io_boundary"
+  ]
+}

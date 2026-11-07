@@ -10,10 +10,16 @@ the baseline-capped `test_finalize_iterate.py`) per the existing convention.
 
 from __future__ import annotations
 
-import json
+import sys
 from pathlib import Path
 
+import json
+
 import pytest
+
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "testkit"))
+from event_log_probe import event_text  # noqa: E402
 
 
 @pytest.fixture()
@@ -29,7 +35,7 @@ def project(tmp_path):
 
 
 def _read_events_jsonl(project: Path) -> list[dict]:
-    raw = (project / "shipwright_events.jsonl").read_text(encoding="utf-8")
+    raw = event_text(project)
     return [json.loads(line) for line in raw.splitlines() if line.strip()]
 
 

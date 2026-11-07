@@ -140,8 +140,9 @@ def test_the_cli_refuses_an_unclassified_bug_and_accepts_the_reason_code(tmp_pat
     ok = base + ["--spec-impact", "none", "--spec-impact-justification", "ci flake",
                  "--spec-impact-reason-code", "tooling-only"]
     assert record_event.main(ok) == 0
-    events = (tmp_path / "shipwright_events.jsonl").read_text(encoding="utf-8").splitlines()
-    assert json.loads(events[-1])["spec_impact_reason_code"] == "tooling-only"
+    from lib.events_read import read_events_assembled  # the layout-independent reader (S2)
+
+    assert read_events_assembled(tmp_path).records[-1]["spec_impact_reason_code"] == "tooling-only"
 
 
 def _f11(tmp_path, intent: str, **event_fields):

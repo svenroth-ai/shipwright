@@ -71,14 +71,43 @@ export async function launchPipeline(page: Page): Promise<void> {
 }
 
 /**
- * The modal only creates the task (state "draft"). The session starts with the green Launch button on the task
+ * A task created without the modal launch is a "draft". The session starts with the green Launch button on the task
  * page, so click it and wait until it is gone, which means the terminal launch was accepted.
  */
-export async function startTaskSession(page: Page): Promise<void> {
+export async function startTaskSession(page: Page, onMiss?: (attempt: number) => Promise<void>, waitMs: { first: number; retry: number } = { first: 30_000, retry: 20_000 }): Promise<void> {
   const cta = page.getByTestId("cta-launch-in-terminal");
-  await cta.waitFor({ state: "visible", timeout: 30_000 });
+  // The button can be missing right after the page loads (seen on fresh starts: terminal open at an empty prompt, task
+  // still "Awaiting launch"). Reload and look again before giving up; onMiss records what the task looked like.
+  // NOT proven by a passing run: the cause of the missing button is unknown, this only gives it two more chances.
+  let visible = false;
+  for (let attempt = 1; attempt <= 3 && !visible; attempt++) {
+    visible = await cta.waitFor({ state: "visible", timeout: attempt === 1 ? waitMs.first : waitMs.retry }).then(() => true, () => false);
+    if (!visible) {
+      await onMiss?.(attempt).catch(() => undefined); // recording is best effort and must not end the retry
+      if (attempt < 3) await page.reload();
+    }
+  }
+  if (!visible) await cta.waitFor({ state: "visible", timeout: 1_000 }); // throws the usual timeout error
   await cta.click();
   await cta.waitFor({ state: "hidden", timeout: 60_000 });
+}
+
+/** The task's state as the WebUI lists it (for the report when the launch button is missing); never throws. */
+export async function taskStateText(request: APIRequestContext, base: string, taskId: string | null): Promise<string> {
+  if (!taskId) return "task id unknown";
+  try {
+    const res = await request.get(`${base}/api/external/tasks`);
+    const body = (await res.json()) as { tasks?: { taskId: string; state?: string }[] };
+    const mine = (body.tasks ?? []).find((t) => t.taskId === taskId);
+    return mine ? `state ${mine.state ?? "not reported"}` : "task not in the list";
+  } catch (error) {
+    return `state unreadable (${String((error as Error).message).slice(0, 80)})`;
+  }
+}
+
+/** True when no launch button is there because the modal's Launch already started the task (state as `taskStateText` words it). */
+export function launchedByModal(hasLaunch: boolean, stateText: string): boolean {
+  return !hasLaunch && /^state (awaiting_external_start|active)$/.test(stateText);
 }
 
 export async function findTaskId(request: APIRequestContext, base: string, projectId: string): Promise<string | null> {
@@ -160,4 +189,17 @@ export async function pendingPrompt(inboxPage: Page, base: string): Promise<bool
   } catch {
     return false;
   }
+}
+
+/** A resumed run's Claude session died with the earlier run; the task page then offers "Resume". Click it, or nothing runs. */
+export async function resumeInterruptedSession(page: Page, record: (title: string) => Promise<void>): Promise<void> {
+  const btn = page.getByRole("button", { name: /Resume/ }).first();
+  if (!(await btn.isVisible().catch(() => false))) return;
+  await btn.click();
+  // The resumed session sits at its prompt: its background agent died with the old session (run 25 idled here).
+  await page.waitForTimeout(45_000);
+  await page.locator(".xterm").first().click();
+  await page.keyboard.type("Continue the pipeline where it was interrupted. The background agent of the earlier session did not finish, so start that phase again and carry on until the pipeline is complete.");
+  await page.keyboard.press("Enter");
+  await record("Resume: the interrupted Claude session was resumed with the Resume button and told to continue");
 }

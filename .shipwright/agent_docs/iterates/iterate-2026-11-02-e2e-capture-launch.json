@@ -1,0 +1,55 @@
+{
+  "run_id": "iterate-2026-11-02-e2e-capture-launch",
+  "date": "2026-11-01T23:58:11.669137Z",
+  "event_at": "2026-11-01T22:47:33.589413+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "default",
+  "branch": "iterate/e2e-capture-launch",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-11-02-e2e-capture-launch",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "the launch command is read inside a route on POST /launch only",
+        "disposition": "tested",
+        "evidence": "harness-fixes.spec.ts launch capture reads the body inside the route PASSED"
+      },
+      {
+        "behavior": "the page receives the very response it asked for",
+        "disposition": "tested",
+        "evidence": "harness-fixes.spec.ts launch capture reads the body inside the route PASSED"
+      },
+      {
+        "behavior": "a non-JSON body or a failed fetch never breaks the page's request",
+        "disposition": "tested",
+        "evidence": "harness-fixes.spec.ts launch capture reads the body inside the route PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 3,
+      "tested": 3,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 3,
+      "covered_acs": 3
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "node integration-tests/e2e-webui/node_modules/@playwright/test/cli.js test --config integration-tests/e2e-webui/playwright.config.ts --project=unit",
+    "exit_code": 0,
+    "tests_run": 82,
+    "evidence_path": ".shipwright/runs/iterate-2026-11-02-e2e-capture-launch/surface_verification.log",
+    "timestamp": "2026-11-01T23:58:00.953Z"
+  },
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}

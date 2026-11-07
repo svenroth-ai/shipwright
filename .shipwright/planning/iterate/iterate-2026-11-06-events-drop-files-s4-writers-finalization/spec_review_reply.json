@@ -1,0 +1,4 @@
+{"stage":"spec-compliance","verdict":"PASS","spec_citations":[],"findings":[
+{"severity":"medium","file":"shared/scripts/tools/generate_session_handoff.py","line":145,"text":"8-hex ids written into drops by two stragglers; fixed after review (project root passed), re-review PASS."},
+{"severity":"medium","file":"plugins/shipwright-changelog/skills/changelog/SKILL.md","line":345,"text":"Release event step did not stage or commit the drops layout; fixed after review, re-review PASS."},
+{"severity":"medium","file":"plugins/shipwright-adopt/scripts/lib/event_seeder.py","line":80,"text":"Adopt seeder key _adopt deviates from the live key rule; recorded as a decided exception in docs/hooks-and-pipeline.md and pinned by a test, re-review PASS."}]}

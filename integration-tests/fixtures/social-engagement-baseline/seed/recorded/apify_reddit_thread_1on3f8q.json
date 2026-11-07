@@ -1,0 +1,52 @@
+[
+  {
+    "dataType": "post",
+    "id": "1on3f8q",
+    "parsedId": "1on3f8q",
+    "url": "https://www.reddit.com/r/ExperiencedDevs/comments/1on3f8q/",
+    "communityName": "r/ExperiencedDevs",
+    "title": "Our team ships faster with agents but nobody can explain the codebase anymore",
+    "body": "Six months in. Throughput is up, incidents are up too, and onboarding a new dev takes longer than before because the code has no author who remembers why. Anyone found a working practice for this?",
+    "authorName": "granite_finch",
+    "ageHours": 61.3,
+    "score": 402,
+    "commentsCount": 3,
+    "createdAt": "2026-10-31T19:40:00Z"
+  },
+  {
+    "dataType": "comment",
+    "id": "mq2b001",
+    "parsedId": "mq2b001",
+    "postId": "1on3f8q",
+    "parentKind": "post",
+    "parsedParentId": "1on3f8q",
+    "authorName": "vellum_sky",
+    "body": "Comprehension debt. You pay it at every incident.",
+    "ageHours": 40.0,
+    "score": 120
+  },
+  {
+    "dataType": "comment",
+    "id": "mq2b002",
+    "parsedId": "mq2b002",
+    "postId": "1on3f8q",
+    "parentKind": "comment",
+    "parsedParentId": "mq2b001",
+    "authorName": "granite_finch",
+    "body": "Good name for it. How do you pay it down?",
+    "ageHours": 39.0,
+    "score": 35
+  },
+  {
+    "dataType": "comment",
+    "id": "mq2b003",
+    "parsedId": "mq2b003",
+    "postId": "1on3f8q",
+    "parentKind": "post",
+    "parsedParentId": "1on3f8q",
+    "authorName": "pebble_arch",
+    "body": "We added an ADR per non trivial change. The agent drafts it, a human signs it.",
+    "ageHours": 38.0,
+    "score": 64
+  }
+]

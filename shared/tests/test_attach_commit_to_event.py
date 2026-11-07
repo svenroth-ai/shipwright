@@ -25,6 +25,19 @@ if str(_TOOLS) not in sys.path:
     sys.path.insert(0, str(_TOOLS))
 
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "testkit"))
+from event_log_probe import pin_legacy  # noqa: E402
+
+import pytest  # noqa: E402
+
+
+@pytest.fixture(autouse=True)
+def _legacy_layout(monkeypatch):
+    """These tests are about the in-place rewrite of the LEGACY log; drops amend instead
+    (``test_events_writers_drops.py``)."""
+    pin_legacy(monkeypatch)
+
+
 def _write_event(project_root: Path, event: dict) -> str:
     """Append one event via the public ``append_event`` API."""
     from record_event import append_event

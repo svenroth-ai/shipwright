@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "1. **The question, answered in one sentence.** No \u2014 the smallest thing that would do is stop tracking the log (Option C), which removes the problem entirely and adds no standing mechanism at all.\n\n2. **The smallest thing that would do.** Move `shipwright_events.jsonl` out of git (gitignore it, write to an already-ignored or per-machine path). No conflicts, no layout switch, no env-flag pairing, no fixture pair, no replay gate, no ~100-entry known-failure list. If events must survive across clones, that is a persistence requirement the brief never states \u2014 and it would argue for a real store, not a tracked append-only file under a merge driver git ignores anyway.\n\n3. **What it costs to keep.** As proposed: a second layout that every future reader/writer change must reason about for as long as the campaign runs *and* after migration (the override pair, the runtime config key, and the fixture pair never go away); plus a standing CI replay step with a committed shrink-only list that needs a named owner to curate it forever \u2014 a gate that will eventually be flaky, slow, or quietly stale. Option C costs a one-time migration of any consumers who read the file from git history, and nothing ongoing.\n\n4. **What it forecloses.** The replay gate plus known-failures list makes every future event-related test change carry the extra obligation of running it under two layouts and shrinking the list. It also locks in the drops layout as the destination before any reader unit has validated it. Option C forecloses nothing the brief names.\n\n5. **Findings**\n\n- Category: existence\n- Severity: high\n- Finding: The stated problem \u2014 merge conflicts on one tracked append-only file \u2014 is fully solved by not tracking the file. The proposal instead builds a second permanent data layout plus a standing CI ratchet, which is a much larger permanent surface than the failure it addresses (stalled auto-merges, recoverable by hand or by rebase).\n- Suggestion: Take Option C: gitignore the events log (or relocate it outside the repo), keep the single-file layout. If a later, evidenced need for durable cross-clone events appears, build for that need then.\n\n- Category: proportionality\n- Severity: high\n- Finding: The standing replay gate \u2014 CI time budget, committed known-failing set (~100 entries) split by unit, shrink-only ratchet with per-unit ownership \u2014 is the most expensive item in the change and exists only to make the migration of a layout that Option C makes unnecessary. A list of 100 known failures is a mechanism that needs a human to notice it rotting; it will rot unnoticed.\n- Suggestion: Drop the gate and the drops layout together. If the layout is kept anyway, the gate should at minimum be scoped to die at the end of the campaign, with a stated removal condition \u2014 not a permanent CI step.\n\n- Category: simpler-alternative\n- Severity: medium\n- Finding: Option B (re-run `ensure_current` when main moves) uses machinery that already exists and directly addresses the 7-of-7 conflict window; even if adopted instead of C, it adds nothing permanent.\n- Suggestion: If tracking must be preserved for unstated reasons, Option B is the fallback \u2014 but C is strictly simpler and should be first choice.\n\nSHIPWRIGHT_VERDICT: reject",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Yes to A\u2019s per-run files and migration harness; the broad replay gate and its roughly 100-entry failure ratchet should exist only as temporary migration machinery.**\n\n2. **Smallest thing:** Keep the dormant drops path, protected layout selection, bare-origin conflict test and fixture pair. During migration, gate the drops tests for completed units; run unmigrated tests diagnostically. Remove the migration gate and test override after cutover. B adds coordination whenever main moves; C changes the tracked-log contract without an established replacement; D preserves an observed, frequent blockage.\n\n3. **Cost to keep:** Two layouts require compatibility maintenance. The proposed replay ratchet additionally requires failure-list classification and ownership across units; \u201cwhoever owns each later unit\u201d leaves that obligation unattended if the campaign stalls.\n\n4. **What it forecloses:** Keeping both layouts indefinitely makes future event-format and reader changes accommodate both. A permanent failure inventory also couples test reorganization to migration bookkeeping.\n\n5. **Findings**\n\nCategory: proportionality\nSeverity: medium\nFinding: Replaying every event-related test against roughly 100 accepted failures creates a broad ongoing obligation before those readers and writers are migrated. Shrink-only bookkeeping does not establish when this machinery ends.\nSuggestion: Gate drops tests for completed units, keep remaining replay results diagnostic, and retire the migration-specific gate at cutover.\n\nCategory: ownership\nSeverity: medium\nFinding: Assigning maintenance to future unit owners leaves the dormant path and migration machinery without a clear owner if subsequent units stop.\nSuggestion: Give one campaign owner responsibility for completing cutover or removing the dormant path and migration gate if the campaign is abandoned.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "architecture",
+  "capture": {
+    "run_id": "iterate-2026-11-05-s0-harness-dormant-writer",
+    "at": "2026-11-05T14:57:06.485236+00:00"
+  },
+  "verdicts": {
+    "glm": "reject",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=reject, openai=revise"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-07-events-drop-hardening",
+  "date": "2026-11-07",
+  "section": "Iterate â€” change: events drop-files hardening before the flip",
+  "title": "Event drop folds report a stuck file; F11 checks drop ownership and fails closed",
+  "context": "Reviews of the drop-files campaign left seven hardening gaps: a fold stopped halfway on a locked file, F11 skipped on git errors and ignored ownership, the layout CI check blocked a legal rollback and had a side-branch bypass, adopt turned null into legacy, the committed-check failed in subdirectories, the release skill staged absent docs.",
+  "decision": "A file that cannot be deleted is reported (folded_incomplete, exit 1) and the rollbacks keep the layout; F11 passes the run's keys and fails on a git error; the layout check accepts only unfoldable base drops as rollback leftovers and excuses only first-parent commits; adopt keeps an explicit null; the committed-check reads HEAD:./path; the release skill builds BULLET_DOCS.",
+  "consequences": "F11 ownership is not enforced on unfinished stacked or single-branch campaigns and never for drops written from the same worktree; a pre-flip side branch merged into a PR now fails the layout check and must be re-recorded as drops.",
+  "rationale": "Each gap was a way for the flip to fail loudly on an honest branch or silently on a dishonest one; the fixes keep the honest shapes the review found (absorb, re-attempt, campaign worktree) passing.",
+  "rejected": "Dropping F11 ownership entirely (loses the foreign-key guard); enforcing it with the run id alone (false FAIL on stacked units, absorb and re-attempts).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

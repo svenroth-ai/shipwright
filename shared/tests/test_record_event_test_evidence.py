@@ -16,6 +16,10 @@ from pathlib import Path
 _TOOLS = Path(__file__).resolve().parents[1] / "scripts" / "tools"
 if str(_TOOLS) not in sys.path:
     sys.path.insert(0, str(_TOOLS))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "testkit"))
+from event_log_probe import event_log_exists, event_text  # noqa: E402
+import pytest
+pytestmark = pytest.mark.covers("FR-01.11")
 
 
 class TestFrGateTestEvidenceCli:
@@ -31,7 +35,7 @@ class TestFrGateTestEvidenceCli:
         assert rc == 1
         captured = capsys.readouterr()
         assert "fr_gate_missing_test_evidence" in captured.out
-        assert not (tmp_path / "shipwright_events.jsonl").exists()
+        assert not event_log_exists(tmp_path)
 
     def test_main_passes_with_no_tests_reason(self, tmp_path, capsys):
         """--no-tests-reason satisfies the gate and is serialized onto the
@@ -48,9 +52,8 @@ class TestFrGateTestEvidenceCli:
         assert rc == 0
         captured = capsys.readouterr()
         assert "fr_gate_missing_test_evidence" not in captured.out
-        log = tmp_path / "shipwright_events.jsonl"
-        assert log.exists()
-        content = log.read_text(encoding="utf-8")
+        assert event_log_exists(tmp_path)
+        content = event_text(tmp_path)
         assert '"no_tests_reason":"scanner change' in content
 
     def test_main_zero_total_still_requires_reason(self, tmp_path, capsys):

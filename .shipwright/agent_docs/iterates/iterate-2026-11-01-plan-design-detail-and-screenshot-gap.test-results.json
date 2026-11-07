@@ -1,0 +1,84 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-01-plan-design-detail-and-screenshot-gap",
+    "date": "2026-11-01",
+    "unit": {
+      "status": "passed",
+      "passed": 839,
+      "skipped": 5,
+      "total": 844
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run --project plugins/shipwright-plan --extra dev pytest plugins/shipwright-plan/tests/test_design_detail_prompts.py -q",
+      "exit_code": 0,
+      "tests_run": 4,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\plan-design-detail-and-screenshot-gap\\.shipwright\\runs\\iterate-2026-11-01-plan-design-detail-and-screenshot-gap\\surface_verification.log",
+      "timestamp": "2026-11-01T15:12:46.759Z"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "section-writer prompt requires literal @media, per-state content, declared extension, contradiction without side",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-plan/tests/test_design_detail_prompts.py::test_section_writer_copies_design_values_from_the_screen PASSED"
+        },
+        {
+          "behavior": "Build spec-reviewer gate unchanged; no declared line is an exemption",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-plan/tests/test_design_detail_prompts.py::test_build_spec_reviewer_gate_is_unchanged PASSED"
+        },
+        {
+          "behavior": "batch task prompt carries the rules with mockups and not without",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-plan/tests/test_design_detail_prompts.py::test_batch_task_prompt_carries_the_rules PASSED; ::test_batch_task_prompt_without_mockups_has_no_design_rules PASSED"
+        },
+        {
+          "behavior": "screenshot-check reference keeps a fail a plain STOP with a neutral non-normative length note",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-test/tests/test_screenshot_check_prose.py::test_a_fail_is_a_plain_stop_and_the_length_note_is_not_normative PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 4,
+        "tested": 4,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 3,
+        "covered_acs": 3
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-24-r5b-merge-lane",
+    "commit": "032d1ebbf0ef9c99eb98f240c8f1110e981a32a5",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

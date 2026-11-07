@@ -92,6 +92,9 @@ export function checkScreensComposed(projectPath: string, mockups: string[], che
 
 const LOOPBACK = /^(127\.0\.0\.1|localhost|0\.0\.0\.0|\[::1\])$/i;
 const HARMLESS_HOSTS = /^(www\.w3\.org|example\.(com|org|net)|json-schema\.org)$/i;
+// Reserved names (RFC 2606 / 6761) never resolve to a real server. Only the source-adapter variant exempts them (opt-in below):
+// its fixture pages name made-up hosts such as www.reddit.example; the tabs variant's S05 stays as strict as before.
+const RESERVED_TEST_HOSTS = /^(?:[a-z0-9-]+\.)*[a-z0-9-]+\.(?:example|test|invalid|localhost)$/i;
 const KEY_READ = /(os\.environ|os\.getenv|process\.env)[^\n]{0,80}(API_?KEY|SECRET|PASSWORD|(API|ACCESS|AUTH)_?TOKEN)/i;
 
 // Calls with no scheme: protocol-relative `url(//host/x)`, `@import "//host"`, `fetch("//host")`, and a bare dotted host as the
@@ -113,22 +116,27 @@ function hostOf(raw: string): string {
 
 /** A host that is ONE template token (`{DEFAULT_HOST}`, `${host}`, `%s`, `<host>`) names no real server; `{region}.api.openai.com` still does. */
 const PLACEHOLDER_HOST = /^(?:\$?\{[^}]*\}|%s|<[^>]*>)$/;
+/** A host cut off inside an interpolated request-header read (`f"http://{self.headers.get('Host')}"`): it echoes the incoming request, it reaches nothing. */
+const HEADER_READ_HOST = /^\$?\{[^}]*\bheaders\b/;
+/** A host cut inside an f-string/template expression at its slice colon (`f"https://{value[scheme.end():]}"` leaves `{value[scheme.end()`): code, not a host. */
+const CUT_EXPRESSION_HOST = /^\$?\{[^}]*$/;
 
 /** External URLs and key reads in code lines (comment lines are skipped) of the given files. */
-export function findExternalUse(projectPath: string, files: string[]): string[] {
+export function findExternalUse(projectPath: string, files: string[], opts: { reservedTestDomains?: boolean } = {}): string[] {
   const hits: string[] = [];
+  const harmless = (host: string) => LOOPBACK.test(host) || HARMLESS_HOSTS.test(host) || PLACEHOLDER_HOST.test(host) || HEADER_READ_HOST.test(host) || CUT_EXPRESSION_HOST.test(host) || (!!opts.reservedTestDomains && RESERVED_TEST_HOSTS.test(host));
   for (const rel of files) {
     const lines = fs.readFileSync(path.join(projectPath, rel), "utf8").split(/\r?\n/);
     lines.forEach((line, i) => {
       if (/^\s*(#|\/\/|\*|\/\*)/.test(line)) return;
       for (const m of line.matchAll(/(?:https?|wss?):\/\/[^\s"'`<>)]+|(?:href|src)=["']\/\/[^\s"'`<>)]+/gi)) {
         const host = hostOf(m[0]);
-        if (!LOOPBACK.test(host) && !HARMLESS_HOSTS.test(host) && !PLACEHOLDER_HOST.test(host)) hits.push(`${rel}:${i + 1} reaches ${host}`);
+        if (!harmless(host)) hits.push(`${rel}:${i + 1} reaches ${host}`);
       }
       for (const m of line.matchAll(SCHEMELESS)) {
         const host = hostOf(`http://${m[1]}`);
         if (FILE_EXT.test(host)) continue; // fetch("data.json") is a file, not a host
-        if (!LOOPBACK.test(host) && !HARMLESS_HOSTS.test(host) && !PLACEHOLDER_HOST.test(host)) hits.push(`${rel}:${i + 1} reaches ${host}`);
+        if (!harmless(host)) hits.push(`${rel}:${i + 1} reaches ${host}`);
       }
       if (KEY_READ.test(line)) hits.push(`${rel}:${i + 1} reads a key or token from the environment`);
     });

@@ -1,0 +1,9 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"Recordings, rule, angle line, template, fit criteria, pins all in the diff; tolerance, metric, check and plugins untouched."},
+{"name":"Error Handling","verdict":"pass","note":"Fixture data only; the tests assert on missing/invalid shape (4/4/4, tz-aware stamps, invented hosts)."},
+{"name":"Security Basics","verdict":"pass","note":"Recordings use invented .example hosts and authors; no keys or real accounts."},
+{"name":"Test Quality","verdict":"pass","note":"Mockup text is recomputed from data+rule+template by an independent implementation; S05 findRecorded checked on the shipped files."},
+{"name":"Performance Basics","verdict":"n/a","note":"No runtime code."},
+{"name":"Naming & Structure","verdict":"pass","note":"seed/recorded/ mirrors the built project's path; tests grouped at the end of the existing file."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Producer: package files; consumer: package hash, brief_package layout, S05 findRecorded, build copy. Probed: verify_package with new files, validate_layout [], findRecorded on a temp project built from the shipped files."}
+]}

@@ -1,0 +1,80 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-01-mockup-text-length-parity",
+    "date": "2026-11-01",
+    "unit": {
+      "status": "passed",
+      "passed": 24375,
+      "skipped": 107,
+      "total": 24482
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "passed",
+      "passed": 76,
+      "skipped": 0,
+      "total": 76
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "the package hash in brief.json matches the changed fixture package",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_e2e_real_fixture.py::test_package_declares_the_skill_app_class_and_the_hash_matches PASSED (9 passed)"
+        },
+        {
+          "behavior": "mockups remain master-detail boards without chat or keywords tab, one header across all five",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_e2e_real_fixture.py::test_mockups_are_master_detail_boards_without_chat_and_without_a_keywords_tab PASSED"
+        },
+        {
+          "behavior": "the approved mockups satisfy S01/S02/S04 in a real browser with the new counts and titles",
+          "disposition": "tested",
+          "evidence": "integration-tests/e2e-webui tests/unit/real-variant.spec.ts PASSED (npm run test:unit 76 passed, typecheck clean)"
+        },
+        {
+          "behavior": "the built page passes the Test-phase screenshot check against the new mockups",
+          "disposition": "untestable",
+          "reason_code": "requires-external-nondeterministic-service",
+          "reason": "needs a real end-to-end run (model-built project); the operator decides when to run it"
+        }
+      ],
+      "counts": {
+        "testable": 3,
+        "tested": 3,
+        "untestable": 1,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 3,
+        "covered_acs": 3
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-24-r5b-merge-lane",
+    "commit": "032d1ebbf0ef9c99eb98f240c8f1110e981a32a5",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

@@ -24,6 +24,9 @@ Fail-closed conditions (mirror of SKILL.md F0.5):
 7. ``surface`` other than ``web`` while the diff touches a UI file: a UI
    change is driven in a browser. (Other detected kinds only refuse ``none``;
    an API or contract change may legitimately be driven as ``api`` or ``cli``.)
+   The one exception is ``native``: when every touched UI file lies in a native
+   (Expo / React Native) package, Jest results from those packages stand in for the
+   browser run (:mod:`._surface_native`); ``native`` for anything else is refused.
 
 Precedence: the diff wins over the reason code. ``no-startable-surface`` on a
 diff that touches a route is refused like any other code.
@@ -49,6 +52,7 @@ from ._entry_details import _no_entry_detail, _wrong_shape_detail  # noqa: E402
 from ._iterate_latest import read_iterate_latest, stale_detail  # noqa: E402
 from ._surface_detect import detect_surfaces  # noqa: E402
 from ._surface_evidence import evidence_problem  # noqa: E402
+from ._surface_native import native_packages  # noqa: E402
 from ._surface_git import surface_texts  # noqa: E402
 from .common import CheckResult, Severity  # noqa: E402
 from .git_helpers import _run_git, git_context  # noqa: E402
@@ -56,6 +60,7 @@ from .git_helpers import _run_git, git_context  # noqa: E402
 __all__ = ["check_surface_verification"]
 
 CHECK_NAME = "F0.5 surface_verification block valid"
+SURFACES = ("web", "cli", "api", "none", "native")  # == surface_verification.VALID_SURFACES (pinned by a test)
 _FAMILY = "surface_none"
 
 
@@ -130,7 +135,7 @@ def _check_none(project_root: Path, block: dict, commit_hash: str) -> CheckResul
         named = "; ".join(f"{kind}: {', '.join(paths[:3])}" for kind, paths in diff.touched.items())
         return CheckResult(CHECK_NAME, False,
                            f"surface=none ({code}) refused: the diff touches a runnable surface "
-                           f"({named}). Drive it through F0.5 with --surface web|api|cli")
+                           f"({named}). Drive it through F0.5 with --surface web|native|api|cli")
     return CheckResult(CHECK_NAME, True,
                        f"surface=none ({code}), justification recorded ({len(justification)} "
                        f"chars), diff vs {diff.base[:8]} touches no runnable surface")
@@ -151,8 +156,8 @@ def check_surface_verification(project_root: Path, run_id: str, commit_hash: str
         return CheckResult(CHECK_NAME, False, problem or "surface_verification missing")
 
     surface = block.get("surface")
-    if surface not in ("web", "cli", "api", "none"):
-        return CheckResult(CHECK_NAME, False, f"surface={surface!r} not one of web/cli/api/none")
+    if surface not in SURFACES:
+        return CheckResult(CHECK_NAME, False, f"surface={surface!r} not one of {'/'.join(SURFACES)}")
     if surface == "none":
         return _check_none(project_root, block, commit_hash)
 
@@ -170,11 +175,31 @@ def check_surface_verification(project_root: Path, run_id: str, commit_hash: str
     diff = _touched(project_root, commit)
     if diff.error:
         return CheckResult(CHECK_NAME, False, f"surface={surface}, tests_run={tests_run}: {diff.error}")
-    if "ui" in diff.touched and surface != "web":
+    scope = None
+    if "ui" in diff.touched and surface not in ("web", "native"):
         return CheckResult(CHECK_NAME, False,
                            f"surface={surface}, but the diff touches UI ({', '.join(diff.touched['ui'][:3])}): "
-                           "a UI change is driven in a browser. Re-run F0.5 with --surface web")
-    bad, summary = evidence_problem(project_root, run_id, commit, block, diff.touched, diff.paths)
+                           "a UI change is driven in a browser. Re-run F0.5 with --surface web "
+                           "(or --surface native when every UI file lies in an Expo / React Native package)")
+    if surface == "native":
+        if "ui" not in diff.touched:
+            return CheckResult(CHECK_NAME, False, f"surface=native, tests_run={tests_run}, but the diff touches no UI "
+                               "file: native is the surface of a UI change in a native package; use cli or api")
+        scope, why = native_packages(project_root, commit, diff.base, diff.touched["ui"])
+        if why:
+            return CheckResult(CHECK_NAME, False,
+                               f"surface=native refused: {why}. A UI change outside a native package is driven in a "
+                               "browser: re-run F0.5 with --surface web (a backend src/**/*.ts file in the same diff "
+                               "counts as UI until that rule is narrowed; an Expo app with a real web build needs a "
+                               "browser run)")
+        for kind, paths in diff.touched.items():  # native tests exercise the native packages only
+            stray = next((p for p in paths if kind != "ui" and not scope.contains(p)), None)
+            if stray:
+                return CheckResult(CHECK_NAME, False,
+                                   f"surface=native refused: the diff also touches a {kind} file outside the native "
+                                   f"package(s), {stray}, which Jest results of those packages do not exercise. "
+                                   "Drive it through its own surface (cli / api) in a separate run")
+    bad, summary = evidence_problem(project_root, run_id, commit, block, diff.touched, diff.paths, scope)
     if bad:
         return CheckResult(CHECK_NAME, False, f"surface={surface}, tests_run={tests_run}: {bad}")
     return CheckResult(CHECK_NAME, True, f"surface={surface}, tests_run={tests_run}, exit_code=0; {summary}")

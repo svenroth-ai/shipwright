@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-06-windows-tests-paths-filter",
+  "date": "2026-11-06",
+  "section": "Iterate — change: windows-tests paths filter",
+  "title": "Windows Tests runs on a PR only when it touches what it tests",
+  "context": "The non-required Windows shared-tests job takes 27-30 min, longer than the required Linux job, and ran on every PR.",
+  "decision": "Add a pull_request paths filter (shared/**, scripts/**, root env files, the workflow itself). Push to main and workflow_dispatch stay unfiltered.",
+  "consequences": "A plugins/**- or docs/**-only PR no longer runs Windows pre-merge; its post-merge push run is not watched by main_health, so a Windows-only break surfaces late.",
+  "rationale": "Saves ~30 min of runner time on most PRs; Linux CI still runs the same roots on every PR.",
+  "rejected": "Matrix/xdist changes belong to later iterates; watching the push run via MONITORED_WORKFLOWS left to IT-9 Unit 3.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

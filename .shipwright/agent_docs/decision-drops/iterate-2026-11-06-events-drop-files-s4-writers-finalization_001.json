@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-06-events-drop-files-s4-writers-finalization",
+  "date": "2026-11-06",
+  "section": "Iterate - feature: events drop writers and finalization (S4)",
+  "title": "One event writer, drops stay dormant",
+  "context": "Event appends were spread over several writers and finalization knew only the single legacy log (issue 978).",
+  "decision": "One writer module (stamp, 16-hex ids, dedup, atomic create, rotate-on-commit), a live key rule, F6 staging by own key, ensure_current absorb, F7b seal; default stays legacy.",
+  "consequences": "Legacy bytes unchanged; drops layout needs the S9a flip. Stage, absorb and seal take the writers lock; absorb leaves every work_completed file to its owner's F6.",
+  "rationale": "A shared writer lets dedup see the whole log; absorbing everything except gate-event files keeps 'F6 forgot to stage, F11 fails' true.",
+  "rejected": "Per-writer duplicates; absorbing every drop of the worktree (hides a forgotten F6 stage).",
+  "commit": "",
+  "architecture_impact": "data-flow",
+  "spec_ref": ""
+}

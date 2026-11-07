@@ -25,6 +25,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from lib.config import read_all_configs, read_events
 from lib.events_log import latest_event_dt
+from lib.events_read import sorted_by_ts
 from lib.handoff_iterate import render_iterate_progress
 from lib.canon_frontmatter import (
     CANON_MARKER_KEYS,
@@ -141,7 +142,7 @@ def _emit_session_id_fallback_warning(
 
         append_event(project_root, {
             "v": 1,
-            "id": generate_event_id(),
+            "id": generate_event_id(project_root),
             "ts": datetime.now(timezone.utc).isoformat(),
             "type": "hook_warning",
             "source": "session_id_fallback",
@@ -431,8 +432,7 @@ def generate_handoff(
     # Event log section (if exists)
     events = read_events(project_root)
     if events:
-        # Show last 5 events
-        recent = events[-5:]
+        recent = sorted_by_ts(events)[-5:]  # last 5 by ts, not by list position
         lines += [
             "",
             "## Last Events",
@@ -451,7 +451,7 @@ def generate_handoff(
 
         # Summary
         work_events = [e for e in events if e.get("type") == "work_completed"]
-        iterate_events = [e for e in work_events if e.get("source") == "iterate"]
+        iterate_events = sorted_by_ts(e for e in work_events if e.get("source") == "iterate")
         # Count DISTINCT phase names: a multi-split phase now records one
         # phase_completed PER split (iterate-2026-07-11-phase-completed-per-split),
         # so a raw list length would overcount "N phases completed".

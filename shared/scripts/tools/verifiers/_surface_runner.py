@@ -109,13 +109,13 @@ def under(tid: str, paths: list[str]) -> bool:
     return any(tid == p or tid.startswith(p + "/") or tid.startswith(p + "::") for p in paths)
 
 
-def passing_case_counts(project_root: Path, evio) -> dict[str, int]:
+def passing_case_counts(project_root: Path, evio, vitest: bool = False) -> dict[str, int]:
     """``{folded test id: passing JUnit cases}``; the runner's own counting unit.
 
     The evidence index folds ``test_foo[a]`` / ``test_foo[b]`` into one id, but a runner
     reports ``tests_run`` per case (pytest's "N passed"). Comparing the two units made a
     parametrized unit's honest ``tests_run=18`` read as 10 passing. An id absent here
-    (Playwright, Vitest) counts as 1. Known fail-closed limits (they undercount, never
+    (Playwright) counts as 1. Known fail-closed limits (they undercount, never
     overcount): the Playwright reader folds every project (browser) into one id, so a
     multi-project run recording N per project is refused; and a later staged report
     REPLACES an earlier one's count, as in :func:`latest_attempts`, so a partial ``--lf``
@@ -135,6 +135,13 @@ def passing_case_counts(project_root: Path, evio) -> dict[str, int]:
         except (OSError, UnicodeDecodeError):
             continue  # unread => no extra cases credited; the id still counts once
         counts.update(evio.read_junit_cases(text, root=Path(project_root), base=str(entry["base"])))
+    if vitest and "vitest" in (prov.get("reports") or {}):  # surface=native only: Jest titles repeat across describes
+        try:
+            data = json.loads((evd / evidence_drop.REPORT_NAMES["vitest"]).read_text(encoding="utf-8"))
+            for tid, n in evio.read_vitest_cases(data, root=Path(project_root)).items():
+                counts[tid] = max(counts.get(tid, 0), n)
+        except Exception:  # noqa: BLE001 - a malformed report is unread evidence: no extra cases, the id counts once
+            pass
     return counts
 
 

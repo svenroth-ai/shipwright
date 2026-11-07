@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-01-plan-design-detail-and-screenshot-gap",
+  "date": "2026-11-01",
+  "section": "Iterate - change: plan carries design-defined detail",
+  "title": "Plan copies design-defined detail; contradictions stay with a person",
+  "context": "E2E runs 12-14: sections restated screen values from memory (768 vs 900px, posted view, extra field), so Build's spec-reviewer stopped for a person each time.",
+  "decision": "section-writer copies breakpoints, per-state content and declares extras as Design extension with an FR/AC id; spec-reviewer accepts only a declared extension whose FR/AC names it. A true contradiction is not settled by Plan.",
+  "consequences": "Fewer false conflicts reach Build; FR-01.05 AC05 (person decides, requirement corrected) is unchanged.",
+  "rationale": "Opus doubt/code review showed a Plan-time 'screen wins' would bypass the person-decides rule and the requirement write-back.",
+  "rejected": "Letting Plan resolve contradictions (screen wins); changing the screenshot tolerance or fonts from one run.",
+  "commit": "",
+  "architecture_impact": "convention",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-11-01-plan-design-detail-and-screenshot-gap-plan-design-detail.md"
+}

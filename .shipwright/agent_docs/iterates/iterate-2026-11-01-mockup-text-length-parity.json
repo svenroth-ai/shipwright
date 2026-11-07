@@ -1,0 +1,56 @@
+{
+  "run_id": "iterate-2026-11-01-mockup-text-length-parity",
+  "date": "2026-11-01T17:03:04.232631Z",
+  "event_at": "2026-11-01T15:13:34.804094+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/mockup-text-length-parity",
+  "spec": ".shipwright/planning/iterate/iterate-2026-11-01-mockup-text-length-parity.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-11-01-mockup-text-length-parity",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "the package hash in brief.json matches the changed fixture package",
+        "disposition": "tested",
+        "evidence": "integration-tests/test_e2e_real_fixture.py::test_package_declares_the_skill_app_class_and_the_hash_matches PASSED (9 passed)"
+      },
+      {
+        "behavior": "mockups remain master-detail boards without chat or keywords tab, one header across all five",
+        "disposition": "tested",
+        "evidence": "integration-tests/test_e2e_real_fixture.py::test_mockups_are_master_detail_boards_without_chat_and_without_a_keywords_tab PASSED"
+      },
+      {
+        "behavior": "the approved mockups satisfy S01/S02/S04 in a real browser with the new counts and titles",
+        "disposition": "tested",
+        "evidence": "integration-tests/e2e-webui tests/unit/real-variant.spec.ts PASSED (npm run test:unit 76 passed, typecheck clean)"
+      },
+      {
+        "behavior": "the built page passes the Test-phase screenshot check against the new mockups",
+        "disposition": "untestable",
+        "reason_code": "requires-external-nondeterministic-service",
+        "reason": "needs a real end-to-end run (model-built project); the operator decides when to run it"
+      }
+    ],
+    "counts": {
+      "testable": 3,
+      "tested": 3,
+      "untestable": 1,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 3,
+      "covered_acs": 3
+    }
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": [
+    "touches_shared_infra"
+  ]
+}

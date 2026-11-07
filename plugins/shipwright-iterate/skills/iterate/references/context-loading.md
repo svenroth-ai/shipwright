@@ -29,6 +29,13 @@ context-loading discipline.
     bulge, and an unbounded read is exactly the context-cost class this repo
     already measures. Missing directory / no pending drops = skip, not an
     error.
+4b. Pending bullet drops (`.shipwright/agent_docs/decision-drops/bullets/*.md`) — convention /
+    architecture / learning lines not yet folded into `conventions.md` / `architecture.md`:
+    ```bash
+    uv run "{shared_root}/scripts/tools/fold_bullets.py" --project-root "{project_root}" --summary
+    ```
+    Prints the 20 newest, then `N more pending`, and a WARNING above 40 pending (fold them).
+    Empty output = skip, not an error.
 5. `.shipwright/agent_docs/architecture.md` — app structure, component tree, data flow
 6. `shipwright_sync_config.json` — file-to-FR mappings (if exists)
 7. `.shipwright/planning/*/spec.md` — every spec file across all splits. Run

@@ -1,0 +1,228 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-01-plan-design-detail-and-screenshot-gap",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-01T15:11:44.975050+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-01T15:11:57.334311+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "plugins/shipwright-plan/agents/section-writer.md",
+          "line": 97,
+          "finding": "Weakened gate: the plan agent resolves a spec-vs-screen contradiction itself and spec-reviewer treats the Design contradiction line as declared; requirement write-back is skipped.",
+          "suggestion": "Writer records the contradiction without taking a side; Build keeps the person-decides STOP. ACCEPTED-AND-FIXED.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-build/skills/build/SKILL.md",
+          "line": 143,
+          "finding": "Build own stop rule and section-builder not taught the declared extension. ACCEPTED-AND-FIXED (SKILL.md and self-review checklist).",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "readability",
+          "file": "plugins/shipwright-build/agents/spec-reviewer.md",
+          "line": 83,
+          "finding": "Anti-rationalization row contradicted item 5. ACCEPTED-AND-FIXED: contradiction line is no exemption, so the row stays true.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-build/agents/spec-reviewer.md",
+          "line": 71,
+          "finding": "Extension requirement id never checked. ACCEPTED-AND-FIXED: reviewer opens the cited FR/AC.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-plan/agents/section-writer.md",
+          "line": 80,
+          "finding": "Template block lacked the new lines. ACCEPTED-AND-FIXED.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-test/skills/test/references/step-3.7b-screenshot-check.md",
+          "line": 47,
+          "finding": "fail row still defined fail as visibly not the design. ACCEPTED-AND-FIXED.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": "plugins/shipwright-test/skills/test/references/step-3.7b-screenshot-check.md",
+          "line": 35,
+          "finding": "Text-length label should be a likely cause, not a judgement. ACCEPTED-AND-FIXED.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-plan/agents/section-writer.md",
+          "line": 92,
+          "finding": "Run identifiers in runtime prompt. ACCEPTED-AND-FIXED.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-plan/tests/test_design_detail_prompts.py",
+          "line": 29,
+          "finding": "Weak pre-existing needle; no no-mockups test. ACCEPTED-AND-FIXED.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-01T15:11:45.302514+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: The contradiction gate itself is unchanged — Plan-time 'screen wins' plus spec-reviewer exemption settles a mockup-vs-FR conflict without a person (FR-01.05 AC05, requirement-writeback.md).",
+          "suggestion": "Keep Design extension only; Design contradiction must still reach a person. ADDRESSED: exemption removed, writer takes no side.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "hidden coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: The plan review sees the Design contradiction line — Sections are written after Step 5; nothing reads the line. ADDRESSED: claim removed, Build stops on the line.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: A requirement id makes an extension legitimate — Reviewer never opens the id. ADDRESSED: reviewer opens the cited FR/AC; FR/AC ids only.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: Build reviewers agree — self-review-checklist not updated. ADDRESSED.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-01T15:11:45.462092+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-01T15:11:57.709235+00:00",
+      "disposition": "closed by reason_code diff-below-threshold",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "diff-below-threshold"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-01T15:11:45.120900+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-01T15:11:57.444364+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-01T15:11:57.585807+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}

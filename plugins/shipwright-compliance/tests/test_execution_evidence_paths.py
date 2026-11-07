@@ -183,3 +183,18 @@ def test_nested_brackets_in_a_param_id_fold_to_the_function_id():
     assert out["tests/t.py::test_x"]["executed"] == "pass"
     assert out["tests/t.py::test_y"]["executed"] == "fail"  # one failing case never hides behind a passing one
     assert read_junit_cases(xml) == {"tests/t.py::test_x": 2, "tests/t.py::test_y": 1}
+
+
+@pytest.mark.covers("FR-01.11/AC07")
+def test_read_vitest_cases_counts_each_passing_assertion_behind_a_folded_title():
+    from scripts.lib.collectors._evidence_readers import read_vitest, read_vitest_cases
+
+    data = {"testResults": [{"name": "app/src/A.test.tsx", "assertionResults": [
+        {"title": "renders", "status": "passed"},    # same title under two describe blocks:
+        {"title": "renders", "status": "passed"},    # read_vitest folds them into ONE id
+        {"title": "blurs", "status": "failed"},
+        {"title": "skipme", "status": "pending"},
+        {"title": "", "status": "passed"},
+    ]}, {"name": "", "assertionResults": [{"title": "x", "status": "passed"}]}]}
+    assert read_vitest_cases(data) == {"app/src/A.test.tsx::renders": 2}
+    assert set(read_vitest_cases(data)) <= {tid for tid, e in read_vitest(data).items() if e["executed"] == "pass"}

@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-06-windows-tests-paths-filter",
+  "ci_supplychain_ack": {
+    "run_id": "iterate-2026-11-06-windows-tests-paths-filter",
+    "paths_fingerprint": "fdd625bfdfe92cd5a5378db4caf19363f58441d6871b9124ed2812acbe27c560",
+    "consistent_with": "iterate-2026-08-07-windows-ci-perf",
+    "statement": "Adds a pull_request paths filter (shared/**, scripts/**, pyproject.toml, uv.lock, conftest.py, .gitattributes, .python-version, the workflow itself) to windows-tests.yml; push-to-main and workflow_dispatch stay unfiltered. No action added, no pin changed, no permission or secret touched, ci.yml untouched. Reduces when the non-required Windows job runs; does not widen the trust boundary.",
+    "ci_paths": [
+      ".github/workflows/windows-tests.yml"
+    ],
+    "provenance": "worktree",
+    "provenance_ref": null
+  }
+}
