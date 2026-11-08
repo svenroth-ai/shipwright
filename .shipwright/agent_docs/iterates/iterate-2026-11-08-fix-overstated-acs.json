@@ -1,0 +1,49 @@
+{
+  "run_id": "iterate-2026-11-08-fix-overstated-acs",
+  "date": "2026-11-08T16:26:14.439778Z",
+  "event_at": "2026-11-08T14:54:27.426083+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "keyword",
+  "branch": "iterate/fix-overstated-acs",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-11-08-fix-overstated-acs",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "the guard still stops a forced push to main, lets other commands run, and degrades to the coarse check when the precise guard cannot decide (the behaviour the corrected sentence now describes)",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-build/tests/test_hooks.py (173) PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 1,
+      "tested": 1,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 1,
+      "covered_acs": 1
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "runner": "",
+    "exit_code": 0,
+    "tests_run": 0,
+    "evidence_path": "",
+    "timestamp": "2026-11-08T16:26:01.433Z",
+    "attempts": 0,
+    "justification": "One requirement sentence in the spec corrected; no runnable surface changes",
+    "reason_code": "docs-only-surface"
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}

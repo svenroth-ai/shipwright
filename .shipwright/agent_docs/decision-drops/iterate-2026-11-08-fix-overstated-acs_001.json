@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-08-fix-overstated-acs",
+  "date": "2026-11-08",
+  "section": "Iterate - change: correct an overstated acceptance criterion",
+  "title": "Correct FR-01.05 AC09 to match the guard's fallback",
+  "context": "The ac-at-start Q2 seeded measurement showed AC09 promised that a failure of the command guard never blocks work, but the guard degrades to a deliberately over-blocking coarse check that can stop a forced push to a branch merely named like main.",
+  "decision": "The criterion sentence is corrected to the true promise: a forced overwrite of main is stopped, other commands run, and when the precise check cannot decide a coarser fallback errs towards stopping. Product code is unchanged.",
+  "consequences": "Only AC09 was a catalog AC; the #920 sentence was an assistant-written seed AC, so the Q2 follow-up line 'Two backfilled ACs overstate the code' should read one. Hook tests already cover the fallback.",
+  "rationale": "Operator-delegated rule: the sentence follows the code, because making the guard fail open would be a product decision.",
+  "rejected": "Changing validate_command.sh to fail open (product decision, weakens the protection).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

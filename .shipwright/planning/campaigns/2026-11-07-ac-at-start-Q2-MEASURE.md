@@ -28,3 +28,6 @@ Bar met on the evidence reading (5/5 altered; 0 unsupported alarms), NOT met on 
 
 ## Honest limits
 n = 10, assistant-written alterations, PR description as spec. The set cannot show the false-alarm rate on real runs; that is measured on the first 20 iterates. Q2 stays warning-only until then.
+
+## Correction 2026-11-08
+The sentence in adjudication B (#920, "before any project configuration is written") was one of the assistant-written seed ACs of this measurement, derived from the PR text. It is not a catalog AC, so adjudication B concerns the seed wording only and no catalog fix is needed. Only A (FR-01.05 AC09) was a real catalog AC; it is corrected in iterate-2026-11-08-fix-overstated-acs. The follow-up line above ("correct or re-scope AC09 (#859) and the #920 AC wording") therefore reduces to AC09 alone.
