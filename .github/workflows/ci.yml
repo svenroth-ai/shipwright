@@ -371,7 +371,7 @@ jobs:
         # the archives carry. The one file both artifacts contain, `.ci-junit/plan.json`, is
         # deterministic and byte-identical, so last-writer-wins is harmless; every other file is disjoint.
         if: always()
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           pattern: ci-tests-*
           merge-multiple: true
