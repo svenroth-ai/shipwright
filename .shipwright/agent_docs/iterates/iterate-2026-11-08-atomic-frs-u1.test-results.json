@@ -1,0 +1,109 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-08-atomic-frs-u1",
+    "date": "2026-11-08",
+    "unit": {
+      "status": "passed",
+      "passed": 16502,
+      "skipped": 62,
+      "total": 16564
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 680,
+      "skipped": 0,
+      "total": 680
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run pytest shared/tests/test_fr_clusters.py shared/tests/test_fr_scope_check.py -q",
+      "exit_code": 0,
+      "tests_run": 26,
+      "evidence_path": ".shipwright/runs/iterate-2026-11-08-atomic-frs-u1/surface_verification.log",
+      "timestamp": "2026-11-08T20:20:58.639Z",
+      "attempts": 1
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "a two-capability FR with few ACs is flagged splittable with its evidence, a 12-AC single-capability FR is left alone",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_fr_clusters.py::test_seeded_two_capability_fr_with_few_criteria_is_flagged_and_large_single_capability_fr_is_left_alone PASSED; plugins/shipwright-compliance/tests/test_audit_group_i_clusters.py::test_i10_lists_the_splittable_fr_with_evidence_and_leaves_the_large_single_capability_alone PASSED"
+        },
+        {
+          "behavior": "groups need >=3 criteria and >=50% of an FR bound to tests; singles are loose; thin evidence says no/partial evidence, never a guess",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_fr_clusters.py::test_a_group_needs_at_least_three_criteria_two_threes_split_a_two_and_a_six_do_not, ::test_singletons_are_loose_never_groups, ::test_a_split_needs_at_least_half_of_the_criteria_bound_to_tests, ::test_thin_evidence_says_no_evidence_never_a_guess PASSED"
+        },
+        {
+          "behavior": "evidence binds only from covers decorators and comments, never string literals; repo-wide utility files do not join groups",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_fr_clusters.py::test_ids_inside_string_literals_and_docstrings_are_not_coverage, ::test_evidence_reads_marker_above_test_and_inline_reference_and_ignores_fr_level_tags, ::test_repo_wide_utility_does_not_join_unrelated_groups PASSED"
+        },
+        {
+          "behavior": "I10 reports splittable FRs, no-evidence counts, 'could not read' and 'I10 broken' as distinct advisory outcomes and never fails",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_audit_group_i_clusters.py (6 tests) PASSED; integration-tests/test_requirements_corpus_false_verdicts.py PASSED"
+        },
+        {
+          "behavior": "fr_scope_check blocks only unreadable/empty specs, Must FRs without criteria and paths/symbols; shape, HTTP verbs and 'and' in a name are prompts",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_fr_scope_check.py (10 tests) PASSED"
+        },
+        {
+          "behavior": "fr_cluster_report says 'could not read the catalog' for an unparsed catalog and --fr prints one entry",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_fr_clusters.py::test_unparsed_catalog_is_said_to_be_unreadable_not_zero_splittable, ::test_fr_option_prints_only_that_requirement PASSED"
+        },
+        {
+          "behavior": "S5 reads the criteria of an adopt-format spec without an Acceptance label (parser question)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_fr_scope_check.py::test_s5_reads_the_criteria_of_an_adopt_format_spec_without_an_acceptance_label PASSED"
+        },
+        {
+          "behavior": "project-skill gate is skill prose plus the fr_scope_check exit code; a live /shipwright-project run on two briefs was not performed",
+          "disposition": "untestable",
+          "reason_code": "requires-external-nondeterministic-service",
+          "reason": "the gate is LLM skill prose; the stand-in briefs and exit codes are tested, a real skill run needs a model session"
+        }
+      ],
+      "counts": {
+        "testable": 7,
+        "tested": 7,
+        "untestable": 1,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 8,
+        "covered_acs": 8
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-24-r5b-merge-lane",
+    "commit": "032d1ebbf0ef9c99eb98f240c8f1110e981a32a5",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

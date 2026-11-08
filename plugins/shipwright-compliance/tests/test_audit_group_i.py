@@ -117,12 +117,13 @@ def _run(project_root):
 def _by_id(findings):
     return {f.check_id: f for f in findings}
 
+@pytest.mark.covers("FR-01.10")
 def test_clean_greenfield_spec_is_clean(tmp_path):
     findings = _by_id(_run(_spec(tmp_path, _GREENFIELD)))
     # I5 (Basis vocabulary) joined the group in campaign S5; I6 (acceptance
     # criteria) in the REQ-3 granularity round; I7 (criterion shape) in
     # iterate-2026-09-06-fr-hygiene-touched-rows.
-    assert set(findings) == {"I1", "I2", "I3", "I4", "I5", "I6", "I7", "I8", "I9"}
+    assert set(findings) == {"I1", "I2", "I3", "I4", "I5", "I6", "I7", "I8", "I9", "I10"}
     # Greenfield has no Name column, so the §5 fence is inapplicable, NOT passing.
     assert findings["I1"].status == "skip"
     assert "not applicable" in findings["I1"].detail

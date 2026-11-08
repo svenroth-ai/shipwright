@@ -115,6 +115,18 @@ If no boundaries touched: write `n/a` with one-line justification.}
      Folding is the common case.
    - **MINT → classify ADD.** Only for a genuinely new, user- or
      system-observable capability.
+   - **Fold only if it fits (`fr-authoring.md` §3c) — RUN the evidence:**
+     `uv run "{shared_root}/scripts/tools/fr_cluster_report.py"
+     --project-root "{project_root}" --fr FR-xx.yy --json` for the candidate
+     owner FR, and carry its `verdict` and `clusters` (groups, tests, files)
+     into the decision. On an error or a non-zero exit, or `{"unparsed": true}`
+     ("could not read the catalog"), or `no evidence` / `partial evidence`: code
+     cannot say, judge by purpose alone. A NEW AC has no tests yet, so it is
+     matched to a group by its purpose and wording only. FOLD when it serves the
+     same purpose as the FR's ACs, which is the common case. MINT only when its
+     purpose differs from every group AND it needs a different reader AND a
+     different test setup; "shares no evidence" alone is never a reason to
+     MINT. Size is not the test.
    - A new endpoint, route, or component is **not** by itself a new
      capability — it is usually the plumbing of one that already has an FR.
    - Altitude self-check before writing the row: could a non-technical
