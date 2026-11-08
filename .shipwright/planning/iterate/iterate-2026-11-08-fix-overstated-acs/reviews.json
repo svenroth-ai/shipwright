@@ -58,11 +58,12 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-11-08T16:34:04.999385+00:00",
+      "completed_at": "2026-11-08T16:36:15.090229+00:00",
       "disposition": "docs-only diff, no trigger surface (coordinator decision)",
       "recorded_by": "none",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
     },
     "external_code": {
       "review_type": "external_code",
