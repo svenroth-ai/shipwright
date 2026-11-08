@@ -2,10 +2,10 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://shipwright.local/schemas/codex_spec_review_schema.json",
   "title": "Codex spec-reviewer output",
-  "description": "Pinned to plugins/shipwright-build/agents/spec-reviewer.md's output contract. Passed to `codex exec --output-schema` for the Codex-driver internal-review transport (review_via_codex.py) and re-validated client-side after the process returns.",
+  "description": "Pinned to plugins/shipwright-build/agents/spec-reviewer.md's output contract. Passed to `codex exec --output-schema` for the Codex-driver internal-review transport (review_via_codex.py) and re-validated client-side after the process returns. `ac_verdicts` is listed in `required` with a nullable type, per OpenAI strict-schema mode: null when no AC claims file was passed (the common case), else one entry per claim.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["stage", "verdict", "spec_citations", "summary"],
+  "required": ["stage", "verdict", "spec_citations", "summary", "ac_verdicts"],
   "properties": {
     "stage": { "type": "string", "const": "spec-compliance" },
     "verdict": { "type": "string", "enum": ["REJECT", "PASS"] },
@@ -23,6 +23,21 @@
         }
       }
     },
-    "summary": { "type": "string" }
+    "summary": { "type": "string" },
+    "ac_verdicts": {
+      "type": ["array", "null"],
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["ac", "verdict", "diff_location", "reason", "weakens"],
+        "properties": {
+          "ac": { "type": "string" },
+          "verdict": { "type": "string", "enum": ["matches", "diverges"] },
+          "diff_location": { "type": ["string", "null"] },
+          "reason": { "type": "string" },
+          "weakens": { "type": ["boolean", "null"] }
+        }
+      }
+    }
   }
 }

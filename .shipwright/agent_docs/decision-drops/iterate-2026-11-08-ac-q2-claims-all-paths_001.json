@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-08-ac-q2-claims-all-paths",
+  "date": "2026-11-08",
+  "section": "Iterate - change: AC claims on every review path",
+  "title": "Pass the AC claims file on the campaign and Codex review paths",
+  "context": "Q2 phase 1 passed ac-claims.json to the spec-reviewer only in the standalone Step 8; the campaign runner/3f-bis and the Codex dispatch never did, so they always reported no AC review ran and the first-20-iterates measurement would be empty for Codex and campaign runs.",
+  "decision": "Both paths build the claims with the existing tool (ac_claims.py build) and pass it as the optional third input only when it holds claims. Codex: review_via_codex.py --claims-file (role spec only) and a required-nullable ac_verdicts key in codex_spec_review_schema.json (OpenAI strict mode); null when none passed. record_review_pass already copies ac_verdicts onto the spec row.",
+  "consequences": "Same warning-only behaviour on every path; no-AC runs unchanged; the Codex spec reply always carries ac_verdicts (null if none). campaign-mode.md stays at 1708 lines. Follow-ups: write_claims writes an empty file at 0 claims (skip it); stacked-unit base differs between runner 3.7 and 3f-bis (stacked is deprecated); no claims fingerprint (phase-2 precondition); test_campaign_step_3f_bis docstring quotes removed prose.",
+  "rationale": "One tool, no second builder; strict-mode schemas cannot have optional keys, so nullable-required. External plan/code review (GLM+GPT): GLM's 'wrong --project-root in runner 3.7' rejected (the runner's project_root IS the unit worktree); schema-consumer audit: only the transport validates it (full shared suite green).",
+  "rejected": "A separate Codex schema file or pseudo-role (ripples through three role tables); optional non-required key (breaks strict mode); building claims inside the transport.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

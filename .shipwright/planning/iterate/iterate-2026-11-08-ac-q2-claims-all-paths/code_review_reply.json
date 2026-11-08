@@ -1,0 +1,14 @@
+{
+  "section": "ac-q2-claims-all-paths",
+  "review": [
+    {
+      "severity": "medium",
+      "category": "verification",
+      "file": "shared/schemas/codex_spec_review_schema.json",
+      "line": null,
+      "finding": "Coordinator-run code-reviewer (opus): no HIGH; 1 medium (check the new required-nullable schema against the live Codex endpoint) and 3 lows. The coordinator ran the live check (completed with and without --claims-file); the lows were fixed per the closed fix list or recorded as follow-ups in the decision drop. Coordinator-spawned (opus): the runner cannot spawn the cascade here; the coordinator ran it, and the closed fix list from it was applied in this run.",
+      "suggestion": "live check done by the coordinator",
+      "source": null
+    }
+  ]
+}

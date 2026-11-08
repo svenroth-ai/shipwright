@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "**Findings**\n\n- **Category: edge-case \u2014 Severity: medium**\n  \"Pass the file only when it holds claims\" \u2014 how is \"holds claims\" determined? If it's a non-empty check, an empty-but-valid claims file (header only) may be indistinguishable from a build failure. Decide explicitly: file exists and parses with zero claims vs. file missing.\n  *Suggestion:* Define the check as \"build succeeded and claims list non-empty,\" and log which branch was taken so the \"no AC review ran\" message has a diagnostic trail.\n\n- **Category: risk \u2014 Severity: medium**\n  Step 1 runs `ac_claims.py build` *before* the Stage-1 spawn but the plan says nothing about build failure handling. If the build errors, does the campaign abort, or silently continue without claims (reproducing the current bug)?\n  *Suggestion:* Make failure explicit: either fail fast or warn loudly and record the skip in the run's review-pass metadata, not just stdout.\n\n- **Category: risk \u2014 Severity: low**\n  Making `ac_verdicts` required-nullable in `codex_spec_review_schema.json` (OpenAI strict mode) is a schema change that affects any existing consumers validating that schema, not just the new path. Confirm no other caller validates against the old shape before flipping the requirement.\n  *Suggestion:* Grep for validators of the schema and verify they tolerate the added field (or, if they're strict about unknown keys, that they're updated in the same change).\n\n- **Category: dependency \u2014 Severity: low**\n  `review_via_codex.py --claims-file` is listed as a role-spec-only flag, but the plan doesn't state whether the claims file is injected into the prompt or referenced by path. If path-referenced, the Codex sandbox must be able to read it; if injected, prompt-size limits for large claims files are unhandled.\n  *Suggestion:* State the injection mechanism and cap or chunk oversized claims files.\n\n- **Category: edge-case \u2014 Severity: low**\n  Codex runs may execute in working directories that differ from where `ac_claims.py build` wrote the file. Confirm the campaign and standalone Codex driver paths agree on the file location.\n  *Suggestion:* Have the driver resolve the path passed to it, not assume a default.\n\n- **Category: security \u2014 Severity: low**\n  Claims files typically embed issue text from external sources; if injected into Codex prompts, that's prompt-injection surface, same as existing prompt content. No new mitigation required, but note that claims content is untrusted in the dispatch doc.\n\nNo over-production concerns \u2014 this is appropriately small and the \"no change to `record_review_pass`\" reuse is the right call.\n\n**Overall assessment:** Sound, proportionate plan; the main gaps are unspecified failure handling for the claims build and ambiguity in the \"holds claims\" condition \u2014 both cheap to resolve before implementation.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Category:** dependency \u00b7 **Severity:** medium  \n   **Finding:** The plan covers the Codex flag and output schema, but not how claims enter the spec-reviewer\u2019s prompt or how returned verdicts map to claims. A required-nullable `ac_verdicts` can still return `null` when claims exist, leaving the original measurement gap unresolved.  \n   **Suggestion:** Explicitly include claims in the spec-review input and require verdicts keyed by claim ID. Validate coverage when claims were supplied; distinguish incomplete AC review from a run with no AC items.\n\n2. **Category:** edge-case \u00b7 **Severity:** medium  \n   **Finding:** \u201cPass the file only when it holds claims\u201d does not define behavior for build failure, malformed output, or a stale file from an earlier iteration. Silently skipping these cases would again look like \u201cno AC review ran\u201d; reusing stale claims could produce misleading results.  \n   **Suggestion:** Build into a run-specific location and consume output only after a successful build and parse. Treat a valid empty claims set as normal, but emit an explicit AC-review failure status for build or parsing errors. The overall review can remain warning-only.\n\n3. **Category:** risk \u00b7 **Severity:** low  \n   **Finding:** Making `ac_verdicts` required changes the output contract for every Codex spec review, including those without claims. Existing fixtures and consumers may assume the field is absent or always contains a collection.  \n   **Suggestion:** Define the no-claims value explicitly and test it through schema validation and `record_review_pass`. Include hermetic coverage for both campaign entry points, Codex with claims, incomplete verdict coverage, and non-spec roles remaining unaffected.\n\nThe approach is appropriately scoped and targets the right integration points. Before implementation, make the claims-to-verdict contract and failure handling explicit so the change reliably fixes the measurement gap.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-11-08-ac-q2-claims-all-paths",
+    "at": "2026-11-08T14:52:12.823354+00:00"
+  },
+  "verdicts": {
+    "glm": "revise",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

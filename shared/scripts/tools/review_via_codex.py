@@ -36,7 +36,7 @@ write its `findings`/`summary` into `plan.md`'s own `## Internal Plan
 Review` section instead. `--role architecture_internal` is the same shape
 (metadata-only `architecture_internal` row, own canonical basename
 `architecture_internal_reply.json`) but takes `--brief-file` (the architecture
-brief) + `--spec-file` (the sanitized spec copy) — never a plan or diff. On `status: "error"`, `reason` names the concrete
+brief) + `--spec-file` (the sanitized spec copy) — never a plan or diff. `--claims-file` (role `spec` only) hands the reviewer the run's `ac-claims.json`; its `ac_verdicts` ride onto the `spec` row. On `status: "error"`, `reason` names the concrete
 failure — either fall back to an ordinary Agent-tool spawn (then record
 `--transport agent --transport-note "<reason>"`) or, when no fallback
 exists, record `--status not_run --reason-code unavailable --disposition
@@ -68,6 +68,9 @@ from lib.codex_review_transport import (  # noqa: E402
 #: Sections the sanitized spec copy has stripped (prepare_architecture_internal_spec.py).
 _PRIOR_REVIEW_HEADINGS = ("## Internal Plan Review", "## Self-Review")
 
+#: The spec schema requires the nullable ``ac_verdicts`` key (OpenAI strict mode), so a pass with no claims file says so.
+_NO_CLAIMS = "No AC claims file was passed: ignore the AC claims sections of the instructions and set `ac_verdicts` to null."
+
 
 def _emit_error(reason: str) -> int:
     print(json.dumps({"status": "error", "transport": "codex", "reason": reason}))
@@ -96,6 +99,9 @@ def main(argv: list[str] | None = None) -> int:
                         help="required for --role plan_review: the plan being reviewed")
     parser.add_argument("--brief-file", default=None,
                         help="required for --role architecture_internal: the architecture brief")
+    parser.add_argument("--claims-file", default=None,
+                        help="--role spec only: the run's ac-claims.json (tools/ac_claims.py build); the reviewer then "
+                             "answers per AC in `ac_verdicts`. Omit when no claims exist (the reply then carries null)")
     parser.add_argument("--timeout", type=float, default=None)
     parser.add_argument("--max-retries", type=int, default=None)
     # Distinctly named — never reuses `--review-model`/`--plan-review-model`
@@ -112,6 +118,8 @@ def main(argv: list[str] | None = None) -> int:
                              "or SHIPWRIGHT_CODEX_PLAN_REVIEW_MODEL (plan_review, architecture_internal)")
     args = parser.parse_args(argv)
 
+    if args.claims_file and args.role != "spec":
+        return _emit_error("--claims-file is only valid for --role spec")
     if args.role == "architecture_internal":
         if not args.brief_file:
             return _emit_error("--brief-file is required for --role architecture_internal")
@@ -124,6 +132,8 @@ def main(argv: list[str] | None = None) -> int:
         if not args.diff_file:
             return _emit_error(f"--diff-file is required for --role {args.role}")
         context_paths = {"Spec file": args.spec_file, "Diff file": args.diff_file}
+        if args.claims_file:
+            context_paths["AC claims file"] = args.claims_file
 
     try:
         agent_markdown = Path(args.agent_md).read_text(encoding="utf-8")
@@ -133,6 +143,8 @@ def main(argv: list[str] | None = None) -> int:
         }
     except OSError as exc:
         return _emit_error(f"could not read an input file: {exc}")
+    if args.role == "spec" and not args.claims_file:
+        context_sections["AC claims file"] = _NO_CLAIMS
     # An empty subject (e.g. `git diff HEAD` on an all-new-file change, per
     # this repo's own recorded gotcha) is not an OSError, so it would
     # otherwise reach codex as a review of nothing — schema-valid, exit 0,

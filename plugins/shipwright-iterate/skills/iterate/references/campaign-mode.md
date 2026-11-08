@@ -889,6 +889,12 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
        Review that same MERGE-BASE diff, never `origin/{default}`'s tip (a moved
        main yields false high findings):
 
+       Q2 per-AC input (warning only): build the claims from the unit's committed AC record, in the unit worktree:
+         run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"; unit_wt=$(cat "$run_dir/unit_worktree"); [ -n "$unit_wt" ] || unit_wt="{project_root}"
+         uv run "{shared_root}/scripts/tools/ac_claims.py" build --project-root "$unit_wt" --run-id "{run_id}" --base-ref origin/{default}
+       It prints `{"path", "claims": N}`. Any output other than `{path, claims>0}` (`claims: 0`, skipped, exit 2, error) = no third input, spawn as before. Else
+       the `spec-reviewer` prompt (a) adds: "Also read the AC claims file at `<path>`." Never commit `ac-claims.json`.
+
        a) `spec-reviewer`  — Stage 1, HARD-GATE. A REJECT blocks the rest.
        b) `code-reviewer`  — Stage 2, only once Stage 1 PASSES.
        c) `doubt-reviewer` — Stage 3, conditional, advisory-must-address.
@@ -937,15 +943,9 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
          … record --project-root "$unit_wt" --review-type doubt --status not_applicable --reason-code diff-below-threshold --force --disposition "Stage 3 is conditional and did not trigger for this
              diff; Stage 2 passed at 3f-bis" || STRICT-STOP
 
-       Then ship the record with the PR. `run_dir`/`pr_url`/`unit_wt` were
-       set BEFORE the a/b/c spawns above and this block runs AFTER them —
-       re-derive all three here, exactly as 3g does below, rather than trust
-       shell state across that boundary (R3 doubt-round, round 2, medium:
-       `run_dir`/`pr_url` are re-derived from scratch here, so which boundary
-       they crossed is moot; `$diff_head`/`$fires`/`$pr_json` cross the
-       earlier `fires`-judgement boundary and are handled by the dual-writes
-       above; `$unit_wt` crosses BOTH, which is why it is re-read from its
-       file here as well):
+       Then ship the record with the PR. `run_dir`/`pr_url`/`unit_wt` were set BEFORE the a/b/c spawns and
+       this block runs AFTER them: re-derive all three here, as 3g does below, never trust shell state across
+       that boundary (`$diff_head`/`$fires`/`$pr_json` are covered by the dual-writes above):
          run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
          unit_wt=$(cat "$run_dir/unit_worktree"); [ -n "$unit_wt" ] || unit_wt="{project_root}"
          pr_url=$(cd "$unit_wt" && gh pr view "{branch}" --json url -q .url)

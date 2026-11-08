@@ -1,0 +1,260 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-08-ac-q2-claims-all-paths",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-08T14:51:52.735821+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Define the check as \"build succeeded and claims list non-empty,\" and log which branch was taken so the \"no AC review ran\" message has a diagnostic trail.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Make failure explicit: either fail fast or warn loudly and record the skip in the run's review-pass metadata, not just stdout.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Grep for validators of the schema and verify they tolerate the added field (or, if they're strict about unknown keys, that they're updated in the same change).",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "State the injection mechanism and cap or chunk oversized claims files.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Have the driver resolve the path passed to it, not assume a default.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency ·",
+          "file": null,
+          "line": null,
+          "finding": "The plan covers the Codex flag and output schema, but not how claims enter the spec-reviewer’s prompt or how returned verdicts map to claims. A required-nullable `ac_verdicts` can still return `null` when claims exist, leaving the original measurement gap unresolved.",
+          "suggestion": "Explicitly include claims in the spec-review input and require verdicts keyed by claim ID. Validate coverage when claims were supplied; distinguish incomplete AC review from a run with no AC items.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "“Pass the file only when it holds claims” does not define behavior for build failure, malformed output, or a stale file from an earlier iteration. Silently skipping these cases would again look like “no AC review ran”; reusing stale claims could produce misleading results.",
+          "suggestion": "Build into a run-specific location and consume output only after a successful build and parse. Treat a valid empty claims set as normal, but emit an explicit AC-review failure status for build or parsing errors. The overall review can remain warning-only.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk ·",
+          "file": null,
+          "line": null,
+          "finding": "Making `ac_verdicts` required changes the output contract for every Codex spec review, including those without claims. Existing fixtures and consumers may assume the field is absent or always contains a collection.",
+          "suggestion": "Define the no-claims value explicitly and test it through schema validation and `record_review_pass`. Include hermetic coverage for both campaign entry points, Codex with claims, incomplete verdict coverage, and non-spec roles remaining unaffected.  The approach is appropriately scoped and targets the right integration points. Before implementation, make the claims-to-verdict contract and failure handling explicit so the change reliably fixes the measurement gap.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-08T14:53:32.219584+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] **Findings**\n\n- **Category: edge-case — Severity: medium**\n  \"Pass the file only when it holds claims\" — how is \"holds claims\" determined? If it's a non-empty check, an empty-but-valid claims file (header only) may be indistinguishable from a build failure. Decide explicitly: file exists and parses with zero claims vs. file missing.\n  *Suggestion:* Define the check as \"build succeeded and claims list non-empty,\" and log which branch was taken so the \"no AC review ran\" message has a diagnostic trail.\n\n- **Category: risk — Severity: medium**\n  Step 1 runs `ac_claims.py build` *before* the Stage-1 spawn but the plan says nothing about build failure handling. If the build errors, does the campaign abort, or silently continue without claims (reproducing the current bug)?\n  *Suggestion:* Make failure explicit: either fail fast or warn loudly and record the skip in the run's review-pass metadata, not just stdout.\n\n- **Category: risk — Severity: low**\n  Making `ac_verdicts` required-nullable in `codex_spec_review_schema.json` (OpenAI strict mode) is a schema change that affects any existing consumers validating that schema, not just the new path. Confirm no other caller validates against the old shape before flipping the requirement.\n  *Suggestion:* Grep for validators of the schema and verify they tolerate the added field (or, if they're strict about unknown keys, that they're updated in the same change).\n\n- **Category: dependency — Severity: low**\n  `review_via_codex.py --claims-file` is listed as a role-spec-only flag, but the plan doesn't state whether the claims file is injected into the prompt or referenced by path. If path-referenced, the Codex sandbox must be able to read it; if injected, prompt-size limits for large claims files are unhandled.\n  *Suggestion:* State the injection mechanism and cap or chunk oversized claims files.\n\n- **Category: edge-case — Severity: low**\n  Codex runs may execute in working directories that differ from where `ac_claims. […truncated]\n\n[openai] 1. **Category:** dependency · **Severity:** medium  \n   **Finding:** The plan covers the Codex flag and output schema, but not how claims enter the spec-reviewer’s prompt or how returned verdicts map to claims. A required-nullable `ac_verdicts` can still return `null` when claims exist, leaving the original measurement gap unresolved.  \n   **Suggestion:** Explicitly include claims in the spec-review input and require verdicts keyed by claim ID. Validate coverage when claims were supplied; distinguish incomplete AC review from a run with no AC items.\n\n2. **Category:** edge-case · **Severity:** medium  \n   **Finding:** “Pass the file only when it holds claims” does not define behavior for build failure, malformed output, or a stale file from an earlier iteration. Silently skipping these cases would again look like “no AC review ran”; reusing stale claims could produce misleading results.  \n   **Suggestion:** Build into a run-specific location and consume output only after a successful build and parse. Treat a valid empty claims set as normal, but emit an explicit AC-review failure status for build or parsing errors. The overall review can remain warning-only.\n\n3. **Category:** risk · **Severity:** low  \n   **Finding:** Making `ac_verdicts` required changes the output contract for every Codex spec review, including those without claims. Existing fixtures and consumers may assume the field is absent or always contains a collection.  \n   **Suggestion:** Define the no-claims value explicitly and test it through schema validation and `record_review_pass`. Include hermetic coverage for both campaign entry points, Codex with claims, incomplete verdict coverage, and non-spec roles remaining unaffected.\n\nThe approach is appropriately scoped and targets the right integration points. Before implementation, make the claims-to-verdict contract and failure handling explicit so the change reliably fixes the measurement gap.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "verification",
+          "file": "shared/schemas/codex_spec_review_schema.json",
+          "line": null,
+          "finding": "Coordinator-run code-reviewer (opus): no HIGH; 1 medium (check the new required-nullable schema against the live Codex endpoint) and 3 lows. The coordinator ran the live check (completed with and without --claims-file); the lows were fixed per the closed fix list or recorded as follow-ups in the decision drop. Coordinator-spawned (opus): the runner cannot spawn the cascade here; the coordinator ran it, and the closed fix list from it was applied in this run.",
+          "suggestion": "live check done by the coordinator",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-08T14:51:45.829076+00:00",
+      "disposition": "coordinator spawned the reviewer; the runner cannot",
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "0fc8014343e4ba0b138ce36ba3799a90f32eb7e2"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "completeness",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: both paths now reach the reviewer reliably — Coordinator-run doubt-reviewer (opus): no HIGH, 5 low doubts. Fix-list items were applied; the rest (empty claims file at 0 claims, stacked-unit base mismatch, no claims fingerprint, stale test docstring) are follow-ups in the decision drop. Coordinator-spawned (opus): the runner cannot spawn the cascade here; the coordinator ran it, and the closed fix list from it was applied in this run.",
+          "suggestion": "decision drop: follow-ups",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-08T14:51:45.967451+00:00",
+      "disposition": "coordinator spawned the reviewer; the runner cannot",
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "0fc8014343e4ba0b138ce36ba3799a90f32eb7e2"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-step-3-7-internal-reviews.md` (the new Per-AC block, `--project-root \"{project_root}\"`)",
+          "line": null,
+          "finding": "The Step 3.7 prose says to build the claims \"from the unit's committed AC record … from the unit worktree\", but the command passes `--project-root \"{project_root}\"`, while the 3f-bis path in `campaign-mode.md` correctly uses `--project-root \"$unit_wt\"`. For a unit in a separate worktree (where `ac-record.jsonl` lives under the unit's `.shipwright/`, not the main project root), the 3.7 build will read the wrong tree and print `claims: 0`, silently reproducing exactly the \"no AC review ran\" bug this change is meant to fix.",
+          "suggestion": "Use `--project-root \"$unit_wt\"` (re-derived from `unit_worktree` exactly as 3f-bis does) in the 3.7 command, or document that `{project_root}` here resolves to the unit worktree.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "regression",
+          "file": "shared/schemas/codex_spec_review_schema.json` (`required` now includes `ac_verdicts`)",
+          "line": null,
+          "finding": "Making `ac_verdicts` required is a breaking change for every existing producer/consumer of spec-reviewer replies that doesn't emit the key. The diff itself shows this: two existing test fixtures (`test_codex_review_cascade_distinctness_fixture.py`, `test_codex_review_transport_reasoning_effort.py`) had to be updated, and the agent-tool spec reply in this very change (`spec_review_reply.json`) contains no `ac_verdicts` at all. Any other client-side validator or replayer that validates old recorded `spec` payloads against this schema (e.g. F11 replay, the cascade-verification pass) will now reject replies that were valid when written.",
+          "suggestion": "Audit all consumers of `codex_spec_review_schema.json` beyond the live Codex call and either make those consumers accept the key's absence or confirm they only validate fresh Codex replies; the commit message / decision drop should state the payload-contract break explicitly.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_ac_claims_all_paths.py` (`test_the_runner_cascade_reference_builds_and_passes_the_claims_before_the_spec_spawn`, `test_the_orchestrator_cascade_builds_in_the_unit_worktree_before_stage_one`)",
+          "line": null,
+          "finding": "These are flat-string assertions on the docs; they pass even if the embedded command is wrong (a wrong flag, wrong project root, wrong base ref would still satisfy \"ac_claims.py\\\" build\" and \"--base-ref\" presence). The \"before Stage-1\" ordering assertion compares against `flat.index(\"Record the pair 3f-bis can verify\")`, a string unrelated to the Stage-1 spawn, so misordering the build after the spec spawn would pass. Notably, the very bug I flag above (wrong `--project-root` in 3.7) would pass these tests.",
+          "suggestion": "Assert the exact project-root token per file (`\"$unit_wt\"` for 3.7 if fixed, `{project_root}` deliberately otherwise) and anchor the ordering between the build line and the literal \"`a) `spec-reviewer``\" spawn marker.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/review_via_codex.py` (`--claims-file` handling)",
+          "line": null,
+          "finding": "The tool accepts any `--claims-file` without checking it is the non-empty claims file the build contract requires (e.g. the known `claims: 0` empty file that `ac_claims.py build` writes, per the decision drop's own follow-up list). A driver that passes the path unconditionally will produce a review against an empty claims list and `ac_verdicts: []`, which the F11 check reads as \"a review ran with no verdicts\" rather than the intended \"no claims\".",
+          "suggestion": "Validate the parsed claims file contains a non-empty `claims` list and emit the standard error otherwise (this also closes the decision-drop follow-up).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "spec",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md` (deleted R3 boundary note)",
+          "line": null,
+          "finding": "The rewritten paragraph drops the recorded rationale that `$unit_wt` crosses both spawn boundaries and must be re-read from its file — a documented past defect (R3 doubt-round, medium). The instruction to re-derive survives, but the \"why\" for the worktree variable specifically (the one that bit before) is gone, inviting a future shortcut.",
+          "suggestion": "Restore one clause noting `$unit_wt` in particular must be re-read from `unit_worktree`, not reused from shell state.  Overall assessment: The core wiring (CLI flag, strict-mode schema, prompt injection, record round-trip) is implemented and tested behaviorally, but the 3.7 project-root inconsistency means one of the two fixed paths can still silently skip the AC review in separate-worktree campaigns, and the schema's new required key is an undocumented contract break for pre-existing replies — ship-with-fixes.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-08T14:53:32.361863+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] **Findings**\n\n- Category: bug\n  Severity: medium\n  File: `plugins/shipwright-iterate/skills/iterate/references/campaign-step-3-7-internal-reviews.md` (the new Per-AC block, `--project-root \"{project_root}\"`)\n  Finding: The Step 3.7 prose says to build the claims \"from the unit's committed AC record … from the unit worktree\", but the command passes `--project-root \"{project_root}\"`, while the 3f-bis path in `campaign-mode.md` correctly uses `--project-root \"$unit_wt\"`. For a unit in a separate worktree (where `ac-record.jsonl` lives under the unit's `.shipwright/`, not the main project root), the 3.7 build will read the wrong tree and print `claims: 0`, silently reproducing exactly the \"no AC review ran\" bug this change is meant to fix.\n  Suggestion: Use `--project-root \"$unit_wt\"` (re-derived from `unit_worktree` exactly as 3f-bis does) in the 3.7 command, or document that `{project_root}` here resolves to the unit worktree.\n\n- Category: regression\n  Severity: medium\n  File: `shared/schemas/codex_spec_review_schema.json` (`required` now includes `ac_verdicts`)\n  Finding: Making `ac_verdicts` required is a breaking change for every existing producer/consumer of spec-reviewer replies that doesn't emit the key. The diff itself shows this: two existing test fixtures (`test_codex_review_cascade_distinctness_fixture.py`, `test_codex_review_transport_reasoning_effort.py`) had to be updated, and the agent-tool spec reply in this very change (`spec_review_reply.json`) contains no `ac_verdicts` at all. Any other client-side validator or replayer that validates old recorded `spec` payloads against this schema (e.g. F11 replay, the cascade-verification pass) will now reject replies that were valid when written.\n  Suggestion: Audit all consumers of `codex_spec_review_schema.json` beyond the live Codex call and either make those consumers accept the key's absence or confirm they only validate fresh Codex replies; the commit message / decision drop should state the pa […truncated]\n\n[openai] No concrete defects found in the supplied diff.\n\nThe change covers the campaign runner, 3f-bis, and Codex dispatch paths. The Codex CLI forwards claims only for the spec role, reports unreadable inputs, and supports the required nullable schema field. Tests check prompt contents, schema validation, error handling, and persistence onto the spec review row.\n\nCampaign coverage checks procedure text rather than execution, so it provides limited assurance of the actual handoff. I could not run tests because command execution was blocked by the environment.\n\nOverall assessment: ship-as-is based on the supplied diff.\nSHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "openai": "approve",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-08T14:51:45.685477+00:00",
+      "disposition": "coordinator spawned the reviewer; the runner cannot",
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "0fc8014343e4ba0b138ce36ba3799a90f32eb7e2"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-08T14:53:32.499249+00:00",
+      "disposition": "the runner cannot spawn the internal arms here; the change was built from a coordinator brief, reviewed after the build by the coordinator-run cascade and the external plan and code reviews",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "no-spawn-site"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-08T14:53:32.622779+00:00",
+      "disposition": "the runner cannot spawn the internal arms here; the change was built from a coordinator brief, reviewed after the build by the coordinator-run cascade and the external plan and code reviews",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "no-spawn-site"
+    }
+  }
+}

@@ -203,7 +203,7 @@ uv run "{shared_root}/scripts/tools/ac_claims.py" build --project-root "{project
 
 `ac-claims.json` (`lib/ac_claims.py`) lists per item `ac` (`item-N` for an exemption), `kind`, `new_text`, `old_text`
 (the catalog text at the merge-base), `decided_by`, `confirmed`, `files`, `grade`. It is derived and regenerable: **do not
-commit it** (F11 recomputes the claims from the committed record). Say in the spawn prompt: "Also read the AC claims file
+commit it** (F11 recomputes the claims from the committed record). **Every review path passes it**: this Step 8, the campaign runner (`campaign-step-3-7-internal-reviews.md`) and 3f-bis, and the Codex driver (`review_via_codex.py --claims-file`). Say in the spawn prompt: "Also read the AC claims file
 at `<path>`." The reviewer then adds `ac_verdicts[]` (`{ac, verdict: matches|diverges, diff_location, reason, weakens}`) to its
 reply; without the file its reply is unchanged (it is shared with `/shipwright-build`). Record the reply as usual: `record_review_pass.py`
 copies the cleaned `ac_verdicts` onto the completed `spec` row (`lib/ac_verdicts.py`; a reply without them records as before).
