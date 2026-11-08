@@ -388,9 +388,10 @@ _Where the work detail lives_ at the end of this document.
   rather than restates.
 - (E) [AC09] Given an assistant is about to run a command, when that command would overwrite the
   shared main branch's history by force, then it is stopped; any other command, including
-  one that only mentions it, runs untouched, and a failure of this protection never
-  blocks work.
-  (iterate-2026-10-08-validate-command-force-push-fp)
+  one that only mentions it, runs untouched. When the precise check cannot reach a
+  decision, a coarser fallback applies that errs towards stopping a forced push that
+  mentions the main branch, rather than letting one through.
+  (iterate-2026-10-08-validate-command-force-push-fp, iterate-2026-11-08-fix-overstated-acs)
 - (E) [AC10] Given a planned section has passed the internal reviews, when its build is finished,
   then an independent outside review of that section's code change runs by default, the same as
   for any other finished change, unless the operator has switched it off; it is skipped, with
