@@ -74,7 +74,9 @@ Before adding an FR row, answer one question:
 - **MINT** — a genuinely new, user- or system-observable capability.
   → Add one row, per §4 and §5.
 
-Folding is the common case. A spec that grows one FR per unit of work stops
+Folding is the common case — but only into a requirement the new criterion
+**fits** (§3c): fold a criterion only if it serves the same purpose as the
+requirement's other criteria; otherwise MINT. A spec that grows one FR per unit of work stops
 describing the product and starts duplicating the changelog.
 
 **Worked example.** Four rows had accumulated for one capability:
@@ -182,6 +184,47 @@ section governs the shape of a criterion once one is written, not whether one
 must exist yet. §7's `I8` is the visibility signal for a `TBD` that has sat
 unrefined for a long time; it is advisory and never blocks, since it targets
 exactly the legacy content a run did not touch.
+
+---
+
+## 3c. Scope: can this requirement still be split?
+
+One requirement names **one capability** with a small, countable set of
+promises. The question is never *how many* criteria it has — 20 criteria can be
+one capability and 8 can be two — but **can it still be split?**
+
+- **Fold or mint:** does the new criterion serve the **same purpose** as the
+  requirement's other criteria? Yes → FOLD it. No → MINT a new requirement.
+  A criterion that needs a different test setup and a different reader than its
+  neighbours is a new capability, whatever its topic.
+- **The capability test:** can each group of criteria be named in **one plain
+  sentence without "and"**? If the sentence needs an *and*, the group is two
+  capabilities. (A judgement — a person or the AI makes it.)
+- **Stop rule, against hundreds of tiny requirements:** split only if **every
+  part has a name a user understands, keeps at least three criteria, AND code
+  finds no shared tests or files between the parts.** Parts that share tests or
+  files stay one requirement, and a part with fewer than three criteria stays
+  folded.
+- **Code finds the seams** (`shared/scripts/tools/fr_cluster_report.py`, audit
+  `I10`): it groups the criteria of an FR by the tests that name them, the source
+  files those tests touch, and the wording they share. Two or more groups
+  **of at least three criteria each** that share none of them → splittable, but only
+  when at least half of the FR's criteria are named by tests. A criterion that
+  sits in a group of fewer than three is **loose**, never a group (a new requirement carved out of one or two
+  criteria is too thin to justify a row). One connected group
+  (plus loose singles) → stays whole, at any size. Too little evidence (fewer than
+  half the criteria named by a test) → the report says **"partial evidence"** or
+  **"no evidence"**; it never guesses. The criterion count only sorts the
+  worklist, biggest first.
+- **Honest limit:** clusters show what is connected in code, not what is one
+  capability. Two promises that share a test can still be two capabilities. Code
+  proposes; the operator confirms every cut.
+- **At spec time there is no code or test yet,** so `/shipwright-project` blocks
+  on the capability test **plus the code form checks** (`step-6-fr-scope.md`): it
+  may not finish an FR until each group of its criteria passes the capability
+  test and `fr_scope_check.py` exits 0. The gate is skill prose plus that exit
+  code (no phase validator runs it). The cluster check runs later, in the audit,
+  as advice.
 
 ---
 
@@ -378,6 +421,7 @@ document.
 | `I7` | a criterion that exists but is not in the §3b `Given`/`when`/`then` shape | advisory |
 | `I8` | a `/shipwright-adopt` `TBD` acceptance-criteria placeholder that has survived 90+ days, read from `git blame` | advisory |
 | `I9` | a requirement whose recorded changes never co-occur with a decision-drop / ADR run_id ("Rewritability", REQ3.04c mechanism M7) | advisory, never blocking |
+| `I10` | an FR whose criteria fall into two or more groups sharing no test, file or wording — it can still be split (§3c); listed biggest first, with the evidence | advisory, never blocking |
 
 **Advisory** means the finding is reported with its count and IDs but does not
 change the audit's verdict or exit code — an existing spec can carry historical
@@ -441,6 +485,10 @@ three-outcome shape (`linked` / `unlinked` / `could_not_determine` — a
 requirement with no recorded changes at all is the third, not silently
 folded into `unlinked`).
 
-Not linted, deliberately: §5.3 (name length) and §5.4 (one capability per FR)
-need editorial judgement, and a wrong automated verdict would be worse than
-silence.
+`I10` is advisory because the cut is a judgement: code shows what is connected,
+not what is one capability, and a legacy catalog must not redden CI. It says
+"no evidence" rather than guess when too few criteria are named by tests.
+
+Not linted, deliberately: §5.3 (name length) needs editorial judgement, and a
+wrong automated verdict would be worse than silence. §5.4 (one capability per FR)
+is only *advised* (`I10`) — never decided — by code.

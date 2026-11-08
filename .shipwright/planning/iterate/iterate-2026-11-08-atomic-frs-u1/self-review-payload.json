@@ -1,0 +1,10 @@
+{"items": [
+  {"name": "Spec Compliance", "verdict": "pass", "note": "U1 of the atomic-frs brief: scope rule (fr-authoring 3c), clustering lib + report tool, advisory audit check I10, blocking project-skill gate with fr_scope_check, iterate Step 1a points at the same rule; the operator decisions (min group size 3, conservative gate) are implemented and tested."},
+  {"name": "Error Handling", "verdict": "pass", "note": "I10 separates 'could not read', 'I10 broken (cannot load / internal error)' and thin evidence; fr_scope_check and fr_cluster_report fail loudly on unreadable input instead of reading clean."},
+  {"name": "Security Basics", "verdict": "pass", "note": "Read-only scanners; no shell, no network; files are parsed with ast/tokenize/regex, size-capped at 2 MB, skip dirs excluded."},
+  {"name": "Test Quality", "verdict": "pass", "note": "Seeded two-capability FR flagged, large single-capability FR left alone, loose/partial/hub/min-group boundaries, string-literal exclusion, unreadable and broken-loader paths; hermetic tmp_path projects."},
+  {"name": "Performance Basics", "verdict": "pass", "note": "One walk of the repo plus one parse per test file; real catalog run completes in seconds; pairwise linking is per FR (49 ACs max)."},
+  {"name": "Naming & Structure", "verdict": "pass", "note": "All new files under 300 LOC; sibling group_i_clusters keeps group_i at 281; runtime prompts under 400 lines (path-a-feature 375); spec-generation.md not grown."},
+  {"name": "Affected Boundaries", "verdict": "pass", "note": "Boundary is the audit loading shared libs via load_shared_lib (ADR-045): run in the compliance root with other group_i tests; the integration-tests Group I id set updated to I1..I10 and run (680 passed)."},
+  {"name": "Test Hygiene Probe", "verdict": "pass", "note": "scan_test_hygiene --diff reported no findings (see run output)."}
+]}

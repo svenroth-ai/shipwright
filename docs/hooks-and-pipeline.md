@@ -915,6 +915,22 @@ module rather than a growth of `fr_criteria.py`, so tightening the shape rule
 can never touch the criteria-FINDING logic three other gates (S5, the
 cross-layer hard gate, I6) depend on staying exactly as permissive as today.
 
+**One requirement, one capability: scope rule + I10 (atomic-frs U1).** `fr-authoring.md` §3c replaces any size
+number with the question "can this FR still be split". Code finds the seams: `shared/scripts/lib/fr_clusters.py`
+groups one FR's criteria by bound tests, the source files those tests import and shared wording (evidence from
+`lib/fr_cluster_evidence.py`, which reads test files for `FR-xx.yy/ACnn` references; source files imported by the tests
+of many FRs are ignored as hubs). Verdict per FR: `yes` (at least half of its criteria are named by tests AND two or more groups of at least three
+criteria share nothing; one or two criteria on their own are "loose", never groups, since a requirement carved out of
+them would be too thin), `no` (fewer than two such groups, at any size), or
+`partial evidence` / `no evidence` (too few criteria named by tests; never a guess). The count only sorts the
+worklist. Audit check `I10` (`group_i_clusters.py`, loaded through `load_shared_lib`) lists the `yes` FRs with their
+evidence, counts the FRs with no evidence, and says "could not read" (status skip) for an unreadable catalog; it is
+advisory, never red; `tools/fr_cluster_report.py` prints the same worklist with the evidence. The `/shipwright-project`
+Step 6 gate (`references/step-6-fr-scope.md`) BLOCKS finishing an FR until its criteria groups pass the capability test
+(AI) and `tools/fr_scope_check.py` exits 0 (code, conservative: a readable spec, criteria on every Must requirement, no file
+path or code symbol in a criterion; Given/when/then shape, HTTP verbs and an "and" in the name are only printed prompts). It is skill prose plus that exit code: no phase validator runs it; no code exists at spec time, so that gate cannot use clusters. `/shipwright-iterate` Step 2's FOLD/MINT
+gate points to the same rule. No hook, phase or reader changed.
+
 **A stale TBD is visibility, not a gate (same change).** `/shipwright-adopt`'s
 `"_TBD — refine via /shipwright-iterate._"` placeholder is a legitimate
 starting point, but nothing ever escalated it — the same observed project

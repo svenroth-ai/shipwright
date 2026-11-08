@@ -22,6 +22,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from requirements_corpus.probe import ProbeFailed, probe  # noqa: E402
@@ -161,6 +163,7 @@ def test_fv2_d1_d2_d4_still_skip_when_there_is_nothing_at_all_to_compare():
     assert "no spec.md" in result["D2"][2]
 
 
+@pytest.mark.covers("FR-01.10")
 def test_fv2_group_i_skips_every_check_on_empty():
     """FROZEN-BUG (FV-2): every Group I check skips on zero rows.
 
@@ -193,7 +196,7 @@ def test_fv2_group_i_skips_every_check_on_empty():
     """
     findings = _probe("group_i_empty", "absent")
     assert {f["check_id"] for f in findings} == {
-        "I1", "I2", "I3", "I4", "I5", "I6", "I7", "I8", "I9",
+        "I1", "I2", "I3", "I4", "I5", "I6", "I7", "I8", "I9", "I10",
     }
     assert {f["status"] for f in findings} == {"skip"}  # FROZEN-BUG (FV-2)
     # The state is now named rather than generic -- S5's half of FV-2.

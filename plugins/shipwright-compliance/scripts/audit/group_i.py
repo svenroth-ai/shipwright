@@ -18,6 +18,8 @@ own requirement, and duplicate FR IDs.
   co-occur with a decision-drop / ADR run_id (M7 "Rewritability" — advisory,
   never a gate; see `shared/scripts/lib/rewritability_links.py` for the
   interpretation this proxies)
+- I10 — an FR whose criteria fall into two or more groups that share no test,
+  file or wording: it can still be split (`fr-authoring.md` §3c; advisory)
 
 **Advisory by construction, not by luck.** The three prose checks (I1/I2/I3)
 never emit ``status="fail"``, because a failing finding feeds
@@ -49,6 +51,7 @@ from scripts.audit.audit_adapters import (
     Finding,
     load_shared_lib,
 )
+from scripts.audit.group_i_clusters import splittable_report
 from scripts.audit.group_i_criteria import frs_with_malformed_criteria, frs_without_criteria
 from scripts.audit.group_i_rewritability import rewritability_detail
 from scripts.audit.group_i_tbd_age import DEFAULT_THRESHOLD_DAYS, frs_with_stale_tbd
@@ -83,6 +86,7 @@ _CHECKS: tuple[tuple[str, str, str], ...] = (
     ("I7", "FR criterion not in the prescribed Given/when/then shape", "LOW"),
     ("I8", "Stale TBD acceptance-criteria placeholder", "MEDIUM"),
     ("I9", "Requirement with no linked rationale (M7 Rewritability)", "LOW"),
+    ("I10", "FR can still be split into separate capabilities", "LOW"),
 )
 
 #: I5's, I6's, I7's, I8's and I9's display names, bound by NAME rather than by
@@ -93,6 +97,7 @@ _I6_NAME = next(name for cid, name, _sev in _CHECKS if cid == "I6")
 _I7_NAME = next(name for cid, name, _sev in _CHECKS if cid == "I7")
 _I8_NAME = next(name for cid, name, _sev in _CHECKS if cid == "I8")
 _I9_NAME = next(name for cid, name, _sev in _CHECKS if cid == "I9")
+_I10_NAME = next(name for cid, name, _sev in _CHECKS if cid == "I10")
 
 #: I1/I2/I3 are prose heuristics over legacy specs, so they report WITHOUT
 #: ``status="fail"``: a failing finding feeds ``AuditReport.any_fail``, which
@@ -131,7 +136,9 @@ _I9_NAME = next(name for cid, name, _sev in _CHECKS if cid == "I9")
 #: be bloat, and the check only PROXIES the real question (see
 #: `rewritability_links.py`'s module docstring), so a false positive is
 #: expected and must never cost a build.
-_ADVISORY_CHECKS = frozenset({"I1", "I2", "I3", "I6", "I7", "I8", "I9"})
+#: I10 is advisory because the cut is a judgement (code shows what is connected,
+#: not what is one capability) and legacy catalogs must not redden CI.
+_ADVISORY_CHECKS = frozenset({"I1", "I2", "I3", "I6", "I7", "I8", "I9", "I10"})
 
 
 def _finding(check_id: str, name: str, severity: str, status: str, detail: str) -> Finding:
@@ -271,4 +278,5 @@ def run(
                 frs_with_stale_tbd(project_root, rows, threshold_days=DEFAULT_THRESHOLD_DAYS),
                 f"FR(s) with a TBD placeholder open >= {DEFAULT_THRESHOLD_DAYS} days"),
         _rewritability_finding(project_root, rows),
+        _finding("I10", _I10_NAME, "LOW", *splittable_report(project_root)),
     ]
