@@ -288,7 +288,7 @@ FALLBACK_CASES = [
 ]
 
 
-@pytest.mark.covers("FR-01.05/AC08")
+@pytest.mark.covers("FR-01.05/AC08", "FR-01.05/AC09")
 @pytest.mark.parametrize("guard_body", [
     None,  # guard file missing
     "import sys\nsys.exit(4)\n",  # guard cannot decide
@@ -301,7 +301,7 @@ def test_hook_degrades_to_coarse_check_when_guard_cannot_decide(tmp_path, guard_
     assert "coarse fallback" in result.stderr
 
 
-@pytest.mark.covers("FR-01.05/AC08")
+@pytest.mark.covers("FR-01.05/AC08", "FR-01.05/AC09")
 def test_hook_still_checks_when_python_cannot_extract_the_command():
     """A lone surrogate makes the Python extractor fail; sed must still find the command."""
     result = _run_hook(
@@ -310,7 +310,7 @@ def test_hook_still_checks_when_python_cannot_extract_the_command():
     assert result.returncode == 2, (result.stdout, result.stderr)
 
 
-@pytest.mark.covers("FR-01.05/AC08")
+@pytest.mark.covers("FR-01.05/AC08", "FR-01.05/AC09")
 @pytest.mark.parametrize("command,expected", FALLBACK_CASES)
 def test_hook_still_guards_when_no_python_interpreter_is_found(tmp_path, command, expected):
     """Every interpreter candidate fails its probe -> sed/grep path, never a silent allow."""

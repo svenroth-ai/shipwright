@@ -1,0 +1,14 @@
+{
+ "section": "fix-overstated-acs",
+ "review": [
+  {
+   "severity": "medium",
+   "category": "verification",
+   "file": "plugins/shipwright-build/tests/test_hooks.py",
+   "line": null,
+   "finding": "Coordinator-run code-reviewer (opus): no HIGH; 1 medium and 1 low, both handled by the closed fix list (AC09 cover markers on the fallback tests; decision-drop quote paraphrased). Coordinator-spawned (opus): the runner did not spawn the cascade here; the coordinator ran it and its closed fix list was applied in this run.",
+   "suggestion": "applied",
+   "source": null
+  }
+ ]
+}

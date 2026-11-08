@@ -29,29 +29,40 @@
     },
     "code": {
       "review_type": "code",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "verification",
+          "file": "plugins/shipwright-build/tests/test_hooks.py",
+          "line": null,
+          "finding": "Coordinator-run code-reviewer (opus): no HIGH; 1 medium and 1 low, both handled by the closed fix list (AC09 cover markers on the fallback tests; decision-drop quote paraphrased). Coordinator-spawned (opus): the runner did not spawn the cascade here; the coordinator ran it and its closed fix list was applied in this run.",
+          "suggestion": "applied",
+          "source": "code-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-11-08T16:27:42.277707+00:00",
-      "disposition": "closed by reason_code delegated-to-orchestrator",
-      "recorded_by": "none",
+      "completed_at": "2026-11-08T16:34:04.859049+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "62fb2691674a1d93a1ffc0f329b0594b811949df"
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "not_run",
+      "status": "not_applicable",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-11-08T16:27:42.415174+00:00",
-      "disposition": "closed by reason_code delegated-to-orchestrator",
+      "completed_at": "2026-11-08T16:34:04.999385+00:00",
+      "disposition": "docs-only diff, no trigger surface (coordinator decision)",
       "recorded_by": "none",
       "parse_status": null,
-      "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "raw_excerpt": null
     },
     "external_code": {
       "review_type": "external_code",
@@ -68,16 +79,27 @@
     },
     "spec": {
       "review_type": "spec",
-      "status": "not_run",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-11-08T16:27:42.121176+00:00",
-      "disposition": "closed by reason_code delegated-to-orchestrator",
-      "recorded_by": "none",
+      "completed_at": "2026-11-08T16:34:04.714305+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "62fb2691674a1d93a1ffc0f329b0594b811949df",
+      "ac_verdicts": [
+        {
+          "ac": "FR-01.05.AC09",
+          "verdict": "matches",
+          "diff_location": "plugins/shipwright-build/scripts/hooks/validate_command.sh:86-93",
+          "reason": "The corrected sentence matches the guard's coarse fallback; the new wording is weaker than before, which is expected and accepted.",
+          "weakens": true
+        }
+      ]
     },
     "plan_internal": {
       "review_type": "plan_internal",
