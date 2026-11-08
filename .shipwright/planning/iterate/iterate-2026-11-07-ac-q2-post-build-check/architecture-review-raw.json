@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "1. **The question, answered in one sentence.** Yes \u2014 option 3 (warning-only) is the right size; a recorded promise that nothing ever reads back is a dead artifact, and a structured input is the cheapest reliable way to make the reviewer read it.\n\n2. **The smallest thing that would do.** Option 3 as described: a claims file derived from the existing record, the shared spec-reviewer taking it as an optional third input (verbatim behavior when absent, per the constraint), and F11 reporting the verdicts as a warning. Option 2 (prose-only) is nominally smaller but not actually smaller in obligation: it makes correctness depend on the reviewer's prompt actually steering it to the record every time, with no artifact to check that it did \u2014 so you'd add the same verification burden later, in a worse shape. The warning-only gate is the correct ceiling for this phase given the `decided_by: code, confirmed: false` status of the AC itself.\n\n3. **What it costs to keep.** A claims-file format that must stay in sync with the promise record, a producer script (`ac_claims.py`), the shared reviewer's contract for a third input, and the F11 warning text. Every future change to the record format or the shared reviewer must reason about this path.\n\n4. **What it forecloses.** Mostly none, because the divergence is a warning, not a gate \u2014 upgrading to blocking later (or reverting to blocking-off) is open. The one mild foreclosure: the shared-reviewer interface now has a formal optional input, so the other skill sharing that reviewer inherits the question of whether it should pass one too.\n\n5. **Findings:**\n\n- Category: ownership\n- Severity: low\n- Finding: A warning-only F11 check that reports \"no such review ran\" relies on a human noticing the warning; it will eventually be routinely ignored.\n- Suggestion: Acceptable for phase 1, but record who is expected to read the F11 warning and what they are expected to do on a divergence, so phase 2 has a consumer to build for rather than a habit to retrofit.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Should it exist?** The promise check should exist inside the existing spec-reviewer; a separate claims file and F11 reporting mechanism are not justified by the stated problem.\n\n2. **Smallest thing:** Choose option 2: instruct the existing spec-reviewer to read added or changed promises from the existing record and report `matches` or `diverges` for each, citing the breaking line for divergences. Keep this evidence advisory.\n\n3. **Cost to keep:** Maintain one reviewer instruction and its connection to the existing promise record. Option 3 additionally requires keeping claim extraction, an intermediate artifact, and F11 reporting consistent.\n\n4. **What it forecloses:** Option 3 makes changes to the promise record and reviewer output harder by coupling both to another reporting path.\n\n5. **Findings**\n\nCategory: simpler-alternative\nSeverity: medium\nFinding: Option 3 adds a derived claims artifact and a reporting mechanism to supply information the existing spec-reviewer could read directly. The brief establishes a missing review responsibility, but no need for a separate extraction and reporting lifecycle.\nSuggestion: Use option 2 with explicit per-promise verdict instructions in the existing review. Add extraction or separate reporting only if direct review demonstrates a concrete limitation.\n\nSHIPWRIGHT_VERDICT: reject",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "architecture",
+  "capture": {
+    "run_id": "iterate-2026-11-07-ac-q2-post-build-check",
+    "at": "2026-11-08T07:00:37.957754+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "reject"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": true,
+    "comparable": true,
+    "requires_resolution": true,
+    "reason": "reviewers contradict each other: glm=approve, openai=reject"
+  }
+}

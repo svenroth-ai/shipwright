@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "## Findings\n\n- **Category: edge-case** \u2014 **Severity: medium** \u2014 The plan says a divergence must \"name the line that breaks it,\" but there's no stated mechanism for the judge to map a natural-language AC to a specific diff line. If the spec-reviewer (an LLM) emits the line, `ac_verdicts` needs a defined schema (file + line + reason), and `judge()` needs to handle missing/malformed line references. Decide now: is the line required for `diverges`, or optional? The AC says it's required \u2014 enforce it in the schema and tests.\n\n- **Category: edge-case** \u2014 **Severity: medium** \u2014 What happens when a run has an `ac-record.jsonl` but no `ac-claims.json` (tool not run, e.g. older campaign or partial failure)? Step 4 says \"says visibly when no AC review ran\" \u2014 good \u2014 but `judge()`/the spec-reviewer also need defined behavior when the claims file exists but is empty or references ACs absent from the base catalog (stale records, renamed ACs). Cheap: treat unmatched claims as a visible warning, not a crash.\n\n- **Category: approach** \u2014 **Severity: medium** \u2014 Step 3 promises \"net-zero lines in the 408-line file\" while simultaneously cleaning and carrying `ac_verdicts` through `record_review_pass.py`. Those are two goals in tension; the net-zero constraint is arbitrary and could force awkward compression. Drop the net-zero framing \u2014 the goal is clarity, and adding a small carry-through block is fine. Don't let a line-count constraint drive design.\n\n- **Category: risk** \u2014 **Severity: medium** \u2014 Step 2 modifies `agents/spec-reviewer.md`, which is explicitly shared with `/shipwright-build`. Adding an \"optional third input\" changes a prompt used by an existing path. You noted \"unchanged without the input\" \u2014 good \u2014 but that claim needs a hermetic test proving the build path's spec-review output format is byte-identical when the claims file is absent, not just intent. A prompt drift here silently changes build-phase reviews.\n\n- **Category: edge-case** \u2014 **Severity: low** \u2014 \"Grade reject for operator/code items\" \u2014 but phase 1 is warning-only. Make explicit that `grade` is recorded on the spec row but has no enforcement in phase 1; otherwise a future reader may wire the reject grade to blocking before phase 2's design is reviewed. The AC text itself says divergences \"never hold the change back\" \u2014 the reject grade is metadata for phase 2, and the docs should say so.\n\n- **Category: edge-case** \u2014 **Severity: low** \u2014 Added vs. changed ACs (\"kind\": \"add\") \u2014 what about removed ACs recorded in Q1 (kind \"remove\")? If Q1 records removals, the claims builder should either include them (trivially \"matches\" if the line is gone) or explicitly exclude them, and the exclusion should be documented so it doesn't look like a missed check.\n\n- **Category: dependency** \u2014 **Severity: low** \u2014 `ac-claims.json` is gitignored and built from \"committed `ac-record.jsonl`\". Confirm the ordering dependency: the claims build must run after the record is committed but before the spec-reviewer invokes. State where step 1's tool runs in the pipeline (and what happens if it runs before the commit lands \u2014 stale claims).\n\nOverall: the approach is sound and well-scoped \u2014 warning-only phase 1 with the grading data captured for phase 2 is the right shape. The main risks are schema precision around the \"diverging line\" requirement and proving the shared spec-reviewer prompt doesn't drift on the build path.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Category:** dependency  \n   **Severity:** high  \n   **Finding:** The plan adds an optional reviewer input but does not describe wiring it into the iterate workflow. Generating claims, supplying them to the post-build spec-reviewer, and forwarding its verdicts to `record_review_pass.py` are required for the check to run. F11 could otherwise report \u201cno AC review ran\u201d on every change.  \n   **Suggestion:** Explicitly add that orchestration and an integration test covering frozen record \u2192 claims \u2192 reviewer verdicts \u2192 completed spec row \u2192 F11 warning.\n\n2. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** \u201cClean and bound\u201d verdicts does not establish that every added or changed AC received exactly one valid verdict. Missing, duplicate, unknown, or truncated entries could leave promises unchecked while F11 appears successful.  \n   **Suggestion:** Reconcile verdicts against the expected claim IDs. Surface incomplete or malformed coverage as a visible warning, including when bounds discard entries. Test partial output and duplicate IDs.\n\n3. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** The plan does not specify how claims and verdicts stay associated with the same run and reviewed diff. A gitignored claims file or an earlier completed spec row could survive a retry or subsequent code changes, producing results for outdated code.  \n   **Suggestion:** Associate artifacts with the run and reviewed base/head revisions, regenerate claims for the current run, and make F11 warn when results are stale or mismatched.\n\n4. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** The AC requires a divergence to name the line that breaks the promise, but the planned output validation does not explicitly require a usable file-and-line reference. A verdict containing only prose would not satisfy that requirement.  \n   **Suggestion:** Require a structured evidence location for `diverges`, validate it against the reviewed diff, and define how deleted lines are referenced. Invalid evidence should produce an incomplete-review warning.\n\nOverall, the approach fits a warning-only first phase and preserves the shared reviewer\u2019s existing behavior. The execution wiring and completeness, freshness, and evidence checks need to be explicit before implementation.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-11-07-ac-q2-post-build-check",
+    "at": "2026-11-08T07:00:16.892040+00:00"
+  },
+  "verdicts": {
+    "glm": "revise",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

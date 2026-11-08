@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: spec\n- Severity: medium\n- File: shared/scripts/lib/ac_verdicts.py:35\n- Finding: A `diverges` entry with no `diff_location` is retained as a valid verdict. F11 consequently reports \u201cno line given\u201d instead of satisfying AC50\u2019s requirement that a divergence identify the breaking line.\n- Suggestion: Require a nonempty `path:line` citation for divergences. Drop invalid entries so F11 explicitly reports the corresponding claim as unreviewed.\n\n- Category: bug\n- Severity: medium\n- File: shared/scripts/lib/ac_claims.py:100\n- Finding: `judge()` treats any verdict other than `diverges` as a match. Because F11 reads committed `reviews.json` directly without applying `clean()`, an entry such as `{\"ac\": \"FR-01.03.AC06\", \"verdict\": \"maybe\"}` produces no warning and can result in \u201call match the diff.\u201d Malformed review data therefore silently passes.\n- Suggestion: Validate verdict rows before judging them, treating missing or unknown verdict values as unreviewed claims. Add a test covering malformed committed verdicts.\n\nOverall assessment: ship-with-fixes. The warning-only flow is implemented, but verdict validation needs tightening to prevent unsupported review results from appearing complete.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "- Category: bug\n  Severity: low\n  File: shared/scripts/lib/ac_claims.py (`judge`, weakens line)\n  Finding: The `weakens` warning is emitted with a hardcoded `(change)` label: `f\"{c['ac']} (change): the new wording weakens...\"` regardless of the claim's `kind`. A reviewer (or a forged/careless verdict) setting `weakens: true` on an `add`, `remove`, or `exempt` claim produces a misleading message; the prompt itself says `weakens` is only meaningful for `kind: change`.\n  Suggestion: Gate the weakens message on `c[\"kind\"] == \"change\"` (or echo the real kind), or drop `weakens` from non-change verdicts in `clean`.\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/lib/ac_claims.py (`_claim`)\n  Finding: For a `remove` item whose `ac` is missing/mistyped, `ac` becomes `\"\"` and the claim is named `item-N` with `old_text: None`; the prompt's `remove` table then asks the reviewer to judge removal of a promise whose old text it was never given, so the verdict is unanchored. Also `new_text` for a `remove` falls back to the record's `new_text` if present, which the prompt ignores \u2014 harmless but means the file can carry a field with no defined meaning.\n  Suggestion: Either look up the base text by a `removes_ac`-style key (as `restore` does with `restores_ac`) or skip/drop remove claims whose base text cannot be resolved, so no claim is ever judged against `old_text: null`.\n\n- Category: test\n  Severity: low\n  File: shared/tests/test_ac_post_build_check.py (`test_a_run_with_no_event_is_skipped_and_one_with_no_ac_item_passes`)\n  Finding: `chk._work_event = lambda ...` reassigns the module attribute directly (monkeypatch had already patched it); the assignment is only undone by the monkeypatch fixture's teardown of the *earlier* setattr. Within this test it works, but the second assertion depends on monkeypatch teardown semantics rather than an explicit restore \u2014 if the assertion order changes or monkeypatch is removed, the leaked lambda breaks every later test in the session.\n  Suggestion: Use `monkeypatch.setattr` for the second patch as well.\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/tools/verifiers/post_build_ac_check.py (`stack_base_ref` handling)\n  Finding: `merge_base(root, fork.strip(), commit_hash)` is called with three arguments, while `tools/ac_claims.py` calls `merge_base(root, args.base_ref)` with two. If `merge_base` does not accept an optional head argument, this raises `TypeError`, which is swallowed by the broad `except Exception` and turns a stacked-unit check into a generic \"could not be checked\" warning rather than using the intended fork point \u2014 silently degrading the stacked-unit path (the pre-build check's precedent suggests the signature exists, but nothing in the diff or tests exercises a stacked run).\n  Suggestion: Confirm `merge_base`'s signature supports the head argument and add a stacked-fork test; if it does not, pass the head explicitly the way the pre-build check does.\n\nEverything else checks out: the AC (per-AC verdicts, cited line, warning-only for unconfirmed auto items, visible \"no AC review ran\") is implemented end-to-end \u2014 claims builder, prompt addition, record wiring via `entry_extras`, and the F11 check are all present and consistent; the check is registered in the finalization registry; `record_review_pass.py` keeps its previous behavior exactly when no `ac_verdicts` are present; error paths are fail-visible rather than fail-red, and the tests cover both happy and error paths (unreadable JSON, unsafe run-id, missing payloads) rather than only calling the functions.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-11-07-ac-q2-post-build-check",
+    "at": "2026-11-08T07:00:53.369211+00:00"
+  },
+  "verdicts": {
+    "openai": "revise",
+    "glm": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

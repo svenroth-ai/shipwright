@@ -210,3 +210,4 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [Dormant per-run event drops layout, bare-origin harness and standing replay gate](iterate-2026-11-05-s0-harness-dormant-writer-dormant-event-drops-layout.md)
 - [One assembling event reader with per-file status](iterate-2026-11-06-events-drop-files-s2-read-events-assembling-event-reader.md)
 - [Readers, classifiers and the event-log reference guard](iterate-2026-11-06-events-drop-files-s3-readers-guards-readers-classifiers-guard.md)
+- [Post-build per-AC check, phase 1 (warning only)](iterate-2026-11-07-ac-q2-post-build-check-per-ac-post-build-check.md)

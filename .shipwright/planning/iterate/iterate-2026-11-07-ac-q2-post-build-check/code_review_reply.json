@@ -1,0 +1,10 @@
+{
+  "section": "ac-q2-post-build-check",
+  "review": [
+    {
+      "severity": "low",
+      "category": "edge-case",
+      "finding": "Coordinator-run code-reviewer (opus): no HIGH findings, 7 edge items. The closed fix list from them was applied in this run (restore id, repeated-AC merge, AC50 wording, gitignore, test hygiene, single build); the rest is in the decision drop as known follow-ups. Coordinator-spawned (opus): the runner spawn guard allows 3 spec-reviewer spawns per runner and all 3 were used on the seeded measurement."
+    }
+  ]
+}

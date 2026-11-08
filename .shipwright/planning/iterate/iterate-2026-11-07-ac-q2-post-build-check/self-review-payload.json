@@ -1,0 +1,39 @@
+{
+  "items": [
+    {
+      "name": "Spec Compliance",
+      "verdict": "pass",
+      "note": "plan items 1-6 done; AC50 reworded per the closed fix list"
+    },
+    {
+      "name": "Error Handling",
+      "verdict": "pass",
+      "note": "malformed record/review data is a warning, never a crash; unknown verdict values count as no verdict"
+    },
+    {
+      "name": "Security Basics",
+      "verdict": "pass",
+      "note": "run id validated; claims texts are data for the reviewer; no shell interpolation"
+    },
+    {
+      "name": "Test Quality",
+      "verdict": "pass",
+      "note": "hermetic tests incl. restore id, repeated ids, unknown verdicts"
+    },
+    {
+      "name": "Performance Basics",
+      "verdict": "pass",
+      "note": "one git cat-file per read"
+    },
+    {
+      "name": "Naming & Structure",
+      "verdict": "pass",
+      "note": "all new files under 300 lines; bloat-capped files not grown"
+    },
+    {
+      "name": "Affected Boundaries",
+      "verdict": "pass",
+      "note": "producer record -> claims file -> reviewer reply -> spec row -> F11 round-tripped in tests"
+    }
+  ]
+}
