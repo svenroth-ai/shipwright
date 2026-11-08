@@ -44,7 +44,11 @@ has (brief + spec only). Only a **real Codex CLI driver** runs it through
 `shipwright-plan:architecture-internal-reviewer` through the Agent tool like
 the other reviewers. Either way the pass shows `Ran: yes`.
 
-Only when **Codex CLI itself is driving** — run:
+Only when **Codex CLI itself is driving** — for role `spec` in an iterate, first build the AC claims
+(one line; `{base_ref}` is the merge-base ref the reviewed diff used, never `HEAD~1`):
+`uv run "{shared_root}/scripts/tools/ac_claims.py" build --project-root "{project_root}" --run-id "{run_id}" --base-ref "{base_ref}"`.
+Any output other than `{path, claims>0}` (`claims: 0`, `"status": "skipped"`, exit 2, an error) = no
+claims file: omit `--claims-file`. Then run:
 
 ```bash
 uv run "{shared_root}/scripts/tools/review_via_codex.py" \
@@ -60,6 +64,8 @@ uv run "{shared_root}/scripts/tools/review_via_codex.py" \
   --plan-file "{the plan file — required for role plan_review only}" \
   --brief-file "{architecture_brief.md — required for role architecture_internal only}" \
   --out-dir "{project_root}/.shipwright/planning/iterate/{run_id}/" \
+  [--claims-file "{role spec only, from the build step above: the printed `path`, only when the
+    build printed `claims` above 0; otherwise omit — the reply then carries `ac_verdicts: null`}"] \
   [--codex-model "{a per-run override for the Codex reviewer model, e.g.
     gpt-6.1-sol — optional; unset defers to this role's session env var,
     then shipwright_model_config.json's codex_review/codex_plan_review key,
@@ -120,6 +126,8 @@ Parse the printed JSON line:
     argument and the record call errors out, silently losing the very
     evidence row this step exists to write (doubt-reviewer, medium,
     2026-09-20).
+    With `--claims-file` the reply's `ac_verdicts` rows ride onto the `spec` row with no extra
+    flag (`record_review_pass.py` copies them; `null` records as before). Never commit `ac-claims.json`.
   - **`role` is `architecture_internal`:** like `plan_review`, no
     `--from` adapter exists (the `architecture_internal` row is metadata-only).
     Read `canonical_path` directly, write its `findings`/`summary` into the

@@ -28,7 +28,7 @@ VALID_CODE_REVIEW = {"section": "s1", "review": []}
 #: none of the tests using it inspect `result["status"]` (External Review,
 #: GLM leg, low, 2026-09-20).
 _VALID_PAYLOADS: dict[str, dict] = {
-    "spec": {"stage": "spec-compliance", "verdict": "PASS", "spec_citations": [], "summary": "ok"},
+    "spec": {"stage": "spec-compliance", "verdict": "PASS", "spec_citations": [], "summary": "ok", "ac_verdicts": None},
     "code": VALID_CODE_REVIEW,
     "doubt": {"stage": "doubt", "gating": "advisory-must-address", "trigger": "io-boundary", "doubts": [], "summary": "ok"},
     "plan_review": {"reviewer": "opus-plan-reviewer", "severity": "none", "findings": [], "summary": "ok"},

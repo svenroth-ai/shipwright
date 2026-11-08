@@ -50,7 +50,7 @@ _SPEC_PAYLOAD = {
         "spec_ref": "AC1", "kind": "unfaithful", "diff_location": "lib/x.py:1",
         "divergence": "spec-reviewer citation: AC1 says gated on role, diff guards on model instead",
     }],
-    "summary": "spec-reviewer: one AC diverges from the diff",
+    "summary": "spec-reviewer: one AC diverges from the diff", "ac_verdicts": None,
 }
 _CODE_PAYLOAD = {
     "section": "m4-codex-subagent-dispatch",

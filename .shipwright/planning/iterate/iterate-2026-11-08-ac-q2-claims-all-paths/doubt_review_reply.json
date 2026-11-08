@@ -1,0 +1,13 @@
+{
+  "stage": "doubt",
+  "gating": "advisory-must-address",
+  "doubts": [
+    {
+      "severity": "low",
+      "lens": "completeness",
+      "claim_under_doubt": "both paths now reach the reviewer reliably",
+      "disproof_attempt": "Coordinator-run doubt-reviewer (opus): no HIGH, 5 low doubts. Fix-list items were applied; the rest (empty claims file at 0 claims, stacked-unit base mismatch, no claims fingerprint, stale test docstring) are follow-ups in the decision drop. Coordinator-spawned (opus): the runner cannot spawn the cascade here; the coordinator ran it, and the closed fix list from it was applied in this run.",
+      "what_would_resolve_it": "decision drop: follow-ups"
+    }
+  ]
+}

@@ -1,0 +1,71 @@
+{
+  "run_id": "iterate-2026-11-08-ac-q2-claims-all-paths",
+  "date": "2026-11-08T14:57:13.140715Z",
+  "event_at": "2026-11-08T14:54:27.426083+00:00",
+  "type": "bug",
+  "complexity": "medium",
+  "prior_source": "history",
+  "branch": "iterate/ac-q2-claims-all-paths",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-11-08-ac-q2-claims-all-paths",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "Codex spec schema takes null or per-AC rows, requires the key, closes the row shape",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_ac_claims_all_paths.py::test_the_codex_spec_schema_takes_null_or_per_ac_rows; ::test_the_codex_spec_schema_requires_the_key_and_closes_the_row_shape PASSED"
+      },
+      {
+        "behavior": "review_via_codex --claims-file puts the claims in the spec prompt; without it the model is told to answer null; refused for other roles and when unreadable",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_ac_claims_all_paths.py::test_a_spec_pass_with_a_claims_file_puts_it_in_the_prompt; ::test_a_spec_pass_without_claims_is_told_to_answer_null; ::test_a_claims_file_is_refused_for_every_other_role_and_when_unreadable PASSED"
+      },
+      {
+        "behavior": "a Codex reply with ac_verdicts lands on the spec row; null records as before (composed end to end: review_via_codex stub -> canonical reply -> record_review_pass)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_ac_claims_all_paths.py::test_a_codex_reply_with_verdicts_carries_them_onto_the_spec_row; ::test_a_codex_reply_with_null_records_exactly_as_before PASSED; ::test_integration_codex_dispatch_to_the_recorded_spec_row PASSED",
+        "category": "integration"
+      },
+      {
+        "behavior": "runner Step 3.7, 3f-bis and the Codex dispatch doc build the claims and pass them before the spec spawn; grandfathered prompts did not grow",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_ac_claims_all_paths.py (4 doc tests) PASSED"
+      },
+      {
+        "behavior": "live Codex endpoint accepts the new schema with and without claims",
+        "disposition": "untestable",
+        "reason_code": "requires-prod-credential",
+        "reason": "needs the real Codex login, absent from CI; run live once by the coordinator (completed with and without --claims-file)"
+      }
+    ],
+    "counts": {
+      "testable": 4,
+      "tested": 4,
+      "untestable": 1,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 1,
+      "covered_acs": 1
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run --extra dev pytest shared/tests/test_ac_claims_all_paths.py shared/tests/test_review_via_codex_cli.py shared/tests/test_codex_review_transport_reasoning_effort.py shared/tests/test_codex_review_cascade_distinctness_fixture.py -q",
+    "exit_code": 0,
+    "tests_run": 37,
+    "evidence_path": ".shipwright/runs/iterate-2026-11-08-ac-q2-claims-all-paths/surface_verification.log",
+    "timestamp": "2026-11-08T14:54:02.294Z",
+    "attempts": 1
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": [
+    "cross_component"
+  ]
+}
