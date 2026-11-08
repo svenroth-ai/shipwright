@@ -1,0 +1,233 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-07-ac-q2-post-build-check",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-08T07:02:56.536932+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan adds an optional reviewer input but does not describe wiring it into the iterate workflow. Generating claims, supplying them to the post-build spec-reviewer, and forwarding its verdicts to `record_review_pass.py` are required for the check to run. F11 could otherwise report “no AC review ran” on every change.",
+          "suggestion": "Explicitly add that orchestration and an integration test covering frozen record → claims → reviewer verdicts → completed spec row → F11 warning.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "“Clean and bound” verdicts does not establish that every added or changed AC received exactly one valid verdict. Missing, duplicate, unknown, or truncated entries could leave promises unchecked while F11 appears successful.",
+          "suggestion": "Reconcile verdicts against the expected claim IDs. Surface incomplete or malformed coverage as a visible warning, including when bounds discard entries. Test partial output and duplicate IDs.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The plan does not specify how claims and verdicts stay associated with the same run and reviewed diff. A gitignored claims file or an earlier completed spec row could survive a retry or subsequent code changes, producing results for outdated code.",
+          "suggestion": "Associate artifacts with the run and reviewed base/head revisions, regenerate claims for the current run, and make F11 warn when results are stale or mismatched.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The AC requires a divergence to name the line that breaks the promise, but the planned output validation does not explicitly require a usable file-and-line reference. A verdict containing only prose would not satisfy that requirement.",
+          "suggestion": "Require a structured evidence location for `diverges`, validate it against the reviewed diff, and define how deleted lines are referenced. Invalid evidence should produce an incomplete-review warning.  Overall, the approach fits a warning-only first phase and preserves the shared reviewer’s existing behavior. The execution wiring and completeness, freshness, and evidence checks need to be explicit before implementation.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-08T07:02:56.616649+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: edge-case** — **Severity: medium** — The plan says a divergence must \"name the line that breaks it,\" but there's no stated mechanism for the judge to map a natural-language AC to a specific diff line. If the spec-reviewer (an LLM) emits the line, `ac_verdicts` needs a defined schema (file + line + reason), and `judge()` needs to handle missing/malformed line references. Decide now: is the line required for `diverges`, or optional? The AC says it's required — enforce it in the schema and tests.\n\n- **Category: edge-case** — **Severity: medium** — What happens when a run has an `ac-record.jsonl` but no `ac-claims.json` (tool not run, e.g. older campaign or partial failure)? Step 4 says \"says visibly when no AC review ran\" — good — but `judge()`/the spec-reviewer also need defined behavior when the claims file exists but is empty or references ACs absent from the base catalog (stale records, renamed ACs). Cheap: treat unmatched claims as a visible warning, not a crash.\n\n- **Category: approach** — **Severity: medium** — Step 3 promises \"net-zero lines in the 408-line file\" while simultaneously cleaning and carrying `ac_verdicts` through `record_review_pass.py`. Those are two goals in tension; the net-zero constraint is arbitrary and could force awkward compression. Drop the net-zero framing — the goal is clarity, and adding a small carry-through block is fine. Don't let a line-count constraint drive design.\n\n- **Category: risk** — **Severity: medium** — Step 2 modifies `agents/spec-reviewer.md`, which is explicitly shared with `/shipwright-build`. Adding an \"optional third input\" changes a prompt used by an existing path. You noted \"unchanged without the input\" — good — but that claim needs a hermetic test proving the build path's spec-review output format is byte-identical when the claims file is absent, not just intent. A prompt drift here silently changes build-phase reviews.\n\n- **Category: edge-case** — **Severity: low** — \"Gra […truncated]\n\n[openai] 1. **Category:** dependency  \n   **Severity:** high  \n   **Finding:** The plan adds an optional reviewer input but does not describe wiring it into the iterate workflow. Generating claims, supplying them to the post-build spec-reviewer, and forwarding its verdicts to `record_review_pass.py` are required for the check to run. F11 could otherwise report “no AC review ran” on every change.  \n   **Suggestion:** Explicitly add that orchestration and an integration test covering frozen record → claims → reviewer verdicts → completed spec row → F11 warning.\n\n2. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** “Clean and bound” verdicts does not establish that every added or changed AC received exactly one valid verdict. Missing, duplicate, unknown, or truncated entries could leave promises unchecked while F11 appears successful.  \n   **Suggestion:** Reconcile verdicts against the expected claim IDs. Surface incomplete or malformed coverage as a visible warning, including when bounds discard entries. Test partial output and duplicate IDs.\n\n3. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** The plan does not specify how claims and verdicts stay associated with the same run and reviewed diff. A gitignored claims file or an earlier completed spec row could survive a retry or subsequent code changes, producing results for outdated code.  \n   **Suggestion:** Associate artifacts with the run and reviewed base/head revisions, regenerate claims for the current run, and make F11 warn when results are stale or mismatched.\n\n4. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** The AC requires a divergence to name the line that breaks the promise, but the planned output validation does not explicitly require a usable file-and-line reference. A verdict containing only prose would not satisfy that requirement.  \n   **Suggestion:** Require a structured evidence location for `diverges`, validate it against the reviewed diff, a […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Coordinator-run code-reviewer (opus): no HIGH findings, 7 edge items. The closed fix list from them was applied in this run (restore id, repeated-AC merge, AC50 wording, gitignore, test hygiene, single build); the rest is in the decision drop as known follow-ups. Coordinator-spawned (opus): the runner spawn guard allows 3 spec-reviewer spawns per runner and all 3 were used on the seeded measurement.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-08T07:02:56.886030+00:00",
+      "disposition": "reviewer spawned by the coordinator because the runner spawn guard allows 3 spec-reviewer spawns per runner",
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "021956c528ce8e5e908c2f5ce52375d6ff9165c9"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "completeness",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: phase 1 is safe to ship as a warning — Coordinator-run doubt-reviewer (opus): no HIGH, 2 medium and 4 low doubts. Phase-2 preconditions (no claims fingerprint, no cross-check of the spec row against the committed reply) are recorded as known follow-ups in the decision drop. Coordinator-spawned (opus): the runner spawn guard allows 3 spec-reviewer spawns per runner and all 3 were used on the seeded measurement.",
+          "suggestion": "decision drop: PHASE-2 PRECONDITIONS",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-08T07:02:56.973413+00:00",
+      "disposition": "reviewer spawned by the coordinator because the runner spawn guard allows 3 spec-reviewer spawns per runner",
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "021956c528ce8e5e908c2f5ce52375d6ff9165c9"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "shared/scripts/lib/ac_claims.py (`judge`, weakens line)",
+          "line": null,
+          "finding": "The `weakens` warning is emitted with a hardcoded `(change)` label: `f\"{c['ac']} (change): the new wording weakens...\"` regardless of the claim's `kind`. A reviewer (or a forged/careless verdict) setting `weakens: true` on an `add`, `remove`, or `exempt` claim produces a misleading message; the prompt itself says `weakens` is only meaningful for `kind: change`.",
+          "suggestion": "Gate the weakens message on `c[\"kind\"] == \"change\"` (or echo the real kind), or drop `weakens` from non-change verdicts in `clean`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/ac_claims.py (`_claim`)",
+          "line": null,
+          "finding": "For a `remove` item whose `ac` is missing/mistyped, `ac` becomes `\"\"` and the claim is named `item-N` with `old_text: None`; the prompt's `remove` table then asks the reviewer to judge removal of a promise whose old text it was never given, so the verdict is unanchored. Also `new_text` for a `remove` falls back to the record's `new_text` if present, which the prompt ignores — harmless but means the file can carry a field with no defined meaning.",
+          "suggestion": "Either look up the base text by a `removes_ac`-style key (as `restore` does with `restores_ac`) or skip/drop remove claims whose base text cannot be resolved, so no claim is ever judged against `old_text: null`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_ac_post_build_check.py (`test_a_run_with_no_event_is_skipped_and_one_with_no_ac_item_passes`)",
+          "line": null,
+          "finding": "chk._work_event = lambda ...` reassigns the module attribute directly (monkeypatch had already patched it); the assignment is only undone by the monkeypatch fixture's teardown of the earlier setattr. Within this test it works, but the second assertion depends on monkeypatch teardown semantics rather than an explicit restore — if the assertion order changes or monkeypatch is removed, the leaked lambda breaks every later test in the session.",
+          "suggestion": "Use `monkeypatch.setattr` for the second patch as well.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/verifiers/post_build_ac_check.py (`stack_base_ref` handling)",
+          "line": null,
+          "finding": "merge_base(root, fork.strip(), commit_hash)` is called with three arguments, while `tools/ac_claims.py` calls `merge_base(root, args.base_ref)` with two. If `merge_base` does not accept an optional head argument, this raises `TypeError`, which is swallowed by the broad `except Exception` and turns a stacked-unit check into a generic \"could not be checked\" warning rather than using the intended fork point — silently degrading the stacked-unit path (the pre-build check's precedent suggests the signature exists, but nothing in the diff or tests exercises a stacked run).",
+          "suggestion": "Confirm `merge_base`'s signature supports the head argument and add a stacked-fork test; if it does not, pass the head explicitly the way the pre-build check does.  Everything else checks out: the AC (per-AC verdicts, cited line, warning-only for unconfirmed auto items, visible \"no AC review ran\") is implemented end-to-end — claims builder, prompt addition, record wiring via `entry_extras`, and the F11 check are all present and consistent; the check is registered in the finalization registry; `record_review_pass.py` keeps its previous behavior exactly when no `ac_verdicts` are present; error paths are fail-visible rather than fail-red, and the tests cover both happy and error paths (unreadable JSON, unsafe run-id, missing payloads) rather than only calling the functions.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/lib/ac_verdicts.py",
+          "line": 35,
+          "finding": "A `diverges` entry with no `diff_location` is retained as a valid verdict. F11 consequently reports “no line given” instead of satisfying AC50’s requirement that a divergence identify the breaking line.",
+          "suggestion": "Require a nonempty `path:line` citation for divergences. Drop invalid entries so F11 explicitly reports the corresponding claim as unreviewed.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/lib/ac_claims.py",
+          "line": 100,
+          "finding": "judge()` treats any verdict other than `diverges` as a match. Because F11 reads committed `reviews.json` directly without applying `clean()`, an entry such as `{\"ac\": \"FR-01.03.AC06\", \"verdict\": \"maybe\"}` produces no warning and can result in “all match the diff.” Malformed review data therefore silently passes.",
+          "suggestion": "Validate verdict rows before judging them, treating missing or unknown verdict values as unreviewed claims. Add a test covering malformed committed verdicts.  Overall assessment: ship-with-fixes. The warning-only flow is implemented, but verdict validation needs tightening to prevent unsupported review results from appearing complete.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-08T07:02:56.704397+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] - Category: bug\n  Severity: low\n  File: shared/scripts/lib/ac_claims.py (`judge`, weakens line)\n  Finding: The `weakens` warning is emitted with a hardcoded `(change)` label: `f\"{c['ac']} (change): the new wording weakens...\"` regardless of the claim's `kind`. A reviewer (or a forged/careless verdict) setting `weakens: true` on an `add`, `remove`, or `exempt` claim produces a misleading message; the prompt itself says `weakens` is only meaningful for `kind: change`.\n  Suggestion: Gate the weakens message on `c[\"kind\"] == \"change\"` (or echo the real kind), or drop `weakens` from non-change verdicts in `clean`.\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/lib/ac_claims.py (`_claim`)\n  Finding: For a `remove` item whose `ac` is missing/mistyped, `ac` becomes `\"\"` and the claim is named `item-N` with `old_text: None`; the prompt's `remove` table then asks the reviewer to judge removal of a promise whose old text it was never given, so the verdict is unanchored. Also `new_text` for a `remove` falls back to the record's `new_text` if present, which the prompt ignores — harmless but means the file can carry a field with no defined meaning.\n  Suggestion: Either look up the base text by a `removes_ac`-style key (as `restore` does with `restores_ac`) or skip/drop remove claims whose base text cannot be resolved, so no claim is ever judged against `old_text: null`.\n\n- Category: test\n  Severity: low\n  File: shared/tests/test_ac_post_build_check.py (`test_a_run_with_no_event_is_skipped_and_one_with_no_ac_item_passes`)\n  Finding: `chk._work_event = lambda ...` reassigns the module attribute directly (monkeypatch had already patched it); the assignment is only undone by the monkeypatch fixture's teardown of the *earlier* setattr. Within this test it works, but the second assertion depends on monkeypatch teardown semantics rather than an explicit restore — if the assertion order changes or monkeypatch is removed, the leaked lambda breaks every later te […truncated]\n\n[openai] - Category: spec\n- Severity: medium\n- File: shared/scripts/lib/ac_verdicts.py:35\n- Finding: A `diverges` entry with no `diff_location` is retained as a valid verdict. F11 consequently reports “no line given” instead of satisfying AC50’s requirement that a divergence identify the breaking line.\n- Suggestion: Require a nonempty `path:line` citation for divergences. Drop invalid entries so F11 explicitly reports the corresponding claim as unreviewed.\n\n- Category: bug\n- Severity: medium\n- File: shared/scripts/lib/ac_claims.py:100\n- Finding: `judge()` treats any verdict other than `diverges` as a match. Because F11 reads committed `reviews.json` directly without applying `clean()`, an entry such as `{\"ac\": \"FR-01.03.AC06\", \"verdict\": \"maybe\"}` produces no warning and can result in “all match the diff.” Malformed review data therefore silently passes.\n- Suggestion: Validate verdict rows before judging them, treating missing or unknown verdict values as unreviewed claims. Add a test covering malformed committed verdicts.\n\nOverall assessment: ship-with-fixes. The warning-only flow is implemented, but verdict validation needs tightening to prevent unsupported review results from appearing complete.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-08T07:02:56.791444+00:00",
+      "disposition": "reviewer spawned by the coordinator because the runner spawn guard allows 3 spec-reviewer spawns per runner",
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "021956c528ce8e5e908c2f5ce52375d6ff9165c9"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-08T07:02:57.058379+00:00",
+      "disposition": "effective complexity is small, below the medium trigger of this internal arm",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-08T07:02:57.139758+00:00",
+      "disposition": "effective complexity is small, below the medium trigger of this internal arm",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}

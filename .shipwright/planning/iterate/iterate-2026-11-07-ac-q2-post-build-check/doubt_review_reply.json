@@ -1,0 +1,13 @@
+{
+  "stage": "doubt",
+  "gating": "advisory-must-address",
+  "doubts": [
+    {
+      "severity": "medium",
+      "lens": "completeness",
+      "claim_under_doubt": "phase 1 is safe to ship as a warning",
+      "disproof_attempt": "Coordinator-run doubt-reviewer (opus): no HIGH, 2 medium and 4 low doubts. Phase-2 preconditions (no claims fingerprint, no cross-check of the spec row against the committed reply) are recorded as known follow-ups in the decision drop. Coordinator-spawned (opus): the runner spawn guard allows 3 spec-reviewer spawns per runner and all 3 were used on the seeded measurement.",
+      "what_would_resolve_it": "decision drop: PHASE-2 PRECONDITIONS"
+    }
+  ]
+}

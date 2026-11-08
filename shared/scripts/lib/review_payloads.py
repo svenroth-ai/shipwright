@@ -13,6 +13,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+from .ac_verdicts import verdict_fields
 from .review_finding_shape import TRUNCATION_MARKER
 from .review_findings import (
     PARSE_PARTIAL,
@@ -31,7 +32,7 @@ from .review_verdict import CURRENT_REVIEWER_ROSTERS, HISTORICAL_REVIEWER_PAIRS,
 __all__ = [
     "ADAPTERS", "CANONICAL_PAYLOAD_BASENAMES", "MAX_RAW_EXCERPT",
     "canonical_basename_error", "unread_reply_warning", "build_findings", "build_review_evidence",
-    "build_reviewer_verdicts",
+    "build_reviewer_verdicts", "entry_extras",
 ]
 
 ADAPTERS = (
@@ -278,3 +279,9 @@ def unread_reply_warning(
     return {"warning": (f"findings_count is 0 because no reply was read{ignored}; to record the "
                         f"reviewer's findings pass --from {native} --payload-file <the canonical "
                         "reply file> (re-record with --force)")}
+
+
+def entry_extras(args: Any) -> dict[str, Any]:
+    """The optional row fields a ``record`` call adds after ``make_entry``: the 3f-bis attestation and a spec pass's per-AC verdicts."""
+    extras = {k: v for k, v in (("verdict", args.verdict), ("reviewed_commit", args.reviewed_commit)) if v}
+    return {**extras, **verdict_fields(args.review_type, args.status, args.payload_file)}

@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-07-ac-q2-post-build-check",
+  "date": "2026-11-08",
+  "section": "Iterate - feature: ac-at-start Q2 post-build per-AC check (phase 1)",
+  "title": "Check the built code against the recorded promise, warning only",
+  "context": "Q1 records the promise (AC) before the build but nothing checks the finished code keeps it; the reviewer never read the catalog ACs.",
+  "decision": "Code builds ac-claims.json from the committed record; the shared spec-reviewer takes it as an optional third input and answers matches or diverges per AC; F11 reports it as a warning and says when no AC review ran. Nothing blocks.",
+  "consequences": "Visible per-AC evidence for a person. Unconfirmed auto items only warn. Phase 2 (refusing a spec row) is not wired and has two preconditions: a claims fingerprint and a reply cross-check.",
+  "rationale": "An AI verdict is evidence, not proof; the seeded set (n=10) cannot show the real false-alarm rate, so measure on the first 20 iterates before any refusal.",
+  "rejected": "Blocking on divergence now; prose-only instruction to the reviewer; a new PR check.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-11-07-ac-q2-post-build-check-per-ac-post-build-check.md"
+}

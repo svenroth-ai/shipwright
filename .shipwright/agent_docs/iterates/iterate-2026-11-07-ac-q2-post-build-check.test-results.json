@@ -1,0 +1,92 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-07-ac-q2-post-build-check",
+    "date": "2026-11-08",
+    "unit": {
+      "status": "passed",
+      "passed": 16008,
+      "skipped": 71,
+      "total": 16079
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "claims are built by code from the committed record; old_text comes from the base catalog; grade reject for operator/code, warn for auto or unknown",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_ac_claims.py::test_an_add_claim_carries_the_recorded_text_and_no_old_text; ::test_a_change_claim_takes_old_text_from_the_base_catalog_not_the_record; ::test_only_an_unconfirmed_auto_item_is_warning_grade; ::test_a_record_item_with_no_decided_by_is_never_reject_grade PASSED"
+        },
+        {
+          "behavior": "restore/unchanged promise the base text; an exemption gets item-N; a restore with no id never becomes the text None",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_ac_claims.py::test_restore_and_unchanged_claims_promise_the_base_text; ::test_an_exempt_claim_gets_a_stable_item_reference_and_the_files; ::test_a_restore_without_restores_ac_never_becomes_the_text_none PASSED"
+        },
+        {
+          "behavior": "a head ref reads the committed record; no record is no claims; malformed lines are skipped; the file is written deterministically",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_ac_claims.py::test_the_committed_record_is_what_a_head_ref_reads; ::test_no_record_means_no_claims_and_malformed_items_are_skipped; ::test_write_claims_lands_next_to_the_record_and_is_deterministic PASSED"
+        },
+        {
+          "behavior": "judge: repeated ids merge (diverges and weakens win), unknown verdict values count as no verdict, weakens only for a change",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_ac_claims.py::test_a_repeated_ac_reference_merges_diverges_and_weakens_from_every_entry; ::test_an_unknown_or_missing_verdict_value_counts_as_no_verdict_not_as_a_match; ::test_weakens_is_only_reported_for_a_changed_promise PASSED"
+        },
+        {
+          "behavior": "the ac_claims tool writes the file, skips an unusable base ref, refuses an unsafe run id",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_ac_claims_tool.py (3 tests) PASSED"
+        },
+        {
+          "behavior": "per-AC verdicts land on a completed spec row, other review types never carry them, malformed entries are dropped and bounded, a reply without them records as before",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_ac_verdicts_record.py (6 tests) PASSED"
+        },
+        {
+          "behavior": "F11 check: warns visibly when no AC review ran, reject-grade vs warning-only divergences, unreviewed claim, weakens, never a crash, mode off skipped, registered after the Q1 check",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_ac_post_build_check.py (10 tests) PASSED"
+        },
+        {
+          "behavior": "the shared spec-reviewer prompt takes the claims file as an optional third input, states unchanged behaviour without it, stays within 400 lines",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_ac_spec_reviewer_prompt.py (3 tests); plugins/shipwright-build/tests (345) PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 8,
+        "tested": 8,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 1,
+        "covered_acs": 1
+      }
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run --extra dev pytest shared/tests/test_ac_claims.py shared/tests/test_ac_claims_tool.py shared/tests/test_ac_post_build_check.py shared/tests/test_ac_verdicts_record.py -q",
+      "exit_code": 0,
+      "tests_run": 32,
+      "evidence_path": ".shipwright/runs/iterate-2026-11-07-ac-q2-post-build-check/surface_verification.log",
+      "timestamp": "2026-11-08T07:26:52.479Z",
+      "attempts": 1
+    }
+  }
+}
