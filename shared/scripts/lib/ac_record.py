@@ -18,6 +18,7 @@ from pathlib import Path
 from lib.ac_base_tests import ac_pattern, named_in_base_tests
 from lib.ac_catalog import ac_body, catalog_texts, load_catalog
 from lib.ac_decision import count_decisions, frozen_fields
+from lib.ac_move_map import parse_move_map, real_moves
 from lib.ac_surface import git_changes, is_observable_path, is_test_path, observable_files, read_blobs, run_git
 from lib.ac_wording import diff_identifiers, wording_violations
 
@@ -88,12 +89,22 @@ def _texts(root: Path, ref: str | None, paths: list[str]) -> dict[str, str]:
 
 def changed_catalog(project_root: str | Path, base: str, head: str | None, spec_paths: list[str]) -> tuple[dict[str, str], set[str]]:
     """``(changed, removed)``: the catalog ACs whose text differs ``base`` -> ``head`` (id -> new text), and the ids that vanished."""
-    root, changed, removed = Path(project_root), {}, set()
+    root = Path(project_root)
     before, after = _texts(root, base, spec_paths), _texts(root, head, spec_paths)
+    moves: dict[str, str] = {}  # a criterion an fr_split moved is neither removed nor added, even into another spec file
     for rel in spec_paths:
-        old, new = catalog_texts(before[rel]), catalog_texts(after[rel])
-        changed.update({k: v for k, v in new.items() if old.get(k) != v})
-        removed.update(k for k in old if k not in new)
+        moves.update(parse_move_map(after[rel]))
+    old_all: dict[str, str] = {}
+    new_all: dict[str, str] = {}
+    for rel in spec_paths:
+        old_all.update(catalog_texts(before[rel]))
+        new_all.update(catalog_texts(after[rel]))
+    split = lambda k: tuple(k.rsplit(".", 1))  # noqa: E731 - "FR-01.11.AC21" -> ("FR-01.11", "AC21")
+    moved = real_moves({split(k) for k in old_all}, {split(k) for k in new_all}, moves)  # new -> old; the one rule the gates share
+    gone = {old: new for new, old in moved.items()}
+    now = {".".join(gone.get(split(k), split(k))): v for k, v in old_all.items()}
+    changed = {k: v for k, v in new_all.items() if now.get(k) != v}
+    removed = {k for k in old_all if k not in new_all and split(k) not in gone}
     return changed, removed
 
 

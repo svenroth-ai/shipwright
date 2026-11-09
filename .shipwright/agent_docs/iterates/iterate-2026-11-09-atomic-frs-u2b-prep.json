@@ -1,0 +1,75 @@
+{
+  "run_id": "iterate-2026-11-09-atomic-frs-u2b-prep",
+  "date": "2026-11-09T22:10:21.427318Z",
+  "event_at": "2026-11-09T09:07:32.454095+00:00",
+  "type": "feature",
+  "complexity": "medium",
+  "branch": "iterate/atomic-frs-u2b-prep",
+  "spec": ".shipwright/planning/iterate/2026-11-09-atomic-frs-u2b-prep.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-11-09-atomic-frs-u2b-prep",
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run pytest shared/tests/test_fr_split_tool.py shared/tests/test_ac_move_map_readers.py -q",
+    "exit_code": 0,
+    "tests_run": 34,
+    "evidence_path": ".shipwright/runs/iterate-2026-11-09-atomic-frs-u2b-prep/surface_verification.json",
+    "timestamp": "2026-11-09T21:59:14.181Z",
+    "attempts": 1
+  },
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "Keystone gate: a moved criterion with unchanged wording is not added/removed/changed; reworded = changed; no move map = removed+added",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_keystone_ac_moves.py::test_a_moved_criterion_with_unchanged_wording_is_not_a_change, ::test_a_moved_and_reworded_criterion_is_changed_not_added_or_removed, ::test_without_a_move_map_the_same_edit_reads_as_removed_plus_added PASSED"
+      },
+      {
+        "behavior": "A moved+reworded criterion that lost all tests is binding_removed (base links read under the old id); stub change sets carry moved",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_keystone_ac_moves.py::test_a_moved_and_reworded_criterion_that_lost_all_its_tests_is_binding_removed PASSED (fails when the old-id lookup is reverted); shared/tests/test_keystone_core.py PASSED"
+      },
+      {
+        "behavior": "A hand-written/renumbering/merge row cannot hide a removal: one shared real_moves rule used by keystone and the catalog diff",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_ac_move_map_readers.py::test_real_moves_is_the_one_rule_and_both_gate_readers_agree_with_it, ::test_a_hand_written_row_onto_a_living_id_does_not_hide_a_removal, ::test_a_renumbering_row_does_not_hide_a_removal_in_the_catalog_diff, ::test_two_sources_onto_one_target_leave_one_removal_visible; shared/scripts/tools/tests/test_keystone_ac_moves.py::test_a_hand_written_row_onto_a_living_id_does_not_hide_a_removal PASSED"
+      },
+      {
+        "behavior": "Pre-build catalog diff treats a moved criterion (same file, other spec file, two hops) as neither removed nor changed",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_ac_move_map_readers.py::test_moved_criterion_with_same_wording_is_neither_changed_nor_removed, ::test_a_criterion_moved_into_another_spec_file_is_neither_removed_nor_changed, ::test_a_two_hop_move_through_changed_catalog_is_neither_removed_nor_changed, ::test_moved_and_reworded_criterion_is_changed_not_removed PASSED"
+      },
+      {
+        "behavior": "ac_history of the old id, the new id and the slash id return the same runs; other criteria untouched",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_ac_move_map_readers.py::test_ac_history_of_a_moved_criterion_joins_the_runs_under_its_old_and_new_id, ::test_history_can_be_asked_with_the_slash_id_the_move_map_uses PASSED"
+      },
+      {
+        "behavior": "fr_history names the requirement a new one was split from (text and JSON); nothing for one that was not",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_ac_move_map_readers.py::test_fr_history_names_the_requirement_a_new_one_was_split_from PASSED; shared/scripts/tests fr_history/fr_change_history 149 PASSED"
+      },
+      {
+        "behavior": "fr_split picks no FR number origin/main already uses (incl. specs only trunk has), reports ids, rows, descriptions, all FR-level test files, and says so when origin/main is unreadable",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_fr_split_tool.py::test_a_number_already_used_on_origin_main_is_not_picked, ::test_the_cut_skips_a_number_origin_main_already_uses, ::test_the_dry_run_names_the_new_ids_the_copied_row_and_fr_level_tests, ::test_the_report_names_test_files_with_a_bare_fr_level_tag_on_the_source, ::test_the_report_does_not_claim_an_origin_check_when_origin_main_is_not_readable PASSED"
+      },
+      {
+        "behavior": "A hung or missing git while reading origin/main reads as nothing (no crash)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_fr_split_tool.py::test_a_hung_or_missing_git_reads_as_nothing_instead_of_crashing PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 8,
+      "tested": 8,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 5,
+      "covered_acs": 5
+    }
+  }
+}

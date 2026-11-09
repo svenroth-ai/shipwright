@@ -1,0 +1,293 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-09-atomic-frs-u2b-prep",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-09T20:49:39.439712+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "risk / dependency ·",
+          "file": null,
+          "line": null,
+          "finding": "The largest residual hole — bindings of a moved criterion are re-judged by nothing in CI (keystone gate sees \"unchanged\", binding-regression sees no base links under the new id, conservation check runs only on operator-invoked `fr_split`). A post-cut hand-drop of test links (3→1) is invisible to the pipeline. This is documented, but the mitigation (runbook discipline + a PR-2 CI hook) leaves a window during which a bad merge lands silently on main.",
+          "suggestion": "Pull the \"run `fr_split`'s conservation check in CI when a diff adds AC-Move-Map rows\" follow-up into this PR. You're already touching the shared gate code that detects map rows; wiring conservation into CI here closes the hole before the real cut (PR 2) rather than after it, and the reviewers already scoped it as a small change.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "aliases` / `split_sources` are lenient (trust every map row) while the gates are strict. A malformed or stale hand-written row is rejected by `real_moves` (reads as removal+addition — good) but is still consumed by the history readers, so `ac_history`/`fr_history` can present a merged view that disagrees with what the gates concluded about the same edit. The two classes of consumers silently disagree rather than one of them flagging the row.",
+          "suggestion": "Have the lenient readers emit a warning (or surface in `--json` output) when a map row fails `real_moves` — a few lines using the strict rule you already have, no new abstraction.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "The known \"freed-number reuse\" case: gates correctly reject a reused target, but `ac_history`'s alias merging means a freed id later reassigned to a genuinely new criterion could conflate the old criterion's run history with the new occupant's, if a lenient alias row still maps them. The plan addresses the gate side but not the history side of reuse.",
+          "suggestion": "Document it as a known limit of the history views, or make `ac_history` stop using an alias once the old id is re-minted at head (analogous to the gates ignoring a row once its target is on base).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "The `origin/main` collision check holds only against the last fetch; a parallel iterate minting the same number after the run isn't seen. The runbook mitigation (\"fetch + fresh dry run right before the push\") depends on operator discipline, and PR 2's list of cuts is exactly the artifact most likely to be rebased.",
+          "suggestion": "Consider a cheap CI-side duplicate-FR-id check against origin (the second deferred architecture-review item) — that converts both this race and the stale-fetch problem from runbook steps into merge-blocking facts.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk ·",
+          "file": null,
+          "line": null,
+          "finding": "The report's table-row lookup depends on `plan()` inserting the spec first — an implicit ordering dependency that external review flagged and was left unfixed. It's the kind of coupling that breaks silently when someone reorders `plan()`.",
+          "suggestion": "Fix it now (explicit lookup or a guard); it's low-effort and avoids a latent crash in the operator-facing dry run.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency ·",
+          "file": null,
+          "line": null,
+          "finding": "The approach handles an unreadable `origin/main` by removing the report’s claim that it checked that ref, but does not specify whether allocation stops. If `fr_split` still produces an applicable plan, it cannot satisfy acceptance criterion 5 and may allocate an already-used FR number.",
+          "suggestion": "Fail before allocating or applying a split when `origin/main` cannot be read or any of its specs cannot be inspected. Test that this failure produces no file changes; a report disclaimer alone is insufficient.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "Two-hop move handling is required for the catalog diff, but its interaction with the shared strict rule is underspecified. For `A → B → C` across the compared revisions, neither individual row necessarily passes the stated checks: `B` may exist in neither catalog, and the second hop’s source may be absent from base. Keystone also needs the same final identity resolution to meet the goal that every catalog comparison agrees.",
+          "suggestion": "Resolve move chains to their base source and head destination before applying endpoint eligibility checks. Add a shared parity test covering both hops within one comparison and the second hop after the first has merged, including a wording change. Require Keystone and `changed_catalog` to classify each case consistently.  The shared move-resolution helper and targeted reader changes are appropriately sized for this change. Resolve the unreadable-origin behavior and demonstrate consistent multi-hop handling before approval; the documented binding-conservation limitation can remain a separate follow-up.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-09T20:54:26.225785+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: risk / dependency** · **Severity: medium**\n  **Finding:** The largest residual hole — bindings of a moved criterion are re-judged by nothing in CI (keystone gate sees \"unchanged\", binding-regression sees no base links under the new id, conservation check runs only on operator-invoked `fr_split`). A post-cut hand-drop of test links (3→1) is invisible to the pipeline. This is documented, but the mitigation (runbook discipline + a PR-2 CI hook) leaves a window during which a bad merge lands silently on main.\n  **Suggestion:** Pull the \"run `fr_split`'s conservation check in CI when a diff adds AC-Move-Map rows\" follow-up into this PR. You're already touching the shared gate code that detects map rows; wiring conservation into CI here closes the hole before the real cut (PR 2) rather than after it, and the reviewers already scoped it as a small change.\n\n- **Category: edge-case** · **Severity: medium**\n  **Finding:** `aliases` / `split_sources` are lenient (trust every map row) while the gates are strict. A malformed or stale hand-written row is rejected by `real_moves` (reads as removal+addition — good) but is still consumed by the history readers, so `ac_history`/`fr_history` can present a merged view that disagrees with what the gates concluded about the same edit. The two classes of consumers silently disagree rather than one of them flagging the row.\n  **Suggestion:** Have the lenient readers emit a warning (or surface in `--json` output) when a map row fails `real_moves` — a few lines using the strict rule you already have, no new abstraction.\n\n- **Category: edge-case** · **Severity: low**\n  **Finding:** The known \"freed-number reuse\" case: gates correctly reject a reused target, but `ac_history`'s alias merging means a freed id later reassigned to a genuinely *new* criterion could conflate the old criterion's run history with the new occupant's, if a lenient alias row still maps them. The plan addresses the gate side but not […truncated]\n\n[openai] 1. **Category: dependency · Severity: medium**  \n   **Finding:** The approach handles an unreadable `origin/main` by removing the report’s claim that it checked that ref, but does not specify whether allocation stops. If `fr_split` still produces an applicable plan, it cannot satisfy acceptance criterion 5 and may allocate an already-used FR number.  \n   **Suggestion:** Fail before allocating or applying a split when `origin/main` cannot be read or any of its specs cannot be inspected. Test that this failure produces no file changes; a report disclaimer alone is insufficient.\n\n2. **Category: edge-case · Severity: medium**  \n   **Finding:** Two-hop move handling is required for the catalog diff, but its interaction with the shared strict rule is underspecified. For `A → B → C` across the compared revisions, neither individual row necessarily passes the stated checks: `B` may exist in neither catalog, and the second hop’s source may be absent from base. Keystone also needs the same final identity resolution to meet the goal that every catalog comparison agrees.  \n   **Suggestion:** Resolve move chains to their base source and head destination before applying endpoint eligibility checks. Add a shared parity test covering both hops within one comparison and the second hop after the first has merged, including a wording change. Require Keystone and `changed_catalog` to classify each case consistently.\n\nThe shared move-resolution helper and targeted reader changes are appropriately sized for this change. Resolve the unreadable-origin behavior and demonstrate consistent multi-hop handling before approval; the documented binding-conservation limitation can remain a separate follow-up.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/ac_record.py",
+          "line": 246,
+          "finding": "Round 2: two base criteria mapped to one target let a removal vanish in changed_catalog (warning reader only; keystone gate was safe). FIXED after the review with a claimed-target set and a test.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/ac_move_map.py",
+          "line": 62,
+          "finding": "aliases/split_sources trust every map row (history readers only, no gating). Accepted as a documented limit.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/_keystone_ac_digest.py",
+          "line": 267,
+          "finding": "Checked sound: cross-file source/target, chains, cycles, AcChangeSet.moved consumers. Known limit: a moved criterion with unchanged wording is checked by fr_split conservation, not the gate.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-09T20:42:10.479887+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "shared/scripts/tools/verifiers/_ac_binding_regression.py",
+          "line": null,
+          "finding": "Claim under doubt: bindings of a moved, unchanged criterion are owned by fr_split conservation — Conservation runs only on the operator's machine; a hand edit after the cut that drops tests is caught in CI only by the coverage ratchet (0 links, non-grandfathered).",
+          "suggestion": "Documented in the iterate spec Known limits (decision: not widened into this PR) with a PR 2 runbook step to re-run the dry run after any hand edit.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "concurrency & ordering",
+          "file": "shared/scripts/lib/fr_split_report.py",
+          "line": null,
+          "finding": "Claim under doubt: no FR number already on origin/main is picked — Holds only against the last fetch at run time.",
+          "suggestion": "Acceptance item 5 reworded; PR 2 runbook: fetch and fresh dry run before push.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-09T20:48:14.749351+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "test ·",
+          "file": "shared/scripts/tools/tests/test_keystone_ac_moves.py:60-64 (and shared/scripts/tools/verifiers/_keystone_core.py:150-151)",
+          "line": null,
+          "finding": "The new test `test_a_moved_and_reworded_criterion_keeps_its_old_links_for_the_binding_check` only asserts `cs.moved == {...}`; it never runs `evaluate_keystone`. The `_keystone_core` change (looking up base links under the pre-move id) — the piece the round-1 review flagged as the medium-severity fix — is untested. If someone later reverts that two-line lookup or swaps the tuple order, every test in the suite still passes while the gate mis-judges the link counts of a moved+reworded criterion (exactly the false \"added bindings\" / missed-regression the fix was for).",
+          "suggestion": "Add a test that builds a repo where the old id has base links and the moved criterion is reworded, runs `evaluate_keystone`, and asserts AC-2 passes (or fails) based on the old-id link count.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case ·",
+          "file": "shared/scripts/lib/fr_split_report.py",
+          "line": 36,
+          "finding": "new_spec = next(iter(result[\"files\"].values()))[1]` picks the first entry of the files dict and assumes it is the spec file the new rows were written into. This holds only by insertion order inside `plan` (the spec entry must be inserted first). If file ordering ever changes (e.g. the tags rewrite is recorded before the spec, or the spec lands in a second file for cross-file splits), `_row` returns `\"\"` and the operator-facing \"table row\" line silently goes blank — the report claims to show the copied row but shows nothing, with no warning.",
+          "suggestion": "Key the spec explicitly (e.g. pass `rel_spec` in the result, or filter `result[\"files\"]` to the spec path) instead of relying on dict order.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "spec ·",
+          "file": "shared/scripts/lib/spec_chain.py:225-236",
+          "line": null,
+          "finding": "Acceptance item 3 says \"`ac_history` of the old and the new id returns the same runs\", but alias joining happens only when `spec_acs is None`. Any existing caller that passes a pre-computed `spec_acs` dict silently gets no move-map joining — the old and new id return different histories for that caller. The docstring documents the limitation, but it is a contract asymmetry: same API, different answer depending on an optional argument.",
+          "suggestion": "Either read the move map independently of `spec_acs` (it only needs the spec texts, not the catalog), or assert/annotate that the passed-in form is the legacy path. Reading the map separately is cheap and removes the asymmetry.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case ·",
+          "file": "shared/scripts/lib/ac_record.py:101-110 (same rule in verifiers/_keystone_criteria.py:84-91)",
+          "line": null,
+          "finding": "The \"real move\" rule (`target must not exist at base`) misreads a legitimate single-commit sequence where a target criterion is deleted and its number immediately reused as the move destination: base has `FR-01.03.AC01` (old text), head deletes it and moves `FR-01.01.AC01` onto `FR-01.03.AC01`. Both readers report removed+changed instead of moved/unchanged. `fr_split` never produces this (it mints fresh numbers), so this only bites hand-written cuts — consistent with the documented \"hand-written row\" tradeoff, but it is a wider class than the docs imply.",
+          "suggestion": "Acceptable as documented; consider noting \"reuse of a freed number in the same commit\" in the known limits rather than only \"hand-written row onto a living id\".",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test ·",
+          "file": "shared/tests/test_fr_split_tool.py:225 (`test_the_cut_skips_a_number_origin_main_already_uses`)",
+          "line": null,
+          "finding": "The test asserts `\"FR-01.04\" in out` but never asserts `FR-01.03` is absent from the new-ids line. A broken `origin_numbers` (e.g. returncode mishandling, wrong ref) that picks FR-01.03 anyway could still print FR-01.04 elsewhere (e.g. in a problems note) and pass.",
+          "suggestion": "Assert the new-ids line exactly, e.g. `\"...new ids ...): FR-01.04\"` and that `FR-01.03` is not among the chosen ids.  Security: no issues — subprocess calls use argument lists without shell, regex inputs are escaped, no untrusted data reaches sensitive sinks beyond reading repo-local files.  Overall assessment: the implementation matches the spec's five acceptance criteria, the tricky \"claimed target / hand-written row\" logic in `changed_catalog` is sound and tested, and the residual gaps are an untested core-gate lookup and small report fragilities — ship-with-fixes, with the `_keystone_core` test gap the one worth addressing before PR 2 depends on this.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/lib/fr_split_report.py",
+          "line": 23,
+          "finding": "origin_numbers` checks only spec paths present in the local tree. If the fetched `origin/main` introduced another spec file containing FR-01.03, an older branch can still allocate FR-01.03. This violates acceptance criterion 5 even with a current fetch.",
+          "suggestion": "Enumerate spec paths from `origin/main` itself, then read all of those files when collecting occupied numbers.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/lib/fr_split_report.py",
+          "line": 53,
+          "finding": "The report silently truncates FR-level test files to the first eight. When nine or more files carry the source FR tag, the operator cannot review everything the specification requires the dry run to list. The added test covers only one matching file.",
+          "suggestion": "Print every matching file, preferably one per line, and add a test with more than eight files.  Ship-with-fixes: the move-aware comparisons appear sound, but number allocation and report completeness need these specific corrections before shipping.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-09T20:53:39.121515+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] The diff is substantial and largely faithful to the spec. I traced the move-map logic through the keystone gate, `changed_catalog`, `ac_history`, `fr_history`, and the `fr_split` report, and the acceptance items 1–5 each have direct code plus tests. Findings:\n\n- Category: test · Severity: medium\n  File: shared/scripts/tools/tests/test_keystone_ac_moves.py:60-64 (and shared/scripts/tools/verifiers/_keystone_core.py:150-151)\n  Finding: The new test `test_a_moved_and_reworded_criterion_keeps_its_old_links_for_the_binding_check` only asserts `cs.moved == {...}`; it never runs `evaluate_keystone`. The `_keystone_core` change (looking up base links under the pre-move id) — the piece the round-1 review flagged as the medium-severity fix — is untested. If someone later reverts that two-line lookup or swaps the tuple order, every test in the suite still passes while the gate mis-judges the link counts of a moved+reworded criterion (exactly the false \"added bindings\" / missed-regression the fix was for).\n  Suggestion: Add a test that builds a repo where the old id has base links and the moved criterion is reworded, runs `evaluate_keystone`, and asserts AC-2 passes (or fails) based on the old-id link count.\n\n- Category: edge-case · Severity: low\n  File: shared/scripts/lib/fr_split_report.py:36\n  Finding: `new_spec = next(iter(result[\"files\"].values()))[1]` picks the first entry of the files dict and assumes it is the spec file the new rows were written into. This holds only by insertion order inside `plan` (the spec entry must be inserted first). If file ordering ever changes (e.g. the tags rewrite is recorded before the spec, or the spec lands in a second file for cross-file splits), `_row` returns `\"\"` and the operator-facing \"table row\" line silently goes blank — the report claims to show the copied row but shows nothing, with no warning.\n  Suggestion: Key the spec explicitly (e.g. pass `rel_spec` in the result, or filter `result[\"files\"]` to the spec path) ins […truncated]\n\n[openai] - Category: spec\n- Severity: medium\n- File: shared/scripts/lib/fr_split_report.py:23\n- Finding: `origin_numbers` checks only spec paths present in the local tree. If the fetched `origin/main` introduced another spec file containing FR-01.03, an older branch can still allocate FR-01.03. This violates acceptance criterion 5 even with a current fetch.\n- Suggestion: Enumerate spec paths from `origin/main` itself, then read all of those files when collecting occupied numbers.\n\n- Category: spec\n- Severity: medium\n- File: shared/scripts/lib/fr_split_report.py:53\n- Finding: The report silently truncates FR-level test files to the first eight. When nine or more files carry the source FR tag, the operator cannot review everything the specification requires the dry run to list. The added test covers only one matching file.\n- Suggestion: Print every matching file, preferably one per line, and add a test with more than eight files.\n\nShip-with-fixes: the move-aware comparisons appear sound, but number allocation and report completeness need these specific corrections before shipping.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-09T20:35:17.332263+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-09T20:54:27.476667+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-09T20:54:27.999255+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

@@ -55,6 +55,14 @@ def test_a_test_that_names_criteria_of_two_parts_blocks_the_cut_unless_allowed(t
     assert fr_split.main(["--project-root", str(root), "--grouping", str(cut), "--no-diff", "--allow-shared-tests"]) == 0
 
 
+def test_the_report_names_test_files_with_a_bare_fr_level_tag_on_the_source(tmp_path, capsys):
+    root, cut = _project(tmp_path)
+    (root / "tests/test_level.py").write_text('import pytest\n\n@pytest.mark.covers("FR-01.01")\ndef test_x():\n    pass\n', encoding="utf-8")
+    assert fr_split.main(["--project-root", str(root), "--grouping", str(cut), "--no-diff"]) == 0
+    out = capsys.readouterr().out
+    assert "FR-level tag on FR-01.01" in out and "tests/test_level.py" in out and "tests/test_plans.py" not in out.split("FR-level tag on")[1]
+
+
 def test_unusable_input_exits_two(tmp_path, capsys):
     root, cut = _project(tmp_path)
     cut.write_text(json.dumps({"source": "FR-01.01", "parts": []}), encoding="utf-8")
@@ -180,3 +188,62 @@ def test_a_criterion_moved_twice_is_still_not_new_baseline_growth(tmp_path):
     (tmp_path / ".shipwright/planning/01-core").mkdir(parents=True)
     (tmp_path / ".shipwright/planning/01-core/spec.md").write_text(new, encoding="utf-8")
     assert baseline_grown_since_parent(tmp_path, tmp_path / "b.json", {"FR-01.04/AC04"}, "HEAD") == ([], [])
+
+
+def test_the_dry_run_names_the_new_ids_the_copied_row_and_fr_level_tests(tmp_path, capsys):
+    root, cut = _project(tmp_path)
+    assert fr_split.main(["--project-root", str(root), "--grouping", str(cut), "--no-diff"]) == 0
+    out = capsys.readouterr().out
+    assert "new ids (checked against this tree and the AC registry ONLY" in out and "FR-01.03" in out
+    assert "table row (Priority/Basis/Layers copied from FR-01.01 unless set): | FR-01.03" in out
+    assert "description:" in out
+
+
+def test_a_number_already_used_on_origin_main_is_not_picked(tmp_path):
+    import subprocess
+
+    from lib.fr_split_report import origin_numbers
+    git = lambda *a: subprocess.run(["git", "-c", "user.email=a@b.c", "-c", "user.name=t", *a], cwd=tmp_path, check=True, capture_output=True)  # noqa: E731
+    git("init", "-q")
+    (tmp_path / "spec.md").write_text("### FR-01.07 — Elsewhere\n", encoding="utf-8")
+    git("add", "-A")
+    git("commit", "-qm", "main")
+    git("update-ref", "refs/remotes/origin/main", "HEAD")
+    assert origin_numbers(tmp_path, ["spec.md", "missing.md"], "01") == {7}
+
+
+def test_the_cut_skips_a_number_origin_main_already_uses(tmp_path, capsys):
+    import subprocess
+    root, cut = _project(tmp_path)
+    spec = root / ".shipwright/planning/01-core/spec.md"
+    git = lambda *a: subprocess.run(["git", "-c", "user.email=a@b.c", "-c", "user.name=t", *a], cwd=root, check=True, capture_output=True)  # noqa: E731
+    git("init", "-q")
+    local = spec.read_text(encoding="utf-8")
+    spec.write_text(local + "\n### FR-01.03 — Minted elsewhere\n\n- (E) [AC01] Given x, when y, then z.\n", encoding="utf-8")
+    git("add", "-A")
+    git("commit", "-qm", "trunk")
+    git("update-ref", "refs/remotes/origin/main", "HEAD")
+    spec.write_text(local, encoding="utf-8")  # this tree has not seen FR-01.03
+    assert fr_split.main(["--project-root", str(root), "--grouping", str(cut), "--no-diff", "--allow-dirty"]) == 0
+    ids_line = next(x for x in capsys.readouterr().out.splitlines() if "new ids" in x)
+    assert ids_line.endswith(": FR-01.04") and "and origin/main" in ids_line
+
+
+def test_the_report_does_not_claim_an_origin_check_when_origin_main_is_not_readable(tmp_path, capsys):
+    root, cut = _project(tmp_path)
+    assert fr_split.main(["--project-root", str(root), "--grouping", str(cut), "--no-diff"]) == 0
+    ids_line = next(x for x in capsys.readouterr().out.splitlines() if "new ids" in x)
+    assert "ONLY" in ids_line and "git fetch origin main" in ids_line
+
+
+def test_a_hung_or_missing_git_reads_as_nothing_instead_of_crashing(tmp_path, monkeypatch):
+    import subprocess
+
+    from lib import fr_split_report as rep
+
+    def hang(*_a, **_k):
+        raise subprocess.TimeoutExpired("git", 60)
+    monkeypatch.setattr(rep.subprocess, "run", hang)
+    assert rep.origin_numbers(tmp_path, ["spec.md"], "01") == set() and rep.origin_readable(tmp_path) is False
+    monkeypatch.setattr(rep.subprocess, "run", lambda *a, **k: (_ for _ in ()).throw(FileNotFoundError("git")))
+    assert rep.origin_numbers(tmp_path, ["spec.md"], "01") == set()

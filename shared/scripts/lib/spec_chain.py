@@ -16,7 +16,8 @@ guessing. This module is the single place that knows the hops:
 * **AC history.** ``affected_acs`` on events (P1) plus the run ids that the catalog's
   ``spec.md`` carries in the text of an AC (the backfill for runs before P1).
 
-Everything is read-only, stdlib only and never raises on a missing file.
+Everything is read-only, stdlib plus ``lib.ac_move_map`` and never raises on a missing file.
+``ac_history`` joins a moved criterion's old and new ids only when it reads the specs itself (``spec_acs`` not passed).
 """
 
 from __future__ import annotations
@@ -25,6 +26,8 @@ import re
 import subprocess
 from pathlib import Path
 from typing import Iterable
+
+from lib.ac_move_map import aliases, parse_move_map
 
 __all__ = [
     "PLAN_NAME", "plan_rel_path", "safe_plan_path", "stub_kind", "render_stub", "parse_stub", "fold_plan_path",
@@ -37,7 +40,7 @@ _ADR_DIR = ".shipwright/planning/adr"
 _RUN_ID = re.compile(r"iterate-\d{4}-\d{2}-\d{2}-[a-z0-9](?:[a-z0-9-]*[a-z0-9])?")
 _FR_HEADING = re.compile(r"^###\s+(FR-\d+\.\d+)\b")
 _AC_START = re.compile(r"^-\s+(?:\([A-Z]\)\s+)?\[(AC\d+)\]")
-_AC_ID = re.compile(r"^(FR-\d+\.\d+)[.\s_-]*(?:AC|ac)[-_ ]?(\d+)$")
+_AC_ID = re.compile(r"^(FR-\d+\.\d+)[./\s_-]*(?:AC|ac)[-_ ]?(\d+)$")
 _SAFE_RID = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]*")
 _PR_SUBJECT = re.compile(r"\(#(\d+)\)\s*$")
 _PLAN_NAMES_IN_RUN_DIR = ("plan.md", "mini-plan.md", "miniplan.md", "mini_plan.md", "MINIPLAN.md", "spec.md")
@@ -222,21 +225,25 @@ def ac_history(project_root: Path, ac: str, events: list[dict], spec_acs: dict[s
     """Which runs shaped ``ac`` and, per run, its plan and PR. ``spec_acs`` defaults to the catalog's ``spec.md`` files."""
     root = Path(project_root)
     norm = normalise_ac(ac) or ac
+    moves: dict[str, str] = {}
     if spec_acs is None:
         spec_acs = {}
         for spec in sorted((root / ".shipwright" / "planning").glob("*/spec.md")):
             try:
-                spec_acs.update(parse_spec_acs(spec.read_text(encoding="utf-8")))
+                text = spec.read_text(encoding="utf-8")
+                spec_acs.update(parse_spec_acs(text))
+                moves.update(parse_move_map(text))
             except (OSError, ValueError):
                 continue
+    ids = aliases(norm, moves)  # an AC an fr_split moved: its runs under the old and the new id are one history
     # by_run keeps the LAST work_completed event per run (later events overwrite earlier ones with the same adr_id).
     by_run = {str(e.get("adr_id")): e for e in events if e.get("type") == "work_completed" and e.get("adr_id")}
-    runs: dict[str, dict] = {r: {"run_id": r, "via": ["spec-text"]} for r in spec_acs.get(norm, [])}
+    runs: dict[str, dict] = {r: {"run_id": r, "via": ["spec-text"]} for a in sorted(ids) for r in spec_acs.get(a, [])}
     for evt in events:
         if evt.get("type") != "work_completed" or not evt.get("adr_id"):
             continue
         for found, disposition in _event_acs(evt):
-            if found == norm:
+            if found in ids:
                 entry = runs.setdefault(str(evt["adr_id"]), {"run_id": str(evt["adr_id"]), "via": []})
                 entry["via"].append("event")
                 entry["disposition"] = disposition

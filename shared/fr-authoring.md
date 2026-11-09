@@ -234,6 +234,16 @@ one capability and 8 can be two — but **can it still be split?**
   manifest), no test still names an old id, the new names pass the Group `I1`
   fence, and no single test names criteria of two parts. Each cut is its own PR
   with the list of cuts; the operator approves it.
+  The dry run names the new ids (checked against this tree, the AC registry and
+  `origin/main`), each new table row (Priority, Basis and Layers are copied from the
+  source row unless the grouping sets them) and the test files tagged with the
+  bare source FR, so the operator confirms what is copied. The keystone AC gate,
+  the pre-build catalog diff, `ac_history` and `fr_history` read the move map: a
+  moved criterion is the same criterion, not "removed here, added there". The
+  gates accept only rows of the shape `fr_split` writes (same AC number, the
+  target in a new FR, a source that is gone); any other row reads as an ordinary
+  removal plus addition. Map rows are append-only once merged: never edit or
+  delete one, the history views keep using it.
 - **At spec time there is no code or test yet,** so `/shipwright-project` blocks
   on the capability test **plus the code form checks** (`step-6-fr-scope.md`): it
   may not finish an FR until each group of its criteria passes the capability

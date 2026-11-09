@@ -1,0 +1,10 @@
+{"items": [
+ {"name": "Spec Compliance", "verdict": "pass", "note": "All 5 acceptance criteria implemented and tested; spec-reviewer PASS round 2; no extra features."},
+ {"name": "Error Handling", "verdict": "pass", "note": "origin_numbers catches OSError/SubprocessError (reads as nothing); readers never raise on a missing map; git failures fall back to the local tree."},
+ {"name": "Security Basics", "verdict": "pass", "note": "Read-only readers; git invoked with a list argv, no shell; no secrets; rel paths come from repo spec discovery."},
+ {"name": "Test Quality", "verdict": "pass", "note": "Behaviour tests on real git repos incl. regression for a colliding hand-written row, two-sources-one-target, cross-file and two-hop moves, plan()-level origin/main check; a vacuous assert was removed."},
+ {"name": "Performance Basics", "verdict": "pass", "note": "One git show per spec file, 60s timeout; catalogs read once per call."},
+ {"name": "Naming & Structure", "verdict": "pass", "note": "New code split into fr_split_report.py; every touched file <=300 lines (_keystone_ac_digest.py exactly 300)."},
+ {"name": "Affected Boundaries", "verdict": "pass", "note": "Consumers of the AC-Move-Map table (fr_split writer, readers) round-trip tested on a real git repo and a probe cut of FR-01.11 AC21-25; AcChangeSet.moved has a default, no serializer."},
+ {"name": "Test Hygiene Probe", "verdict": "n/a", "note": "To be run at F0 (scan_test_hygiene --diff) together with the full suite."}
+]}

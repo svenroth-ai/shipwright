@@ -32,6 +32,9 @@ def _render_text(history, coverage) -> str:
     # entry, and every field off the log is sanitised in
     # ``fr_change_history._clean``. Nothing reaching this renderer is raw.
     lines = [f"# {history.fr_id} — recorded changes", ""]
+    if history.split_from:
+        lines += _para(f"Some criteria of this requirement were moved here from {', '.join(history.split_from)}; changes before the split are recorded there.")
+        lines.append("")
 
     if history.status == STATUS_NO_CHANGES:
         lines.append("No recorded changes.")

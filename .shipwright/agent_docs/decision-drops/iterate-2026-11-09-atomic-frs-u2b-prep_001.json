@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-09-atomic-frs-u2b-prep",
+  "date": "2026-11-09",
+  "section": "Iterate — feature: the gates and readers learn the AC-Move-Map",
+  "title": "One shared real_moves rule lets a cut criterion read as the same criterion in every catalog comparison",
+  "context": "Atomic-FR campaign U2b-prep: after fr_split (PR #1027) a moved criterion showed as removed here + added there in the keystone AC gate, the pre-build catalog diff, ac_history and fr_history, which would stall the real FR-01.11 cut.",
+  "decision": "ac_move_map.real_moves is the one rule (same AC number, source gone at head, target absent at base, target FR new, one source per target). The keystone digest compares a moved criterion under its pre-move id and the binding check reads base links under the old id; changed_catalog uses the same rule across all spec files; ac_history and fr_history join old and new ids. fr_split also checks new FR numbers against every spec on origin/main and reports ids, rows and all FR-level test files.",
+  "consequences": "A row the rule rejects reads as an ordinary removal + addition, so a hand-written map row cannot hide a removal. Bindings of a moved, unchanged criterion stay owned by fr_split's conservation check plus the coverage ratchet; running that check in CI when map rows are added is a PR 2 follow-up.",
+  "rationale": "One function for the rule keeps the gate and the catalog diff from drifting apart; strictness limits what an author-written table can relax.",
+  "rejected": "Operator overrides per cut (trains people to override criterion gates), rewriting history ids (changes append-only records) and a central catalog-diff module (more change than needed).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ".shipwright/planning/iterate/2026-11-09-atomic-frs-u2b-prep.md"
+}

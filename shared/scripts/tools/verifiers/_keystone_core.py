@@ -147,7 +147,8 @@ def evaluate_keystone(change_set, head_manifest: dict, base_manifest: dict) -> K
 
     # --- AC-2: every changed AC's bound tests, judged on LINK COUNTS only.
     for fr_id, ac_id in sorted(change_set.changed):
-        base_links = _links_for(base_manifest, fr_id, ac_id)
+        old_fr, old_ac = change_set.moved.get((fr_id, ac_id), (fr_id, ac_id))  # a moved criterion's base links sit under its old id
+        base_links = _links_for(base_manifest, old_fr, old_ac)
         head_links = _links_for(head_manifest, fr_id, ac_id)
         if not head_links:
             if base_links:

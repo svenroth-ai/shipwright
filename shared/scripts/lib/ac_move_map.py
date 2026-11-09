@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import re
 
-__all__ = ["AC_ID", "MOVE_HEADING", "parse_move_map", "render_section", "resolve_ac"]
+__all__ = ["AC_ID", "MOVE_HEADING", "aliases", "moved_catalog", "parse_move_map", "real_moves", "render_section", "resolve_ac", "split_sources"]
 
 MOVE_HEADING = "## AC-Move-Map"
 AC_ID = re.compile(r"^FR-\d{2}\.\d{2}/AC\d{2,}$")
@@ -48,6 +48,44 @@ def resolve_ac(ac_id: str, moves: dict[str, str]) -> str:
         ac_id = moves[ac_id]
         seen.add(ac_id)
     return ac_id
+
+
+def real_moves(base: set[tuple[str, str]], head: set[tuple[str, str]], moves: dict[str, str]) -> dict[tuple[str, str], tuple[str, str]]:
+    """``{(fr, ac) at head: (fr, ac) at base}`` for the map rows that look like what ``fr_split`` writes - THE one rule the gates share.
+
+    A row counts only when the criterion keeps its AC number, the source is gone at head, the target did not exist at base,
+    the target FR is new (absent at base) and no other source already claimed the target. Anything else (a hand-written row
+    onto a living id, a renumbering, a merge into an existing FR) reads as an ordinary removal + addition, so a row cannot hide one."""
+    base_frs = {fr for fr, _ in base}
+    out: dict[tuple[str, str], tuple[str, str]] = {}
+    for fr, ac in sorted(base):
+        target = resolve_ac(f"{fr}/{ac}", moves).split("/", 1)
+        new = (target[0], target[1]) if len(target) == 2 else (fr, ac)
+        if new != (fr, ac) and new[1] == ac and new in head and (fr, ac) not in head and new not in base and new[0] not in base_frs and new not in out:
+            out[new] = (fr, ac)
+    return out
+
+
+def moved_catalog(texts: dict[str, str], moves: dict[str, str]) -> dict[str, str]:
+    """``texts`` (catalog keys ``FR-01.11.AC21``) re-keyed to where each criterion lives now, per ``moves`` (ids ``FR-01.11/AC21``)."""
+    out = {}
+    for key, text in texts.items():
+        fr, _, ac = key.rpartition(".")
+        out[resolve_ac(f"{fr}/{ac}", moves).replace("/", ".")] = text
+    return out
+
+
+def aliases(ac_key: str, moves: dict[str, str]) -> set[str]:
+    """Every id the criterion ``ac_key`` (dotted, ``FR-01.11.AC21``) has ever carried or carries now, dotted, itself included."""
+    fr, _, ac = ac_key.rpartition(".")
+    final = resolve_ac(f"{fr}/{ac}", moves)
+    ids = {a for a in {*moves, *moves.values()} if resolve_ac(a, moves) == final}
+    return {a.replace("/", ".") for a in ids} | {ac_key}
+
+
+def split_sources(fr_id: str, moves: dict[str, str]) -> tuple[str, ...]:
+    """The requirements whose criteria an ``fr_split`` moved INTO ``fr_id`` (so their history is part of its story)."""
+    return tuple(sorted({o.split("/")[0] for o, n in moves.items() if n.split("/")[0] == fr_id and o.split("/")[0] != fr_id}))
 
 
 def render_section(moves: dict[str, str]) -> str:
