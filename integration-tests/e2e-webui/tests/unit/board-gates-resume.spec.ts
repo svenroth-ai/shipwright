@@ -175,7 +175,7 @@ test("resume: a run-config alone does not skip New pipeline; a live process of t
 
 // @covers FR-01.06
 test("run identity: uncommitted plugin changes change the fingerprint; the package hash is computed from the files", () => {
-  expect(pluginFingerprint(repo)).toMatch(/^[0-9a-f]{40}(\+[0-9a-f]{16})?$/);
+  expect(pluginFingerprint(repo)).toMatch(/^plugins:[0-9a-f]{40} shared:[0-9a-f]{40}(\+[0-9a-f]{16})?$/);
   const fixtureDir = path.join(repo, "integration-tests", "fixtures", FIXTURE_NAME);
   const recorded = (JSON.parse(fs.readFileSync(path.join(fixtureDir, "brief.json"), "utf8")) as { package_sha256: string }).package_sha256;
   expect(packageDigest(repo, fixtureDir)).toBe(recorded);

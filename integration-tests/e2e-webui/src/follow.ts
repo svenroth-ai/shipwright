@@ -5,6 +5,7 @@ import * as ui from "./driver.js";
 import { IDLE_MINUTES, IdleWatch } from "./idle.js";
 import { fileActivity, phaseSignature, readRunState } from "./progress.js";
 import type { Report } from "./report.js";
+import { STOPPED_PREFIX, describeStop, stopReached, type StopSpec } from "./stop-after.js";
 import { isAuthFailure } from "./terminal-gate.js";
 
 const POLL_MS = 15_000;
@@ -18,7 +19,7 @@ export async function waitForTask(page: Page, base: string, projectId: string): 
   return null;
 }
 
-export async function follow(page: Page, base: string, projectId: string, projectPath: string, deadline: number, maxMinutes: number, report: Report): Promise<string> {
+export async function follow(page: Page, base: string, projectId: string, projectPath: string, deadline: number, maxMinutes: number, report: Report, stopAfter: StopSpec | null = null): Promise<string> {
   const idle = new IdleWatch(IDLE_MINUTES * 60_000);
   let lastPhases = "";
   let boardShot = false;
@@ -37,6 +38,10 @@ export async function follow(page: Page, base: string, projectId: string, projec
       }
     }
     if (state.status === "complete" || state.status === "failed") return state.status;
+    if (stopAfter && stopReached(projectPath, stopAfter)) {
+      await report.step(`Stop point reached: ${describeStop(stopAfter)} is done`, page, "SHIPWRIGHT_E2E_STOP_AFTER ends the run here; later phases are not run and the checklist is not evaluated.");
+      return `${STOPPED_PREFIX} ${describeStop(stopAfter)}`;
+    }
     for (const done of await ui.answerGates(page, gateState)) {
       report.gate(done);
       if (/exemption|safety dialog/i.test(done)) report.escalation(done);
