@@ -219,6 +219,21 @@ one capability and 8 can be two — but **can it still be split?**
 - **Honest limit:** clusters show what is connected in code, not what is one
   capability. Two promises that share a test can still be two capabilities. Code
   proposes; the operator confirms every cut.
+- **Performing a cut** (`shared/scripts/tools/fr_split.py`): the AI proposes ONE
+  grouping (a small JSON file: the source FR, and per new requirement a plain
+  name, a description and the criteria it takes), the operator confirms it, and
+  the tool does the rest. It **moves** criteria — never rewords or renumbers one
+  (`AC21` stays `AC21`, only the FR part of its id changes) — adds the new
+  rows and sections to `spec.md`, re-points the test tags that bind them, and
+  records every move in a `## AC-Move-Map` table (old id → new id), so an old
+  report, decision note or event that names `FR-01.11/AC21` still resolves. It
+  runs a **dry run** first (diff, nothing written). The hard conservation check
+  fails the cut — and `--apply` restores every file — unless each criterion
+  appears exactly once with its wording unchanged, every test is bound to the
+  same criterion under its new id (also in a freshly regenerated traceability
+  manifest), no test still names an old id, the new names pass the Group `I1`
+  fence, and no single test names criteria of two parts. Each cut is its own PR
+  with the list of cuts; the operator approves it.
 - **At spec time there is no code or test yet,** so `/shipwright-project` blocks
   on the capability test **plus the code form checks** (`step-6-fr-scope.md`): it
   may not finish an FR until each group of its criteria passes the capability

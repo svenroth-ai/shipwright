@@ -85,6 +85,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from lib.ac_move_map import parse_move_map, resolve_ac
+
 from .git_blob_read import blob_oid
 from .git_helpers import _run_git
 
@@ -153,5 +155,17 @@ def baseline_grown_since_parent(project_root: Path, baseline_path: Path,
             or not all(isinstance(x, str) for x in doc["unbound"]):
         return [], [f"the baseline at the parent commit ({resolved}) does not have the expected shape"]
 
-    parent_set = set(doc["unbound"])
+    moved = _moved(project_root)
+    parent_set = {resolve_ac(x, moved) for x in doc["unbound"]}  # a criterion an fr_split moved is not a NEW entry
     return sorted(current - parent_set), []
+
+
+def _moved(project_root: Path) -> dict[str, str]:
+    """``{old ac id: new ac id}`` from the ``## AC-Move-Map`` of every spec.md in the working tree (``{}`` if none or unreadable)."""
+    try:
+        out: dict[str, str] = {}
+        for spec in sorted((project_root / ".shipwright" / "planning").glob("*/spec.md")):
+            out.update(parse_move_map(spec.read_text(encoding="utf-8")))
+        return out
+    except (ImportError, OSError, ValueError):
+        return {}

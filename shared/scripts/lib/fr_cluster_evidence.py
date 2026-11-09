@@ -117,35 +117,57 @@ def _py_bindings(rel: str, text: str) -> dict[str, set[str]]:
     return out
 
 
-def _js_comment(line: str, in_block: bool) -> tuple[str, bool]:
-    """The comment text of one JS/TS line (``//`` and ``/* */``, which may span lines) and whether a block comment is still open."""
-    out, i = [], 0
-    while i < len(line):
-        if in_block:
+def js_comment_spans(line: str, state: str) -> tuple[list[tuple[int, int]], str]:
+    """The comment character ranges of one JS/TS line and the scan state carried to the next.
+
+    ``state`` is ``""`` (code), ``"*"`` (inside a block comment) or a backtick (inside a template literal, which may span
+    lines). ``'`` and ``"`` strings end with their line. A ``//`` or ``/*`` inside a string is text, not a comment."""
+    out: list[tuple[int, int]] = []
+    i, n, quote = 0, len(line), ""
+    if state in ("'", '"', "`"):
+        quote = state
+    while i < n:
+        if state == "*":
             j = line.find("*/", i)
             if j < 0:
-                out.append(line[i:])
-                return " ".join(out), True
-            out.append(line[i:j])
-            i, in_block = j + 2, False
+                out.append((i, n))
+                return out, "*"
+            out.append((i, j))
+            i, state = j + 2, ""
             continue
-        a, b = line.find("/*", i), line.find("//", i)
-        if b >= 0 and (a < 0 or b < a):
-            out.append(line[b + 2:])
-            return " ".join(out), False
-        if a < 0:
-            break
-        i, in_block = a + 2, True
-    return " ".join(out), in_block
+        c = line[i]
+        if quote:
+            if c == "\\":
+                i += 2
+                continue
+            if c == quote:
+                quote = ""
+            i += 1
+            continue
+        if c in ("'", '"', "`"):
+            quote = c
+        elif line.startswith("//", i):
+            out.append((i + 2, n))
+            return out, ""
+        elif line.startswith("/*", i):
+            state, i = "*", i + 1
+        i += 1
+    return out, "`" if quote == "`" else ""
+
+
+def _js_comment(line: str, state: str) -> tuple[str, str]:
+    """The comment text of one JS/TS line and the scan state for the next line (see ``js_comment_spans``)."""
+    spans, state = js_comment_spans(line, state)
+    return " ".join(line[s:e] for s, e in spans), state
 
 
 def _js_bindings(rel: str, text: str) -> dict[str, set[str]]:
     """JS/TS: ids named in a comment only - a ``// @covers`` line above a test, or any comment inside its body."""
     out: dict[str, set[str]] = {}
     pending: list[str] = []
-    current, in_block = "", False
+    current, state = "", ""
     for line in text.splitlines():
-        comment, in_block = _js_comment(line, in_block)
+        comment, state = _js_comment(line, state)
         js = _JS_TEST.match(line)
         if js:
             current = js.group(2)

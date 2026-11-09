@@ -1,0 +1,1 @@
+{"stage": "spec-compliance", "verdict": "PASS", "spec_citations": [], "summary": "Every requirement in AC1-6, the design table, the operator decisions and brief U2 is in the code and does what the spec says. Nothing beyond the spec was added. Coordinator-spawned (opus); the five non-blocking test-gap findings were closed in this run."}
