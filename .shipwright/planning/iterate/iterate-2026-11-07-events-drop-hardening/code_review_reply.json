@@ -1,0 +1,7 @@
+{"review":[
+{"severity":"high","category":"correctness","file":"shared/scripts/tools/verifiers/events_integrity_check.py","finding":"F11 ownership would fail legitimate stacked / single-branch units that inherit earlier units' drops (fixed: not enforced while such a campaign is on record; parametrized test)"},
+{"severity":"medium","category":"correctness","file":"shared/scripts/lib/events_layout_ci.py","finding":"rollback exemption did not require the leftover to be the unchanged, not-ok base file (fixed; head blob must equal base blob)"},
+{"severity":"medium","category":"test-coverage","file":"shared/tests/test_events_drop_hardening.py","finding":"item 3 test did not exercise the not-ok arm or a corrupted base drop (fixed: two cases added)"},
+{"severity":"low","category":"correctness","file":"plugins/shipwright-changelog/skills/changelog/SKILL.md","finding":"BULLET_DOCS needs one shell invocation (fixed: stated in the block)"},
+{"severity":"low","category":"docs","file":"shared/scripts/lib/events_layout_ci.py","finding":"item 6 docs overstated (fixed: stops a side branch merged INTO the PR, not a built history)"},
+{"severity":"low","category":"correctness","file":"shared/scripts/tools/fold_events.py","finding":"partial fold result was staged (fixed: *_incomplete never staged, error says do not commit)"}]}

@@ -1,0 +1,1 @@
+Goal: Tell existing projects what they must do for the per-run event files | Reason: The release cutter sees only the release, so the action must be in it; CI stays optional for solo maintainers | Reference: issue 978, campaign events-drop-files

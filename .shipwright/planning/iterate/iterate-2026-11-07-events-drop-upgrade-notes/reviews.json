@@ -1,0 +1,155 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-07-events-drop-upgrade-notes",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-07T11:57:48.920610+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-07T11:59:54.816707+00:00",
+      "disposition": "small docs-only change: no plan, architecture or external code review at this complexity",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "high",
+          "category": null,
+          "file": "plugins/shipwright-changelog/skills/changelog/references/release-workflow.md",
+          "line": null,
+          "finding": "The upgrade-notes check ran at Step 5, after the real aggregate run in Step 4 had used up the drops, so a Changed drop added then would ship one release late.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
+          "line": null,
+          "finding": "In autonomous mode Step 5 is skipped, so the pointer there could be skipped.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": "plugins/shipwright-changelog/skills/changelog/references/release-workflow.md",
+          "line": null,
+          "finding": "Pages without a 'Do you have to do anything?' line and a first release without a previous tag were not covered.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": "plugins/shipwright-changelog/skills/changelog/references/release-workflow.md",
+          "line": null,
+          "finding": "Condenser claim overstated: it files under Breaking Changes only when the reader must act to keep working.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": "plugins/shipwright-changelog/tests/test_skill_upgrade_notes_check.py",
+          "line": null,
+          "finding": "Migration page path breaks in the plugin cache; the 'optional' assert was weak.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-07T11:59:48.562080+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-07T11:59:54.633704+00:00",
+      "disposition": "docs and skill-prose diff plus one guard test; no migrations, concurrency, cross-plugin imports or irreversible operations",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "diff-below-threshold"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-07T11:59:54.816707+00:00",
+      "disposition": "small docs-only change: no plan, architecture or external code review at this complexity",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-07T11:57:49.113806+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-07T11:59:54.816707+00:00",
+      "disposition": "small docs-only change: no plan, architecture or external code review at this complexity",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-07T11:59:54.816707+00:00",
+      "disposition": "small docs-only change: no plan, architecture or external code review at this complexity",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}

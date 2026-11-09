@@ -1,1 +1,0 @@
-feat(run): autonomous runs decide the screenshot viewport per screen, fix CSS and seed-data deviations in the Test phase, record brief capabilities marked `UI: none` as non-UI and treat a size target as soft, instead of asking

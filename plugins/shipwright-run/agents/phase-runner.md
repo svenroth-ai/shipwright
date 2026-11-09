@@ -49,7 +49,15 @@ recurring conflicts by rule and record them with
 `shared/scripts/tools/record_autonomous_decision.py` (approved package links, a brief
 requirement no mockup shows, an explicit brief value over plan text, a hard requirement
 over a visible extra, installing dev tooling the project already declares) or by the plan
-boundary baseline (earlier phases' uncommitted files). Do not return those to the master
+boundary baseline (earlier phases' uncommitted files). A second tool,
+`shared/scripts/tools/record_autonomous_choice.py`, settles the rest of what run 23 asked a person: `--kind precedence`
+when two sources disagree (hard requirement > brief > approved screen > plan text: plan against brief, the brief
+against itself, a brief line the approved pictures lack, so a screenshot check that fails only because of it records
+a known difference), and `--kind routine --topic changelog-entry|tag-uncommitted|test-screenshots|decision-log-entry`
+for the wrap-up questions that have one safe default (a missing decision-log entry is written, then the check runs
+again). In the Test phase a bug the tests find in the built app is fixed in that phase, and code that departs from a
+brief value goes back to the brief's own words (`--kind precedence`, brief over plan text); neither is put to a person
+(run 27 asked both). Do not return those to the master
 as "the master decides"; only what the tool answers with exit 1 (`action: ask`) is a
 question.
 

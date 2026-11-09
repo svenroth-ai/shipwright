@@ -233,3 +233,13 @@ def test_the_skill_runs_the_baseline_cli_and_it_works_without_creating_designs_d
     assert json.loads(proc.stdout) == {"boundary_baseline": "written"}
     assert not (root / ".shipwright" / "designs").exists()
     assert run_gates(root, "boundary")[0] == 0
+
+
+def test_the_phases_own_changelog_line_and_event_log_are_not_a_breach(project):
+    """Run 23: the design verifier requires the CHANGELOG.md line and the phase end logs an event; both tripped the gate."""
+    _git_init(project)
+    _start_session(project)
+    (project / "CHANGELOG.md").write_text("# Changelog\n\n### Added\n- Design: 7 screens + 2 flows added\n", encoding="utf-8")
+    (project / "shipwright_events.jsonl").write_text('{"event": "phase_completed"}\n', encoding="utf-8")
+    code, out = run_gates(project, "boundary")
+    assert code == 0, out

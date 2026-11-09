@@ -1,0 +1,57 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-06-flaky-claim-timing-test",
+    "date": "2026-11-06",
+    "unit": {
+      "status": "passed",
+      "passed": 24319,
+      "skipped": 108,
+      "total": 24427
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 666,
+      "skipped": 0,
+      "total": 666
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "none",
+      "exit_code": 0,
+      "tests_run": 0,
+      "justification": "Test-only change: a timing bound in one unit test. No UI, CLI or API surface exists to start.",
+      "reason_code": "build-config-only",
+      "evidence_path": ".shipwright/runs/iterate-2026-11-06-flaky-claim-timing-test/surface_verification.json",
+      "timestamp": "2026-11-06T00:00:00Z"
+    },
+    "test_completeness": {
+      "status": "n/a",
+      "reason_code": "trivial-auto"
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-11-06-flaky-claim-timing-test",
+    "commit": "aacc3d002c5a3357aa280fdf5a76afe08fe4f395",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

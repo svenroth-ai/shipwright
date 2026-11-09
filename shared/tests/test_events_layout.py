@@ -13,6 +13,7 @@ import pytest
 
 from lib import events_layout as el
 from lib.config import read_events
+from lib.events_sentinel import UnsupportedEventsLayout
 from lib.events_layout import (
     DROPS_DIR,
     events_layout,
@@ -160,6 +161,10 @@ def test_layout_precedence_matrix(tmp_path, monkeypatch, config, env, flag, expe
     if flag is not None:
         monkeypatch.setenv(el.ENV_LAYOUT_TEST, flag)
     assert events_layout(tmp_path) == expected
+    if config == "garbage":  # S7 sentinel: an unknown committed value is read as legacy but never WRITTEN
+        with pytest.raises(UnsupportedEventsLayout):
+            resolve_events_write_path(tmp_path)
+        return
     # Writers and readers resolve through the same function: the write target agrees.
     target = resolve_events_write_path(tmp_path)
     assert (target.parent.name == DROPS_DIR) == (expected == "drops")

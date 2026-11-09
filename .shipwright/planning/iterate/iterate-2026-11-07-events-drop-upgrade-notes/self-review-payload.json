@@ -1,0 +1,9 @@
+{"items":[
+ {"point":"1 correctness","result":"ok","evidence":"3 guard tests + 111 changelog-plugin tests pass; claims on the migration page re-verified by the spec reviewer in three passes"},
+ {"point":"2 scope","result":"ok","evidence":"docs page, one reference section, two reworded lines in SKILL.md (443 lines unchanged), one test file; WebUI repo untouched"},
+ {"point":"3 honesty of docs","result":"ok","evidence":"first spec pass rejected four unfaithful claims (F11 catches wrong layout, rebase warning, emergency vs full fold, old plugin fails loudly) plus quarantine wording; all corrected"},
+ {"point":"4 tests","result":"ok","evidence":"test_skill_upgrade_notes_check.py pins the Step 5 pointer, the check section and the migration page answers"},
+ {"point":"5 style","result":"ok","evidence":"ruff clean; plain-language page for solo maintainers"},
+ {"point":"6 risk","result":"ok","evidence":"docs and skill prose only, no runtime code path changes"},
+ {"point":"7 affected boundaries","result":"ok","evidence":"none: no config, hook or state file format touched"}
+]}

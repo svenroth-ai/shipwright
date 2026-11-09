@@ -2,14 +2,11 @@
 
 ``read_events_assembled(root)`` returns every event of a tree as one ordered list:
 
-1. the legacy ``shipwright_events.jsonl`` in FILE order (byte-for-byte what the
-   plain legacy read gave -- a tree without the folders below is untouched), then
-2. the archive (``shipwright_events.archive/``) and drop files
-   (``shipwright_events.d/``) merged and sorted by (parsed instant, id). Ties on both keep
-   folder (archive, then drops), file-name, then in-file order, so the result is deterministic.
+1. the legacy ``shipwright_events.jsonl`` in FILE order (a tree without the folders below is untouched), then
+2. the archive (``shipwright_events.archive/``) and drop files (``shipwright_events.d/``) merged and sorted by
+   (parsed instant, id). Ties keep folder (archive, then drops), file-name, then in-file order.
 
-Layout independent: the folders are read whenever they exist, whatever
-``events_layout`` says -- a reader must see what any writer, old or new, left.
+Layout independent: the folders are read whenever they exist, whatever ``events_layout`` says.
 
 PER-FILE STATUS (:class:`FileStatus`): ``ok`` (records, nothing left over),
 ``corrupt`` (an unrecoverable remainder; the records around it ARE still returned,
@@ -18,16 +15,13 @@ and ``unreadable`` (``OSError``). Status means "something is wrong with this fil
 never "the file is unusable". Every caller keeps its own policy:
 
 * gates that conclude an event is ABSENT call :meth:`AssembledRead.absence_blockers`
-  with the run's key and refuse to conclude when it is non-empty -- ONLY a non-ok
-  DROP file named for that key blocks (kill criterion 8). A damaged legacy or archive
-  file, or another run's drop, is tolerated and merely counted;
+  with the run's key and refuse to conclude when it is non-empty -- ONLY a non-ok DROP file named
+  for that key blocks (kill criterion 8); damaged legacy/archive files and other runs' drops are counted;
 * batch readers (compliance, dashboards) skip and report ``skipped_files``;
 * ``events_log.finalized_run_ids`` keeps answering "unknown" (``None``) on unreadable.
 
-Archive/drop duplicates (a fold racing a fold writes the same event twice): an
-identical id with identical content collapses to one record, an identical id with
-different content keeps BOTH and lists the id in ``duplicate_ids``. The legacy file
-is never deduplicated.
+Archive/drop duplicates (a fold racing a fold): same id + same content collapses to one record; same id with
+different content keeps BOTH and lists the id in ``duplicate_ids``. The legacy file is never deduplicated.
 
 Stdlib + sibling imports only; package-member context (``lib.events_read``).
 """
@@ -126,6 +120,8 @@ class AssembledRead(RecordRead):
 class EventLogNotReadable(RuntimeError):
     """An absence gate cannot decide: a drop file of the run's key is non-ok."""
 
+    code = "event_log_not_readable"
+
 
 def require_readable_for_absence(read: AssembledRead, run_key: str) -> None:
     """Raise :class:`EventLogNotReadable` when ``run_key``'s own drop files are damaged."""
@@ -171,8 +167,7 @@ def sorted_by_ts(events: Iterable[Any]) -> list[Any]:
 def _status(records: list[dict], fragments: int, kind: str) -> str:
     if fragments:
         return "corrupt"
-    # A zero-record legacy file is a legitimate state (after a full fold); an empty
-    # archive/drop file is not (files are only created by a complete first write).
+    # zero-record legacy = legitimate (after a full fold); an empty archive/drop file is not
     return "ok" if records or kind == "legacy" else "empty"
 
 
@@ -181,10 +176,8 @@ def _read_one(path: Path, kind: str) -> tuple[RecordRead, FileStatus] | None:
     key = match.group("key") if match else None
 
     def _gone() -> tuple[RecordRead, FileStatus] | None:
-        # Listed, then deleted before/while reading (a fold, a checkout). A vanished
-        # LEGACY log reads as absent; a vanished archive/drop is "unreadable" -- non-ok,
-        # so an absence gate for its run fails closed instead of concluding "absent"
-        # from a file it could not read (and it must never read as a clean "empty").
+        # Listed, then deleted (a fold, a checkout): a vanished legacy log reads as absent; an archive/drop
+        # is "unreadable" (non-ok), so an absence gate for its run fails closed -- never a clean "empty".
         return None if kind == "legacy" else (RecordRead(), FileStatus(str(path), kind, key, "unreadable"))
 
     try:
@@ -226,18 +219,12 @@ def _dedup_extra(extra: list[dict]) -> tuple[list[dict], list[str]]:
     return kept, flagged
 
 
-def read_events_assembled(project_root: Path | str, *, include_legacy: bool = True) -> AssembledRead:
-    """Legacy file in FILE order, then archive + drops by (parsed instant, id); ``include_legacy=False``: folders only."""
-    root = Path(project_root)
-    legacy_path = resolve_events_path(root)
-    result = AssembledRead()
-    extra: list[dict] = []
+def _assemble_once(root: Path, include_legacy: bool) -> AssembledRead:
+    legacy_path, result, extra = resolve_events_path(root), AssembledRead(), []
     for path in event_files(root):
         kind = "legacy" if path == legacy_path else (
             "archive" if path.parent.name == ARCHIVE_DIR else "drop")
-        if kind == "legacy" and (not include_legacy or not path.exists()):
-            continue
-        one = _read_one(path, kind)
+        one = None if kind == "legacy" and (not include_legacy or not path.exists()) else _read_one(path, kind)
         if one is None:
             continue
         part, status = one
@@ -248,6 +235,25 @@ def read_events_assembled(project_root: Path | str, *, include_legacy: bool = Tr
         extra.sort(key=lambda e: (instant(e.get("ts")), str(e.get("id", ""))))
         extra, result.duplicate_ids = _dedup_extra(extra)
         result.records.extend(extra)
+    return result
+
+
+VANISH_RETRIES = 2  # a fold deletes drops AFTER adding their archive file: redo the read on a vanished file
+
+def read_events_assembled(project_root: Path | str, *, include_legacy: bool = True) -> AssembledRead:
+    """Legacy file in FILE order, then archive + drops by (parsed instant, id).
+
+    A file lost between listing and reading triggers a fresh pass (records from ONE consistent state); its
+    ``unreadable`` status is kept, so an absence gate for its run still fails closed.
+    """
+    root, lost = Path(project_root), []
+    for _ in range(VANISH_RETRIES + 1):
+        result = _assemble_once(root, include_legacy)
+        gone = [f for f in result.files if f.status == "unreadable" and f.kind != "legacy" and not Path(f.path).exists()]
+        lost += [f for f in gone if f not in lost]
+        if not gone:
+            break
+    result.files += [f for f in lost if f.path not in {x.path for x in result.files}]
     return result
 
 

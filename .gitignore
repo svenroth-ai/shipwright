@@ -260,6 +260,8 @@ Spec/
 # RTM evidence on fresh clones). iterate-2026-06-09-external-review-marker-gitignore.
 /.shipwright/planning/iterate/**/external_review_state.json
 /.shipwright/planning/iterate/**/external_code_review_state.json
+# Derived, regenerable claims file the per-AC review reads (tools/ac_claims.py); F11 recomputes it from the committed record.
+/.shipwright/planning/iterate/**/ac-claims.json
 # Campaign planning dirs (campaign.md + status.json + sub-iterates/) are local-only
 # operational planning, not durable product artifacts. Keep them out of git so a
 # new campaign is never auto-committed; progress is projectable from the tracked

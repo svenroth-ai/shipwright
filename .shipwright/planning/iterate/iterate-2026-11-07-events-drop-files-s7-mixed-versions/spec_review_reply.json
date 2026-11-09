@@ -1,0 +1,1 @@
+{"verdict":"PASS","spec_citations":[],"summary":"Every S7 requirement present: sentinel, evidence refusal, merge-base CI check, explicit key in init/adopt, legacy-write guard, conditional gitignore re-include; KC3 mixed-version cases covered."}

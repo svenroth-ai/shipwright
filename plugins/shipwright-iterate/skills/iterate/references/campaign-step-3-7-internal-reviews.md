@@ -51,6 +51,18 @@ the diff and re-review. Record `spec`, `code` (`--from code-reviewer`) and `doub
 (`doubt` is `not_applicable --reason-code diff-below-threshold` when Stage 3 did not apply), and set
 `reviews.code.status: "completed"` in the result JSON.
 
+**Per-AC input (Q2, warning only).** Right before the Stage-1 spawn, build the claims file from the unit's
+committed AC record (`iteration-reviews.md` → *Per-AC review*), from the unit worktree:
+
+```bash
+uv run "{shared_root}/scripts/tools/ac_claims.py" build --project-root "{project_root}" \
+  --run-id "{run_id}" --base-ref "{base_branch}"      # prints {"path": ..., "claims": N}
+```
+
+Any output other than `{path, claims>0}` (`claims: 0`, `"status": "skipped"`, exit 2, an error) = no third input: spawn exactly as before. Otherwise say in the
+`spec-reviewer` prompt "Also read the AC claims file at `<path>`." and record the reply as usual (the
+`ac_verdicts` ride onto the `spec` row). Derived and regenerable: do not commit `ac-claims.json`.
+
 **Hand the reply over, or the findings are lost.** Each `completed` cascade row names its adapter AND the
 canonical reply file: `--from spec-reviewer|code-reviewer|doubt-reviewer --payload-file
 "{project_root}/.shipwright/planning/iterate/{run_id}/{spec|code|doubt}_review_reply.json"`. `--recorded-by`

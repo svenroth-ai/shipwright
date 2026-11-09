@@ -1,1 +1,0 @@
-fix(e2e): baseline fixture checks click the visible list row, compare error texts unescaped, accept service hosts in the whole adapter package; add npm run recheck to re-run them against a built project

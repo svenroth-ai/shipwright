@@ -116,3 +116,11 @@ def test_the_next_split_takes_a_fresh_baseline_after_a_build_in_the_same_run(pro
     gates = _load("check-plan-gates.py", "_plan_gates_inproc4")
     assert gates.boundary_gate(project, "02-b")["ok"] is True
     assert gates.boundary_gate(project, "01-a")["ok"] is False  # another split's gate does not trust it
+
+
+def test_the_pipelines_own_event_log_line_is_not_a_boundary_breach(project, monkeypatch, capsys):
+    """Run 23: the plan phase's own 'plan started/completed' lines in shipwright_events.jsonl tripped the gate."""
+    _setup(project, monkeypatch, capsys)
+    (project / "shipwright_events.jsonl").write_text('{"event": "phase_completed"}\n', encoding="utf-8")
+    gate = _load("check-plan-gates.py", "_plan_gates_inproc_events").boundary_gate(project, "01-a")
+    assert gate["ok"] is True, gate

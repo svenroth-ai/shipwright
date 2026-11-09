@@ -161,6 +161,8 @@ exist.
 See [references/step-6-spec-gen.md](references/step-6-spec-gen.md).
 Detailed file formats in
 [references/spec-generation.md](references/spec-generation.md).
+**Blocking gate:** an FR is not finished until it passes
+[references/step-6-fr-scope.md](references/step-6-fr-scope.md) (one capability per FR).
 
 **Goal:** Write spec files for each split directory.
 
@@ -271,6 +273,7 @@ the invalid-input-file and session-conflict prompts.
 - [step-4-confirmation.md](references/step-4-confirmation.md) — User Confirmation
 - [step-5-create-dirs.md](references/step-5-create-dirs.md) — Create Directories
 - [step-6-spec-gen.md](references/step-6-spec-gen.md) — Spec Generation (links to spec-generation.md)
+- [step-6-fr-scope.md](references/step-6-fr-scope.md) — blocking scope gate: one FR = one capability (capability test + form checks)
 - [step-7-scaffolding.md](references/step-7-scaffolding.md) — Project Scaffolding (links to project-scaffolding.md)
 - [step-8-completion.md](references/step-8-completion.md) — Completion + canon block + summary
 - [brief-mode.md](references/brief-mode.md) — Project brief mode: a Brief package replaces the interview

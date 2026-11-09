@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "1. **The question, answered in one sentence.** Yes \u2014 option 3 is the right size: the failure it fixes is a persistent self-exemption behaviour that prose alone has already failed to stop, and the mechanism is iterate-local, advisory, and adds no PR gate.\n\n2. **The smallest thing that would do** \u2014 exactly what option 3 names, minus anything not needed for the decision: the ask/auto table applied in the FEATURE and CHANGE paths, the frozen text and decisions recorded in the plan stub (an existing artifact \u2014 no new place data gets written), and the advisory read. The 16-PR replay is a one-time measurement, not a standing cost, so it does not count against the mechanism.\n\n3. **What it costs to keep** \u2014 the ask/auto table's rules must stay correct as new exemption patterns appear (an author who wants to skip writing a promise now games the table instead of the prose); the frozen-text format in the stub is a contract the advisory check and any future tooling must keep parsing; every future change to the FEATURE/CHANGE paths must reason about the freeze interaction (promises changed mid-build).\n\n4. **What it forecloses** \u2014 none identified. The freeze is per-plan-stub and advisory; nothing later is locked in.\n\n5. **Findings**\n\n- Category: proportionality\n- Severity: low\n- Finding: The \"first matching row wins\" table plus exemption-by-outcome recording risks growing into a maintained ruleset that authors argue with, which is the same failure mode recurring one level up.\n- Suggestion: Keep the table to the four fixed triggers named in the brief; treat any new trigger as a campaign-level change, not an in-unit edit.\n\n- Category: ownership\n- Severity: low\n- Finding: The advisory check is something that can silently stop being read by the agent (advisory checks rot precisely because nothing fails when they're ignored).\n- Suggestion: When the campaign measures Q1, include one signal that the advisory output actually influenced at least one decision \u2014 otherwise the check is dead weight and the table alone is the mechanism.\n\n- Category: simpler-alternative\n- Severity: low\n- Finding: Option 2 (prose only) was plausibly rejected, but if the replay showed the existing Step 2 prose already catches most cases, option 3's cost would not be worth it.\n- Suggestion: The 3-PR-beats-control replay margin already covers this \u2014 if the control gets within 1-2 PRs, drop back to option 2 and keep only the freeze.\n\nNo other findings.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Should it exist?** Pre-build acceptance decisions should exist, but the brief does not yet justify a separate script, hash protocol and advisory checker.\n\n2. **Smallest thing that would do:** Choose option 2: put the ordered ask/auto table and plain-language question in the existing FEATURE and CHANGE instructions. Record the exact AC text, exemption or restore target and decision in the existing plan stub before building; treat that snapshot as frozen. Under `--autonomous`, record unanswered questions and stop the unit. Run the required replay and clarity measurement before adding enforcement machinery.\n\n3. **What it costs to keep:** Maintaining the shared decision rules and ensuring the build process follows the recorded decision. Option 3 additionally creates a script, hash convention and checker whose agreement must survive future workflow changes.\n\n4. **What it forecloses:** Separate hash and checker machinery makes changes to plan representation and AC handling require coordinated updates.\n\n5. **Findings**\n\nCategory: proportionality\nSeverity: medium\nFinding: The eleven omissions justify moving the decision before the build, but do not establish that prose with an explicit decision record is insufficient. Adding several permanent enforcement parts before measuring that smaller intervention is premature.\nSuggestion: Measure option 2 against the required control first. Add a local check only if observed failures show agents skipping or altering the pre-build record, and target that demonstrated failure.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "architecture",
+  "capture": {
+    "run_id": "iterate-2026-11-01-q1-pre-build-ac",
+    "at": "2026-11-01T14:46:31.959970+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

@@ -27,10 +27,10 @@ from pathlib import Path
 _SCRIPTS_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_SCRIPTS_DIR))
 
-from lib.artifact_paths import (  # noqa: E402
-    runtime_path,
-    tracked_path,
-)
+from lib.artifact_paths import runtime_path, tracked_path  # noqa: E402
+from lib.events_read import EventLogNotReadable  # noqa: E402
+from lib.events_sentinel import UnsupportedEventsLayout  # noqa: E402
+from lib.events_write import require_run_drops_readable  # noqa: E402
 from lib.atomic_write import durable_atomic_write  # noqa: E402
 from lib.campaign_status_io import finalize_campaign_status  # noqa: E402
 from lib.fr_classification import normalize_fr_impact as _normalize_fr_impact  # noqa: E402
@@ -258,6 +258,8 @@ def _record_event(
         # Idempotency: an existing event for this run_id is returned; a re-run that supplies claims (extras) is gated first.
         prior = next((e for e in read_events(project_root) if e.get("type") == "work_completed"
                       and e.get("source") == "iterate" and e.get("adr_id") == run_id), None)
+        if prior is None:
+            require_run_drops_readable(project_root, run_id)  # KC8: "absent" needs this run's drop files readable
         if prior and not event_extras:  # the Stop-hook repair pass: no new claims, nothing to judge
             return prior.get("id")
 
@@ -280,7 +282,7 @@ def _record_event(
 
         event.update({
             "v": 1,
-            "id": generate_event_id(),
+            "id": generate_event_id(project_root),
             "ts": datetime.now(timezone.utc).isoformat(),
             "type": "work_completed",
             "source": "iterate",
@@ -321,11 +323,9 @@ def _record_event(
         if prior:  # recorded earlier: return its ID (callers patch the commit SHA later)
             warn_claims_divergence(prior, event, "finalize_iterate")
             return prior.get("id")
-        return append_event(project_root, event)
-    except FinalizeGateError:
-        # Fail-closed: propagate so the iterate halts with guidance rather than
-        # silently dropping (or degrading) the work record. NOT swallowed by the
-        # best-effort handler below.
+        return append_event(project_root, event, run_id)
+    except (FinalizeGateError, EventLogNotReadable, UnsupportedEventsLayout):
+        # Fail-closed: propagate so the iterate halts with guidance; NOT swallowed by the handler below.
         raise
     except Exception as exc:
         print(f"[finalize_iterate] event recording failed: {exc}", file=sys.stderr)
@@ -571,10 +571,10 @@ def main(argv: list[str] | None = None) -> int:
             project_root, args.run_id, args.commit, args.reason,
             event_extras=event_extras,
         )
-    except FinalizeGateError as exc:
+    except (FinalizeGateError, EventLogNotReadable, UnsupportedEventsLayout) as exc:
         # Fail-closed: exit 1, nothing written. `error` is the gate's own code.
         print(json.dumps(
-            {"success": False, "error": exc.code, "detail": str(exc)},
+            {"success": False, "error": getattr(exc, "code", "unsupported_events_layout"), "detail": str(exc)},
             indent=2, ensure_ascii=False,
         ))
         return 1

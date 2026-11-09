@@ -94,7 +94,7 @@ generic "Quality" bucket).
 - A quality-target FR with a measurable target (e.g., "within 500ms", "10 concurrent users") follows the same rule — its criteria drive performance/load tests in shipwright-build
 - Criteria must be testable (shipwright-build uses them for TDD)
 - Use checkbox format: `- [ ] {criterion}`
-- 2-5 criteria per requirement (not more)
+- How many criteria per requirement is decided by scope, not a count: `shared/fr-authoring.md` §3c
 
 **The criteria are also how you find out the requirement is too big.** Read
 `shared/fr-authoring.md` §3a: a capability that cannot be given criteria **a

@@ -1,0 +1,1 @@
+feat(e2e): fork an earlier e2e run at a phase boundary (fork_run.py) and stop after a phase (SHIPWRIGHT_E2E_STOP_AFTER), so one area is replayed in about an hour instead of a ten-hour run; the resume identity is now the git trees of plugins/ and shared/, and the harness reads the Claude token from the env file itself

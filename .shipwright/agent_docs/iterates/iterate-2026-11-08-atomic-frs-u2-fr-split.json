@@ -1,0 +1,81 @@
+{
+  "run_id": "iterate-2026-11-08-atomic-frs-u2-fr-split",
+  "date": "2026-11-09T09:07:32.198154Z",
+  "event_at": "2026-11-08T20:21:36.147614+00:00",
+  "type": "feature",
+  "complexity": "medium",
+  "branch": "iterate/atomic-frs-u2-fr-split",
+  "spec": ".shipwright/planning/iterate/2026-11-08-atomic-frs-u2-fr-split.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-11-08-atomic-frs-u2-fr-split",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "dry run prints cuts and a diff, writes nothing, exit 0 when conservation holds",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_fr_split_tool.py::test_dry_run_writes_nothing PASSED (see file; 16 tool tests PASSED)"
+      },
+      {
+        "behavior": "every criterion appears exactly once after the cut, wording byte-identical, number kept; Move-Map complete",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_fr_split.py catalog conservation tests PASSED (test_check_catalog_catches_a_lost_a_reworded_and_a_doubled_criterion)"
+      },
+      {
+        "behavior": "tags binding a moved criterion are re-pointed; fixture strings, bare FR tags, unrelated ids and JS strings untouched",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_fr_split.py::test_js_slashes_inside_a_string_are_not_a_comment, ::test_js_comment_tags_move_and_other_text_does_not, ::test_rewrite_keeps_crlf_and_non_ascii_columns PASSED"
+      },
+      {
+        "behavior": "a lost/doubled/reworded criterion, changed binding, bad name or shared test exits 1 and apply restores the tree",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_fr_split_tool.py apply/restore/coupling tests PASSED"
+      },
+      {
+        "behavior": "unsafe groupings and spec shapes exit 2 with the reason (parts <3, source <3, dup titles, remaining incomplete, sub-heading, cell count)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_fr_split.py refusal tests PASSED incl. ::test_remaining_needs_title_and_description"
+      },
+      {
+        "behavior": "registry high-water mark keeps moved numbers retired; registry numbers are never reused for new FRs",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_fr_split_tool.py::test_the_registry_keeps_the_high_water_mark_so_a_moved_number_is_never_minted_again PASSED"
+      },
+      {
+        "behavior": "moved baseline entries (incl. two hops) are not counted as baseline growth",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_fr_split_tool.py::test_a_move_does_not_count_as_new_baseline_growth, ::test_a_criterion_moved_twice_is_still_not_new_baseline_growth PASSED"
+      },
+      {
+        "behavior": "edit during regeneration and uncommitted targets are never overwritten",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_fr_split_tool.py::test_a_file_edited_while_the_run_was_waiting_is_never_overwritten, ::test_uncommitted_changes_in_a_target_file_refuse_the_write PASSED"
+      },
+      {
+        "behavior": "a live cut of the real FR-01.11 catalog with a real manifest regeneration in CI",
+        "disposition": "untestable",
+        "reason_code": "requires-external-nondeterministic-service",
+        "reason": "the real cut is the data PR (PR 2) with the operator's approval; here it was probed by hand on a throwaway tree and restored"
+      }
+    ],
+    "counts": {
+      "testable": 8,
+      "tested": 8,
+      "untestable": 1,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 6,
+      "covered_acs": 6
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run pytest shared/tests/test_fr_split.py shared/tests/test_fr_split_tool.py -q",
+    "exit_code": 0,
+    "tests_run": 44,
+    "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\atomic-frs-u2-fr-split\\.shipwright\\runs\\iterate-2026-11-08-atomic-frs-u2-fr-split\\surface_verification.log",
+    "timestamp": "2026-11-09T09:06:43.638Z",
+    "attempts": 1
+  }
+}

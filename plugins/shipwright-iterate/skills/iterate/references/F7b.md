@@ -24,10 +24,20 @@ uv run "{shared_root}/scripts/tools/commit_event_followup.py" \
   --co-author "Claude <noreply@anthropic.com>"
 ```
 
-The tool prints a JSON status to stdout: `committed` / `clean` /
-`ignored` / `untracked` / `dry_run`. The `committed` status carries
-the new commit SHA. Only the `committed` path produces a new commit
-on the branch; all other statuses are noops.
+The tool prints a JSON status to stdout: `committed` / `partial` / `clean` /
+`ignored` / `untracked` / `skipped` / `dry_run`. The `committed` and `partial` statuses carry
+the new commit SHA. Only those two produce a new commit on the branch; all other statuses
+are noops. `partial` means the commit was made but your event was NOT sealed (drops layout, see below).
+
+> **Drops layout.** The tool also seals every UNTRACKED drop written from the main tree
+> (`shipwright_events.d/_main--*` and any file whose worktree id is the main git dir's): it lists them
+> with `git ls-files --others`, validates each is whole, and commits exactly those paths
+> (`chore(events): seal event drops for <run_id>`). The `committed` status then carries a `sealed`
+> list. A non-empty index (`staged_changes`) skips instead. A torn file stays in the working copy and is named in
+> `left_behind` while the whole drops are sealed; if the event you just wrote sits in that torn file the status is
+> `partial` (a commit WAS made for the whole drops, but your event is NOT sealed: repair the file). Only when EVERY pending
+> drop is torn is nothing sealed (`invalid_drop`). A torn file keeps catching new events of its key until it is
+> repaired, so `left_behind` needs a manual fix.
 
 > **Why this exists.** SKILL.md historically documented F7 as
 > "writes only to a gitignored event log" — incorrect for

@@ -15,7 +15,9 @@ The tags, and the structural rule each carries:
 ``C`` classifier  decides whether a PATH is bookkeeping / churn / generated / uncounted;
                   must list ALL three folders (:data:`FOLDERS`) or use ``EVENT_FOLDERS``.
 ``L`` lister      reports that the log exists; must look at the drops folder.
-``W`` writer      writes events or the log file. S4 owns these (writers stay dormant).
+``W`` writer      writes events or the log file; must go through the one writer module
+                  (one of :data:`WRITER_MARKERS`) -- or, for the adopt plugin that cannot import
+                  shared ``lib`` (ADR-045), carry its documented duplicate of it.
 ``S`` ssot        the resolver / reader / layout modules themselves.
 ``M`` marker      the name only labels something (an artifact list, an argument default).
 ``P`` prose       prompts, docs, docstrings, messages and templates that name the file.
@@ -44,8 +46,8 @@ TRACKED_DERIVED = frozenset({"UNION_PATHS", "APPEND_ONLY_INPUTS"})
 DERIVED_ALIASES = frozenset({
     "UNION_PATHS", "APPEND_ONLY_INPUTS", "PRODUCER_STATE", "CONFIG_FILES", "CHURN_ALLOWLIST",
     "CONFIG_MARKERS", "MANAGED_MARKER_PATHS", "UNCOUNTED_FILES", "FRAMEWORK_BOOKKEEPING",
-    "_BOOKKEEPING", "_GENERATED_BASENAMES", "_SKIP_REVIEW_CANONICAL_BASENAME_PATHS",
-    "_MAIN_TREE_WRITE_EXEMPT", "_EXISTING_ARTIFACT_CANDIDATES",
+    "_BOOKKEEPING", "_LEDGERS", "_GENERATED_BASENAMES", "_SKIP_REVIEW_CANONICAL_BASENAME_PATHS",
+    "_MAIN_TREE_WRITE_EXEMPT", "_EXISTING_ARTIFACT_CANDIDATES", "DESIGN_ALLOWED_PREFIXES", "PLAN_ALLOWED_PREFIXES",
 })
 FOLDERS = EVENT_FOLDERS
 READER_MARKERS = (
@@ -53,6 +55,7 @@ READER_MARKERS = (
     "finalized_run_ids", "iter_event_lines", "source_stats", "has_event_folders", "validate_event_folders",
 )  # a call/import of the assembling reader; a bare folder name or a generic word is NOT enough
 CLASSIFIER_MARKERS = ("EVENT_FOLDERS", "is_event_folder_path")
+WRITER_MARKERS = ("events_write", "events_stage", "events_target", "_DROPS_DIR")  # the writer module / helpers / adopt's duplicate
 
 TOKEN = re.compile(
     r"shipwright_events\.jsonl|\b(?:" + "|".join(sorted(KNOWN_ALIASES | TRACKED_DERIVED | set(RESOLVERS))) + r")\b")
@@ -77,10 +80,13 @@ REGISTRY: dict[str, tuple[str, ...]] = {
         "shared/scripts/tools/replay_baseline_lock.py",
         "shared/scripts/tools/resolve_churn_conflicts.py",
         "shared/scripts/tools/verifiers/adopt_compliance.py",
+        "shared/scripts/tools/validate_event_log.py",
         "shared/scripts/tools/verifiers/common.py",
         "shared/scripts/tools/verifiers/iterate_checks.py",
     ),
     "C": (
+        "plugins/shipwright-design/scripts/checks/check-design-gates.py",
+        "plugins/shipwright-plan/scripts/checks/check-plan-gates.py",
         "shared/scripts/tools/compliance_input_state.py",
         "plugins/shipwright-security/scripts/lib/pr_review_generated.py",
         "plugins/shipwright-security/scripts/lib/pr_review_skip_safety.py",
@@ -97,19 +103,21 @@ REGISTRY: dict[str, tuple[str, ...]] = {
         "plugins/shipwright-compliance/scripts/lib/compliance_report.py",
         "plugins/shipwright-grade/scripts/lib/authoritative.py",
     ),
-    # Writers and finalization: S4 migrates these; each entry leaves this list with its unit.
+    # Writers and finalization (S4): each goes through the one writer module or its documented duplicate.
     "W": (
         "plugins/shipwright-adopt/scripts/lib/event_seeder.py",
         "plugins/shipwright-adopt/scripts/tools/generate_adoption_artifacts.py",
         "shared/scripts/tools/commit_event_followup.py",
         "shared/scripts/tools/convert_configs_to_events.py",
         "shared/scripts/tools/record_event.py",
-        "shared/scripts/tools/validate_event_log.py",
     ),
     "S": (
+        "shared/scripts/lib/events_gitignore.py",
         "shared/scripts/lib/events_layout.py",
+        "shared/scripts/lib/events_layout_ci.py",
         "shared/scripts/lib/events_log.py",
         "shared/scripts/lib/events_read.py",
+        "shared/scripts/lib/events_sentinel.py",
         "shared/scripts/lib/events_references.py",
     ),
     "M": (
@@ -119,14 +127,17 @@ REGISTRY: dict[str, tuple[str, ...]] = {
         "plugins/shipwright-compliance/scripts/lib/collectors/__init__.py",
         "plugins/shipwright-compliance/scripts/lib/data_collector.py",
         "plugins/shipwright-iterate/scripts/tools/campaign_progress.py",
+        "shared/scripts/lib/ac_surface.py",
         "shared/scripts/lib/campaign_status_io.py",
+        "shared/scripts/lib/events_fold_full.py",
+        "shared/scripts/lib/events_integrity.py",
         "shared/scripts/lib/event_context_query.py",
         "shared/scripts/tools/events_replay_gate.py",
         "shared/scripts/tools/measure_baseline.py",
     ),
     "P": (
         "docs/guide.md", "docs/hooks-and-pipeline.md", "docs/migrations/requirements-catalog-merge.md",
-        "docs/token-cost-controllable.md",
+        "docs/migrations/events-drop-files.md", "docs/token-cost-controllable.md",
         "plugins/shipwright-adopt/scripts/lib/gitattributes_scaffolder.py",
         "plugins/shipwright-adopt/skills/adopt/references/step-e-artifact-generation.md",
         "plugins/shipwright-adopt/skills/adopt/references/step-h-validate-commit-handoff.md",
@@ -245,6 +256,8 @@ def check(repo: Path, tag_of: dict[str, str] | None = None) -> list[str]:
             problems.append(f"{rel}: tagged reader but never uses the assembling reader ({READER_MARKERS[:3]} ...)")
         if tag == "C" and not (all(f in text for f in FOLDERS) or any(m in text for m in CLASSIFIER_MARKERS)):
             problems.append(f"{rel}: tagged classifier but does not list all three folders {FOLDERS}")
+        if tag == "W" and not any(m in text for m in WRITER_MARKERS):
+            problems.append(f"{rel}: tagged writer but never uses the writer module ({WRITER_MARKERS})")
         if tag == "L" and FOLDERS[0] not in text:
             problems.append(f"{rel}: tagged lister but never looks at {FOLDERS[0]}")
         problems += alias_problems(rel, text)

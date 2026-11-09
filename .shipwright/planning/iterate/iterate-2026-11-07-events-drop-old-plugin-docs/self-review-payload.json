@@ -1,0 +1,7 @@
+{"items": [
+  {"name": "Every changed sentence is backed by evidence", "verdict": "pass", "note": "v0.34.0 experiment: record_event.py exit 0, line appended to shipwright_events.jsonl; grep of the v0.34.0 tree finds no events_layout or shipwright_events.d reference"},
+  {"name": "No remaining copy of the false claim", "verdict": "pass", "note": "repo grep for 'fails loudly' and 'from before step 2' finds only unrelated hits"},
+  {"name": "Docs-only: no code, hooks or CI touched", "verdict": "pass", "note": "diff is 3 planning notes + 1 paragraph in docs/hooks-and-pipeline.md, plus run artifacts"},
+  {"name": "Line endings preserved", "verdict": "pass", "note": "byte-preserving edit, CRLF kept"},
+  {"name": "Full F0 suite", "verdict": "pass", "note": "18 units GREEN, diff-coverage n/a"}
+]}

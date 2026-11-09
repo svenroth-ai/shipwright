@@ -1,0 +1,114 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-06-events-drop-files-s5-bullets",
+    "date": "2026-11-06",
+    "unit": {
+      "status": "passed",
+      "passed": 20803,
+      "skipped": 106,
+      "total": 20909
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 666,
+      "skipped": 0,
+      "total": 666
+    },
+    "pgtap": {
+      "status": "not_run",
+      "passed": 0,
+      "skipped": 0,
+      "total": 0
+    },
+    "e2e": {
+      "status": "not_run",
+      "passed": 0,
+      "skipped": 0,
+      "total": 0
+    },
+    "design_fidelity": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "two branches adding bullets are clean under real git merge-tree; editing the shared section conflicts (KC7)",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "shared/tests/test_doc_bullets_gates.py::test_two_branches_adding_bullets_are_clean_under_merge_tree PASSED"
+        },
+        {
+          "behavior": "render identical pending vs folded (LF and CRLF), fold idempotent, same-anchor different text kept",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_doc_bullets.py::test_render_identical_pending_vs_folded PASSED"
+        },
+        {
+          "behavior": "old aggregate_decisions / architecture_doc.scan_drops / *.json glob see no bullet as an ADR",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_doc_bullets_gates.py::test_old_consumers_see_no_bullet_as_an_adr PASSED"
+        },
+        {
+          "behavior": "context load shows 20 newest plus N more pending and warns above 40",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_doc_bullets.py::test_context_cap_20_newest_then_n_more_then_warning PASSED"
+        },
+        {
+          "behavior": "budget and shape read folded plus pending on the branch and at the merge-base",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_doc_bullets_gates.py::test_base_side_includes_bullets_pending_at_the_base PASSED"
+        },
+        {
+          "behavior": "release folds bullets before ADRs and refuses to fold ADRs over a failed bullet fold",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_doc_bullets_gates.py::test_aggregate_does_not_fold_adrs_over_a_failed_bullet_fold PASSED"
+        },
+        {
+          "behavior": "compliance Group F5 loads architecture_doc by path and still reads pending bullets",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_doc_bullets_gates.py::test_architecture_doc_loaded_by_path_still_reads_pending_bullets PASSED; plugins/shipwright-compliance tests 2147 passed"
+        },
+        {
+          "behavior": "prompt-injection scan covers bullet files without the allowlist marker",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-security/tests/test_prompt_injection_decision_drops.py::test_bullet_drop_is_scanned_and_cannot_use_the_allowlist_marker PASSED"
+        },
+        {
+          "behavior": "old WebUI reading the decision-drops folder shows no bullet as an ADR",
+          "disposition": "untestable",
+          "reason_code": "covered-by-existing-test",
+          "reason": "the WebUI lives in its own repository (S5b); the non-recursive *.json glob shape is proven here"
+        }
+      ],
+      "counts": {
+        "testable": 8,
+        "tested": 8,
+        "untestable": 1,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 2,
+        "covered_acs": 2
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-11-06-events-drop-files-s5-bullets",
+    "commit": "b80bf649db05b854a706d5c655016fff1889e6f5",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

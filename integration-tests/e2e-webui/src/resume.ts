@@ -13,7 +13,7 @@ export interface RunIdentity {
   fixture: string;
   packageSha256: string;
   profile: string;
-  /** git HEAD of the checkout whose plugins the run loads. */
+  /** The plugin code the run loads: the git trees of plugins/ and shared/ (run-identity.ts). Manifests from before this form hold a plain commit and are refused. */
   commit: string;
 }
 
@@ -143,11 +143,13 @@ export function planResume(requested: string, workdir: string, current: RunIdent
   if (packageThere) reused.push("package copy in brief/");
   const started = config !== null && typeof earlier.pipelineStarted === "string";
   if (started) reused.push(`pipeline already started (status ${String(config?.status)})`);
+  const fork = earlier.forkedFrom as { run?: unknown; at?: unknown; commit?: unknown } | undefined;
+  const forkNote = fork && typeof fork === "object" ? `Fork of ${String(fork.run)} at ${String(fork.at)} (boundary commit ${String(fork.commit).slice(0, 9)}). ` : "";
   return {
     runDir: asked, tempHome, projectPath,
     skipPackageCopy: packageThere,
     skipStartPipeline: started,
     reused,
-    note: `Resumed from ${path.basename(asked)} (commit ${current.commit}, package ${current.packageSha256.slice(0, 12)}). Steps reused: ${reused.join(", ")}. Not reused: the WebUI instance and every check (they run again).`,
+    note: `${forkNote}Resumed from ${path.basename(asked)} (plugins ${current.commit}, package ${current.packageSha256.slice(0, 12)}). Steps reused: ${reused.join(", ")}. Not reused: the WebUI instance and every check (they run again).`,
   };
 }

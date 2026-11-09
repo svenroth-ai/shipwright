@@ -20,12 +20,13 @@ idempotency and dashboard-parity subjects.
 
 from __future__ import annotations
 
-import json
 import subprocess
 import sys
 from pathlib import Path
 
 import pytest
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "shared" / "testkit"))
+from event_log_probe import event_records  # noqa: E402
 
 import scripts.tools.update_compliance as update_compliance
 from scripts.lib.data_collector import ComplianceData, DependencyInfo
@@ -63,12 +64,7 @@ def _gradeable_data(root: Path) -> ComplianceData:
 
 
 def _snapshots(root: Path) -> list[dict]:
-    path = root / "shipwright_events.jsonl"
-    if not path.exists():
-        return []
-    events = (json.loads(ln) for ln in path.read_text(encoding="utf-8").splitlines()
-              if ln.strip())
-    return [e for e in events if e.get("type") == "grade_snapshot"]
+    return [e for e in event_records(root) if e.get("type") == "grade_snapshot"]
 
 
 def _pristine_repo(root: Path) -> None:

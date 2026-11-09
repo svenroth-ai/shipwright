@@ -35,6 +35,9 @@ this template:
 - [ ] {AC from interview — concrete, testable}
 - [ ] {AC 2}
 
+**Pre-build AC record (Step 2a):** the exact AC text added or changed (old and new for a change), or the AC id a
+restore restores; frozen in `ac-record.jsonl`, never asserted as an exemption (computed from the diff).
+
 ## Spec Impact
 {Classify how this iterate changes the FR spec — see Step 2.}
 - **Classification:** {add | modify | remove | none — one or more}
@@ -112,6 +115,18 @@ If no boundaries touched: write `n/a` with one-line justification.}
      Folding is the common case.
    - **MINT → classify ADD.** Only for a genuinely new, user- or
      system-observable capability.
+   - **Fold only if it fits (`fr-authoring.md` §3c) — RUN the evidence:**
+     `uv run "{shared_root}/scripts/tools/fr_cluster_report.py"
+     --project-root "{project_root}" --fr FR-xx.yy --json` for the candidate
+     owner FR, and carry its `verdict` and `clusters` (groups, tests, files)
+     into the decision. On an error or a non-zero exit, or `{"unparsed": true}`
+     ("could not read the catalog"), or `no evidence` / `partial evidence`: code
+     cannot say, judge by purpose alone. A NEW AC has no tests yet, so it is
+     matched to a group by its purpose and wording only. FOLD when it serves the
+     same purpose as the FR's ACs, which is the common case. MINT only when its
+     purpose differs from every group AND it needs a different reader AND a
+     different test setup; "shares no evidence" alone is never a reason to
+     MINT. Size is not the test.
    - A new endpoint, route, or component is **not** by itself a new
      capability — it is usually the plumbing of one that already has an FR.
    - Altitude self-check before writing the row: could a non-technical
@@ -206,6 +221,66 @@ If no boundaries touched: write `n/a` with one-line justification.}
 > verifiable by the F0.5 runner), not story-shaped. Story-shaped ACs
 > cannot be empirically driven and silently degrade F0.5 to spec-only
 > authorship.
+
+## Step 2a: Pre-build AC — the promise, recorded BEFORE any code (FEATURE, CHANGE and BUG, every complexity)
+
+Step 2 decides which requirement a change belongs to; this step writes down **what it promises**, before the
+build, so the promise cannot drift to fit the code. It runs at trivial and small too. **Code decides what code can
+decide; the agent only words the promise.** Be exact about what is live and what is only checked later. **Live now:**
+the declaration is validated (wording, ids, the ask rule) and an ask stops the unit. **Only a claim now:** before the
+build the diff is empty, so an `exempt` item is a **claim**. **F11 is warning-only** and runs after the commit: it
+tests the exemption, the wording against the names in the changed code, the frozen text against the catalog,
+and for the record it warns when it differs from the base in a removing way and when its commit is not earlier than the first code commit in the PR (in a one-commit iterate order cannot be proven). It never holds the PR.
+
+1. **Declare one item per promise** in a JSON file written with the Write tool (free text never goes through a
+   shell command line); the shape is in the docstring of `shared/scripts/tools/ac_decision.py`:
+   - `add`: the exact AC text and `owner_fr`, the single FR the MINT-vs-FOLD gate chose. The `ac` id, if given, must be
+     NEW (an id in the base catalog is refused: reword an existing AC with `change`). A new area of the product with
+     no FR yet: `new_fr: {"id": "FR-01.30", "title": "one sentence"}` instead of `owner_fr` (asked once).
+   - `change` / `remove`: `ac`, the current text copied exactly from the catalog (`old_text`; the tool compares it) and for a change the new text (`new_text`).
+   - `restore` (a fix): `restores_ac`, the id of the AC the work brings back. **It must exist in the catalog at the
+     base** — the tool checks. If no AC names the promise, it is a catalog gap: declare an `add`. A test in the diff should name the AC id.
+   - `unchanged` (a behaviour-preserving refactor or dependency bump): `ac`, an existing AC the work leaves true, and
+     `files`, which must list ALL observable files of the whole diff (the item says the whole diff changes no behaviour), not only the files this AC concerns. F11 warns when the files differ from the diff, or when no test names the AC - one added in the diff, or one that already exists at the merge-base (a refactor leaves the promise tests untouched; a `restore` still needs a test in the diff).
+   - `exempt`: nothing else — a claim that no user- or operator-observable behaviour changes. Observable is
+     computed from the diff (`lib/ac_surface.py`, fail-closed: only docs and test roots at the repo or plugin root,
+     ledgers, and comment- or blank-line-only hunks do not count). Any text field must be text, not a list or number.
+2. **AC text is outcome wording — a hard validation, not a question.** Write it so the operator can read it cold: name every thing by its real name ("the shipwright-iterate skill ...", not "the coordinator"), no role nouns nobody knows ("coordinator", "outside reviewers"), and no phrases like "however the command was typed". This is an instruction, not a code check (a word list would reject valid wording); the operator's "Don't understand" is the backstop. The tool refuses (exit 2, rewrite it) text
+   with a file path, a name taken from the changed code, a snake_case/CamelCase/UPPER_SNAKE token, a flag, backticked
+   code, or an ADR, AC or FR number. `end-to-end`, `and/or`, `read/write`, product names and a bare slash command pass.
+3. **Run it.** The catalog is read at `merge-base(--base-ref, HEAD)` (git), never your working tree:
+   `uv run "{shared_root}/scripts/tools/ac_decision.py" --project-root "{project_root}" --from-json "{ac_json}" --base-ref "{base_branch}" --run-id "{run_id}" --bind-id "{campaign_slug}--{unit_id}" --nonce "{campaign_created_at}" --sub-iterate-id "{unit_id}" --out "{decided_json}"` plus `--autonomous` when the run is autonomous
+   (add `--autonomous` when this iterate or its campaign runs `--autonomous`: only that flag or the loop environment makes a run unattended, so the default mode becomes `auto` and no question ever stops the run; add `--ac-mode "{ac_mode}"` when the campaign or the user set one; `--base-ref` is required: the branch you were cut from, not `origin/main` by default - when `base_branch` is null (the first stacked sub-iterate) pass the default-branch remote ref, e.g. `origin/main`; if the base cannot be resolved the tool prints `skipped` with a note and exits 0, and F11 still warns later; `--bind-id` is the unit's
+   STABLE id, never an attempt id; `--nonce` is the campaign's `created_at` so a recreated campaign cannot reuse an old answer; `--bind-id`, `--nonce` and `--sub-iterate-id` are omitted outside a campaign; the unit id is used only when an unattended run must ask). No spec.md, or any spec with text
+   but no FR the tool can read, is **skipped** with a note: nothing is asked, refused or held. **One ask rule:** the operator is asked ONLY when (a)
+   an existing AC is changed or removed, (b) no single area of the product owns the new AC, or (c) a new area is proposed.
+   Everything else is decided alone, counted (`counts`: auto, asked, exempt, restore, unchanged, answered_inline) and listed in the PR body
+   (`references/F11.md`). Exit `0` decided or skipped · `10` ask · `11` explain and ask again (the operator did not understand) · `2` fix the declaration, or the operator said no.
+4. **Ask (exit 10), interactively:** print each question to the operator exactly as the tool wrote it. It has a fixed shape: a fixed intro paragraph (what the requirement list is and what to check), then why it is asked (`Finding:`), `Part:` (the spec's own grouping of the requirement, else the top-level directory of the changed paths, else no line - never a name the tool made up), your acceptance-criterion wording UNCHANGED, and `Requirement FR-xx.yy: "<name>"` with the requirement's NAME from the spec (for a new AC the one best-fitting requirement: a small model proposes it, code checks the id exists and fetches the name, and may add one checked `In plain words:` line; with no key or no fit the best match by shared words, else the question shows a drafted `New requirement:` with a `Purpose:` sentence). "No requirement fits, create a new one" asks one more question that shows the drafted requirement (one Yes). A closing `Does this fit?` line leads into the options. The options are numbered and **"Don't understand, need help" is always last**. No model rewording of your wording, no glossary, no area list reaches the operator. Write the reply into the item (`"answer": {"choice": "yes|no|new_fr|explain", "text": "..."}`) and run the tool again. `yes` records it as shown; `new_fr` ("No requirement fits, create a new one") records a new requirement; **`no`** hands the work back: the tool exits `2` telling you to ask the operator in the chat what they want instead, then you change the declaration and run again (a unit in a hands-off run stops there, as with any open question). **`explain` ("Don't understand, need help", exit `11`):** explain the question to the operator in everyday words in the chat, reword the acceptance criterion with the real names of things (rule 2), and run the tool again; the new wording is a NEW question (a stale `explain` settles nothing; a resume of a stored question calls no model). Give the paths you will change in an add item's `files` (the diff is empty before the build) so the `Part:` line can fall back to them.
+   **Modes: ask / auto / off.** `--ac-mode` (the campaign's own setting, passed by the orchestrator), else `SHIPWRIGHT_AC_MODE`, else `ac_decision.mode` in `shipwright_iterate_config.json`, else `auto` when unattended and `ask` otherwise. **`ask`** is the behaviour above. **`auto`** asks nothing: the tool takes the model's pick (else the best match by shared words, else a new requirement it drafts), records each decision `auto-assigned` and `unconfirmed`, and prints the list "Assignments made without you" (`unconfirmed_assignments` in its JSON and on stderr, changed or removed existing criteria first) - copy it into the PR body and into `result.json` as `ac_unconfirmed` so the campaign end can list it. Wording is still refused (exit 2), and F11 stays a warning. **`off`** prints `skipped`: write no AC record and pass no `--ac-decision` to `write_plan_stub.py`. **Model egress:** with an `OPENROUTER_API_KEY`, one call sends only the AC sentence and each requirement's id and title; `ac_decision.model_suggest: false` or `SHIPWRIGHT_AC_MODEL_SUGGEST=0` stops it (best match by shared words, no network).
+   **Unattended runs.** A run is unattended when `SHIPWRIGHT_LOOP_UNIT_ID` is set (non-empty), or
+   `--autonomous` is passed; a worktree's folder name proves nothing (guided campaigns use the same per-unit layout and are attended). Under `--autonomous` the default mode is `auto`: changed or removed existing criteria pass through and are listed first in the end list, and `ask`/`off` are explicit opt-ins. In `ask` mode an unattended run is stopped as follows: an inline `answer` is
+   REFUSED, and the unit writes the printed `escalation` (`sub_iterate_id`, `bind_id`, and per question the text,
+   `question_sha256`, `kind`, `promise` and `options`) to its `result.json`, returns `status:"escalated"`,
+   `reason_code:"ac_question_requires_operator"`, and commits and pushes nothing. The orchestrator holds ONLY that unit
+   when the hashes recompute from the bind id, item index, kind, promise and options; otherwise it is an ordinary escalation
+   (exit 3). The rest of the wave continues; campaign finalize prints the open `ac_questions`. A standalone
+   `--autonomous` run records `record_hard_blocker.py --reason-code operator-only-decision` with the fixed detail sentence.
+   **The operator answers, not the agent:** `ac_decision.py answer --decided {result.json or decided_json} --item N
+   --choice <option number, or yes|no|new_fr|explain> [--text-file wording.txt] --answers {answers_json}`. The answer is
+   bound to the sha256 of stable id + nonce + item index + kind + original promise + the canonical options map (not the question's wording, so a moved base never invalidates it) and signed (HMAC under `~/.shipwright/ac_operator.key`,
+   made on first use). In an unattended session `answer` refuses unless `SHIPWRIGHT_AC_OPERATOR_CHANNEL` is set (the
+   orchestrator shell needs it). **`answered_via` and `unattended` are self-reported; the signature is a guard against
+   accident and casual forgery, not authentication — a determined agent with shell access can read the key.** An unsigned
+   file answer is recorded `self-reported`, an inline one `inline`; F11 warns on an unattended asked decision not operator-signed; for an attended run the inline answers are only counted (`counts.answered_inline`) - print that as one line in the PR body.
+   To resume the held unit: `loop_claim.py mark --state ... --unit ... --status pending --reason ... --operator ...`
+   (held -> pending), then run the unit again with `--answers {answers_json}` and the same `--bind-id`.
+5. **Freeze:** write the plan stub NOW, before the build: `write_plan_stub.py ... --ac-decision "{decided_json}"`
+   (`references/F5b.md`) and commit the record with the first code. The freeze is an append-only record next to the stub
+   (`ac-record.jsonl`); `--force` appends a `superseded` line and never replaces. Before F6, `ac_decision.py verify --run-id
+   ... --base-ref ...` prints what F11 will warn about (frozen text against the catalog, a catalog AC edited or removed that
+   no item names, a restore with no test naming it, wording against the committed diff's names). F11 reads the record from the
+   commit and warns if it differs from the base in a removing way or its commit is not earlier than the first code commit. Pass `"ac_decisions"` in the F5b extras. Every record item carries `decided_by` (`operator` | `auto` | `code`) and `confirmed` (true | false), written by the code only (never by the declaration or a model): `operator`/true when a question was asked and answered, `auto`/false when Shipwright assigned it under `auto` (a requirement it created is marked in the record and the end list), `code`/false when the code decided alone by rule and no question was shown (in either mode). With `--run-id` the tool also writes the mode it used to `ac-mode.json` beside the record (commit it): F11 then skips with "Q1 off: mode=off (source=flag|env|config)" when it was `off`.
 
 ## Step 3: Mini-Plan (persisted at every tier that runs it)
 

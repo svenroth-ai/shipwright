@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "1. **Category: risk \u00b7 Severity: high**  \n   **Finding:** The JS/TS scanner can rewrite ordinary string literals containing `//` and an AC id. The checker sharing the same parsing bug does not make this safe: conservation could pass while fixtures, snapshots, or application strings change. This directly contradicts acceptance criterion 3.  \n   **Suggestion:** Track string and template-literal state before recognizing comments, or refuse affected files until they can be parsed safely. Add a regression case with an old AC id after `//` inside a string.\n\n2. **Category: dependency \u00b7 Severity: high**  \n   **Finding:** The move map is written, but existing consumers do not resolve it. This does not fulfill the promised behavior that old ids remain resolvable; historical references may cease to connect to the current criterion after the first cut.  \n   **Suggestion:** Wire resolution into consumers that look up historical AC ids before using the tool for a real split. Define chained moves and reject cycles or conflicting mappings; test an AC moved twice.\n\n3. **Category: approach \u00b7 Severity: medium**  \n   **Finding:** The tool introduces a minimum of three criteria per part, although the campaign explicitly makes capability boundaries\u2014not AC count\u2014the criterion. Conversely, the described conservation check enforces shared-test coupling but does not mention the stop rule\u2019s shared-file check. A valid two-criterion capability could be rejected while a split sharing implementation files passes.  \n   **Suggestion:** Remove the numeric minimum unless separately authorized. Check shared-file evidence as well as shared tests, and make any operator override explicit and recorded.\n\n4. **Category: risk \u00b7 Severity: medium**  \n   **Finding:** Restoring the manifest to committed bytes by default can leave a successful split with stale traceability. If an existing uncommitted manifest is allowed, restoring committed bytes can also discard that work. The regenerated before/after comparison validates a temporary state, not necessarily the final tree.  \n   **Suggestion:** Preserve the exact pre-run bytes for rollback and retain the regenerated manifest on successful application. If the manifest intentionally remains uncommitted, validate that final state and clearly identify the required regeneration step.\n\nThe tool\u2019s narrow scope, dry-run default, and conservation checks are sound foundations. Address the unsafe tag rewrite, incomplete historical resolution, and final-state traceability behavior before using it for the first real cut.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "## Review findings\n\n1. **Category: edge-case \u00b7 Severity: medium** \u2014 The JS/TS tag scanner has no string-state, yet `fr_split_tags.py` claims to rewrite \"only places that BIND, never other string literals.\" Without a string-state tracker, the rewrite cannot reliably distinguish a binding comment from a `//` or `# covers(...)` fragment inside a string/template literal. A JS file containing e.g. a template literal quoting a test tag would be a candidate for a wrong rewrite or, conversely, a missed binding. The claim of \"never other string literals\" and \"no string state\" are in tension \u2014 at minimum add a refusal (exit 2) when a candidate binding line sits inside a region the scanner can't classify, rather than guessing. This is the one piece where the tool's safety claim exceeds what the scanner can actually verify.\n\n2. **Category: edge-case \u00b7 Severity: medium** \u2014 Doubt 5 (dry run green, `--apply` refuses due to evidence-walker skips / 2 MB files) is \"accepted\" but the asymmetry undermines the tool's core workflow: the operator approves a dry-run diff, then the apply can fail on data the dry run never saw. Fix the walker's file-set parity with the manifest collector in this PR \u2014 it's likely a few lines (same skip list + size cap applied to both, or the dry run reports \"N files skipped by evidence walker\") and it's high-risk-classified tooling. Cheap to fix now; the first real cut (FR-01.11) will hit it again otherwise.\n\n3. **Category: risk \u00b7 Severity: low** \u2014 `--keep-manifest` (keeping regenerated manifest bytes) plus \"restore on any failure\" leaves a subtle state: a partially-successful `--apply` where the manifest is kept but a later refusal restores other files could leave the tree with a manifest describing a split that didn't happen. Confirm the ordering (manifest is the last write and included in the all-or-nothing restore unless `--keep-manifest`), and document that `--keep-manifest` is operator-explicit opt-out of atomicity.\n\n4. **Category: dependency \u00b7 Severity: low** \u2014 AC number collisions: decision 1 keeps AC numbers on move (`FR-01.22/AC21`). If the target FR number is also *live elsewhere* or the new FR later receives new ACs via FOLD, the \"next free number\" logic must count moved ids' high-water marks (doubt 1/L7 covers pre-cut high-water for the registry \u2014 good), but verify FOLD/MINT in the project skill reads the move map or high-water mark so it never mints `FR-01.22/AC21` twice. That consumer wiring is deferred; note it as a hard precondition before the FR-01.11 data PR merges, not a generic follow-up.\n\n5. **Category: edge-case \u00b7 Severity: low** \u2014 Move-map resolvability is only as good as consumers; `fr_history.py`, compliance readers, and `fr_cluster_report.py` don't follow it yet. For the *tool* PR that's fine, but the FR-01.11 data PR must not merge until at least the audit and cluster report resolve moved ids \u2014 otherwise U1's own splittability check will silently see the new FRs' ACs as unbound/new and the U3 measurement may mis-attribute old ids. Make \"consumer wiring for the audit check\" an explicit gate for the second PR, listed in the plan.\n\n6. **Category: approach \u00b7 Severity: low** \u2014 The FR-01.14 pre-check (one connected cluster, stays whole) is a good evidence-driven deferral, but it's recorded only in this plan. Record it as an explicit, dated exception in the repo (the U2 done-criterion allows \"recorded exception\") so the audit finding doesn't re-litigate it every run.\n\n7. **Category: risk \u00b7 Severity: low** \u2014 Cross-repo use (U2b webui, doubt 9: plugin-cache invocation needs the compliance plugin next to `shared/`) is deferred, correctly, but the probe must happen before the webui iterate starts \u2014 add it as a named precondition in the webui plan so it isn't discovered mid-cut in a repo where the admin-merge grant doesn't apply anyway.\n\n8. **Category: security \u00b7 Severity: low** \u2014 No real concerns: the tool is repo-local, dry-run default, no network, no eval of input. The `--allow-dirty` and `--allow-shared-tests` escapes are reasonable operator-only levers; ensure both are loudly echoed in the apply diff header so they appear in the PR record.\n\nOverall: the approach is sound and unusually well-defended \u2014 hard conservation check, dry-run default, per-file restore, and the review round already closed most sharp edges. The two medium items (JS/TS string-state mismatch between claim and scanner capability, and the dry-run/apply evidence asymmetry) are the only ones I'd want addressed before the first real cut; both are small fixes to this PR.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": null,
+    "at": "2026-11-09T08:45:33.356102+00:00"
+  },
+  "verdicts": {
+    "openai": "revise",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

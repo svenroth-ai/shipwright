@@ -1,0 +1,225 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-07-events-drop-writer-hardening",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-07T19:29:30.367734+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-07T19:29:30.621295+00:00",
+      "disposition": "plan and architecture arms run at medium and above; this run is small",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/F7b.md",
+          "line": 36,
+          "finding": "Runtime prompt still says a torn file (invalid_drop) skips; after the change a torn drop is left behind and the whole ones are committed.",
+          "suggestion": "Update F7b.md.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/commit_event_followup.py",
+          "line": 149,
+          "finding": "A partial seal returns committed even when the event F7 just wrote sits in the left-behind torn file.",
+          "suggestion": "Return a distinct signal when event_id is in a left-behind file.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/events_write.py",
+          "line": 97,
+          "finding": "Idempotency check asks whether any amendment ever recorded this sha; A,B,A leaves the effective commit at B.",
+          "suggestion": "Compare against the last amendment with a commit field.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/tools/commit_event_followup.py",
+          "line": 146,
+          "finding": "Duplicated bad-file parse and redundant base rebuild.",
+          "suggestion": "Use split idiom and list(problems).",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/tests/test_events_drop_writer_hardening.py",
+          "line": 57,
+          "finding": "No test for the all-torn invalid_drop branch or the torn-file-holds-the-event case.",
+          "suggestion": "Add both tests.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_events_drop_writer_hardening.py",
+          "line": 107,
+          "finding": "No A,B,A amend test; docstring says four findings while there are three fixes plus one regression pin.",
+          "suggestion": "Add case and reword.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-07T19:14:18.991148+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "8104b6477aab15f78f122fa8e96e9e3961283639"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "shared/scripts/lib/events_write.py",
+          "line": null,
+          "finding": "Claim under doubt: amend_commit skip rule — Readers apply the last event_amended of any kind (whole fields replaced); a later {pr:N} amendment wipes the commit and a retry of attach_commit(A) would then be a silent no-op.",
+          "suggestion": "Compare against the last amendment of any kind, add a test.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "shared/scripts/tools/commit_event_followup.py",
+          "line": null,
+          "finding": "Claim under doubt: torn drop never crashes the seal — The stranded probe reads an unreadable file without try; PermissionError escapes.",
+          "suggestion": "Treat OSError as possibly stranded.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/F7b.md",
+          "line": null,
+          "finding": "Claim under doubt: callers handle partial — F7b.md status summary lists no partial/skipped.",
+          "suggestion": "Update the status list.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "concurrency",
+          "file": "shared/scripts/tools/commit_event_followup.py",
+          "line": null,
+          "finding": "Claim under doubt: later events keep shipping — A torn open drop keeps catching new events of its key.",
+          "suggestion": "Document that left_behind needs a manual repair.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "boundary & contract",
+          "file": "shared/scripts/lib/events_read.py",
+          "line": null,
+          "finding": "Claim under doubt: writer and reader agree on same event — Writer ignores ts and run, reader only run.",
+          "suggestion": "Comment.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "boundary & contract",
+          "file": "shared/scripts/lib/events_write.py",
+          "line": null,
+          "finding": "Claim under doubt: any event_amended shape tolerated — Non-dict fields raises.",
+          "suggestion": "isinstance guard.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-07T19:19:29.480892+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "8104b6477aab15f78f122fa8e96e9e3961283639"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-07T19:29:36.322986+00:00",
+      "disposition": "small diff (under 100 changed source lines, no risk flag); covered by the internal spec, code and doubt cascade at opus",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "diff-below-threshold"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-07T19:16:38.078617+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "8104b6477aab15f78f122fa8e96e9e3961283639"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-07T19:29:30.621295+00:00",
+      "disposition": "plan and architecture arms run at medium and above; this run is small",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-07T19:29:30.621295+00:00",
+      "disposition": "plan and architecture arms run at medium and above; this run is small",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}

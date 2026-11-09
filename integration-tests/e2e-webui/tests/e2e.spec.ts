@@ -12,19 +12,19 @@ import * as ui from "../src/driver.js";
 import { ConfigError, loadConfig } from "../src/env.js";
 import { BASELINE_FIXTURE_NAME, activeFixture, PROFILE, type FixtureName, expectedFile as expectedPath, fixtureDir as fixturePath } from "../src/fixture.js";
 import { follow, waitForTask } from "../src/follow.js";
+import { launchWaitingTask } from "../src/fork-launch.js";
 import { captureLaunchCommands, ensureLaunched, handOverCommands } from "../src/launch-recovery.js";
 import { appendRecord, loadRecords, wholeRun } from "../src/gate-log.js";
 import { checkGates } from "../src/gates.js";
-import { checkProjectFiles, listHtml, readScreenshotCheck, recordScreenshotCheck } from "../src/progress.js";
-import { checkPluginShape, checkScreensComposed, checkTestsRan } from "../src/project-checks.js";
-import { checkSkillTriggers } from "../src/skill-trigger.js";
+import { runFileChecks } from "../src/file-checks.js";
 import { variantFor } from "../src/variant.js";
 import { recordFixtureApproval } from "../src/baseline/approval.js";
-import { runBaselineSuite, runStatic } from "../src/baseline/suite.js";
+import { runBaselineSuite } from "../src/baseline/suite.js";
 import { acquireLock, addLockPid, markFinished, markPipelineStarted, planResume, releaseLock, writeManifest, type ResumePlan, type RunIdentity } from "../src/resume.js";
 import { provisionHome } from "../src/provision.js";
 import { Report } from "../src/report.js";
 import { packageDigest, pluginFingerprint } from "../src/run-identity.js";
+import { STOPPED_PREFIX, parseStopAfter, type StopSpec } from "../src/stop-after.js";
 import { Shutdown } from "../src/shutdown.js";
 import { BUILD_STEP_TIMEOUT_MS, startStack, checkWebuiDir } from "../src/stack.js";
 import { tourBoard } from "../src/tour.js";
@@ -53,14 +53,16 @@ test("brief package to a working skill-backed board app through the WebUI", asyn
   // 1. Refuse to start without the operator inputs and an authentication source (no defaults).
   let cfg;
   let authSource: AuthSource;
+  let stopSpec: StopSpec | null;
   let FIXTURE_NAME: FixtureName; // SHIPWRIGHT_E2E_FIXTURE from the process env or the env file; the default is the tabs fixture
   const realHome = realHomeDir();
   try {
     cfg = loadConfig(repoRoot);
-    authSource = pickAuthSource(process.env, realHome);
+    authSource = pickAuthSource(cfg.env, realHome);
+    stopSpec = parseStopAfter(cfg.stopAfter);
     FIXTURE_NAME = activeFixture({ SHIPWRIGHT_E2E_FIXTURE: cfg.fixture });
   } catch (error) {
-    if (error instanceof ConfigError || error instanceof AuthError) throw new Error(error.message);
+    if (error instanceof ConfigError || error instanceof AuthError || (error instanceof Error && error.message.startsWith("Refusing to start"))) throw new Error(error.message);
     throw error;
   }
   const baseline = FIXTURE_NAME === BASELINE_FIXTURE_NAME; // own checklist and suite (src/baseline/)
@@ -155,7 +157,7 @@ test("brief package to a working skill-backed board app through the WebUI", asyn
     if (scrubbed > 0) housekeeping = `Removed ${scrubbed} stale login copy/copies left by an earlier run that was killed.`;
     // 2. Provision the temp HOME and start the second WebUI instance.
     if (authSource === "copied login") login = copyLogin(realHome, tempHome);
-    const key = process.env.ANTHROPIC_API_KEY ?? "";
+    const key = cfg.env.ANTHROPIC_API_KEY ?? "";
     provisionHome({
       repoRoot, tempHome, projectPath, permissionMode: cfg.permissionMode,
       apiKeyTail: authSource === "env key" ? key.slice(-20) : undefined,
@@ -164,7 +166,7 @@ test("brief package to a working skill-backed board app through the WebUI", asyn
     if (resume) report.setResume(resume.note);
     const stack = await startStack({
       webuiDir: cfg.webuiDir, repoRoot, home: tempHome,
-      extraEnv: { ...authEnv(authSource, process.env), SHIPWRIGHT_ACCEPT_FIXTURE_APPROVAL: "1" },
+      extraEnv: { ...authEnv(authSource, cfg.env), SHIPWRIGHT_ACCEPT_FIXTURE_APPROVAL: "1" },
       deadline,
     });
     stop = stack.stop;
@@ -187,6 +189,7 @@ test("brief package to a working skill-backed board app through the WebUI", asyn
     let launched: Awaited<ReturnType<typeof captureLaunchCommands>> | null = null;
     if (resume?.skipStartPipeline) {
       await report.step("Resume: the pipeline was already started, New pipeline not clicked again", null);
+      await launchWaitingTask(page, base, async (t, d) => { await report.step(t, page, d); }); // a forked run: the first task waits on the board card
     } else {
       await ui.startPipeline(page, "Build the social engagement board", "Build the app from the approved Brief package: /shipwright-run --brief brief/");
       markPipelineStarted(runDir); // the task exists from here on: a resume must not click "New pipeline" again
@@ -206,6 +209,7 @@ test("brief package to a working skill-backed board app through the WebUI", asyn
     if ((resume?.skipStartPipeline || launchedByModal) && !hasLaunch) {
       await report.step(launchedByModal ? "No launch button: the modal already launched the task" : "Resume: no launch button on the task page, the task was already launched", page,
         launchedByModal ? `Launch command captured from the modal's request: ${launched?.get() ? "yes" : "no"}.` : undefined);
+      if (resume?.skipStartPipeline) await ui.resumeInterruptedSession(page, async (t) => { await report.step(t, page); }); // run 24 idled without it
       // The modal's hand-over can be lost (the task then waits at an empty prompt and the page has no button): watch, hand it over again, fail fast.
       if (launchedByModal) {
         await ensureLaunched({
@@ -223,21 +227,15 @@ test("brief package to a working skill-backed board app through the WebUI", asyn
       });
     }
     await report.step("Task page after launch", page);
-    status = await follow(page, base, projectId, projectPath, deadline, cfg.maxMinutes, report);
+    status = await follow(page, base, projectId, projectPath, deadline, cfg.maxMinutes, report, stopSpec);
     initialStatus = status;
+    if (status.startsWith(STOPPED_PREFIX)) { // a partial run: the checklist describes the whole app, so it is not judged (the report lists what happened)
+      await report.step("Finished", page, `${status}; partial run, checklist not evaluated`);
+      return;
+    }
 
     // 5. Hard file checks, then the built app (only when the run completed).
-    checkProjectFiles(projectPath, fixtureDir, checklist);
-    const shot = readScreenshotCheck(projectPath);
-    report.setScreenshotCheck(shot.summary);
-    recordScreenshotCheck(checklist, shot);
-    const mockups = listHtml(path.join(fixtureDir, "mockups"));
-    checkPluginShape(projectPath, checklist);
-    checkScreensComposed(projectPath, mockups, checklist);
-    if (baseline) await runStatic(projectPath, checklist);
-    else variant!.selfContained(projectPath, checklist);
-    checkTestsRan(projectPath, checklist);
-    if (checklist.items.some((i) => i.id === "S09")) checkSkillTriggers(projectPath, checklist, { ...process.env, HOME: tempHome, USERPROFILE: tempHome }, undefined, baseline ? "open the reply board" : undefined);
+    await runFileChecks({ projectPath, fixtureDir, checklist, report, variant, tempHome });
     if (status === "complete") {
       await ui.openBoard(page, base, projectId);
       // The Test phase used the throw-away data folder of this fixed port; move it aside so H06-H10 start fresh.

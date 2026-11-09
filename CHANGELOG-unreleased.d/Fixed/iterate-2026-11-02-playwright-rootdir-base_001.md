@@ -1,1 +1,0 @@
-Playwright end-to-end results from a project whose Playwright config lives in a sub-folder (for example `client/playwright.config.ts`) now join the test manifest. Previously every passing E2E test read as missing and the cross-layer coverage check failed on a green suite. Reported in #969.

@@ -19,6 +19,10 @@ import subprocess
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "testkit"))
+from event_log_probe import event_records  # noqa: E402
+
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(REPO_ROOT / "shared" / "scripts"))
@@ -206,11 +210,7 @@ def test_a_phase_rerun_that_records_no_new_event_still_passes(tmp_path):
     # emit (`generate_session_handoff` records a `session_id_fallback` warning
     # when SHIPWRIGHT_SESSION_ID is unset — true on CI, false locally). Asserting
     # over the whole file passed on one machine and failed on the other.
-    completions = [
-        json.loads(line) for line in
-        (root / "shipwright_events.jsonl").read_text(encoding="utf-8").splitlines()
-        if line.strip()
-    ]
+    completions = event_records(root)
     entries = json.loads((root / "shipwright_run_config.json").read_text(
         encoding="utf-8"))["phase_history"]["changelog"]
     result = check_c3(root, "changelog")

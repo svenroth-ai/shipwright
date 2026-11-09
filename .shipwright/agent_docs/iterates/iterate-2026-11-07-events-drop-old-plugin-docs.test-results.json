@@ -1,0 +1,84 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-07-events-drop-old-plugin-docs",
+    "date": "2026-11-07",
+    "unit": {
+      "status": "passed",
+      "passed": 25362,
+      "skipped": 109,
+      "total": 25471
+    },
+    "integration": {
+      "status": "not_run",
+      "passed": 0,
+      "skipped": 0,
+      "total": 0
+    },
+    "pgtap": {
+      "status": "not_run",
+      "passed": 0,
+      "skipped": 0,
+      "total": 0
+    },
+    "e2e": {
+      "status": "not_run",
+      "passed": 0,
+      "skipped": 0,
+      "total": 0
+    },
+    "design_fidelity": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "The three planning documents no longer claim an old plugin fails loudly on a drops repo; they say it appends silently to the legacy log",
+          "disposition": "tested",
+          "evidence": "Experiment with plugin v0.34.0 on a repo with events_layout=drops: record_event.py exit 0, one line appended to shipwright_events.jsonl; grep of the v0.34.0 tree finds no events_layout or shipwright_events.d reference (reader cannot see drop files)"
+        },
+        {
+          "behavior": "docs/hooks-and-pipeline.md states what a pre-campaign plugin does on a drops repo and that every machine must be updated before the flip",
+          "disposition": "tested",
+          "evidence": "docs guards (test_events_reference_guard and the shared/tests docs checks) PASSED in the full F0 run, GREEN 18 units"
+        }
+      ],
+      "counts": {
+        "testable": 2,
+        "tested": 2,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 2,
+        "covered_acs": 2
+      }
+    },
+    "surface_verification": {
+      "surface": "none",
+      "tests_run": 0,
+      "exit_code": 0,
+      "justification": "Documentation-only change (three planning documents and one paragraph in docs/hooks-and-pipeline.md); no UI, API route, message contract or runtime code is touched."
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-11-07-events-drop-old-plugin-docs",
+    "commit": "72e56bd7c2ab8671b8ae4a26b037e7da18a81ec2",
+    "dirty": true,
+    "base": null,
+    "release": null
+  },
+  "last_updated": "2026-11-07"
+}

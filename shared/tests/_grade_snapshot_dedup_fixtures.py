@@ -15,6 +15,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "testkit"))
+from event_log_probe import event_records  # noqa: E402
 from tools.record_event import append_event_idempotent  # noqa: E402
 
 SNAP = "grade_snapshot"
@@ -43,22 +45,8 @@ def _write(root: Path, *events: dict) -> None:
 
 
 def _snaps(root: Path) -> list[dict]:
-    path = root / "shipwright_events.jsonl"
-    if not path.exists():
-        return []
-    # One parse per line, and skips anything unparseable, so a test that
-    # deliberately corrupts the log can still use the suite's own reader.
-    out = []
-    for ln in path.read_text(encoding="utf-8").splitlines():
-        if not ln.strip():
-            continue
-        try:
-            event = json.loads(ln)
-        except ValueError:
-            continue
-        if event.get("type") == SNAP:
-            out.append(event)
-    return out
+    """Every grade snapshot of the tree, whichever layout wrote it (unparseable lines are skipped)."""
+    return [e for e in event_records(root) if e.get("type") == SNAP]
 
 
 def _append(root: Path, event: dict):

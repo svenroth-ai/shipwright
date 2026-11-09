@@ -1,0 +1,6 @@
+{
+  "stage": "spec-compliance",
+  "verdict": "PASS",
+  "spec_citations": [],
+  "summary": "PASS (opus). Coordinator-spawned (opus): the runner cannot spawn the cascade here; the coordinator ran it, and the closed fix list from it was applied in this run."
+}

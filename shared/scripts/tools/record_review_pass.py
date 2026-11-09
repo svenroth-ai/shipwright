@@ -38,7 +38,7 @@ from lib.review_entry_checks import REVIEW_FAMILY, default_disposition  # noqa: 
 from lib.review_findings import ProseOverflowError, ReviewFindingsError  # noqa: E402
 from lib.reason_codes import REASON_CODES  # noqa: E402
 from lib.review_marker import ALLOWED_STATUSES  # noqa: E402
-from lib.review_payloads import ADAPTERS, build_review_evidence, canonical_basename_error, unread_reply_warning  # noqa: E402
+from lib.review_payloads import ADAPTERS, build_review_evidence, canonical_basename_error, entry_extras, unread_reply_warning  # noqa: E402
 from lib.review_capture_redact import redact_unavailable_stderr  # noqa: E402
 from lib.review_unavailable import write_time_error  # noqa: E402
 from lib.review_record import (  # noqa: E402
@@ -191,7 +191,7 @@ def _cmd_record(args: argparse.Namespace) -> int:
         )
     except ReviewRecordError as exc:
         return _fail("invalid_entry", str(exc), EXIT_USAGE)
-    entry.update({k: v for k, v in (("verdict", args.verdict), ("reviewed_commit", args.reviewed_commit)) if v})
+    entry.update(entry_extras(args))
 
     project_root = Path(args.project_root)
     markers: list[str] = []

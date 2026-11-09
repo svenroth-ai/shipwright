@@ -36,8 +36,11 @@ from typing import Callable
 from .affected_acs_check import check_affected_acs_declared
 from .cascade_trigger import check_cascade_trigger
 from .common import CheckResult
+from .events_integrity_check import check_events_integrity
 from .exemption_record_check import check_exemption_record
 from .plan_stub_check import check_plan_stub_recorded
+from .post_build_ac_check import check_post_build_ac_review
+from .pre_build_ac_check import check_pre_build_ac_recorded
 from .tag_binding_gate import check_test_tag_binding
 
 __all__ = ["CLAIM_CHECKS", "run_claim_checks"]
@@ -49,6 +52,9 @@ CLAIM_CHECKS: list[Callable[[Path, str, str], CheckResult]] = [
     check_cascade_trigger,
     check_affected_acs_declared,
     check_plan_stub_recorded,
+    check_pre_build_ac_recorded,
+    check_post_build_ac_review,
+    check_events_integrity,
 ]
 
 

@@ -1,1 +1,0 @@
-feat(run): /shipwright-run --brief accepts a Brief package directory; its hash and approval are verified before write-config and on resume, brief_dir is stored in run_config, and Project brief mode builds the project artifacts from brief.md with content checks in the project gate

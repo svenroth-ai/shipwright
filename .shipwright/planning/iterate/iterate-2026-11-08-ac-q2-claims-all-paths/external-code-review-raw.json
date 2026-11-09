@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "No concrete defects found in the supplied diff.\n\nThe change covers the campaign runner, 3f-bis, and Codex dispatch paths. The Codex CLI forwards claims only for the spec role, reports unreadable inputs, and supports the required nullable schema field. Tests check prompt contents, schema validation, error handling, and persistence onto the spec review row.\n\nCampaign coverage checks procedure text rather than execution, so it provides limited assurance of the actual handoff. I could not run tests because command execution was blocked by the environment.\n\nOverall assessment: ship-as-is based on the supplied diff.\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "**Findings**\n\n- Category: bug\n  Severity: medium\n  File: `plugins/shipwright-iterate/skills/iterate/references/campaign-step-3-7-internal-reviews.md` (the new Per-AC block, `--project-root \"{project_root}\"`)\n  Finding: The Step 3.7 prose says to build the claims \"from the unit's committed AC record \u2026 from the unit worktree\", but the command passes `--project-root \"{project_root}\"`, while the 3f-bis path in `campaign-mode.md` correctly uses `--project-root \"$unit_wt\"`. For a unit in a separate worktree (where `ac-record.jsonl` lives under the unit's `.shipwright/`, not the main project root), the 3.7 build will read the wrong tree and print `claims: 0`, silently reproducing exactly the \"no AC review ran\" bug this change is meant to fix.\n  Suggestion: Use `--project-root \"$unit_wt\"` (re-derived from `unit_worktree` exactly as 3f-bis does) in the 3.7 command, or document that `{project_root}` here resolves to the unit worktree.\n\n- Category: regression\n  Severity: medium\n  File: `shared/schemas/codex_spec_review_schema.json` (`required` now includes `ac_verdicts`)\n  Finding: Making `ac_verdicts` required is a breaking change for every existing producer/consumer of spec-reviewer replies that doesn't emit the key. The diff itself shows this: two existing test fixtures (`test_codex_review_cascade_distinctness_fixture.py`, `test_codex_review_transport_reasoning_effort.py`) had to be updated, and the agent-tool spec reply in this very change (`spec_review_reply.json`) contains no `ac_verdicts` at all. Any other client-side validator or replayer that validates old recorded `spec` payloads against this schema (e.g. F11 replay, the cascade-verification pass) will now reject replies that were valid when written.\n  Suggestion: Audit all consumers of `codex_spec_review_schema.json` beyond the live Codex call and either make those consumers accept the key's absence or confirm they only validate fresh Codex replies; the commit message / decision drop should state the payload-contract break explicitly.\n\n- Category: test\n  Severity: medium\n  File: `shared/tests/test_ac_claims_all_paths.py` (`test_the_runner_cascade_reference_builds_and_passes_the_claims_before_the_spec_spawn`, `test_the_orchestrator_cascade_builds_in_the_unit_worktree_before_stage_one`)\n  Finding: These are flat-string assertions on the docs; they pass even if the embedded command is wrong (a wrong flag, wrong project root, wrong base ref would still satisfy \"ac_claims.py\\\" build\" and \"--base-ref\" presence). The \"before Stage-1\" ordering assertion compares against `flat.index(\"Record the pair 3f-bis can verify\")`, a string unrelated to the Stage-1 spawn, so misordering the build after the spec spawn would pass. Notably, the very bug I flag above (wrong `--project-root` in 3.7) would pass these tests.\n  Suggestion: Assert the exact project-root token per file (`\"$unit_wt\"` for 3.7 if fixed, `{project_root}` deliberately otherwise) and anchor the ordering between the build line and the literal \"`a) `spec-reviewer``\" spawn marker.\n\n- Category: edge-case\n  Severity: low\n  File: `shared/scripts/tools/review_via_codex.py` (`--claims-file` handling)\n  Finding: The tool accepts any `--claims-file` without checking it is the non-empty claims file the build contract requires (e.g. the known `claims: 0` empty file that `ac_claims.py build` writes, per the decision drop's own follow-up list). A driver that passes the path unconditionally will produce a review against an empty claims list and `ac_verdicts: []`, which the F11 check reads as \"a review ran with no verdicts\" rather than the intended \"no claims\".\n  Suggestion: Validate the parsed claims file contains a non-empty `claims` list and emit the standard error otherwise (this also closes the decision-drop follow-up).\n\n- Category: spec\n  Severity: low\n  File: `plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md` (deleted R3 boundary note)\n  Finding: The rewritten paragraph drops the recorded rationale that `$unit_wt` crosses *both* spawn boundaries and must be re-read from its file \u2014 a documented past defect (R3 doubt-round, medium). The instruction to re-derive survives, but the \"why\" for the worktree variable specifically (the one that bit before) is gone, inviting a future shortcut.\n  Suggestion: Restore one clause noting `$unit_wt` in particular must be re-read from `unit_worktree`, not reused from shell state.\n\n**Overall assessment:** The core wiring (CLI flag, strict-mode schema, prompt injection, record round-trip) is implemented and tested behaviorally, but the 3.7 project-root inconsistency means one of the two fixed paths can still silently skip the AC review in separate-worktree campaigns, and the schema's new required key is an undocumented contract break for pre-existing replies \u2014 ship-with-fixes.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-11-08-ac-q2-claims-all-paths",
+    "at": "2026-11-08T14:52:40.381780+00:00"
+  },
+  "verdicts": {
+    "openai": "approve",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=approve"
+  }
+}

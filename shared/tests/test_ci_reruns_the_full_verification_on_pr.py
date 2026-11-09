@@ -99,6 +99,19 @@ def test_the_pull_request_trigger_has_no_path_filter(workflow: str) -> None:
 #: comment-poster, say) can't be misread as evidence against this one.
 _GATE_JOBS = {"ci.yml": "python-checks", "security.yml": "scan", "codeql.yml": "analyze"}
 
+#: Jobs that run verification tools but are NOT the required check itself: they must be as
+#: unconditional as the gate job. ci.yml's shared tier runs in `tests-shared` since
+#: iterate-2026-11-06-ci-parallel-jobs, so a step-level `if:` there would skip real tests.
+_EXTRA_GATE_JOBS = {"ci.yml": ("tests-shared", "tests-main")}
+
+#: The one job-level `if:` a gate job may carry. `python-checks` gathers `tests-shared` and a
+#: job whose `needs` failed is SKIPPED - which GitHub counts as a passing required check - so it
+#: must run `always()` and fail by itself (see test_ci_parallel_jobs.py). `always()` makes it
+#: MORE unconditional, not less: it runs on every pull request and push, cancelled or not.
+#: Keyed per workflow: only ci.yml's `python-checks` is a gather job; security.yml and
+#: codeql.yml must keep NO job-level `if:` at all.
+_ALLOWED_JOB_IF = {"ci.yml": "always()"}
+
 #: Substrings identifying the specific STEPS, inside a gate job, that are the
 #: actual verification invocation — narrower than "every step in the job"
 #: because unrelated steps (coverage upload, PR comments) legitimately gate
@@ -139,11 +152,15 @@ def test_the_gate_job_itself_carries_no_conditional(workflow: str) -> None:
     together prove this job runs on every pull request."""
     doc = _load(workflow)
     job = (doc.get("jobs") or {})[_GATE_JOBS[workflow]]
-    assert job.get("if") is None, (
+    assert job.get("if") in (None, _ALLOWED_JOB_IF.get(workflow)), (
         f"{workflow}:{_GATE_JOBS[workflow]} has a job-level `if:` "
         f"({job.get('if')!r}) — a condition of any shape could make this "
         f"job skip on a pull request while looking present in the file"
     )
+    for extra in _EXTRA_GATE_JOBS.get(workflow, ()):
+        assert (doc.get("jobs") or {})[extra].get("if") is None, (
+            f"{workflow}:{extra} runs tests and must carry no job-level `if:`"
+        )
 
 
 @pytest.mark.covers("FR-01.17/AC01")
@@ -157,8 +174,10 @@ def test_no_gate_carrying_step_is_conditioned_out(workflow: str) -> None:
     step in the job, since unrelated steps legitimately gate on
     `github.event_name`/`success()`."""
     doc = _load(workflow)
-    job = (doc.get("jobs") or {})[_GATE_JOBS[workflow]]
-    gate_steps = _gate_steps(job, _GATE_STEP_MARKERS[workflow])
+    jobs = doc.get("jobs") or {}
+    gate_steps = []
+    for job_id in (_GATE_JOBS[workflow], *_EXTRA_GATE_JOBS.get(workflow, ())):
+        gate_steps += _gate_steps(jobs[job_id], _GATE_STEP_MARKERS[workflow])
     assert gate_steps, f"{workflow}: found no step matching {_GATE_STEP_MARKERS[workflow]}"
     for step in gate_steps:
         assert step.get("if") is None, (

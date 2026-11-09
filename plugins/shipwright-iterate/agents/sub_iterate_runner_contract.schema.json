@@ -33,6 +33,11 @@
           }
         },
         "adr": { "type": "string" },
+        "ac_unconfirmed": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Only in ac mode auto: the lines of the list Assignments made without you that ac_decision.py printed (the heading first, then one line per decision, changed or removed existing criteria first, each ending with decided_by=auto, confirmed=false). The campaign end lists them across units."
+        },
         "reviews": {
           "type": "object",
           "description": "Review-cascade record per ADR-029. Optional for backwards-compat with pre-ADR-029 result.json files; required for runners under the post-ADR-029 contract.",
@@ -221,8 +226,8 @@
         "reason": { "type": "string" },
         "reason_code": {
           "type": "string",
-          "description": "Machine-readable escalation cause. `complexity_large` is the original Step 2 case. `ci_supplychain_requires_operator` is the Step 3.4 case: the diff touches the CI trust boundary (.github/workflows/**, dependency-updater config, composite actions, shipped CI templates), which check_ci_supplychain_ack gates at EVERY complexity. The runner hands back rather than writing its own acknowledgement — the ack names the recorded posture decision a change agrees with, and a machine authoring its own permission slip defeats the gate (operator decision 2026-08-01). `architecture_review_rejected` is the Step 3.5 case: either external architecture reviewer answered `reject`; the interactive contract is STOP-and-ask, the autonomous runner cannot ask, so it halts the unit and carries both verdicts plus the recommended alternative inline for the orchestrator to surface at campaign end.",
-          "enum": ["complexity_large", "ci_supplychain_requires_operator", "architecture_review_rejected"]
+          "description": "Machine-readable escalation cause. `complexity_large` is the original Step 2 case. `ci_supplychain_requires_operator` is the Step 3.4 case: the diff touches the CI trust boundary (.github/workflows/**, dependency-updater config, composite actions, shipped CI templates), which check_ci_supplychain_ack gates at EVERY complexity. The runner hands back rather than writing its own acknowledgement — the ack names the recorded posture decision a change agrees with, and a machine authoring its own permission slip defeats the gate (operator decision 2026-08-01). `architecture_review_rejected` is the Step 3.5 case: either external architecture reviewer answered `reject`; the interactive contract is STOP-and-ask, the autonomous runner cannot ask, so it halts the unit and carries both verdicts plus the recommended alternative inline for the orchestrator to surface at campaign end. `ac_question_requires_operator` is the pre-build AC case: the one ask rule (tools/ac_decision.py: an existing AC is changed or removed, or no single FR owns a new AC) says the operator must answer; the runner cannot ask and never accepts its own answer, so it stops THIS unit only (the orchestrator holds the unit, not the wave) before building and carries the plain-language questions inline in `ac_questions`.",
+          "enum": ["complexity_large", "ci_supplychain_requires_operator", "architecture_review_rejected", "ac_question_requires_operator"]
         },
         "detected_complexity": {
           "type": "string",
@@ -252,10 +257,38 @@
             "findings": { "type": "array", "items": { "type": "string" } }
           }
         },
+        "bind_id": { "type": "string", "description": "The unit's stable id (campaign slug and unit id, never an attempt id) the question hashes are bound to; the hold recomputes every question_sha256 from bind_id (with the campaign nonce), item index, kind, promise and options - never from the rendered question text." },
+        "ac_questions": {
+          "type": "array",
+          "description": "The plain-language questions of an ac_question_requires_operator stop, inline (the per-unit worktree may be gone by the time an operator reads this). Required and non-empty for that reason_code. `row` is the ask rule that fired (1 = an existing AC changed or removed, 2 = no single requirement owns the new AC, 3 = a new requirement); `question_sha256` is the sha256 of the stable content (bind_id, item, kind, promise, options) the operator's answer is bound to; the question text is display only.",
+          "items": {
+            "type": "object",
+            "required": ["item", "row", "question", "question_sha256", "kind", "promise", "options"],
+            "properties": {
+              "item": { "type": "integer", "minimum": 0 },
+              "row": { "type": ["integer", "string"] },
+              "question": { "type": "string", "pattern": "\\S" },
+              "question_sha256": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+              "kind": { "type": "string", "description": "The kind of the item (add, change, remove)." },
+              "promise": { "type": "object", "description": "The original promise text the answer is bound to: {old, new, title}." },
+              "options": { "type": "object", "description": "The numbered answers of the question (numbered 1, 2, ... with the help option last), each mapped to its machine answer (the requirement id stays here)." }
+            }
+          }
+        },
         "partial_commit": { "type": ["string", "null"] }
       },
       "additionalProperties": false,
       "allOf": [
+        {
+          "if": {
+            "required": ["reason_code"],
+            "properties": { "reason_code": { "const": "ac_question_requires_operator" } }
+          },
+          "then": {
+            "required": ["reason_code", "ac_questions"],
+            "properties": { "ac_questions": { "minItems": 1 } }
+          }
+        },
         {
           "if": {
             "required": ["reason_code"],

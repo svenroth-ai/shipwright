@@ -1,0 +1,6 @@
+{
+  "stage": "spec-compliance",
+  "verdict": "PASS",
+  "spec_citations": [],
+  "summary": "PASS (opus, spawned by the coordinator). Coordinator-spawned (opus): the runner spawn guard allows 3 spec-reviewer spawns per runner and all 3 were used on the seeded measurement."
+}

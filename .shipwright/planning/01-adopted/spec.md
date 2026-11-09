@@ -388,9 +388,10 @@ _Where the work detail lives_ at the end of this document.
   rather than restates.
 - (E) [AC09] Given an assistant is about to run a command, when that command would overwrite the
   shared main branch's history by force, then it is stopped; any other command, including
-  one that only mentions it, runs untouched, and a failure of this protection never
-  blocks work.
-  (iterate-2026-10-08-validate-command-force-push-fp)
+  one that only mentions it, runs untouched. When the precise check cannot reach a
+  decision, a coarser fallback applies that errs towards stopping a forced push that
+  mentions the main branch, rather than letting one through.
+  (iterate-2026-10-08-validate-command-force-push-fp, iterate-2026-11-08-fix-overstated-acs)
 - (E) [AC10] Given a planned section has passed the internal reviews, when its build is finished,
   then an independent outside review of that section's code change runs by default, the same as
   for any other finished change, unless the operator has switched it off; it is skipped, with
@@ -1079,6 +1080,15 @@ _Where the work detail lives_ at the end of this document.
   works and not what it does; a missing answer shows a visible warning and never holds
   the change back, because a finished record cannot be corrected afterwards.
   (iterate-2026-10-31-p2-close-gaps-and-backfill)
+- (E) [AC49] Given a change would alter what a user or operator can see or rely on, when it is planned, then the promise it
+  makes is written down in plain outcome words before it is built, and the person who owns the product is asked only when an
+  existing promise is changed or removed or no single requirement owns the new one; a change that alters nothing anyone can
+  observe needs no new promise.
+  (iterate-2026-11-01-q1-pre-build-ac)
+- (E) [AC50] Given a finished change added or changed a promise, when the reviewer checks it, then each such promise gets a
+  verdict of matches or diverges against what was built, a divergence names the line that breaks it, and a divergence on a
+  promise not confirmed by an operator (decided by auto) is only a visible warning that never holds the change back.
+  (iterate-2026-11-07-ac-q2-post-build-check)
 
 <a id="fr-0112"></a>
 ### FR-01.12 — Local project preview

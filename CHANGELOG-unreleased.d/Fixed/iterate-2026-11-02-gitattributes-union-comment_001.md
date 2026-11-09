@@ -1,1 +1,0 @@
-The comments and docs no longer claim that GitHub's server-side merge applies the `merge=union` driver. It only works in local merges, so two open pull requests that append at the same place can still show CONFLICTING on GitHub. Reported in #978.

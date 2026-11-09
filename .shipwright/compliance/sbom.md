@@ -1,53 +1,56 @@
 # Software Bill of Materials (SBOM)
 
-Generated: 2026-10-09T22:59:02.124377+00:00 (dependency versions resolved from uv.lock)
-Source-State: run=iterate-2026-10-10-security-triage-reraise base=3d082d111122
-Consistency-audit: last run 2026-07-28 (73 days earlier) — FAIL
+Generated: 2026-11-07T12:24:08.955229+00:00 (dependency versions resolved from uv.lock)
+Source-State: run=iterate-2026-11-07-events-drop-upgrade-notes base=ac194e8ced01 release=v0.35.0
+Consistency-audit: last run 2026-07-28 (102 days earlier) — FAIL
 
 ## Summary
 
 | Metric | Value |
 |--------|-------|
 | Runtime dependencies | 8 (deduplicated) |
-| Dev dependencies | 5 |
-| Total packages | 13 |
-| Licenses resolved | 5 / 13 |
-| Unique licenses | 2 (Apache-2.0, MIT) |
+| Dev dependencies | 8 |
+| Total packages | 16 |
+| Licenses resolved | 16 / 16 |
+| Unique licenses | 3 (Apache-2.0, MIT, PSFL) |
 | Copyleft licenses | 0 |
 
 ## License Distribution
 
 ```mermaid
-pie title License Distribution (all 13 packages)
-    "Apache-2.0" : 3
-    "MIT" : 2
-    "unknown" : 8
+pie title License Distribution (all 16 packages)
+    "Apache-2.0" : 8
+    "MIT" : 7
+    "PSFL" : 1
 ```
 
 ## Runtime Dependencies
 
 | Package | Version | License |
 |---------|---------|---------|
-| defusedxml | 0.7.1 | - |
-| google-genai | 1.68.0 | - |
+| defusedxml | 0.7.1 | PSFL |
+| google-genai | 1.68.0 | Apache-2.0 |
 | jsonschema | 4.26.0 | MIT |
 | openai | 2.30.0 | Apache-2.0 |
 | openai | 3.27.0 | Apache-2.0 |
 | openai | 3.6.0 | Apache-2.0 |
 | pyyaml | 6.0.3 | MIT |
-| requests | 2.33.0 | - |
+| requests | 2.33.0 | Apache-2.0 |
 
 ## Dev Dependencies
 
 | Package | Version | License |
 |---------|---------|---------|
-| diff-cover | 10.3.0 | - |
-| pytest | 9.0.3 | - |
-| pytest | 9.1.1 | - |
-| pytest-cov | 7.1.0 | - |
-| pytest-mock | 3.15.1 | - |
+| @playwright/test | ^1.59.1 | Apache-2.0 |
+| @types/node | ^22.0.0 | MIT |
+| diff-cover | 10.3.0 | Apache-2.0 |
+| pytest | 9.0.3 | MIT |
+| pytest | 9.1.1 | MIT |
+| pytest-cov | 7.1.0 | MIT |
+| pytest-mock | 3.15.1 | MIT |
+| typescript | ^5.6.0 | Apache-2.0 |
 
 ## License Compliance
 
-**8 dependency(ies) could not be resolved in this scan** - license unverified; verify before distribution.
+No license concerns: all 16 packages resolved (0 unknown, 0 copyleft).
 

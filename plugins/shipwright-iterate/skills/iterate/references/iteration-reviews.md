@@ -182,7 +182,8 @@ All three stages run in this fixed order:
 1. **`spec-reviewer` (Stage 1, HARD-GATE).** Spec-compliance only: does the diff
    match the iterate spec / affected FR? A REJECT cites the exact spec line and
    **blocks Stage 2** — the `code-reviewer` does not run until `spec-reviewer`
-   returns PASS. Re-review the fixed diff until PASS.
+   returns PASS. Re-review the fixed diff until PASS. When the run froze AC items, Stage 1
+   also gets the claims file and answers per AC (**Per-AC review** below).
 2. **`code-reviewer` (Stage 2, quality).** The existing 5-axis review, run only
    behind a Stage-1 PASS.
 3. **`doubt-reviewer` (Stage 3, conditional, advisory).** After Stage 2 passes,
@@ -191,6 +192,25 @@ All three stages run in this fixed order:
    disprove-biased pass. Docs-only / trivial diffs skip it. It is
    advisory-must-address: the implementer answers each doubt in writing (fix or
    reasoned rebuttal) before commit; it does not hard-block the way Stage 1 does.
+
+**Per-AC review (Q2, phase 1 - warning only).** When the run has an `ac-record.jsonl` (Q1: the promises it froze before
+the build), build the third input with code, right before the Stage-1 spawn, and hand its path to `spec-reviewer`:
+
+```bash
+uv run "{shared_root}/scripts/tools/ac_claims.py" build --project-root "{project_root}" \
+  --run-id "{run_id}" --base-ref "{base_branch}"      # prints {"path": ..., "claims": N}; "skipped" = no third input
+```
+
+`ac-claims.json` (`lib/ac_claims.py`) lists per item `ac` (`item-N` for an exemption), `kind`, `new_text`, `old_text`
+(the catalog text at the merge-base), `decided_by`, `confirmed`, `files`, `grade`. It is derived and regenerable: **do not
+commit it** (F11 recomputes the claims from the committed record). **Every review path passes it**: this Step 8, the campaign runner (`campaign-step-3-7-internal-reviews.md`) and 3f-bis, and the Codex driver (`review_via_codex.py --claims-file`). Say in the spawn prompt: "Also read the AC claims file
+at `<path>`." The reviewer then adds `ac_verdicts[]` (`{ac, verdict: matches|diverges, diff_location, reason, weakens}`) to its
+reply; without the file its reply is unchanged (it is shared with `/shipwright-build`). Record the reply as usual: `record_review_pass.py`
+copies the cleaned `ac_verdicts` onto the completed `spec` row (`lib/ac_verdicts.py`; a reply without them records as before).
+F11's `check_post_build_ac_review` prints the result as a WARNING: `diverges` on an operator-confirmed or code-decided item
+is marked reject-grade, on an unconfirmed `auto` item warning only; a run with AC items but no AC review says "no AC review
+ran". **Nothing blocks in this phase** and the per-AC answers do not change the Stage-1 `verdict`. A `diverges` is an AI's
+judgement - evidence for a person, not proof.
 
 All three are **internal** Claude subagents. The external cascade below stays a
 generic code-quality second opinion on the diff — the spec-compliance and doubt
@@ -628,7 +648,7 @@ a completed marker, while a skipped marker cannot carry reviewer evidence.
 |---|---|---|---|---|
 | Step 7 Self-Review | `self` | `self-review` | `self-review-payload.json` | `{"items":[{"name","verdict":"pass\|fail\|n/a","note"}]}` — one entry per checklist item |
 | External plan/iterate review (Branch A) | `plan` | `external-review-json` | `external-plan-review-raw.json` | `external_review.py` stdout, verbatim. Add `--marker-status` |
-| `spec-reviewer` (Stage 1, HARD-GATE) | `spec` | `spec-reviewer` | `spec_review_reply.json` | the subagent's reply verbatim (`{stage, verdict, spec_citations[]}`). Must be `completed` before a `completed` `code` row |
+| `spec-reviewer` (Stage 1, HARD-GATE) | `spec` | `spec-reviewer` | `spec_review_reply.json` | the subagent's reply verbatim (`{stage, verdict, spec_citations[], ac_verdicts[]?}` - `ac_verdicts` only when the claims file was passed). Must be `completed` before a `completed` `code` row |
 | Internal `code-reviewer` (Stage 2) | `code` | `code-reviewer` | `code_review_reply.json` | the subagent's reply |
 | `doubt-reviewer` (Stage 3) | `doubt` | `doubt-reviewer` | `doubt_review_reply.json` | the subagent's reply |
 | External code cascade | `external_code` | `external-review-json` | `external-code-review-raw.json` | `external_review.py` stdout. Add `--marker-status` |

@@ -1,0 +1,11 @@
+{
+  "run_id": "iterate-2026-11-06-flaky-claim-timing-test",
+  "date": "2026-11-06T21:56:29.566938Z",
+  "event_at": "2026-11-06T18:41:50.028547+00:00",
+  "type": "bug",
+  "complexity": "trivial",
+  "branch": "iterate/flaky-claim-timing-test",
+  "spec": "none",
+  "tests_passed": true,
+  "adr": "iterate-2026-11-06-flaky-claim-timing-test"
+}

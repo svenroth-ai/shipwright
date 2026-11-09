@@ -1,0 +1,89 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-07-events-drop-files-s8-full-integration",
+    "date": "2026-11-07",
+    "unit": {
+      "status": "passed",
+      "passed": 16216,
+      "skipped": 80,
+      "total": 16296
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 680,
+      "skipped": 0,
+      "total": 680
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "campaign wave, retried unit, squash sequence and real ensure_current on the drops layout",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_events_drops_full_system.py::test_campaign_wave_squash_sequence_and_retried_unit PASSED"
+        },
+        {
+          "behavior": "old writer, PR in flight at the flip, mid-run flip, toggle and merged-main cases of the layout CI check",
+          "disposition": "tested",
+          "evidence": "test_events_drops_full_system.py::test_old_writer_branch_and_a_pr_in_flight_at_the_flip and shared/tests/test_events_sentinel_mixed.py PASSED"
+        },
+        {
+          "behavior": "mid-run rollback by emergency fold then full fold; quarantine; mixed versions; fault injection; shared worktree hop; stacked base",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_events_drops_full_system.py (8 tests) PASSED"
+        },
+        {
+          "behavior": "both rollbacks lossless on a copy of the real history; real log untouched",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_events_drops_rollback_rehearsal.py (3 tests) PASSED"
+        },
+        {
+          "behavior": "run-scoped read, whole-log read and per-write cost at 300 files",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_events_drops_benchmark.py PASSED (strict run: 10.6 ms / 143 ms / 103 ms)"
+        },
+        {
+          "behavior": "name regexes reject a trailing newline; fold --stage handles ~1000 drops in one call",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_events_integrity.py and the rehearsal PASSED"
+        },
+        {
+          "behavior": "Linux runner timing under coverage",
+          "disposition": "untestable",
+          "reason_code": "requires-prod-credential",
+          "reason": "needs the Linux CI runner; its numbers arrive in the job summary of the PR run"
+        }
+      ],
+      "counts": {
+        "testable": 6,
+        "tested": 6,
+        "untestable": 1,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 3,
+        "covered_acs": 3
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-24-r5b-merge-lane",
+    "commit": "032d1ebbf0ef9c99eb98f240c8f1110e981a32a5",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

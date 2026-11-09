@@ -16,16 +16,22 @@ import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from uuid import uuid4
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from lib.events_layout import events_layout, events_lock_path  # noqa: E402
+from lib.events_log import event_files  # noqa: E402
+from lib.events_write import new_event_id, write_event_line  # noqa: E402
+from lib.file_lock import FileLock  # noqa: E402
 from lib.handoff_phase_status import completed_phases  # noqa: E402
 
 SCHEMA_VERSION = 1
 
 
+_PROJECT_ROOT: Path | None = None  # set by main(): picks the id width of the active layout
+
+
 def _eid() -> str:
-    return f"evt-{uuid4().hex[:8]}"
+    return new_event_id(_PROJECT_ROOT)
 
 
 def _read_json(path: Path) -> dict:
@@ -185,7 +191,9 @@ def main() -> int:
     parser.add_argument("--dry-run", action="store_true", help="Print events without writing")
     args = parser.parse_args()
 
+    global _PROJECT_ROOT
     project_root = Path(args.project_root).resolve()
+    _PROJECT_ROOT = project_root
     events = convert(project_root)
 
     if args.dry_run:
@@ -196,13 +204,20 @@ def main() -> int:
 
     # Write
     out_path = project_root / "shipwright_events.jsonl"
-    if out_path.exists():
+    drops = events_layout(project_root) == "drops"
+    if out_path.exists() or (drops and any(p.exists() for p in event_files(project_root))):
         print(f"ERROR: {out_path} already exists. Delete it first or use --dry-run.")
         return 1
 
-    with open(out_path, "w", encoding="utf-8") as fp:
-        for event in events:
-            fp.write(json.dumps(event, ensure_ascii=False, separators=(",", ":")) + "\n")
+    if drops:  # the one writer module: stamped, 16-hex ids, atomic file creation
+        with FileLock(events_lock_path(project_root)):
+            for event in events:
+                write_event_line(project_root, event, "convert-configs")
+        out_path = project_root / "shipwright_events.d"
+    else:
+        with open(out_path, "w", encoding="utf-8") as fp:
+            for event in events:
+                fp.write(json.dumps(event, ensure_ascii=False, separators=(",", ":")) + "\n")
 
     # Verify
     section_count = 0

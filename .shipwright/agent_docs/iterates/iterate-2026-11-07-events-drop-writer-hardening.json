@@ -1,0 +1,68 @@
+{
+  "run_id": "iterate-2026-11-07-events-drop-writer-hardening",
+  "date": "2026-11-07T19:29:37.050344Z",
+  "event_at": "2026-11-07T18:45:52.024689+00:00",
+  "type": "bug",
+  "complexity": "small",
+  "prior_source": "keyword",
+  "branch": "iterate/events-drop-writer-hardening",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-11-07-events-drop-writer-hardening",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "A retried event whose ts the writer bumped is written once",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_events_drop_writer_hardening.py::test_a_repeated_event_is_not_written_twice_after_the_writer_bumped_its_ts PASSED"
+      },
+      {
+        "behavior": "Attaching the same commit twice records one amendment; a different commit a second one",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_events_drop_writer_hardening.py::test_attaching_the_same_commit_twice_records_one_amendment PASSED"
+      },
+      {
+        "behavior": "A, B, A commits end at A; a later non-commit amendment does not make a retry a silent no-op",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_events_drop_writer_hardening.py::test_attaching_a_commit_again_after_another_one_is_recorded, ::test_attach_again_restores_the_commit_after_a_later_non_commit_amendment PASSED"
+      },
+      {
+        "behavior": "A run key in event extras cannot spoof the drop run stamp (already safe)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_events_drop_writer_hardening.py::test_a_run_key_in_the_extras_cannot_spoof_the_drop_run_stamp PASSED"
+      },
+      {
+        "behavior": "The F7b seal ships the whole drops and names the torn one",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_events_drop_writer_hardening.py::test_the_seal_ships_the_whole_drops_and_reports_the_torn_one PASSED"
+      },
+      {
+        "behavior": "All drops torn: nothing sealed (invalid_drop); event in the torn file: status partial; unreadable torn file does not crash",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_events_drop_writer_hardening.py::test_the_seal_still_refuses_when_every_pending_drop_is_torn, ::test_the_seal_says_partial_when_the_just_written_event_sits_in_the_torn_file, ::test_an_unreadable_torn_file_does_not_crash_the_seal PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 6,
+      "tested": 6,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 6,
+      "covered_acs": 6
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "justification": "Writer and CLI tooling for the event log; no UI, API route or message contract. The behaviour is exercised by 9 new unit tests against real git repos and by the full F0 suite."
+  },
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}

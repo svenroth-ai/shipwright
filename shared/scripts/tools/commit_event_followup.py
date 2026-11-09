@@ -39,6 +39,11 @@ import subprocess
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # shared/scripts
+from lib.events_layout import events_layout  # noqa: E402
+from lib.jsonl_records import read_jsonl_records  # noqa: E402
+from lib.events_stage import commit_drops, validate_drops, writer_lock, wt_drops  # noqa: E402
+
 EVENT_FILE = "shipwright_events.jsonl"
 
 
@@ -116,6 +121,59 @@ def has_staged_changes(project_root: Path) -> bool:
     return _run_git(["diff", "--cached", "--quiet"], project_root, check=False).returncode != 0
 
 
+def _seal_drops(main_root: Path, run_id: str, event_id: str | None, co_author: str | None,
+                dry_run: bool) -> dict | None:
+    """DROPS layout: seal every untracked drop written from the MAIN tree (its ``_main--*`` files).
+
+    Porcelain-style, folder-scoped (``ls-files --others`` on the drops folder) and path-restricted, because
+    the legacy ``git diff --quiet -- <file>`` probe and hard-coded path would never see a NEW untracked file.
+    ``None`` when there is nothing to seal -- the legacy flow then decides, unchanged.
+    """
+    if events_layout(main_root) != "drops" or not wt_drops(main_root):
+        return None  # nothing to seal: no lock file is created either
+    with writer_lock(main_root):  # list -> validate -> add -> commit must not interleave with an append
+        return _seal_locked(main_root, run_id, event_id, co_author, dry_run)
+
+
+def _holds_event(path: Path, event_id: str) -> bool:
+    """True when the (torn) file carries the event; an unreadable file counts as possibly holding it."""
+    try:
+        return any(r.get("id") == event_id for r in read_jsonl_records(path).records)
+    except OSError:
+        return True
+
+
+def _seal_locked(main_root: Path, run_id: str, event_id: str | None, co_author: str | None,
+                 dry_run: bool) -> dict | None:
+    rels = wt_drops(main_root)
+    if not rels:
+        return None
+    base = {"main_repo_root": str(main_root), "sealed": rels}
+    if has_staged_changes(main_root):
+        return {**base, "status": "skipped", "reason": "staged_changes"}
+    problems = validate_drops(main_root, rels)
+    bad = {p.split(":", 1)[0] for p in problems}
+    if bad and bad >= set(rels):
+        return {**base, "status": "skipped", "reason": "invalid_drop", "problems": problems}
+    event_stranded = False
+    if bad:  # ship the whole drops; a torn one stays in the working copy and is named, never half-sealed
+        event_stranded = bool(event_id) and any(_holds_event(main_root / rel, event_id) for rel in rels if rel in bad)
+        rels = [rel for rel in rels if rel not in bad]
+        base = {**base, "sealed": rels, "left_behind": problems}
+    title = f"chore(events): seal event drops for {run_id}"
+    body = f"Run-ID: {run_id}" + (f"\nEvent: {event_id}" if event_id else "")
+    if co_author:
+        body += f"\nCo-Authored-By: {co_author}"
+    if dry_run:
+        return {**base, "status": "dry_run", "title": title, "body": body}
+    ok, detail = commit_drops(main_root, rels, title + "\n\n" + body)
+    if not ok:
+        raise subprocess.CalledProcessError(1, "git commit", stderr=detail)
+    sha = _run_git(["rev-parse", "HEAD"], main_root, check=True).stdout.strip()
+    # ``partial``: the event F7 just wrote sits in a torn file that stayed behind, so it is NOT sealed
+    return {**base, "status": "partial" if event_stranded else "committed", "commit": sha, "title": title}
+
+
 def commit_followup(
     project_root: Path,
     run_id: str,
@@ -131,6 +189,9 @@ def commit_followup(
     ``main_repo_root`` so callers can see which tree was acted on.
     """
     main_repo_root = resolve_main_repo_root(project_root)
+    sealed = _seal_drops(main_repo_root, run_id, event_id, co_author, dry_run)
+    if sealed is not None:
+        return sealed
     if not is_tracked(main_repo_root):
         return {
             "status": "ignored",

@@ -19,7 +19,7 @@ if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
 from lib.events_log import event_files  # noqa: E402
-from lib.events_read import read_events_assembled  # noqa: E402
+from lib.events_read import latest_by_ts, read_events_assembled  # noqa: E402
 from lib.campaign_wave import (  # noqa: E402
     per_unit_worktree_identity,
     resolve_wave_safe_unit_value,
@@ -105,18 +105,11 @@ def resolve_run_id(project_root: Path, session_id: str) -> str:
     # ``_MAIN_REPO_ONLY`` exemption instead of carrying it to a new file.
     if any(p.exists() for p in event_files(project_root)):
         try:
-            latest_run_id: str | None = None
-            # Record-boundary recovery via the shared SSoT: a merge=union merge can
-            # leave two records on one physical line, and the pre-fix per-line
-            # json.loads dropped BOTH — silently falling through to the session-id
-            # fallback and mis-attributing every audit row keyed on the resolved run
-            # (iterate-2026-07-20-events-record-boundary-remainder). read_jsonl_records
-            # returns only JSON objects, in wire order, so latest-wins is preserved.
-            for obj in read_events_assembled(project_root).records:
-                if obj.get("type") == "run_started":
-                    rid = obj.get("run_id") or obj.get("id")
-                    if isinstance(rid, str) and rid:
-                        latest_run_id = rid
+            # Newest by ``ts``, not last in the list: with per-run drop files list position carries no time meaning.
+            started = latest_by_ts(read_events_assembled(project_root).records, lambda o: bool(
+                o.get("type") == "run_started" and isinstance(o.get("run_id") or o.get("id"), str)
+                and (o.get("run_id") or o.get("id"))))
+            latest_run_id = (started.get("run_id") or started.get("id")) if started else None
             if latest_run_id:
                 return latest_run_id
         except OSError:

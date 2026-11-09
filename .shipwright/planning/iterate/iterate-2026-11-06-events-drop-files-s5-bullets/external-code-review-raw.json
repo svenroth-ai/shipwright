@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: spec\n- Severity: medium\n- File: shared/scripts/lib/doc_bullets.py:156\n- Finding: `effective_text()` uses `read_text()`, which converts CRLF to LF, while `fold()` reads bytes and preserves CRLF. For an existing CRLF document, the pending render and folded output therefore differ, violating KC7\u2019s byte-identical rendering requirement. The tests separately check LF equivalence and CRLF preservation, so they miss this combination.\n- Suggestion: Read the effective document without newline translation, matching `fold()`. Extend the pending-versus-folded equivalence test to include a CRLF document.\n\nOverall assessment: ship-with-fixes. The implementation covers the main workflow, but the rendering equivalence defect needs correction before shipping. Execution was blocked by the environment policy, so this review is based on the supplied diff.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "### Findings\n\n- Category: spec\n  Severity: medium\n  File: shared/scripts/tools/verifiers/iterate_checks.py (check_conventions_reviewed hunk, ~line 486)\n  Finding: The spec says check_conventions_reviewed counts a *fresh* pending conventions bullet as the update. The implementation accepts any pending conventions/learnings bullet of this run with no freshness comparison at all \u2014 no mtime check against the reference. A bullet written days before the review commit (or a stale run_id reused across sessions) passes, and the test never exercises staleness.\n  Suggestion: Compare the bullet file's mtime (max over the run's own files) to `reference_mtime`, mirroring the `conv.stat().st_mtime` check above it.\n\n- Category: bug\n  Severity: medium\n  File: shared/scripts/tools/check_agent_doc_budget.py \u2014 `_read`\n  Finding: Missing-file semantics changed subtly: previously a nonexistent doc returned `None` (caller can skip); now, if the doc doesn't exist but *any* pending bullet for *any* target exists (even one targeting a different file \u2014 e.g. `architecture.md` missing while only conventions bullets are pending), `_read` returns `\"\"` instead of `None`. Callers distinguishing \"file absent\" from \"file empty\" can now misreport (e.g. budget reporting an empty doc instead of skipping a missing one).\n  Suggestion: Gate on bullets pending *for that file's* targets: `pending(project_root, target_for(filename))[0]`, or keep returning `None` when the doc file itself is absent and no bullet would land in it.\n\n- Category: bug (error-path swallow)\n  Severity: medium\n  File: shared/scripts/tools/aggregate_decisions.py \u2014 `aggregate`, bullet-fold hunk (~line 169)\n  Finding: Bullet-fold failures are collected into `result[\"errors\"]` but the ADR aggregation proceeds. If the doc write or lock fails, the ADR fold still runs and its *fallback bullet* for the same run is added to the doc while the run's bullet drop stays pending; when the drop is later folded, the anchor dedup in `insert_bullets` will not match if the fallback's pointer text differs (\"decision_log (ADR-012)\" vs \"decision_log (ADR via Run-ID: ...)\"), producing the exact duplication the \"bullets before ADRs\" ordering was designed to prevent. Nothing visible aborts the release on `bullets[\"errors\"]`.\n  Suggestion: Make `aggregate` fail fast (or at least make `main` exit non-zero) when `bullets[\"errors\"]` is non-empty and non-dry-run, so a release never folds ADRs over an unfolded bullet.\n\n- Category: spec\n  Severity: low\n  File: whole diff (check_agent_doc_shape not touched)\n  Finding: The spec requires the *shape* check to read folded + pending, but no change to `check_agent_doc_shape.py` appears in the diff; the new test asserts shape behavior that only works if shape already routes through a shared reader (e.g. budget's `_read` or `effective_text`). If shape has its own direct file read anywhere, pending bullets are invisible to it and the AC is only partially implemented.\n  Suggestion: Confirm/point at the exact path shape uses; if it reads files directly, route it through `effective_text`.\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/lib/doc_bullets.py \u2014 `effective_text`\n  Finding: `effective_text` reads the doc with `errors=\"ignore\"`, while `fold` writes bytes decoded strictly \u2014 so the \"render identical pending vs folded\" KC7 byte-identity can silently break for a doc containing invalid UTF-8: the pending view drops bad bytes, the folded view either errors or keeps them.\n  Suggestion: Acceptable if docs are validated UTF-8 elsewhere; otherwise make both paths use the same decode policy.\n\n- Category: edge-case\n  Severity: low\n  File: plugins/shipwright-iterate/skills/iterate/references/F6.md (new `git add` line)\n  Finding: The glob `bullets/*--{run_id}--*.md` uses the raw run_id, but the writer's filename key is `sanitize_key(run_id)`. Any run_id whose sanitized form differs from the raw string (the same class of mismatch the gate code avoids by calling `sanitize_key`) makes the glob match nothing and the bullet silently ships uncommitted \u2014 the exact failure `check_decision_drop_committed` exists to catch, but only if that gate runs.\n  Suggestion: State the sanitized key in the F6 instruction (or instruct F6 to use the path `write_doc_bullet.py` printed).\n\nTest quality is good overall: KC7 (merge-tree, render identity, cap warning, old-consumer invisibility, fold order) is genuinely exercised, including the base-side-pending case. The weaknesses are the untested \"freshness\" claim in check_conventions_reviewed and the swallowed fold errors in aggregate.\n\nOverall: the core mechanism is sound and well tested; fix the fold-error path in `aggregate_decisions` and the conventions-freshness/staleness gap before release \u2014 ship-with-fixes.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-11-06-events-drop-files-s5-bullets",
+    "at": "2026-11-06T18:02:14.647517+00:00"
+  },
+  "verdicts": {
+    "openai": "revise",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import fnmatch
 import json
+import re
 
 # Triage-log validation lives in lib.triage_validate and the triage dedup in
 # lib.triage_dedup (both extracted so this module stays under the 300-LOC
@@ -190,6 +191,9 @@ def classify(conflicted: object) -> tuple[list[str], list[str]]:
     return sorted(set(resolvable)), sorted(set(blocking))
 
 
+_RUN_MEMBER = re.compile(r',"run":"[^"\\]*"(?=\}\s*$)')  # the drops-layout stamp
+
+
 def dedup_event_lines(lines: list[str]) -> tuple[list[str], list[str]]:
     """Exact-line dedup preserving first-seen order (never drops a *distinct*
     line). Returns ``(deduped, warnings)``; a warning is emitted — never a drop —
@@ -218,9 +222,12 @@ def dedup_event_lines(lines: list[str]) -> tuple[list[str], list[str]]:
     for line in lines:
         if not line.strip():
             continue
-        if line in seen_lines:
+        # Byte comparison IGNORES the stamped ``run`` field (DESIGN 10.2): the same event, once with and once
+        # without the stamp, is one line. A legacy line carries no stamp, so its comparison is unchanged.
+        key = _RUN_MEMBER.sub("", line)
+        if key in seen_lines:
             continue
-        seen_lines.add(line)
+        seen_lines.add(key)
         out.append(line)
         try:
             ev_id = json.loads(line).get("id")

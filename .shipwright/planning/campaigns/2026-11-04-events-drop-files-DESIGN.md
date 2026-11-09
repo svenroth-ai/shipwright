@@ -199,7 +199,7 @@ Archive per fold (recommended, done). Flip dogfood-first (recommended, done). Pi
 - **Follow-ups for the iterates:** line-hash consumers (`event_context_index`, `dedup_event_lines`) exclude the stamped `run` field in
   the byte-identity comparison; the rotation probe uses `ls-tree`/`cat-file` or a HEAD-sha marker, never `git status`; `validate_event_log`
   and `commit_event_followup` hard-coded paths; Windows path length (key cap 80); `integrate_merge` validates drops brought in by a merge;
-  prompt_injection_scan on bullet `.md`; a plugin from before step 2 running F11 on a drops repo fails loudly (document in the flip announcement).
+  prompt_injection_scan on bullet `.md`; a plugin from before this campaign on a drops repo does NOT fail: it writes silently to the legacy `shipwright_events.jsonl` (tested with v0.34.0, 2026-11-07), so the flip announcement must say: update every machine BEFORE switching.
 
 ### 10.3 Campaign shape (every iterate carries its own control: kill criteria, guards, full review cascade)
 - **S0** harness: the spike's bare-origin integration harness promoted to a test (legacy baseline vs drops, real `ensure_current`/`record_event`)

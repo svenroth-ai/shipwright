@@ -1,1 +1,0 @@
-The iterate worktree gate now arms for projects onboarded with /shipwright-adopt, which keep status in_progress and an empty iterate_history, so an autonomous iterate there can no longer edit the main checkout.

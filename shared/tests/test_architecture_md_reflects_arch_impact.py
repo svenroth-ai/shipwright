@@ -37,6 +37,7 @@ sys.path.insert(0, str(_REPO_ROOT / "shared" / "scripts"))
 from lib.architecture_doc import (  # noqa: E402
     arch_impact_records,
     missing_entries,
+    read_target_texts,
     records_in_run_set,
     scan_drops,
 )
@@ -49,18 +50,6 @@ def _project_root() -> Path:
     here = Path(__file__).resolve()
     # shared/tests/test_X.py → walk up to repo root (= 2 levels above shared/)
     return here.parents[2]
-
-
-def _arch_md_text() -> str:
-    return (_project_root() / ".shipwright" / "agent_docs" / "architecture.md").read_text(
-        encoding="utf-8", errors="ignore"
-    )
-
-
-def _conv_md_text() -> str:
-    return (_project_root() / ".shipwright" / "agent_docs" / "conventions.md").read_text(
-        encoding="utf-8", errors="ignore"
-    )
 
 
 _REAL_IMPACTS = frozenset({"component", "data-flow", "convention"})
@@ -122,6 +111,7 @@ def _discovery_sanity(drops_dir: Path) -> tuple[str, str]:
     return ("ok", f"resolver found {len(all_drops)} drop file(s) under {drops_dir}")
 
 
+@pytest.mark.covers("FR-01.11")
 def test_every_arch_impact_drop_has_architecture_md_entry():
     """For every decision-drop that flagged an architecture-impact, the run_id
     must appear in its TARGET doc — routed via the shared oracle
@@ -151,7 +141,7 @@ def test_every_arch_impact_drop_has_architecture_md_entry():
     if not arch_impact_records(records):
         pytest.skip("no owned architecture-impact decision-drops to verify")  # test-hygiene: allow-silent-skip: conditional on repo migration/drop state; correctly inert otherwise
 
-    texts = {"architecture.md": _arch_md_text(), "conventions.md": _conv_md_text()}
+    texts = read_target_texts(_project_root() / ".shipwright" / "agent_docs")  # folded + pending bullet drops
     missing = missing_entries(records, texts)
     if missing:
         lines = ["target doc does not mention the following arch-impact drops:"]

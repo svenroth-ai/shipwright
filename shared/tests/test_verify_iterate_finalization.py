@@ -12,7 +12,12 @@ import os
 import subprocess
 from pathlib import Path
 
+import sys
+
 import pytest
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "testkit"))
+from event_log_probe import event_log_exists  # noqa: E402
 
 
 
@@ -207,6 +212,7 @@ def test_events_working_copy_sufficient_when_untracked(git_origin_repo, make_wor
     assert result.ok is True
 
 
+@pytest.mark.covers("FR-01.11")
 def test_boundary_roundtrip_worktree_producer_to_verifier(git_origin_repo, make_worktree):
     """AC-6 boundary round-trip: an event WRITTEN from a worktree via
     record_event lands in that worktree's OWN log and is READ BACK by the F11
@@ -219,12 +225,14 @@ def test_boundary_roundtrip_worktree_producer_to_verifier(git_origin_repo, make_
     append_event(wt, {"v": 1, "id": "evt-rt000001", "ts": "T",
                       "type": "work_completed", "source": "iterate",
                       "commit": "r0undtr1p", "adr_id": "iterate-rt"})
-    # Producer wrote the WORKTREE's own copy, NOT the main tree.
-    assert (wt / "shipwright_events.jsonl").exists()
-    assert not (work / "shipwright_events.jsonl").exists()
-    # The consumer (verifier) reads it back from the same worktree. The log is
-    # untracked here (record_event doesn't commit), so working-copy presence is
-    # sufficient — the committed-assertion only applies to tracked logs.
+    # Producer wrote the WORKTREE's own copy (legacy log or a drop), NOT the main tree.
+    assert event_log_exists(wt) and not event_log_exists(work)
+    # Legacy: the untracked log is not judged (committed-assertion only applies to TRACKED logs).
+    # Drops: an unstaged drop FAILS, so F6 (here: the commit) must carry it.
+    if (wt / "shipwright_events.d").is_dir():
+        assert check_events_has_commit(wt, "r0undtr1p", run_id="iterate-rt").ok is False
+        _git(wt, "add", "shipwright_events.d")
+        _git(wt, "commit", "-q", "-m", "F6")
     assert check_events_has_commit(wt, "r0undtr1p", run_id="iterate-rt").ok is True
 
 

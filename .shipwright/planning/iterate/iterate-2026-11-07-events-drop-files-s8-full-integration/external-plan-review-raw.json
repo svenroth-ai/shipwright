@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "**Findings**\n\n- **Category: edge-case / Severity: medium** \u2014 The benchmark uses \"a real legacy log + 300 drops\" but the acceptance criteria specify \"300 files.\" If the real log's size is unbounded or the fixture isn't pinned, CI numbers drift and the \"<= 20 ms / <= 0.3 s\" gate can't be reproducibly verified. Pin an exact fixture (committed or generated deterministically) and assert its file count, so KC5 is a real gate rather than a sample.\n\n- **Category: risk / Severity: medium** \u2014 Rollback rehearsal on \"a copy of real history\" depends on there being a sufficiently representative real history at this point (pre-flip, mixed-version appends, a torn drop if quarantine is rehearsed). If the real log is thin, the rehearsal is a happy-path test masquerading as a rehearsal. Explicitly state minimum characteristics the history copy must have (e.g., at least one mid-run flip artifact, at least one non-finalized run) or synthesize the missing states on top of the copy.\n\n- **Category: approach / Severity: medium** \u2014 Item 4 bundles three incidental production fixes into a test-gate change (\"fixes the rehearsals force\"). The `check_layout_ci` behavior change (judging layout at first parent) changes blame semantics for *all* PRs, not just flip-era ones \u2014 that's a behavioral policy change shipped inside S8. Split it out or at minimum add a dedicated test for the first-parent judgment (a PR that merges main with pre-flip appends must pass), otherwise it's only exercised incidentally.\n\n- **Category: risk / Severity: low** \u2014 Fixing `\\Z` in three name regexes is a correctness fix for Python's `re` (where `\\Z` is the true end-anchor; `$` matches before trailing newline). Fine, but verify it's applied consistently across all name-validation paths, not just the three the rehearsal tripped \u2014 otherwise validation is inconsistent between paths.\n\n- **Category: edge-case / Severity: low** \u2014 Windows-shared-runner timing with 10x bounds plus strict mode behind an env var is reasonable, but the run-scoped 20 ms criterion should specify whether it's wall-clock or excludes I/O cache warmup. A cold-cache first read on Windows CI can blow 20 ms even when the feature is fine. State the measurement protocol in the readiness note.\n\n- **Category: dependency / Severity: medium** \u2014 The spec says S8 is a gate for the flip, which requires \"a WebUI release with S1+S5b in use and a plugin release containing S2-S7.\" The mini-plan's flip-readiness note should explicitly check these as verifiable preconditions (release versions, not just checkboxes), since the note is the deliverable that gates S9a. As written, item 5 is underspecified \u2014 list concrete, checkable preconditions per criterion.\n\n- **Category: risk / Severity: low** \u2014 Two run ids in one shared worktree and stacked base are covered, but the scenario list omits the \"old writer appends *after* rollback\" case (a stale writer process surviving the full fold). If the fold doesn't lock or version-check writers, this is exactly the situation the emergency fold exists for \u2014 worth one scenario before declaring rollback rehearsed.\n\n- **Category: approach / Severity: low** \u2014 \"Fixes the rehearsals force\" \u2014 the `fold_events --stage` chunking (WinError 206 / filename-too-long) is the right fix, but confirm the chunk size isn't hard-coded to a magic number tuned to one machine; derive it from path-length budget or make it configurable with a conservative default.\n\n**Overall assessment:** Sound and well-scoped as a gate change; the main gaps are making the benchmark fixture deterministic so the KC numbers are a real gate, pulling the `check_layout_ci` policy change out with its own test, and specifying the flip-readiness preconditions concretely rather than as a prose note.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Category: approach \u00b7 Severity: high**  \n   **Finding:** The default benchmark permits 10\u00d7 the acceptance limits, so S8 could appear green while failing the required \u226420 ms run-scoped read and \u22640.3 s whole-log read. An optional strict flag does not establish a blocking gate on both platforms.  \n   **Suggestion:** Make strict benchmarking mandatory for the S8 gate on Windows and Linux. Define the measurement method, repetitions, and cache conditions, and record results separately from the generous regression checks.\n\n2. **Category: edge-case \u00b7 Severity: medium**  \n   **Finding:** Event-multiset equality, `finalized_run_ids`, and `latest_event_dt` do not establish rollback equivalence if event ordering affects reconstructed state. These checks can pass despite changed ordering among retries or events with identical timestamps.  \n   **Suggestion:** Compare the reader\u2019s reconstructed run state before and after each rollback, including retry outcomes and deterministic ordering. Run each rollback independently from a fresh copy; also verify that repeating a completed fold is safe.\n\n3. **Category: risk \u00b7 Severity: medium**  \n   **Finding:** Chunking `fold_events --stage` introduces partial-success behavior: an early chunk can be staged before a later command fails. The proposed fault-injection coverage does not explicitly cover this new failure boundary.  \n   **Suggestion:** Inject a failure after a successful staging chunk and verify that the command reports failure, preserves recoverable events, and can be retried without loss or duplication. Size chunks by command-line length, including long Windows paths.\n\n4. **Category: risk \u00b7 Severity: medium**  \n   **Finding:** The first-parent change to `check_layout_ci` needs explicit merge coverage. Exempting inherited pre-flip appends must still detect legacy-log modifications introduced by merge conflict resolution; otherwise this production fix could weaken the layout guard.  \n   **Suggestion:** Add paired cases: a merge that merely inherits allowed history passes, while a merge resolution that introduces a prohibited append fails. Include the stacked-base scenario in these assertions.\n\nThe approach is well aligned with S8 and appropriately leaves the operational flip to the follow-up campaign. Before using it as the release gate, make the performance thresholds blocking and explicitly verify the failure boundaries introduced by the production fixes.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-11-07-events-drop-files-s8-full-integration",
+    "at": "2026-11-07T01:15:54.755360+00:00"
+  },
+  "verdicts": {
+    "glm": "revise",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

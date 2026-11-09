@@ -1,0 +1,431 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-06-events-drop-files-s6-fold-integrity",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-06T20:57:47.663459+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The fold-races-open-PR acceptance criterion (KC6) is handled two ways: an empty `.keep` for directory renames (item 6) and reader re-read on vanished files (item 5), but the fold itself is not serialized against CI checkouts or concurrent appends. A fold commits while a PR is open: the PR's merge-base contains the drops, the fold deletes them on main, and the PR diff will show deletes — the integrity checker must accept this, but a PR that also touches drop files could smuggle deletes under the fold exception's broad shape. The \"fold exception = every deleted event hash in an added archive file\" check is the key gate; the plan should state explicitly that a partial overlap (fold deletes + attacker deletes mixed) is rejected, not just per-file matching.",
+          "suggestion": "Specify that the fold exception validates the exact deleted-file set (byte-identical hash multiset), and add a test where a PR simultaneously folds and modifies an unrelated drop — that must fail.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The \"fold is clean while a PR is open\" claim is weaker than stated. Even with `.keep` preventing directory renames, a PR branched before the fold will re-read drops via the vanished-file re-read logic (item 5) — but the CI checker on the PR branch sees the PR's tree, not main's. If the fold lands on main mid-PR, the PR diff vs its merge-base is clean (no deletes on the PR side), which is fine — but a rebase of the PR after the fold will surface fold deletes in the PR's own history interactions. The plan mentions \"bare-origin race\" tests, which suggests awareness, but the success criterion for KC6 (\"a fold racing an open PR is clean\") needs a concrete definition of what's checked: PR diff cleanliness, checker outcome, or app behavior.",
+          "suggestion": "Make the KC6 test scenario concrete in the plan: fold commits to main while PR #N is open on top of the pre-fold merge-base; assert (a) PR diff contains only adds, (b) integrity checker passes on the PR, (c) post-merge main passes the checker.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "emergency` fold sets `events_layout -> legacy` and archives \"all ok drops,\" but the spec says quarantine requires \"zero recoverable records AND non-ok at the merge-base.\" The emergency path's treatment of non-ok drops at rollback time isn't specified — presumably they're not archived (only \"ok drops\") and not quarantined either, meaning emergency fold silently drops unmerged/unverifiable events. If rollback 2 (full fold into the legacy log) and `emergency` interact, the order matters.",
+          "suggestion": "State the emergency-path invariant explicitly: what happens to non-ok drops during emergency (kept in place? quarantined?), and test it.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Item 5 (reader change: \"re-read once when a file vanished\") is a behavioral change to the hot read path (`events_read`, which is under a bloat ratchet at 300 lines). A re-read adds a second traversal on every raced read; more importantly, the \"stays `unreadable`\" decision means the reader's final state for a raced file is failure even though the data may now live in the archive file it already listed. This is intentional (fail-closed), but it means a fold landing mid-read produces a spurious unreadable report — noisy in production.",
+          "suggestion": "Confirm this noise is acceptable and documented; consider whether the re-read should prefer reading the archive entry instead (spec says absent = unreadable, so if intentional, just document it).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "\"No workflow touched (wiring the checker into CI is the operator's call)\" — but the acceptance criterion KC6 is partially about CI behavior (\"re-checked by the CI checker\"). Shipping the checker without wiring means the fold tool and integrity checker can drift apart between this change and operator wiring, and the merge-base derivation logic goes untested in a real PR context (only simulated locally).",
+          "suggestion": "At minimum, include the local simulation at a bare origin (the plan does mention \"bare-origin race\" tests — good); note in docs that the checker is dormant until wired.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "The path grammar (`[A-Za-z0-9._-]{1,80}`, single segment) is sound against traversal, and symlinks are checked. The \"forged `run` stamps\" check is mentioned but not defined — presumably validating the run-id matches the recorded CI run. Ensure the archive file name (hash of the set) can't collide with a drop-file name in the grammar; if archive names are hash-derived they likely satisfy the same charset, so specify the archive folder is a distinct directory checked separately.",
+          "suggestion": "State that archive files live in a separate directory excluded from the drop path grammar, or that the integrity checker distinguishes them by directory.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The 14-day fold threshold: events older than 14 days that are unmerged but not in a failed state (e.g., pending recovery review) get folded per \"merged + unmodified + older than 14 days.\" If \"unmodified\" is meant to protect in-flight events, define what marks an event as safe-to-fold at day 14 — otherwise a long-running recovery is folded underneath.",
+          "suggestion": "Confirm \"unmodified\" is defined against event content age, and document the 14-day rationale.  Overall: the approach is well-grounded in the spec's constraints (append-only, fail-closed, dormant layout) and the git-specific hazards (directory rename, `cat-file` vs `show`) show real forethought. The main gaps are precision around the fold-exception validation against mixed diffs and the emergency-path treatment of non-ok drops — both fixable in the plan, not the architecture.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "dependency |",
+          "file": null,
+          "line": null,
+          "finding": "Leaving CI wiring to the operator leaves KC6 unenforced. Adding a checker alone does not block modifications, deletions, or forged appends in PRs.",
+          "suggestion": "Wire the checker into the existing required CI check, or identify an existing invocation that already runs it. Verify rejection through that CI entry point.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach |",
+          "file": null,
+          "line": null,
+          "finding": "Full fold deletes drops after moving their contents into the legacy log, but the proposed integrity rules only allow deletion through an added archive or quarantine twin. A legitimate full fold would fail the checker.",
+          "suggestion": "Define how full fold passes integrity validation. Either add a narrowly validated legacy-log exception consistent with DESIGN, or explicitly constrain full fold to the authorized rollback procedure outside normal PR handling.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk |",
+          "file": null,
+          "line": null,
+          "finding": "The lock serializes writers, but does not make a multi-file fold atomic for readers or protect against interruption. The plan does not specify when archives become visible relative to drop deletion, or when emergency fold switches to legacy. Incorrect ordering can temporarily hide records or leave an incomplete rollback.",
+          "suggestion": "Publish and verify the destination before deleting sources, and make interrupted operations safely resumable. For emergency fold, establish that all retained events are visible through the legacy reader before switching layouts. Test interruption at those boundaries alongside the reader race.  The approach is broadly sound and addresses the main append-only and concurrency concerns. CI enforcement, full-fold compatibility with the checker, and interruption-safe sequencing need to be explicit before implementation.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "codex",
+      "completed_at": "2026-11-06T20:57:32.914766+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Review Findings\n\n**Category:** edge-case — **Severity:** high\n**Finding:** The fold-races-open-PR acceptance criterion (KC6) is handled two ways: an empty `.keep` for directory renames (item 6) and reader re-read on vanished files (item 5), but the fold itself is not serialized against CI checkouts or concurrent appends. A fold commits while a PR is open: the PR's merge-base contains the drops, the fold deletes them on main, and the PR diff will show deletes — the integrity checker must accept this, but a PR that *also* touches drop files could smuggle deletes under the fold exception's broad shape. The \"fold exception = every deleted event hash in an added archive file\" check is the key gate; the plan should state explicitly that a *partial* overlap (fold deletes + attacker deletes mixed) is rejected, not just per-file matching.\n**Suggestion:** Specify that the fold exception validates the exact deleted-file set (byte-identical hash multiset), and add a test where a PR simultaneously folds and modifies an unrelated drop — that must fail.\n\n**Category:** approach — **Severity:** medium\n**Finding:** The \"fold is clean while a PR is open\" claim is weaker than stated. Even with `.keep` preventing directory renames, a PR branched before the fold will re-read drops via the vanished-file re-read logic (item 5) — but the *CI checker on the PR branch* sees the PR's tree, not main's. If the fold lands on main mid-PR, the PR diff vs its merge-base is clean (no deletes on the PR side), which is fine — but a *rebase* of the PR after the fold will surface fold deletes in the PR's own history interactions. The plan mentions \"bare-origin race\" tests, which suggests awareness, but the success criterion for KC6 (\"a fold racing an open PR is clean\") needs a concrete definition of what's checked: PR diff cleanliness, checker outcome, or app behavior.\n**Suggestion:** Make the KC6 test scenario concrete in the plan: fold commits to main while PR #N is open on top of the p […truncated]\n\n[openai] 1. **Category: dependency | Severity: high**  \n   **Finding:** Leaving CI wiring to the operator leaves KC6 unenforced. Adding a checker alone does not block modifications, deletions, or forged appends in PRs.  \n   **Suggestion:** Wire the checker into the existing required CI check, or identify an existing invocation that already runs it. Verify rejection through that CI entry point.\n\n2. **Category: approach | Severity: high**  \n   **Finding:** Full fold deletes drops after moving their contents into the legacy log, but the proposed integrity rules only allow deletion through an added archive or quarantine twin. A legitimate full fold would fail the checker.  \n   **Suggestion:** Define how full fold passes integrity validation. Either add a narrowly validated legacy-log exception consistent with DESIGN, or explicitly constrain full fold to the authorized rollback procedure outside normal PR handling.\n\n3. **Category: risk | Severity: medium**  \n   **Finding:** The lock serializes writers, but does not make a multi-file fold atomic for readers or protect against interruption. The plan does not specify when archives become visible relative to drop deletion, or when emergency fold switches to legacy. Incorrect ordering can temporarily hide records or leave an incomplete rollback.  \n   **Suggestion:** Publish and verify the destination before deleting sources, and make interrupted operations safely resumable. For emergency fold, establish that all retained events are visible through the legacy reader before switching layouts. Test interruption at those boundaries alongside the reader race.\n\nThe approach is broadly sound and addresses the main append-only and concurrency concerns. CI enforcement, full-fold compatibility with the checker, and interruption-safe sequencing need to be explicit before implementation.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "shared/scripts/lib/events_fold.py",
+          "line": null,
+          "finding": "quarantine lock-time compare strict on CRLF checkout (fixed)",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/events_fold_full.py",
+          "line": null,
+          "finding": "full fold duplicates records of non-ok files (fixed)",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/events_log.py",
+          "line": null,
+          "finding": "_all_records has no vanish retry (comment corrected; deferred)",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/events_integrity.py",
+          "line": null,
+          "finding": "archive_injection false positive on overlapping folds (fixed)",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/events_fold.py",
+          "line": null,
+          "finding": "FileNotFoundError at lock-time recheck (fixed)",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/events_integrity.py",
+          "line": null,
+          "finding": "quarantine twin keyed by sha only (fixed)",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": "shared/scripts/tools/verifiers/events_integrity_check.py",
+          "line": null,
+          "finding": "F11 fails open on git error / no own_keys (documented, deferred)",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/events_read.py",
+          "line": null,
+          "finding": "unreadable kept after retry (documented)",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/fold_events.py",
+          "line": null,
+          "finding": "--stage config only for emergency (fixed)",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-06T21:13:59.970825+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "01fb7471e1671fb03744d9df73cc538d871cb134"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "concurrency",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: concurrent folds of one set are clean — archive name hashed platform line endings; overlapping sets can rename-conflict",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: checker blocks every modify on case-insensitive checkouts — file names differing only in case",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: forged_run_id stops forgery — missing run stamp and foreign adr_id passed",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "reversibility",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: emergency/full fold completes or changes nothing — set_layout after unlink with a bad config",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "reversibility",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: archive write never destroys — existing archive with other bytes",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: id-less dedup and surrogate encode in full fold/dump_line — id-less duplicates collapse; lone surrogate blocks fold",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-06T21:23:23.259463+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "65faf7f28afc4667d6e3c56529e64cbf2a9c7f4c"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/tools/fold_events.py` (`_stage_paths`)",
+          "line": null,
+          "finding": "_stage_paths` adds `shipwright_sync_config.json` (and `.keep`, which is fine) for every status starting with `\"folded\"` — including plain `fold`, which never writes the config. If the working tree carries unrelated, uncommitted edits to `shipwright_sync_config.json` (a tracked file in real repos), `--stage` sweeps them into the fold commit, violating the stated contract \"stages exactly the paths the tool touched\" and potentially committing someone else's half-finished config change.",
+          "suggestion": "Include `shipwright_sync_config.json` only for `emergency` and `full` (the modes that call `set_layout`); key the condition on `mode`/status pair rather than the `\"folded\"` prefix.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "shared/scripts/tools/verifiers/events_integrity_check.py` (`check_events_integrity`)",
+          "line": null,
+          "finding": "The `run_id` parameter is accepted and never used; `own_keys` is never passed to `check_integrity`, so the `foreign_key` rule is dead code along the F11 path. The branch knows its own run id but a PR adding a drop under a key the change doesn't own passes F11 silently (only the stamp-vs-key forgery is caught — the doc explicitly notes this gap, but F11 had the id in hand and dropped it).",
+          "suggestion": "Pass `own_keys=(run_id,)` (or a derived key) when a single-run mapping is valid, or document deliberately why F11 cannot derive the key; at minimum the unused parameter is misleading.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/events_integrity.py` (`added_quarantine` construction)",
+          "line": null,
+          "finding": "added_quarantine` is a dict keyed by `new_sha`; two quarantine adds sharing one blob collapse to one entry, and only the surviving name's deletion is recognized as a legal quarantine twin — the other delete is reported as `deleted_existing` even though it is byte-identical to its twin. (Two different runs whose junk files happen to be byte-identical is rare but possible, e.g. both `\"not json\\n\"`.)",
+          "suggestion": "Key by `new_sha` → list of entries, or by `(new_sha, name)`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/events_fold.py` (`plan_quarantine`)",
+          "line": null,
+          "finding": "path.read_bytes()` is called without OSError handling; an unreadable (permission-denied) drop file makes the whole quarantine CLI exit 2 instead of skipping/reporting the file, unlike `plan_fold` which catches `OSError` per file.",
+          "suggestion": "Wrap the read and skip with a reported reason, mirroring `plan_fold`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": "shared/scripts/tools/fold_events.py:38–43",
+          "line": null,
+          "finding": "full --stage` never stages `shipwright_events.jsonl`, although full fold appends the recovered events there and deletes their source files. Committing the staged result can therefore remove the only committed copies of those events. Ordinary `fold --stage` also stages the sync config despite not changing it, potentially including unrelated edits.",
+          "suggestion": "Have each operation return exactly the paths it changed. Include the legacy log for full fold and include the config only when the operation writes it.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": "shared/scripts/lib/events_fold.py:207–211",
+          "line": null,
+          "finding": "Quarantine uses the bytes captured during planning without rechecking the source under the lock. If a writer adds recoverable records between planning and application, quarantine copies the stale corrupt bytes and deletes the updated source, losing those records.",
+          "suggestion": "Before writing or deleting anything, re-read every selected source under the events lock and refuse the operation if any bytes differ from the plan.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": "shared/scripts/tools/verifiers/events_integrity_check.py:39–41",
+          "line": null,
+          "finding": "The F11 prefilter uses case-sensitive folder pathspecs, so a change containing only `Shipwright_Events.D/...` is skipped before the integrity library can reject it. This bypasses the case-variant protection on case-insensitive checkouts.",
+          "suggestion": "Remove the prefilter or apply the same whole-tree, case-insensitive folder filtering used by `_entries`. Add a test that exercises the F11 wrapper with only a case-variant path.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/lib/events_fold.py:157–159",
+          "line": null,
+          "finding": "Emergency rollback returns before resetting `events_layout` when no drops are selected. A repository with only archived events, or only corrupt drops, can remain configured for drops after a supposedly successful emergency rollback.",
+          "suggestion": "Reset the layout under the lock for emergency mode even when there are no eligible drops. Test both archive-only and corrupt-only states.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/lib/events_fold.py:134, 162",
+          "line": null,
+          "finding": "Conflict detection happens during planning, outside the events lock. A writer can subsequently append a different event with the same ID to another file; application only rechecks selected files and proceeds despite the newly introduced conflict.",
+          "suggestion": "Repeat the whole-log conflict scan after acquiring the lock and validating the selected files, before publishing the archive.  Overall assessment: ship-with-fixes. The implementation covers the main fold and integrity rules, but the staging omission and quarantine race can lose committed or newly written events.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "codex",
+      "completed_at": "2026-11-06T21:05:25.081762+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ### Findings\n\n- **Category: bug** — **Severity: medium**\n  **File:** `shared/scripts/tools/fold_events.py` (`_stage_paths`)\n  **Finding:** `_stage_paths` adds `shipwright_sync_config.json` (and `.keep`, which is fine) for *every* status starting with `\"folded\"` — including plain `fold`, which never writes the config. If the working tree carries unrelated, uncommitted edits to `shipwright_sync_config.json` (a tracked file in real repos), `--stage` sweeps them into the fold commit, violating the stated contract \"stages exactly the paths the tool touched\" and potentially committing someone else's half-finished config change.\n  **Suggestion:** Include `shipwright_sync_config.json` only for `emergency` and `full` (the modes that call `set_layout`); key the condition on `mode`/status pair rather than the `\"folded\"` prefix.\n\n- **Category: bug** — **Severity: low**\n  **File:** `shared/scripts/tools/verifiers/events_integrity_check.py` (`check_events_integrity`)\n  **Finding:** The `run_id` parameter is accepted and never used; `own_keys` is never passed to `check_integrity`, so the `foreign_key` rule is dead code along the F11 path. The branch knows its own run id but a PR adding a drop under a key the change doesn't own passes F11 silently (only the stamp-vs-key forgery is caught — the doc explicitly notes this gap, but F11 had the id in hand and dropped it).\n  **Suggestion:** Pass `own_keys=(run_id,)` (or a derived key) when a single-run mapping is valid, or document deliberately why F11 cannot derive the key; at minimum the unused parameter is misleading.\n\n- **Category: edge-case** — **Severity: low**\n  **File:** `shared/scripts/lib/events_integrity.py` (`added_quarantine` construction)\n  **Finding:** `added_quarantine` is a dict keyed by `new_sha`; two quarantine adds sharing one blob collapse to one entry, and only the surviving name's deletion is recognized as a legal quarantine twin — the other delete is reported as `deleted_existing` even though it is by […truncated]\n\n[openai] - Category: bug\n- Severity: high\n- File: shared/scripts/tools/fold_events.py:38–43\n- Finding: `full --stage` never stages `shipwright_events.jsonl`, although full fold appends the recovered events there and deletes their source files. Committing the staged result can therefore remove the only committed copies of those events. Ordinary `fold --stage` also stages the sync config despite not changing it, potentially including unrelated edits.\n- Suggestion: Have each operation return exactly the paths it changed. Include the legacy log for full fold and include the config only when the operation writes it.\n\n- Category: bug\n- Severity: high\n- File: shared/scripts/lib/events_fold.py:207–211\n- Finding: Quarantine uses the bytes captured during planning without rechecking the source under the lock. If a writer adds recoverable records between planning and application, quarantine copies the stale corrupt bytes and deletes the updated source, losing those records.\n- Suggestion: Before writing or deleting anything, re-read every selected source under the events lock and refuse the operation if any bytes differ from the plan.\n\n- Category: security\n- Severity: medium\n- File: shared/scripts/tools/verifiers/events_integrity_check.py:39–41\n- Finding: The F11 prefilter uses case-sensitive folder pathspecs, so a change containing only `Shipwright_Events.D/...` is skipped before the integrity library can reject it. This bypasses the case-variant protection on case-insensitive checkouts.\n- Suggestion: Remove the prefilter or apply the same whole-tree, case-insensitive folder filtering used by `_entries`. Add a test that exercises the F11 wrapper with only a case-variant path.\n\n- Category: bug\n- Severity: medium\n- File: shared/scripts/lib/events_fold.py:157–159\n- Finding: Emergency rollback returns before resetting `events_layout` when no drops are selected. A repository with only archived events, or only corrupt drops, can remain configured for drops after a supposedly suc […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-06T21:05:29.080904+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "86f5112e6dc199fd42cff84d6f65e35ebbd27ca6"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-06T20:57:33.095110+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-06T20:57:33.268799+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

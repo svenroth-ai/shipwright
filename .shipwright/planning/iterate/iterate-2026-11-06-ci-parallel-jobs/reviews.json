@@ -1,0 +1,301 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-06-ci-parallel-jobs",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-06T13:00:40.567161+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Cancelled-run behavior. `python-checks` carries job-level `if: always()`, so when the concurrency group cancels an in-progress run (new push), the gather job still runs, tries to download artifacts from cancelled sibling jobs, and turns the required check red on runs nobody will ever look at. AC2's explicit prohibition of `!cancelled()` suggests this is intentional, but the spec never states the tradeoff.",
+          "suggestion": "Confirm this is deliberate and note it in `docs/hooks-and-pipeline.md`; if branch-protection treats cancelled-run results as noise, reconsider whether the pin should allow `always() && !cancelled()` — otherwise at least verify branch protection isn't polluted by cancelled-run failures.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Artifact filename collisions on merge. Each test job uploads `.ci-junit/` and `.cov-data/` separately, and `python-checks` merges with `merge-multiple: true` into `.`. Since junit paths are absolute and identical on every runner, this is only safe because the test roots are partitioned across jobs. If a root is ever added to two jobs (or `tests-shared` and `tests-integration` ever emit a same-named junit/`.coverage.` file), the merge silently overwrites. AC4's verify gate would catch missing roots, but not overwritten ones.",
+          "suggestion": "Add a shape-test assertion that the per-job root lists are disjoint, so the invariant the merge depends on is pinned rather than assumed.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "events-replay` uploads nothing, but the plan doesn't verify that `events_replay_gate`'s step currently produces no files consumed by downstream gates (manifest/evidence/provenance steps live in `python-checks`). If the replay gate writes anything into `.ci-junit/` or the workspace that a later gate reads, moving it to a separate job with no artifact silently breaks that consumer.",
+          "suggestion": "Step 1 of the work breakdown should explicitly confirm (grep the gate script for output writes) that `events_replay_gate` is side-effect-free with respect to the gather job's gates; record the answer in the findings list.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Upload steps run `if: always()` with `if-no-files-found: error`. A job that dies before its first pytest (e.g., `uv sync` failure) produces no junit, so the upload step itself errors — doubling the red steps and obscuring the root cause. This is cosmetic but adds PR-debugging friction.",
+          "suggestion": "Acceptable as-is (fail-closed is the stated philosophy); alternatively scope the upload's `if:` to job-failure-after-tests, or just note it in the docs so triage knows the upload error can be ignored.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "include-hidden-files: true` requires a recent `actions/upload-artifact` (v4.4+). The plan doesn't mention pinning/updating the action version; if the workflow pins an older v4 tag, the flag is silently ignored and `.ci-junit/`/`.cov-data/` never upload — the coverage-set gate would catch it, but only after a confusing full CI run.",
+          "suggestion": "Check the pinned action version supports the input during step 1; add it to the shape test if cheap.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Per-job setup duplication (`fetch-depth: 0`, full `uv sync`, plan regen ×5) may erode the wall-clock win if sync is slow; also `tests-plugins` additionally installs three scanners and may become the critical path, capping gains regardless of the other three jobs finishing fast. The ~10-11 min push target is asserted but not budgeted.",
+          "suggestion": "Measure the per-job setup time on the probe PR run; if `tests-plugins` dominates, splitting scanners into their own parallel job (or accepting the cap) should be a conscious decision, not a surprise.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The proposed end-to-end probe does not establish the central failure guarantee. A successful PR run plus YAML-shape assertions cannot demonstrate that a failed or skipped dependency actually produces a red `Python (lint + test)` check. The confidence section mentions a deliberately failing job, but the work breakdown does not explicitly schedule that probe.",
+          "suggestion": "Before merge, run a temporary branch revision with one needed job deliberately failing and confirm that `python-checks` executes and fails while naming that job’s result. Also test the result-checking logic against synthetic `failure`, `cancelled`, and `skipped` results; YAML assertions alone do not verify its behavior.  The approach is sound and appropriately scoped. The binding revisions address the important artifact, coverage-completeness, and setup-order risks; the remaining change is to make failure-path verification an explicit prerequisite for merge.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-06T12:45:45.892732+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Review Findings\n\n**Category: edge-case — Severity: medium**\n**Finding:** Cancelled-run behavior. `python-checks` carries job-level `if: always()`, so when the concurrency group cancels an in-progress run (new push), the gather job still runs, tries to download artifacts from cancelled sibling jobs, and turns the required check red on runs nobody will ever look at. AC2's explicit prohibition of `!cancelled()` suggests this is intentional, but the spec never states the tradeoff.\n**Suggestion:** Confirm this is deliberate and note it in `docs/hooks-and-pipeline.md`; if branch-protection treats cancelled-run results as noise, reconsider whether the pin should allow `always() && !cancelled()` — otherwise at least verify branch protection isn't polluted by cancelled-run failures.\n\n**Category: edge-case — Severity: medium**\n**Finding:** Artifact filename collisions on merge. Each test job uploads `.ci-junit/` and `.cov-data/` separately, and `python-checks` merges with `merge-multiple: true` into `.`. Since junit paths are absolute and identical on every runner, this is only safe because the test roots are partitioned across jobs. If a root is ever added to two jobs (or `tests-shared` and `tests-integration` ever emit a same-named junit/`.coverage.*` file), the merge silently overwrites. AC4's verify gate would catch missing roots, but not overwritten ones.\n**Suggestion:** Add a shape-test assertion that the per-job root lists are disjoint, so the invariant the merge depends on is pinned rather than assumed.\n\n**Category: risk — Severity: medium**\n**Finding:** `events-replay` uploads nothing, but the plan doesn't verify that `events_replay_gate`'s step currently produces no files consumed by downstream gates (manifest/evidence/provenance steps live in `python-checks`). If the replay gate writes anything into `.ci-junit/` or the workspace that a later gate reads, moving it to a separate job with no artifact silently breaks that consumer.\n**Suggestion:** Step  […truncated]\n\n[openai] 1. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** The proposed end-to-end probe does not establish the central failure guarantee. A successful PR run plus YAML-shape assertions cannot demonstrate that a failed or skipped dependency actually produces a red `Python (lint + test)` check. The confidence section mentions a deliberately failing job, but the work breakdown does not explicitly schedule that probe.  \n   **Suggestion:** Before merge, run a temporary branch revision with one needed job deliberately failing and confirm that `python-checks` executes and fails while naming that job’s result. Also test the result-checking logic against synthetic `failure`, `cancelled`, and `skipped` results; YAML assertions alone do not verify its behavior.\n\nThe approach is sound and appropriately scoped. The binding revisions address the important artifact, coverage-completeness, and setup-order risks; the remaining change is to make failure-path verification an explicit prerequisite for merge.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "test-coverage",
+          "file": "shared/tests/test_ci_parallel_jobs.py",
+          "line": null,
+          "finding": "setup-sequence and upload-shape tests did not cover tests-main (fixed: parametrized over both test jobs)",
+          "suggestion": "assert setup(SHARED)==setup(MAIN)==setup(GATHER); parametrize the upload test",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "docs",
+          "file": ".github/workflows/ci.yml",
+          "line": null,
+          "finding": "stale comment on the download step and two stale module docstrings still described python-checks as running plugins/integration (fixed)",
+          "suggestion": "update comments",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "style",
+          "file": ".github/workflows/ci.yml",
+          "line": null,
+          "finding": "double blank line before python-checks and extra trailing blank line (fixed)",
+          "suggestion": "remove",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-06T12:58:02.409726+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "ci-topology",
+          "file": ".github/workflows/ci.yml",
+          "line": null,
+          "finding": "Claim under doubt: Re-running failed jobs after artifact expiry works — retention-days 2 would make a late 'Re-run failed jobs' fail the coverage/JUnit gates (fails closed). Fixed: retention raised to 7 and pinned by a test.",
+          "suggestion": "retention-days 7",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "concurrency",
+          "file": ".github/workflows/ci.yml",
+          "line": null,
+          "finding": "Claim under doubt: A superseded PR run does not delay the next run — always() gather job still starts on a cancelled run; whether the next run in the concurrency group waits is only observable on GitHub. To be checked on the PR run.",
+          "suggestion": "push twice on the PR and compare run timing",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "feedback-latency",
+          "file": ".github/workflows/ci.yml",
+          "line": null,
+          "finding": "Claim under doubt: Lint feedback is as fast as before — Lint is in the gather job that needs both test jobs, so a lint-only failure shows after the tests. Accepted: AC7 pins lint to python-checks; total time on green runs improves; revisit in iterate 3/3.",
+          "suggestion": "put ruff in a needs-free leg later",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "docs",
+          "file": ".github/workflows/ci.yml",
+          "line": null,
+          "finding": "Claim under doubt: Comments and spec text match the final shape — several comments, docstrings and AC4 wording described the earlier shape. Fixed.",
+          "suggestion": "reword",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-06T13:00:09.037643+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_ci_parallel_jobs.py — `test_every_job_that_runs_tests_is_gathered` (`if job_id == GATHER: continue`)",
+          "line": null,
+          "finding": "AC1 says \"A job that runs pytest or `events_replay_gate` and is not one of the test jobs … fails a test (reverse drift)\". `python-checks` is not one of the test jobs, yet the test skips it entirely. Combined with `test_a_job_with_needs_runs_no_tests`, which only checks step names against a four-marker allowlist, a step named e.g. `Run docs tests` running `pytest shared/...` inside `python-checks` would pass every new test — exactly the \"tests after the needs barrier\" topology failure AC1 was written to catch.",
+          "suggestion": "drop the `GATHER` exemption and assert `runs_tests` is false for any job with `needs` (or at least for `python-checks`), instead of keying only on step names.  2. `test_a_job_with_needs_runs_no_tests` is name-based only",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_ci_parallel_jobs.py",
+          "line": null,
+          "finding": "The test checks `n.startswith(marker)` on step names, so a renamed or new-named test step in a `needs` job escapes. The body-based detection already written in `test_every_job_that_runs_tests_is_gathered` is the right tool; it's just pointed at the wrong jobs.",
+          "suggestion": "Reuse the `runs_tests` body scan for all jobs with `needs`.  3. Coverage-data gate derives its plugin expectation from directory shape, not from the actual CI loop",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/check_ci_coverage_data_set.py:32-46 (`expected_files`)",
+          "line": null,
+          "finding": "The gate expects `.coverage.<plugin>` only for plugins with `pyproject.toml` + `tests/` + `scripts/`. This mirrors a comment's description of the CI loop, but nothing in the tests (or the diff) proves the ci.yml plugin loop uses the same predicate — the loop lives in `tests-main` and isn't shown. If the CI loop measures a plugin with a different condition (e.g., no `scripts/` requirement, or a pyproject-keyed name), the gate either false-fails the required check or silently under-gates. The repo-fixture test (`test_this_repos_expected_set…`) only checks a prefix, not parity.",
+          "suggestion": "Add a test that parses the `Run plugin tests` loop in ci.yml and asserts its measured-plugin predicate equals `expected_files`' predicate (or extract the predicate into one shared function both use).  4. `_result_check` doesn't simulate the `id:`/env plumbing, so the step could still break in CI while tests pass",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_ci_parallel_jobs.py — `_result_check",
+          "line": null,
+          "finding": "The subprocess harness executes the step's `run` body with `NEEDS` injected, which is good, but the actual step also depends on `${{ toJSON(needs) }}` resolving at the env-mapping level and on the step having `id: needs_ok` (the `id` is asserted elsewhere but never exercised). This is acceptable given the spec's \"proven against synthetic results\" wording, but note the harness passes `env={os.environ, \"NEEDS\": ...}` — on a machine where a stray `NEEDS` is exported, nothing breaks, fine; on Windows the skip guard covers it. No defect, only flagging that GitHub's actual `needs` JSON shape (`result`, `outputs`, `reason`?) isn't pinned — if GitHub adds fields the jq logic is unaffected (it only reads `.result`), so this is sound.",
+          "suggestion": "None required; optionally assert the jq filter tolerates extra keys (it does — no fix needed).  5. Docs/test arithmetic: \"eight guards\", \"five tabulated\"",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "spec",
+          "file": "docs/hooks-and-pipeline.md (diff hunk)",
+          "line": null,
+          "finding": "The docs now say eight guards / five tabulated / \"other two not\" mirrored locally, and `CI_ONLY_GATES` gains `Coverage data set (gate)`. The table shown adds exactly one row (four → five tabulated), and the unmirrored paragraph goes four → five. The numbers are internally consistent in the visible text, but the claim \"three of those five mirrored locally\" isn't verifiable from the diff — verify_local.py only shows additions. A miscount here would be caught by whatever ratchets the docs table; if no test pins the guard count, this can silently drift.",
+          "suggestion": "Confirm a test pins the guard count/table against ci.yml; if none exists, that's pre-existing, not this diff's problem.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_ci_parallel_jobs.py",
+          "line": 83,
+          "finding": "AC1’s reverse-drift protection is incomplete. This assertion accepts any additional test-running job provided it is added to `needs`, although AC1 permits tests only in `tests-shared` and `tests-main`. The gather job is also explicitly excluded, while the separate “job with needs” test checks only existing step names; a new step named differently could run pytest there without failing either test.",
+          "suggestion": "Detect actual pytest/replay invocations across every job and require their job IDs to belong to `{tests-shared, tests-main}` and appear in `python-checks.needs`. Add mutation cases proving that an extra test job and a differently named pytest step in the gather job are rejected.  Overall assessment: ship-with-fixes. The workflow and artifact hand-off appear consistent with the specification, but the explicitly required reverse-drift tests leave concrete gaps.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "codex+glm",
+      "completed_at": "2026-11-06T13:02:15.334358+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n**1. AC1 reverse-drift test exempts the gather job from pytest detection**\n- Category: test\n- Severity: medium\n- File: shared/tests/test_ci_parallel_jobs.py — `test_every_job_that_runs_tests_is_gathered` (`if job_id == GATHER: continue`)\n- Finding: AC1 says \"A job that runs pytest or `events_replay_gate` and **is not one of the test jobs** … fails a test (reverse drift)\". `python-checks` is not one of the test jobs, yet the test skips it entirely. Combined with `test_a_job_with_needs_runs_no_tests`, which only checks step *names* against a four-marker allowlist, a step named e.g. `Run docs tests` running `pytest shared/...` inside `python-checks` would pass every new test — exactly the \"tests after the needs barrier\" topology failure AC1 was written to catch.\n- Suggestion: drop the `GATHER` exemption and assert `runs_tests` is false for any job with `needs` (or at least for `python-checks`), instead of keying only on step names.\n\n**2. `test_a_job_with_needs_runs_no_tests` is name-based only**\n- Category: test\n- Severity: low (same root cause as #1)\n- File: shared/tests/test_ci_parallel_jobs.py\n- Finding: The test checks `n.startswith(marker)` on step names, so a renamed or new-named test step in a `needs` job escapes. The body-based detection already written in `test_every_job_that_runs_tests_is_gathered` is the right tool; it's just pointed at the wrong jobs.\n- Suggestion: Reuse the `runs_tests` body scan for all jobs with `needs`.\n\n**3. Coverage-data gate derives its plugin expectation from directory shape, not from the actual CI loop**\n- Category: edge-case\n- Severity: low\n- File: shared/scripts/tools/check_ci_coverage_data_set.py:32-46 (`expected_files`)\n- Finding: The gate expects `.coverage.<plugin>` only for plugins with `pyproject.toml` + `tests/` + `scripts/`. This mirrors a comment's description of the CI loop, but nothing in the tests (or the diff) proves the ci.yml plugin loop uses the same predicate — the loop lives in `tests-m […truncated]\n\n[openai] - Category: test\n- Severity: medium\n- File: shared/tests/test_ci_parallel_jobs.py:83\n- Finding: AC1’s reverse-drift protection is incomplete. This assertion accepts any additional test-running job provided it is added to `needs`, although AC1 permits tests only in `tests-shared` and `tests-main`. The gather job is also explicitly excluded, while the separate “job with needs” test checks only existing step names; a new step named differently could run pytest there without failing either test.\n- Suggestion: Detect actual pytest/replay invocations across every job and require their job IDs to belong to `{tests-shared, tests-main}` and appear in `python-checks.needs`. Add mutation cases proving that an extra test job and a differently named pytest step in the gather job are rejected.\n\nOverall assessment: ship-with-fixes. The workflow and artifact hand-off appear consistent with the specification, but the explicitly required reverse-drift tests leave concrete gaps.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-06T12:57:02.791533+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-06T12:18:46.728382+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-06T12:15:53.868464+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

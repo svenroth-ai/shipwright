@@ -1,0 +1,287 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-06-events-drop-files-s5-bullets",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-06T18:33:01.724940+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "dependency |",
+          "file": null,
+          "line": null,
+          "finding": "A release note mentioning S5b does not enforce the external release gate. Updated writers could expose bullet drops to consumers before the WebUI release is available.",
+          "suggestion": "Make S5b availability an explicit prerequisite for enabling or releasing bullet writers, and identify how that prerequisite is verified.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk |",
+          "file": null,
+          "line": null,
+          "finding": "Release staging mentions only the two destination documents. Folding also removes consumed bullet files; leaving those deletions unstaged could cause subsequent readers or releases to apply the same bullets again.",
+          "suggestion": "Stage destination updates and consumed-drop deletions together. Test that a second aggregation is a no-op and that a failed fold retains recoverable drops.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "“Pending bullet counts as the update” leaves the `check_conventions_reviewed` adaptation underspecified. An unrelated or stale pending bullet could satisfy the check, while filesystem mtimes change across checkouts.",
+          "suggestion": "Define which target and run qualify, preserve the existing freshness requirement, and test stale drops, unrelated targets, and checkout-induced mtime changes.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "“20 newest” and shared insertion logic do not fully establish deterministic rendering. Ordering must remain stable across branches and checkouts, and the summary cap must not truncate validation input.",
+          "suggestion": "Define a stable ordering with a tie-breaker independent of filesystem mtime. Test multiple drops targeting the same section in different discovery orders, and verify budget, shape, architecture, and injection checks process every pending file beyond the display cap.  The drop-file approach is sound and fits parallel branch workflows without unnecessary abstraction. The release gate, fold lifecycle, and reader semantics need explicit treatment before implementation proceeds.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-06T18:33:01.879487+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] ## Findings\n\n**Category: edge-case | Severity: medium**\nThe plan says readers see \"folded + pending,\" but `check_conventions_reviewed` switches from a mtime-based check to \"pending bullet counts as the update.\" What happens after fold at release? Once bullets are folded into the target doc, the mtime signal the old check relied on may or may not change — if fold rewrites the target doc, mtime updates naturally and the \"pending counts as update\" adaptation is only needed pre-fold. If fold does NOT rewrite the target (e.g., no-op fold for empty pending), the check semantics differ pre/post release. The plan should state explicitly: does fold always touch the target doc, and is the mtime-adaptation logic identical in both windows?\n\n**Category: edge-case | Severity: medium**\n`insert_bullets()` shared between fold and effective-text rendering is good for the \"pending == folded bytes\" criterion, but the criterion says \"render identical pending vs folded\" — verify this is byte-identical including ordering guarantees. \"20 newest\" by what? Mtime is unreliable under checkouts/merges; the `<wt8>` wallclock token in the filename is presumably the sort key — state it, and define tie-breaking (two bullets same second, different runs). Otherwise the cap-overflow \"20 + N more\" and fold order are nondeterministic across machines, which will flake tests.\n\n**Category: risk | Severity: medium**\nTwo parallel PRs each adding bullets must be merge-tree clean — that's guaranteed by O_EXCL + nonce8, but only if the nonce is genuinely per-run unique (what entropy source?). A collision on the same `<target>--<key>` from two agents in the same second should be handled by the nonce, but idempotency is \"per run+text\" — if the same run retries and writes a different nonce, you get near-duplicate files that both fold. Clarify: is `<nonce8>` derived from content/run-id so a retry is a no-op, or random so a retry adds a second file?\n\n**Category: dependency | Severity: medium**\n`check_de […truncated]\n\n[openai] 1. **Category: dependency | Severity: high**  \n   **Finding:** A release note mentioning S5b does not enforce the external release gate. Updated writers could expose bullet drops to consumers before the WebUI release is available.  \n   **Suggestion:** Make S5b availability an explicit prerequisite for enabling or releasing bullet writers, and identify how that prerequisite is verified.\n\n2. **Category: risk | Severity: medium**  \n   **Finding:** Release staging mentions only the two destination documents. Folding also removes consumed bullet files; leaving those deletions unstaged could cause subsequent readers or releases to apply the same bullets again.  \n   **Suggestion:** Stage destination updates and consumed-drop deletions together. Test that a second aggregation is a no-op and that a failed fold retains recoverable drops.\n\n3. **Category: edge-case | Severity: medium**  \n   **Finding:** “Pending bullet counts as the update” leaves the `check_conventions_reviewed` adaptation underspecified. An unrelated or stale pending bullet could satisfy the check, while filesystem mtimes change across checkouts.  \n   **Suggestion:** Define which target and run qualify, preserve the existing freshness requirement, and test stale drops, unrelated targets, and checkout-induced mtime changes.\n\n4. **Category: edge-case | Severity: medium**  \n   **Finding:** “20 newest” and shared insertion logic do not fully establish deterministic rendering. Ordering must remain stable across branches and checkouts, and the summary cap must not truncate validation input.  \n   **Suggestion:** Define a stable ordering with a tie-breaker independent of filesystem mtime. Test multiple drops targeting the same section in different discovery orders, and verify budget, shape, architecture, and injection checks process every pending file beyond the display cap.\n\nThe drop-file approach is sound and fits parallel branch workflows without unnecessary abstraction. The release gate, fold lifecyc […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/aggregate_decisions.py",
+          "line": 169,
+          "finding": "aggregate dropped fold conflicts so a kept same-anchor bullet was silent on the release path; fixed after review (conflicts reported in errors, test added).",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/write_doc_bullet.py",
+          "line": 80,
+          "finding": "duplicate-anchor refusal checks pending files only; accepted. ADR- anchor exception and parse_bullet trailing whitespace fixed after review.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "performance",
+          "file": "shared/scripts/tools/check_agent_doc_budget.py",
+          "line": 83,
+          "finding": "one git show per base bullet per doc; accepted.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_doc_bullets.py",
+          "line": 132,
+          "finding": "no-op replace removed after review.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-06T18:33:24.595868+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "b80bf649db05b854a706d5c655016fff1889e6f5"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "hidden-coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: moving bullets out of conventions.md/architecture.md breaks no repo-wide gate — artifact path canon and stack-profile prose guard scan tracked .md files; bullet files are not exempt",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: every budget/shape check sees folded + pending — the repo-state iterate test test_agent_doc_entry_rules reads raw docs",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden-coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: no reader misses pending bullets — area_catalog and adopt review_runner read the raw docs (context only)",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-06T18:33:02.341750+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "b80bf649db05b854a706d5c655016fff1889e6f5"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/tools/verifiers/iterate_checks.py (check_conventions_reviewed hunk, ~line 486)",
+          "line": null,
+          "finding": "The spec says check_conventions_reviewed counts a fresh pending conventions bullet as the update. The implementation accepts any pending conventions/learnings bullet of this run with no freshness comparison at all — no mtime check against the reference. A bullet written days before the review commit (or a stale run_id reused across sessions) passes, and the test never exercises staleness.",
+          "suggestion": "Compare the bullet file's mtime (max over the run's own files) to `reference_mtime`, mirroring the `conv.stat().st_mtime` check above it.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/tools/check_agent_doc_budget.py — `_read",
+          "line": null,
+          "finding": "Missing-file semantics changed subtly: previously a nonexistent doc returned `None` (caller can skip); now, if the doc doesn't exist but any pending bullet for any target exists (even one targeting a different file — e.g. `architecture.md` missing while only conventions bullets are pending), `_read` returns `\"\"` instead of `None`. Callers distinguishing \"file absent\" from \"file empty\" can now misreport (e.g. budget reporting an empty doc instead of skipping a missing one).",
+          "suggestion": "Gate on bullets pending for that file's targets: `pending(project_root, target_for(filename))[0]`, or keep returning `None` when the doc file itself is absent and no bullet would land in it.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug (error-path swallow)",
+          "file": "shared/scripts/tools/aggregate_decisions.py — `aggregate`, bullet-fold hunk (~line 169)",
+          "line": null,
+          "finding": "Bullet-fold failures are collected into `result[\"errors\"]` but the ADR aggregation proceeds. If the doc write or lock fails, the ADR fold still runs and its fallback bullet for the same run is added to the doc while the run's bullet drop stays pending; when the drop is later folded, the anchor dedup in `insert_bullets` will not match if the fallback's pointer text differs (\"decision_log (ADR-012)\" vs \"decision_log (ADR via Run-ID: ...)\"), producing the exact duplication the \"bullets before ADRs\" ordering was designed to prevent. Nothing visible aborts the release on `bullets[\"errors\"]`.",
+          "suggestion": "Make `aggregate` fail fast (or at least make `main` exit non-zero) when `bullets[\"errors\"]` is non-empty and non-dry-run, so a release never folds ADRs over an unfolded bullet.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "spec",
+          "file": "whole diff (check_agent_doc_shape not touched)",
+          "line": null,
+          "finding": "The spec requires the shape check to read folded + pending, but no change to `check_agent_doc_shape.py` appears in the diff; the new test asserts shape behavior that only works if shape already routes through a shared reader (e.g. budget's `_read` or `effective_text`). If shape has its own direct file read anywhere, pending bullets are invisible to it and the AC is only partially implemented.",
+          "suggestion": "Confirm/point at the exact path shape uses; if it reads files directly, route it through `effective_text`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/doc_bullets.py — `effective_text",
+          "line": null,
+          "finding": "effective_text` reads the doc with `errors=\"ignore\"`, while `fold` writes bytes decoded strictly — so the \"render identical pending vs folded\" KC7 byte-identity can silently break for a doc containing invalid UTF-8: the pending view drops bad bytes, the folded view either errors or keeps them.",
+          "suggestion": "Acceptable if docs are validated UTF-8 elsewhere; otherwise make both paths use the same decode policy.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/F6.md (new `git add` line)",
+          "line": null,
+          "finding": "The glob `bullets/--{run_id}--.md` uses the raw run_id, but the writer's filename key is `sanitize_key(run_id)`. Any run_id whose sanitized form differs from the raw string (the same class of mismatch the gate code avoids by calling `sanitize_key`) makes the glob match nothing and the bullet silently ships uncommitted — the exact failure `check_decision_drop_committed` exists to catch, but only if that gate runs.",
+          "suggestion": "State the sanitized key in the F6 instruction (or instruct F6 to use the path `write_doc_bullet.py` printed).  Test quality is good overall: KC7 (merge-tree, render identity, cap warning, old-consumer invisibility, fold order) is genuinely exercised, including the base-side-pending case. The weaknesses are the untested \"freshness\" claim in check_conventions_reviewed and the swallowed fold errors in aggregate.  Overall: the core mechanism is sound and well tested; fix the fold-error path in `aggregate_decisions` and the conventions-freshness/staleness gap before release — ship-with-fixes.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/lib/doc_bullets.py",
+          "line": 156,
+          "finding": "effective_text()` uses `read_text()`, which converts CRLF to LF, while `fold()` reads bytes and preserves CRLF. For an existing CRLF document, the pending render and folded output therefore differ, violating KC7’s byte-identical rendering requirement. The tests separately check LF equivalence and CRLF preservation, so they miss this combination.",
+          "suggestion": "Read the effective document without newline translation, matching `fold()`. Extend the pending-versus-folded equivalence test to include a CRLF document.  Overall assessment: ship-with-fixes. The implementation covers the main workflow, but the rendering equivalence defect needs correction before shipping. Execution was blocked by the environment policy, so this review is based on the supplied diff.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-06T18:33:02.498137+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ### Findings\n\n- Category: spec\n  Severity: medium\n  File: shared/scripts/tools/verifiers/iterate_checks.py (check_conventions_reviewed hunk, ~line 486)\n  Finding: The spec says check_conventions_reviewed counts a *fresh* pending conventions bullet as the update. The implementation accepts any pending conventions/learnings bullet of this run with no freshness comparison at all — no mtime check against the reference. A bullet written days before the review commit (or a stale run_id reused across sessions) passes, and the test never exercises staleness.\n  Suggestion: Compare the bullet file's mtime (max over the run's own files) to `reference_mtime`, mirroring the `conv.stat().st_mtime` check above it.\n\n- Category: bug\n  Severity: medium\n  File: shared/scripts/tools/check_agent_doc_budget.py — `_read`\n  Finding: Missing-file semantics changed subtly: previously a nonexistent doc returned `None` (caller can skip); now, if the doc doesn't exist but *any* pending bullet for *any* target exists (even one targeting a different file — e.g. `architecture.md` missing while only conventions bullets are pending), `_read` returns `\"\"` instead of `None`. Callers distinguishing \"file absent\" from \"file empty\" can now misreport (e.g. budget reporting an empty doc instead of skipping a missing one).\n  Suggestion: Gate on bullets pending *for that file's* targets: `pending(project_root, target_for(filename))[0]`, or keep returning `None` when the doc file itself is absent and no bullet would land in it.\n\n- Category: bug (error-path swallow)\n  Severity: medium\n  File: shared/scripts/tools/aggregate_decisions.py — `aggregate`, bullet-fold hunk (~line 169)\n  Finding: Bullet-fold failures are collected into `result[\"errors\"]` but the ADR aggregation proceeds. If the doc write or lock fails, the ADR fold still runs and its *fallback bullet* for the same run is added to the doc while the run's bullet drop stays pending; when the drop is later folded, the anchor dedup in `insert […truncated]\n\n[openai] - Category: spec\n- Severity: medium\n- File: shared/scripts/lib/doc_bullets.py:156\n- Finding: `effective_text()` uses `read_text()`, which converts CRLF to LF, while `fold()` reads bytes and preserves CRLF. For an existing CRLF document, the pending render and folded output therefore differ, violating KC7’s byte-identical rendering requirement. The tests separately check LF equivalence and CRLF preservation, so they miss this combination.\n- Suggestion: Read the effective document without newline translation, matching `fold()`. Extend the pending-versus-folded equivalence test to include a CRLF document.\n\nOverall assessment: ship-with-fixes. The implementation covers the main workflow, but the rendering equivalence defect needs correction before shipping. Execution was blocked by the environment policy, so this review is based on the supplied diff.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-06T18:33:02.031212+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "b80bf649db05b854a706d5c655016fff1889e6f5"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-06T18:33:02.650863+00:00",
+      "disposition": "effective complexity small; internal plan arms run at medium and above",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-06T18:33:02.796064+00:00",
+      "disposition": "effective complexity small; internal architecture arm runs at medium and above",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}

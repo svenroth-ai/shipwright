@@ -1,0 +1,39 @@
+{
+  "items": [
+    {
+      "name": "Spec Compliance",
+      "verdict": "pass",
+      "note": "both gap paths build and pass the claims; warning-only, unchanged without claims"
+    },
+    {
+      "name": "Error Handling",
+      "verdict": "pass",
+      "note": "any build output other than path+claims>0 means no third input; unreadable claims file is a clear CLI error"
+    },
+    {
+      "name": "Security Basics",
+      "verdict": "pass",
+      "note": "claims texts are data for the reviewer; no shell interpolation of free text"
+    },
+    {
+      "name": "Test Quality",
+      "verdict": "pass",
+      "note": "14 hermetic tests incl. schema, CLI wiring, record round trip, doc pins"
+    },
+    {
+      "name": "Performance Basics",
+      "verdict": "pass",
+      "note": "one extra tool call per review"
+    },
+    {
+      "name": "Naming & Structure",
+      "verdict": "pass",
+      "note": "campaign-mode.md held at 1708 lines; new files under 300"
+    },
+    {
+      "name": "Affected Boundaries",
+      "verdict": "pass",
+      "note": "Codex reply (schema) -> canonical file -> record_review_pass -> spec row round-tripped in tests; live Codex check by the coordinator"
+    }
+  ]
+}

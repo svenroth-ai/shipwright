@@ -25,7 +25,6 @@ import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from uuid import uuid4
 
 # Wire shared/scripts for both direct execution and module imports
 # (`tools.record_event` / `scripts.tools.record_event`), both exercised in CI.
@@ -34,7 +33,10 @@ if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
 from lib.events_log import resolve_events_path  # noqa: E402
-from lib.events_layout import events_lock_path, resolve_events_write_path  # noqa: E402
+from lib.events_layout import events_layout, events_lock_path  # noqa: E402
+from lib.events_sentinel import UnsupportedEventsLayout, require_writable_layout  # noqa: E402
+from lib.events_read import EventLogNotReadable  # noqa: E402
+from lib.events_write import amend_commit, new_event_id, require_run_drops_readable, write_event_line  # noqa: E402
 from lib.events_amend import apply_amendments  # noqa: E402
 # grade_snapshot shape + attribution; top-level for ADR-045 like tests_block.
 from grade_snapshot_shape import apply_grade_snapshot, reject_asserted_attribution  # noqa: E402
@@ -54,7 +56,6 @@ from lib.event_dedup import (  # noqa: E402,F401 — re-exported surface
 # Keep the historical `_FileLock` alias monkeypatchable for the F14 lifecycle
 # test and existing `with _FileLock(...)` call sites.
 from lib.file_lock import FileLock as _FileLock  # noqa: E402
-from lib.jsonl_records import ends_without_newline  # noqa: E402
 from lib.reason_codes import family_codes  # noqa: E402
 # FR-classification SSOT (BP-1); gate predicates moved to lib/fr_gates.py.
 # `_NONE_REASON_MAX_LEN` remains re-exported and drift-pinned by its test so the
@@ -98,9 +99,9 @@ def has_phase_event(
 # Core logic
 # ---------------------------------------------------------------------------
 
-def generate_event_id() -> str:
-    """Generate a unique event ID: evt- + 8 hex chars from UUID4."""
-    return f"evt-{uuid4().hex[:8]}"
+def generate_event_id(project_root: Path | str | None = None) -> str:
+    """A unique event id: ``evt-`` + 8 hex (legacy) or 16 hex (drops layout of ``project_root``)."""
+    return new_event_id(project_root)
 
 
 def _non_negative_int(value: str) -> int:
@@ -161,7 +162,7 @@ def build_event(args: argparse.Namespace) -> dict:
     """Build the event dict from parsed CLI arguments."""
     event: dict = {
         "v": SCHEMA_VERSION,
-        "id": generate_event_id(),
+        "id": generate_event_id(args.project_root),
         "ts": datetime.now(timezone.utc).isoformat(),
         "type": args.type,
     }
@@ -369,39 +370,22 @@ def build_event(args: argparse.Namespace) -> dict:
     return event
 
 
-def append_event(project_root: Path, event: dict) -> str:
+def append_event(project_root: Path, event: dict, run_id: str | None = None) -> str:
     """Atomically append an event to the JSONL log. Returns the event ID.
 
-    Unconditional append — no dedup. Direct callers are single-writer
+    Unconditional append -- no dedup. Direct callers are single-writer
     (e.g. ``finalize_iterate`` emits a run-id-idempotent ``work_completed``).
     Every dedup rule (``phase_completed``, by-commit, and the opt-in
     ``grade_snapshot`` one) lives in ``append_event_idempotent`` (deep-audit
     F14); the CLI and the compliance grade emitter both route through it.
 
-    The target is chosen under the lock by ``resolve_events_write_path``: the
+    The target is chosen under the lock by ``lib.events_write.write_event_line``: the
     per-tree legacy log (worktree-local; F6 commits it so the event ships through
-    the iterate PR), or a per-run drop under the dormant drops layout. The lock is
-    ``events_lock_path``. See ``lib.events_log`` / ``lib.events_layout``.
+    the iterate PR), or a per-run drop under the drops layout (``run_id`` picks the key).
+    The lock is ``events_lock_path``.
     """
-    lock_path = events_lock_path(project_root)
-    line = json.dumps(event, ensure_ascii=False, separators=(",", ":")) + "\n"
-
-    with _FileLock(lock_path):
-        path = resolve_events_write_path(project_root)  # chosen under the lock
-        # Termination guard (iterate-2026-07-18-events-jsonl-record-boundary,
-        # mirroring `triage.py _append_line`): never assume the PREVIOUS writer
-        # left a trailing newline, or two records land on one physical line.
-        # The lock does NOT make this redundant — triage held the very same
-        # FileLock class and still needed the guard, because the other writers
-        # (event_seeder, an operator edit, a git union merge) do not take it.
-        needs_separator = ends_without_newline(path)
-        with open(path, "a", encoding="utf-8") as fp:
-            if needs_separator:
-                fp.write("\n")
-            fp.write(line)
-            fp.flush()
-            os.fsync(fp.fileno())
-
+    with _FileLock(events_lock_path(project_root)):
+        write_event_line(project_root, event, run_id)  # chosen + stamped under the lock
     return event["id"]
 
 
@@ -411,6 +395,7 @@ def append_event_idempotent(
     *,
     deduplicate_by_commit: bool = False,
     deduplicate_grade_snapshot: bool = False,
+    run_id: str | None = None,
 ) -> tuple[str | None, dict | None]:
     """Scan-for-duplicate then append **inside one ``_FileLock``** (deep-audit F14).
 
@@ -431,10 +416,9 @@ def append_event_idempotent(
     manual/replay callers remain unconditional; only the compliance emitter
     enables it.
     """
-    lock_path = events_lock_path(project_root)
-    line = json.dumps(event, ensure_ascii=False, separators=(",", ":")) + "\n"
-
-    with _FileLock(lock_path):
+    with _FileLock(events_lock_path(project_root)):
+        if event.get("type") == "phase_completed" or (deduplicate_by_commit and event.get("type") == "work_completed"):
+            require_run_drops_readable(project_root, run_id)  # KC8: a dedup that finds nothing needs the run's drops readable
         # Dedup scan UNDER the lock — readers see every prior append.
         if (deduplicate_by_commit and event.get("commit")
                 and event.get("type") == "work_completed"):
@@ -468,16 +452,10 @@ def append_event_idempotent(
                 if split_id is not None:
                     skip["splitId"] = split_id
                 return None, skip
-        path = resolve_events_write_path(project_root)
-        # Same termination guard as `append_event` — probed AFTER the dedup
-        # checks so a skipped duplicate never touches the file at all.
-        needs_separator = ends_without_newline(path)
-        with open(path, "a", encoding="utf-8") as fp:
-            if needs_separator:
-                fp.write("\n")
-            fp.write(line)
-            fp.flush()
-            os.fsync(fp.fileno())
+        # Termination guard + drops stamping live in write_event_line; a duplicate
+        # decision above means a skipped event never touches a file at all.
+        if write_event_line(project_root, event, run_id) is None:
+            return None, {"reason": "duplicate_event", "id": event["id"]}
 
     return event["id"], None
 
@@ -486,6 +464,7 @@ def attach_commit_to_event(
     project_root: Path,
     event_id: str,
     commit_sha: str,
+    run_id: str | None = None,
 ) -> bool:
     """Patch the ``commit`` field of a previously-recorded event in place.
 
@@ -507,7 +486,13 @@ def attach_commit_to_event(
       * no line parses to JSON with ``id == event_id``.
 
     Worktree-aware via ``resolve_events_path``.
+
+    Under the DROPS layout a closed file is never edited: this appends an
+    ``event_amended {commit}`` to the open drop instead (only when the target exists).
     """
+    require_writable_layout(project_root, events_layout(project_root))  # S7 sentinel
+    if events_layout(project_root) == "drops":
+        return amend_commit(project_root, event_id, commit_sha, run_id)
     path = resolve_events_path(project_root)
     if not path.exists():
         return False
@@ -680,6 +665,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                         "tests.e2e_run. Re-send the whole object, or fold via "
                         "apply_amendments(deep=True).")
 
+    p.add_argument("--run-id",
+                   help="Explicit run id: the key of the drop file (drops layout only; "
+                        "default SHIPWRIGHT_RUN_ID, else the worktree/branch rule).")
+
     # Deduplication
     p.add_argument("--deduplicate-by-commit", action="store_true",
                    help="Skip if a work_completed event with same commit exists")
@@ -711,10 +700,12 @@ def main(argv: list[str] | None = None) -> int:
 
     # F14: the dedup scan (phase_completed / --deduplicate-by-commit) and the
     # append share ONE lock so concurrent phase-Stop firings can't both append.
-    event_id, skipped = append_event_idempotent(
-        project_root, event,
-        deduplicate_by_commit=bool(args.deduplicate_by_commit and args.commit),
-    )
+    try:
+        event_id, skipped = _append_checked(project_root, event, args)
+    except (EventLogNotReadable, UnsupportedEventsLayout) as exc:
+        err = "event_log_not_readable" if isinstance(exc, EventLogNotReadable) else "unsupported_events_layout"
+        print(json.dumps({"success": False, "error": err, "detail": str(exc)}, indent=2))
+        return 1
     if skipped is not None:
         print(json.dumps({"success": True, "skipped": True, **skipped}, indent=2))
         return 0
@@ -722,6 +713,14 @@ def main(argv: list[str] | None = None) -> int:
     result = {"success": True, "id": event_id, "type": args.type}
     print(json.dumps(result, indent=2))
     return 0
+
+
+def _append_checked(project_root: Path, event: dict, args: argparse.Namespace):
+    return append_event_idempotent(
+        project_root, event,
+        deduplicate_by_commit=bool(args.deduplicate_by_commit and args.commit),
+        run_id=args.run_id or (args.adr_id if args.type == "work_completed" else None),
+    )
 
 
 if __name__ == "__main__":
