@@ -208,7 +208,7 @@ def apply(root: Path, result: dict) -> list[str]:
     created = {rel for rel in originals if not (root / rel).is_file()}  # files this run brings into being: a restore removes them again
     manifest_path = root / MANIFEST
     manifest_bytes = manifest_path.read_bytes() if manifest_path.is_file() else None
-    interrupted: BaseException | None = None
+    interrupted: KeyboardInterrupt | SystemExit | None = None
     wrote = False
     try:
         # The committed manifest may already lag the code, so it is no baseline: regenerate it BEFORE the cut and AFTER, compare those.
@@ -227,7 +227,7 @@ def apply(root: Path, result: dict) -> list[str]:
         problems = check_manifest(before, _regenerate_manifest(root), result["moves"]) if before is not None else []
     except Exception as exc:  # noqa: BLE001 - any failure while writing must leave the tree as it was
         problems = [f"apply failed: {exc}"]
-    except BaseException as exc:  # Ctrl-C during the long regeneration: restore first, then let it go on
+    except (KeyboardInterrupt, SystemExit) as exc:  # Ctrl-C during the long regeneration: restore first, then let it go on
         problems, interrupted = [f"apply interrupted: {type(exc).__name__}"], exc
     if (problems or not result.get("keep_manifest")) and manifest_bytes is not None:
         try:
