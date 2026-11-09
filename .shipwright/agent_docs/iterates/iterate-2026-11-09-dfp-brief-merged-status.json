@@ -1,0 +1,21 @@
+{
+  "run_id": "iterate-2026-11-09-dfp-brief-merged-status",
+  "date": "2026-11-09T22:58:36.960914Z",
+  "event_at": "2026-11-09T21:26:30.979843+00:00",
+  "type": "change",
+  "complexity": "trivial",
+  "branch": "iterate/dfp-brief-merged-status",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-11-09-dfp-brief-merged-status",
+  "test_completeness": {
+    "status": "n/a",
+    "reason_code": "trivial-auto"
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}
