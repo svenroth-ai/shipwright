@@ -1,0 +1,48 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-09-code-ai-convention",
+    "date": "2026-11-09",
+    "unit": {
+      "status": "passed",
+      "passed": 25510,
+      "skipped": 108,
+      "total": 25618
+    },
+    "integration": {
+      "status": "skipped",
+      "passed": 0,
+      "skipped": 0,
+      "total": 0
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "n/a",
+      "reason_code": "trivial-auto"
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-11-09-code-ai-convention",
+    "commit": "2fce3a9b7ad09313281eb04ad612557a0f41d834",
+    "dirty": false,
+    "base": null,
+    "release": null
+  }
+}
