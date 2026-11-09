@@ -9,7 +9,9 @@ export const REQUIRED = [
   "SHIPWRIGHT_E2E_WEBUI_DIR",
   "SHIPWRIGHT_E2E_MAX_MINUTES",
 ] as const;
-export const OPTIONAL = ["SHIPWRIGHT_E2E_WORKDIR", "SHIPWRIGHT_E2E_RESUME_RUN", "SHIPWRIGHT_E2E_FIXTURE"] as const;
+export const OPTIONAL = ["SHIPWRIGHT_E2E_WORKDIR", "SHIPWRIGHT_E2E_RESUME_RUN", "SHIPWRIGHT_E2E_FIXTURE", "SHIPWRIGHT_E2E_STOP_AFTER"] as const;
+/** Auth variables are also read from the env file: run 27 used a stale copied login because only run-e2e.ps1 exported them. */
+export const AUTH_KEYS = ["CLAUDE_CODE_OAUTH_TOKEN", "ANTHROPIC_API_KEY"] as const;
 
 export type Source = "process-env" | "env-file" | "unset";
 
@@ -22,6 +24,10 @@ export interface E2EConfig {
   resumeRun: string | null;
   /** Raw SHIPWRIGHT_E2E_FIXTURE (process env first, then the env file); "" = unset. Validated by activeFixture(), not here. */
   fixture: string;
+  /** Raw SHIPWRIGHT_E2E_STOP_AFTER; "" = run to the end. Validated by parseStopAfter(). */
+  stopAfter: string;
+  /** The process env with the auth variables of the env file filled in where the process env has none. Never printed. */
+  env: NodeJS.ProcessEnv;
   /** Which source supplied each variable (never a value that could be a secret). */
   sources: Record<string, Source>;
   envFile: string;
@@ -42,6 +48,12 @@ export function parseEnvFile(text: string): Record<string, string> {
     out[key] = value;
   }
   return out;
+}
+
+function withFileAuth(env: NodeJS.ProcessEnv, fromFile: Record<string, string>): NodeJS.ProcessEnv {
+  const merged = { ...env };
+  for (const key of AUTH_KEYS) if ((merged[key] ?? "").trim() === "" && (fromFile[key] ?? "").trim() !== "") merged[key] = fromFile[key].trim();
+  return merged;
 }
 
 /** Default env file: ../autorune2e/.env relative to the repo root (no user path is hard-coded). */
@@ -102,6 +114,8 @@ export function loadConfig(
     maxMinutes: minutes,
     workdir,
     fixture: values.SHIPWRIGHT_E2E_FIXTURE ?? "",
+    stopAfter: values.SHIPWRIGHT_E2E_STOP_AFTER ?? "",
+    env: withFileAuth(env, fromFile),
     resumeRun: values.SHIPWRIGHT_E2E_RESUME_RUN ? path.resolve(values.SHIPWRIGHT_E2E_RESUME_RUN) : null,
     sources,
     envFile,

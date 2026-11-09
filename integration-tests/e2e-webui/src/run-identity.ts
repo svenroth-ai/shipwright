@@ -8,11 +8,15 @@ import path from "node:path";
 
 const CODE_DIRS = ["plugins", "shared"];
 
-/** git HEAD, plus "+<digest>" over tracked changes and untracked files under plugins/ and shared/. "unknown" when git fails. */
+/**
+ * The git trees of plugins/ and shared/ at HEAD ("plugins:<tree> shared:<tree>"), plus "+<digest>" over tracked changes and
+ * untracked files under them. A commit that only touches the harness keeps the identity, so a forked or stopped run can be
+ * resumed after harness fixes (a plain HEAD refused it). fork/fork_run.py writes the same form. "unknown" when git fails.
+ */
 export function pluginFingerprint(repoRoot: string): string {
   const git = (...args: string[]) => execFileSync("git", ["-C", repoRoot, ...args], { encoding: "utf8", maxBuffer: 256 * 1024 * 1024 });
   try {
-    const head = git("rev-parse", "HEAD").trim();
+    const head = CODE_DIRS.map((d) => `${d}:${git("rev-parse", `HEAD:${d}`).trim()}`).join(" ");
     const hash = createHash("sha256");
     hash.update(git("diff", "HEAD", "--binary", "--", ...CODE_DIRS));
     const untracked = git("ls-files", "-o", "--exclude-standard", "-z", "--", ...CODE_DIRS).split("\0").filter(Boolean).sort();

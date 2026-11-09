@@ -167,13 +167,36 @@ the report up to that point. `SHIPWRIGHT_E2E_MAX_MINUTES` is a real limit for th
 
 A run that stopped (idle abort, budget, crash) leaves its `run-<id>` folder. Set `SHIPWRIGHT_E2E_RESUME_RUN` to that
 folder to continue instead of paying 70-80 minutes again. The harness writes `run-manifest.json` (fixture, package hash,
-profile, plugin commit) into every new run folder and refuses to resume unless all four match the current checkout, the
+profile, plugin identity) into every new run folder and refuses to resume unless all four match the current checkout, the
 folder is a real `run-<id>` directory directly under the workdir (no link), it has `project/` and `home/`, the earlier run
 has not yet finished all its checks (a pipeline that is already `complete` is still resumable after a crash in the
 preview or the checks; a run that wrote its final report is not), and the project's `brief/` is this package. A resumed run reuses the temp HOME, the project and an
 already-started pipeline (New pipeline is not clicked again), starts a fresh WebUI instance and a fresh budget, and runs
 every check again. A resumed run records its idle, budget or crash escalations (`gates.jsonl` keeps them across parts), so S08 fails on such a run: resume is a way to continue and diagnose, and a run that needed a resume cannot end "all hard items hold" (fail-closed by design). S08 is judged on the earlier part as loaded when the resumed run starts plus the gates of the resumed part held in memory, never on a re-read of the file. Before resuming, make sure the earlier run's processes are dead: the WebUI stack and the companion on the preview port (127.0.0.1:3911); there is no liveness check. The report names the folder and the steps reused. How the WebUI picks up the continued task is
 verified only by a real run (E8).
+
+## Fork an earlier run, replay one area
+
+Waiting ten hours to see one phase behave is not needed. The project of every run is a git repo and the pipeline commits at
+each phase boundary together with the run config of that moment, so an earlier run can be continued from any boundary with
+the plugins of the checkout you want to try:
+
+```
+uv run integration-tests/e2e-webui/fork/fork_run.py --from <workdir>/run-ABC123 --at build:04-board --repo <checkout>
+SHIPWRIGHT_E2E_RESUME_RUN=<printed run-fork… folder> SHIPWRIGHT_E2E_STOP_AFTER=build:04-board  # then start the run as usual
+```
+
+`--at` is `phase` or `phase:split`. The script copies the project, resets it to the first commit at which that phase could
+start, deletes ignored files written after it (baselines, loop state, caches; `node_modules` and `.venv` stay), puts the start
+task back to `awaiting_launch` with the plugin's own `recover-phase-task`, and writes a manifest whose plugin identity is the
+git trees of `plugins/` and `shared/` of `--repo` (it refuses a checkout with uncommitted changes there). The identity is the
+trees, not HEAD, so harness-only commits do not break a resume. The harness then launches the waiting task from the board card
+and the report starts with "Fork of run-… at …".
+
+`SHIPWRIGHT_E2E_STOP_AFTER=<phase>[:<split>]` ends the run once every task of that phase (of that split) is done. A stopped run is
+partial: the report says `stopped-after …` and the checklist (which describes the whole app) is **not** evaluated; read the
+report steps, the project's commits and `shipwright_test_results.json` instead. A fork also records the escalations of its
+parts, so S08 is red by design, as for any resumed run. Not covered yet: a checklist subset per phase.
 
 ## Before the first run of this app class
 
