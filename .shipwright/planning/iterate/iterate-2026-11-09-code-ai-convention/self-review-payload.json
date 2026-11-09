@@ -1,0 +1,10 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"States the four rules of 2026-11-02, the three sharpenings of 2026-11-09 and the Anthropic link with the Shipwright rule winning, as start condition 7 of the programme brief requires."},
+{"name":"Error Handling","verdict":"n/a","note":"No code."},
+{"name":"Security Basics","verdict":"pass","note":"Guidance prose only; one public link."},
+{"name":"Test Quality","verdict":"n/a","note":"No tests added or edited."},
+{"name":"Performance Basics","verdict":"n/a","note":"No code."},
+{"name":"Naming & Structure","verdict":"pass","note":"Lives in docs/ as hand-written developer guidance, not in shared/prompts/ (runtime prompts)."},
+{"name":"Affected Boundaries","verdict":"n/a","note":"Not loaded at runtime; wiring into Plan, Build and Iterate is deferred."},
+{"name":"Test Hygiene Probe","verdict":"n/a","note":"No test files in the diff."}
+]}

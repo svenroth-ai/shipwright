@@ -1,0 +1,21 @@
+{
+  "run_id": "iterate-2026-11-09-code-ai-convention",
+  "date": "2026-11-09T21:26:30.699315Z",
+  "event_at": "2026-11-09T09:07:32.454095+00:00",
+  "type": "change",
+  "complexity": "trivial",
+  "branch": "iterate/code-ai-convention",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-11-09-code-ai-convention",
+  "test_completeness": {
+    "status": "n/a",
+    "reason_code": "trivial-auto"
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}
