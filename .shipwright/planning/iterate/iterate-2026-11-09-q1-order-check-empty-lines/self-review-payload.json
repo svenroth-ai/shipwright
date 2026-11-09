@@ -1,0 +1,10 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"Restores FR-01.11/AC49: the order check now reads multi-commit branches correctly; the promise text is unchanged."},
+{"name":"Error Handling","verdict":"pass","note":"Unchanged best-effort contract: a git failure still returns no problem."},
+{"name":"Security Basics","verdict":"pass","note":"No input from outside git; no secrets."},
+{"name":"Test Quality","verdict":"pass","note":"Four tests; three fail on the old code, the fourth pins the opposite case."},
+{"name":"Performance Basics","verdict":"pass","note":"Same single git log call."},
+{"name":"Naming & Structure","verdict":"pass","note":"New focused test file instead of growing test_ac_round3.py."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Only _order_problem and its caller in ac_record.py; F11 check output wording unchanged."},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"Tests use tmp_path repos and monkeypatch; no shared state."}
+]}
