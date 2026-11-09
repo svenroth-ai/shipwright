@@ -169,7 +169,7 @@ def _record_problems(root: Path, run_id: str, base: str, head: str | None) -> tu
     old_lines, new_lines = was.splitlines(), now.splitlines()
     if old_lines and new_lines[:len(old_lines)] != old_lines:
         out.append("the AC record is not append-only: a line present at the base was removed or changed")
-    order = _order_problem(root, rel, base, head) if now and not was else ""  # a record already at the base predates this branch's code
+    order = _order_problem(root, rel, base, head) if now and now != was else ""  # a record the branch leaves untouched predates its code; an appended one is checked
     return _parse_records(now), out + ([order] if order else [])
 
 

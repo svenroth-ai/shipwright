@@ -73,10 +73,19 @@ def test_code_brought_in_by_merging_the_default_branch_is_not_this_runs_code(tmp
 
 
 @pytest.mark.covers("FR-01.11/AC49")
-def test_a_record_already_at_the_base_is_not_order_checked(tmp_path, monkeypatch):
+def test_a_record_the_branch_leaves_untouched_is_not_order_checked(tmp_path, monkeypatch):
     root, _ = _branch(tmp_path, monkeypatch)
     base = _record(root)                                             # a stacked unit: the record predates this branch
-    _code(root)
-    head = _record(root)                                             # appended after the code: only a NEW record is order-checked
+    head = _code(root)                                               # the branch never touches the record file
     _, problems = ar._record_problems(root, _RUN, base, head)
     assert not any(_LATE in p for p in problems)
+
+
+@pytest.mark.covers("FR-01.11/AC49")
+def test_a_record_appended_after_the_code_to_one_already_at_the_base_is_flagged(tmp_path, monkeypatch):
+    root, _ = _branch(tmp_path, monkeypatch)
+    base = _record(root)
+    _code(root)
+    head = _record(root)                                             # this branch's own record lands after its code
+    _, problems = ar._record_problems(root, _RUN, base, head)
+    assert any(_LATE in p for p in problems)
