@@ -1,0 +1,10 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"Only the programme brief, the changelog pilot brief and the measurement file under .shipwright/planning/campaigns/ change; content matches the operator decisions of 2026-11-06/07/09."},
+{"name":"Error Handling","verdict":"n/a","note":"No code."},
+{"name":"Security Basics","verdict":"pass","note":"Planning prose only; no secrets or customer data."},
+{"name":"Test Quality","verdict":"n/a","note":"No tests added or edited."},
+{"name":"Performance Basics","verdict":"n/a","note":"No code."},
+{"name":"Naming & Structure","verdict":"pass","note":"Existing dated brief and MEASURE files, edited in place."},
+{"name":"Affected Boundaries","verdict":"n/a","note":"Documents read by future campaign runners only."},
+{"name":"Test Hygiene Probe","verdict":"n/a","note":"No test files in the diff."}
+]}

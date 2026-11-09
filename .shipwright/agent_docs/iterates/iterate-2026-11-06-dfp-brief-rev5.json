@@ -1,0 +1,21 @@
+{
+  "run_id": "iterate-2026-11-06-dfp-brief-rev5",
+  "date": "2026-11-09T20:35:34.617059Z",
+  "event_at": "2026-11-06T11:52:06.640246+00:00",
+  "type": "change",
+  "complexity": "trivial",
+  "branch": "iterate/dfp-brief-rev5",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-11-06-dfp-brief-rev5",
+  "test_completeness": {
+    "status": "n/a",
+    "reason_code": "trivial-auto"
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}
