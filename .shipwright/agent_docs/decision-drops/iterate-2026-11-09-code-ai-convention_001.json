@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-09-code-ai-convention",
+  "date": "2026-11-09",
+  "section": "Iterate — change: code-versus-AI convention file",
+  "title": "Convention: checks in code, interpretation by the AI, code validates every AI output",
+  "context": "The deterministic-first programme converts skill prose into code; the operator decided on 2026-11-02 what belongs in code and sharpened it on 2026-11-09 so that 'as deterministic as possible' cannot become false determinism.",
+  "decision": "A shared guidance file states the rule: checks and comparisons in code, interpretation and wording by the AI, code validates every AI output, a chosen fallback per AI step; decided by whether an answer can be checked without understanding language.",
+  "consequences": "Runners of the changelog pilot are pointed at the file. Wiring it into Plan, Build and Iterate waits until after the pilot's stop 3.",
+  "rationale": "A code heuristic that guesses meaning is wrong reliably and looks trustworthy; code checks form, a review or the operator judges truth.",
+  "rejected": "Pushing as much as possible into code regardless of whether the answer needs language understanding.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

@@ -1,0 +1,174 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-09-code-ai-convention",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-09T21:26:04.291824+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-09T21:26:04.579903+00:00",
+      "disposition": "closed by reason_code trivial-auto",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "trivial-auto"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-09T21:26:04.579903+00:00",
+      "disposition": "closed by reason_code trivial-auto",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "trivial-auto"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "evidence",
+          "file": "docs/building-skills-plugins-agents.md",
+          "line": null,
+          "finding": "Claim under doubt: the fr_cluster_report.py pattern finds several sections or entry points — fr_clusters groups by tests, files and shared words; the operator confirms cuts",
+          "suggestion": "Fixed: describes grouping by tests, source files and wording, judged by the AI or the operator",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "contract",
+          "file": "docs/building-skills-plugins-agents.md",
+          "line": null,
+          "finding": "Claim under doubt: 'Do not write one' bans any meaning-guessing heuristic — the cited pattern itself uses a word-overlap heuristic",
+          "suggestion": "Fixed: such a heuristic may propose, labelled, never decide",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "scope",
+          "file": "docs/building-skills-plugins-agents.md",
+          "line": null,
+          "finding": "Claim under doubt: 'Tests pin behaviour, not prose' bans structural SKILL.md checks — the P12 ratchet and runtime-input tests are behaviour",
+          "suggestion": "Fixed: structural checks and runtime-input tests are named as behaviour",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "scope",
+          "file": "docs/building-skills-plugins-agents.md",
+          "line": null,
+          "finding": "Claim under doubt: every script returns JSON — rule 3 covers AI output only",
+          "suggestion": "Fixed: structured output where the next step must check it",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "contract",
+          "file": "docs/building-skills-plugins-agents.md",
+          "line": null,
+          "finding": "Claim under doubt: 'caught later by a reviewer' allows a warning for harmful cases — the brief says cosmetic only",
+          "suggestion": "Fixed: 'cosmetic, and a later reviewer sees it' plus 'when in doubt, the case does harm'",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "evidence",
+          "file": "docs/building-skills-plugins-agents.md",
+          "line": null,
+          "finding": "Claim under doubt: record-before-code is a reliable code check — it is vacuous on a squashed unit",
+          "suggestion": "Fixed: example removed",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "clarity",
+          "file": "docs/building-skills-plugins-agents.md",
+          "line": null,
+          "finding": "Claim under doubt: jargon unexplained (AC, STRICT-STOP, Q2, operator, kind) — a reader outside the programme cannot decode them",
+          "suggestion": "Fixed: glossed or replaced on first use",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-09T21:26:04.435457+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "transport": "agent"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-09T21:26:04.579903+00:00",
+      "disposition": "closed by reason_code trivial-auto",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "trivial-auto"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-09T21:26:04.579903+00:00",
+      "disposition": "closed by reason_code trivial-auto",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "trivial-auto"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-09T21:26:04.579903+00:00",
+      "disposition": "closed by reason_code trivial-auto",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "trivial-auto"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-09T21:26:04.579903+00:00",
+      "disposition": "closed by reason_code trivial-auto",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "trivial-auto"
+    }
+  }
+}
