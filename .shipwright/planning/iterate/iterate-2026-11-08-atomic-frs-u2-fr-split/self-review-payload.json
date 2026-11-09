@@ -1,0 +1,10 @@
+{"items": [
+ {"name": "1. Spec compliance", "verdict": "pass", "note": "All six acceptance criteria and the operator decisions (numbers kept, AC-Move-Map, two PRs) are implemented; spec-reviewer APPROVE."},
+ {"name": "2. Error handling", "verdict": "pass", "note": "Unsafe shapes raise SplitError (exit 2); apply restores every file on any failure incl. Ctrl-C; restore failures are named."},
+ {"name": "3. Security basics", "verdict": "pass", "note": "No shell interpolation: subprocess calls use argv lists; the grouping is data, never executed; no secrets."},
+ {"name": "4. Test quality", "verdict": "pass", "note": "41 tests assert outcomes (bytes before/after, exit codes, conservation negatives); error paths for each refusal."},
+ {"name": "5. Performance basics", "verdict": "pass", "note": "One repo walk for evidence; two manifest regenerations only on --apply (about 12 s each on this repo)."},
+ {"name": "6. Naming and structure", "verdict": "pass", "note": "Pure lib modules plus one tool; every file under 300 lines (fr_split.py 299); tests split into three files."},
+ {"name": "7. Affected boundaries", "verdict": "pass", "note": "Boundaries: spec.md text, test files, coverage baseline, AC registry, regenerated traceability manifest; each has a conservation or restore check."},
+ {"name": "8. Docs and follow-ups", "verdict": "pass", "note": "fr-authoring 3c and guide I10 paragraph updated; deferred doubt findings listed in the iterate spec."}
+]}

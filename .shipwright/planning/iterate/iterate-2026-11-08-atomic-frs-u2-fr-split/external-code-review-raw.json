@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: spec\n- Severity: high\n- File: shared/scripts/tools/fr_split.py:220 \u2014 Finding: Manifest regeneration is skipped entirely when the manifest does not already exist. `--apply` can therefore succeed without the required before/after traceability check, leaving manifest-only binding changes undetected.\n- Suggestion: Regenerate before and after every apply. Track initial absence so rollback and the default manifest restoration policy remove any newly created manifest.\n\n- Category: bug\n- Severity: medium\n- File: shared/scripts/tools/fr_split.py:223 \u2014 Finding: The stale-target early return bypasses manifest restoration. If the initial regeneration rewrites the manifest and a target changes meanwhile, the tool exits with failure but leaves that regenerated manifest behind, despite reporting that all files were restored.\n- Suggestion: Route this failure through the common cleanup path, or restore the manifest in a `finally` block that also runs on early returns.\n\n- Category: spec\n- Severity: medium\n- File: shared/scripts/tools/fr_split.py:161 \u2014 Finding: An existing baseline whose entries are not formatted as one contiguous block of standalone lines is left unchanged with only a note. For example, a valid compact JSON baseline retains moved IDs while the cut succeeds, violating the requirement to update the coverage baseline.\n- Suggestion: Support valid baseline JSON independently of formatting, or refuse the cut when moved entries cannot be rewritten safely.\n\n- Category: edge-case\n- Severity: medium\n- File: shared/scripts/tools/verifiers/_ac_baseline_growth.py:157 \u2014 Finding: Baseline migration follows only one move-map hop. If a criterion moves from A to B and subsequently from B to C between the comparison commit and the working tree, the parent entry maps to B and the current C entry is incorrectly rejected as baseline growth.\n- Suggestion: Use `resolve_ac` to follow the complete move chain, and add a test covering two successive moves.\n\nOverall assessment: ship-with-fixes. The implementation covers the main split workflow, but manifest verification, rollback, and baseline migration have concrete gaps that should be corrected first.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "## Findings\n\n- Category: bug\n  Severity: low\n  File: `shared/scripts/tools/fr_split.py` \u2014 `apply()` (backup tempdir, `wrote = True` path)\n  Finding: The backup directory created by `tempfile.mkdtemp(prefix=\"fr_split-backup-\")` is only *mentioned* as the recovery location on a failed restore; on a **successful** apply it is never cleaned up, so every applied cut leaks a full copy of the touched files into the system temp dir.\n  Suggestion: `shutil.rmtree(backup, ignore_errors=True)` at the end of `apply()` when there are no problems and no restore-incomplete; keep it only when a restore failed.\n\n- Category: edge-case\n  Severity: low\n  File: `shared/scripts/tools/fr_split.py` \u2014 `_dirty()`\n  Finding: `ln[3:]` assumes porcelain paths start at column 3. A renamed target (`R  old -> new`) yields `\"old -> new\"` as the path, and quoted paths with special characters keep their surrounding quotes, so the dirty-list message names a path that doesn't exist and `--allow-dirty` comparisons still work but the reported rel never matches `result[\"files\"]` keys. Cosmetic today (the refusal is over-broad, never under-broad), but the printed reason can be wrong.\n  Suggestion: Strip quotes and split renames on `\" -> \"` before reporting, or just report the raw porcelain line.\n\n- Category: edge-case\n  Severity: medium\n  File: `shared/scripts/tools/fr_split.py` \u2014 `apply()` / `main()`\n  Finding: On a successful `--apply` without `--keep-manifest`, the *regenerated* manifest (which correctly reflects the new bindings \u2014 it was just compared and passed) is discarded and the stale committed bytes are restored. The resulting working tree has spec + tags cut but a manifest that still names old ids; unless the data PR regenerates and commits it, the committed manifest is now wrong relative to the tree. The design note says \"restored to committed bytes unless `--keep-manifest`\", but nothing in the tool or output tells the operator that the committed manifest must be regenerated in the data PR.\n  Suggestion: At minimum print a note after a successful apply without `--keep-manifest` (\"the committed manifest is now stale vs the cut; regenerate it in the data PR\"), so the operator cannot merge the cut with a knowingly-lagging manifest.\n\n- Category: bug\n  Severity: low\n  File: `shared/scripts/lib/fr_split_tags.py` \u2014 `_py_spans()`\n  Finding: On `SyntaxError` the function silently returns `[]`, i.e. no tag rewrite and no comment rewrite for that file. This is not a defect per se (the conservation check then fails with \"still named by a test under its old id\", which is the safe direction), but a test file that fails to parse for an unrelated reason turns into a confusing conservation error rather than \"file X does not parse\". Not a correctness hole \u2014 noting so reviewers don't mistake it for one.\n  Suggestion: Optional: have the tool surface \"does not parse\" as its own problem string.\n\n- Category: test\n  Severity: low\n  File: `shared/tests/test_fr_split_tool.py` \u2014 `test_uncommitted_changes_in_a_target_file_refuse_the_write`\n  Finding: The test shells out to `git` with `check=True`; in an environment without `git` on PATH it errors rather than fails cleanly. Also `_dirty()` returning `[]` outside git is the *same* code path being tested, so a regression that always returns `[]` (e.g. the `proc.returncode != 0` branch taken because of git config) would make the first assertion fail for the wrong reason \u2014 acceptable, but a monkeypatched `_dirty` negative (returning `[]`) asserting exit 0-with-`--allow-dirty` semantics is not covered.\n  Suggestion: Skip the test when `git` is unavailable (`shutil.which(\"git\")`), or mock subprocess like the other tests do.\n\n## Things checked and found sound\n\n- Conservation logic (`check_catalog`, `check_bindings`, `check_manifest`) genuinely compares old\u2192new via the move map, including the \"old id still bound\" and \"criterion still in source (doubled)\" negatives; tests exercise each negative with a concrete mutation, so a broken checker would not pass.\n- Restore path: per-file best-effort, `BaseException` for Ctrl-C, created-file removal, manifest byte restore, and the mid-write failure test (`flaky` third write) actually validates byte-identical restoration via `_snapshot`.\n- `split_spec`: CRLF round-trip, document order of kept bullets, anchor/heading splice, table-before-section invariant, `\\|` escaping, and the 99-number ceiling are all handled and each has a dedicated test.\n- Tag rewrite: ast byte-column handling (`_abs`), form feeds, CRLF, non-ASCII, parametrize-vs-decorator discrimination \u2014 covered by tests. The JS no-string-state scanner is a declared, self-consistent known limit.\n- Exit-code contract (0/1/2) matches the acceptance criteria, including unusable-input-of-any-type \u2192 2.\n\nOverall assessment: the implementation matches the spec's acceptance criteria, the tests are behavior-level with byte-snapshot restore checks, and the defects found are hygiene/communication issues rather than correctness holes \u2014 ship-with-fixes (tempdir leak and the stale-manifest note are worth one small commit). \n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": null,
+    "at": "2026-11-09T08:45:33.342000+00:00"
+  },
+  "verdicts": {
+    "openai": "revise",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

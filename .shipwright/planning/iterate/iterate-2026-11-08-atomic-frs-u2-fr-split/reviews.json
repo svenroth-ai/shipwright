@@ -1,0 +1,354 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-08-atomic-frs-u2-fr-split",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-09T08:53:46.558613+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "risk ·",
+          "file": null,
+          "line": null,
+          "finding": "The JS/TS scanner can rewrite ordinary string literals containing `//` and an AC id. The checker sharing the same parsing bug does not make this safe: conservation could pass while fixtures, snapshots, or application strings change. This directly contradicts acceptance criterion 3.",
+          "suggestion": "Track string and template-literal state before recognizing comments, or refuse affected files until they can be parsed safely. Add a regression case with an old AC id after `//` inside a string.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "dependency ·",
+          "file": null,
+          "line": null,
+          "finding": "The move map is written, but existing consumers do not resolve it. This does not fulfill the promised behavior that old ids remain resolvable; historical references may cease to connect to the current criterion after the first cut.",
+          "suggestion": "Wire resolution into consumers that look up historical AC ids before using the tool for a real split. Define chained moves and reject cycles or conflicting mappings; test an AC moved twice.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach ·",
+          "file": null,
+          "line": null,
+          "finding": "The tool introduces a minimum of three criteria per part, although the campaign explicitly makes capability boundaries—not AC count—the criterion. Conversely, the described conservation check enforces shared-test coupling but does not mention the stop rule’s shared-file check. A valid two-criterion capability could be rejected while a split sharing implementation files passes.",
+          "suggestion": "Remove the numeric minimum unless separately authorized. Check shared-file evidence as well as shared tests, and make any operator override explicit and recorded.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk ·",
+          "file": null,
+          "line": null,
+          "finding": "Restoring the manifest to committed bytes by default can leave a successful split with stale traceability. If an existing uncommitted manifest is allowed, restoring committed bytes can also discard that work. The regenerated before/after comparison validates a temporary state, not necessarily the final tree.",
+          "suggestion": "Preserve the exact pre-run bytes for rollback and retain the regenerated manifest on successful application. If the manifest intentionally remains uncommitted, validate that final state and clearly identify the required regeneration step.  The tool’s narrow scope, dry-run default, and conservation checks are sound foundations. Address the unsafe tag rewrite, incomplete historical resolution, and final-state traceability behavior before using it for the first real cut.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-09T08:54:06.757690+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] ## Review findings\n\n1. **Category: edge-case · Severity: medium** — The JS/TS tag scanner has no string-state, yet `fr_split_tags.py` claims to rewrite \"only places that BIND, never other string literals.\" Without a string-state tracker, the rewrite cannot reliably distinguish a binding comment from a `//` or `# covers(...)` fragment inside a string/template literal. A JS file containing e.g. a template literal quoting a test tag would be a candidate for a wrong rewrite or, conversely, a missed binding. The claim of \"never other string literals\" and \"no string state\" are in tension — at minimum add a refusal (exit 2) when a candidate binding line sits inside a region the scanner can't classify, rather than guessing. This is the one piece where the tool's safety claim exceeds what the scanner can actually verify.\n\n2. **Category: edge-case · Severity: medium** — Doubt 5 (dry run green, `--apply` refuses due to evidence-walker skips / 2 MB files) is \"accepted\" but the asymmetry undermines the tool's core workflow: the operator approves a dry-run diff, then the apply can fail on data the dry run never saw. Fix the walker's file-set parity with the manifest collector in this PR — it's likely a few lines (same skip list + size cap applied to both, or the dry run reports \"N files skipped by evidence walker\") and it's high-risk-classified tooling. Cheap to fix now; the first real cut (FR-01.11) will hit it again otherwise.\n\n3. **Category: risk · Severity: low** — `--keep-manifest` (keeping regenerated manifest bytes) plus \"restore on any failure\" leaves a subtle state: a partially-successful `--apply` where the manifest is kept but a later refusal restores other files could leave the tree with a manifest describing a split that didn't happen. Confirm the ordering (manifest is the last write and included in the all-or-nothing restore unless `--keep-manifest`), and document that `--keep-manifest` is operator-explicit opt-out of atomicity.\n\n4. **Category: dependen […truncated]\n\n[openai] 1. **Category: risk · Severity: high**  \n   **Finding:** The JS/TS scanner can rewrite ordinary string literals containing `//` and an AC id. The checker sharing the same parsing bug does not make this safe: conservation could pass while fixtures, snapshots, or application strings change. This directly contradicts acceptance criterion 3.  \n   **Suggestion:** Track string and template-literal state before recognizing comments, or refuse affected files until they can be parsed safely. Add a regression case with an old AC id after `//` inside a string.\n\n2. **Category: dependency · Severity: high**  \n   **Finding:** The move map is written, but existing consumers do not resolve it. This does not fulfill the promised behavior that old ids remain resolvable; historical references may cease to connect to the current criterion after the first cut.  \n   **Suggestion:** Wire resolution into consumers that look up historical AC ids before using the tool for a real split. Define chained moves and reject cycles or conflicting mappings; test an AC moved twice.\n\n3. **Category: approach · Severity: medium**  \n   **Finding:** The tool introduces a minimum of three criteria per part, although the campaign explicitly makes capability boundaries—not AC count—the criterion. Conversely, the described conservation check enforces shared-test coupling but does not mention the stop rule’s shared-file check. A valid two-criterion capability could be rejected while a split sharing implementation files passes.  \n   **Suggestion:** Remove the numeric minimum unless separately authorized. Check shared-file evidence as well as shared tests, and make any operator override explicit and recorded.\n\n4. **Category: risk · Severity: medium**  \n   **Finding:** Restoring the manifest to committed bytes by default can leave a successful split with stale traceability. If an existing uncommitted manifest is allowed, restoring committed bytes can also discard that work. The regenerated before/afte […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/fr_split_spec.py",
+          "line": null,
+          "finding": "M1 table cells split two ways (header vs row) could drop or misalign a cell silently",
+          "suggestion": "FIXED: row and header read with split_cells, cell-count refusal",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/fr_split_spec.py",
+          "line": null,
+          "finding": "M2 a sub-heading under the source FR would move to the wrong requirement",
+          "suggestion": "FIXED: section ends at same-or-higher heading, a deeper heading is refused",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "robustness",
+          "file": "shared/scripts/tools/fr_split.py",
+          "line": null,
+          "finding": "M3 apply restore missed Ctrl-C and stopped at the first failing file",
+          "suggestion": "FIXED: BaseException path, per-file best-effort restore, honest message",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/fr_split.py",
+          "line": null,
+          "finding": "M4 two parts with the same title hid a shared test",
+          "suggestion": "FIXED: duplicate titles refused, labels keyed by new FR id",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/fr_split_tags.py",
+          "line": null,
+          "finding": "L1-L9: form-feed offsets, FR number above 99, bullet order, non-UTF-8 note, quoted old ids, heading regex, exit codes, dead anchor branch",
+          "suggestion": "FIXED in this run; L7 (registry) fixed together with doubt finding 1",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-09T08:53:46.843690+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "reversibility",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: a moved criterion number can never be minted again — The AC registry was never updated, so after moving the highest numbers the minter could re-issue FR-01.11/AC48 while the move map also sends AC48 elsewhere.",
+          "suggestion": "RESOLVED: fr_split writes the pre-cut high-water mark of the source and the new FRs into shipwright_ac_registry.json (test added).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: renaming baseline entries is safe — The push-time baseline-growth check would read FR-01.22/AC12 as a new grandfathered entry and turn main red.",
+          "suggestion": "RESOLVED: baseline_grown_since_parent maps the parent set through the AC-Move-Map (test added).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "reversibility",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: a failed apply restores everything — A manifest-restore failure skipped the file restore and still printed all files restored.",
+          "suggestion": "RESOLVED: restore whenever anything failed, honest message, created files removed again.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "concurrency",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: apply is safe in a working tree with other edits — Targets were overwritten with plan-time bytes after a long regeneration.",
+          "suggestion": "RESOLVED: bytes re-compared before writing, uncommitted targets refuse (--allow-dirty), originals backed up to a temp dir.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the dry run equals what apply will accept — The evidence walker skips some directories and files over 2 MB that the manifest collector reads.",
+          "suggestion": "ACCEPTED: apply still refuses and restores; documented in the iterate spec.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: move-map rows do not disturb tests — Tests counting lines that start with | FR- would count map rows.",
+          "suggestion": "RESOLVED: ids are written in backticks.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "completeness",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: old ids stay resolvable — No consumer reads the move map except the baseline-growth check.",
+          "suggestion": "ACCEPTED: follow-up, listed in the iterate spec.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: only tags are rewritten — A parametrize row mentioning covers would be rewritten.",
+          "suggestion": "RESOLVED: only covers(...) calls are rewritten (test added).",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-09T08:53:46.983245+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "shared/scripts/tools/fr_split.py` — `apply()` (backup tempdir, `wrote = True` path)",
+          "line": null,
+          "finding": "The backup directory created by `tempfile.mkdtemp(prefix=\"fr_split-backup-\")` is only mentioned as the recovery location on a failed restore; on a successful apply it is never cleaned up, so every applied cut leaks a full copy of the touched files into the system temp dir.",
+          "suggestion": "shutil.rmtree(backup, ignore_errors=True)` at the end of `apply()` when there are no problems and no restore-incomplete; keep it only when a restore failed.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/fr_split.py` — `_dirty()",
+          "line": null,
+          "finding": "ln[3:]` assumes porcelain paths start at column 3. A renamed target (`R  old -> new`) yields `\"old -> new\"` as the path, and quoted paths with special characters keep their surrounding quotes, so the dirty-list message names a path that doesn't exist and `--allow-dirty` comparisons still work but the reported rel never matches `result[\"files\"]` keys. Cosmetic today (the refusal is over-broad, never under-broad), but the printed reason can be wrong.",
+          "suggestion": "Strip quotes and split renames on `\" -> \"` before reporting, or just report the raw porcelain line.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/fr_split.py` — `apply()` / `main()",
+          "line": null,
+          "finding": "On a successful `--apply` without `--keep-manifest`, the regenerated manifest (which correctly reflects the new bindings — it was just compared and passed) is discarded and the stale committed bytes are restored. The resulting working tree has spec + tags cut but a manifest that still names old ids; unless the data PR regenerates and commits it, the committed manifest is now wrong relative to the tree. The design note says \"restored to committed bytes unless `--keep-manifest`\", but nothing in the tool or output tells the operator that the committed manifest must be regenerated in the data PR.",
+          "suggestion": "At minimum print a note after a successful apply without `--keep-manifest` (\"the committed manifest is now stale vs the cut; regenerate it in the data PR\"), so the operator cannot merge the cut with a knowingly-lagging manifest.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "shared/scripts/lib/fr_split_tags.py` — `_py_spans()",
+          "line": null,
+          "finding": "On `SyntaxError` the function silently returns `[]`, i.e. no tag rewrite and no comment rewrite for that file. This is not a defect per se (the conservation check then fails with \"still named by a test under its old id\", which is the safe direction), but a test file that fails to parse for an unrelated reason turns into a confusing conservation error rather than \"file X does not parse\". Not a correctness hole — noting so reviewers don't mistake it for one.",
+          "suggestion": "Optional: have the tool surface \"does not parse\" as its own problem string.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_fr_split_tool.py` — `test_uncommitted_changes_in_a_target_file_refuse_the_write",
+          "line": null,
+          "finding": "The test shells out to `git` with `check=True`; in an environment without `git` on PATH it errors rather than fails cleanly. Also `_dirty()` returning `[]` outside git is the same code path being tested, so a regression that always returns `[]` (e.g. the `proc.returncode != 0` branch taken because of git config) would make the first assertion fail for the wrong reason — acceptable, but a monkeypatched `_dirty` negative (returning `[]`) asserting exit 0-with-`--allow-dirty` semantics is not covered.",
+          "suggestion": "Skip the test when `git` is unavailable (`shutil.which(\"git\")`), or mock subprocess like the other tests do.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "shared/scripts/tools/fr_split.py:220 — Finding: Manifest regeneration is skipped entirely when the manifest does not already exist. `--apply` can therefore succeed without the required before/after traceability check, leaving manifest-only binding changes undetected.",
+          "line": null,
+          "finding": "Regenerate before and after every apply. Track initial absence so rollback and the default manifest restoration policy remove any newly created manifest.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/tools/fr_split.py:223 — Finding: The stale-target early return bypasses manifest restoration. If the initial regeneration rewrites the manifest and a target changes meanwhile, the tool exits with failure but leaves that regenerated manifest behind, despite reporting that all files were restored.",
+          "line": null,
+          "finding": "Route this failure through the common cleanup path, or restore the manifest in a `finally` block that also runs on early returns.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/tools/fr_split.py:161 — Finding: An existing baseline whose entries are not formatted as one contiguous block of standalone lines is left unchanged with only a note. For example, a valid compact JSON baseline retains moved IDs while the cut succeeds, violating the requirement to update the coverage baseline.",
+          "line": null,
+          "finding": "Support valid baseline JSON independently of formatting, or refuse the cut when moved entries cannot be rewritten safely.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/verifiers/_ac_baseline_growth.py:157 — Finding: Baseline migration follows only one move-map hop. If a criterion moves from A to B and subsequently from B to C between the comparison commit and the working tree, the parent entry maps to B and the current C entry is incorrectly rejected as baseline growth.",
+          "line": null,
+          "finding": "Use `resolve_ac` to follow the complete move chain, and add a test covering two successive moves.  Overall assessment: ship-with-fixes. The implementation covers the main split workflow, but manifest verification, rollback, and baseline migration have concrete gaps that should be corrected first.  SHIPWRIGHT_VERDICT: revise",
+          "suggestion": null,
+          "source": "external-review"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-09T08:54:06.893526+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- Category: bug\n  Severity: low\n  File: `shared/scripts/tools/fr_split.py` — `apply()` (backup tempdir, `wrote = True` path)\n  Finding: The backup directory created by `tempfile.mkdtemp(prefix=\"fr_split-backup-\")` is only *mentioned* as the recovery location on a failed restore; on a **successful** apply it is never cleaned up, so every applied cut leaks a full copy of the touched files into the system temp dir.\n  Suggestion: `shutil.rmtree(backup, ignore_errors=True)` at the end of `apply()` when there are no problems and no restore-incomplete; keep it only when a restore failed.\n\n- Category: edge-case\n  Severity: low\n  File: `shared/scripts/tools/fr_split.py` — `_dirty()`\n  Finding: `ln[3:]` assumes porcelain paths start at column 3. A renamed target (`R  old -> new`) yields `\"old -> new\"` as the path, and quoted paths with special characters keep their surrounding quotes, so the dirty-list message names a path that doesn't exist and `--allow-dirty` comparisons still work but the reported rel never matches `result[\"files\"]` keys. Cosmetic today (the refusal is over-broad, never under-broad), but the printed reason can be wrong.\n  Suggestion: Strip quotes and split renames on `\" -> \"` before reporting, or just report the raw porcelain line.\n\n- Category: edge-case\n  Severity: medium\n  File: `shared/scripts/tools/fr_split.py` — `apply()` / `main()`\n  Finding: On a successful `--apply` without `--keep-manifest`, the *regenerated* manifest (which correctly reflects the new bindings — it was just compared and passed) is discarded and the stale committed bytes are restored. The resulting working tree has spec + tags cut but a manifest that still names old ids; unless the data PR regenerates and commits it, the committed manifest is now wrong relative to the tree. The design note says \"restored to committed bytes unless `--keep-manifest`\", but nothing in the tool or output tells the operator that the committed manifest must be regenerated in the  […truncated]\n\n[openai] - Category: spec\n- Severity: high\n- File: shared/scripts/tools/fr_split.py:220 — Finding: Manifest regeneration is skipped entirely when the manifest does not already exist. `--apply` can therefore succeed without the required before/after traceability check, leaving manifest-only binding changes undetected.\n- Suggestion: Regenerate before and after every apply. Track initial absence so rollback and the default manifest restoration policy remove any newly created manifest.\n\n- Category: bug\n- Severity: medium\n- File: shared/scripts/tools/fr_split.py:223 — Finding: The stale-target early return bypasses manifest restoration. If the initial regeneration rewrites the manifest and a target changes meanwhile, the tool exits with failure but leaves that regenerated manifest behind, despite reporting that all files were restored.\n- Suggestion: Route this failure through the common cleanup path, or restore the manifest in a `finally` block that also runs on early returns.\n\n- Category: spec\n- Severity: medium\n- File: shared/scripts/tools/fr_split.py:161 — Finding: An existing baseline whose entries are not formatted as one contiguous block of standalone lines is left unchanged with only a note. For example, a valid compact JSON baseline retains moved IDs while the cut succeeds, violating the requirement to update the coverage baseline.\n- Suggestion: Support valid baseline JSON independently of formatting, or refuse the cut when moved entries cannot be rewritten safely.\n\n- Category: edge-case\n- Severity: medium\n- File: shared/scripts/tools/verifiers/_ac_baseline_growth.py:157 — Finding: Baseline migration follows only one move-map hop. If a criterion moves from A to B and subsequently from B to C between the comparison commit and the working tree, the parent entry maps to B and the current C entry is incorrectly rejected as baseline growth.\n- Suggestion: Use `resolve_ac` to follow the complete move chain, and add a test covering two successive moves.\n\nOverall asse […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-09T08:53:46.698561+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-09T08:54:00.535116+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-09T08:54:00.645990+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}
