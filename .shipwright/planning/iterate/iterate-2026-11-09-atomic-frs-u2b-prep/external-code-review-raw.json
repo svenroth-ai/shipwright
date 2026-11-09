@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: spec\n- Severity: medium\n- File: shared/scripts/lib/fr_split_report.py:23\n- Finding: `origin_numbers` checks only spec paths present in the local tree. If the fetched `origin/main` introduced another spec file containing FR-01.03, an older branch can still allocate FR-01.03. This violates acceptance criterion 5 even with a current fetch.\n- Suggestion: Enumerate spec paths from `origin/main` itself, then read all of those files when collecting occupied numbers.\n\n- Category: spec\n- Severity: medium\n- File: shared/scripts/lib/fr_split_report.py:53\n- Finding: The report silently truncates FR-level test files to the first eight. When nine or more files carry the source FR tag, the operator cannot review everything the specification requires the dry run to list. The added test covers only one matching file.\n- Suggestion: Print every matching file, preferably one per line, and add a test with more than eight files.\n\nShip-with-fixes: the move-aware comparisons appear sound, but number allocation and report completeness need these specific corrections before shipping.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "The diff is substantial and largely faithful to the spec. I traced the move-map logic through the keystone gate, `changed_catalog`, `ac_history`, `fr_history`, and the `fr_split` report, and the acceptance items 1\u20135 each have direct code plus tests. Findings:\n\n- Category: test \u00b7 Severity: medium\n  File: shared/scripts/tools/tests/test_keystone_ac_moves.py:60-64 (and shared/scripts/tools/verifiers/_keystone_core.py:150-151)\n  Finding: The new test `test_a_moved_and_reworded_criterion_keeps_its_old_links_for_the_binding_check` only asserts `cs.moved == {...}`; it never runs `evaluate_keystone`. The `_keystone_core` change (looking up base links under the pre-move id) \u2014 the piece the round-1 review flagged as the medium-severity fix \u2014 is untested. If someone later reverts that two-line lookup or swaps the tuple order, every test in the suite still passes while the gate mis-judges the link counts of a moved+reworded criterion (exactly the false \"added bindings\" / missed-regression the fix was for).\n  Suggestion: Add a test that builds a repo where the old id has base links and the moved criterion is reworded, runs `evaluate_keystone`, and asserts AC-2 passes (or fails) based on the old-id link count.\n\n- Category: edge-case \u00b7 Severity: low\n  File: shared/scripts/lib/fr_split_report.py:36\n  Finding: `new_spec = next(iter(result[\"files\"].values()))[1]` picks the first entry of the files dict and assumes it is the spec file the new rows were written into. This holds only by insertion order inside `plan` (the spec entry must be inserted first). If file ordering ever changes (e.g. the tags rewrite is recorded before the spec, or the spec lands in a second file for cross-file splits), `_row` returns `\"\"` and the operator-facing \"table row\" line silently goes blank \u2014 the report claims to show the copied row but shows nothing, with no warning.\n  Suggestion: Key the spec explicitly (e.g. pass `rel_spec` in the result, or filter `result[\"files\"]` to the spec path) instead of relying on dict order.\n\n- Category: spec \u00b7 Severity: low\n  File: shared/scripts/lib/spec_chain.py:225-236\n  Finding: Acceptance item 3 says \"`ac_history` of the old and the new id returns the same runs\", but alias joining happens only when `spec_acs is None`. Any existing caller that passes a pre-computed `spec_acs` dict silently gets no move-map joining \u2014 the old and new id return different histories for that caller. The docstring documents the limitation, but it is a contract asymmetry: same API, different answer depending on an optional argument.\n  Suggestion: Either read the move map independently of `spec_acs` (it only needs the spec texts, not the catalog), or assert/annotate that the passed-in form is the legacy path. Reading the map separately is cheap and removes the asymmetry.\n\n- Category: edge-case \u00b7 Severity: low\n  File: shared/scripts/lib/ac_record.py:101-110 (same rule in verifiers/_keystone_criteria.py:84-91)\n  Finding: The \"real move\" rule (`target must not exist at base`) misreads a legitimate single-commit sequence where a target criterion is deleted and its number immediately reused as the move destination: base has `FR-01.03.AC01` (old text), head deletes it and moves `FR-01.01.AC01` onto `FR-01.03.AC01`. Both readers report removed+changed instead of moved/unchanged. `fr_split` never produces this (it mints fresh numbers), so this only bites hand-written cuts \u2014 consistent with the documented \"hand-written row\" tradeoff, but it is a wider class than the docs imply.\n  Suggestion: Acceptable as documented; consider noting \"reuse of a freed number in the same commit\" in the known limits rather than only \"hand-written row onto a living id\".\n\n- Category: test \u00b7 Severity: low\n  File: shared/tests/test_fr_split_tool.py:225 (`test_the_cut_skips_a_number_origin_main_already_uses`)\n  Finding: The test asserts `\"FR-01.04\" in out` but never asserts `FR-01.03` is absent from the new-ids line. A broken `origin_numbers` (e.g. returncode mishandling, wrong ref) that picks FR-01.03 anyway could still print FR-01.04 elsewhere (e.g. in a problems note) and pass.\n  Suggestion: Assert the new-ids line exactly, e.g. `\"...new ids ...): FR-01.04\"` and that `FR-01.03` is not among the chosen ids.\n\nSecurity: no issues \u2014 subprocess calls use argument lists without shell, regex inputs are escaped, no untrusted data reaches sensitive sinks beyond reading repo-local files.\n\nOverall assessment: the implementation matches the spec's five acceptance criteria, the tricky \"claimed target / hand-written row\" logic in `changed_catalog` is sound and tested, and the residual gaps are an untested core-gate lookup and small report fragilities \u2014 ship-with-fixes, with the `_keystone_core` test gap the one worth addressing before PR 2 depends on this.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-11-09-atomic-frs-u2b-prep",
+    "at": "2026-11-09T20:49:19.946521+00:00"
+  },
+  "verdicts": {
+    "openai": "revise",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

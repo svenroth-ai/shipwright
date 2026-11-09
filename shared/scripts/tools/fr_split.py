@@ -33,6 +33,7 @@ if str(_SCRIPTS_ROOT) not in sys.path:
 from lib.ac_catalog import parse_catalog  # noqa: E402
 from lib.fr_cluster_evidence import _bindings, _read, _walk, collect_evidence, is_test_file  # noqa: E402
 from lib.fr_split_check import check_bindings, check_catalog, check_manifest, check_names, coupling, dirty_targets, dotted  # noqa: E402
+from lib.fr_split_report import origin_numbers, origin_readable, report  # noqa: E402
 from lib.fr_split_spec import SplitError, split_spec, taken_fr_numbers  # noqa: E402
 from lib.fr_split_tags import rewrite_tags  # noqa: E402
 
@@ -131,6 +132,7 @@ def plan(root: Path, grouping: dict, allow_shared: bool = False) -> dict:
     taken = {int(m) for m in re.findall(rf'"FR-{src[3:5]}\.(\d+)"', reg)}
     for t in specs.values():
         taken |= taken_fr_numbers(t, src[3:5])
+    taken |= origin_numbers(root, [p.relative_to(root).as_posix() for p in specs], src[3:5])  # a number a parallel iterate already took on main
     old_spec = specs[holder]
     new_spec, moves, new_ids = split_spec(old_spec, grouping, taken)
     rel_spec = holder.relative_to(root).as_posix()
@@ -141,6 +143,7 @@ def plan(root: Path, grouping: dict, allow_shared: bool = False) -> dict:
     changed = 0
     not_utf8: list[str] = []
     mentions: list[str] = []
+    fr_level: list[str] = []  # tests tagged with the bare source FR: they stay on it
     for rel in _walk(root):
         if not is_test_file(rel):
             continue
@@ -148,6 +151,8 @@ def plan(root: Path, grouping: dict, allow_shared: bool = False) -> dict:
             continue
         try:
             text = _read_text(root / rel)  # the exact bytes: the rewrite keeps line endings, the restore needs them
+            if re.search(rf"""["']{re.escape(src)}["']""", text):
+                fr_level.append(rel)
         except UnicodeDecodeError:
             not_utf8.append(rel)  # the evidence reader decodes leniently, so it may bind here; this tool cannot rewrite it safely
             continue
@@ -188,18 +193,7 @@ def plan(root: Path, grouping: dict, allow_shared: bool = False) -> dict:
     shared_problems, notes = coupling(labels, tests, srcs)
     notes.extend(notes_extra)
     (notes if allow_shared else problems).extend(f"{x}{' (allowed)' if allow_shared else ''}" for x in shared_problems)
-    return {"files": files, "problems": problems, "notes": notes, "moves": moves, "new_ids": new_ids, "tag_files": changed}
-
-
-def report(root: Path, grouping: dict, result: dict) -> str:
-    lines = [f"fr_split {grouping['source']}: {len(result['moves'])} criteria move into {len(result['new_ids'])} new requirement(s)"]
-    for fr, p in zip(result["new_ids"], grouping["parts"]):
-        lines.append(f"  {fr} {p['title']}: " + ", ".join(f"AC{int(a):02d}" for a in p["acs"]))
-    lines.append(f"  {grouping['source']} keeps the other criteria; {result['tag_files']} test file(s) get their tags re-pointed")
-    lines += [f"note: {n}" for n in result["notes"]]
-    lines += [f"PROBLEM: {x}" for x in result["problems"]]
-    lines.append("conservation: " + ("FAILED" if result["problems"] else "ok (catalog, bindings, names, shared tests)"))
-    return "\n".join(lines)
+    return {"files": files, "problems": problems, "notes": notes, "moves": moves, "new_ids": new_ids, "tag_files": changed, "fr_level_tags": fr_level, "origin_ref": origin_readable(root)}
 
 
 def apply(root: Path, result: dict) -> list[str]:

@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "## Findings\n\n- **Category: risk / dependency** \u00b7 **Severity: medium**\n  **Finding:** The largest residual hole \u2014 bindings of a moved criterion are re-judged by nothing in CI (keystone gate sees \"unchanged\", binding-regression sees no base links under the new id, conservation check runs only on operator-invoked `fr_split`). A post-cut hand-drop of test links (3\u21921) is invisible to the pipeline. This is documented, but the mitigation (runbook discipline + a PR-2 CI hook) leaves a window during which a bad merge lands silently on main.\n  **Suggestion:** Pull the \"run `fr_split`'s conservation check in CI when a diff adds AC-Move-Map rows\" follow-up into this PR. You're already touching the shared gate code that detects map rows; wiring conservation into CI here closes the hole before the real cut (PR 2) rather than after it, and the reviewers already scoped it as a small change.\n\n- **Category: edge-case** \u00b7 **Severity: medium**\n  **Finding:** `aliases` / `split_sources` are lenient (trust every map row) while the gates are strict. A malformed or stale hand-written row is rejected by `real_moves` (reads as removal+addition \u2014 good) but is still consumed by the history readers, so `ac_history`/`fr_history` can present a merged view that disagrees with what the gates concluded about the same edit. The two classes of consumers silently disagree rather than one of them flagging the row.\n  **Suggestion:** Have the lenient readers emit a warning (or surface in `--json` output) when a map row fails `real_moves` \u2014 a few lines using the strict rule you already have, no new abstraction.\n\n- **Category: edge-case** \u00b7 **Severity: low**\n  **Finding:** The known \"freed-number reuse\" case: gates correctly reject a reused target, but `ac_history`'s alias merging means a freed id later reassigned to a genuinely *new* criterion could conflate the old criterion's run history with the new occupant's, if a lenient alias row still maps them. The plan addresses the gate side but not the history side of reuse.\n  **Suggestion:** Document it as a known limit of the history views, or make `ac_history` stop using an alias once the old id is re-minted at head (analogous to the gates ignoring a row once its target is on base).\n\n- **Category: edge-case** \u00b7 **Severity: low**\n  **Finding:** The `origin/main` collision check holds only against the last fetch; a parallel iterate minting the same number after the run isn't seen. The runbook mitigation (\"fetch + fresh dry run right before the push\") depends on operator discipline, and PR 2's list of cuts is exactly the artifact most likely to be rebased.\n  **Suggestion:** Consider a cheap CI-side duplicate-FR-id check against origin (the second deferred architecture-review item) \u2014 that converts both this race and the stale-fetch problem from runbook steps into merge-blocking facts.\n\n- **Category: risk** \u00b7 **Severity: low**\n  **Finding:** The report's table-row lookup depends on `plan()` inserting the spec first \u2014 an implicit ordering dependency that external review flagged and was left unfixed. It's the kind of coupling that breaks silently when someone reorders `plan()`.\n  **Suggestion:** Fix it now (explicit lookup or a guard); it's low-effort and avoids a latent crash in the operator-facing dry run.\n\n- **Category: approach** \u00b7 **Severity: low (positive note)**\n  The design is proportionate: one strict rule (`real_moves`) shared by the gates, lenient readers by explicit decision, per-reader resolution instead of id rewriting, and a measured probe on the real cut before building. The acceptance criteria are falsifiable and cover the reworded/missing-map/two-hop cases. No over-production found.\n\n## Overall assessment\nThis is a well-scoped, well-measured change with unusually honest documentation of its own gaps; the approach is sound. The one substantive improvement is closing the CI-side conservation/bindings hole in this PR rather than the next, since the real cut follows immediately.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Category: dependency \u00b7 Severity: medium**  \n   **Finding:** The approach handles an unreadable `origin/main` by removing the report\u2019s claim that it checked that ref, but does not specify whether allocation stops. If `fr_split` still produces an applicable plan, it cannot satisfy acceptance criterion 5 and may allocate an already-used FR number.  \n   **Suggestion:** Fail before allocating or applying a split when `origin/main` cannot be read or any of its specs cannot be inspected. Test that this failure produces no file changes; a report disclaimer alone is insufficient.\n\n2. **Category: edge-case \u00b7 Severity: medium**  \n   **Finding:** Two-hop move handling is required for the catalog diff, but its interaction with the shared strict rule is underspecified. For `A \u2192 B \u2192 C` across the compared revisions, neither individual row necessarily passes the stated checks: `B` may exist in neither catalog, and the second hop\u2019s source may be absent from base. Keystone also needs the same final identity resolution to meet the goal that every catalog comparison agrees.  \n   **Suggestion:** Resolve move chains to their base source and head destination before applying endpoint eligibility checks. Add a shared parity test covering both hops within one comparison and the second hop after the first has merged, including a wording change. Require Keystone and `changed_catalog` to classify each case consistently.\n\nThe shared move-resolution helper and targeted reader changes are appropriately sized for this change. Resolve the unreadable-origin behavior and demonstrate consistent multi-hop handling before approval; the documented binding-conservation limitation can remain a separate follow-up.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-11-09-atomic-frs-u2b-prep",
+    "at": "2026-11-09T20:53:39.445949+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

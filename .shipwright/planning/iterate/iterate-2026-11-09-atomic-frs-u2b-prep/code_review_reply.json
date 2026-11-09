@@ -1,0 +1,5 @@
+{"section": "iterate-2026-11-09-atomic-frs-u2b-prep", "verdict": "PASS", "review": [
+ {"severity": "medium", "category": "correctness", "file": "shared/scripts/lib/ac_record.py", "line": 246, "finding": "Round 2: two base criteria mapped to one target let a removal vanish in changed_catalog (warning reader only; keystone gate was safe). FIXED after the review with a claimed-target set and a test."},
+ {"severity": "low", "category": "correctness", "file": "shared/scripts/lib/ac_move_map.py", "line": 62, "finding": "aliases/split_sources trust every map row (history readers only, no gating). Accepted as a documented limit."},
+ {"severity": "low", "category": "correctness", "file": "shared/scripts/tools/verifiers/_keystone_ac_digest.py", "line": 267, "finding": "Checked sound: cross-file source/target, chains, cycles, AcChangeSet.moved consumers. Known limit: a moved criterion with unchanged wording is checked by fr_split conservation, not the gate."}
+], "summary": "Round 1 REJECT (high: any hand-written map row hid a removal; medium: base links of moved+reworded criterion) fixed and re-reviewed: PASS."}

@@ -54,6 +54,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from lib._fr_history_events import read_work_events, sort_key
+from lib.ac_move_map import parse_move_map, split_sources
 from lib.tty_sanitize import strip_control_chars
 
 #: ``relation`` values. ``introduced`` is ``new_frs`` — the change that minted
@@ -137,6 +138,8 @@ class FrHistory:
     #: could not survive. An empty log yields ``CoverageSummary(0, 0)``, which
     #: renders as "no completed changes are recorded".
     coverage: CoverageSummary = CoverageSummary(0, 0)
+    #: Requirements whose criteria an ``fr_split`` moved into this one (``## AC-Move-Map``): their changes predate the split.
+    split_from: tuple[str, ...] = ()
 
     @property
     def found(self) -> bool:
@@ -262,8 +265,18 @@ def change_history_for_fr(project_root: Path | str, fr_id: str) -> FrHistory:
     return FrHistory(
         wanted, status, tuple(changes), existence_verified,
         in_catalog=in_catalog, corrupt_fragments=corrupt,
-        coverage=_coverage_of(events),
+        coverage=_coverage_of(events), split_from=_split_from(project_root, wanted),
     )
+
+
+def _split_from(project_root: Path | str, fr_id: str) -> tuple[str, ...]:
+    moves: dict[str, str] = {}
+    for spec in sorted((Path(project_root) / ".shipwright" / "planning").glob("*/spec.md")):
+        try:
+            moves.update(parse_move_map(spec.read_text(encoding="utf-8")))
+        except (OSError, ValueError):
+            continue
+    return split_sources(fr_id, moves)
 
 
 def _collect_known():

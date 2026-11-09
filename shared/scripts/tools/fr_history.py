@@ -104,6 +104,7 @@ def main(argv: list[str] | None = None) -> int:
             "status": history.status,
             "existence_verified": history.existence_verified,
             "in_catalog": history.in_catalog,
+            "split_from": list(history.split_from),
             "corrupt_fragments": history.corrupt_fragments,
             "changes": [
                 {

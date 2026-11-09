@@ -1,0 +1,1 @@
+{"stage": "spec-compliance", "verdict": "PASS", "spec_citations": [], "summary": "PASS on round 2 (round 1 rejected: changed_catalog read the move map per spec file; now merges maps and catalogs across all spec files, with cross-file and two-hop tests). All 5 acceptance criteria hold; no scope creep."}

@@ -23,6 +23,7 @@ if str(_SHARED_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SHARED_SCRIPTS))
 
 from lib import ac_identity  # noqa: E402
+from lib.ac_move_map import real_moves  # noqa: E402
 
 from ._keystone_base_manifest import ReadError  # noqa: E402
 
@@ -75,4 +76,23 @@ def unminted_texts(text: str) -> dict[str, tuple[str, str]]:
     return out
 
 
-__all__ = ["ac_criteria_digests", "unminted_texts"]
+def moved_origins(base: dict, head: dict, moves: dict[str, str]) -> dict[tuple[str, str], tuple[str, str]]:
+    """``{key now at head: key it had at base}`` for the criteria the head's ## AC-Move-Map relocated (the shared ``real_moves`` rule)."""
+    return real_moves(set(base), set(head), moves)
+
+
+def moved_digests(text: str, origin: dict[tuple[str, str], tuple[str, str]]) -> dict[tuple[str, str], str]:
+    """``{new key: the digest that criterion had under its pre-move id}`` for the criteria ``origin`` says moved here.
+
+    A criterion an ``fr_split`` relocated keeps its wording; digesting it under the OLD id is what lets the gate
+    see "unchanged" instead of "removed here, added there"."""
+    out: dict[tuple[str, str], str] = {}
+    for fr_id, items in ac_identity.read_all(text).items():
+        for ac_id, criterion in items:
+            old = origin.get((fr_id, ac_id))
+            if ac_id is not None and old:
+                out[(fr_id, ac_id)] = _digest(old[0], old[1], criterion)
+    return out
+
+
+__all__ = ["ac_criteria_digests", "moved_digests", "moved_origins", "unminted_texts"]

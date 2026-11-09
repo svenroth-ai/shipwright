@@ -30,6 +30,7 @@ class StubChangeSet:
     changed: set = field(default_factory=set)
     added: set = field(default_factory=set)
     removed: set = field(default_factory=set)
+    moved: dict = field(default_factory=dict)
     unminted_changed: list = field(default_factory=list)
     new_frs_without_criteria: list = field(default_factory=list)
     reader_divergence: list = field(default_factory=list)

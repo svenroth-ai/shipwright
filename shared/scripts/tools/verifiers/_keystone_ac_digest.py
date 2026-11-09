@@ -48,6 +48,7 @@ if str(_SHARED_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SHARED_SCRIPTS))
 
 from lib import ac_identity  # noqa: E402
+from lib.ac_move_map import parse_move_map  # noqa: E402
 
 from ._keystone_base_manifest import (  # noqa: E402  (re-exported: one import site for callers)
     MANIFEST_RELPATH,
@@ -57,6 +58,8 @@ from ._keystone_base_manifest import (  # noqa: E402  (re-exported: one import s
 )
 from ._keystone_criteria import (  # noqa: E402  (re-exported: one import site for callers)
     ac_criteria_digests,
+    moved_digests,
+    moved_origins as _moved_origins,
     unminted_texts as _unminted_texts,
 )
 from ._keystone_divergence import (  # noqa: E402  (re-exported: test_keystone_readers.py uses it)
@@ -72,6 +75,7 @@ class AcChangeSet:
     changed: set[tuple[str, str]] = field(default_factory=set)
     added: set[tuple[str, str]] = field(default_factory=set)
     removed: set[tuple[str, str]] = field(default_factory=set)
+    moved: dict[tuple[str, str], tuple[str, str]] = field(default_factory=dict)  # {key at head: key at base}, real moves only
     #: (fr_id, criterion_text) for each criterion this PR changed OR added that
     #: carries no ``[ACnn]``.
     unminted_changed: list[tuple[str, str]] = field(default_factory=list)
@@ -142,6 +146,8 @@ def ac_change_set(
     # and cannot fire once one path succeeds. Collected here, warned on below,
     # regardless of the aggregate outcome.
     unread_paths: list[str] = []
+    head_text_all: list[str] = []
+    moves: dict[str, str] = {}  # head's ## AC-Move-Map rows (fr_split): a moved criterion is neither removed nor added
 
     spec_paths = _spec_paths(head_manifest, base_manifest)
     if not spec_paths:
@@ -177,6 +183,8 @@ def ac_change_set(
                     "an AC id must anchor to exactly one spec path, never reused across documents."
                 )
         head_minted.update(h_minted)
+        moves.update(parse_move_map(head_text))
+        head_text_all.append(head_text)
         head_unminted |= h_unminted
         head_texts.update(_unminted_texts(head_text))
         h_fr_digests = criteria_digests(head_text)
@@ -245,13 +253,19 @@ def ac_change_set(
             "actually scanned."
         )
 
+    origin = _moved_origins(base_minted, head_minted, moves)
+    moved_old: dict[tuple[str, str], str] = {}
+    for txt in head_text_all:
+        moved_old.update(moved_digests(txt, origin))
     for key, head_digest in head_minted.items():
-        base_digest = base_minted.get(key)
+        base_digest = base_minted.get(origin.get(key, key))
+        head_digest = moved_old.get(key, head_digest)
         if base_digest is None:
             result.added.add(key)
         elif base_digest != head_digest:
             result.changed.add(key)
-    result.removed = set(base_minted) - set(head_minted)
+    result.removed = set(base_minted) - set(head_minted) - set(origin.values())
+    result.moved = origin
 
     for digest in sorted(head_unminted - base_unminted):
         # Bare subscript, not `.get(digest, ("<unknown FR>", ""))` (Stage-2 code
