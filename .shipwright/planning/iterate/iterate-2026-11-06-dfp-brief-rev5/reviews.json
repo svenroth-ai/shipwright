@@ -1,0 +1,173 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-06-dfp-brief-rev5",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-09T20:24:57.367352+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-09T20:24:57.765963+00:00",
+      "disposition": "closed by reason_code trivial-auto",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "trivial-auto"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-09T20:24:57.765963+00:00",
+      "disposition": "closed by reason_code trivial-auto",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "trivial-auto"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "contract",
+          "file": ".shipwright/planning/campaigns/2026-10-25-deterministic-first-programme-BRIEF.md",
+          "line": null,
+          "finding": "Claim under doubt: The STRICT-STOP reading the AC record guards a conversion unit — The runner declares kind itself; an add labelled unchanged passes the record, the STRICT-STOP and F11",
+          "suggestion": "Addressed in 937d84eb0: a unit counts as unchanged only with equal traces and an unchanged promise lock",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "contract",
+          "file": ".shipwright/planning/campaigns/2026-10-25-deterministic-first-programme-BRIEF.md",
+          "line": null,
+          "finding": "Claim under doubt: Allowing exempt items in a conversion unit is safe — decide() accepts exempt on a clean tree and F11 warns only when all items are exempt",
+          "suggestion": "Addressed: any exempt other than a mechanic the plugin brief names stops the unit",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "evidence",
+          "file": ".shipwright/planning/campaigns/2026-11-07-dfp-pre-q1-MEASURE.md",
+          "line": null,
+          "finding": "Claim under doubt: Zero warnings means the AC is covered — named_in_base_tests matches any mention of the id in a base test path, including comments and fixtures",
+          "suggestion": "Addressed: stated as a mention; coverage comes from the promise list",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": ".shipwright/planning/campaigns/2026-10-25-deterministic-first-programme-BRIEF.md",
+          "line": null,
+          "finding": "Claim under doubt: Resolving AC ids through the AC-Move-Map keeps the lock sound — A hand-added map row could move a locked test onto a different promise",
+          "suggestion": "Addressed: only fr_split rows that keep the AC number and text; covers id outside the body hash; anything else trips",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "ordering",
+          "file": ".shipwright/planning/campaigns/2026-10-25-dfp-pilot-changelog-BRIEF.md",
+          "line": null,
+          "finding": "Claim under doubt: Starting after the events flip fixes what the traces record — The layout is per project config and env-overridable; the flip does not change a scratch fixture",
+          "suggestion": "Addressed: scenarios pin both layouts; replay and L3 unset the layout variables",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "isolation",
+          "file": ".shipwright/planning/campaigns/2026-10-25-deterministic-first-programme-BRIEF.md",
+          "line": null,
+          "finding": "Claim under doubt: --setting-sources project isolates an L3 run — One Haiku probe; inherited SHIPWRIGHT_* variables and user MCP servers not checked",
+          "suggestion": "Addressed: unset SHIPWRIGHT_* and CLAUDE_PLUGIN_ROOT, abort unless the init event matches",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "evidence",
+          "file": ".shipwright/planning/campaigns/2026-11-07-dfp-pre-q1-MEASURE.md",
+          "line": null,
+          "finding": "Claim under doubt: A squashed unit is not affected by the order-check bug — On a squashed unit the order check is vacuous",
+          "suggestion": "Addressed: stated as vacuous; record-before-code checked on the unsquashed branch",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-09T20:25:37.779102+00:00",
+      "disposition": "all 7 doubts addressed in 937d84eb0",
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-09T20:24:57.765963+00:00",
+      "disposition": "closed by reason_code trivial-auto",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "trivial-auto"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-09T20:24:57.765963+00:00",
+      "disposition": "closed by reason_code trivial-auto",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "trivial-auto"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-09T20:24:57.765963+00:00",
+      "disposition": "closed by reason_code trivial-auto",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "trivial-auto"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-09T20:24:57.765963+00:00",
+      "disposition": "closed by reason_code trivial-auto",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "trivial-auto"
+    }
+  }
+}
