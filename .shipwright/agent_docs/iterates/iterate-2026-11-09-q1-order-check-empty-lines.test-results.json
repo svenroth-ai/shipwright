@@ -1,0 +1,84 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-09-q1-order-check-empty-lines",
+    "date": "2026-11-09",
+    "unit": {
+      "status": "passed",
+      "passed": 25514,
+      "skipped": 108,
+      "total": 25622
+    },
+    "integration": {
+      "status": "skipped",
+      "passed": 0,
+      "skipped": 0,
+      "total": 0
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "a record committed after a docs-only commit and before the code is in order",
+          "disposition": "tested",
+          "evidence": "test_ac_record_order.py::test_a_record_after_a_docs_only_commit_and_before_the_code_is_in_order PASSED"
+        },
+        {
+          "behavior": "a record committed after the code on a multi-commit branch is still flagged",
+          "disposition": "tested",
+          "evidence": "test_ac_record_order.py::test_a_record_committed_after_the_code_on_a_multi_commit_branch_is_still_flagged PASSED"
+        },
+        {
+          "behavior": "code brought in by merging the default branch does not count as this run's code",
+          "disposition": "tested",
+          "evidence": "test_ac_record_order.py::test_code_brought_in_by_merging_the_default_branch_is_not_this_runs_code PASSED"
+        },
+        {
+          "behavior": "a record the branch leaves untouched is not order-checked",
+          "disposition": "tested",
+          "evidence": "test_ac_record_order.py::test_a_record_the_branch_leaves_untouched_is_not_order_checked PASSED"
+        },
+        {
+          "behavior": "a record appended after the code to one already at the base is flagged",
+          "disposition": "tested",
+          "evidence": "test_ac_record_order.py::test_a_record_appended_after_the_code_to_one_already_at_the_base_is_flagged PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 5,
+        "tested": 5,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 1,
+        "covered_acs": 1
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-11-09-q1-order-check-empty-lines",
+    "commit": "2fce3a9b7ad09313281eb04ad612557a0f41d834",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

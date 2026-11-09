@@ -139,14 +139,18 @@ def _mentions(changes: dict[str, dict], ac: str) -> bool:
 
 
 def _order_problem(root: Path, rel: str, base: str, head: str) -> str:
-    """Best effort: the record is committed no later than the first code commit (a single squashed commit is fine)."""
+    """Best effort: the record is committed no later than the first code commit (a single squashed commit is fine).
+
+    ``--first-parent --no-merges`` keeps commits brought in by merging the default branch out of the count, and the merge itself:
+    that code is not this run's.
+    """
     try:
-        log = run_git(root, "log", "--reverse", "--name-only", "--format=%x00%H", f"{base}..{head}").decode("utf-8", "replace")
+        log = run_git(root, "log", "--reverse", "--first-parent", "--no-merges", "--name-only", "--format=%x00%H", f"{base}..{head}").decode("utf-8", "replace")
     except RuntimeError:
         return ""
     rec_at = code_at = None
     for n, block in enumerate(b for b in log.split("\x00") if b.strip()):
-        files = block.splitlines()[1:]
+        files = [f for f in block.splitlines()[1:] if f.strip()]  # git puts an empty line between the hash and the names; "" would count as code
         if rec_at is None and rel in files:
             rec_at = n
         if code_at is None and any(f != rel and is_observable_path(f) for f in files):
@@ -165,7 +169,7 @@ def _record_problems(root: Path, run_id: str, base: str, head: str | None) -> tu
     old_lines, new_lines = was.splitlines(), now.splitlines()
     if old_lines and new_lines[:len(old_lines)] != old_lines:
         out.append("the AC record is not append-only: a line present at the base was removed or changed")
-    order = _order_problem(root, rel, base, head) if now else ""
+    order = _order_problem(root, rel, base, head) if now and now != was else ""  # a record the branch leaves untouched predates its code; an appended one is checked
     return _parse_records(now), out + ([order] if order else [])
 
 

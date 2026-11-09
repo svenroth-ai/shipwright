@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-09-q1-order-check-empty-lines",
+  "date": "2026-11-09",
+  "section": "Iterate — bug: AC record order check on multi-commit branches",
+  "title": "The AC record's order check ignores git's empty separator line, merged-in commits and records already at the base",
+  "context": "The F11 dry run for the deterministic-first pilot found that the order check counted the empty line git prints between a commit hash and its file names as a code file, so on any branch with several commits the first commit always looked like code.",
+  "decision": "Skip empty names, read the branch with --first-parent --no-merges so code merged in from main is not counted as the run's own, and run the order check only for a record that is new on the branch.",
+  "consequences": "A record written after a docs-only or plan commit and before the code no longer gets a false warning; a record committed after the code is still flagged.",
+  "rationale": "The check exists to show the promise was written before the build; a warning on every multi-commit branch teaches runners to ignore it.",
+  "rejected": "Dropping the order check: it is the only signal that the record came first on an unsquashed branch.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}
