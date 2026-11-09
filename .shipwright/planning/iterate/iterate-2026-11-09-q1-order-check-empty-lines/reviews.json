@@ -107,16 +107,27 @@
     },
     "spec": {
       "review_type": "spec",
-      "status": "not_applicable",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-11-09T21:14:42.734986+00:00",
-      "disposition": "closed by reason_code complexity-below-threshold",
-      "recorded_by": "close-missing",
+      "completed_at": "2026-11-09T21:22:17.368250+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "complexity-below-threshold"
+      "model_tier": "opus",
+      "transport": "agent",
+      "verdict": "pass",
+      "ac_verdicts": [
+        {
+          "ac": "FR-01.11.AC49",
+          "verdict": "matches",
+          "diff_location": "shared/scripts/lib/ac_record.py:148",
+          "reason": "The order check again flags a record committed after the first code commit on multi-commit branches, without the false alarm from empty names; test_a_record_committed_after_the_code_on_a_multi_commit_branch_is_still_flagged shows a late record is still caught.",
+          "weakens": false
+        }
+      ]
     },
     "plan_internal": {
       "review_type": "plan_internal",
