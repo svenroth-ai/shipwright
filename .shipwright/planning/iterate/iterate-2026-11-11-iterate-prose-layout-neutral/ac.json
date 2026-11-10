@@ -1,0 +1,1 @@
+{"items": [{"kind": "add", "owner_fr": "FR-01.11", "new_text": "Given a run's event is only in the working copy and not yet committed, when the finalization check fails, then its message names how to stage the event for both the single-file and the per-run layout.", "files": ["shared/scripts/tools/verifiers/iterate_checks.py"]}]}

@@ -1,0 +1,86 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-11-iterate-prose-layout-neutral",
+    "date": "2026-11-11",
+    "unit": {
+      "status": "passed",
+      "passed": 25541,
+      "skipped": 108,
+      "total": 25649
+    },
+    "integration": {
+      "status": "not_run",
+      "passed": 0,
+      "skipped": 0,
+      "total": 0
+    },
+    "pgtap": {
+      "status": "not_run",
+      "passed": 0,
+      "skipped": 0,
+      "total": 0
+    },
+    "e2e": {
+      "status": "not_run",
+      "passed": 0,
+      "skipped": 0,
+      "total": 0
+    },
+    "design_fidelity": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "The finalization check's failure message names how to stage an uncommitted event for both the single-file and the per-run layout",
+          "disposition": "tested",
+          "test": "shared/tests/test_verify_iterate_finalization.py::test_uncommitted_event_message_names_both_layouts_fix",
+          "evidence": "shared/tests/test_verify_iterate_finalization.py::test_uncommitted_event_message_names_both_layouts_fix passed in the F0 shared/tests unit (junit-shared-tests)"
+        },
+        {
+          "behavior": "Iterate skill references no longer name only the single event file where the per-run layout also applies",
+          "disposition": "untestable",
+          "reason_code": "requires-manual-visual-judgment",
+          "reason": "runtime prose, checked by the spec and doubt reviewers against the code"
+        }
+      ],
+      "counts": {
+        "testable": 1,
+        "tested": 1,
+        "untestable": 1,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 1,
+        "covered_acs": 1
+      }
+    },
+    "surface_verification": {
+      "surface": "none",
+      "tests_run": 0,
+      "exit_code": 0,
+      "justification": "Skill prose and one verifier message text; no UI or API route."
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-24-r5b-merge-lane",
+    "commit": "032d1ebbf0ef9c99eb98f240c8f1110e981a32a5",
+    "dirty": true,
+    "base": null,
+    "release": null
+  },
+  "last_updated": "2026-11-11"
+}

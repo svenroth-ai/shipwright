@@ -1,0 +1,165 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-11-iterate-prose-layout-neutral",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-10T23:35:18.379213+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-10T23:35:18.903416+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_verify_iterate_finalization.py",
+          "line": 201,
+          "finding": "New test repeats the setup of the neighbouring working-copy test.",
+          "suggestion": "Could fold the two assertions into the existing test; kept separate on purpose, named after its intent.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/F5b.md",
+          "line": 180,
+          "finding": "Two parentheticals back to back.",
+          "suggestion": "Fixed: reworded.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/F11.md",
+          "line": 210,
+          "finding": "Singular 'file' narrower than what the code stages.",
+          "suggestion": "Fixed: 'file(s)'.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-10T23:35:18.623595+00:00",
+      "disposition": "Three LOW notes: two fixed, one test duplication kept on purpose",
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "hidden coupling & blast radius",
+          "file": "plugins/shipwright-iterate/skills/iterate/SKILL.md",
+          "line": null,
+          "finding": "Claim under doubt: iterate runtime prose is correct for both layouts — SKILL.md order note, F5b row and F5b.md bold sentence still named only the legacy file.",
+          "suggestion": "Made layout-neutral. DONE.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/F6.md",
+          "line": null,
+          "finding": "Claim under doubt: prose is right about what stage_event_drops.py stages — F6.md said unit/branch key; own_drops never stages a shared branch key.",
+          "suggestion": "Reworded to campaign per-unit key, never a shared branch key. DONE.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "shared/scripts/tools/verifiers/iterate_checks.py",
+          "line": null,
+          "finding": "Claim under doubt: all verifier messages are layout-neutral — The missing-file message fires only when no event file exists in either layout.",
+          "suggestion": "Accepted as out of scope (rare edge, not a regression); follow-up.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-10T23:35:18.753812+00:00",
+      "disposition": "Medium and one low fixed; one low accepted as follow-up",
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-10T23:35:19.034926+00:00",
+      "disposition": "closed by reason_code diff-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "diff-below-threshold"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-10T23:35:18.489991+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-10T23:49:04.949468+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-10T23:49:04.949468+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}
