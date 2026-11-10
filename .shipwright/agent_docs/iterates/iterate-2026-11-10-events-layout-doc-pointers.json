@@ -1,0 +1,50 @@
+{
+  "run_id": "iterate-2026-11-10-events-layout-doc-pointers",
+  "date": "2026-11-10T23:09:24.445873Z",
+  "event_at": "2026-11-10T20:47:41.037094+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "keyword",
+  "branch": "iterate/events-layout-doc-pointers",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-11-10-events-layout-doc-pointers",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "The user guide points to the per-run event layout section and states what must be true before switching",
+        "disposition": "untestable",
+        "reason_code": "requires-manual-visual-judgment",
+        "reason": "documentation prose, checked against the rewritten hooks-and-pipeline section"
+      },
+      {
+        "behavior": "Two test module docstrings no longer call the drops layout dormant or tied to the flip",
+        "disposition": "untestable",
+        "reason_code": "covered-by-existing-test",
+        "reason": "docstrings only; the tests in those files still run and pass in the F0 suite"
+      }
+    ],
+    "counts": {
+      "testable": 0,
+      "tested": 0,
+      "untestable": 2,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 1,
+      "covered_acs": 1
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "justification": "Documentation and docstrings only; no UI, API route or message contract."
+  },
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}

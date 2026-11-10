@@ -2447,6 +2447,8 @@ Each decision record follows the ADR template: Status, Context, Decision, Conseq
 
 `shipwright_events.jsonl` is an append-only JSONL file in the project root. Every build section, iterate change, test run, and phase transition is recorded as a JSON event. This is the single source of truth for all compliance reports and the activity dashboard. Events are never edited -- corrections use `event_amended` entries that reference the original event's ID.
 
+**One file per run (optional).** A repo can store its events as one file per run in `shipwright_events.d/` instead of the single file, so parallel branches never conflict in the event log. A repo opts in with `events_layout` in `shipwright_sync_config.json`; a repo without the key keeps the single file. Before switching, every machine must run the current Shipwright plugin (an older plugin silently keeps writing to the single file) and the Command Center WebUI must be version 0.31.0 or newer. How to switch, check, fold and roll back is in the "Event-log layout: one file per run" section of `docs/hooks-and-pipeline.md`.
+
 ### Project Activity Dashboard
 
 `.shipwright/agent_docs/build_dashboard.md` shows the project's current state, derived from the event log. The most recent changes appear at the top (newest first), followed by test status, pipeline progress, and build history grouped by split. This is the first file an agent reads to understand what has happened and what to do next.

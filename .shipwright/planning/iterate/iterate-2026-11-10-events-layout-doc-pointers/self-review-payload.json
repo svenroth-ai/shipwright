@@ -1,0 +1,7 @@
+{"items": [
+ {"name": "Guide pointer is accurate", "verdict": "pass", "note": "matches the rewritten hooks-and-pipeline section: opt-in key, old plugin keeps writing the single file, WebUI 0.31.0 or newer"},
+ {"name": "Docstrings only, no behaviour change", "verdict": "pass", "note": "two module docstrings; no code line changed"},
+ {"name": "Other stale wording", "verdict": "pass", "note": "grep of shared/scripts, shared/tests and plugin scripts found no other false dormant/unsupported-until-flip claim; remaining 'before the flip' mentions describe history of a PR, still true"},
+ {"name": "Line endings preserved", "verdict": "pass", "note": "CRLF files edited byte-preserving"},
+ {"name": "Affected boundaries", "verdict": "n/a", "note": "no serialized format touched"}
+]}
