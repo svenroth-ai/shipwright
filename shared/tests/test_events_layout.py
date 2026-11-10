@@ -1,4 +1,4 @@
-"""Dormant drops layout (issue 978, S0): switch precedence, write path, assembled read."""
+"""Per-run drops layout: switch precedence, write path, assembled read."""
 
 from __future__ import annotations
 

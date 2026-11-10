@@ -1,0 +1,47 @@
+{
+  "unattended": true,
+  "resolved_items": [
+    {
+      "kind": "exempt",
+      "decided_by": "code",
+      "confirmed": false
+    }
+  ],
+  "ac_decisions": [
+    {
+      "ac": "none",
+      "mode": "auto",
+      "answer": "auto",
+      "kind": "exempt",
+      "outcome": "no-observable-change",
+      "answered_via": "none",
+      "decided_by": "code",
+      "confirmed": false
+    }
+  ],
+  "counts": {
+    "total": 1,
+    "auto": 0,
+    "asked": 0,
+    "exempt": 1,
+    "restore": 0,
+    "unchanged": 0,
+    "answered_inline": 0,
+    "unconfirmed": 0,
+    "exempt_share": 1.0,
+    "restore_share": 0.0
+  },
+  "status": "ok",
+  "ac_mode": {
+    "mode": "auto",
+    "source": "default (unattended)"
+  },
+  "run_id": "iterate-2026-11-10-events-layout-doc-pointers",
+  "bind_id": "iterate-2026-11-10-events-layout-doc-pointers",
+  "exemption_check": "tested against the current diff (5 file(s), 5 not observable)",
+  "surface": {
+    "observable": false,
+    "files": [],
+    "ignored": 5
+  }
+}

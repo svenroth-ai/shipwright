@@ -1,4 +1,4 @@
-"""Writer hardening before the events-drop-files flip (S9a precondition): three fixes and one regression pin.
+"""Writer hardening of the per-run event file layout: three fixes and one regression pin.
 
 1 a repeated event whose ``ts`` the writer bumped is still recognised as the same event;
 2 re-attaching the same commit twice writes one ``event_amended``, not two;
