@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-10-events-flip-drops",
+  "date": "2026-11-10",
+  "section": "Iterate - change: this repo records its events one file per run",
+  "title": "The Shipwright monorepo switches its event log to per-run drop files",
+  "context": "Parallel branches kept conflicting in the single event log. The per-run layout, its fold and rollback tools and the layout check were released with plugin 0.35.0 and WebUI 0.31.0, and the writer was hardened afterwards.",
+  "decision": "Set events_layout to drops in this repo's sync config and rewrite the event-log section of the hooks-and-pipeline doc for users: what the layout is, how to switch a repo, what must be true first, what an old plugin does, rollback by fold (never git revert), checks, and when to fold.",
+  "consequences": "Every event of this repo is now a drop file; an old plugin on a machine appends silently to the legacy log and nothing reports it unless the optional layout check is wired into CI. Folding is manual and due before about 300 open drops. The iterate prose (F11, F5b, SKILL F6 row) and one verifier hint still name only the legacy file: follow-up.",
+  "rationale": "The tooling, the WebUI and the machines are ready, and every later change then merges without event-log conflicts.",
+  "rejected": "Waiting for the optional CI checks: the operator keeps CI minimal and the layout check has a known gap with merge commits anyway.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

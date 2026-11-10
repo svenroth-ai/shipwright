@@ -1,0 +1,4 @@
+{"section": "events-flip-drops", "review": [
+ {"severity": "low", "category": "docs", "file": "shared/tests/test_events_layout.py", "line": 1, "finding": "Module docstring still says 'Dormant drops layout', stale now that the monorepo runs on drops.", "suggestion": "Reword in a follow-up."},
+ {"severity": "low", "category": "docs", "file": "docs/guide.md", "line": 1, "finding": "The guide does not mention events_layout; a one-line pointer to the hooks-and-pipeline section would help users.", "suggestion": "Add in a follow-up."}
+]}

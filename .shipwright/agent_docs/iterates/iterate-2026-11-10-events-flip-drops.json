@@ -1,0 +1,59 @@
+{
+  "run_id": "iterate-2026-11-10-events-flip-drops",
+  "date": "2026-11-10T20:47:40.791801Z",
+  "event_at": "2026-11-09T22:58:37.198667+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "keyword",
+  "branch": "iterate/events-flip-drops",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-11-10-events-flip-drops",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "A repo whose sync config sets the layout to drops resolves to drops, and writers, readers, fold and integrity checks work on it",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "integration-tests/test_events_drops_full_system.py (8 scenarios) and test_events_drops_rollback_rehearsal.py (3) PASSED; shared/tests/test_events_layout.py, test_events_sentinel_mixed.py, test_events_fold.py, test_events_drop_hardening.py 112 PASSED"
+      },
+      {
+        "behavior": "The writer-path docstring no longer claims the layout is dormant or unsupported",
+        "disposition": "untestable",
+        "reason_code": "covered-by-existing-test",
+        "reason": "docstring only; behaviour covered by the layout tests above"
+      },
+      {
+        "behavior": "The rewritten docs section is accurate, number-free and complete",
+        "disposition": "untestable",
+        "reason_code": "requires-manual-visual-judgment",
+        "reason": "prose; checked by spec-reviewer and code-reviewer against the code (11 claims) and by grep for campaign numbers"
+      }
+    ],
+    "counts": {
+      "testable": 1,
+      "tested": 1,
+      "untestable": 2,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 1,
+      "covered_acs": 1
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "justification": "Repository configuration and documentation for the event log; no UI, API route or message contract. Exercised by the drops integration tests and the full F0 suite."
+  },
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": [
+    "touches_shared_infra",
+    "touches_io_boundary"
+  ]
+}

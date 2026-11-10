@@ -18,6 +18,7 @@
     "shared/scripts/github_triage.py": "FR-01.14",
     "shared/scripts/hooks/import_github_findings.py": "FR-01.14"
   },
+  "events_layout": "drops",
   "note": "Populated incrementally by /shipwright-iterate as file changes get mapped to FRs.",
   "updated_at": "2026-05-19T12:00:00+00:00"
 }

@@ -1,9 +1,8 @@
-"""Event-log LAYOUT: legacy single file vs per-run drop files (issue 978, S0).
+"""Event-log LAYOUT: legacy single file vs per-run drop files.
 
-DORMANT by default. ``legacy`` (the one tracked ``shipwright_events.jsonl``) stays
-the layout everywhere until the campaign's flip unit; this module only lands the
-``drops`` path (``shipwright_events.d/<key>--<wt8>--<nonce8>.jsonl``) behind a
-switch so the harness and the standing replay gate can exercise it.
+``legacy`` (the one tracked ``shipwright_events.jsonl``) is the layout of every repo that does not
+set ``events_layout``; a repo that sets ``drops`` writes ``shipwright_events.d/<key>--<wt8>--<nonce8>.jsonl``
+instead (one file per run). The switch is the ``events_layout`` key in ``shipwright_sync_config.json``.
 
 Layout precedence (campaign BRIEF section 2):
 
@@ -30,14 +29,11 @@ write; the folder alone is invisible to git); a torn line is recovered by
 serialize on the lock, so they share the one open file and every recorded event is
 readable exactly once.
 
-UNSUPPORTED before the flip unit (S9a): setting ``events_layout: drops`` in a real
-repo today splits the log -- writers use drops while ``attach_commit_to_event`` and
-the compliance twin (S3/S4) still read the legacy file only. The key is honoured
-now because S0 owns reading it. READING is ``lib/events_read.py`` (S2): the one
+Every writer and reader honours the key. READING is ``lib/events_read.py``: the one
 assembling reader with per-file status, layout independent.
 
-The ``run`` stamp, 16-hex ids and the atomic append live in ``events_write`` (S4); fold/archive
-tooling is S6. The advisory lock is ``events_lock_path`` -- the SAME untracked file
+The ``run`` stamp, 16-hex ids and the atomic append live in ``events_write``; fold/archive
+tooling is ``tools/fold_events.py``. The advisory lock is ``events_lock_path`` -- the SAME untracked file
 the legacy path already locks, so it lives OUTSIDE the tracked drops folder.
 """
 
