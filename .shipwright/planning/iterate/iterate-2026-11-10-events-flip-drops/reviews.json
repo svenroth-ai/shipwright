@@ -1,0 +1,183 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-10-events-flip-drops",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-10T20:29:14.024934+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-10T20:36:10.491649+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "docs",
+          "file": "shared/tests/test_events_layout.py",
+          "line": 1,
+          "finding": "Module docstring still says 'Dormant drops layout', stale now that the monorepo runs on drops.",
+          "suggestion": "Reword in a follow-up.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "docs",
+          "file": "docs/guide.md",
+          "line": 1,
+          "finding": "The guide does not mention events_layout; a one-line pointer to the hooks-and-pipeline section would help users.",
+          "suggestion": "Add in a follow-up.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-10T20:31:07.285980+00:00",
+      "disposition": "First pass REJECT on one wrong sentence (layout-check gap); fixed, re-checked by the same reviewer: ACCEPT. Two LOW notes left as follow-ups.",
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "reversibility",
+          "file": "docs/hooks-and-pipeline.md",
+          "line": null,
+          "finding": "Claim under doubt: the switch can be undone — A git revert of the switch removes the key but leaves the drops; the layout check then refuses every write.",
+          "suggestion": "Warn against git revert in the rollback paragraph. DONE: sentence added, rollback is the folds.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/F11.md",
+          "line": null,
+          "finding": "Claim under doubt: iterate runtime prose is layout-neutral — F11.md, SKILL.md F6 row, F5b.md and one verifier hint still name only the legacy file.",
+          "suggestion": "Follow-up iterate that makes the prose and the hint layout-neutral; the code paths (drops_committed_state, F6.md, stage_event_drops) are already correct and the first drop of this run exercises them.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "concurrency",
+          "file": ".worktrees/campaign-ac-at-start",
+          "line": null,
+          "finding": "Claim under doubt: no open work at the switch — Two campaign worktrees still carry a running unit in loop_state.json.",
+          "suggestion": "Operator confirms no activity (stated); a late merge would only bring legacy appends that the assembling reader still reads.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling",
+          "file": "docs/hooks-and-pipeline.md",
+          "line": null,
+          "finding": "Claim under doubt: fold has an owner — Per-write cost grows with open drops; docs said fold from the main tree with no iterate running.",
+          "suggestion": "Docs now say fold runs on its own branch and PR; cadence stays an operator decision.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "shared/scripts/lib/events_layout.py",
+          "line": null,
+          "finding": "Claim under doubt: code docstrings match the switch — events_layout.py docstring still said dormant and unsupported before the flip.",
+          "suggestion": "DONE: docstring rewritten.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "process",
+          "file": ".shipwright/planning/iterate/iterate-2026-11-10-events-flip-drops/ac-decided.json",
+          "line": null,
+          "finding": "Claim under doubt: AC record valid — The first ac-decided.json said invalid (exempt refused).",
+          "suggestion": "Already re-recorded as an add under FR-01.11, status ok.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-10T20:36:05.084085+00:00",
+      "disposition": "Doubts 1, 4, 6, 7 fixed here; doubt 2 (layout-neutral iterate prose) is a follow-up iterate; doubt 3 accepted by the operator (no activity); doubts 5, 8 accepted.",
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-10T20:36:10.838119+00:00",
+      "disposition": "closed by reason_code diff-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "diff-below-threshold"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-10T20:28:43.327397+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-10T20:36:10.607843+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-10T20:36:10.733615+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}

@@ -1,0 +1,1 @@
+The Shipwright repository now records its events one file per run, so parallel branches no longer conflict in the event log. The documentation for the layout was rewritten for users: how to switch a repo, what must be true first, how to roll back and when to fold.

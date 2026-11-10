@@ -1,0 +1,53 @@
+{
+  "unattended": false,
+  "resolved_items": [
+    {
+      "kind": "add",
+      "owner_fr": "FR-01.11",
+      "new_text": "Given the Shipwright repository records its events one file per run, when two branches each record events and are merged, then the merge raises no conflict in the event record.",
+      "files": [
+        "shipwright_sync_config.json"
+      ],
+      "decided_by": "code",
+      "confirmed": false
+    }
+  ],
+  "ac_decisions": [
+    {
+      "ac": "FR-01.11.new",
+      "mode": "auto",
+      "answer": "auto",
+      "kind": "add",
+      "answered_via": "none",
+      "decided_by": "code",
+      "confirmed": false
+    }
+  ],
+  "counts": {
+    "total": 1,
+    "auto": 1,
+    "asked": 0,
+    "exempt": 0,
+    "restore": 0,
+    "unchanged": 0,
+    "answered_inline": 0,
+    "unconfirmed": 0,
+    "exempt_share": 0.0,
+    "restore_share": 0.0
+  },
+  "status": "ok",
+  "ac_mode": {
+    "mode": "ask",
+    "source": "default"
+  },
+  "run_id": "iterate-2026-11-10-events-flip-drops",
+  "bind_id": "iterate-2026-11-10-events-flip-drops",
+  "exemption_check": "tested against the current diff (6 file(s), 5 not observable)",
+  "surface": {
+    "observable": true,
+    "files": [
+      "shipwright_sync_config.json"
+    ],
+    "ignored": 5
+  }
+}

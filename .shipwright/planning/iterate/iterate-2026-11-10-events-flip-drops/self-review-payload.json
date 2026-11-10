@@ -1,0 +1,9 @@
+{"items": [
+ {"name": "Config change is exactly one key and valid JSON", "verdict": "pass", "note": "events_layout=drops added, CRLF kept, events_layout() resolves to drops"},
+ {"name": "Tests that read this repo's own layout", "verdict": "pass", "note": "112 shared tests and 11 integration tests on the drops layout green"},
+ {"name": "Docs section free of campaign, unit and issue numbers", "verdict": "pass", "note": "grep of the section and the writer-path row finds none; spec reviewer confirmed"},
+ {"name": "Docs claims match the code", "verdict": "pass", "note": "fold modes, 14 days, sentinel, layout CI checked by the spec reviewer"},
+ {"name": "Other repos unaffected", "verdict": "pass", "note": "key is per repo; leadwright and webui have no key and stay legacy"},
+ {"name": "AC record", "verdict": "pass", "note": "exempt was refused (observable config change); declared as an add under FR-01.11, decided"},
+ {"name": "Affected boundaries", "verdict": "pass", "note": "producer record_event/finalize_iterate writes drops, consumers read_events_assembled and the WebUI 0.31.0 read them; round trip covered by the drops integration tests"}
+]}

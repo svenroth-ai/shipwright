@@ -1,0 +1,1 @@
+{"items": [{"kind": "add", "owner_fr": "FR-01.11", "new_text": "Given the Shipwright repository records its events one file per run, when two branches each record events and are merged, then the merge raises no conflict in the event record.", "files": ["shipwright_sync_config.json"]}]}
