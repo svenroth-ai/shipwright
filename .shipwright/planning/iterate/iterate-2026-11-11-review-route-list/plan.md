@@ -1,0 +1,5 @@
+Goal: Give the GPT external-review leg an opt-in ordered route list (gpt_leg.routes) that falls through to the next route on runtime failure and records every attempt.
+Reason: GitHub issue #1034: when codex exec fails at runtime (quota) the leg ends in error although OpenRouter would have answered.
+Reference: GitHub issue #1034
+AC item: {"confirmed": false, "decided_by": "code", "files": ["shared/scripts/checks/check-external-review-keys.py", "shared/scripts/lib/external_review_routes.py", "shared/scripts/tools/external_review.py"], "kind": "add", "new_text": "Given a project that lists, in order, the routes its GPT outside reviewer may use, when a route is unavailable or fails while the review is running, then the next route in the list is tried, and the review reports every route that was skipped or failed together with its reason, so extra metered cost stays visible; a project that has not listed routes behaves exactly as before.", "owner_fr": "FR-01.03"}
+AC decisions: [{"ac": "FR-01.03.new", "mode": "auto", "answer": "auto", "kind": "add", "answered_via": "none", "decided_by": "code", "confirmed": false}]

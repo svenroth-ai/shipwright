@@ -1,0 +1,27 @@
+{
+  "section": "iterate-2026-11-11-review-route-list (issue #1034, FR-01.03 AC24)",
+  "review": [
+    {"severity": "high", "category": "correctness", "file": "shared/scripts/lib/external_review_config.py", "line": 155,
+     "finding": "The availability check does not know about routes. _codex_route_reachable() returns True only when gpt_leg_provider(config) == codex, and both get_external_review_status() and is_external_review_enabled() use it. An operator with only Codex (no API keys) who sets gpt_leg.routes: [codex, ...] while keeping provider api gets missing_keys, so the calling skill stops or asks for a key before external_review.py runs.",
+     "suggestion": "Treat codex as configured when provider == codex OR codex is in gpt_leg_routes(config); import deferred to avoid a cycle. Add a test: no keys, routes [codex, openrouter], codex available -> status available."},
+    {"severity": "medium", "category": "correctness", "file": "shared/scripts/tools/external_review.py", "line": 411,
+     "finding": "With routes configured, provider = second_route becomes the literal routes. It goes into the envelope provider, degraded_reason and timing telemetry; before, those named the transport that answered, and the nothing-available state was reported as none.",
+     "suggestion": "After the futures resolve, set provider from the winning leg's via; fall back to none when the chain returned skipped with nothing attempted. Assert provider in the CLI test."},
+    {"severity": "medium", "category": "readability", "file": "shared/scripts/lib/external_review_routes.py", "line": 153,
+     "finding": "Dead code: outcome reassigned after the attempt was appended and never read; _NOT_AN_ANSWER has no effect. An unknown runner status passes through unchanged.",
+     "suggestion": "Delete it, or normalise the status before recording the attempt and add a test."},
+    {"severity": "medium", "category": "correctness", "file": "shared/scripts/lib/llm_review.py", "line": 224,
+     "finding": "run_review() is the second entry point resolving the GPT leg and still ignores gpt_leg.routes, although the docs describe routes as a general GPT-leg setting.",
+     "suggestion": "Wire run_route_chain into llm_review.run_review, or narrow docs and config comment to the external_review.py CLI."},
+    {"severity": "low", "category": "correctness", "file": "shared/scripts/checks/check-external-review-keys.py", "line": 55,
+     "finding": "codex_configured is True whenever provider == codex, even when a routes list without codex is set.",
+     "suggestion": "routes = gpt_leg_routes(config); codex_configured = (codex in routes) if routes else provider == codex."},
+    {"severity": "low", "category": "correctness", "file": "shared/scripts/lib/external_review_routes.py", "line": 155,
+     "finding": "If every attempted route fails and the last one returned skipped at runtime after an earlier error, the leg is reported skipped and the earlier real failure stops counting as a missing reviewer.",
+     "suggestion": "If any attempted route had error/degraded, report the leg as error."},
+    {"severity": "low", "category": "readability", "file": "shared/tests/test_external_review_route_list.py", "line": 244,
+     "finding": "_chain swaps is_codex_available by hand with try/finally while the CLI helper uses monkeypatch.",
+     "suggestion": "Use monkeypatch in _chain."}
+  ],
+  "notes": "Sound: ADR-045 import style, thread-safety of the chain inside one executor worker, runner lambdas (no late-binding hazard), fallback_reason cannot be clobbered, driver_enforced_reason unaffected, gpt_leg_routes degrades safely. Bloat: external_review.py 464 vs baseline 469."
+}

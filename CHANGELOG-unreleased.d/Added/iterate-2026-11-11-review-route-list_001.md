@@ -1,0 +1,1 @@
+external_review.gpt_leg.routes: an ordered, opt-in list of GPT-reviewer routes (codex, openrouter, direct) that falls through when a route is unavailable or fails at runtime, recording every attempt (#1034)

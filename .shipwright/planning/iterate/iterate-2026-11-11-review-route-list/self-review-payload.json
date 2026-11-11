@@ -1,0 +1,10 @@
+{"items": [
+ {"name": "Spec Compliance", "verdict": "pass", "note": "Issue 1034 asks for an ordered, configurable route list for the GPT leg that falls through on pre-call unavailability and on runtime failure and records every attempt; implemented as gpt_leg.routes with attempts/fallback_reason, existing provider configs unchanged (tested)."},
+ {"name": "Error Handling", "verdict": "pass", "note": "Malformed routes (non-list, unknown names, repeats, empty) degrade to the legacy provider path; a route runner that raises becomes an error attempt and the chain continues; all-unavailable is a skipped leg listing every reason."},
+ {"name": "Security Basics", "verdict": "pass", "note": "No new input surface beyond a config list validated against a closed set of three names; reasons are truncated to 300 chars; no shell, no new network target (same three existing legs)."},
+ {"name": "Test Quality", "verdict": "pass", "note": "19 tests assert outcomes of the chain, the config resolver and a real main() run in which codex fails with a quota error and OpenRouter answers; the no-routes path is pinned to the old terminal-error behaviour."},
+ {"name": "Performance Basics", "verdict": "pass", "note": "A failed route adds its own latency before the next route; worst case is the sum of the route budgets, which is the intended trade for an answer."},
+ {"name": "Naming & Structure", "verdict": "pass", "note": "New logic in lib/external_review_routes.py; tools/external_review.py grows by 13 lines (464 vs baseline 469); ruff clean."},
+ {"name": "Affected Boundaries", "verdict": "pass", "note": "The leg result gains attempts and fallback_reason (additive); config gains an optional gpt_leg.routes list; check-external-review-keys reports codex_configured for a routes list that names codex."},
+ {"name": "Test Hygiene Probe", "verdict": "n/a", "note": "No skips added."}
+]}

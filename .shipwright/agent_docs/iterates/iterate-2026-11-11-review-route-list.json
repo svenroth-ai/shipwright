@@ -1,0 +1,66 @@
+{
+  "run_id": "iterate-2026-11-11-review-route-list",
+  "date": "2026-11-11T08:40:30.805940Z",
+  "event_at": "2026-11-11T07:55:47.344529+00:00",
+  "type": "feature",
+  "complexity": "small",
+  "prior_source": "keyword",
+  "branch": "iterate/review-route-list",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-11-11-review-route-list",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "A runtime failure of one route (codex quota) falls through to the next route and is recorded in attempts/fallback_reason",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_external_review_route_list.py::test_runtime_failure_falls_through_to_the_next_route_and_records_it PASSED; shared/tests/test_external_review_route_list.py::test_cli_codex_quota_falls_through_to_openrouter_and_lists_the_attempts PASSED;"
+      },
+      {
+        "behavior": "An unavailable route is skipped before the call; nothing available gives a skipped leg listing every reason",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_external_review_route_list.py::test_unavailable_route_is_skipped_before_the_call PASSED; shared/tests/test_external_review_route_list.py::test_nothing_available_is_a_skipped_leg_listing_every_reason PASSED;"
+      },
+      {
+        "behavior": "First success stops the chain; all failing reports the last real failure; a runtime-skipped last route does not hide an earlier error; degraded/raising/unknown-status routes fall through",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_external_review_route_list.py::test_first_route_success_stops_the_chain_without_a_fallback_note PASSED; shared/tests/test_external_review_route_list.py::test_every_route_failing_reports_the_last_failure_with_all_attempts PASSED; shared/tests/test_external_review_route_list.py::test_a_runtime_skipped_last_route_does_not_hide_an_earlier_real_failure PASSED; shared/tests/test_external_review_route_list.py::test_a_degraded_reply_also_falls_through PASSED; shared/tests/test_external_review_route_list.py::test_a_route_that_raises_does_not_end_the_chain PASSED; shared/tests/test_external_review_route_list.py::test_an_unknown_runner_status_counts_as_a_failure PASSED;"
+      },
+      {
+        "behavior": "gpt_leg.routes resolution degrades safely on malformed config; without routes behaviour is unchanged",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_external_review_route_list.py::test_gpt_leg_routes_resolution_degrades_instead_of_crashing PASSED; shared/tests/test_external_review_route_list.py::test_cli_without_routes_keeps_the_terminal_codex_failure PASSED;"
+      },
+      {
+        "behavior": "A codex-only operator with a routes list counts as configured (availability check honours routes); envelope provider names the answering route",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_external_review_route_list.py::test_codex_only_operator_with_a_routes_list_counts_as_configured PASSED; shared/tests/test_external_review_route_list.py::test_cli_codex_quota_falls_through_to_openrouter_and_lists_the_attempts PASSED;"
+      }
+    ],
+    "counts": {
+      "testable": 5,
+      "tested": 5,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 1,
+      "covered_acs": 1
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run --extra dev pytest shared/tests/test_external_review_route_list.py -q",
+    "exit_code": 0,
+    "tests_run": 22,
+    "evidence_path": ".shipwright/runs/iterate-2026-11-11-review-route-list/surface_verification.json",
+    "timestamp": "2026-11-11T08:40:24Z"
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}

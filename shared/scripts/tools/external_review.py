@@ -129,6 +129,7 @@ from external_review_routing import (  # noqa: E402
 )
 from external_review_empty import empty_diff_envelope  # noqa: E402
 from external_review_gateway import gateway_configured  # noqa: E402
+from external_review_routes import gpt_leg_routes, run_route_chain  # noqa: E402
 from external_review_strict import add_strict_arguments  # noqa: E402
 from external_review_gateway_cli import emit_envelope, review_timing, run_gateway  # noqa: E402
 
@@ -398,8 +399,11 @@ def main() -> int:
     # the 'openai' identity) from ever leaking an 'openai' leg into a
     # driver=codex roster: resolve_openai_route is simply never called on
     # that path.
+    routes = None if args.driver == "codex" else gpt_leg_routes(config)  # opt-in ordered list (#1034)
     if args.driver == "codex":
         second_route, second_route_note = resolve_opus_route(config, has_openrouter_key=has_openrouter)
+    elif routes:
+        second_route, second_route_note = "routes", ""
     else:
         second_route, second_route_note = resolve_openai_route(
             config, has_openrouter_key=has_openrouter, has_openai_key=has_openai,
@@ -423,7 +427,14 @@ def main() -> int:
                 else:
                     reviews[second_id] = {"status": "skipped", "reason": second_route_note or "No claude CLI or OPENROUTER_API_KEY available"}
             else:
-                if second_route == "codex":
+                if second_route == "routes":
+                    runners = {
+                        "codex": lambda: review_codex(_render_user_prompt(user_prompt, primary_text, spec), system_prompt, config),
+                        "openrouter": lambda: review_with_openrouter(primary_text, spec, system_prompt, user_prompt, config, "openai"),
+                        "direct": lambda: review_with_openai(primary_text, spec, system_prompt, user_prompt, config),
+                    }
+                    futures[executor.submit(run_route_chain, routes, runners, has_openrouter=has_openrouter, has_openai=has_openai)] = second_id
+                elif second_route == "codex":
                     futures[executor.submit(review_codex, _render_user_prompt(user_prompt, primary_text, spec), system_prompt, config)] = second_id
                 elif second_route == "openrouter":
                     futures[executor.submit(review_with_openrouter, primary_text, spec, system_prompt, user_prompt, config, "openai")] = second_id
@@ -437,6 +448,8 @@ def main() -> int:
                     reviews[name] = future.result()
                 except Exception as e:
                     reviews[name] = {"status": "error", "reason": str(e)}
+            if second_route == "routes":  # name the route that answered, not the setting
+                provider = reviews[second_id].get("via") or "none"
             if second_route_note and second_id in reviews and second_route != "none":
                 reviews[second_id]["fallback_reason"] = second_route_note  # WHY even on success, not only on skip
         if timing_extra is not None:
