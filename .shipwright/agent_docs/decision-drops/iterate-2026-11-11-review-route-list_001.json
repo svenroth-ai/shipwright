@@ -1,7 +1,7 @@
 {
   "run_id": "iterate-2026-11-11-review-route-list",
   "date": "2026-11-11",
-  "section": "Iterate — feature: GPT-leg route list",
+  "section": "Iterate - feature: GPT-leg route list",
   "title": "Ordered fall-through routes for the GPT reviewer leg",
   "context": "A codex exec runtime failure (quota, timeout) ended the GPT leg in error although an API key would have answered; provider picked one transport only (issue 1034).",
   "decision": "Opt-in external_review.gpt_leg.routes list (codex/openrouter/direct) tried in order; moves on when a route is unavailable or fails; every attempt recorded in attempts.",
