@@ -1,0 +1,344 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-11-u1-tag-binding",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-11T21:21:07.068695+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Replacing the textual brace count with `ts_lexer.lex` over \"the joined source\" changes the input domain: the lexer presumably expects a complete, self-contained document. Concatenating multiple files into one lexer run can misattribute brace balance across file boundaries if the lexer keeps internal state (e.g., template literals spanning lines, JSX mode). Per-file lexing with per-file line offsets would be safer and simpler.",
+          "suggestion": "Lex each file separately and accumulate per-line deltas with correct line offset math; only join if the current brace counter was already treating the joined string as one document.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The lexer-based count must handle brace characters inside strings, comments, and regexes — that's presumably the whole point — but the plan doesn't say what happens when the lexer fails (malformed template, lexing error). Falling back to the old textual count silently would hide regressions; propagating an error could crash suite-tag extraction on any file with a syntax quirk.",
+          "suggestion": "Define explicit error handling: skip the file's delta on lex failure and log, or fall back to `line.count` with a marker so fixtures can distinguish.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "\"Emits `unbound-covers-comment` … also on a consecutive overwrite and at EOF\" — three distinct trigger states feeding one reason code. If the audit or user needs to know which trigger fired, one reason may be lossy, and fixtures asserting all three share a code should be explicit.",
+          "suggestion": "Confirm one reason code is intended for all three; if not, add a sub-detail field rather than a second code.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Routing a new invalid-tag reason into warnings-only in `_flag_tags` and exempting it from D-orphan is a policy change that could mask genuine problems: a `// @covers` comment that's ignored for an unrelated reason (e.g., inside a `@ts-ignore`d block or genuinely malformed syntax) now silently produces nothing actionable.",
+          "suggestion": "Ensure the `unbound-covers-comment` emission requires a positive identification of the comment context (e.g., lexer confirms the tag is inside a comment), not \"brace count said the tag is unbound.\" Otherwise misclassification becomes invisible.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "\"Only when new vs base\" for warnings implies a diff against a base state; the plan doesn't mention how that base is derived or what happens on a full run without base (first run, CI on a fresh clone).",
+          "suggestion": "Specify the no-base behavior (presumably warn on all).",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan says \"regenerate test-traceability.json once as last step and list moved FRs in the PR\" — but acceptance criteria are TBD and the brief lives in another worktree. Reordering FR traceability entries is easy to get wrong and hard to review if done as a bulk regeneration.",
+          "suggestion": "Ensure the regeneration is limited to the moved FRs and diffed in the PR so reviewers see the mapping change explicitly.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Rewriting the untagged-modified STOP text to \"name both remedies\" is fine, but asserting exact gate text in tests makes the message brittle against future copy edits.",
+          "suggestion": "Assert on stable tokens (e.g., presence of both remedy identifiers) rather than full sentence text.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk ·",
+          "file": null,
+          "line": null,
+          "finding": "The test plan does not explicitly include the required stale-FR regression. Incorrect suite depth can silently propagate coverage tags into unrelated tests and alter traceability.",
+          "suggestion": "Add direct `propagate_suite_tags` assertions for stale-FR leakage, braces inside comments and multiline templates, nested suites, and JSX/TSX. Assert exact inherited IDs and where inheritance stops.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "The plan adds unbound diagnostics on overwrite and EOF, but does not explicitly require clearing the pending tag when it becomes unbound. Emitting a warning alone could still let the comment bind to a later test.",
+          "suggestion": "Clear pending binding state at every unbound transition. Test that each abandoned comment produces one diagnostic at its original location and never supplies coverage to a subsequent test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency ·",
+          "file": null,
+          "line": null,
+          "finding": "The closing steps omit the explicitly required moved-FR list in the PR and cache sync after merge. The traceability regeneration may reveal binding changes that need review.",
+          "suggestion": "Add those steps, inspect the final traceability diff, and identify any moved FR associations in the PR.  The approach is sound and appropriately scoped, with no specific security concern evident from the supplied text. Make the binding-state regression coverage explicit before proceeding; compliance with the unread brief remains unverified.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-11T21:19:59.316475+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: approach — Severity: medium**\n  **Finding:** Replacing the textual brace count with `ts_lexer.lex` over \"the joined source\" changes the input domain: the lexer presumably expects a complete, self-contained document. Concatenating multiple files into one lexer run can misattribute brace balance across file boundaries if the lexer keeps internal state (e.g., template literals spanning lines, JSX mode). Per-file lexing with per-file line offsets would be safer and simpler.\n  **Suggestion:** Lex each file separately and accumulate per-line deltas with correct line offset math; only join if the current brace counter was already treating the joined string as one document.\n\n- **Category: edge-case — Severity: medium**\n  **Finding:** The lexer-based count must handle brace characters inside strings, comments, and regexes — that's presumably the whole point — but the plan doesn't say what happens when the lexer *fails* (malformed template, lexing error). Falling back to the old textual count silently would hide regressions; propagating an error could crash suite-tag extraction on any file with a syntax quirk.\n  **Suggestion:** Define explicit error handling: skip the file's delta on lex failure and log, or fall back to `line.count` with a marker so fixtures can distinguish.\n\n- **Category: edge-case — Severity: low**\n  **Finding:** \"Emits `unbound-covers-comment` … also on a consecutive overwrite and at EOF\" — three distinct trigger states feeding one reason code. If the audit or user needs to know *which* trigger fired, one reason may be lossy, and fixtures asserting all three share a code should be explicit.\n  **Suggestion:** Confirm one reason code is intended for all three; if not, add a sub-detail field rather than a second code.\n\n- **Category: risk — Severity: medium**\n  **Finding:** Routing a new invalid-tag reason into warnings-only in `_flag_tags` and exempting it from D-orphan is a policy change that could mask genuine problem […truncated]\n\n[openai] The environment blocked reading the normative brief and source files, so this review is limited to the supplied specification and mini-plan.\n\n1. **Category:** risk · **Severity:** medium  \n   **Finding:** The test plan does not explicitly include the required stale-FR regression. Incorrect suite depth can silently propagate coverage tags into unrelated tests and alter traceability.  \n   **Suggestion:** Add direct `propagate_suite_tags` assertions for stale-FR leakage, braces inside comments and multiline templates, nested suites, and JSX/TSX. Assert exact inherited IDs and where inheritance stops.\n\n2. **Category:** edge-case · **Severity:** medium  \n   **Finding:** The plan adds unbound diagnostics on overwrite and EOF, but does not explicitly require clearing the pending tag when it becomes unbound. Emitting a warning alone could still let the comment bind to a later test.  \n   **Suggestion:** Clear pending binding state at every unbound transition. Test that each abandoned comment produces one diagnostic at its original location and never supplies coverage to a subsequent test.\n\n3. **Category:** dependency · **Severity:** low  \n   **Finding:** The closing steps omit the explicitly required moved-FR list in the PR and cache sync after merge. The traceability regeneration may reveal binding changes that need review.  \n   **Suggestion:** Add those steps, inspect the final traceability diff, and identify any moved FR associations in the PR.\n\nThe approach is sound and appropriately scoped, with no specific security concern evident from the supplied text. Make the binding-state regression coverage explicit before proceeding; compliance with the unread brief remains unverified.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/_tag_binding_core.py",
+          "line": 193,
+          "finding": "Unbound-covers warning key (test, raw) includes the line number, so an edit above an existing unbound comment re-warns it. Warning only.",
+          "suggestion": "strip the :<n>: part before comparing, or document in hooks-and-pipeline.md",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-compliance/scripts/lib/collectors/_suite_tags.py",
+          "line": 117,
+          "finding": "An unbound covers comment with a malformed id is named twice (flush_unbound invalid-tag plus unbound-covers-comment); verdict still correct because the malformed tag STOPs.",
+          "suggestion": "none required",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "test-quality",
+          "file": "plugins/shipwright-compliance/tests/test_suite_tags_lexer.py",
+          "line": 1161,
+          "finding": "test_tsx_source_is_lexed_with_jsx_on_and_ts_with_it_off only asserts the tsx half.",
+          "suggestion": "add a .ts case where jsx lexing would change depth, or rename",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "test-quality",
+          "file": "plugins/shipwright-compliance/tests/test_group_d_unbound_covers.py",
+          "line": 1071,
+          "finding": "'malformed' in detail is satisfied by 'not malformed tags'; status==pass carries the check.",
+          "suggestion": "assert the full phrase",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "pre-existing",
+          "file": "plugins/shipwright-compliance/scripts/lib/collectors/_suite_tags.py",
+          "line": 107,
+          "finding": "A one-line describe (net brace 0) is never entered/popped and leaks its FR to later tests. Not introduced here.",
+          "suggestion": "follow-up card",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-11T22:12:57.193145+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "hidden coupling & blast radius",
+          "file": "plugins/shipwright-compliance/scripts/audit/_group_d_traceability.py:108-166",
+          "line": null,
+          "finding": "Claim under doubt: Group D change is local and free to keep — _group_d_traceability.py is now 303 lines (limit 300, not in baseline): Group H1 will raise a bloat-drift card after merge and the Stop hook can block a later session that edits it. CI does not gate on it.",
+          "suggestion": "move the unbound split and note text into _group_d_render.py. DISPOSITION: accepted, not fixed in this PR; a fix is a new commit on a reviewed tree and would restart the whole cascade for a non-correctness finding. Orchestrator reports it as a follow-up (3-line extraction).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "shared/scripts/tools/verifiers/tag_binding_gate.py:136-142",
+          "line": null,
+          "finding": "Claim under doubt: unbound warning always shown at the gate — tag_binding_gate._result drops warnings when findings exist; the STOP still fires and audit D lists the comment. DISPOSITION: rebutted in writing, D-orphan is the channel; accepted.",
+          "suggestion": "accept",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "shared/scripts/lib/ts_lexer.py:61-68",
+          "line": null,
+          "finding": "Claim under doubt: lexer never worse than text count — ts_lexer reads a slash after a closing brace as a regex start; one line can lose braces. DISPOSITION: accepted as a known limit.",
+          "suggestion": "accept",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling & blast radius",
+          "file": "plugins/shipwright-compliance/scripts/hooks/check_rtm_coverage.py:203-222",
+          "line": null,
+          "finding": "Claim under doubt: consumers see only better numbers — a requirement covered only by a leaked frame can fall below a consumer's RTM threshold. DISPOSITION: accepted; the changelog drop notes that counts move.",
+          "suggestion": "accept",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-11T22:12:57.310340+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": "shared/scripts/tools/verifiers/_tag_binding_core.py — `_flag_tags` (new `if item.get(\"reason\") == _UNBOUND_COVERS:` block)",
+          "line": null,
+          "finding": "The unbound-covers branch is inserted after the pre-existing filter `if not isinstance(item, dict) or not _is_test_id(str(item.get(\"test\") or \"\")): continue`. Unbound items are constructed in `_suite_tags._unbound` with `test=\"\"`. If `_is_test_id(\"\")` is False (very likely — it checks a `file::test` id against `_TEST_DIRS`), every unbound item is dropped by that first `continue` and the new warning branch is dead code. Similarly, the warning's own guard `_is_test_id(str(item.get(\"raw\") or \"\").split(\":\", 1)[0])` passes a bare file path with no `::` into a helper that validates test ids — if that returns False, the warning is silently swallowed. The new tests in `shared/tests/test_tag_binding_unbound_covers.py` assert the warning is emitted, so either these pass (and the helpers are lenient in a way worth confirming), or the gate never warns and the spec's \"routes it to warnings\" is not met. Verify `_is_test_id` behavior for `\"\"` and for a path-only prefix; if either returns False, hoist the unbound check above the `_is_test_id(test)` filter and drop/replace the `_is_test_id(raw-prefix)` guard (e.g. check the path is a test file instead).",
+          "suggestion": "Move the `reason == _UNBOUND_COVERS` dispatch to the top of the loop body, before the generic `continue` filters, and validate the file path with the same predicate used to decide which files the collector runs on.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-compliance/scripts/lib/collectors/_suite_tags.py — `pending_at",
+          "line": null,
+          "finding": "pending_at` is only assigned in the `elif same_line_covers is not None:` branch (and the two-consecutive-covers sub-branch). The primary covers-comment path (the `cm` branch handling a line that is only a `// @covers`, not shown in the diff and therefore unchanged) sets `pending` without setting `pending_at`, since that branch predates the variable. Any unbound comment flowing through that branch is reported with a stale `pending_at` (initially 0, so raw reads `path:0: // @covers …`). The new tests never assert the reported line number, so this would pass CI while emitting wrong line numbers in warnings and audit output.",
+          "suggestion": "Set `pending_at = lineno` wherever `pending` is first assigned (including the covers-comment-only branch), and add a test asserting the raw contains the actual line number (e.g. `a.test.ts:1:` for the import case, `:2:` for the blank-line case).",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "plugins/shipwright-compliance/tests/test_suite_tags_lexer.py — `test_covers_above_an_import_is_reported_once_and_never_rebound`, `test_covers_separated_from_describe_by_a_blank_line_is_reported`, `test_two_consecutive_covers_lines_report_the_overwritten_first_one",
+          "line": null,
+          "finding": "These tests assert only `reason` and that the FR id appears somewhere in `raw`; they never check the line number or that exactly one report is produced per dropped comment in the two-consecutive case beyond a `len == 1`. Combined with the `pending_at` issue above, an implementation reporting `path:0:` or a wrong line would still pass. Also, the raw format string is asserted nowhere, so downstream consumers (`_flag_tags` splits `raw` on `\":\"` taking element 0 as a path) are untested against the actual producer format — the shared-side test hand-writes a raw string rather than round-tripping the collector's output.",
+          "suggestion": "Assert the full raw (or at least `f\"{PATH}:{lineno}:\"` prefix), and add one round-trip test that feeds `propagate_suite_tags` output into `evaluate` so the producer/consumer raw format contract is enforced.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/verifiers/_tag_binding_core.py — `_is_test_id(str(item.get(\"raw\") or \"\").split(\":\", 1)[0])",
+          "line": null,
+          "finding": "On a Windows/absolute path (`C:\\repo\\tests\\a.test.ts`), `split(\":\", 1)[0]` yields `C`, so a legitimate unbound covers warning would be dropped. Low-impact if the guard is removed per the high finding above.",
+          "suggestion": "Remove the guard or parse the path up to the `: // @covers` marker instead.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "spec",
+          "file": "(diff-wide)",
+          "line": null,
+          "finding": "The spec calls for regenerating `test-traceability.json` once as the last step and listing moved FRs in the PR. No traceability regeneration is visible in the diff (may be intentionally out-of-diff, but it is an acceptance item). Confirm it was done; otherwise the moved/renamed FR coverage entries for the new test files will be stale.",
+          "suggestion": "Run the traceability regeneration and include the artifact change in the PR.  The lexer-based depth counting itself (`_brace_deltas` with the joined source and per-line bisect) is sound — offsets are internally consistent even for `\\r\\n`/unicode line separators — and the `check_orphan` routing (excluded from fail conditions, worded apart) matches the spec, with tests covering the only-unbound and mixed cases.  Overall: the approach is right and the collector/audit side looks solid, but the gate-side routing in `_tag_binding_core` depends on unverified `_is_test_id` behavior that could make the warning path dead code, and the line-number reporting is likely wrong for the common covers-comment path — fix and add the corresponding assertions before merging.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/tools/verifiers/_tag_binding_core.py",
+          "line": 197,
+          "finding": "The new warning branch is unreachable for collector-produced unbound comments. `_unbound()` emits `test=\"\"`, so the preceding `_is_test_id(...)` guard skips these records before checking their reason. Consequently, unbound comments produce no warning, violating the specification; `test_unbound_covers_is_one_warning_and_no_finding` should fail.",
+          "suggestion": "Handle `unbound-covers-comment` before the test-ID guard, validating the source path from `raw` within that branch. Retain the existing guard for other invalid tags.  Ship-with-fixes: the warning routing needs correction before shipping. Review was limited to the supplied diff because execution policy blocked reading the campaign brief and running tests.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-11T21:22:46.628801+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- Category: bug\n  Severity: high\n  File: shared/scripts/tools/verifiers/_tag_binding_core.py — `_flag_tags` (new `if item.get(\"reason\") == _UNBOUND_COVERS:` block)\n  Finding: The unbound-covers branch is inserted *after* the pre-existing filter `if not isinstance(item, dict) or not _is_test_id(str(item.get(\"test\") or \"\")): continue`. Unbound items are constructed in `_suite_tags._unbound` with `test=\"\"`. If `_is_test_id(\"\")` is False (very likely — it checks a `file::test` id against `_TEST_DIRS`), every unbound item is dropped by that first `continue` and the new warning branch is dead code. Similarly, the warning's own guard `_is_test_id(str(item.get(\"raw\") or \"\").split(\":\", 1)[0])` passes a bare file path with no `::` into a helper that validates test ids — if that returns False, the warning is silently swallowed. The new tests in `shared/tests/test_tag_binding_unbound_covers.py` assert the warning *is* emitted, so either these pass (and the helpers are lenient in a way worth confirming), or the gate never warns and the spec's \"routes it to warnings\" is not met. Verify `_is_test_id` behavior for `\"\"` and for a path-only prefix; if either returns False, hoist the unbound check above the `_is_test_id(test)` filter and drop/replace the `_is_test_id(raw-prefix)` guard (e.g. check the path is a test file instead).\n  Suggestion: Move the `reason == _UNBOUND_COVERS` dispatch to the top of the loop body, before the generic `continue` filters, and validate the file path with the same predicate used to decide which files the collector runs on.\n\n- Category: bug\n  Severity: medium\n  File: plugins/shipwright-compliance/scripts/lib/collectors/_suite_tags.py — `pending_at`\n  Finding: `pending_at` is only assigned in the `elif same_line_covers is not None:` branch (and the two-consecutive-covers sub-branch). The primary covers-comment path (the `cm` branch handling a line that is only a `// @covers`, not shown in the diff and therefore unchanged) sets ` […truncated]\n\n[openai] - Category: bug\n- Severity: medium\n- File: shared/scripts/tools/verifiers/_tag_binding_core.py:197\n- Finding: The new warning branch is unreachable for collector-produced unbound comments. `_unbound()` emits `test=\"\"`, so the preceding `_is_test_id(...)` guard skips these records before checking their reason. Consequently, unbound comments produce no warning, violating the specification; `test_unbound_covers_is_one_warning_and_no_finding` should fail.\n- Suggestion: Handle `unbound-covers-comment` before the test-ID guard, validating the source path from `raw` within that branch. Retain the existing guard for other invalid tags.\n\nShip-with-fixes: the warning routing needs correction before shipping. Review was limited to the supplied diff because execution policy blocked reading the campaign brief and running tests.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-11T22:12:57.080842+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-11T21:19:59.470524+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-11T21:19:59.612589+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}

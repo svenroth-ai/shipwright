@@ -27,12 +27,11 @@ import ast
 import re
 
 from ._lib_loader import load_shared_lib
-from ._suite_tags import propagate_suite_tags
+from ._suite_tags import JSX_SUFFIXES as _JSX_SUFFIXES, brace_deltas, propagate_suite_tags
 
 # The gate's own lexer (regex literals, JSX text, comments), so a wrapped ``.each`` table closes at
 # the same paren for the collector and the test-tag gate.
 _lex = load_shared_lib("ts_lexer").lex
-_JSX_SUFFIXES = (".tsx", ".jsx", ".js")  # same set as the gate; never ``.ts``, where ``<T>x`` is a cast
 
 # A declaration head left open at the end of its line, as a statement of its own:
 # ``test(`` / ``it.only(`` / ``test.describe(`` / ``describe(`` with nothing after the paren.
@@ -56,12 +55,19 @@ def join_multiline_decls(source: str, jsx: bool = True) -> str:
     starts the callback (``=>`` / ``function``). Gives up — leaving the source untouched
     for that declaration — when no callback line appears within ``_MAX_HEAD_LINES`` or a
     comment line interrupts the head, so an unusual shape degrades to the reference
-    parser's behaviour instead of being mangled. Braces are preserved, only moved onto one
-    line, so the suite-scope brace depth is unchanged. ``jsx`` says whether JSX text is lexed
+    parser's behaviour instead of being mangled. Braces are moved onto one
+    line, so suite depth is counted on the ORIGINAL lines (``parse_file``): a trailing ``//``
+    comment in a folded head would otherwise swallow the callback brace. ``jsx`` says whether JSX text is lexed
     (the gate's rule: not for a ``.ts`` file).
     """
+    return _join(source, jsx)[0]
+
+
+def _join(source: str, jsx: bool) -> tuple[str, list[tuple[int, int]]]:
+    """``(joined source, spans)``: ``spans[k]`` is the (first, last) ORIGINAL line index joined line ``k`` holds."""
     lines = source.splitlines()
     out: list[str] = []
+    spans: list[tuple[int, int]] = []
     i = 0
     while i < len(lines):
         end = _each_end(lines, i, jsx)
@@ -69,11 +75,13 @@ def join_multiline_decls(source: str, jsx: bool = True) -> str:
             end = _head_end(lines, i)
         if end is None:
             out.append(lines[i])
+            spans.append((i, i))
             i += 1
             continue
         out.append(" ".join([lines[i].rstrip()] + [ln.strip() for ln in lines[i + 1:end + 1]]))
+        spans.append((i, end))
         i = end + 1
-    return "\n".join(out) + ("\n" if source.endswith("\n") else "")
+    return "\n".join(out) + ("\n" if source.endswith("\n") else ""), spans
 
 
 def _each_end(lines: list[str], start: int, jsx: bool = True) -> int | None:
@@ -207,10 +215,17 @@ def parse_file(rel_path: str, source: str, grammar):
     untagged inventory must see the same declarations the tag parser saw. A leading UTF-8 BOM
     is dropped: ``ast.parse`` rejects it, which used to hide every test in such a file."""
     source = source[1:] if source.startswith("\ufeff") else source
+    origin = None
     if rel_path.lower().endswith(grammar._TS_SUFFIXES):
-        source = join_multiline_decls(source, rel_path.lower().endswith(_JSX_SUFFIXES))
+        jsx = rel_path.lower().endswith(_JSX_SUFFIXES)
+        original = source
+        source, spans = _join(original, jsx)
+        # Braces are counted on the ORIGINAL lines: a ``//`` comment inside a wrapped head would
+        # otherwise swallow the callback brace once the head is folded onto one line.
+        per_line = brace_deltas(original.splitlines(), jsx)
+        origin = ([sum(per_line[a:b + 1]) for a, b in spans], [a + 1 for a, _ in spans])
     res = grammar.parse_source(rel_path, source)
-    scope_hits, scope_invalid = propagate_suite_tags(source, rel_path, grammar)
+    scope_hits, scope_invalid = propagate_suite_tags(source, rel_path, grammar, origin)
     if rel_path.lower().endswith(".py"):
         h, iv = python_scope_marks(source, rel_path, grammar)
         scope_hits, scope_invalid = scope_hits + h, scope_invalid + iv

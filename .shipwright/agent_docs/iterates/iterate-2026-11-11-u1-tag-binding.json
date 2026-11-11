@@ -1,0 +1,74 @@
+{
+  "run_id": "iterate-2026-11-11-u1-tag-binding",
+  "date": "2026-11-11T21:56:25.864365Z",
+  "event_at": "2026-11-11T21:56:07.580720+00:00",
+  "type": "bug",
+  "complexity": "small",
+  "prior_source": "keyword",
+  "branch": "iterate/campaign-leadwright-followups--U1",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-11-11-u1-tag-binding",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "suite braces inside string/regex/template/comment literals do not pop or hold open a suite frame; no stale FR after a closed describe",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-compliance/tests/test_suite_tags_lexer.py::test_literal_with_closing_brace_does_not_pop_the_frame_early PASSED"
+      },
+      {
+        "behavior": "a comment inside a wrapped head does not swallow the callback brace (brace deltas on original lines)",
+        "disposition": "tested",
+        "evidence": "test_suite_tags_lexer.py::test_a_line_comment_inside_a_wrapped_describe_head_does_not_leave_the_suite_open PASSED"
+      },
+      {
+        "behavior": "unbound covers comment is reported once (import, blank line, overwrite, EOF), never rebound, none above a declaration",
+        "disposition": "tested",
+        "evidence": "test_suite_tags_lexer.py::test_covers_above_an_import_is_reported_once_and_never_rebound PASSED"
+      },
+      {
+        "behavior": "reported line is the on-disk line; manifest carries the entry shape",
+        "disposition": "tested",
+        "evidence": "test_suite_tags_lexer.py::test_the_reported_line_is_the_line_on_disk_not_in_the_joined_source PASSED"
+      },
+      {
+        "behavior": "gate routes unbound covers to a warning, never a finding; malformed tag still a finding",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_tag_binding_unbound_covers.py::test_unbound_covers_is_one_warning_and_no_finding PASSED"
+      },
+      {
+        "behavior": "untagged-modified text names both remedies, stays a hard STOP, no new exemption code",
+        "disposition": "tested",
+        "evidence": "test_tag_binding_unbound_covers.py::test_untagged_modified_names_both_remedies_and_stays_a_stop PASSED"
+      },
+      {
+        "behavior": "Group D words unbound covers apart and does not fail D-orphan on it",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-compliance/tests/test_group_d_unbound_covers.py PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 7,
+      "tested": 7,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 1,
+      "covered_acs": 1
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "justification": "collector/gate/audit library change below medium complexity; no startable surface",
+    "reason_code": "no-startable-surface",
+    "tests_run": 0
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}

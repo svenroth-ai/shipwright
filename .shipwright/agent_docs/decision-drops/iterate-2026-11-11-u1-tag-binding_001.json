@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-11-u1-tag-binding",
+  "date": "2026-11-11",
+  "section": "Iterate - bug: suite brace depth, unbound covers warning, gate text (U1)",
+  "title": "Suite depth from the shared lexer; unbound covers comment is a warning",
+  "context": "The collector counted braces textually so literals/comments mis-scoped suite tags (stale or lost FR); a covers comment reaching no declaration vanished silently.",
+  "decision": "propagate_suite_tags takes per-line brace deltas from ts_lexer. A dropped covers comment becomes an invalid_tags entry reason unbound-covers-comment (test empty, raw path:line) that the gate warns on and D-orphan words apart; untagged-modified text names both remedies, still a STOP.",
+  "consequences": "RTM counts can move in consumers; no new exemption code; frozen fr_tag_grammar untouched.",
+  "rationale": "One lexer for collector and gate; warning-only because the comment binds nothing and is not a malformed tag.",
+  "rejected": "Second quote tracker; emitting from flush_unbound (false-warns every suite tag); a deferral exemption (self-declared bypass).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}
