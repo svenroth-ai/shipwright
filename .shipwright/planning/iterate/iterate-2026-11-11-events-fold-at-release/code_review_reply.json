@@ -1,0 +1,83 @@
+{
+ "section": "iterate-2026-11-11-events-fold-at-release",
+ "verdict": "approve_with_fixes",
+ "review": [
+  {
+   "severity": "medium",
+   "category": "correctness",
+   "file": "shared/scripts/tools/fold_events_for_release.py",
+   "line": 101,
+   "finding": "The rollback can delete a file the fold did not create: it unlinks every planned path that is not in HEAD, including an archive or .keep that existed untracked before the run (the dirty check lets an untracked archive pass). An exception inside apply_fold before its own exists-with-different-content check would delete a foreign archive."
+  },
+  {
+   "severity": "medium",
+   "category": "correctness",
+   "file": "shared/scripts/tools/fold_events_for_release.py",
+   "line": 95,
+   "finding": "_rollback can raise (ls-tree with check=True, TimeoutExpired from the pathspec calls) from inside the except block and from _commit_fold, so the CLI could print a traceback and exit 1, breaking 'always exits 0'."
+  },
+  {
+   "severity": "medium",
+   "category": "correctness",
+   "file": "shared/scripts/tools/fold_events_for_release.py",
+   "line": 171,
+   "finding": "The 300 s commit timeout is unsafe as a hook-stall handler: killing git can leave index.lock behind, the pipes may keep waiting on Windows, and a commit that landed before a stalling post-commit hook is reported as commit_failed against the new HEAD."
+  },
+  {
+   "severity": "low",
+   "category": "correctness",
+   "file": "shared/scripts/tools/fold_events_for_release.py",
+   "line": 176,
+   "finding": "The 'not known' guard runs after the commit instead of before it; an empty pathspec list could commit everything staged."
+  },
+  {
+   "severity": "low",
+   "category": "correctness",
+   "file": "shared/scripts/tools/fold_events_for_release.py",
+   "line": 73,
+   "finding": "git status paths are relative to the repository root while the pathspec calls resolve relative to -C root, so a project root that is a subdirectory makes the dirty check fail open; stdin pathspecs use glob magic (defensive only)."
+  },
+  {
+   "severity": "low",
+   "category": "correctness",
+   "file": "shared/scripts/tools/fold_events_for_release.py",
+   "line": 86,
+   "finding": "An untracked .keep counts as a local change (only the archive has the ?? exemption), so a leftover .keep blocks every later fold; the fail-closed git-status branch reports the misleading reason 'local changes'."
+  },
+  {
+   "severity": "low",
+   "category": "readability",
+   "file": "shared/scripts/tools/fold_events_for_release.py",
+   "line": 17,
+   "finding": "The docstring says skipped means nothing changed, but archive_incomplete with rollback returns skipped plus rolled_back; dry_run is a returned status that is not listed."
+  },
+  {
+   "severity": "low",
+   "category": "architecture",
+   "file": "shared/scripts/tools/fold_events_for_release.py",
+   "line": 43,
+   "finding": "The module imports the private helpers _stage and _stage_paths from another tool module whose return value was changed for this second caller."
+  },
+  {
+   "severity": "low",
+   "category": "correctness",
+   "file": "shared/tests/test_events_fold_for_release.py",
+   "line": 305,
+   "finding": "test_a_renamed_drop_is_a_local_change_too accepts skipped or nothing_to_fold and never reaches the dirty check, so the rename record parsing is not exercised."
+  },
+  {
+   "severity": "low",
+   "category": "correctness",
+   "file": "shared/tests/test_events_fold_for_release.py",
+   "line": 115,
+   "finding": "No test covers rolled_back false, a pre-existing identical untracked archive plus a commit failure, or a rollback that itself fails."
+  },
+  {
+   "severity": "low",
+   "category": "correctness",
+   "file": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
+   "line": 41,
+   "finding": "The stated minimum git version for --pathspec-from-file may be 2.26 rather than 2.25 (add and checkout), unchecked."
+  }
+ ]
+}

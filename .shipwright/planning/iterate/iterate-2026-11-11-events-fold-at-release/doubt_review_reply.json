@@ -1,0 +1,39 @@
+{
+ "reviewer": "doubt-reviewer",
+ "stage": "doubt",
+ "verdict": "DOUBTS_RAISED",
+ "doubts": [
+  {
+   "severity": "medium",
+   "lens": "reversibility",
+   "claim_under_doubt": "a fold never breaks the integrity gate, including when the release is later aborted",
+   "disproof_attempt": "A release PR now contains the fold commit; reverting a merged release (git revert -m1, or a squash-merged release) deletes the archive that exists at the merge-base, which check_integrity flags as deleted_existing. No event is lost, but the revert is blocked. Nothing in the skill or docs says to leave the chore(events) commit out of a revert.",
+   "file": "shared/scripts/lib/events_integrity.py:151-168 vs changelog SKILL.md Step 5.3",
+   "what_would_resolve_it": "Document that reverting a release reverts only the chore(release) commit, not the fold commit."
+  },
+  {
+   "severity": "medium",
+   "lens": "concurrency & ordering",
+   "claim_under_doubt": "a fold never loses an event and the step can never stop a release",
+   "disproof_attempt": "_rollback deletes the new archive even when its own reset or checkout failed (index.lock from a hook timeout or another session). The work tree then holds neither the folded drops nor the archive, the index keeps the drop deletions staged, Step 6 fails on index.lock, and Step 7's staged-diff pathspec could commit the deletions without the archive.",
+   "file": "shared/scripts/tools/fold_events_for_release.py (_rollback, _commit_fold timeout branch)",
+   "what_would_resolve_it": "Delete the archive only after the tracked drops are confirmed back; document the repair for rolled_back false and a left-behind index.lock."
+  },
+  {
+   "severity": "low",
+   "lens": "boundary & contract",
+   "claim_under_doubt": "the fold commit always passes the events integrity check",
+   "disproof_attempt": "plan_fold judges merged against the trunk TIP while check_integrity judges against merge-base(trunk, HEAD). A release branch whose own old drop was squash-merged into the trunk but never rebased makes the archive look injected.",
+   "file": "shared/scripts/tools/fold_events_for_release.py (_fold) vs shared/scripts/lib/events_integrity.py:103",
+   "what_would_resolve_it": "Plan against git merge-base <trunk> HEAD."
+  },
+  {
+   "severity": "low",
+   "lens": "hidden coupling & blast radius",
+   "claim_under_doubt": "an aborted release leaves no trace",
+   "disproof_attempt": "If Step 5.5 refuses, the chore(events) commit stays and may be read into the changelog on the re-run.",
+   "file": "plugins/shipwright-changelog/skills/changelog/SKILL.md Steps 1-2 vs 5.3",
+   "what_would_resolve_it": "Skip chore(events) commits in Step 2, or confirm chore commits are dropped."
+  }
+ ]
+}

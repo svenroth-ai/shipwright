@@ -53,17 +53,18 @@ def _stage_paths(result: dict) -> list[str]:
     return paths
 
 
-def _stage(root: str, paths: list[str]) -> None:
+def _stage(root: str, paths: list[str]) -> list[str]:
     """``git add -A`` of exactly ``paths`` (those that exist or are tracked) in ONE call, paths on stdin (S8: ~1000 drops
     overflowed a Windows command line; one call also keeps the index all-or-nothing)."""
     tracked = set(git(root, "ls-files", "-z").stdout.decode("utf-8", "replace").split(chr(0)))
     known = [p for p in paths if (Path(root) / p).exists() or p in tracked]
     if not known:
-        return
+        return []
     proc = subprocess.run(["git", "-C", str(root), "add", "-A", "--pathspec-from-file=-", "--pathspec-file-nul"],
                           input=chr(0).join(known).encode("utf-8"), capture_output=True, timeout=120)
     if proc.returncode:
         raise GitError("git add failed: " + proc.stderr.decode("utf-8", "replace").strip()[-400:])
+    return known
 
 
 def _run(a: argparse.Namespace) -> dict:

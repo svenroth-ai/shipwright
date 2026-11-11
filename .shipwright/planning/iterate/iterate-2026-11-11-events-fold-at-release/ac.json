@@ -1,0 +1,5 @@
+{"items": [
+ {"kind": "add", "owner_fr": "FR-01.11", "new_text": "Given a release is cut in a project that uses per-run event files, when event files are already merged and older than two weeks, then they are folded into the archive in a commit of their own before the release commit and no event is lost.", "files": ["shared/scripts/tools/fold_events_for_release.py"]},
+ {"kind": "add", "owner_fr": "FR-01.11", "new_text": "Given a release folds old event files, when other work is already staged or a run is still in flight, then the staged work stays out of the fold commit and the run's event files are left alone.", "files": ["shared/scripts/tools/fold_events_for_release.py"]},
+ {"kind": "add", "owner_fr": "FR-01.11", "new_text": "Given the fold at release meets a conflict, a missing base, a file it cannot delete or a refusing commit hook, when the release runs, then it prints one line about it and the release goes on.", "files": ["shared/scripts/tools/fold_events_for_release.py"]}
+]}

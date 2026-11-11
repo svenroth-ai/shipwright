@@ -1,0 +1,93 @@
+{
+  "unattended": true,
+  "resolved_items": [
+    {
+      "kind": "add",
+      "owner_fr": "FR-01.11",
+      "new_text": "Given a release is cut in a project that uses per-run event files, when event files are already merged and older than two weeks, then they are folded into the archive in a commit of their own before the release commit and no event is lost.",
+      "files": [
+        "shared/scripts/tools/fold_events_for_release.py"
+      ],
+      "decided_by": "code",
+      "confirmed": false
+    },
+    {
+      "kind": "add",
+      "owner_fr": "FR-01.11",
+      "new_text": "Given a release folds old event files, when other work is already staged or a run is still in flight, then the staged work stays out of the fold commit and the run's event files are left alone.",
+      "files": [
+        "shared/scripts/tools/fold_events_for_release.py"
+      ],
+      "decided_by": "code",
+      "confirmed": false
+    },
+    {
+      "kind": "add",
+      "owner_fr": "FR-01.11",
+      "new_text": "Given the fold at release meets a conflict, a missing base, a file it cannot delete or a refusing commit hook, when the release runs, then it prints one line about it and the release goes on.",
+      "files": [
+        "shared/scripts/tools/fold_events_for_release.py"
+      ],
+      "decided_by": "code",
+      "confirmed": false
+    }
+  ],
+  "ac_decisions": [
+    {
+      "ac": "FR-01.11.new",
+      "mode": "auto",
+      "answer": "auto",
+      "kind": "add",
+      "answered_via": "none",
+      "decided_by": "code",
+      "confirmed": false
+    },
+    {
+      "ac": "FR-01.11.new",
+      "mode": "auto",
+      "answer": "auto",
+      "kind": "add",
+      "answered_via": "none",
+      "decided_by": "code",
+      "confirmed": false
+    },
+    {
+      "ac": "FR-01.11.new",
+      "mode": "auto",
+      "answer": "auto",
+      "kind": "add",
+      "answered_via": "none",
+      "decided_by": "code",
+      "confirmed": false
+    }
+  ],
+  "counts": {
+    "total": 3,
+    "auto": 3,
+    "asked": 0,
+    "exempt": 0,
+    "restore": 0,
+    "unchanged": 0,
+    "answered_inline": 0,
+    "unconfirmed": 0,
+    "exempt_share": 0.0,
+    "restore_share": 0.0
+  },
+  "status": "ok",
+  "ac_mode": {
+    "mode": "auto",
+    "source": "default (unattended)"
+  },
+  "run_id": "iterate-2026-11-11-events-fold-at-release",
+  "bind_id": "iterate-2026-11-11-events-fold-at-release",
+  "exemption_check": "tested against the current diff (8 file(s), 5 not observable)",
+  "surface": {
+    "observable": true,
+    "files": [
+      "plugins/shipwright-changelog/skills/changelog/SKILL.md",
+      "shared/scripts/tools/fold_events.py",
+      "shared/scripts/tools/fold_events_for_release.py"
+    ],
+    "ignored": 5
+  }
+}
