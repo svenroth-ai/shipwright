@@ -1,0 +1,50 @@
+{
+  "run_id": "iterate-2026-11-11-iterate-prose-layout-neutral",
+  "date": "2026-11-10T23:45:58.152570Z",
+  "event_at": "2026-11-10T23:09:24.697905+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "keyword",
+  "branch": "iterate/iterate-prose-layout-neutral",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-11-11-iterate-prose-layout-neutral",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "The finalization check's failure message names how to stage an uncommitted event for both the single-file and the per-run layout",
+        "disposition": "tested",
+        "test": "shared/tests/test_verify_iterate_finalization.py::test_uncommitted_event_message_names_both_layouts_fix",
+        "evidence": "shared/tests/test_verify_iterate_finalization.py::test_uncommitted_event_message_names_both_layouts_fix passed in the F0 shared/tests unit (junit-shared-tests)"
+      },
+      {
+        "behavior": "Iterate skill references no longer name only the single event file where the per-run layout also applies",
+        "disposition": "untestable",
+        "reason_code": "requires-manual-visual-judgment",
+        "reason": "runtime prose, checked by the spec and doubt reviewers against the code"
+      }
+    ],
+    "counts": {
+      "testable": 1,
+      "tested": 1,
+      "untestable": 1,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 1,
+      "covered_acs": 1
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "justification": "Skill prose and one verifier message text; no UI or API route."
+  },
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}

@@ -198,6 +198,24 @@ def test_events_fails_when_tracked_but_only_in_working_copy(git_origin_repo, mak
     assert "commit" in result.detail.lower()
 
 
+@pytest.mark.covers("FR-01.11")
+def test_uncommitted_event_message_names_both_layouts_fix(git_origin_repo, make_worktree):
+    """The fix hint must not send a drops-layout run to ``git add shipwright_events.jsonl`` only."""
+    work, _ = git_origin_repo
+    wt = make_worktree(work, "probe")
+    (wt / "shipwright_events.jsonl").write_text(
+        json.dumps({"type": "phase_started", "phase": "p"}) + "\n", encoding="utf-8")
+    _git(wt, "add", "shipwright_events.jsonl")
+    _git(wt, "commit", "-m", "chore(events): baseline")
+    with (wt / "shipwright_events.jsonl").open("a", encoding="utf-8") as fp:
+        fp.write(json.dumps({"v": 1, "id": "evt-hint", "type": "work_completed", "source": "iterate",
+                             "commit": "h1nt0001", "adr_id": "iterate-hint"}) + "\n")
+    result = check_events_has_commit(wt, "h1nt0001", run_id="iterate-hint")
+    assert result.ok is False
+    assert "git add shipwright_events.jsonl" in result.detail
+    assert "stage_event_drops.py" in result.detail
+
+
 def test_events_working_copy_sufficient_when_untracked(git_origin_repo, make_worktree):
     """No regression for gitignored/untracked logs: an uncommitted event still
     passes when events.jsonl is NOT tracked (committed-assertion is skipped)."""

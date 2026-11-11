@@ -1,0 +1,8 @@
+{"items": [
+ {"name": "Prose names both layouts where it names the event log", "verdict": "pass", "note": "F11 gate check, F5b (two places), SKILL.md order note, F5b row and F6 row, F6.md drops note"},
+ {"name": "Verifier message names both fixes", "verdict": "pass", "note": "git add for the legacy file, stage_event_drops.py for a drop; new test asserts both"},
+ {"name": "No behaviour change in the verifier", "verdict": "pass", "note": "only message text changed; 12 events tests pass"},
+ {"name": "No issue, campaign or unit numbers added", "verdict": "pass", "note": "F6.md lost its campaign/issue reference"},
+ {"name": "AC record", "verdict": "pass", "note": "declared as an add under FR-01.11 (observable verifier message), decided ok"},
+ {"name": "CRLF preserved in edited files", "verdict": "pass", "note": "edits made byte-preserving; test file has 1568 CRLF lines, 0 bare LF"}
+]}

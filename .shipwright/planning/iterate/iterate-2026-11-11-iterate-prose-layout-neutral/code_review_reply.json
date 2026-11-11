@@ -1,0 +1,5 @@
+{"section": "iterate-prose-layout-neutral", "review": [
+ {"severity": "low", "category": "readability", "file": "shared/tests/test_verify_iterate_finalization.py", "line": 201, "finding": "New test repeats the setup of the neighbouring working-copy test.", "suggestion": "Could fold the two assertions into the existing test; kept separate on purpose, named after its intent."},
+ {"severity": "low", "category": "readability", "file": "plugins/shipwright-iterate/skills/iterate/references/F5b.md", "line": 180, "finding": "Two parentheticals back to back.", "suggestion": "Fixed: reworded."},
+ {"severity": "low", "category": "correctness", "file": "plugins/shipwright-iterate/skills/iterate/references/F11.md", "line": 210, "finding": "Singular 'file' narrower than what the code stages.", "suggestion": "Fixed: 'file(s)'."}
+]}

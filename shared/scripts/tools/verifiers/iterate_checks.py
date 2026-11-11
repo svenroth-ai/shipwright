@@ -187,8 +187,10 @@ def check_events_has_commit(
         return CheckResult(
             name, False,
             f"{present_detail}, but it is NOT in any commit (HEAD blob) — F6 "
-            "must `git add shipwright_events.jsonl` so the event ships in the "
-            "iterate PR (it currently lives only in the working copy)",
+            "must stage the event log so the event ships in the iterate PR "
+            "(`git add shipwright_events.jsonl` under the legacy layout, "
+            "`stage_event_drops.py` for a drop under the drops layout; it "
+            "currently lives only in the working copy)",
         )
     if committed is True:
         return CheckResult(name, True, f"{present_detail}; committed in HEAD")

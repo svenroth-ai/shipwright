@@ -1,0 +1,1 @@
+{"stage": "spec-compliance", "verdict": "PASS", "spec_citations": [], "summary": "PASS. Diff matches the spec: prose and verifier message layout-neutral, no behaviour change, no new issue or campaign numbers; claims about stage_event_drops.py and the layout key verified against code."}
