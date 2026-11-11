@@ -87,7 +87,9 @@ def test_nothing_old_enough_changes_nothing_and_a_second_run_does_too(tmp_path):
     assert git(root, "rev-parse", "HEAD").strip() == head
 
 
-def test_a_project_on_the_legacy_layout_is_left_alone(tmp_path):
+def test_a_project_on_the_legacy_layout_is_left_alone(tmp_path, monkeypatch):
+    for name in ("SHIPWRIGHT_EVENTS_LAYOUT", "SHIPWRIGHT_EVENTS_LAYOUT_TEST"):
+        monkeypatch.delenv(name, raising=False)
     root = _repo(tmp_path, layout=None)
     head = git(root, "rev-parse", "HEAD").strip()
     assert _run(root)["status"] == "not_applicable"
@@ -267,7 +269,9 @@ def test_a_foreign_archive_with_different_content_is_never_deleted(tmp_path):
     assert foreign.read_text(encoding="utf-8") == "someone else's file" + chr(10)
 
 
-def test_every_status_carries_open_files_except_not_applicable(tmp_path):
+def test_every_status_carries_open_files_except_not_applicable(tmp_path, monkeypatch):
+    for name in ("SHIPWRIGHT_EVENTS_LAYOUT", "SHIPWRIGHT_EVENTS_LAYOUT_TEST"):
+        monkeypatch.delenv(name, raising=False)   # the events replay gate forces drops for the whole run; the legacy repo below must read as legacy
     root = _repo(tmp_path)
     assert "open_files" in tool.fold_for_release(str(root))                           # no trunk: skipped
     assert "open_files" in tool.fold_for_release(str(root), base_ref="main", dry_run=True)
