@@ -12,6 +12,14 @@ valid/malformed split never diverges from the frozen grammar.
 from __future__ import annotations
 
 import re
+from bisect import bisect_right
+
+from ._lib_loader import load_shared_lib
+
+# The gate's own lexer: braces inside string, template and regex literals and comments never count.
+_lex = load_shared_lib("ts_lexer").lex
+JSX_SUFFIXES = (".tsx", ".jsx", ".js")  # JSX text is lexed for these only, never for ``.ts`` (``<T>x`` is a cast)
+UNBOUND_COVERS = "unbound-covers-comment"
 
 _DESCRIBE_RE = re.compile(r"\bdescribe(?:\.\w+)?\s*\(\s*(['\"`])(?P<title>.*?)\1")
 
@@ -32,7 +40,25 @@ def _describe_tokens(line: str, dtest: str, grammar, pending, same_line_covers, 
     return tokens
 
 
-def propagate_suite_tags(source: str, path: str, grammar):
+def brace_deltas(lines: list[str], jsx: bool) -> list[int]:
+    """Net ``{`` minus ``}`` per line, counted over the lexed token stream of the whole source."""
+    starts, pos = [], 0
+    for ln in lines:
+        starts.append(pos)
+        pos += len(ln) + 1
+    deltas = [0] * len(lines)
+    for tok in _lex("\n".join(lines), 0, jsx)[0]:
+        if tok.kind == "punct" and tok.text in ("{", "}"):
+            deltas[bisect_right(starts, tok.start) - 1] += 1 if tok.text == "{" else -1
+    return deltas
+
+
+def _unbound(grammar, path: str, lineno: int, ids: str):
+    """A covers comment that reaches no declaration: reported, never rebound to a later line."""
+    return grammar.InvalidTag(raw=f"{path}:{lineno}: // @covers {ids.strip()}", test="", reason=UNBOUND_COVERS)
+
+
+def propagate_suite_tags(source: str, path: str, grammar, origin=None):
     """Return ``(hits, invalid)`` for describe-level tags propagated to inner tests.
 
     Non-TS/JS sources produce nothing: describe/it suites are a TS/JS-only construct, so a
@@ -45,6 +71,10 @@ def propagate_suite_tags(source: str, path: str, grammar):
     brace lands on the FOLLOWING line (Prettier-wrapped signatures) is not popped
     before its body opens. Known limitation: a one-line ``describe(..., () => { it(...) })``
     does not propagate (describe + test share a line) — the dominant multi-line form does.
+
+    ``origin`` = ``(deltas, linenos)`` per line of ``source`` when it is a JOINED form of the file:
+    the brace delta counted on the original lines and each line's original 1-based number. Without
+    it the deltas and line numbers are those of ``source`` itself.
     """
     # describe/it suites are a TS/JS-only construct — gate on the frozen grammar's OWN suffix set
     # (the single authoritative list, identical to what the collector scans) so a describe/it
@@ -56,9 +86,12 @@ def propagate_suite_tags(source: str, path: str, grammar):
     invalid: list = []
     stack: list[list] = []   # [open_depth, tokens, entered]
     pending: str | None = None           # leading // @covers ids awaiting the next line
+    pending_at = 0
     depth = 0
+    lines = source.splitlines()
+    deltas, linenos = origin or (brace_deltas(lines, path.lower().endswith(JSX_SUFFIXES)), None)
 
-    for line in source.splitlines():
+    for lineno, line in enumerate(lines, 1):
         while stack and stack[-1][2] and depth <= stack[-1][0]:
             stack.pop()
         cm = grammar._COVERS_COMMENT_RE.search(line)
@@ -78,16 +111,22 @@ def propagate_suite_tags(source: str, path: str, grammar):
                     hits.append(grammar.TagHit(fr_id, test, tag_source, raw))
             pending = None
         elif same_line_covers is not None:
-            pending = same_line_covers
+            if pending is not None:   # two covers lines in a row: the first is overwritten
+                invalid.append(_unbound(grammar, path, pending_at, pending))
+            pending, pending_at = same_line_covers, linenos[lineno - 1] if linenos else lineno
         else:
+            if pending is not None:
+                invalid.append(_unbound(grammar, path, pending_at, pending))
             pending = None
 
-        depth += line.count("{") - line.count("}")
+        depth += deltas[lineno - 1]
         for entry in stack:
             if depth > entry[0]:
                 entry[2] = True   # the describe body has opened — now poppable on close
 
+    if pending is not None:
+        invalid.append(_unbound(grammar, path, pending_at, pending))
     return hits, invalid
 
 
-__all__ = ["propagate_suite_tags"]
+__all__ = ["JSX_SUFFIXES", "UNBOUND_COVERS", "brace_deltas", "propagate_suite_tags"]

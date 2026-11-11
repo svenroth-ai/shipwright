@@ -41,6 +41,15 @@ def orphan_line(o: dict, tag: str) -> str:
     return f"{o.get('test', '?')} {target} ({o.get('reason', '')}) [{tag}]"
 
 
+#: ``invalid_tags`` reason of a ``// @covers`` comment that reached no declaration (collector ``_suite_tags``).
+UNBOUND_COVERS_REASON = "unbound-covers-comment"
+
+
+def unbound_covers_line(iv: dict) -> str:
+    """A covers comment above no test or describe: it binds nothing, but it is not a malformed tag."""
+    return f"{iv.get('raw', '?')}: covers comment binds no declaration - move it directly above one [unbound_covers]"
+
+
 def invalid_tag_line(iv: dict) -> str:
     """One malformed ``@FR`` tag — a typo that silently under-covers."""
     return (f"{iv.get('test', '?')}: malformed tag {iv.get('raw', '')!r} "
@@ -112,6 +121,6 @@ def invalid_layer_line(iv: dict) -> str:
 
 
 __all__ = [
-    "fold_defect_line", "invalid_layer_line", "invalid_tag_line", "layer_gap_line",
+    "UNBOUND_COVERS_REASON", "fold_defect_line", "invalid_layer_line", "invalid_tag_line", "unbound_covers_line", "layer_gap_line",
     "orphan_line", "suggest_layer", "suggest_orphan",
 ]

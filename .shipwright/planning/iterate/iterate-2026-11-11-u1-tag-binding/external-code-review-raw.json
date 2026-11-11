@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: bug\n- Severity: medium\n- File: shared/scripts/tools/verifiers/_tag_binding_core.py:197\n- Finding: The new warning branch is unreachable for collector-produced unbound comments. `_unbound()` emits `test=\"\"`, so the preceding `_is_test_id(...)` guard skips these records before checking their reason. Consequently, unbound comments produce no warning, violating the specification; `test_unbound_covers_is_one_warning_and_no_finding` should fail.\n- Suggestion: Handle `unbound-covers-comment` before the test-ID guard, validating the source path from `raw` within that branch. Retain the existing guard for other invalid tags.\n\nShip-with-fixes: the warning routing needs correction before shipping. Review was limited to the supplied diff because execution policy blocked reading the campaign brief and running tests.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "## Findings\n\n- Category: bug\n  Severity: high\n  File: shared/scripts/tools/verifiers/_tag_binding_core.py \u2014 `_flag_tags` (new `if item.get(\"reason\") == _UNBOUND_COVERS:` block)\n  Finding: The unbound-covers branch is inserted *after* the pre-existing filter `if not isinstance(item, dict) or not _is_test_id(str(item.get(\"test\") or \"\")): continue`. Unbound items are constructed in `_suite_tags._unbound` with `test=\"\"`. If `_is_test_id(\"\")` is False (very likely \u2014 it checks a `file::test` id against `_TEST_DIRS`), every unbound item is dropped by that first `continue` and the new warning branch is dead code. Similarly, the warning's own guard `_is_test_id(str(item.get(\"raw\") or \"\").split(\":\", 1)[0])` passes a bare file path with no `::` into a helper that validates test ids \u2014 if that returns False, the warning is silently swallowed. The new tests in `shared/tests/test_tag_binding_unbound_covers.py` assert the warning *is* emitted, so either these pass (and the helpers are lenient in a way worth confirming), or the gate never warns and the spec's \"routes it to warnings\" is not met. Verify `_is_test_id` behavior for `\"\"` and for a path-only prefix; if either returns False, hoist the unbound check above the `_is_test_id(test)` filter and drop/replace the `_is_test_id(raw-prefix)` guard (e.g. check the path is a test file instead).\n  Suggestion: Move the `reason == _UNBOUND_COVERS` dispatch to the top of the loop body, before the generic `continue` filters, and validate the file path with the same predicate used to decide which files the collector runs on.\n\n- Category: bug\n  Severity: medium\n  File: plugins/shipwright-compliance/scripts/lib/collectors/_suite_tags.py \u2014 `pending_at`\n  Finding: `pending_at` is only assigned in the `elif same_line_covers is not None:` branch (and the two-consecutive-covers sub-branch). The primary covers-comment path (the `cm` branch handling a line that is only a `// @covers`, not shown in the diff and therefore unchanged) sets `pending` without setting `pending_at`, since that branch predates the variable. Any unbound comment flowing through that branch is reported with a stale `pending_at` (initially 0, so raw reads `path:0: // @covers \u2026`). The new tests never assert the reported line number, so this would pass CI while emitting wrong line numbers in warnings and audit output.\n  Suggestion: Set `pending_at = lineno` wherever `pending` is first assigned (including the covers-comment-only branch), and add a test asserting the raw contains the actual line number (e.g. `a.test.ts:1:` for the import case, `:2:` for the blank-line case).\n\n- Category: test\n  Severity: medium\n  File: plugins/shipwright-compliance/tests/test_suite_tags_lexer.py \u2014 `test_covers_above_an_import_is_reported_once_and_never_rebound`, `test_covers_separated_from_describe_by_a_blank_line_is_reported`, `test_two_consecutive_covers_lines_report_the_overwritten_first_one`\n  Finding: These tests assert only `reason` and that the FR id appears somewhere in `raw`; they never check the line number or that exactly one report is produced per dropped comment in the two-consecutive case beyond a `len == 1`. Combined with the `pending_at` issue above, an implementation reporting `path:0:` or a wrong line would still pass. Also, the raw format string is asserted nowhere, so downstream consumers (`_flag_tags` splits `raw` on `\":\"` taking element 0 as a path) are untested against the actual producer format \u2014 the shared-side test hand-writes a raw string rather than round-tripping the collector's output.\n  Suggestion: Assert the full raw (or at least `f\"{PATH}:{lineno}:\"` prefix), and add one round-trip test that feeds `propagate_suite_tags` output into `evaluate` so the producer/consumer raw format contract is enforced.\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/tools/verifiers/_tag_binding_core.py \u2014 `_is_test_id(str(item.get(\"raw\") or \"\").split(\":\", 1)[0])`\n  Finding: On a Windows/absolute path (`C:\\repo\\tests\\a.test.ts`), `split(\":\", 1)[0]` yields `C`, so a legitimate unbound covers warning would be dropped. Low-impact if the guard is removed per the high finding above.\n  Suggestion: Remove the guard or parse the path up to the `: // @covers` marker instead.\n\n- Category: spec\n  Severity: low\n  File: (diff-wide)\n  Finding: The spec calls for regenerating `test-traceability.json` once as the last step and listing moved FRs in the PR. No traceability regeneration is visible in the diff (may be intentionally out-of-diff, but it is an acceptance item). Confirm it was done; otherwise the moved/renamed FR coverage entries for the new test files will be stale.\n  Suggestion: Run the traceability regeneration and include the artifact change in the PR.\n\nThe lexer-based depth counting itself (`_brace_deltas` with the joined source and per-line bisect) is sound \u2014 offsets are internally consistent even for `\\r\\n`/unicode line separators \u2014 and the `check_orphan` routing (excluded from fail conditions, worded apart) matches the spec, with tests covering the only-unbound and mixed cases.\n\nOverall: the approach is right and the collector/audit side looks solid, but the gate-side routing in `_tag_binding_core` depends on unverified `_is_test_id` behavior that could make the warning path dead code, and the line-number reporting is likely wrong for the common covers-comment path \u2014 fix and add the corresponding assertions before merging.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-11-11-u1-tag-binding",
+    "at": "2026-11-11T21:21:42.367893+00:00"
+  },
+  "verdicts": {
+    "openai": "revise",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

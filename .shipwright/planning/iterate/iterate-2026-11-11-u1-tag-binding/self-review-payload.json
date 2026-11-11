@@ -1,0 +1,9 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"Brace count via shared lexer; unbound covers reported as warning; untagged-modified text names both remedies, still a STOP, no new exemption code."},
+{"name":"Error Handling","verdict":"pass","note":"The lexer never raises (unterminated literals fall back to punct tokens); no new failure path."},
+{"name":"Security Basics","verdict":"pass","note":"No external input beyond test source text; no shell or network."},
+{"name":"Test Quality","verdict":"pass","note":"Fixtures call propagate_suite_tags directly and were red before the change (14 failed) and green after."},
+{"name":"Performance Basics","verdict":"pass","note":"One lex pass per TS file, linear; bisect for line mapping."},
+{"name":"Naming & Structure","verdict":"pass","note":"JSX_SUFFIXES defined once and imported by _file_tags; no second quote tracker; bloat files untouched."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Producer _suite_tags to manifest invalid_tags to consumers _tag_binding_core and Group D; both probed by tests with real dicts; schema allows the entry (test empty, raw non-empty, reason string)."}
+]}

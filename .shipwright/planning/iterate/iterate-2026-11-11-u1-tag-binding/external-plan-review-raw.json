@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "## Findings\n\n- **Category: approach \u2014 Severity: medium**\n  **Finding:** Replacing the textual brace count with `ts_lexer.lex` over \"the joined source\" changes the input domain: the lexer presumably expects a complete, self-contained document. Concatenating multiple files into one lexer run can misattribute brace balance across file boundaries if the lexer keeps internal state (e.g., template literals spanning lines, JSX mode). Per-file lexing with per-file line offsets would be safer and simpler.\n  **Suggestion:** Lex each file separately and accumulate per-line deltas with correct line offset math; only join if the current brace counter was already treating the joined string as one document.\n\n- **Category: edge-case \u2014 Severity: medium**\n  **Finding:** The lexer-based count must handle brace characters inside strings, comments, and regexes \u2014 that's presumably the whole point \u2014 but the plan doesn't say what happens when the lexer *fails* (malformed template, lexing error). Falling back to the old textual count silently would hide regressions; propagating an error could crash suite-tag extraction on any file with a syntax quirk.\n  **Suggestion:** Define explicit error handling: skip the file's delta on lex failure and log, or fall back to `line.count` with a marker so fixtures can distinguish.\n\n- **Category: edge-case \u2014 Severity: low**\n  **Finding:** \"Emits `unbound-covers-comment` \u2026 also on a consecutive overwrite and at EOF\" \u2014 three distinct trigger states feeding one reason code. If the audit or user needs to know *which* trigger fired, one reason may be lossy, and fixtures asserting all three share a code should be explicit.\n  **Suggestion:** Confirm one reason code is intended for all three; if not, add a sub-detail field rather than a second code.\n\n- **Category: risk \u2014 Severity: medium**\n  **Finding:** Routing a new invalid-tag reason into warnings-only in `_flag_tags` and exempting it from D-orphan is a policy change that could mask genuine problems: a `// @covers` comment that's ignored for an unrelated reason (e.g., inside a `@ts-ignore`d block or genuinely malformed syntax) now silently produces nothing actionable.\n  **Suggestion:** Ensure the `unbound-covers-comment` emission requires a positive identification of the comment context (e.g., lexer confirms the tag is inside a comment), not \"brace count said the tag is unbound.\" Otherwise misclassification becomes invisible.\n\n- **Category: risk \u2014 Severity: low**\n  **Finding:** \"Only when new vs base\" for warnings implies a diff against a base state; the plan doesn't mention how that base is derived or what happens on a full run without base (first run, CI on a fresh clone).\n  **Suggestion:** Specify the no-base behavior (presumably warn on all).\n\n- **Category: dependency \u2014 Severity: medium**\n  **Finding:** The plan says \"regenerate test-traceability.json once as last step and list moved FRs in the PR\" \u2014 but acceptance criteria are TBD and the brief lives in another worktree. Reordering FR traceability entries is easy to get wrong and hard to review if done as a bulk regeneration.\n  **Suggestion:** Ensure the regeneration is limited to the moved FRs and diffed in the PR so reviewers see the mapping change explicitly.\n\n- **Category: approach \u2014 Severity: low**\n  **Finding:** Rewriting the untagged-modified STOP text to \"name both remedies\" is fine, but asserting exact gate text in tests makes the message brittle against future copy edits.\n  **Suggestion:** Assert on stable tokens (e.g., presence of both remedy identifiers) rather than full sentence text.\n\n## Overall Assessment\n\nThe approach is sound in direction \u2014 lexer-based depth and a dedicated warning path are the right shape \u2014 but the plan under-specifies error handling for lexer failures and the joined-source input, which are the two places this can silently regress existing tag binding. Tighten those and it's ready.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "The environment blocked reading the normative brief and source files, so this review is limited to the supplied specification and mini-plan.\n\n1. **Category:** risk \u00b7 **Severity:** medium  \n   **Finding:** The test plan does not explicitly include the required stale-FR regression. Incorrect suite depth can silently propagate coverage tags into unrelated tests and alter traceability.  \n   **Suggestion:** Add direct `propagate_suite_tags` assertions for stale-FR leakage, braces inside comments and multiline templates, nested suites, and JSX/TSX. Assert exact inherited IDs and where inheritance stops.\n\n2. **Category:** edge-case \u00b7 **Severity:** medium  \n   **Finding:** The plan adds unbound diagnostics on overwrite and EOF, but does not explicitly require clearing the pending tag when it becomes unbound. Emitting a warning alone could still let the comment bind to a later test.  \n   **Suggestion:** Clear pending binding state at every unbound transition. Test that each abandoned comment produces one diagnostic at its original location and never supplies coverage to a subsequent test.\n\n3. **Category:** dependency \u00b7 **Severity:** low  \n   **Finding:** The closing steps omit the explicitly required moved-FR list in the PR and cache sync after merge. The traceability regeneration may reveal binding changes that need review.  \n   **Suggestion:** Add those steps, inspect the final traceability diff, and identify any moved FR associations in the PR.\n\nThe approach is sound and appropriately scoped, with no specific security concern evident from the supplied text. Make the binding-state regression coverage explicit before proceeding; compliance with the unread brief remains unverified.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-11-11-u1-tag-binding",
+    "at": "2026-11-11T21:19:21.972594+00:00"
+  },
+  "verdicts": {
+    "glm": "revise",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}
