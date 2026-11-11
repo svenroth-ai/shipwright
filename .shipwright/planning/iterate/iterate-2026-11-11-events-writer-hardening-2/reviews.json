@@ -1,0 +1,290 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-11-events-writer-hardening-2",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-11T07:42:13.204677+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "AC2's mechanism is underspecified. The plan says `_monotonic_ts` \"also look[s] at the run's other drops\" when the target file doesn't exist, but the reproduced bug is that the reader breaks ties with (ts, then random id). Merely looking at other drops doesn't say what the writer does on a tie — if it merely skips the guard (or reads the same coarse clock), the new event can still carry the identical `ts` and lose the tie in the reader. The fix must force the new event's `ts` strictly greater than the closed drop's last event ts (e.g., bump by one), and that behaviour needs a stated invariant: first-event-after-rotation `ts > last ts in any of the run's drops`.",
+          "suggestion": "State the concrete rule (\"if new-file first ts <= max ts across the run's drops, set ts = max + 1\") and add a test where the rotation event and the next event come from the same coarse clock tick.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The torn-file predicate is `ends_without_newline`. An empty (0-byte) drop file — which can exist after a crash before the first write lands — ends without a newline only if the check is written as `not data.endswith(b'\\n')`. That would permanently skip an empty file as an open-drop candidate, accumulating a new file per run per crash even though an empty file is harmless to append to (a fresh first line is fine).",
+          "suggestion": "Define torn as \"non-empty and last byte is not `\\n`\". Add a probe test for the empty-file case.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The AC2 scan (\"same `<key>--<wt8>--` prefix\") implies a directory listing per new-file creation. Fine, but if all of a run's drops are torn (repeated crash), the writer creates a new drop each time — acceptable, but worth one sentence confirming that's intended and that a fully-torn run still yields readable, ordered events.",
+          "suggestion": "Confirm in the plan; optionally a test with two torn drops then a fresh event.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Reader strictness change (`.+` → strict `DROP_NAME`) is a behavioural change beyond hardening: any previously-legible file with, say, a key containing a space or a leading dot now reads as `key=None`, and per the stated rule any non-ok event in it fails the run's absence gate closed. The plan marks this \"Intended,\" which is right, but it's the kind of change that surfaces on real checkouts with hand-named files.",
+          "suggestion": "Make sure the name-table test includes a realistic hand-named file, and confirm the fold/quarantine path gives the operator a clear message (not just a silent refusal) for such a file.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "events_read`'s flat-load path reuses `_sibling` to load `events_names` — good — but `events_stage` and the audit adapter's other flat-load consumers aren't mentioned. If any other module imports `events_fold_io`'s re-exported `drop_key_of` in a flat context, the sibling load chain must resolve there too.",
+          "suggestion": "Extend the existing flat-load context test to cover `events_names` resolution from both `events_read` and `events_fold_io` contexts.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Writer self-validation with the strict `DROP_NAME` (replacing a looser check) could regress if the writer ever produces a key outside `[A-Za-z0-9_-][A-Za-z0-9._-]{0,79}` — e.g., a key derived from user input. The plan doesn't say what happens on self-validation failure (crash? fall back?).",
+          "suggestion": "Assert the writer's key generation satisfies `DROP_NAME` in a unit test, and define self-validation failure as a hard error with the offending name in the message.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The two writer fixes intersect: after rejecting a torn open drop, `_monotonic_ts` will scan that same damaged file among the run’s other drops. The plan does not specify how it handles the incomplete final record. A parsing failure could prevent the next event from being written, violating AC3.",
+          "suggestion": "Read complete, valid records for timestamp discovery while preserving the damaged file unchanged and retaining its fail-closed status. Add a combined test: valid event, torn final record, then a successful write to a new drop.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "“Look at the run’s other drops” does not establish which timestamp controls the new event. Directory order and nonce order cannot establish event order; using the last file encountered could still produce a timestamp earlier than an existing event. Equal timestamps would retain the reader’s random-ID ordering problem.",
+          "suggestion": "Compute the maximum valid timestamp across matching drops and advance strictly beyond it using the existing timestamp precision. Test multiple closed drops with deliberately shuffled filenames, a frozen clock, and a clock earlier than the stored maximum.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "AC4 requires byte-identical legacy writes, but the plan changes shared timestamp logic without explicitly identifying a layout guard or legacy regression coverage. A new-file check alone does not guarantee that drop scanning cannot affect a newly created legacy log.",
+          "suggestion": "Restrict cross-drop timestamp discovery explicitly to the per-run layout. Add a deterministic legacy regression test comparing emitted bytes, including initial creation.  The approach is focused, and a small shared naming module is a reasonable way to remove inconsistent validation. Resolve the interaction between damaged files and timestamp discovery, make the maximum-timestamp rule explicit, and pin legacy compatibility before proceeding.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-11T07:37:28.482904+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: approach** — **Severity: medium**\n  **Finding:** AC2's mechanism is underspecified. The plan says `_monotonic_ts` \"also look[s] at the run's other drops\" when the target file doesn't exist, but the reproduced bug is that the *reader* breaks ties with (ts, then random id). Merely looking at other drops doesn't say what the writer does on a tie — if it merely skips the guard (or reads the same coarse clock), the new event can still carry the identical `ts` and lose the tie in the reader. The fix must force the new event's `ts` strictly greater than the closed drop's last event ts (e.g., bump by one), and that behaviour needs a stated invariant: first-event-after-rotation `ts > last ts in any of the run's drops`.\n  **Suggestion:** State the concrete rule (\"if new-file first ts <= max ts across the run's drops, set ts = max + 1\") and add a test where the rotation event and the next event come from the same coarse clock tick.\n\n- **Category: edge-case** — **Severity: medium**\n  **Finding:** The torn-file predicate is `ends_without_newline`. An empty (0-byte) drop file — which can exist after a crash before the first write lands — ends without a newline only if the check is written as `not data.endswith(b'\\n')`. That would permanently skip an empty file as an open-drop candidate, accumulating a new file per run per crash even though an empty file is harmless to append to (a fresh first line is fine).\n  **Suggestion:** Define torn as \"non-empty and last byte is not `\\n`\". Add a probe test for the empty-file case.\n\n- **Category: edge-case** — **Severity: low**\n  **Finding:** The AC2 scan (\"same `<key>--<wt8>--` prefix\") implies a directory listing per new-file creation. Fine, but if all of a run's drops are torn (repeated crash), the writer creates a new drop each time — acceptable, but worth one sentence confirming that's intended and that a fully-torn run still yields readable, ordered events.\n  **Suggestion:** Confirm in the plan; o […truncated]\n\n[openai] 1. **Category:** edge-case  \n   **Severity:** high  \n   **Finding:** The two writer fixes intersect: after rejecting a torn open drop, `_monotonic_ts` will scan that same damaged file among the run’s other drops. The plan does not specify how it handles the incomplete final record. A parsing failure could prevent the next event from being written, violating AC3.  \n   **Suggestion:** Read complete, valid records for timestamp discovery while preserving the damaged file unchanged and retaining its fail-closed status. Add a combined test: valid event, torn final record, then a successful write to a new drop.\n\n2. **Category:** approach  \n   **Severity:** medium  \n   **Finding:** “Look at the run’s other drops” does not establish which timestamp controls the new event. Directory order and nonce order cannot establish event order; using the last file encountered could still produce a timestamp earlier than an existing event. Equal timestamps would retain the reader’s random-ID ordering problem.  \n   **Suggestion:** Compute the maximum valid timestamp across matching drops and advance strictly beyond it using the existing timestamp precision. Test multiple closed drops with deliberately shuffled filenames, a frozen clock, and a clock earlier than the stored maximum.\n\n3. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** AC4 requires byte-identical legacy writes, but the plan changes shared timestamp logic without explicitly identifying a layout guard or legacy regression coverage. A new-file check alone does not guarantee that drop scanning cannot affect a newly created legacy log.  \n   **Suggestion:** Restrict cross-drop timestamp discovery explicitly to the per-run layout. Add a deterministic legacy regression test comparing emitted bytes, including initial creation.\n\nThe approach is focused, and a small shared naming module is a reasonable way to remove inconsistent validation. Resolve the interaction between damaged files and timestamp discover […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "test-coverage",
+          "file": "shared/tests/test_events_writer_hardening_round2.py",
+          "line": 77,
+          "finding": "Staging test did not call the staging tool (fixed: asserts events_stage.wt_drops skips the bad name).",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "simplification",
+          "file": "shared/tests/test_events_writer_hardening_round2.py",
+          "line": 74,
+          "finding": "Identity assert repeated across parametrized names (fixed: one standalone test).",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-11T07:48:22.365778+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: _monotonic_ts keeps ts close to wall clock — A skewed clock on a shared implicit key (_main/_branch-*) pulls later events of that key forward; order/display only, no gate compares event ts to wall clock. Accepted and written into the spec Out of Scope.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: A torn file never blocks a run for good — F6 staging is all-or-nothing and absence gates fail closed until a person removes the cut-off line; documented, no worse than before. Accepted.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: Stricter DROP_NAME only rejects names no writer produces — Holds for every writer incl. adopt seeder; off-pattern non-ok drop blocks every absence verdict (fail closed). Noted in spec Out of Scope.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-11T07:51:15.726372+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/events_write.py — `_monotonic_ts`, the cross-drop scan (`records = [r for p in event_files(root)[1:] ... for r in read_jsonl_records(p).records]`)",
+          "line": null,
+          "finding": "The new scan reads every same-key drop, including files the writer never wrote or that are damaged in ways beyond a torn tail: a file with undecodable bytes, a read-permission error, or a file deleted between listing and read will make `read_jsonl_records(p)` raise (the reader's own path wraps this in `FileStatus` \"unreadable\"; here it is unguarded), so the write of the next event fails outright. Previously this code only ever parsed the writer's own just-appended open file. The spec's AC2/AC3 say the lookup must read \"the valid records of a torn file\" and must not prevent the next event from being written; a file the reader classifies unreadable-but-present is a realistic state on real checkouts (this run itself makes off-pattern/`key=None` files a documented occurrence, and any such file with the right key shape still matches `DROP_NAME`).",
+          "suggestion": "Wrap each per-file read in try/except (UnicodeDecodeError, OSError) and skip files that don't parse cleanly, or reuse the reader's per-file status machinery so only files with a readable status contribute records. Add a test: a same-key drop containing binary garbage, then a successful write to the new file.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/events_write.py — same scan",
+          "line": null,
+          "finding": "If `read_jsonl_records` ever yields a torn fragment as a record (its sibling `split_records` distinguishes fragments, so probably it doesn't — but this is now load-bearing), `instant(r.get(\"ts\"))` with a missing `ts` raises and the write fails. The old code path parsed only the writer's own newline-terminated open file, so this was previously unreachable; the new scan makes the torn-tail case the common path. The combined test (valid event, torn tail, new write) covers the tail, but only if the fixture's fragment is actually dropped by the parser — worth one explicit assert that the fragment record is not in `.records`.",
+          "suggestion": "Filter scanned records to those with a string `ts` (e.g. `r.get(\"ts\")` is a str) before taking the max, and assert in the combined test that the fragment contributes no record.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_events_writer_hardening_round2.py — `test_the_legacy_layout_writes_exactly_the_bytes_it_always_did",
+          "line": null,
+          "finding": "The \"pinned bytes\" are computed from `os.linesep`, i.e. from what the current implementation produces, not from a frozen expected byte string. On Linux this is fine, but the test would not catch a legacy newline change on any platform, and it doesn't pin bytes independently of the code under test. AC4 asks for byte-identical legacy writes; this test proves the new code paths don't run under legacy and that the JSON body is unchanged, but it is a weaker pin than advertised.",
+          "suggestion": "Assert against a hardcoded expected string (with the platform's known legacy behavior stated in the test), or at least pin the separator explicitly and note the Windows expectation separately.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "spec",
+          "file": ".shipwright/planning/iterate/iterate-2026-11-11-events-writer-hardening-2/ac.json (and ac-decided.json / ac-record.jsonl)",
+          "line": null,
+          "finding": "The frozen AC record names `shared/scripts/lib/events_names.py` as the file for the one-name-rule item, but the implemented (and reviewed/approved) design puts `DROP_NAME` in `events_read.py` — `events_names.py` was the rejected first draft. The AC metadata contradicts the shipped code and the miniplan. Planning artifact only, not runtime behavior, but it is the record future runs will read.",
+          "suggestion": "Amend or annotate the AC record to point at `events_read.py`.  Checked and found sound: the shared `DROP_NAME` (greedy key class correctly backtracks for keys containing `--`, `\\Z` blocks the trailing-newline case, `KEY_MAX`-derived bound); the fold_io re-export keeps `drop_key_of`/`name_problem` working; the torn-drop skip keeps the symlink and committed-file conditions; the empty-file-reused and torn-file-unchanged tests are behavioral and would fail on a wrong implementation; the rotation tests cover frozen clock, earlier clock, shuffled names, another worktree, and another run's key; the F11 verifier now uses the `wt8` group of the one regex; the flat-load test was moved and extended rather than lost.  Overall: the implementation matches the spec's four ACs and the review adjustments were actually adopted; the one substantive gap is that the new cross-drop timestamp scan has no error handling around reading arbitrary same-key files, which can turn a damaged file into a failed write — fix that (plus the AC-record filename) before shipping.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/lib/events_layout.py",
+          "line": 216,
+          "finding": "Existing open-file selection still uses `_NONCE.match()` instead of `DROP_NAME`. Because `_NONCE` ends with `$`, a filename such as `r--aaaaaaaa--12345678\\n.jsonl` passes selection on filesystems allowing newlines. The writer appends to it, while the reader treats it as unkeyed and staging/integrity reject it, violating AC1.",
+          "suggestion": "Validate existing candidates with `DROP_NAME` and compare its parsed key and worktree groups. Add a regression test containing a newline immediately before `.jsonl`.  Ship-with-fixes: the approach addresses rotation ordering and torn-file preservation, but existing-file selection still bypasses the shared naming rule. Execution was unavailable because the environment rejected shell commands, so this assessment is based on the supplied diff.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-11T07:52:58.494614+00:00",
+      "disposition": "GPT+GLM revise: fixed nonce \\Z in open-file check, OSError guard in cross-drop scan; AC-record path typo and legacy os.linesep pin accepted",
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- Category: edge-case\n  Severity: medium\n  File: shared/scripts/lib/events_write.py — `_monotonic_ts`, the cross-drop scan (`records = [r for p in event_files(root)[1:] ... for r in read_jsonl_records(p).records]`)\n  Finding: The new scan reads every same-key drop, including files the writer never wrote or that are damaged in ways beyond a torn tail: a file with undecodable bytes, a read-permission error, or a file deleted between listing and read will make `read_jsonl_records(p)` raise (the reader's own path wraps this in `FileStatus` \"unreadable\"; here it is unguarded), so the write of the next event fails outright. Previously this code only ever parsed the writer's own just-appended open file. The spec's AC2/AC3 say the lookup must read \"the valid records of a torn file\" and must not prevent the next event from being written; a file the reader classifies unreadable-but-present is a realistic state on real checkouts (this run itself makes off-pattern/`key=None` files a documented occurrence, and any such file with the right key shape still matches `DROP_NAME`).\n  Suggestion: Wrap each per-file read in try/except (UnicodeDecodeError, OSError) and skip files that don't parse cleanly, or reuse the reader's per-file status machinery so only files with a readable status contribute records. Add a test: a same-key drop containing binary garbage, then a successful write to the new file.\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/lib/events_write.py — same scan\n  Finding: If `read_jsonl_records` ever yields a torn fragment as a record (its sibling `split_records` distinguishes fragments, so probably it doesn't — but this is now load-bearing), `instant(r.get(\"ts\"))` with a missing `ts` raises and the write fails. The old code path parsed only the writer's own newline-terminated open file, so this was previously unreachable; the new scan makes the torn-tail case the common path. The combined test (valid event, torn tail, new write […truncated]\n\n[openai] - Category: spec\n- Severity: medium\n- File: shared/scripts/lib/events_layout.py:216\n- Finding: Existing open-file selection still uses `_NONCE.match()` instead of `DROP_NAME`. Because `_NONCE` ends with `$`, a filename such as `r--aaaaaaaa--12345678\\n.jsonl` passes selection on filesystems allowing newlines. The writer appends to it, while the reader treats it as unkeyed and staging/integrity reject it, violating AC1.\n- Suggestion: Validate existing candidates with `DROP_NAME` and compare its parsed key and worktree groups. Add a regression test containing a newline immediately before `.jsonl`.\n\nShip-with-fixes: the approach addresses rotation ordering and torn-file preservation, but existing-file selection still bypasses the shared naming rule. Execution was unavailable because the environment rejected shell commands, so this assessment is based on the supplied diff.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-11T07:46:10.654892+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-11T07:37:21.431851+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-11T07:37:21.581447+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

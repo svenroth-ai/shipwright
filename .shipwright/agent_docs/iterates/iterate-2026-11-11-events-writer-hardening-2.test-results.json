@@ -1,0 +1,105 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-11-events-writer-hardening-2",
+    "date": "2026-11-11",
+    "unit": {
+      "status": "passed",
+      "passed": 25570,
+      "skipped": 108,
+      "total": 25678
+    },
+    "integration": {
+      "status": "not_run",
+      "passed": 0,
+      "skipped": 0,
+      "total": 0
+    },
+    "pgtap": {
+      "status": "not_run",
+      "passed": 0,
+      "skipped": 0,
+      "total": 0
+    },
+    "e2e": {
+      "status": "not_run",
+      "passed": 0,
+      "skipped": 0,
+      "total": 0
+    },
+    "design_fidelity": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "One drop-file name rule: every module accepts or refuses a name alike (incl. trailing newline, dot, space, over-long key)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_events_writer_hardening_round2.py::test_every_module_judges_a_drop_name_the_same_way PASSED"
+        },
+        {
+          "behavior": "Every name the writer makes fits the rule; the staging tool has no pattern of its own and skips an off-pattern name",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_events_writer_hardening_round2.py::test_every_name_the_writer_makes_fits_the_one_rule, ::test_a_name_the_integrity_checker_refuses_is_not_staged_either, ::test_the_staging_tool_has_no_name_pattern_of_its_own PASSED"
+        },
+        {
+          "behavior": "The reader loads standalone by path and still parses the drop key; the writer's nonce check refuses a trailing newline",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_events_writer_hardening_round2.py::test_the_reader_loads_standalone_by_path_and_still_parses_the_drop_key, ::test_the_writers_open_file_check_refuses_a_trailing_newline_in_the_nonce PASSED"
+        },
+        {
+          "behavior": "First event of a rotated file is read after every earlier event of the same run key (equal ts, earlier clock, shuffled names, other worktree; other runs unaffected)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_events_writer_hardening_round2.py::test_the_first_event_of_a_rotated_file_follows_the_last_event_of_the_closed_one, ::test_a_clock_that_runs_behind_the_stored_events_is_pushed_past_them, ::test_the_newest_event_of_several_closed_files_wins_whatever_their_names_sort_like, ::test_the_order_holds_across_worktrees_of_the_same_run_key, ::test_another_runs_events_do_not_move_this_runs_timestamps PASSED"
+        },
+        {
+          "behavior": "A torn open drop is never appended to; later events go to one new file; an empty drop is still reused; a complete record lacking only its newline counts as torn",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_events_writer_hardening_round2.py::test_a_torn_open_drop_is_not_appended_to_and_the_new_file_is_then_reused, ::test_the_first_event_after_a_torn_file_does_not_tie_with_its_last_valid_event, ::test_an_empty_drop_is_still_reused, ::test_a_complete_last_record_that_only_lacks_its_newline_still_counts_as_torn PASSED"
+        },
+        {
+          "behavior": "The legacy layout writes the same bytes as before",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_events_writer_hardening_round2.py::test_the_legacy_layout_writes_exactly_the_bytes_it_always_did PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 6,
+        "tested": 6,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 4,
+        "covered_acs": 4
+      }
+    },
+    "surface_verification": {
+      "surface": "none",
+      "tests_run": 0,
+      "exit_code": 0,
+      "justification": "Writer, reader and tooling for the event log; no UI, API route or message contract. Exercised by 30 new unit tests against real git repos and by the full F0 suite.",
+      "reason_code": "no-startable-surface"
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-24-r5b-merge-lane",
+    "commit": "032d1ebbf0ef9c99eb98f240c8f1110e981a32a5",
+    "dirty": true,
+    "base": null,
+    "release": null
+  },
+  "last_updated": "2026-11-11"
+}

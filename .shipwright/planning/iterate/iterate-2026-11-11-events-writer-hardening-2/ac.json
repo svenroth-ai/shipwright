@@ -1,0 +1,5 @@
+{"items": [
+ {"kind": "add", "owner_fr": "FR-01.11", "new_text": "Given a run's event file was closed by a commit, when the run records its next event with the same timestamp, then that event is read back after the run's earlier events.", "files": ["shared/scripts/lib/events_write.py"]},
+ {"kind": "add", "owner_fr": "FR-01.11", "new_text": "Given a run's open event file ends in a half-written line, when the run records an event, then the event goes to a new file and the damaged file is left unchanged.", "files": ["shared/scripts/lib/events_layout.py"]},
+ {"kind": "add", "owner_fr": "FR-01.11", "new_text": "Given an event file name, when the writer, the reader, the staging tool, the fold and the integrity check judge it, then they all accept or all refuse it.", "files": ["shared/scripts/lib/events_names.py"]}
+]}

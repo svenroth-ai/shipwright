@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "## Findings\n\n- **Category: approach** \u2014 **Severity: medium**\n  **Finding:** AC2's mechanism is underspecified. The plan says `_monotonic_ts` \"also look[s] at the run's other drops\" when the target file doesn't exist, but the reproduced bug is that the *reader* breaks ties with (ts, then random id). Merely looking at other drops doesn't say what the writer does on a tie \u2014 if it merely skips the guard (or reads the same coarse clock), the new event can still carry the identical `ts` and lose the tie in the reader. The fix must force the new event's `ts` strictly greater than the closed drop's last event ts (e.g., bump by one), and that behaviour needs a stated invariant: first-event-after-rotation `ts > last ts in any of the run's drops`.\n  **Suggestion:** State the concrete rule (\"if new-file first ts <= max ts across the run's drops, set ts = max + 1\") and add a test where the rotation event and the next event come from the same coarse clock tick.\n\n- **Category: edge-case** \u2014 **Severity: medium**\n  **Finding:** The torn-file predicate is `ends_without_newline`. An empty (0-byte) drop file \u2014 which can exist after a crash before the first write lands \u2014 ends without a newline only if the check is written as `not data.endswith(b'\\n')`. That would permanently skip an empty file as an open-drop candidate, accumulating a new file per run per crash even though an empty file is harmless to append to (a fresh first line is fine).\n  **Suggestion:** Define torn as \"non-empty and last byte is not `\\n`\". Add a probe test for the empty-file case.\n\n- **Category: edge-case** \u2014 **Severity: low**\n  **Finding:** The AC2 scan (\"same `<key>--<wt8>--` prefix\") implies a directory listing per new-file creation. Fine, but if all of a run's drops are torn (repeated crash), the writer creates a new drop each time \u2014 acceptable, but worth one sentence confirming that's intended and that a fully-torn run still yields readable, ordered events.\n  **Suggestion:** Confirm in the plan; optionally a test with two torn drops then a fresh event.\n\n- **Category: risk** \u2014 **Severity: low**\n  **Finding:** Reader strictness change (`.+` \u2192 strict `DROP_NAME`) is a behavioural change beyond hardening: any previously-legible file with, say, a key containing a space or a leading dot now reads as `key=None`, and per the stated rule any non-ok event in it fails the run's absence gate closed. The plan marks this \"Intended,\" which is right, but it's the kind of change that surfaces on real checkouts with hand-named files.\n  **Suggestion:** Make sure the name-table test includes a realistic hand-named file, and confirm the fold/quarantine path gives the operator a clear message (not just a silent refusal) for such a file.\n\n- **Category: dependency** \u2014 **Severity: low**\n  **Finding:** `events_read`'s flat-load path reuses `_sibling` to load `events_names` \u2014 good \u2014 but `events_stage` and the audit adapter's other flat-load consumers aren't mentioned. If any other module imports `events_fold_io`'s re-exported `drop_key_of` in a flat context, the sibling load chain must resolve there too.\n  **Suggestion:** Extend the existing flat-load context test to cover `events_names` resolution from both `events_read` and `events_fold_io` contexts.\n\n- **Category: risk** \u2014 **Severity: low**\n  **Finding:** Writer self-validation with the strict `DROP_NAME` (replacing a looser check) could regress if the writer ever produces a key outside `[A-Za-z0-9_-][A-Za-z0-9._-]{0,79}` \u2014 e.g., a key derived from user input. The plan doesn't say what happens on self-validation failure (crash? fall back?).\n  **Suggestion:** Assert the writer's key generation satisfies `DROP_NAME` in a unit test, and define self-validation failure as a hard error with the offending name in the message.\n\n## Overall assessment\n\nThe approach is sound and well-scoped: a single 20-line name module is the right call over fattening `events_log.py`, and the torn-file and rotation fixes target real reproduced defects. The AC2 tie-breaking mechanism and the empty-file edge need to be pinned down before implementation, but these are clarifications, not redesigns.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Category:** edge-case  \n   **Severity:** high  \n   **Finding:** The two writer fixes intersect: after rejecting a torn open drop, `_monotonic_ts` will scan that same damaged file among the run\u2019s other drops. The plan does not specify how it handles the incomplete final record. A parsing failure could prevent the next event from being written, violating AC3.  \n   **Suggestion:** Read complete, valid records for timestamp discovery while preserving the damaged file unchanged and retaining its fail-closed status. Add a combined test: valid event, torn final record, then a successful write to a new drop.\n\n2. **Category:** approach  \n   **Severity:** medium  \n   **Finding:** \u201cLook at the run\u2019s other drops\u201d does not establish which timestamp controls the new event. Directory order and nonce order cannot establish event order; using the last file encountered could still produce a timestamp earlier than an existing event. Equal timestamps would retain the reader\u2019s random-ID ordering problem.  \n   **Suggestion:** Compute the maximum valid timestamp across matching drops and advance strictly beyond it using the existing timestamp precision. Test multiple closed drops with deliberately shuffled filenames, a frozen clock, and a clock earlier than the stored maximum.\n\n3. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** AC4 requires byte-identical legacy writes, but the plan changes shared timestamp logic without explicitly identifying a layout guard or legacy regression coverage. A new-file check alone does not guarantee that drop scanning cannot affect a newly created legacy log.  \n   **Suggestion:** Restrict cross-drop timestamp discovery explicitly to the per-run layout. Add a deterministic legacy regression test comparing emitted bytes, including initial creation.\n\nThe approach is focused, and a small shared naming module is a reasonable way to remove inconsistent validation. Resolve the interaction between damaged files and timestamp discovery, make the maximum-timestamp rule explicit, and pin legacy compatibility before proceeding.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-11-11-events-writer-hardening-2",
+    "at": "2026-11-11T07:32:43.552905+00:00"
+  },
+  "verdicts": {
+    "glm": "revise",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}
