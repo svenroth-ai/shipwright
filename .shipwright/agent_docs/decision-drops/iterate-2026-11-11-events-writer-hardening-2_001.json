@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-11-events-writer-hardening-2",
+  "date": "2026-11-11",
+  "section": "Iterate - change: events writer hardening, round 2",
+  "title": "One drop-file name rule, order across a rotation, no append to a torn file",
+  "context": "Probing the per-run event files after the flip found three name patterns in six modules, a rotated file whose first event could sort before the closed file's last event on a coarse clock, and a writer that kept appending to a half-written file.",
+  "decision": "DROP_NAME in events_read is the one rule (anchored with \\Z, built from KEY_MAX) and every module uses it. The first event of a new file takes max ts of the run key's drops + 1 microsecond. A non-empty drop that does not end in a newline is never appended to; the next event opens one new file. CRLF under autocrlf was probed and is already covered.",
+  "consequences": "A drop file named off the writer's shape now reads with key=None and is not staged (fail closed). A torn file stays as it is and blocks F6 staging and the run's absence gates until a person removes the cut-off line. A skewed clock on a shared implicit key pulls later events of that key forward (order and display only). Archived events are not seen by the ordering lookup.",
+  "rationale": "Each gap could reorder or lose an event, or let a damaged file keep growing, now that this repo writes per-run files.",
+  "rejected": "Repairing or quarantining a torn file automatically (a person decides what a cut-off line was); bounding the ts bump by the wall clock (brings the tie back).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

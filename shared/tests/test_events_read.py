@@ -277,24 +277,6 @@ def test_a_drop_removed_at_open_time_is_reported_unreadable_never_skipped(tmp_pa
     assert [f.status for f in read_events_assembled(tmp_path).files] == ["unreadable"]
 
 
-def test_the_reader_loads_standalone_by_path_with_no_package_around_it(tmp_path):
-    """Sentinel / flat context (``load_shared_lib``): no ``lib`` package on sys.path."""
-    import subprocess
-    import sys
-    lib = Path(__file__).resolve().parents[1] / "scripts" / "lib"
-    _write(tmp_path / "shipwright_events.jsonl", _line(id="a"))
-    _drop(tmp_path, "run-s", _line(id="b"))
-    code = (
-        "import importlib.util, sys\n"
-        f"spec = importlib.util.spec_from_file_location('_flat_events_read', {str(lib / 'events_read.py')!r})\n"
-        "mod = importlib.util.module_from_spec(spec); sys.modules[spec.name] = mod; spec.loader.exec_module(mod)\n"
-        f"print(','.join(e['id'] for e in mod.read_events_assembled({str(tmp_path)!r}).records))\n"
-    )
-    out = subprocess.run([sys.executable, "-I", "-c", code], capture_output=True, text=True, timeout=60)
-    assert out.returncode == 0, out.stderr[-800:]
-    assert out.stdout.strip() == "a,b"
-
-
 def test_event_lines_at_tolerant_decoding_is_the_callers_choice(tmp_path):
     from lib.events_read import event_lines_at
     log = tmp_path / "shipwright_events.jsonl"

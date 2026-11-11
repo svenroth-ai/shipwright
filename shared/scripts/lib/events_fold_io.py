@@ -23,11 +23,9 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .events_log import ARCHIVE_DIR, DROPS_DIR, QUARANTINE_DIR
-from .events_read import instant
+from .events_read import DROP_NAME, instant  # noqa: F401 -- DROP_NAME re-exported: the one rule lives in events_read
 from .jsonl_records import split_records
 
-#: ``<key>--<wt8>--<nonce8>.jsonl``, key ``[A-Za-z0-9._-]{1,80}`` and not hidden (``sanitize_key`` strips leading dots).
-DROP_NAME = re.compile(r"^(?P<key>[A-Za-z0-9_-][A-Za-z0-9._-]{0,79})--[0-9a-f]{8}--[0-9a-f]{8}\.jsonl\Z")
 #: ``fold-<hash>.jsonl`` (and any other single-segment, non-hidden name a person gave an archive file).
 ARCHIVE_NAME = re.compile(r"^[A-Za-z0-9_-][A-Za-z0-9._-]{0,119}\.jsonl\Z")
 FOLDERS = (DROPS_DIR, ARCHIVE_DIR, QUARANTINE_DIR)

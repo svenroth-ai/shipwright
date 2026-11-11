@@ -1,0 +1,9 @@
+{"items": [
+ {"name": "One drop-name rule used by every module", "verdict": "pass", "note": "DROP_NAME in events_read; fold_io re-exports, stage and layout and the F11 own-worktree test use it; table test over 12 names"},
+ {"name": "Rotation keeps order", "verdict": "pass", "note": "failing-first test; max ts over the run key's drops + 1 microsecond; shuffled names, earlier clock, other worktree, other run covered"},
+ {"name": "Torn file never appended to", "verdict": "pass", "note": "failing-first test; file bytes unchanged, later writes reuse one new file; empty file reused; complete record lacking only the newline counts as torn"},
+ {"name": "Legacy bytes unchanged", "verdict": "pass", "note": "byte test for a legacy write; the new code paths run under the drops layout only"},
+ {"name": "CRLF item", "verdict": "pass", "note": "probed: already covered by three existing tests, recorded as not a defect"},
+ {"name": "AC record", "verdict": "pass", "note": "three items declared as add under FR-01.11, decided ok"},
+ {"name": "Affected boundaries", "verdict": "pass", "note": "name producer (events_layout) and consumers (reader, stage, fold, integrity, F11 verifier) agree; flat-load context test extended; ruff clean; events_read stays at 300 lines"}
+]}

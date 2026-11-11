@@ -25,7 +25,9 @@ tree -- or a fresh name, (2) appends one complete line with ``fsync``. A commit
 starts a new file, so a closed file is never edited. A crash between (1) and (2)
 leaves at most a name that does not exist yet (files appear on the first complete
 write; the folder alone is invisible to git); a torn line is recovered by
-``read_jsonl_records`` exactly as in the legacy file. Same-key concurrent writers
+``read_jsonl_records`` exactly as in the legacy file, and the writer never appends to a
+file that does not end in a newline: it opens a new one and leaves the torn file as it is
+(a cut-off last line blocks the run's absence gates and F6 staging until a person deals with it). Same-key concurrent writers
 serialize on the lock, so they share the one open file and every recorded event is
 readable exactly once.
 
@@ -48,7 +50,8 @@ import uuid
 from pathlib import Path
 
 from .events_log import DROPS_DIR, resolve_events_path
-from .events_read import read_events_assembled, sanitize_key  # noqa: F401 -- re-exports
+from .events_read import DROP_NAME, read_events_assembled, sanitize_key  # noqa: F401 -- re-exports
+from .jsonl_records import ends_without_newline
 from .events_sentinel import require_writable_layout
 
 SYNC_CONFIG = "shipwright_sync_config.json"
@@ -57,8 +60,7 @@ LAYOUTS = ("legacy", "drops")
 ENV_LAYOUT = "SHIPWRIGHT_EVENTS_LAYOUT"
 ENV_LAYOUT_TEST = "SHIPWRIGHT_EVENTS_LAYOUT_TEST"
 
-_DROP_NAME = re.compile(r"^[A-Za-z0-9._-]{1,120}$")
-_NONCE = re.compile(r"^[0-9a-f]{8}$")
+_NONCE = re.compile(r"[0-9a-f]{8}\Z")  # \Z, never $: a trailing newline in a name must not pass
 
 
 def events_layout(project_root: Path | str) -> str:
@@ -210,9 +212,10 @@ def resolve_events_write_path(project_root: Path | str, run_id: str | None = Non
         name = path.name
         if (name.startswith(prefix) and name.endswith(".jsonl")
                 and _NONCE.match(name[len(prefix):-len(".jsonl")])
-                and name not in committed and not path.is_symlink()):
+                and name not in committed and not path.is_symlink()
+                and not ends_without_newline(path)):  # a torn file is never appended to (it fails closed: unreadable = torn)
             return path
     name = f"{prefix}{uuid.uuid4().hex[:8]}.jsonl"
-    if not _DROP_NAME.match(name):  # structurally impossible after sanitize_key
+    if not DROP_NAME.match(name):  # structurally impossible after sanitize_key
         raise ValueError(f"refusing unsafe drop file name: {name!r}")
     return drops / name

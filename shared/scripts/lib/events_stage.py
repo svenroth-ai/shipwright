@@ -17,16 +17,16 @@ Everything here is a no-op for a tree without a drops folder, i.e. under the leg
 
 from __future__ import annotations
 
-import re
 import subprocess
 from pathlib import Path
 
 from .events_layout import drop_key, events_layout, events_lock_path, implicit_key, worktree_id
+from .events_read import DROP_NAME
 from .file_lock import FileLock
 from .events_log import DROPS_DIR
 from .jsonl_records import read_jsonl_records
 
-_NAME = re.compile(r"^(?P<key>.+)--(?P<wt8>[0-9a-f]{8})--[0-9a-f]{8}\.jsonl$")
+_NAME = DROP_NAME  # the one drop-name rule (events_read): staging never takes a file the integrity check would refuse
 
 
 def _git(root: Path, *args: str) -> subprocess.CompletedProcess:
