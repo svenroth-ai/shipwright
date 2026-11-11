@@ -375,7 +375,7 @@ uv run "{shared_root}/scripts/tools/publish_release_notes.py" \
 ```
 Read `status` from the JSON and add ONE line to the closing summary:
 `ok`/`exists` (with `url`) print the release link; `skipped`/`failed` print
-`reason` verbatim — never swallowed, never a hard stop.
+`reason` verbatim — never swallowed, never a hard stop. If the command exits non-zero with no JSON (uv could not fetch the script's packages, e.g. offline), print that as `skipped` with the stderr line and continue.
 
 **Phase complete — update pipeline state:**
 

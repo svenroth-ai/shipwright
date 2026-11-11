@@ -1,0 +1,52 @@
+{
+  "unattended": true,
+  "resolved_items": [
+    {
+      "kind": "add",
+      "owner_fr": "FR-01.11",
+      "new_text": "Given a fresh checkout with no extra packages installed by hand, when the finalization verifier or the release-notes condenser is started with a plain uv run from any folder, then it starts and does its work instead of stopping on a missing package.",
+      "files": [
+        "shared/scripts/tools/verify_iterate_finalization.py",
+        "shared/scripts/tools/condense_release_notes.py"
+      ],
+      "decided_by": "code",
+      "confirmed": false
+    }
+  ],
+  "ac_decisions": [
+    {
+      "ac": "FR-01.11.new",
+      "mode": "auto",
+      "answer": "auto",
+      "kind": "add",
+      "answered_via": "none",
+      "decided_by": "code",
+      "confirmed": false
+    }
+  ],
+  "counts": {
+    "total": 1,
+    "auto": 1,
+    "asked": 0,
+    "exempt": 0,
+    "restore": 0,
+    "unchanged": 0,
+    "answered_inline": 0,
+    "unconfirmed": 0,
+    "exempt_share": 0.0,
+    "restore_share": 0.0
+  },
+  "status": "ok",
+  "ac_mode": {
+    "mode": "auto",
+    "source": "--ac-mode"
+  },
+  "run_id": "iterate-2026-11-11-u2-tools-declare-deps",
+  "bind_id": "events-followups--U2@2026-11-11T21:10:33.606388+00:00",
+  "exemption_check": "tested against the current diff (1 file(s), 1 not observable)",
+  "surface": {
+    "observable": false,
+    "files": [],
+    "ignored": 1
+  }
+}

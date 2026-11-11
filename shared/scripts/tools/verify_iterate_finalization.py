@@ -1,3 +1,7 @@
+# /// script
+# requires-python = ">=3.11"
+# dependencies = ["jsonschema>=4.18", "pyyaml>=6.0"]
+# ///
 """Deterministic post-commit verifier for iterate finalization.
 
 Iterate 12.0 turned this file into a thin wrapper. The actual check

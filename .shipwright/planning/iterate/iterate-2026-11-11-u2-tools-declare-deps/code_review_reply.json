@@ -1,0 +1,7 @@
+{"section": "U2-tools-declare-own-dependencies", "verdict": "PASS", "review": [
+ {"severity": "low", "category": "architecture", "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/compliance_runner.py", "line": 104, "finding": "update_compliance.py has two dependency sources (header and --project launchers).", "suggestion": "FIXED: fast test pins header names == compliance pyproject dependencies."},
+ {"severity": "low", "category": "performance", "file": "shared/scripts/tools/finalize_iterate.py", "line": 205, "finding": "timeout=60 now also covers uv building the script environment on a cold cache.", "suggestion": "FIXED: timeout 180."},
+ {"severity": "low", "category": "readability", "file": "shared/tests/test_finalize_iterate_capture_order.py", "line": 172, "finding": "Stale test name and duplicated header substring assertion.", "suggestion": "FIXED: renamed, substring assertion dropped."},
+ {"severity": "low", "category": "readability", "file": "docs/hooks-and-pipeline.md", "line": 4462, "finding": "Sentence omitted publish_release_notes.py and update_compliance.py.", "suggestion": "FIXED: sentence names all four scripts."},
+ {"severity": "low", "category": "correctness", "file": "shared/tests/test_tools_declare_own_dependencies.py", "line": 240, "finding": "json.loads on empty stdout hides uv's stderr.", "suggestion": "FIXED: assert stdout first with stderr as message; outbound request noted in docstring."}
+]}

@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.11"
+# dependencies = ["openai>=2.30.0"]
+# ///
 """Orchestrate the four release-notes stages behind ONE call.
 
 Extract -> condense -> validate/sanitize -> publish, each stage a distinct,

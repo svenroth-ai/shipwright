@@ -196,7 +196,7 @@ def _update_compliance(project_root: Path, run_id: str | None = None) -> list[st
     if not script.exists():
         return []
 
-    try:  # `uv run --project`: needs the compliance plugin's own jsonschema/pyyaml.
+    try:  # one rule: a tool gets its packages from its own `# /// script` header or from the project it runs under; this one runs under the compliance plugin (`--project`: its lock and `.venv`, which the SBOM licence scan reads)
         result = subprocess.run(
             ["uv", "run", "--project", str(compliance_plugin), "python", str(script),
              "--project-root", str(project_root),

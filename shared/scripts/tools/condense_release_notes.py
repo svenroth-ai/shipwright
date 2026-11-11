@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.11"
+# dependencies = ["openai>=2.30.0"]
+# ///
 """Condense a CHANGELOG.md version section into a short release-notes body.
 
 One tool-less, single-turn LLM completion — no Agent-tool spawn, no function/

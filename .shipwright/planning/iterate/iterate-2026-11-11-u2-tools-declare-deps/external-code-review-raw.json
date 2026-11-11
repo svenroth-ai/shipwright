@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "Reviewing the diff against the U2 spec (verify_iterate_finalization.py needs jsonschema; condense_release_notes.py needs openai; fold the `--project` workaround into the same PEP 723 rule; release notes stay best-effort).\n\n**Spec compliance:** All three required changes are present \u2014 PEP 723 headers added to `verify_iterate_finalization.py` (jsonschema, pyyaml), `condense_release_notes.py` (openai), and the `finalize_iterate.py:199` `--project` workaround removed in favor of a header on `update_compliance.py`. Docs and the skill instructions were updated consistently, including the new offline/uv-failure guidance in SKILL.md.\n\nFindings:\n\n- Category: edge-case\n  - Severity: medium\n  - File: plugins/shipwright-compliance/scripts/tools/update_compliance.py:3-5\n  - Finding: The header declares only `jsonschema` and `pyyaml`. If `update_compliance.py` (or any module it imports) also relies on packages supplied only by the compliance plugin's own `pyproject.toml` (or on the plugin's project being importable/sys.path-reachable), the isolated PEP 723 env drops those \u2014 a regression not visible in the diff. The slow `--help` test only covers top-level imports, so a lazily-imported or transitive dependency would slip through.\n  - Suggestion: Grep the script (and its local imports) for third-party imports and either declare them all in the header or confirm in the diff body that jsonschema/pyyaml are the only external deps.\n\n- Category: edge-case\n  - Severity: low\n  - File: shared/tests/test_finalize_iterate_capture_order.py:197-201\n  - Finding: The path-shape assertion (`script.parent.parent.parent.name == \"shipwright-compliance\"`) breaks if the compliance script is ever moved a directory level, and `Path(cmd[2])` assumes uv isn't invoked with a wrapper path that prepends arguments. Fragile, but not a current bug.\n  - Suggestion: Consider asserting the path is a descendant of the plugin dir rather than an exact depth.\n\n- Category: test\n  - Severity: low\n  - File: shared/tests/test_tools_declare_own_dependencies.py:119-123 (`test_verifier_runs_bare_from_an_unrelated_directory`)\n  - Finding: The test pins `returncode == 1` and exact substrings (\"ok,\" / \"error(s)\") of the verifier's report format. If the verifier's exit code or wording changes for an empty project, this test fails spuriously even though the header behavior is fine \u2014 it couples the dependency test to unrelated output formatting.\n  - Suggestion: Assert only that it ran (no `ModuleNotFoundError`, stdout non-empty, exit code in {0,1}) and leave the report-format contract to the verifier's own tests.\n\n- Category: test\n  - Severity: low\n  - File: shared/tests/test_tools_declare_own_dependencies.py:105-116 (`test_condenser_runs_bare_from_an_unrelated_directory`)\n  - Finding: The test sets `OPENROUTER_API_KEY` to a fake key and asserts `status == \"error\"` with a reason other than \"openai package not installed\". This relies on the condenser attempting a real network call (which will fail auth) \u2014 reasonable, but the assertion passes for *any* error reason (e.g. a prompt-file parsing bug), so it only half-validates \"the import resolved\". Acceptable given the comment pointing at the unit test for the fallback, but note the coverage gap.\n  - Suggestion: Optionally also assert the error reason mentions the API/provider call rather than any arbitrary error.\n\nNo security issues introduced: no secrets, no injection surface change; the fake API key in the test is deliberately non-real and scoped to a subprocess.\n\nOverall assessment: the change is sound, matches the spec, and the tests genuinely exercise `uv run` from an unrelated cwd (not just the header text). The medium finding about whether `update_compliance.py` has undeclared third-party imports is the only thing worth verifying before merge.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "No concrete defects found in the supplied diff. The dependency headers cover the verifier, condenser, release entry point, and compliance script; the compliance launcher uses the corresponding bare `uv run` invocation. The skill instructions preserve best-effort release notes when dependency resolution fails.\n\nThe tests check dependency declarations and include clean-directory execution coverage. I couldn\u2019t run them or inspect surrounding files because command execution was blocked by the environment policy.\n\nOverall assessment: ship-as-is based on the supplied diff. Acceptance criteria remain TBD, so compliance was assessed against the stated scope.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-11-11-u2-tools-declare-deps",
+    "at": "2026-11-11T23:10:55.014812+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "approve"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}

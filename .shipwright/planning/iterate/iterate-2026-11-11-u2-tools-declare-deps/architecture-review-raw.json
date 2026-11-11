@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "1. **The question, answered in one sentence.** No new mechanism is needed; Option A (PEP 723 inline headers on the two scripts) is the smallest correct move and matches existing convention in the hook scripts.\n\n2. **The smallest thing that would do.** Add `# /// script` dependency headers to `verify_iterate_finalization.py` and `condense_release_notes.py`, each declaring only what that script imports. Fold the `--project` workaround removal into the same change only if the header makes it redundant \u2014 that is a one-line deletion, not new machinery.\n\n3. **What it costs to keep.** Effectively nothing: the headers must stay accurate when a script's imports change. That is a dependency line per script, already an established pattern in the hook scripts.\n\n4. **What it forecloses.** None identified. Options B/C push the burden onto every future caller and will be forgotten by the next person who runs the script from the wrong directory; D leaves a silent-degradation failure (the verifier's schema checks degrade quietly) that nobody will notice until it matters. A keeps the requirement attached to the script itself, which is where a reader looks first.\n\nNo findings.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. Yes\u2014change the existing dependency machinery using option A; no new standing mechanism is needed.\n2. Add PEP 723 headers declaring each script\u2019s required packages, and remove the finalizer\u2019s `--project` workaround once those headers supply them.\n3. The ongoing obligation is keeping those dependency declarations aligned with the scripts\u2019 requirements; this follows the existing hook-script convention and avoids making every caller manage them.\n4. What it forecloses: none identified.\n5. No findings.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "architecture",
+  "capture": {
+    "run_id": "iterate-2026-11-11-u2-tools-declare-deps",
+    "at": "2026-11-11T23:07:29.448537+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "approve"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}

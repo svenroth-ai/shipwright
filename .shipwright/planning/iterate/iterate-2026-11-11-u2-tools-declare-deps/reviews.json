@@ -1,0 +1,314 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-11-u2-tools-declare-deps",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-11T23:09:27.027953+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Pick one explicitly: (a) update finalize_iterate.py:199 to `uv run --no-project --script` and remove the `--project` flag, or (b) document in the mini-plan why the spec's clause doesn't apply, so the discrepancy is a decision rather than an omission.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Confirm in the plan how intra-repo imports resolve when running with `--script` from an arbitrary cwd, and make the slow test assert the full run succeeds, not just that \"the header resolves.\"",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Acceptable as-is; optionally note that the slow test will surface resolution breakage early.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Have the static header test do a quick import-scan of the script (AST-level `import`/`from` collection) against the declared list, so future imports force a header update. Cheap and prevents the exact bug class this change fixes.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Write the acceptance criteria now; they're nearly free given the plan already describes the verification method.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The plan leaves `finalize_iterate.py:199` unchanged, although the scope explicitly requires folding its `--project` workaround into the same dependency rule. The current launch form explains why metadata is ignored, but does not resolve the requirement.",
+          "suggestion": "Change the invocation to run `update_compliance.py` directly through uv and declare its required dependencies in script metadata. Verify that its local imports still work independently of the caller’s working directory.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Declaring `openai` in script metadata moves dependency installation before Python execution. If resolution or installation fails, the existing “package not installed” fallback cannot run. Leaving that fallback and its tests untouched does not establish that release notes remain best-effort.",
+          "suggestion": "Verify that the caller tolerates a nonzero uv exit and continues finalization. Add coverage for that failure path; adjust caller handling if necessary.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Exporting dependencies and resolving a header from an empty directory do not demonstrate that the actual tools work there. The verifier’s documented silent degradation makes a successful exit particularly weak evidence. Acceptance criteria also remain undefined.",
+          "suggestion": "Define concrete acceptance criteria and exercise the actual bare `uv run <absolute-script-path>` commands from an unrelated directory. For the verifier, assert that dependency-backed checks execute and detect a known invalid fixture, rather than merely asserting successful startup.  PEP 723 metadata is a sound, small solution for the two tools. The plan needs to address the explicitly scoped compliance launcher and verify best-effort behavior across uv failures before approval.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-11T23:09:09.155269+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: approach** — **Severity: medium**\n  The change spec explicitly says to \"fold finalize_iterate.py:199's `--project` workaround into the same rule,\" but the plan declares it out of scope with a justification (different script, different launch form). The justification about `python <script>` not reading inline metadata is technically correct, but it means the spec's stated goal isn't fully delivered. Either the spec should be amended (and the reviewer of the spec notified) or the plan should convert that launch to `uv run --script` so the workaround can be dropped.\n  **Suggestion:** Pick one explicitly: (a) update finalize_iterate.py:199 to `uv run --no-project --script` and remove the `--project` flag, or (b) document in the mini-plan why the spec's clause doesn't apply, so the discrepancy is a decision rather than an omission.\n\n- **Category: risk** — **Severity: medium**\n  Running a PEP 723 script under `uv run --script` creates an isolated environment with *only* the declared deps — but verify_iterate_finalization.py apparently imports sibling code (\"compliance evidence readers and ci_gate_scan\"). If those sibling modules are resolved via cwd/sys.path (typical for this repo's shared scripts), a bare `uv run` from another directory may still fail on the *local imports*, which the new slow test (empty directory) should catch — but the plan doesn't say how local imports are made to work (e.g., a path-bootstrap snippet in the script, or `dev-dependencies`-style sys.path manipulation in the header-adjacent code).\n  **Suggestion:** Confirm in the plan how intra-repo imports resolve when running with `--script` from an arbitrary cwd, and make the slow test assert the full run succeeds, not just that \"the header resolves.\"\n\n- **Category: risk** — **Severity: low**\n  PEP 723 `>=` lower bounds mean the isolated environment resolves to the *latest* available versions at run time, not the versions locked in the monorepo. A jsonschema or  […truncated]\n\n[openai] 1. **Category:** approach  \n   **Severity:** medium  \n   **Finding:** The plan leaves `finalize_iterate.py:199` unchanged, although the scope explicitly requires folding its `--project` workaround into the same dependency rule. The current launch form explains why metadata is ignored, but does not resolve the requirement.  \n   **Suggestion:** Change the invocation to run `update_compliance.py` directly through uv and declare its required dependencies in script metadata. Verify that its local imports still work independently of the caller’s working directory.\n\n2. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** Declaring `openai` in script metadata moves dependency installation before Python execution. If resolution or installation fails, the existing “package not installed” fallback cannot run. Leaving that fallback and its tests untouched does not establish that release notes remain best-effort.  \n   **Suggestion:** Verify that the caller tolerates a nonzero uv exit and continues finalization. Add coverage for that failure path; adjust caller handling if necessary.\n\n3. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** Exporting dependencies and resolving a header from an empty directory do not demonstrate that the actual tools work there. The verifier’s documented silent degradation makes a successful exit particularly weak evidence. Acceptance criteria also remain undefined.  \n   **Suggestion:** Define concrete acceptance criteria and exercise the actual bare `uv run <absolute-script-path>` commands from an unrelated directory. For the verifier, assert that dependency-backed checks execute and detect a known invalid fixture, rather than merely asserting successful startup.\n\nPEP 723 metadata is a sound, small solution for the two tools. The plan needs to address the explicitly scoped compliance launcher and verify best-effort behavior across uv failures before approval.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/compliance_runner.py",
+          "line": 104,
+          "finding": "update_compliance.py has two dependency sources (header and --project launchers).",
+          "suggestion": "FIXED: fast test pins header names == compliance pyproject dependencies.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "performance",
+          "file": "shared/scripts/tools/finalize_iterate.py",
+          "line": 205,
+          "finding": "timeout=60 now also covers uv building the script environment on a cold cache.",
+          "suggestion": "FIXED: timeout 180.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_finalize_iterate_capture_order.py",
+          "line": 172,
+          "finding": "Stale test name and duplicated header substring assertion.",
+          "suggestion": "FIXED: renamed, substring assertion dropped.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "docs/hooks-and-pipeline.md",
+          "line": 4462,
+          "finding": "Sentence omitted publish_release_notes.py and update_compliance.py.",
+          "suggestion": "FIXED: sentence names all four scripts.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_tools_declare_own_dependencies.py",
+          "line": 240,
+          "finding": "json.loads on empty stdout hides uv's stderr.",
+          "suggestion": "FIXED: assert stdout first with stderr as message; outbound request noted in docstring.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-11T23:17:16.004404+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "5c1977f7d746673c00bc13dd7e8006cfbd3ac8e6"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "hidden coupling & blast radius",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: dropping --project only changes the env — The old launch also synced the compliance plugin .venv that the SBOM licence scan reads.",
+          "suggestion": "ADDRESSED: the compliance launcher change and the update_compliance header are reverted; that launcher keeps uv run --project, stated as the other half of the one rule.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "reversibility / offline",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: a plain uv run works from any folder — No lockfile: offline resolution could crash the F11 verifier.",
+          "suggestion": "ADDRESSED: ran verify_iterate_finalization, condense and publish with UV_OFFLINE=1 from an empty directory after a warm run: all exit 0. A cold offline first run needs network (documented in the ADR consequences); the changelog skill treats a uv failure as skipped.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "version drift",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: header and pyproject agree — two dependency sources for update_compliance",
+          "suggestion": "ADDRESSED: moot after the revert; the remaining headers use the same bounds as the root pyproject.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "test coverage",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: tests prove clean-env start — behavioural tests are slow-marked, excluded in CI",
+          "suggestion": "ACCEPTED in writing: CI runs the static header test; the real bare-run tests were run by hand with -m slow (all passed) and are recorded in this run.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-11T23:20:16.257060+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "5c1977f7d746673c00bc13dd7e8006cfbd3ac8e6"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "plugins/shipwright-compliance/scripts/tools/update_compliance.py:3-5",
+          "line": null,
+          "finding": "The header declares only `jsonschema` and `pyyaml`. If `update_compliance.py` (or any module it imports) also relies on packages supplied only by the compliance plugin's own `pyproject.toml` (or on the plugin's project being importable/sys.path-reachable), the isolated PEP 723 env drops those — a regression not visible in the diff. The slow `--help` test only covers top-level imports, so a lazily-imported or transitive dependency would slip through.",
+          "suggestion": "Grep the script (and its local imports) for third-party imports and either declare them all in the header or confirm in the diff body that jsonschema/pyyaml are the only external deps.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/tests/test_finalize_iterate_capture_order.py:197-201",
+          "line": null,
+          "finding": "The path-shape assertion (`script.parent.parent.parent.name == \"shipwright-compliance\"`) breaks if the compliance script is ever moved a directory level, and `Path(cmd[2])` assumes uv isn't invoked with a wrapper path that prepends arguments. Fragile, but not a current bug.",
+          "suggestion": "Consider asserting the path is a descendant of the plugin dir rather than an exact depth.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_tools_declare_own_dependencies.py:119-123 (`test_verifier_runs_bare_from_an_unrelated_directory`)",
+          "line": null,
+          "finding": "The test pins `returncode == 1` and exact substrings (\"ok,\" / \"error(s)\") of the verifier's report format. If the verifier's exit code or wording changes for an empty project, this test fails spuriously even though the header behavior is fine — it couples the dependency test to unrelated output formatting.",
+          "suggestion": "Assert only that it ran (no `ModuleNotFoundError`, stdout non-empty, exit code in {0,1}) and leave the report-format contract to the verifier's own tests.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_tools_declare_own_dependencies.py:105-116 (`test_condenser_runs_bare_from_an_unrelated_directory`)",
+          "line": null,
+          "finding": "The test sets `OPENROUTER_API_KEY` to a fake key and asserts `status == \"error\"` with a reason other than \"openai package not installed\". This relies on the condenser attempting a real network call (which will fail auth) — reasonable, but the assertion passes for any error reason (e.g. a prompt-file parsing bug), so it only half-validates \"the import resolved\". Acceptable given the comment pointing at the unit test for the fallback, but note the coverage gap.",
+          "suggestion": "Optionally also assert the error reason mentions the API/provider call rather than any arbitrary error.  No security issues introduced: no secrets, no injection surface change; the fake API key in the test is deliberately non-real and scoped to a subprocess.  Overall assessment: the change is sound, matches the spec, and the tests genuinely exercise `uv run` from an unrelated cwd (not just the header text). The medium finding about whether `update_compliance.py` has undeclared third-party imports is the only thing worth verifying before merge.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-11T23:11:18.004143+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] Reviewing the diff against the U2 spec (verify_iterate_finalization.py needs jsonschema; condense_release_notes.py needs openai; fold the `--project` workaround into the same PEP 723 rule; release notes stay best-effort).\n\n**Spec compliance:** All three required changes are present — PEP 723 headers added to `verify_iterate_finalization.py` (jsonschema, pyyaml), `condense_release_notes.py` (openai), and the `finalize_iterate.py:199` `--project` workaround removed in favor of a header on `update_compliance.py`. Docs and the skill instructions were updated consistently, including the new offline/uv-failure guidance in SKILL.md.\n\nFindings:\n\n- Category: edge-case\n  - Severity: medium\n  - File: plugins/shipwright-compliance/scripts/tools/update_compliance.py:3-5\n  - Finding: The header declares only `jsonschema` and `pyyaml`. If `update_compliance.py` (or any module it imports) also relies on packages supplied only by the compliance plugin's own `pyproject.toml` (or on the plugin's project being importable/sys.path-reachable), the isolated PEP 723 env drops those — a regression not visible in the diff. The slow `--help` test only covers top-level imports, so a lazily-imported or transitive dependency would slip through.\n  - Suggestion: Grep the script (and its local imports) for third-party imports and either declare them all in the header or confirm in the diff body that jsonschema/pyyaml are the only external deps.\n\n- Category: edge-case\n  - Severity: low\n  - File: shared/tests/test_finalize_iterate_capture_order.py:197-201\n  - Finding: The path-shape assertion (`script.parent.parent.parent.name == \"shipwright-compliance\"`) breaks if the compliance script is ever moved a directory level, and `Path(cmd[2])` assumes uv isn't invoked with a wrapper path that prepends arguments. Fragile, but not a current bug.\n  - Suggestion: Consider asserting the path is a descendant of the plugin dir rather than an exact depth.\n\n- Category: test\n  - Severity: low\n  - File:  […truncated]\n\n[openai] No concrete defects found in the supplied diff. The dependency headers cover the verifier, condenser, release entry point, and compliance script; the compliance launcher uses the corresponding bare `uv run` invocation. The skill instructions preserve best-effort release notes when dependency resolution fails.\n\nThe tests check dependency declarations and include clean-directory execution coverage. I couldn’t run them or inspect surrounding files because command execution was blocked by the environment policy.\n\nOverall assessment: ship-as-is based on the supplied diff. Acceptance criteria remain TBD, so compliance was assessed against the stated scope.\n\nSHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-11T23:14:03.907614+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "5c1977f7d746673c00bc13dd7e8006cfbd3ac8e6"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-11T23:09:27.132535+00:00",
+      "disposition": "effective complexity is small; the internal plan arms run at medium and above",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-11T23:09:27.263067+00:00",
+      "disposition": "effective complexity is small; the internal plan arms run at medium and above",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}
