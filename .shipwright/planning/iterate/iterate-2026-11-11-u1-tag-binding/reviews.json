@@ -124,27 +124,61 @@
     "code": {
       "review_type": "code",
       "status": "completed",
-      "findings_count": 1,
+      "findings_count": 5,
       "findings": [
         {
           "severity": "low",
-          "category": "readability",
-          "file": "plugins/shipwright-compliance/scripts/lib/collectors/_file_tags.py",
-          "line": 59,
-          "finding": "join_multiline_decls docstring stale about brace depth (fixed after review).",
-          "suggestion": "update docstring",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/_tag_binding_core.py",
+          "line": 193,
+          "finding": "Unbound-covers warning key (test, raw) includes the line number, so an edit above an existing unbound comment re-warns it. Warning only.",
+          "suggestion": "strip the :<n>: part before comparing, or document in hooks-and-pipeline.md",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-compliance/scripts/lib/collectors/_suite_tags.py",
+          "line": 117,
+          "finding": "An unbound covers comment with a malformed id is named twice (flush_unbound invalid-tag plus unbound-covers-comment); verdict still correct because the malformed tag STOPs.",
+          "suggestion": "none required",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "test-quality",
+          "file": "plugins/shipwright-compliance/tests/test_suite_tags_lexer.py",
+          "line": 1161,
+          "finding": "test_tsx_source_is_lexed_with_jsx_on_and_ts_with_it_off only asserts the tsx half.",
+          "suggestion": "add a .ts case where jsx lexing would change depth, or rename",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "test-quality",
+          "file": "plugins/shipwright-compliance/tests/test_group_d_unbound_covers.py",
+          "line": 1071,
+          "finding": "'malformed' in detail is satisfied by 'not malformed tags'; status==pass carries the check.",
+          "suggestion": "assert the full phrase",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "pre-existing",
+          "file": "plugins/shipwright-compliance/scripts/lib/collectors/_suite_tags.py",
+          "line": 107,
+          "finding": "A one-line describe (net brace 0) is never entered/popped and leaks its FR to later tests. Not introduced here.",
+          "suggestion": "follow-up card",
           "source": "code-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-11-11T21:32:33.918358+00:00",
+      "completed_at": "2026-11-11T22:12:57.193145+00:00",
       "disposition": null,
       "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "5daa5418d962cf1c9bab61e2656f41ba120b985c"
+      "model_tier": "opus"
     },
     "doubt": {
       "review_type": "doubt",
@@ -152,51 +186,49 @@
       "findings_count": 4,
       "findings": [
         {
-          "severity": "low",
-          "category": "concurrency & ordering",
-          "file": "shared/scripts/tools/verifiers/_tag_binding_core.py:193-200",
+          "severity": "medium",
+          "category": "hidden coupling & blast radius",
+          "file": "plugins/shipwright-compliance/scripts/audit/_group_d_traceability.py:108-166",
           "line": null,
-          "finding": "Claim under doubt: warn only on NEW unbound comment — line number in raw re-warns on shift",
-          "suggestion": "accept and document",
+          "finding": "Claim under doubt: Group D change is local and free to keep — _group_d_traceability.py is now 303 lines (limit 300, not in baseline): Group H1 will raise a bloat-drift card after merge and the Stop hook can block a later session that edits it. CI does not gate on it.",
+          "suggestion": "move the unbound split and note text into _group_d_render.py. DISPOSITION: accepted, not fixed in this PR; a fix is a new commit on a reviewed tree and would restart the whole cascade for a non-correctness finding. Orchestrator reports it as a follow-up (3-line extraction).",
           "source": "doubt-reviewer"
         },
         {
           "severity": "low",
           "category": "boundary & contract",
-          "file": "plugins/shipwright-compliance/scripts/lib/collectors/test_links.py:39",
+          "file": "shared/scripts/tools/verifiers/tag_binding_gate.py:136-142",
           "line": null,
-          "finding": "Claim under doubt: all readers handle entry — external readers see empty test; collector version unchanged",
-          "suggestion": "release note (changelog drop carries it)",
-          "source": "doubt-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": "boundary & contract",
-          "file": "_suite_tags.py:24",
-          "line": null,
-          "finding": "Claim under doubt: warning wording — describe.each unsupported",
+          "finding": "Claim under doubt: unbound warning always shown at the gate — tag_binding_gate._result drops warnings when findings exist; the STOP still fires and audit D lists the comment. DISPOSITION: rebutted in writing, D-orphan is the channel; accepted.",
           "suggestion": "accept",
           "source": "doubt-reviewer"
         },
         {
           "severity": "low",
-          "category": "hidden coupling",
-          "file": "_suite_tags.py:43",
+          "category": "boundary & contract",
+          "file": "shared/scripts/lib/ts_lexer.py:61-68",
           "line": null,
-          "finding": "Claim under doubt: line numbers match disk — exotic line separators",
+          "finding": "Claim under doubt: lexer never worse than text count — ts_lexer reads a slash after a closing brace as a regex start; one line can lose braces. DISPOSITION: accepted as a known limit.",
+          "suggestion": "accept",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling & blast radius",
+          "file": "plugins/shipwright-compliance/scripts/hooks/check_rtm_coverage.py:203-222",
+          "line": null,
+          "finding": "Claim under doubt: consumers see only better numbers — a requirement covered only by a leaked frame can fall below a consumer's RTM threshold. DISPOSITION: accepted; the changelog drop notes that counts move.",
           "suggestion": "accept",
           "source": "doubt-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-11-11T21:36:23.108566+00:00",
+      "completed_at": "2026-11-11T22:12:57.310340+00:00",
       "disposition": null,
       "recorded_by": "doubt-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "5daa5418d962cf1c9bab61e2656f41ba120b985c"
+      "model_tier": "opus"
     },
     "external_code": {
       "review_type": "external_code",
@@ -275,14 +307,12 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-11-11T21:27:10.389719+00:00",
+      "completed_at": "2026-11-11T22:12:57.080842+00:00",
       "disposition": null,
       "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "29ef9477a61ffb25a2ea8b45f2a359756d57b93d"
+      "model_tier": "opus"
     },
     "plan_internal": {
       "review_type": "plan_internal",
