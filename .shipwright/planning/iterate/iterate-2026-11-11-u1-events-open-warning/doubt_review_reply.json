@@ -1,0 +1,5 @@
+{"stage": "doubt", "gating": "advisory-must-address", "doubts": [
+  {"severity": "medium", "lens": "hidden coupling & blast radius", "claim_under_doubt": "the WARN is purely advisory", "disproof_attempt": "The hint told an autonomous iterate to run the fold in its own worktree.", "what_would_resolve_it": "Address it to an operator, on main. ADDRESSED: hint reworded, F0.md and docs say never inside an iterate."},
+  {"severity": "low", "lens": "boundary & contract", "claim_under_doubt": "folding clears the warning", "disproof_attempt": "Files under 14 days old are never folded.", "what_would_resolve_it": "Say so in the line. ADDRESSED: the line says files under 14 days old stay open."},
+  {"severity": "low", "lens": "test strength", "claim_under_doubt": "the flag test proves no gh call", "disproof_attempt": "workflow_files and build_report were not patched.", "what_would_resolve_it": "Patch them too. ADDRESSED."}
+], "summary": "0 high, 1 medium, 2 low; all addressed."}

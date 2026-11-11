@@ -1,0 +1,1 @@
+{"stage": "spec-compliance", "verdict": "PASS", "spec_citations": [], "summary": "Round 2 PASS. Round 1 REJECTED because nothing on the F0 path printed the warning; fixed by main_health.py --events-warning-only wired into F0.md as an advisory step (no gh call, exit 0), with a test. All U1 Done-when items verified against the diff."}

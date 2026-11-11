@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-11-u1-events-open-warning",
+  "date": "2026-11-11",
+  "section": "Iterate — change: events open-file warning",
+  "title": "Advisory WARN at 150 open event drop files",
+  "context": "The drops layout keeps one file per run in shipwright_events.d/; the fold runs automatically only at a release, so a repo that rarely releases accumulates files unnoticed.",
+  "decision": "main_health.py prints one stderr WARN at >=150 drop files (named constant, leaf module events_open_warning), naming the manual fold. Never changes the exit code; legacy layout silent. Also: A7 text names both locations; adopt seeder appends with newline LF.",
+  "consequences": "B1b and F11 (which run main_health) surface the line; no new gate. One constant to keep honest if the threshold or fold command changes.",
+  "rationale": "Smallest thing that does: detection half of the fold, reusing a tool already run at both points; stderr keeps the JSON stdout contract intact.",
+  "rejected": "Do nothing; auto-fold on another trigger; a blocking gate on the count. Architecture review (GLM+GPT): approve/approve. Plan review findings accepted: unreadable folder returns no warning, not a wrong count; leaf module kept as it has two callers (tool + tests).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "No concrete defects found in the supplied diff. It implements the stated scope: the named 150-file threshold, advisory warnings in main health and F0, legacy-layout silence, both verifier paths, LF appends, and drop-name parity coverage.\n\nShip-as-is based on the supplied diff. Local command execution was blocked by policy, so I could not run tests or inspect the referenced full brief.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "Review of the diff against U1:\n\n**Spec coverage check**\n- (1) `main_health.py` WARN at \u2265150 with named constant `OPEN_FILES_WARN_THRESHOLD = 150`, advisory-only, legacy silent, F0 via `--events-warning-only` exiting 0 \u2014 all present and wired into `main()` before any `gh` usage. F0.md updated.\n- (2) A7 message now names both locations \u2014 done in `adopt_compliance.py`.\n- (3) Seeder append uses `newline=\"\\n\"`, and the parity test pins the seeder's drop filename against the shared `DROP_NAME` regex \u2014 done.\n\n**Findings**\n\n- Category: edge-case | Severity: low\n- File: shared/scripts/lib/events_open_warning.py:29-30 (`count_open_drop_files`)\n- Finding: A `shipwright_events.d/` that is a symlink (e.g., the dir is symlinked into a repo layout, or a test/CI checkout artifact) returns 0 unconditionally, so a drops-layout repo with a symlinked events dir never warns. `folder.is_symlink()` guard makes the count silently wrong rather than advisory-silent-by-design; only a symlinked *file* or broken link really needs the guard.\n- Suggestion: Follow the symlink (`folder.resolve()`) before the `is_dir()` check, or drop the `is_symlink()` test and rely on `is_dir()`.\n\n- Category: test | Severity: low\n- File: shared/tests/test_events_open_warning.py:76-78 (`test_legacy_layout_is_silent_even_with_many_files`)\n- Finding: Because `open_files_warning` swallows all exceptions, this test would also pass if `events_layout` raised on the `\"legacy\"` config value instead of recognizing it \u2014 silence is indistinguishable from a crash in this path. The negative result is only meaningful because the \"drops\" positive test exists; a direct assertion that `events_layout(root) == \"legacy\"` (or \"not drops\") would pin the distinction.\n- Suggestion: Add `assert events_layout(tmp_path) != \"drops\"` inside the test so the test fails if layout detection itself errors.\n\n- Category: test | Severity: low\n- File: shared/tests/test_events_open_warning.py:83-88 (`test_temp_and_foreign_files_are_not_counted`)\n- Finding: `.x.jsonl.tmp` is excluded both by the leading-dot rule and the `.jsonl` suffix rule, so this test doesn't distinguish \"dot-prefixed temp files are excluded\" from \"only `.jsonl` suffixed files are counted\". A file like `.tmp-r1.jsonl` (dot-prefixed but with the right suffix) would be the discriminating case.\n- Suggestion: Add a `.hidden.jsonl` fixture and assert it isn't counted.\n\nNone of these are blockers. The positive-path tests (threshold warning text, count in stderr, exit code unchanged, no-gh assertion via the `_no_gh` tripwire, LF byte-level assertion covering both the replace path and the append path via two seeded events) are genuinely discriminating \u2014 a broken implementation would fail them. No security or regression concerns: the new flag short-circuits before any `gh` call, existing main_health behavior (stdout JSON + exit code) is unchanged.\n\nOverall: sound implementation with good discriminating tests; the findings are refinements, none gating.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-11-11-u1-events-open-warning",
+    "at": "2026-11-11T21:18:17.066289+00:00"
+  },
+  "verdicts": {
+    "openai": "approve",
+    "glm": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}
