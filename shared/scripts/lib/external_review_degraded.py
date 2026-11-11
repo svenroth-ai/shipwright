@@ -5,6 +5,11 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+try:
+    from .external_review_strict import apply_strict
+except ImportError:  # top-level import (shared/scripts/lib on sys.path)
+    from external_review_strict import apply_strict  # type: ignore[no-redef]
+
 REVIEW_ENVELOPE_SCHEMA = 2
 
 _NON_SUCCESS_ATTEMPTED_STATUSES = frozenset({"degraded", "error"})
@@ -246,8 +251,13 @@ def file_partial_degradation_triage(
             print(f"note: could not auto-file triage for {leg!r}: {exc}", file=sys.stderr)
 
 
-def finalize_review_output(provider: str, reviews: dict) -> tuple[dict, int]:
-    """Build the stable CLI payload and fail loudly on total provider failure."""
+def finalize_review_output(
+    provider: str, reviews: dict, min_required: int | None = None,
+) -> tuple[dict, int]:
+    """Build the stable CLI payload and fail loudly on total provider failure.
+
+    ``min_required`` is the opt-in strictness floor (see ``external_review_strict``); ``None`` keeps
+    the #670 default where a partial pass still succeeds."""
     succeeded = count_succeeded(reviews)
     degraded = is_degraded(reviews)
     output: dict = {
@@ -260,6 +270,8 @@ def finalize_review_output(provider: str, reviews: dict) -> tuple[dict, int]:
         "provider": provider,
         "degraded": degraded,
         "reviews_succeeded": succeeded,
+        # The roster size to compare `reviews_succeeded` against (issue #1035).
+        "reviews_expected": len(reviews),
         # `success` stays True when nothing was attempted (provider "none" is the
         # explicit missing-keys state callers branch on), so on its own it cannot
         # tell "reviewed and fine" from "nothing reviewed". This can (#547).
@@ -277,4 +289,4 @@ def finalize_review_output(provider: str, reviews: dict) -> tuple[dict, int]:
         output["partially_degraded"] = True
         output["partially_degraded_legs"] = legs
         print(_PARTIAL_BANNER.format(legs=", ".join(legs)), file=sys.stderr)
-    return output, (1 if degraded else 0)
+    return apply_strict(output, reviews, min_required, 1 if degraded else 0)

@@ -30,6 +30,11 @@ def empty_diff_envelope(driver: str, driver_record: dict[str, Any]) -> dict[str,
         "degraded": False,
         "reviewed": False,  # nothing was sent anywhere: success without a review
         "reviews": reviews,
+        # Nothing was reviewed because nothing needed review: 0 expected, so a caller comparing
+        # succeeded with expected never reads an empty diff as a missing reviewer.
+        "reviews_succeeded": 0,
+        "reviews_expected": 0,
+        "missing_legs": [],
         # Same shape on every exit path so a consumer never has to guard
         # for the block's absence.
         **summarize_reviews(reviews),

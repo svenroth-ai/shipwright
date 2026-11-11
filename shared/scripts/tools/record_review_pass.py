@@ -206,9 +206,9 @@ def _cmd_record(args: argparse.Namespace) -> int:
             markers.extend(write_markers(
                 project_root, args.run_id, args.review_type,
                 marker_status=args.marker_status, findings_count=len(findings),
-                record_status=args.status,
-                provider=args.provider,
+                record_status=args.status, provider=args.provider,
                 reason=marker_reason(_disposition(args), parse_status, len(findings)),
+                partial_legs=entry.get("partial_legs"),
                 verdicts=verdicts,
                 contradiction_resolution=args.contradiction_resolution,
             ))

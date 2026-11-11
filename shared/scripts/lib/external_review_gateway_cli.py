@@ -14,6 +14,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import nullcontext
 from pathlib import Path
 
+from external_review_config import load_review_config
+from external_review_strict import required_reviews
 from external_review_degraded import (
     file_partial_degradation_triage,
     finalize_review_output,
@@ -40,14 +42,19 @@ def review_timing(args):
                         name="external_review", parent=parent)
 
 
-def emit_envelope(args, provider: str, reviews: dict, driver_record: dict) -> int:
+def emit_envelope(args, provider: str, reviews: dict, driver_record: dict, config: dict | None = None) -> int:
     """Print the review envelope and return the exit code.
 
     Two reviewers exist so disagreement gets noticed; carry both verdicts and the
     derived contradiction alongside the full texts rather than letting a
     downstream finding count average them away.
     """
-    output, exit_code = finalize_review_output(provider, reviews)
+    required = required_reviews(
+        config if config is not None else load_review_config(project_root=Path(args.project_root).resolve()),
+        len(reviews),
+        require_all=getattr(args, "require_all_legs", False), min_reviews=getattr(args, "min_reviews", None),
+    )
+    output, exit_code = finalize_review_output(provider, reviews, required)
     output.update(driver_record)
     output.update(summarize_reviews(reviews))
     if output.get("partially_degraded"):
@@ -88,4 +95,4 @@ def run_gateway(args, driver_record: dict, primary_text: str, spec: str,
                     reviews[name] = {"status": "error", "reason": redact_all_configured_secrets(str(e))}
         if timing_extra is not None:
             timing_extra["provider"] = "gateway"
-    return emit_envelope(args, "gateway", reviews, driver_record)
+    return emit_envelope(args, "gateway", reviews, driver_record, config)

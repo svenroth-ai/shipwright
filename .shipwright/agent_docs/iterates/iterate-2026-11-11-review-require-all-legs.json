@@ -1,0 +1,81 @@
+{
+  "run_id": "iterate-2026-11-11-review-require-all-legs",
+  "date": "2026-11-11T08:00:00.693541Z",
+  "event_at": "2026-11-11T07:55:47.344529+00:00",
+  "type": "feature",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/review-require-all-legs",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-11-11-review-require-all-legs",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "The envelope reports reviews_expected and missing_legs next to reviews_succeeded",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_external_review_require_all_legs.py::test_expected_count_is_always_reported PASSED"
+      },
+      {
+        "behavior": "Default (#670) behaviour: a partial pass still exits 0 with success true",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_external_review_require_all_legs.py::test_default_partial_pass_still_succeeds PASSED"
+      },
+      {
+        "behavior": "Strict mode fails a partial pass, names the missing legs, exits 1",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_external_review_require_all_legs.py::test_require_all_fails_partial_pass_and_names_legs PASSED"
+      },
+      {
+        "behavior": "Skipped legs and the no-keys state count as missing under strictness",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_external_review_require_all_legs.py::test_skipped_leg_counts_as_missing_under_strictness + test_strict_mode_also_fails_the_no_keys_state PASSED"
+      },
+      {
+        "behavior": "require_all_legs / --require-all-legs / --min-reviews resolution and validation",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_external_review_require_all_legs.py::test_required_reviews_resolution + test_min_reviews_rejects_non_positive_values + test_strict_config_flag_degrades_on_malformed_config PASSED"
+      },
+      {
+        "behavior": "The recorder marks a one-reviewer pass partial, repair keeps it, malformed payloads cannot break it",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_record_review_pass_partial.py::test_one_reviewer_pass_is_marked_partial + test_repair_markers_keeps_the_partial_marker + test_malformed_missing_legs_never_break_the_recorder PASSED"
+      },
+      {
+        "behavior": "mark-review-state --partial / --missing-legs, refused on skipped status",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_external_review_require_all_legs.py::test_marker_records_partial_pass + test_missing_legs_alone_implies_partial + test_partial_is_refused_on_a_skipped_status PASSED"
+      },
+      {
+        "behavior": "The empty-diff envelope reports the roster; full-pass markers keep their shape",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_external_review_require_all_legs.py::test_empty_diff_envelope_reports_the_roster + shared/tests/test_record_review_pass_partial.py::test_full_pass_marker_keeps_its_shape PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 8,
+      "tested": 8,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 1,
+      "covered_acs": 1
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "justification": "Library and CLI-flag change in the external-review scripts; the live providers need paid keys, so every path is exercised in-process by the pytest suite (30 new tests plus the 694 existing review tests).",
+    "reason_code": "no-startable-surface",
+    "tests_run": 0,
+    "exit_code": 0,
+    "timestamp": "2026-11-11T07:55:17.238077+00:00"
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}
