@@ -70,8 +70,11 @@ def write_markers(
     reason: str | None = None,
     verdicts: dict[str, str] | None = None,
     contradiction_resolution: str | None = None,
+    partial_legs: list[str] | None = None,
 ) -> list[str]:
-    """Dual-write the marker. Returns the paths written, run-scoped copy first."""
+    """Dual-write the marker. Returns the paths written, run-scoped copy first.
+
+    ``partial_legs`` (not ``None``) marks a one-reviewer pass: still ``completed``, plus ``partial``."""
     marker_mode = MARKER_TYPES.get(review_type)
     if (record_status == "completed") != (marker_status == "completed"):
         raise ReviewRecordError(
@@ -104,6 +107,8 @@ def write_markers(
         contradiction_resolution=contradiction_resolution,
         marker_schema=marker_schema,
     )
+    if partial_legs is not None and marker_status == "completed":
+        marker.update({"partial": True, "missing_legs": partial_legs})
     shared_dir = Path(project_root) / ".shipwright" / "planning" / "iterate"
     return [
         str(write_marker(target, marker, marker_mode))
@@ -140,6 +145,7 @@ def repair_markers(
             provider=provider, reason=reason,
             verdicts=verdicts,
             contradiction_resolution=entry.get("contradiction_resolution"),
+            partial_legs=entry.get("partial_legs"),
         ))
 
     _run_repair(project_root, run_id, review_type, rewrite)

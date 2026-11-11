@@ -167,6 +167,20 @@ def main() -> int:
             "read."
         ),
     )
+    parser.add_argument(
+        "--partial",
+        action="store_true",
+        help=(
+            "Record that fewer reviewers answered than were configured "
+            "(envelope: reviews_succeeded < reviews_expected). The status stays "
+            "'completed'; a `partial` marker keeps the one-reviewer pass visible."
+        ),
+    )
+    parser.add_argument(
+        "--missing-legs",
+        default=None,
+        help="Comma-separated reviewer legs that did not answer (envelope: missing_legs). Implies --partial.",
+    )
     args = parser.parse_args()
 
     verdicts, verdict_error = parse_verdict_args(args.verdict)
@@ -215,6 +229,17 @@ def main() -> int:
         contradiction_resolution=args.contradiction_resolution,
         **marker_schema_kwargs,
     )
+    missing = sorted(p.strip() for p in (args.missing_legs or "").split(",") if p.strip())
+    if (args.partial or missing) and args.status != "completed":
+        print(json.dumps({
+            "success": False, "error": "invalid_partial",
+            "message": "--partial / --missing-legs only apply to --status completed",
+        }))
+        return 2
+    if args.partial or missing:
+        # Additive keys, omitted otherwise, so every existing marker keeps its exact shape.
+        marker["partial"] = True
+        marker["missing_legs"] = missing
     out_path = write_marker(planning_dir, marker, args.review_type)
 
     print(json.dumps({"success": True, "marker_path": str(out_path), "state": marker}))

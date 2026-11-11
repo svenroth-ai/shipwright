@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from .ac_verdicts import verdict_fields
+from .external_review_strict import partial_legs_from_payload
 from .review_finding_shape import TRUNCATION_MARKER
 from .review_findings import (
     PARSE_PARTIAL,
@@ -284,4 +285,7 @@ def unread_reply_warning(
 def entry_extras(args: Any) -> dict[str, Any]:
     """The optional row fields a ``record`` call adds after ``make_entry``: the 3f-bis attestation and a spec pass's per-AC verdicts."""
     extras = {k: v for k, v in (("verdict", args.verdict), ("reviewed_commit", args.reviewed_commit)) if v}
+    legs = partial_legs_from_payload(args.review_from, args.payload_file) if args.status == "completed" else None
+    if legs is not None:  # a one-reviewer pass keeps its missing legs on the authoritative row (repair-markers reads them)
+        extras["partial_legs"] = legs
     return {**extras, **verdict_fields(args.review_type, args.status, args.payload_file)}

@@ -292,6 +292,14 @@ _Where the work detail lives_ at the end of this document.
   reviewers, so that question is never left unasked
   merely because no outside model was available.
   (iterate-2026-09-28-architecture-review-internal-arm)
+- (E) [AC23] Given a project that requires every outside reviewer to answer, when
+  fewer reviewers answered than were set up, then the review step reports that
+  it did not succeed, names the reviewers that are missing and ends with an
+  error; a project that has not asked for this still proceeds on a single
+  reviewer's opinion. Either way, the number of reviewers that were set up is
+  reported next to the number that answered, and the recorded review state
+  marks a one-reviewer pass as partial instead of plain completed.
+  (iterate-2026-11-11-review-require-all-legs)
 
 <a id="fr-0104"></a>
 ### FR-01.04 — Mockups from requirements

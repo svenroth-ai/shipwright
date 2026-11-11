@@ -2,6 +2,7 @@
   "external_review": {
     "alert_if_missing": true,
     "feedback_iterations": 1,
+    "require_all_legs": false,
     "gpt_leg": {
       "provider": "api"
     },
@@ -10,6 +11,7 @@
     },
     "_comment_alert": "alert_if_missing: reserved (review is now interactive — never silently skipped)",
     "_comment_iterations": "feedback_iterations: default 1 = external review is the default path. 0 = explicit opt-out; the consuming skill then runs a mandatory self-review ('2x denken') fallback instead. If > 0 and no API key is set, the skill interactively prompts the user.",
+    "_comment_require_all_legs": "require_all_legs: false (default) = one answering reviewer is enough to proceed (a partial pass exits 0 with partially_degraded:true). true = every configured reviewer must answer: a pass with fewer successes than `reviews_expected` exits 1 with success:false, strict_failure:true and the missing legs named. CLI equivalents: --require-all-legs, --min-reviews N (N >= 1). Strict mode also fails the no-keys state (every leg skipped, provider none): a skipped leg is a missing reviewer.",
     "_comment_gpt_leg": "gpt_leg.provider: which route answers the 'openai' reviewer identity. 'api' (default) = OpenRouter/direct OpenAI, metered per token — unchanged existing behavior. 'codex' = route it through the Codex CLI instead (flat-cost under a ChatGPT/Codex subscription); requires `codex` installed and authenticated (`codex login status`), falls back to 'api' when unavailable, and skips the leg entirely if neither route is usable. Per-project override: external_review.gpt_leg.provider in shipwright_iterate_config.json.",
     "_comment_opus_leg": "opus_leg.provider: which route answers the 'opus' reviewer identity (used when --driver codex selects the {glm, opus} roster). 'claude_cli' (default) = the local `claude` CLI, flat-cost under a Claude subscription; requires `claude` installed (`claude --version`) and never resolves to a `.cmd`/`.bat` shim on Windows (BatBadBut argv-injection guard — falls back instead). Falls back to 'openrouter' when the CLI is unavailable or refused, and skips the leg entirely if neither route is usable. No ZDR allowlist needed for this leg (Sven: single-provider, not GLM/DeepSeek's multi-endpoint aggregation)."
   },

@@ -129,6 +129,7 @@ from external_review_routing import (  # noqa: E402
 )
 from external_review_empty import empty_diff_envelope  # noqa: E402
 from external_review_gateway import gateway_configured  # noqa: E402
+from external_review_strict import add_strict_arguments  # noqa: E402
 from external_review_gateway_cli import emit_envelope, review_timing, run_gateway  # noqa: E402
 
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
@@ -304,6 +305,7 @@ def main() -> int:
             "harness produced the diff."
         ),
     )
+    add_strict_arguments(parser)
     args = parser.parse_args()
 
     # Enforced, not trusted; the record rides in every envelope for the F11 check —
@@ -444,7 +446,7 @@ def main() -> int:
     if "driver_enforced_reason" in driver_record and reviews.get(second_id, {}).get("status") != "success":
         reviews.setdefault(second_id, {})["coercion_note"] = (  # say WHY this leg, not openai, was tried
             "driver coerced to codex under CODEXTENDER_ACTIVE: this leg needs a logged-in claude CLI or OPENROUTER_API_KEY")
-    return emit_envelope(args, provider, reviews, driver_record)
+    return emit_envelope(args, provider, reviews, driver_record, config)
 
 
 if __name__ == "__main__":

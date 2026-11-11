@@ -1,0 +1,10 @@
+{"items": [
+ {"name": "Spec Compliance", "verdict": "pass", "note": "Issue 1035 asks for reviews_expected, opt-in strictness (config + CLI) with nonzero exit and named missing legs, and a partial marker in the review state; all three are implemented, default behaviour from #670 unchanged (tested)."},
+ {"name": "Error Handling", "verdict": "pass", "note": "A malformed require_all_legs value degrades to the default instead of crashing; a min-reviews above the roster size fails honestly; the total-failure degraded path keeps its own semantics."},
+ {"name": "Security Basics", "verdict": "pass", "note": "No new input surface beyond two CLI flags parsed by argparse (int / bool); no secrets, no shell."},
+ {"name": "Test Quality", "verdict": "pass", "note": "16 tests assert outcomes of the envelope, the resolver and the marker CLI; each tagged to the new acceptance criterion; the pre-existing 694 review tests still pass."},
+ {"name": "Performance Basics", "verdict": "pass", "note": "One extra config load in emit_envelope (a small JSON read)."},
+ {"name": "Naming & Structure", "verdict": "pass", "note": "New logic lives in lib/external_review_strict.py so the grandfathered bloat-baseline files do not grow; ruff clean."},
+ {"name": "Affected Boundaries", "verdict": "pass", "note": "Envelope JSON gains reviews_expected/missing_legs/strict_* (additive); review-state marker gains partial/missing_legs only when requested; config gains require_all_legs (default false). Existing readers ignore unknown keys."},
+ {"name": "Test Hygiene Probe", "verdict": "n/a", "note": "No skips added."}
+]}
