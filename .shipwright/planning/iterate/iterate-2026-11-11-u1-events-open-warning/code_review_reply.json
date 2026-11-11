@@ -1,0 +1,10 @@
+{
+  "section": "U1-events-open-warning-wording-seeder",
+  "review": [
+    {"severity": "medium", "category": "correctness", "file": "plugins/shipwright-adopt/scripts/lib/event_seeder.py", "line": 130, "finding": "Legacy append in _append_jsonl still opened without newline LF (CRLF on Windows).", "suggestion": "Add newline LF there too and extend the CRLF test. FIXED in this run."},
+    {"severity": "medium", "category": "correctness", "file": "shared/scripts/lib/events_open_warning.py", "line": 105, "finding": "The fold hint named a monorepo-relative path that does not exist in a consumer project.", "suggestion": "Build the path from the real fold_events.py location and pass --project-root. FIXED in this run."},
+    {"severity": "low", "category": "readability", "file": "shared/scripts/lib/events_open_warning.py", "line": 105, "finding": "'open' counts every *.jsonl in the folder, incl. committed ones.", "suggestion": "Brief wording is 'open'; kept. Rejected with reason."},
+    {"severity": "low", "category": "readability", "file": "shared/scripts/tools/main_health.py", "line": 207, "finding": "Path resolve and warning print duplicated.", "suggestion": "Resolve once. FIXED in this run."},
+    {"severity": "low", "category": "readability", "file": "plugins/shipwright-iterate/skills/iterate/references/F0.md", "line": 100, "finding": "Advisory call is inline in a sentence.", "suggestion": "Own line. Rejected: F0.md is at its 400-line cap, a new line would cross the bloat limit."}
+  ]
+}

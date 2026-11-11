@@ -112,7 +112,7 @@ def _append_drop(root: Path, event: dict[str, Any]) -> None:
         os.replace(tmp, target)
         _drop_targets[key] = target
         return
-    with target.open("a", encoding="utf-8") as f:
+    with target.open("a", encoding="utf-8", newline="\n") as f:  # LF on every platform, like every other writer
         f.write(line)
 
 
@@ -127,7 +127,7 @@ def _append_jsonl(path: Path, event: dict[str, Any]) -> None:
     # otherwise two records land on one physical line and a reader without
     # record-boundary recovery discards BOTH.
     needs_separator = _ends_without_newline(path)
-    with path.open("a", encoding="utf-8") as f:
+    with path.open("a", encoding="utf-8", newline="\n") as f:
         if needs_separator:
             f.write("\n")
         f.write(json.dumps(event, ensure_ascii=False) + "\n")

@@ -1,0 +1,9 @@
+{"items": [
+  {"name": "Spec Compliance", "verdict": "pass", "note": "All U1 Done-when items covered by tests; F0 path added after spec-reviewer round 1."},
+  {"name": "Error Handling", "verdict": "pass", "note": "open_files_warning never raises; unreadable folder gives no warning, not a wrong count."},
+  {"name": "Security Basics", "verdict": "pass", "note": "Read-only directory listing; symlinked folder treated as absent; no shell interpolation."},
+  {"name": "Test Quality", "verdict": "pass", "note": "Exit-code pin, legacy silence, boundary 149/150, CRLF-translation monkeypatch for both seeder layouts, DROP_NAME parity."},
+  {"name": "Performance Basics", "verdict": "pass", "note": "One directory listing, no gh call in the F0 path."},
+  {"name": "Naming & Structure", "verdict": "pass", "note": "Named constant, small leaf module, no dead code."},
+  {"name": "Affected Boundaries", "verdict": "pass", "note": "Seeder writes the drop file the shared reader consumes; parity test loads the seeder and matches DROP_NAME; append LF probe is a real on-disk byte check."}
+]}

@@ -3021,6 +3021,8 @@ Both call sites are prose in the skill (SKILL.md §B1b, `references/F11.md`),
 pinned by `plugins/shipwright-iterate/tests/test_main_repair_hooks.py`, and the
 repair procedure itself is `references/main-repair.md`.
 
+When the repo uses the drops events layout and `shipwright_events.d/` holds 150 or more open files (`lib/events_open_warning.OPEN_FILES_WARN_THRESHOLD`), `main_health.py` also prints one `WARN` line on stderr: how many are open, that the next release folds the old ones, and the manual `fold_events.py fold`. Advisory only — it never changes the exit code, and the legacy layout stays silent. Because B1b and F11 both run `main_health.py`, an iterate sees it at both points. F0 prints the same line (and only that) through `main_health.py --events-warning-only`, which makes no `gh` call and always exits 0. Folding is operator housekeeping on main (files under 14 days old stay open); an iterate never runs it.
+
 **Campaign Worktree (2026-08-26).** B1a is unconditional for a standalone
 `/shipwright-iterate` run, but a `--campaign --autonomous` orchestrator never
 called it under its own campaign-scoped identity, and the `sub-iterate-runner`

@@ -1,0 +1,96 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-11-u1-events-open-warning",
+    "date": "2026-11-11",
+    "unit": {
+      "status": "passed",
+      "passed": 25668,
+      "skipped": 108,
+      "total": 25776
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run shared/scripts/tools/main_health.py --events-warning-only --project-root .",
+      "exit_code": 0,
+      "tests_run": 1,
+      "evidence_path": ".shipwright/runs/iterate-2026-11-11-u1-events-open-warning/surface_verification.log",
+      "timestamp": "2026-11-11T21:38:50.370Z",
+      "attempts": 1
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "WARN line at >=150 drop files, silent below and on legacy",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_events_open_warning.py::test_at_threshold_warns_with_count_and_fold_hint PASSED"
+        },
+        {
+          "behavior": "warning never changes main_health exit code; failing warning never breaks it",
+          "disposition": "tested",
+          "evidence": "test_main_health_prints_the_line_without_changing_the_exit_code PASSED"
+        },
+        {
+          "behavior": "F0 advisory flag prints only the line, no gh call, exit 0",
+          "disposition": "tested",
+          "evidence": "test_events_warning_only_flag_prints_the_line_makes_no_gh_call_and_exits_zero PASSED"
+        },
+        {
+          "behavior": "A7 failure text names both event locations",
+          "disposition": "tested",
+          "evidence": "test_a7_failure_names_both_locations PASSED"
+        },
+        {
+          "behavior": "adopt seeder appends LF only (drops and legacy) under CRLF-translating platform",
+          "disposition": "tested",
+          "evidence": "test_seeder_append_writes_lf_even_when_the_platform_translates_newlines PASSED"
+        },
+        {
+          "behavior": "seeder drop-file name matches shared DROP_NAME",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "test_seeder_drop_name_obeys_the_shared_name_rule PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 6,
+        "tested": 6,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 6,
+        "covered_acs": 6
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-11-11-u1-events-open-warning",
+    "commit": "be11fa7543631beff62bb425372694e893c5c1fa",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

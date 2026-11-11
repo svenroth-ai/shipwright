@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "**Findings**\n\n- **Category: approach / Severity: low** \u2014 A new leaf module `events_open_warning.py` for a constant and two ~5-line functions is borderline over-production. If `count_open_drop_files` is used by multiple callers (main_health only, per plan), folding it into `main_health.py` (or an existing shared lib module) is simpler. Not a blocker \u2014 a leaf module is defensible if the seeder parity test also imports `DROP_NAME` from shared \u2014 but confirm it's not a single-use wrapper.\n\n- **Category: edge-case / Severity: medium** \u2014 \"Never raises\" + counting files in a directory interact: if the directory is unreadable, unreadable subdirectories exist, or entries are symlinks/dirs, what does `count_open_drop_files` return? Specify behavior: ignore non-regular files, on OSError return None (suppress warning entirely rather than emit a misleading count). Otherwise a permission hiccup silently shows \"0 files\" or worse, a wrong count that hides the warning the change exists to produce.\n\n- **Category: edge-case / Severity: low** \u2014 \"Open\" here means \"files present in shipwright_events.d/\", not OS-open file handles \u2014 the plan should state the definition in the code (docstring/naming, e.g. `count_drop_files`) so future readers don't assume lsof semantics. Confirm against the campaign brief that \"open files\" = drop files present.\n\n- **Category: risk / Severity: low** \u2014 \"F11 both run it\" is asserted but not shown: verify F11 actually invokes the same shared code path rather than a copy, otherwise the warning diverges between the two hooks. Also confirm printing to stderr *after* the JSON on stdout doesn't interleave badly when callers capture combined output (stderr vs stdout buffering). Explicit flush ordering or printing warning before JSON emission ordering guarantee is worth one test.\n\n- **Category: dependency / Severity: medium** \u2014 The seeder parity test \"pins the seeder's drop-file name against `DROP_NAME`\" \u2014 where does `DROP_NAME` live? If it's in the new `events_open_warning.py`, fine; if it's elsewhere in shared, make sure `event_seeder.py` (a plugin) importing from `shared/scripts/lib` is an established pattern in this repo and works under the plugin's import context. If not, the parity test will be the first cross-boundary import and may fail in the plugin's packaging.\n\n- **Category: risk / Severity: low** \u2014 `adopt_compliance.py:220` wording change is cosmetic but user-facing: ensure the new message still passes any existing A7 message-golden tests (the plan includes an \"A7 text\" test \u2014 good; make sure old tests pinning the message are updated, not just new ones added).\n\n- **Category: edge-case / Severity: low** \u2014 `newline=\"\\n\"` on the seeder: also consider read paths \u2014 if anything later opens the file without `newline=\"\"`/LF on Windows, Python's universal-newline translation could still bite. The monkeypatched CRLF test is good; a roundtrip read assert (bytes on disk end with exactly one `\\n`) is the stronger pin.\n\nNo security concerns: no injection, no auth surface; the warning is stderr-only and doesn't alter the JSON contract or exit codes, which is the correct design call.\n\n**Overall assessment**: Sound, proportionate plan with correct instinct to keep stdout JSON untouched and exit codes invariant. Main actions: define the counting function's failure behavior, and verify the shared\u2194plugin import path for the parity test before writing it.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "Repository inspection was blocked by execution policy, so this review is based on the supplied specification and mini-plan.\n\n1. **Category: dependency | Severity: medium**\n   **Finding:** The scope explicitly requires the warning in `main_health.py` **and F0**, but the plan only identifies B1b and F11 as callers. It does not establish that F0 receives the warning.\n   **Suggestion:** Trace F0\u2019s execution path. If it already invokes `main_health.py` with visible stderr, document that and test it; otherwise wire the shared warning into F0. Ensure each invocation emits only one line.\n\n2. **Category: edge-case | Severity: low**\n   **Finding:** The counting rules are unspecified. Counting every directory entry could include temporary files or subdirectories and trigger the warning before 150 actual event files exist.\n   **Suggestion:** Define which files count using the existing event-reader convention, preferably reusing its filename predicate. Add a mixed-directory test alongside the threshold tests.\n\n3. **Category: risk | Severity: low**\n   **Finding:** Making the helper \u201cnever raise\u201d does not cover the subsequent stderr write. A write failure could still change the command\u2019s exit behavior, despite the stated guarantee.\n   **Suggestion:** Include warning emission within the best-effort exception boundary, and make the failure test exercise emission as well as counting.\n\nThe approach is otherwise proportionate: stderr preserves the JSON contract, and the wording and LF changes are narrowly scoped. Resolve the F0 coverage gap before implementation; the other findings are small robustness refinements.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-11-11-u1-events-open-warning",
+    "at": "2026-11-11T21:16:01.397543+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

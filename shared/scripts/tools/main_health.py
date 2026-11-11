@@ -36,6 +36,7 @@ _TOOLS_ROOT = Path(__file__).resolve().parent
 if str(_TOOLS_ROOT.parent) not in sys.path:
     sys.path.insert(0, str(_TOOLS_ROOT.parent))
 
+from lib import events_open_warning as eow  # noqa: E402
 from lib import main_health as mh  # noqa: E402
 from lib import main_health_diagnosis as dx  # noqa: E402
 from tools import main_health_gh as gh  # noqa: E402
@@ -196,12 +197,23 @@ def main(argv: list[str] | None = None) -> int:
                     help="commits walked back from the tip when attributing")
     ap.add_argument("--log-lines", type=int, default=40)
     ap.add_argument("--claim-stale-minutes", type=float, default=120.0)
+    ap.add_argument("--events-warning-only", action="store_true",
+                    help="print only the open-event-files WARN (no gh calls); exit 0")
     ap.add_argument("--trusted-author", action="append", default=[],
                     help="narrow claims further than the non-fork rule (opt-in)")
     args = ap.parse_args(argv)
 
-    report = build_report(Path(args.project_root).resolve(), args)
+    root = Path(args.project_root).resolve()
+    warning = eow.open_files_warning(root)  # advisory only: printed, never part of the exit-code decision
+    if args.events_warning_only:  # the F0 call: that line only, no gh, always exit 0
+        if warning:
+            print(warning, file=sys.stderr)
+        return 0
+
+    report = build_report(root, args)
     print(json.dumps(report, indent=2))
+    if warning:
+        print(warning, file=sys.stderr)
     if report["status"] != "green":
         print(
             f"main is {report['status']} at {report.get('tip_sha') or '?'} — see "
