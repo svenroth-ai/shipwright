@@ -30,7 +30,7 @@ from lib.events_fold_io import GitError  # noqa: E402
 from lib.events_integrity import check_integrity  # noqa: E402
 from lib.events_layout import implicit_key, worktree_id  # noqa: E402
 from lib.events_log import resolve_main_repo_root  # noqa: E402
-from lib.events_read import sanitize_key  # noqa: E402
+from lib.events_read import DROP_NAME, sanitize_key  # noqa: E402
 
 from .common import CheckResult, Severity  # noqa: E402
 from .git_helpers import _branch_base_commit  # noqa: E402
@@ -64,8 +64,8 @@ def _inherits_earlier_units(root: Path) -> bool:
 
 def _own_worktree_drop(path: str, wt8: str) -> bool:
     """``shipwright_events.d/<key>--<wt8>--<nonce>.jsonl`` written from THIS worktree (the key may itself contain ``--``)."""
-    parts = path.rsplit("/", 1)[-1].removesuffix(".jsonl").rsplit("--", 2)
-    return len(parts) == 3 and parts[1] == wt8
+    match = DROP_NAME.match(path.rsplit("/", 1)[-1])
+    return bool(match) and match.group("wt8") == wt8
 
 
 def check_events_integrity(project_root: Path, run_id: str, commit_hash: str = "") -> CheckResult:

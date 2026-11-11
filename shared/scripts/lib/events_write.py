@@ -25,7 +25,7 @@ from uuid import uuid4
 
 from .config import read_events
 from .events_layout import drop_key, events_layout, events_lock_path, resolve_events_write_path
-from .events_read import read_events_assembled, require_readable_for_absence
+from .events_read import DROP_NAME, read_events_assembled, require_readable_for_absence
 from .file_lock import FileLock
 from .events_log import DROPS_DIR, event_files
 from .events_read import instant
@@ -64,16 +64,28 @@ def _already_anywhere(root: Path, chosen: Path, event: dict) -> bool:
     return bool(event.get("id")) and any(p != chosen and _already_in(p, event) for p in event_files(root)[1:])
 
 
-def _monotonic_ts(path: Path, event: dict) -> None:
-    """Drops: a later append never carries an earlier-or-equal ``ts`` than the file's last record.
+def _monotonic_ts(root: Path, path: Path, event: dict) -> None:
+    """Drops: a later append never carries an earlier-or-equal ``ts`` than the run's last record.
 
     Readers order drops by parsed instant (then id), so on a coarse clock (Windows ticks) two events of
     one writer would tie and be scrambled by their random ids. Bumping by whole microseconds keeps the
     file order == time order for a single writer; it never moves an event more than a few ticks.
+
+    An append looks at the open file only. The FIRST event of a new (or still empty) file, opened after a
+    commit closed the old one or because the old one was torn, looks at every drop of the same run KEY (any
+    worktree; a torn file contributes its valid records and is not touched). Archived events are not seen.
     """
-    if not path.exists() or not isinstance(event.get("ts"), str):
+    if not isinstance(event.get("ts"), str):
         return
-    records = read_jsonl_records(path).records
+    records = read_jsonl_records(path).records if path.exists() else []
+    if not records and (named := DROP_NAME.match(path.name)):
+        records = []
+        for p in event_files(root)[1:]:
+            if (m := DROP_NAME.match(p.name)) and m.group("key") == named.group("key"):
+                try:
+                    records += read_jsonl_records(p).records
+                except OSError:  # an ordering nicety must never fail the write: skip a file that cannot be read now
+                    continue
     last = max((instant(r.get("ts")) for r in records), default=None)
     if last is not None and instant(event["ts"]) <= last:
         event["ts"] = (last + timedelta(microseconds=1)).isoformat()
@@ -137,7 +149,7 @@ def write_event_line(project_root: Path | str, event: dict, run_id: str | None =
     if drops and (_already_in(path, event) or _already_anywhere(root, path, event)):
         return None
     if drops:
-        _monotonic_ts(path, event)
+        _monotonic_ts(root, path, event)
     line = json.dumps(event, ensure_ascii=False, separators=(",", ":")) + "\n"
     if drops and not path.exists():
         (root / DROPS_DIR).mkdir(exist_ok=True)

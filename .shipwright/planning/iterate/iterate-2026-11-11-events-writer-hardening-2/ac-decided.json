@@ -1,0 +1,89 @@
+{
+  "unattended": true,
+  "resolved_items": [
+    {
+      "kind": "add",
+      "owner_fr": "FR-01.11",
+      "new_text": "Given a run's event file was closed by a commit, when the run records its next event with the same timestamp, then that event is read back after the run's earlier events.",
+      "files": [
+        "shared/scripts/lib/events_write.py"
+      ],
+      "decided_by": "code",
+      "confirmed": false
+    },
+    {
+      "kind": "add",
+      "owner_fr": "FR-01.11",
+      "new_text": "Given a run's open event file ends in a half-written line, when the run records an event, then the event goes to a new file and the damaged file is left unchanged.",
+      "files": [
+        "shared/scripts/lib/events_layout.py"
+      ],
+      "decided_by": "code",
+      "confirmed": false
+    },
+    {
+      "kind": "add",
+      "owner_fr": "FR-01.11",
+      "new_text": "Given an event file name, when the writer, the reader, the staging tool, the fold and the integrity check judge it, then they all accept or all refuse it.",
+      "files": [
+        "shared/scripts/lib/events_names.py"
+      ],
+      "decided_by": "code",
+      "confirmed": false
+    }
+  ],
+  "ac_decisions": [
+    {
+      "ac": "FR-01.11.new",
+      "mode": "auto",
+      "answer": "auto",
+      "kind": "add",
+      "answered_via": "none",
+      "decided_by": "code",
+      "confirmed": false
+    },
+    {
+      "ac": "FR-01.11.new",
+      "mode": "auto",
+      "answer": "auto",
+      "kind": "add",
+      "answered_via": "none",
+      "decided_by": "code",
+      "confirmed": false
+    },
+    {
+      "ac": "FR-01.11.new",
+      "mode": "auto",
+      "answer": "auto",
+      "kind": "add",
+      "answered_via": "none",
+      "decided_by": "code",
+      "confirmed": false
+    }
+  ],
+  "counts": {
+    "total": 3,
+    "auto": 3,
+    "asked": 0,
+    "exempt": 0,
+    "restore": 0,
+    "unchanged": 0,
+    "answered_inline": 0,
+    "unconfirmed": 0,
+    "exempt_share": 0.0,
+    "restore_share": 0.0
+  },
+  "status": "ok",
+  "ac_mode": {
+    "mode": "auto",
+    "source": "default (unattended)"
+  },
+  "run_id": "iterate-2026-11-11-events-writer-hardening-2",
+  "bind_id": "iterate-2026-11-11-events-writer-hardening-2",
+  "exemption_check": "tested against the current diff (6 file(s), 6 not observable)",
+  "surface": {
+    "observable": false,
+    "files": [],
+    "ignored": 6
+  }
+}

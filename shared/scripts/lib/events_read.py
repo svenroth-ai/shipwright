@@ -69,8 +69,8 @@ except ImportError:  # sentinel / flat load (``audit_adapters.load_shared_lib``)
 
 KEY_MAX = 80
 _BAD_KEY_CHARS = re.compile(r"[^A-Za-z0-9._-]")
-#: ``<key>--<wt8>--<nonce8>.jsonl`` -- the drop name written by ``events_layout``.
-_DROP_NAME = re.compile(r"^(?P<key>.+)--[0-9a-f]{8}--[0-9a-f]{8}\.jsonl$")
+#: THE drop-file name rule, ``<key>--<wt8>--<nonce8>.jsonl`` (writer, reader, staging, fold, integrity check all use it).
+DROP_NAME = re.compile(rf"^(?P<key>[A-Za-z0-9_-][A-Za-z0-9._-]{{0,{KEY_MAX - 1}}})--(?P<wt8>[0-9a-f]{{8}})--(?P<nonce>[0-9a-f]{{8}})\.jsonl\Z")
 
 
 def sanitize_key(raw: str) -> str:
@@ -172,7 +172,7 @@ def _status(records: list[dict], fragments: int, kind: str) -> str:
 
 
 def _read_one(path: Path, kind: str) -> tuple[RecordRead, FileStatus] | None:
-    match = _DROP_NAME.match(path.name) if kind == "drop" else None
+    match = DROP_NAME.match(path.name) if kind == "drop" else None
     key = match.group("key") if match else None
 
     def _gone() -> tuple[RecordRead, FileStatus] | None:
@@ -295,6 +295,6 @@ def event_lines_at(events_path: Path | str, errors: str = "strict") -> list[str]
 
 
 __all__ = [
-    "AssembledRead", "EventLogNotReadable", "FileStatus", "event_lines_at", "events_text", "instant", "latest_by_ts",
+    "AssembledRead", "DROP_NAME", "EventLogNotReadable", "FileStatus", "event_lines_at", "events_text", "instant", "latest_by_ts",
     "read_events_assembled", "read_events_at", "require_readable_for_absence", "sanitize_key", "sorted_by_ts",
 ]

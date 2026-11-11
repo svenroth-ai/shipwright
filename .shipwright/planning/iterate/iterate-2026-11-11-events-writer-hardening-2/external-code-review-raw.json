@@ -1,0 +1,42 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "## Findings\n\n- Category: edge-case\n  Severity: medium\n  File: shared/scripts/lib/events_write.py \u2014 `_monotonic_ts`, the cross-drop scan (`records = [r for p in event_files(root)[1:] ... for r in read_jsonl_records(p).records]`)\n  Finding: The new scan reads every same-key drop, including files the writer never wrote or that are damaged in ways beyond a torn tail: a file with undecodable bytes, a read-permission error, or a file deleted between listing and read will make `read_jsonl_records(p)` raise (the reader's own path wraps this in `FileStatus` \"unreadable\"; here it is unguarded), so the write of the next event fails outright. Previously this code only ever parsed the writer's own just-appended open file. The spec's AC2/AC3 say the lookup must read \"the valid records of a torn file\" and must not prevent the next event from being written; a file the reader classifies unreadable-but-present is a realistic state on real checkouts (this run itself makes off-pattern/`key=None` files a documented occurrence, and any such file with the right key shape still matches `DROP_NAME`).\n  Suggestion: Wrap each per-file read in try/except (UnicodeDecodeError, OSError) and skip files that don't parse cleanly, or reuse the reader's per-file status machinery so only files with a readable status contribute records. Add a test: a same-key drop containing binary garbage, then a successful write to the new file.\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/lib/events_write.py \u2014 same scan\n  Finding: If `read_jsonl_records` ever yields a torn fragment as a record (its sibling `split_records` distinguishes fragments, so probably it doesn't \u2014 but this is now load-bearing), `instant(r.get(\"ts\"))` with a missing `ts` raises and the write fails. The old code path parsed only the writer's own newline-terminated open file, so this was previously unreachable; the new scan makes the torn-tail case the common path. The combined test (valid event, torn tail, new write) covers the tail, but only if the fixture's fragment is actually dropped by the parser \u2014 worth one explicit assert that the fragment record is not in `.records`.\n  Suggestion: Filter scanned records to those with a string `ts` (e.g. `r.get(\"ts\")` is a str) before taking the max, and assert in the combined test that the fragment contributes no record.\n\n- Category: test\n  Severity: low\n  File: shared/tests/test_events_writer_hardening_round2.py \u2014 `test_the_legacy_layout_writes_exactly_the_bytes_it_always_did`\n  Finding: The \"pinned bytes\" are computed from `os.linesep`, i.e. from what the current implementation produces, not from a frozen expected byte string. On Linux this is fine, but the test would not catch a legacy newline change on any platform, and it doesn't pin bytes independently of the code under test. AC4 asks for byte-identical legacy writes; this test proves the new code paths don't run under legacy and that the JSON body is unchanged, but it is a weaker pin than advertised.\n  Suggestion: Assert against a hardcoded expected string (with the platform's known legacy behavior stated in the test), or at least pin the separator explicitly and note the Windows expectation separately.\n\n- Category: spec\n  Severity: low\n  File: .shipwright/planning/iterate/iterate-2026-11-11-events-writer-hardening-2/ac.json (and ac-decided.json / ac-record.jsonl)\n  Finding: The frozen AC record names `shared/scripts/lib/events_names.py` as the file for the one-name-rule item, but the implemented (and reviewed/approved) design puts `DROP_NAME` in `events_read.py` \u2014 `events_names.py` was the rejected first draft. The AC metadata contradicts the shipped code and the miniplan. Planning artifact only, not runtime behavior, but it is the record future runs will read.\n  Suggestion: Amend or annotate the AC record to point at `events_read.py`.\n\nChecked and found sound: the shared `DROP_NAME` (greedy key class correctly backtracks for keys containing `--`, `\\Z` blocks the trailing-newline case, `KEY_MAX`-derived bound); the fold_io re-export keeps `drop_key_of`/`name_problem` working; the torn-drop skip keeps the symlink and committed-file conditions; the empty-file-reused and torn-file-unchanged tests are behavioral and would fail on a wrong implementation; the rotation tests cover frozen clock, earlier clock, shuffled names, another worktree, and another run's key; the F11 verifier now uses the `wt8` group of the one regex; the flat-load test was moved and extended rather than lost.\n\nOverall: the implementation matches the spec's four ACs and the review adjustments were actually adopted; the one substantive gap is that the new cross-drop timestamp scan has no error handling around reading arbitrary same-key files, which can turn a damaged file into a failed write \u2014 fix that (plus the AC-record filename) before shipping.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "- Category: spec\n- Severity: medium\n- File: shared/scripts/lib/events_layout.py:216\n- Finding: Existing open-file selection still uses `_NONCE.match()` instead of `DROP_NAME`. Because `_NONCE` ends with `$`, a filename such as `r--aaaaaaaa--12345678\\n.jsonl` passes selection on filesystems allowing newlines. The writer appends to it, while the reader treats it as unkeyed and staging/integrity reject it, violating AC1.\n- Suggestion: Validate existing candidates with `DROP_NAME` and compare its parsed key and worktree groups. Add a regression test containing a newline immediately before `.jsonl`.\n\nShip-with-fixes: the approach addresses rotation ordering and torn-file preservation, but existing-file selection still bypasses the shared naming rule. Execution was unavailable because the environment rejected shell commands, so this assessment is based on the supplied diff.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-11-11-events-writer-hardening-2",
+    "at": "2026-11-11T07:51:35.572221+00:00"
+  },
+  "verdicts": {
+    "glm": "revise",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

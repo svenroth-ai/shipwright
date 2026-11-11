@@ -1,0 +1,8 @@
+Goal: Harden the per-run event files: one file-name rule, order across a rotation, no append to a torn file
+Reason: Three real gaps found by probing the writer, reader, staging tool and fold
+Reference: .shipwright/planning/iterate/2026-11-11-events-writer-hardening-2.md
+Affected ACs: FR-01.11
+AC item: {"confirmed": false, "decided_by": "code", "files": ["shared/scripts/lib/events_write.py"], "kind": "add", "new_text": "Given a run's event file was closed by a commit, when the run records its next event with the same timestamp, then that event is read back after the run's earlier events.", "owner_fr": "FR-01.11"}
+AC item: {"confirmed": false, "decided_by": "code", "files": ["shared/scripts/lib/events_layout.py"], "kind": "add", "new_text": "Given a run's open event file ends in a half-written line, when the run records an event, then the event goes to a new file and the damaged file is left unchanged.", "owner_fr": "FR-01.11"}
+AC item: {"confirmed": false, "decided_by": "code", "files": ["shared/scripts/lib/events_names.py"], "kind": "add", "new_text": "Given an event file name, when the writer, the reader, the staging tool, the fold and the integrity check judge it, then they all accept or all refuse it.", "owner_fr": "FR-01.11"}
+AC decisions: [{"ac": "FR-01.11.new", "mode": "auto", "answer": "auto", "kind": "add", "answered_via": "none", "decided_by": "code", "confirmed": false}, {"ac": "FR-01.11.new", "mode": "auto", "answer": "auto", "kind": "add", "answered_via": "none", "decided_by": "code", "confirmed": false}, {"ac": "FR-01.11.new", "mode": "auto", "answer": "auto", "kind": "add", "answered_via": "none", "decided_by": "code", "confirmed": false}]
