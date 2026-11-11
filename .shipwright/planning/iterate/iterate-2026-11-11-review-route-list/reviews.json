@@ -1,0 +1,173 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-11-review-route-list",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-11T08:23:49.638930+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-11T08:29:02.301406+00:00",
+      "disposition": "small complexity: plan/architecture/external reviews not required",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "shared/scripts/lib/external_review_config.py",
+          "line": 155,
+          "finding": "The availability check does not know about routes. _codex_route_reachable() returns True only when gpt_leg_provider(config) == codex, and both get_external_review_status() and is_external_review_enabled() use it. An operator with only Codex (no API keys) who sets gpt_leg.routes: [codex, ...] while keeping provider api gets missing_keys, so the calling skill stops or asks for a key before external_review.py runs.",
+          "suggestion": "Treat codex as configured when provider == codex OR codex is in gpt_leg_routes(config); import deferred to avoid a cycle. Add a test: no keys, routes [codex, openrouter], codex available -> status available.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/external_review.py",
+          "line": 411,
+          "finding": "With routes configured, provider = second_route becomes the literal routes. It goes into the envelope provider, degraded_reason and timing telemetry; before, those named the transport that answered, and the nothing-available state was reported as none.",
+          "suggestion": "After the futures resolve, set provider from the winning leg's via; fall back to none when the chain returned skipped with nothing attempted. Assert provider in the CLI test.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "readability",
+          "file": "shared/scripts/lib/external_review_routes.py",
+          "line": 153,
+          "finding": "Dead code: outcome reassigned after the attempt was appended and never read; _NOT_AN_ANSWER has no effect. An unknown runner status passes through unchanged.",
+          "suggestion": "Delete it, or normalise the status before recording the attempt and add a test.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/llm_review.py",
+          "line": 224,
+          "finding": "run_review() is the second entry point resolving the GPT leg and still ignores gpt_leg.routes, although the docs describe routes as a general GPT-leg setting.",
+          "suggestion": "Wire run_route_chain into llm_review.run_review, or narrow docs and config comment to the external_review.py CLI.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/checks/check-external-review-keys.py",
+          "line": 55,
+          "finding": "codex_configured is True whenever provider == codex, even when a routes list without codex is set.",
+          "suggestion": "routes = gpt_leg_routes(config); codex_configured = (codex in routes) if routes else provider == codex.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/external_review_routes.py",
+          "line": 155,
+          "finding": "If every attempted route fails and the last one returned skipped at runtime after an earlier error, the leg is reported skipped and the earlier real failure stops counting as a missing reviewer.",
+          "suggestion": "If any attempted route had error/degraded, report the leg as error.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_external_review_route_list.py",
+          "line": 244,
+          "finding": "_chain swaps is_codex_available by hand with try/finally while the CLI helper uses monkeypatch.",
+          "suggestion": "Use monkeypatch in _chain.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-11T08:26:26.558768+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-11T08:29:02.105450+00:00",
+      "disposition": "diff below doubt-reviewer threshold (no migration/concurrency/cross-plugin import)",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "diff-below-threshold"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-11T08:29:02.301406+00:00",
+      "disposition": "small complexity: plan/architecture/external reviews not required",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-11T08:24:30.092618+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-11T08:29:02.301406+00:00",
+      "disposition": "small complexity: plan/architecture/external reviews not required",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-11T08:29:02.301406+00:00",
+      "disposition": "small complexity: plan/architecture/external reviews not required",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}

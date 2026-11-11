@@ -300,6 +300,13 @@ _Where the work detail lives_ at the end of this document.
   reported next to the number that answered, and the recorded review state
   marks a one-reviewer pass as partial instead of plain completed.
   (iterate-2026-11-11-review-require-all-legs)
+- (E) [AC24] Given a project that lists, in order, the routes its GPT outside
+  reviewer may use, when a route is unavailable or fails while the review is
+  running, then the next route in the list is tried, and the review reports
+  every route that was skipped or failed together with its reason, so extra
+  metered cost stays visible; a project that has not listed routes behaves
+  exactly as before.
+  (iterate-2026-11-11-review-route-list)
 
 <a id="fr-0104"></a>
 ### FR-01.04 — Mockups from requirements

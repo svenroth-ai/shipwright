@@ -141,7 +141,7 @@ def load_review_config(
 
 
 def _codex_route_reachable(config: dict[str, Any]) -> bool:
-    """True iff the project opted the GPT leg into codex AND codex answers.
+    """True iff the project opted the GPT leg into codex (``provider`` or a ``routes`` list) AND codex answers.
 
     A Codex-only operator (no OPENROUTER_API_KEY/OPENAI_API_KEY) must not
     be told 'missing_keys' by the two gates below — that STOPs the calling
@@ -152,7 +152,9 @@ def _codex_route_reachable(config: dict[str, Any]) -> bool:
     THIS module's top level would cycle; deferred avoids that (same
     reasoning as the existing deferred ``env`` import below).
     """
-    if gpt_leg_provider(config) != "codex":
+    from external_review_routes import gpt_leg_routes  # type: ignore[import-not-found]  # deferred: cycle
+
+    if gpt_leg_provider(config) != "codex" and "codex" not in (gpt_leg_routes(config) or []):
         return False
     from external_review_default_legs import is_codex_available  # type: ignore[import-not-found]
 

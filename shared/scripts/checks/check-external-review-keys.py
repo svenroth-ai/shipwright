@@ -27,6 +27,7 @@ from external_review_config import (  # noqa: E402
     is_external_code_review_enabled,
     load_review_config,
 )
+from external_review_routes import gpt_leg_routes  # noqa: E402
 
 
 def main() -> int:
@@ -51,7 +52,7 @@ def main() -> int:
         "glm": bool(os.environ.get("OPENROUTER_API_KEY")),
         "openai": bool(os.environ.get("OPENAI_API_KEY")),
         "gateway": bool(os.environ.get("SHIPWRIGHT_REVIEW_GATEWAY_BASE_URL", "").strip()),
-        "codex_configured": gpt_leg_provider(config) == "codex",
+        "codex_configured": ("codex" in routes) if (routes := gpt_leg_routes(config)) else gpt_leg_provider(config) == "codex",
     }
 
     print(json.dumps({
