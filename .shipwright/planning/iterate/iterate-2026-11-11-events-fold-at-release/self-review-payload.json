@@ -1,0 +1,10 @@
+{"items": [
+ {"name": "Spec Compliance", "verdict": "pass", "note": "three ACs: own commit before the release commit, other staged work and in-flight runs untouched, the release never stops; each has tests on real git repos"},
+ {"name": "Error Handling", "verdict": "pass", "note": "every failure maps to a status and exit 0; a failure after the fold started rolls the tree back (archive removed, drops restored, index reset); hooks never bypassed; commit timeout and git errors are handled"},
+ {"name": "Security Basics", "verdict": "pass", "note": "no shell string building: git arguments are lists, paths go on stdin NUL-separated; no credentials; nothing outside the project root is touched"},
+ {"name": "Test Quality", "verdict": "pass", "note": "19 tests: own commit, staged and unstaged work kept, untracked drop of another run, idempotence, legacy layout, conflict, no trunk, trunk from origin/HEAD, undeletable file, half-deleted fold, refusing hook (tree compared before and after), local changes, 900 files"},
+ {"name": "Performance Basics", "verdict": "pass", "note": "one plan, one add, one commit; the dirty check lists the drops folder once"},
+ {"name": "Naming & Structure", "verdict": "pass", "note": "new tool next to fold_events.py and reuses its stage helpers (_stage now returns the staged paths); ruff clean"},
+ {"name": "Affected Boundaries", "verdict": "pass", "note": "producer: fold tool JSON status; consumer: changelog skill Step 5.3 reads status and open_files; the F11 events integrity check already accepts a fold commit; the skill's step order (before 5.5) and the autonomous shortcut sentence were fixed"},
+ {"name": "Test Hygiene Probe", "verdict": "pass", "note": "scan_test_hygiene.py: no findings"}
+]}

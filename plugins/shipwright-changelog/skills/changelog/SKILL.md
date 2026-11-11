@@ -196,21 +196,8 @@ own text**, not just a count. Those bullets are NOT migrated
 automatically — the operator chooses whether to fold them into the new
 version manually or accept the split-brain.
 
-**Re-running a release is safe.** The changelog is written before the
-drop files are consumed, so an interruption in that window leaves the
-section written and the drops still pending. Running the same version
-again **replaces** that section rather than adding a second one — but
-only when what is on record is still what the drops say. Otherwise it
-**stops with a non-zero exit** and names the disagreement, changing
-neither `CHANGELOG.md` nor any drop file. That is a prompt to reconcile
-by hand, not a transient error to retry.
-
-`changelog_updated` means *bytes were written*, not *the run succeeded*:
-a converging re-run reports `"section_action": "unchanged"` with
-`"changelog_updated": false` and is a **success**. See
-[rerunning-a-release.md](references/rerunning-a-release.md) for the full
-state table, the `--release-date` rule, and why it refuses instead of
-overwriting.
+**Re-running a release is safe.** An interruption after the changelog was written leaves the drops pending; the same version again **replaces** that section, but only when what is on record is still what the drops say, else it **stops with a non-zero exit** and names the disagreement (reconcile by hand, not a transient error).
+`changelog_updated` means *bytes were written*, not *the run succeeded*: a converging re-run reports `"section_action": "unchanged"` and is a **success**. State table, the `--release-date` rule and why it refuses: [rerunning-a-release.md](references/rerunning-a-release.md).
 
 ### ADR decision-drops
 
@@ -248,7 +235,7 @@ format details.
 **Goal:** Show the generated changelog entry to the user.
 
 **Autonomous mode** (`autonomy` is `autonomous` or `unattended` in `shipwright_run_config.json`; gate `changelog.entry-preview`):
-Skip preview confirmation. Proceed directly to Step 6.
+Skip preview confirmation. Continue with Step 5.3, then 5.4, 5.5 and Step 6, in that order.
 
 **Guided mode** (default):
 Present the full entry and ask:
@@ -264,6 +251,16 @@ AskUserQuestion:
 If edit: apply changes and re-preview.
 
 ---
+
+## Step 5.3: Fold Old Event Files (automatic housekeeping)
+
+Folds old per-run event files into `shipwright_events.archive/` in a commit of their own, BEFORE anything of the release is staged. It never blocks the release (always exit 0; every failure puts the tree back):
+
+```bash
+uv run "{shared_root}/scripts/tools/fold_events_for_release.py" --project-root "$(pwd)"
+```
+
+Add at most ONE line to the closing summary from its JSON `status`; every status, the `rolled_back: false` repair and the revert rule: [event-fold.md](references/event-fold.md).
 
 ## Step 5.4: Sync Published Package Manifests
 

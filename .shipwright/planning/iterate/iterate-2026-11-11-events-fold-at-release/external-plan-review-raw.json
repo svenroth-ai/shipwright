@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "## Review: events-fold-at-release\n\n**Category:** edge-case \u2014 **Severity:** medium\n**Finding:** The claim \"a live run is safe: its drop is not on the base ref yet and its events are younger than 14 days\" is an assumption, not an enforced invariant. A stalled run (or a run whose base merged more than 14 days ago but that never finished) can have events that pass both filters and get folded mid-run, violating AC2. The test suite covers an in-flight run, but presumably one under 14 days old.\n**Suggestion:** Add an explicit in-flight guard in `plan_fold`/`fold_for_release` \u2014 e.g., skip any run whose status/drop file indicates the run is still open, rather than relying on age alone.\n\n**Category:** risk \u2014 **Severity:** medium\n**Finding:** On `commit_failed`, the tree is left with fold changes staged (deletions + new archive files) and the release continues. The release commit with its own pathspec will ignore them, but the staged fold work persists after the release. A later `git commit -a` or `git commit` by a human (or another tool) can silently sweep the half-applied fold into an unrelated commit, and the next release's fold will see the files already moved and possibly report confusing state.\n**Suggestion:** On `commit_failed`, attempt `git reset` (unstage only, keep worktree changes) before exiting, so the failure is purely a worktree change a person can inspect; mention this in the reported status line.\n\n**Category:** risk \u2014 **Severity:** low\n**Finding:** When a release is cut directly on `main`, the fold commit lands on `main` *before* the release commit. If the release is aborted between the fold commit and the release commit, `main` carries a chore commit with no release \u2014 probably fine, but also: any release process that assumes \"HEAD == the commit just described in the changelog\" between Step 5.3 and the release commit now sees an unexpected intermediate commit.\n**Suggestion:** Confirm the changelog skill (or anything downstream reading HEAD between steps) tolerates the extra commit; the spec says the tag stays on the release commit, which is the important part \u2014 just verify nothing between 5.3 and 5.4 keys off HEAD.\n\n**Category:** edge-case \u2014 **Severity:** low\n**Finding:** `--pathspec-from-file=- --pathspec-file-nul` is good for overflow, but the 900-file test presumably used ASCII names. Event paths with spaces/unicode are covered by NUL separation, but a path containing a literal newline is fine with NUL; a path that *cannot* be represented (invalid encoding on Windows) would fail the commit and land in `commit_failed` \u2014 acceptable, just make sure that's the tested path.\n**Suggestion:** None needed if the undeletable/hook tests already exercise `commit_failed`; otherwise confirm one test drives the failure through the pathspec commit, not an earlier stage.\n\n**Category:** dependency \u2014 **Severity:** low\n**Finding:** `_stage` returning staged paths instead of `None` is a behavior change to `tools/fold_events.py` shared with its existing CLI. The spec says the existing fold suite runs unchanged, which covers it \u2014 just flagging that the return contract should be documented in the helper (docstring) since the release tool now depends on its exact shape (relative vs absolute paths, NUL-safe?).\n**Suggestion:** Pin the contract in the docstring and assert path form in one test; otherwise a future refactor of `_stage` silently breaks the release tool's commit content.\n\n**Category:** security \u2014 **Severity:** low\n**Finding:** Nothing sensitive here \u2014 the tool runs in the operator's own repo with the operator's git config, and pathspec-from-file avoids shell interpretation. No injection surface beyond what `plan_fold` already validated. No finding, noted for completeness.\n\n## Overall assessment\n\nThe approach is sound: reusing `plan_fold`/`apply_fold` unchanged, gating behind the single-actor release step, and the never-block-the-release failure policy are all right. The two things worth fixing before ship are the unenforced in-flight-run safety assumption (AC2 currently rests on luck) and the dirty staged state left behind on `commit_failed`.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Category:** risk  \n   **Severity:** high  \n   **Finding:** Explicit pathspecs isolate unrelated paths, but they do not protect existing changes within a touched archive or event file. A dirty archive could have unrelated content swept into the housekeeping commit. The existing \u201cother staged work\u201d test does not establish safety for overlapping paths.  \n   **Suggestion:** Before applying the fold, check that every planned path is clean in both the index and working tree. Skip housekeeping with one status line if any overlap exists. Add tests for staged and unstaged archive changes.\n\n2. **Category:** edge-case  \n   **Severity:** high  \n   **Finding:** `incomplete` and `commit_failed` deliberately leave mutations behind while the release continues. After a partial deletion failure or refusing hook, the repository may contain an altered archive, deleted drops, or staged housekeeping changes without the required separate commit. Exit code 0 alone does not establish that the subsequent release remains safe or that events remain unique.  \n   **Suggestion:** Make failure recovery restore only this operation\u2019s changes, preserving the original index and working tree. Test failures after partial application and after staging, then execute the actual release step and verify event integrity, staging preservation, and the release commit\u2019s contents.\n\n3. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** The release integration is underspecified about how it selects `root` and `base_ref`. A resolvable base is insufficient: invoking this on a feature branch could create the housekeeping commit there, despite that being explicitly out of scope.  \n   **Suggestion:** Reuse the release workflow\u2019s authoritative repository root and release/base configuration, and verify the checkout is an allowed release branch before mutating it. Add a feature-branch invocation test that confirms a clean skip.\n\nThe approach is proportionate and sensibly reuses the existing fold implementation. It needs stronger protection for overlapping local changes and proof that failed housekeeping leaves the continuing release safe.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-11-11-events-fold-at-release",
+    "at": "2026-11-11T12:20:56.880900+00:00"
+  },
+  "verdicts": {
+    "glm": "revise",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: bug\n- Severity: high\n- File: shared/scripts/tools/fold_events_for_release.py:137\n- Finding: Commit failure is detected through stderr content rather than the return code. A silent `pre-commit` hook containing only `exit 1` leaves `reason` empty, so the tool reports `folded` without creating a commit or rolling back. The fold remains staged, violating AC1 and AC3.\n- Suggestion: Treat every nonzero return code as failure, supplying a fallback reason when stderr is empty. Add a test with a silent refusing hook that verifies HEAD, index and working tree are restored.\n\n- Category: bug\n- Severity: high\n- File: shared/scripts/tools/fold_events_for_release.py:126\n- Finding: The outer exception handler reports `skipped` without undoing mutations. If `apply_fold` raises after writing the archive or deleting some drops, the release continues with a partially applied fold. This contradicts the required restoration on every failure after folding starts.\n- Suggestion: Record the planned touched paths and their original state before applying the fold, and restore them on exceptions after mutation begins. Test an exception injected after an archive write or partial deletion.\n\n- Category: spec\n- Severity: low\n- File: shared/scripts/tools/fold_events_for_release.py:158\n- Finding: `indent=2` prints the JSON across multiple lines, including failure reports. AC3 explicitly requires these failures to produce one printed line; the CLI test only parses JSON and does not check that requirement.\n- Suggestion: Remove indentation and assert that captured CLI output contains exactly one line for a failure case.\n\nOverall assessment: ship-with-fixes. The approach fits the specification, but failure handling can leave uncommitted fold mutations behind while reporting success or a harmless skip.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "## Findings\n\n- **Category: bug / spec**\n  **Severity: high**\n  File: `shared/scripts/tools/fold_events_for_release.py` \u2014 `fold_for_release`, the broad `except (GitError, ValueError, TypeError, OSError, subprocess.SubprocessError)` at the end\n  **Finding:** The broad exception handler returns `{\"status\": \"skipped\", \"reason\": ...}` *without any rollback*. The spec (Behaviour to note: \"every failure after the fold started puts the tree back\") and the internal plan review (\"[medium] exceptions after the fold were reported as 'nothing changed': they now run the same rollback\") both require rollback on exception paths. Only `_commit_fold`'s local except rolls back; an exception raised inside `apply_fold` (e.g., an OSError/GitError mid-archive-write or mid-delete that `apply_fold` itself does not catch into a result dict), or from `_stage_paths(result)` (called *outside* the try in `_commit_fold` \u2014 a KeyError on a malformed result leaves the half-applied fold in the work tree), leaves deleted drops and a written archive behind while reporting `skipped` as if nothing changed.\n  **Suggestion:** Route the broad except (and the `_stage_paths` call) through the same rollback: wrap the post-`apply_fold` region so any exception calls `_failed`/`_rollback` for the touched paths and reports `rolled_back`.\n\n- **Category: spec**\n  **Severity: medium**\n  File: `shared/scripts/tools/fold_events_for_release.py` \u2014 the `return {\"status\": \"skipped\", \"reason\": f\"{base_ref} does not resolve...\"}` line, and the broad-except return\n  **Finding:** The documented contract (docs/hooks-and-pipeline.md and SKILL.md: \"Every status except `not_applicable` also carries `open_files`\") is violated in two exits: the unresolvable-base `skipped` and the exception `skipped` both omit `open_files`. The changelog skill prints `open_files` verbatim for `skipped`, so this either breaks the skill's step or silently drops the detection signal the architecture review called \"the required detection half\". The test for the unresolvable base does not assert `open_files`, so it would not catch this.\n  **Suggestion:** Add `\"open_files\": _open_files(root)` to both returns and assert it in `test_a_base_ref_that_does_not_resolve_skips_without_error`.\n\n- **Category: edge-case**\n  **Severity: medium**\n  File: `shared/scripts/tools/fold_events_for_release.py` \u2014 `_dirty`\n  **Finding:** The dirty check only inspects `{DROPS_DIR}/<selected>` and `{DROPS_DIR}/.keep` (the `git status` call is pathspec-limited to `DROPS_DIR`). The archive path the fold will write (`shipwright_events.archive/fold-<hash>.jsonl`) is never checked. If that archive already exists at HEAD with local modifications (a previous fold committed it; a person then edited it \u2014 the same dirty-file hazard the check exists for on drops), `apply_fold`'s write plus `git add` sweeps the person's archive edit into the fold commit, exactly the \"dirty archive\" the external plan review flagged as high.\n  **Suggestion:** Extend the `_dirty` check to also include the planned archive path (and remove the `-- DROPS_DIR` pathspec restriction or add the archive dir), and add a test with a locally modified archive file.\n\n- **Category: edge-case**\n  **Severity: low**\n  File: `shared/scripts/tools/fold_events_for_release.py` \u2014 `_dirty`\n  **Finding:** Parsing `git status --porcelain -z` with `e[3:]` misparses rename/copy entries: with `-z`, a rename emits the status record (`R  new`) followed by a separate NUL record containing the *old* path with no status prefix, which the `len(e) > 3` filter either drops or mangles. Not reachable for normal drop names today, but a rename in the drops dir would silently skip the dirty check.\n  **Suggestion:** Skip the status-prefix parsing for odd XY values or use `git diff-index`/`ls-files -m -o` per path; at minimum handle the two-record rename form.\n\n- **Category: edge-case**\n  **Severity: low**\n  File: `shared/scripts/tools/fold_events_for_release.py` \u2014 `fold_for_release`\n  **Finding:** AC2's \"a run still in flight is left alone\" rests on age + merged-unchanged, not on an open-run guard: a run whose base merged more than 14 days ago but that is still writing (a stalled or very long run whose new events happen to be in a *different* file than the merged drop) is safe, but a stalled run whose merged drop itself is unchanged on trunk and >14 days old gets folded while conceptually in flight. The spec explicitly accepted this residual risk (\"not adopted: a 'live run' guard\"), so this is recorded, not a blocker \u2014 but the test suite's in-flight test (`test_an_untracked_file_of_an_other_run...`) only exercises an untracked young run, so the accepted assumption is untested at its edge.\n  **Suggestion:** Either note the residual risk in the test file, or add a probe with an old, merged-but-active run to pin the current behavior.\n\n- **Category: test**\n  **Severity: low**\n  File: `shared/tests/test_events_fold_for_release.py` \u2014 `_head_files` (`git show --name-only ... .split()`)\n  **Finding:** Splitting the `git show` output on whitespace breaks for paths containing spaces; the fold tool itself is NUL-safe, so the test harness is weaker than the code it verifies. Test-only, but a drop key with a space would make the 900-file/own-commit assertions meaningless.\n  **Suggestion:** Use `--format= --name-only -z` and split on NUL.\n\n## Overall assessment\n\nThe core design matches the spec well \u2014 pathspec-isolated commit, rollback on the named failure modes, hooks never bypassed, and the tests are unusually behavioral (real git repos, tree-state comparisons, integrity via event hashes). But the exception path that the plan review explicitly promised to fix is still not rolled back, and the documented `open_files`-on-every-status contract has two silent holes; ship-with-fixes on those two before the next release runs through this step.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-11-11-events-fold-at-release",
+    "at": "2026-11-11T12:27:38.668898+00:00"
+  },
+  "verdicts": {
+    "openai": "revise",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

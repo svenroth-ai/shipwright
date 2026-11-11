@@ -1,0 +1,416 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-11-events-fold-at-release",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-11T12:27:27.028386+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The claim \"a live run is safe: its drop is not on the base ref yet and its events are younger than 14 days\" is an assumption, not an enforced invariant. A stalled run (or a run whose base merged more than 14 days ago but that never finished) can have events that pass both filters and get folded mid-run, violating AC2. The test suite covers an in-flight run, but presumably one under 14 days old.",
+          "suggestion": "Add an explicit in-flight guard in `plan_fold`/`fold_for_release` — e.g., skip any run whose status/drop file indicates the run is still open, rather than relying on age alone.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "On `commit_failed`, the tree is left with fold changes staged (deletions + new archive files) and the release continues. The release commit with its own pathspec will ignore them, but the staged fold work persists after the release. A later `git commit -a` or `git commit` by a human (or another tool) can silently sweep the half-applied fold into an unrelated commit, and the next release's fold will see the files already moved and possibly report confusing state.",
+          "suggestion": "On `commit_failed`, attempt `git reset` (unstage only, keep worktree changes) before exiting, so the failure is purely a worktree change a person can inspect; mention this in the reported status line.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "When a release is cut directly on `main`, the fold commit lands on `main` before the release commit. If the release is aborted between the fold commit and the release commit, `main` carries a chore commit with no release — probably fine, but also: any release process that assumes \"HEAD == the commit just described in the changelog\" between Step 5.3 and the release commit now sees an unexpected intermediate commit.",
+          "suggestion": "Confirm the changelog skill (or anything downstream reading HEAD between steps) tolerates the extra commit; the spec says the tag stays on the release commit, which is the important part — just verify nothing between 5.3 and 5.4 keys off HEAD.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "pathspec-from-file=- --pathspec-file-nul` is good for overflow, but the 900-file test presumably used ASCII names. Event paths with spaces/unicode are covered by NUL separation, but a path containing a literal newline is fine with NUL; a path that cannot be represented (invalid encoding on Windows) would fail the commit and land in `commit_failed` — acceptable, just make sure that's the tested path.",
+          "suggestion": "None needed if the undeletable/hook tests already exercise `commit_failed`; otherwise confirm one test drives the failure through the pathspec commit, not an earlier stage.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "_stage` returning staged paths instead of `None` is a behavior change to `tools/fold_events.py` shared with its existing CLI. The spec says the existing fold suite runs unchanged, which covers it — just flagging that the return contract should be documented in the helper (docstring) since the release tool now depends on its exact shape (relative vs absolute paths, NUL-safe?).",
+          "suggestion": "Pin the contract in the docstring and assert path form in one test; otherwise a future refactor of `_stage` silently breaks the release tool's commit content.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "Nothing sensitive here — the tool runs in the operator's own repo with the operator's git config, and pathspec-from-file avoids shell interpretation. No injection surface beyond what `plan_fold` already validated. No finding, noted for completeness.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Explicit pathspecs isolate unrelated paths, but they do not protect existing changes within a touched archive or event file. A dirty archive could have unrelated content swept into the housekeeping commit. The existing “other staged work” test does not establish safety for overlapping paths.",
+          "suggestion": "Before applying the fold, check that every planned path is clean in both the index and working tree. Skip housekeeping with one status line if any overlap exists. Add tests for staged and unstaged archive changes.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "incomplete` and `commit_failed` deliberately leave mutations behind while the release continues. After a partial deletion failure or refusing hook, the repository may contain an altered archive, deleted drops, or staged housekeeping changes without the required separate commit. Exit code 0 alone does not establish that the subsequent release remains safe or that events remain unique.",
+          "suggestion": "Make failure recovery restore only this operation’s changes, preserving the original index and working tree. Test failures after partial application and after staging, then execute the actual release step and verify event integrity, staging preservation, and the release commit’s contents.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The release integration is underspecified about how it selects `root` and `base_ref`. A resolvable base is insufficient: invoking this on a feature branch could create the housekeeping commit there, despite that being explicitly out of scope.",
+          "suggestion": "Reuse the release workflow’s authoritative repository root and release/base configuration, and verify the checkout is an allowed release branch before mutating it. Add a feature-branch invocation test that confirms a clean skip.  The approach is proportionate and sensibly reuses the existing fold implementation. It needs stronger protection for overlapping local changes and proof that failed housekeeping leaves the continuing release safe.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-11T12:27:00.636751+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Review: events-fold-at-release\n\n**Category:** edge-case — **Severity:** medium\n**Finding:** The claim \"a live run is safe: its drop is not on the base ref yet and its events are younger than 14 days\" is an assumption, not an enforced invariant. A stalled run (or a run whose base merged more than 14 days ago but that never finished) can have events that pass both filters and get folded mid-run, violating AC2. The test suite covers an in-flight run, but presumably one under 14 days old.\n**Suggestion:** Add an explicit in-flight guard in `plan_fold`/`fold_for_release` — e.g., skip any run whose status/drop file indicates the run is still open, rather than relying on age alone.\n\n**Category:** risk — **Severity:** medium\n**Finding:** On `commit_failed`, the tree is left with fold changes staged (deletions + new archive files) and the release continues. The release commit with its own pathspec will ignore them, but the staged fold work persists after the release. A later `git commit -a` or `git commit` by a human (or another tool) can silently sweep the half-applied fold into an unrelated commit, and the next release's fold will see the files already moved and possibly report confusing state.\n**Suggestion:** On `commit_failed`, attempt `git reset` (unstage only, keep worktree changes) before exiting, so the failure is purely a worktree change a person can inspect; mention this in the reported status line.\n\n**Category:** risk — **Severity:** low\n**Finding:** When a release is cut directly on `main`, the fold commit lands on `main` *before* the release commit. If the release is aborted between the fold commit and the release commit, `main` carries a chore commit with no release — probably fine, but also: any release process that assumes \"HEAD == the commit just described in the changelog\" between Step 5.3 and the release commit now sees an unexpected intermediate commit.\n**Suggestion:** Confirm the changelog skill (or anything downstream reading HEAD between […truncated]\n\n[openai] 1. **Category:** risk  \n   **Severity:** high  \n   **Finding:** Explicit pathspecs isolate unrelated paths, but they do not protect existing changes within a touched archive or event file. A dirty archive could have unrelated content swept into the housekeeping commit. The existing “other staged work” test does not establish safety for overlapping paths.  \n   **Suggestion:** Before applying the fold, check that every planned path is clean in both the index and working tree. Skip housekeeping with one status line if any overlap exists. Add tests for staged and unstaged archive changes.\n\n2. **Category:** edge-case  \n   **Severity:** high  \n   **Finding:** `incomplete` and `commit_failed` deliberately leave mutations behind while the release continues. After a partial deletion failure or refusing hook, the repository may contain an altered archive, deleted drops, or staged housekeeping changes without the required separate commit. Exit code 0 alone does not establish that the subsequent release remains safe or that events remain unique.  \n   **Suggestion:** Make failure recovery restore only this operation’s changes, preserving the original index and working tree. Test failures after partial application and after staging, then execute the actual release step and verify event integrity, staging preservation, and the release commit’s contents.\n\n3. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** The release integration is underspecified about how it selects `root` and `base_ref`. A resolvable base is insufficient: invoking this on a feature branch could create the housekeeping commit there, despite that being explicitly out of scope.  \n   **Suggestion:** Reuse the release workflow’s authoritative repository root and release/base configuration, and verify the checkout is an allowed release branch before mutating it. Add a feature-branch invocation test that confirms a clean skip.\n\nThe approach is proportionate and sensibly reuses the exist […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/fold_events_for_release.py",
+          "line": 101,
+          "finding": "The rollback can delete a file the fold did not create: it unlinks every planned path that is not in HEAD, including an archive or .keep that existed untracked before the run (the dirty check lets an untracked archive pass). An exception inside apply_fold before its own exists-with-different-content check would delete a foreign archive.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/fold_events_for_release.py",
+          "line": 95,
+          "finding": "_rollback can raise (ls-tree with check=True, TimeoutExpired from the pathspec calls) from inside the except block and from _commit_fold, so the CLI could print a traceback and exit 1, breaking 'always exits 0'.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/fold_events_for_release.py",
+          "line": 171,
+          "finding": "The 300 s commit timeout is unsafe as a hook-stall handler: killing git can leave index.lock behind, the pipes may keep waiting on Windows, and a commit that landed before a stalling post-commit hook is reported as commit_failed against the new HEAD.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/fold_events_for_release.py",
+          "line": 176,
+          "finding": "The 'not known' guard runs after the commit instead of before it; an empty pathspec list could commit everything staged.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/fold_events_for_release.py",
+          "line": 73,
+          "finding": "git status paths are relative to the repository root while the pathspec calls resolve relative to -C root, so a project root that is a subdirectory makes the dirty check fail open; stdin pathspecs use glob magic (defensive only).",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/fold_events_for_release.py",
+          "line": 86,
+          "finding": "An untracked .keep counts as a local change (only the archive has the ?? exemption), so a leftover .keep blocks every later fold; the fail-closed git-status branch reports the misleading reason 'local changes'.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/tools/fold_events_for_release.py",
+          "line": 17,
+          "finding": "The docstring says skipped means nothing changed, but archive_incomplete with rollback returns skipped plus rolled_back; dry_run is a returned status that is not listed.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/scripts/tools/fold_events_for_release.py",
+          "line": 43,
+          "finding": "The module imports the private helpers _stage and _stage_paths from another tool module whose return value was changed for this second caller.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_events_fold_for_release.py",
+          "line": 305,
+          "finding": "test_a_renamed_drop_is_a_local_change_too accepts skipped or nothing_to_fold and never reaches the dirty check, so the rename record parsing is not exercised.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_events_fold_for_release.py",
+          "line": 115,
+          "finding": "No test covers rolled_back false, a pre-existing identical untracked archive plus a commit failure, or a rollback that itself fails.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
+          "line": 41,
+          "finding": "The stated minimum git version for --pathspec-from-file may be 2.26 rather than 2.25 (add and checkout), unchecked.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-11T12:36:01.703426+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "reversibility",
+          "file": "shared/scripts/lib/events_integrity.py:151-168 vs changelog SKILL.md Step 5.3",
+          "line": null,
+          "finding": "Claim under doubt: a fold never breaks the integrity gate, including when the release is later aborted — A release PR now contains the fold commit; reverting a merged release (git revert -m1, or a squash-merged release) deletes the archive that exists at the merge-base, which check_integrity flags as deleted_existing. No event is lost, but the revert is blocked. Nothing in the skill or docs says to leave the chore(events) commit out of a revert.",
+          "suggestion": "Document that reverting a release reverts only the chore(release) commit, not the fold commit.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "concurrency & ordering",
+          "file": "shared/scripts/tools/fold_events_for_release.py (_rollback, _commit_fold timeout branch)",
+          "line": null,
+          "finding": "Claim under doubt: a fold never loses an event and the step can never stop a release — _rollback deletes the new archive even when its own reset or checkout failed (index.lock from a hook timeout or another session). The work tree then holds neither the folded drops nor the archive, the index keeps the drop deletions staged, Step 6 fails on index.lock, and Step 7's staged-diff pathspec could commit the deletions without the archive.",
+          "suggestion": "Delete the archive only after the tracked drops are confirmed back; document the repair for rolled_back false and a left-behind index.lock.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "shared/scripts/tools/fold_events_for_release.py (_fold) vs shared/scripts/lib/events_integrity.py:103",
+          "line": null,
+          "finding": "Claim under doubt: the fold commit always passes the events integrity check — plan_fold judges merged against the trunk TIP while check_integrity judges against merge-base(trunk, HEAD). A release branch whose own old drop was squash-merged into the trunk but never rebased makes the archive look injected.",
+          "suggestion": "Plan against git merge-base <trunk> HEAD.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling & blast radius",
+          "file": "plugins/shipwright-changelog/skills/changelog/SKILL.md Steps 1-2 vs 5.3",
+          "line": null,
+          "finding": "Claim under doubt: an aborted release leaves no trace — If Step 5.5 refuses, the chore(events) commit stays and may be read into the changelog on the re-run.",
+          "suggestion": "Skip chore(events) commits in Step 2, or confirm chore commits are dropped.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-11T12:43:15.893434+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "bug / spec",
+          "file": "shared/scripts/tools/fold_events_for_release.py` — `fold_for_release`, the broad `except (GitError, ValueError, TypeError, OSError, subprocess.SubprocessError)` at the end",
+          "line": null,
+          "finding": "The broad exception handler returns `{\"status\": \"skipped\", \"reason\": ...}` without any rollback. The spec (Behaviour to note: \"every failure after the fold started puts the tree back\") and the internal plan review (\"[medium] exceptions after the fold were reported as 'nothing changed': they now run the same rollback\") both require rollback on exception paths. Only `_commit_fold`'s local except rolls back; an exception raised inside `apply_fold` (e.g., an OSError/GitError mid-archive-write or mid-delete that `apply_fold` itself does not catch into a result dict), or from `_stage_paths(result)` (called outside the try in `_commit_fold` — a KeyError on a malformed result leaves the half-applied fold in the work tree), leaves deleted drops and a written archive behind while reporting `skipped` as if nothing changed.",
+          "suggestion": "Route the broad except (and the `_stage_paths` call) through the same rollback: wrap the post-`apply_fold` region so any exception calls `_failed`/`_rollback` for the touched paths and reports `rolled_back`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/tools/fold_events_for_release.py` — the `return {\"status\": \"skipped\", \"reason\": f\"{base_ref} does not resolve...\"}` line, and the broad-except return",
+          "line": null,
+          "finding": "The documented contract (docs/hooks-and-pipeline.md and SKILL.md: \"Every status except `not_applicable` also carries `open_files`\") is violated in two exits: the unresolvable-base `skipped` and the exception `skipped` both omit `open_files`. The changelog skill prints `open_files` verbatim for `skipped`, so this either breaks the skill's step or silently drops the detection signal the architecture review called \"the required detection half\". The test for the unresolvable base does not assert `open_files`, so it would not catch this.",
+          "suggestion": "Add `\"open_files\": _open_files(root)` to both returns and assert it in `test_a_base_ref_that_does_not_resolve_skips_without_error`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/fold_events_for_release.py` — `_dirty",
+          "line": null,
+          "finding": "The dirty check only inspects `{DROPS_DIR}/<selected>` and `{DROPS_DIR}/.keep` (the `git status` call is pathspec-limited to `DROPS_DIR`). The archive path the fold will write (`shipwright_events.archive/fold-<hash>.jsonl`) is never checked. If that archive already exists at HEAD with local modifications (a previous fold committed it; a person then edited it — the same dirty-file hazard the check exists for on drops), `apply_fold`'s write plus `git add` sweeps the person's archive edit into the fold commit, exactly the \"dirty archive\" the external plan review flagged as high.",
+          "suggestion": "Extend the `_dirty` check to also include the planned archive path (and remove the `-- DROPS_DIR` pathspec restriction or add the archive dir), and add a test with a locally modified archive file.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/fold_events_for_release.py` — `_dirty",
+          "line": null,
+          "finding": "Parsing `git status --porcelain -z` with `e[3:]` misparses rename/copy entries: with `-z`, a rename emits the status record (`R  new`) followed by a separate NUL record containing the old path with no status prefix, which the `len(e) > 3` filter either drops or mangles. Not reachable for normal drop names today, but a rename in the drops dir would silently skip the dirty check.",
+          "suggestion": "Skip the status-prefix parsing for odd XY values or use `git diff-index`/`ls-files -m -o` per path; at minimum handle the two-record rename form.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/fold_events_for_release.py` — `fold_for_release",
+          "line": null,
+          "finding": "AC2's \"a run still in flight is left alone\" rests on age + merged-unchanged, not on an open-run guard: a run whose base merged more than 14 days ago but that is still writing (a stalled or very long run whose new events happen to be in a different file than the merged drop) is safe, but a stalled run whose merged drop itself is unchanged on trunk and >14 days old gets folded while conceptually in flight. The spec explicitly accepted this residual risk (\"not adopted: a 'live run' guard\"), so this is recorded, not a blocker — but the test suite's in-flight test (`test_an_untracked_file_of_an_other_run...`) only exercises an untracked young run, so the accepted assumption is untested at its edge.",
+          "suggestion": "Either note the residual risk in the test file, or add a probe with an old, merged-but-active run to pin the current behavior.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_events_fold_for_release.py` — `_head_files` (`git show --name-only ... .split()`)",
+          "line": null,
+          "finding": "Splitting the `git show` output on whitespace breaks for paths containing spaces; the fold tool itself is NUL-safe, so the test harness is weaker than the code it verifies. Test-only, but a drop key with a space would make the 900-file/own-commit assertions meaningless.",
+          "suggestion": "Use `--format= --name-only -z` and split on NUL.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": "shared/scripts/tools/fold_events_for_release.py",
+          "line": 137,
+          "finding": "Commit failure is detected through stderr content rather than the return code. A silent `pre-commit` hook containing only `exit 1` leaves `reason` empty, so the tool reports `folded` without creating a commit or rolling back. The fold remains staged, violating AC1 and AC3.",
+          "suggestion": "Treat every nonzero return code as failure, supplying a fallback reason when stderr is empty. Add a test with a silent refusing hook that verifies HEAD, index and working tree are restored.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": "shared/scripts/tools/fold_events_for_release.py",
+          "line": 126,
+          "finding": "The outer exception handler reports `skipped` without undoing mutations. If `apply_fold` raises after writing the archive or deleting some drops, the release continues with a partially applied fold. This contradicts the required restoration on every failure after folding starts.",
+          "suggestion": "Record the planned touched paths and their original state before applying the fold, and restore them on exceptions after mutation begins. Test an exception injected after an archive write or partial deletion.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "spec",
+          "file": "shared/scripts/tools/fold_events_for_release.py",
+          "line": 158,
+          "finding": "indent=2` prints the JSON across multiple lines, including failure reports. AC3 explicitly requires these failures to produce one printed line; the CLI test only parses JSON and does not check that requirement.",
+          "suggestion": "Remove indentation and assert that captured CLI output contains exactly one line for a failure case.  Overall assessment: ship-with-fixes. The approach fits the specification, but failure handling can leave uncommitted fold mutations behind while reporting success or a harmless skip.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-11T12:39:13.800083+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: bug / spec**\n  **Severity: high**\n  File: `shared/scripts/tools/fold_events_for_release.py` — `fold_for_release`, the broad `except (GitError, ValueError, TypeError, OSError, subprocess.SubprocessError)` at the end\n  **Finding:** The broad exception handler returns `{\"status\": \"skipped\", \"reason\": ...}` *without any rollback*. The spec (Behaviour to note: \"every failure after the fold started puts the tree back\") and the internal plan review (\"[medium] exceptions after the fold were reported as 'nothing changed': they now run the same rollback\") both require rollback on exception paths. Only `_commit_fold`'s local except rolls back; an exception raised inside `apply_fold` (e.g., an OSError/GitError mid-archive-write or mid-delete that `apply_fold` itself does not catch into a result dict), or from `_stage_paths(result)` (called *outside* the try in `_commit_fold` — a KeyError on a malformed result leaves the half-applied fold in the work tree), leaves deleted drops and a written archive behind while reporting `skipped` as if nothing changed.\n  **Suggestion:** Route the broad except (and the `_stage_paths` call) through the same rollback: wrap the post-`apply_fold` region so any exception calls `_failed`/`_rollback` for the touched paths and reports `rolled_back`.\n\n- **Category: spec**\n  **Severity: medium**\n  File: `shared/scripts/tools/fold_events_for_release.py` — the `return {\"status\": \"skipped\", \"reason\": f\"{base_ref} does not resolve...\"}` line, and the broad-except return\n  **Finding:** The documented contract (docs/hooks-and-pipeline.md and SKILL.md: \"Every status except `not_applicable` also carries `open_files`\") is violated in two exits: the unresolvable-base `skipped` and the exception `skipped` both omit `open_files`. The changelog skill prints `open_files` verbatim for `skipped`, so this either breaks the skill's step or silently drops the detection signal the architecture review called \"the required detection hal […truncated]\n\n[openai] - Category: bug\n- Severity: high\n- File: shared/scripts/tools/fold_events_for_release.py:137\n- Finding: Commit failure is detected through stderr content rather than the return code. A silent `pre-commit` hook containing only `exit 1` leaves `reason` empty, so the tool reports `folded` without creating a commit or rolling back. The fold remains staged, violating AC1 and AC3.\n- Suggestion: Treat every nonzero return code as failure, supplying a fallback reason when stderr is empty. Add a test with a silent refusing hook that verifies HEAD, index and working tree are restored.\n\n- Category: bug\n- Severity: high\n- File: shared/scripts/tools/fold_events_for_release.py:126\n- Finding: The outer exception handler reports `skipped` without undoing mutations. If `apply_fold` raises after writing the archive or deleting some drops, the release continues with a partially applied fold. This contradicts the required restoration on every failure after folding starts.\n- Suggestion: Record the planned touched paths and their original state before applying the fold, and restore them on exceptions after mutation begins. Test an exception injected after an archive write or partial deletion.\n\n- Category: spec\n- Severity: low\n- File: shared/scripts/tools/fold_events_for_release.py:158\n- Finding: `indent=2` prints the JSON across multiple lines, including failure reports. AC3 explicitly requires these failures to produce one printed line; the CLI test only parses JSON and does not check that requirement.\n- Suggestion: Remove indentation and assert that captured CLI output contains exactly one line for a failure case.\n\nOverall assessment: ship-with-fixes. The approach fits the specification, but failure handling can leave uncommitted fold mutations behind while reporting success or a harmless skip.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-11T12:32:45.392693+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-11T12:27:00.791420+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-11T12:27:00.992616+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

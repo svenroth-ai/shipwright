@@ -1,0 +1,95 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-11-events-fold-at-release",
+    "date": "2026-11-11",
+    "unit": {
+      "status": "passed",
+      "passed": 25656,
+      "skipped": 108,
+      "total": 25764
+    },
+    "integration": {
+      "status": "not_run",
+      "passed": 0,
+      "skipped": 0,
+      "total": 0
+    },
+    "pgtap": {
+      "status": "not_run",
+      "passed": 0,
+      "skipped": 0,
+      "total": 0
+    },
+    "e2e": {
+      "status": "not_run",
+      "passed": 0,
+      "skipped": 0,
+      "total": 0
+    },
+    "design_fidelity": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "Old merged event files are folded into the archive in a commit of their own, no event lost or duplicated; a second run changes nothing",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_events_fold_for_release.py::test_old_merged_files_are_folded_in_a_commit_of_their_own, ::test_nothing_old_enough_changes_nothing_and_a_second_run_does_too PASSED"
+        },
+        {
+          "behavior": "Other staged or unstaged work, an untracked file of another run and a file with local changes stay out of the fold; the trunk is the repo's own (origin/HEAD) and planning uses the merge-base",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_events_fold_for_release.py::test_other_staged_work_stays_out_of_the_fold_commit, ::test_an_untracked_file_of_another_run_is_left_alone, ::test_a_file_with_local_changes_is_not_swept_into_the_fold, ::test_the_trunk_is_the_one_the_repo_names_when_no_base_ref_is_given, ::test_a_file_that_is_only_on_the_trunk_tip_and_not_at_the_merge_base_is_not_folded PASSED"
+        },
+        {
+          "behavior": "A conflict, a missing trunk, an undeletable file, a refusing or silent hook, a mid-fold error or a stalled commit each end in one status, exit 0, and the tree is put back; a file that existed before is never removed; a failed rollback keeps the archive",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_events_fold_for_release.py::test_a_conflicting_id_skips_the_fold_and_changes_nothing, ::test_a_file_that_cannot_be_deleted_is_reported_and_the_tree_is_put_back, ::test_a_refusing_commit_hook_is_reported_and_the_tree_is_put_back, ::test_a_hook_that_refuses_without_a_word_is_still_a_failed_commit, ::test_an_error_in_the_middle_of_the_fold_puts_the_tree_back, ::test_a_failed_rollback_keeps_the_archive_because_it_may_be_the_only_copy PASSED"
+        },
+        {
+          "behavior": "A project on the single event log is left unchanged; 900 files do not overflow the command line",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_events_fold_for_release.py::test_a_project_on_the_legacy_layout_is_left_alone, ::test_a_thousand_files_do_not_overflow_the_command_line PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 4,
+        "tested": 4,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 3,
+        "covered_acs": 3
+      }
+    },
+    "surface_verification": {
+      "surface": "none",
+      "reason_code": "no-startable-surface",
+      "tests_run": 0,
+      "exit_code": 0,
+      "justification": "Release tooling for the event files; no UI, API route or message contract. Exercised by 32 new tests against real git repos and by the full F0 suite."
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-24-r5b-merge-lane",
+    "commit": "032d1ebbf0ef9c99eb98f240c8f1110e981a32a5",
+    "dirty": true,
+    "base": null,
+    "release": null
+  },
+  "last_updated": "2026-11-11"
+}
