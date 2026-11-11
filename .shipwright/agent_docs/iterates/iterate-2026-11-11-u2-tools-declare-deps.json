@@ -1,0 +1,71 @@
+{
+  "run_id": "iterate-2026-11-11-u2-tools-declare-deps",
+  "date": "2026-11-11T23:23:29.028843Z",
+  "event_at": "2026-11-11T23:23:07.044694+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/campaign-events-followups--U2",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-11-11-u2-tools-declare-deps",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "verifier, condenser and release entry point declare their packages in a PEP 723 header",
+        "disposition": "tested",
+        "evidence": "test_tools_declare_own_dependencies.py::test_script_header_declares_its_packages PASSED"
+      },
+      {
+        "behavior": "headers resolve from an empty directory",
+        "disposition": "tested",
+        "evidence": "test_header_resolves_in_a_clean_directory PASSED (-m slow)"
+      },
+      {
+        "behavior": "bare uv run of the condenser from an unrelated directory reaches the provider call, not 'not installed'",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "test_condenser_runs_bare_from_an_unrelated_directory PASSED (-m slow)"
+      },
+      {
+        "behavior": "bare uv run of the verifier from an unrelated directory starts and reports",
+        "disposition": "tested",
+        "evidence": "test_verifier_runs_bare_from_an_unrelated_directory PASSED (-m slow)"
+      },
+      {
+        "behavior": "openai package not installed fallback stays",
+        "disposition": "tested",
+        "evidence": "test_condense_release_notes.py PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 5,
+      "tested": 5,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 1,
+      "covered_acs": 1
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run --no-project --script shared/scripts/tools/publish_release_notes.py --help",
+    "exit_code": 0,
+    "tests_run": 1,
+    "evidence_path": ".shipwright/runs/iterate-2026-11-11-u2-tools-declare-deps/surface_verification.log",
+    "timestamp": "2026-11-11T23:17:28.903Z",
+    "attempts": 1
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": [
+    "touches_billing",
+    "touches_migrations"
+  ]
+}

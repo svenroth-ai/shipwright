@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "## Findings\n\n- **Category: approach** \u2014 **Severity: medium**\n  The change spec explicitly says to \"fold finalize_iterate.py:199's `--project` workaround into the same rule,\" but the plan declares it out of scope with a justification (different script, different launch form). The justification about `python <script>` not reading inline metadata is technically correct, but it means the spec's stated goal isn't fully delivered. Either the spec should be amended (and the reviewer of the spec notified) or the plan should convert that launch to `uv run --script` so the workaround can be dropped.\n  **Suggestion:** Pick one explicitly: (a) update finalize_iterate.py:199 to `uv run --no-project --script` and remove the `--project` flag, or (b) document in the mini-plan why the spec's clause doesn't apply, so the discrepancy is a decision rather than an omission.\n\n- **Category: risk** \u2014 **Severity: medium**\n  Running a PEP 723 script under `uv run --script` creates an isolated environment with *only* the declared deps \u2014 but verify_iterate_finalization.py apparently imports sibling code (\"compliance evidence readers and ci_gate_scan\"). If those sibling modules are resolved via cwd/sys.path (typical for this repo's shared scripts), a bare `uv run` from another directory may still fail on the *local imports*, which the new slow test (empty directory) should catch \u2014 but the plan doesn't say how local imports are made to work (e.g., a path-bootstrap snippet in the script, or `dev-dependencies`-style sys.path manipulation in the header-adjacent code).\n  **Suggestion:** Confirm in the plan how intra-repo imports resolve when running with `--script` from an arbitrary cwd, and make the slow test assert the full run succeeds, not just that \"the header resolves.\"\n\n- **Category: risk** \u2014 **Severity: low**\n  PEP 723 `>=` lower bounds mean the isolated environment resolves to the *latest* available versions at run time, not the versions locked in the monorepo. A jsonschema or pyyaml major release could make the verifier behave differently under `--script` than under the root project. The plan's \"same bounds as the root pyproject\" mitigates but doesn't eliminate this.\n  **Suggestion:** Acceptable as-is; optionally note that the slow test will surface resolution breakage early.\n\n- **Category: edge-case** \u2014 **Severity: low**\n  The plan's own facts note the current failure mode is \"silent degradation\" (transitive imports failing). Once headers exist, a *partially* correct header (e.g., forgetting pyyaml because it's only imported transitively) would reproduce the same silent degradation in the new isolated env. The plan already includes pyyaml, but there's no mechanism described to catch a future added import.\n  **Suggestion:** Have the static header test do a quick import-scan of the script (AST-level `import`/`from` collection) against the declared list, so future imports force a header update. Cheap and prevents the exact bug class this change fixes.\n\n- **Category: edge-case** \u2014 **Severity: low**\n  Acceptance criteria are \"TBD\" \u2014 for a change whose whole point is environment reproducibility, at least one criterion (\"`uv run --no-project --script <tool>` succeeds from an empty cwd\") should be pinned down before merging.\n  **Suggestion:** Write the acceptance criteria now; they're nearly free given the plan already describes the verification method.\n\n- **Category: security** \u2014 **Severity: low**\n  No new supply-chain risk: bounds match the root pyproject and no new external scripts are fetched. The condense script's openai key handling is untouched. Nothing to flag.\n\n## Overall assessment\n\nThe core approach (PEP 723 headers, matching existing hook-script precedent) is right and well-verified. The main gaps are the unresolved `--project` clause from the spec and unconfirmed local-import resolution under `--script` isolation \u2014 both fixable with small plan edits, so this needs a light revision rather than a rethink.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Category:** approach  \n   **Severity:** medium  \n   **Finding:** The plan leaves `finalize_iterate.py:199` unchanged, although the scope explicitly requires folding its `--project` workaround into the same dependency rule. The current launch form explains why metadata is ignored, but does not resolve the requirement.  \n   **Suggestion:** Change the invocation to run `update_compliance.py` directly through uv and declare its required dependencies in script metadata. Verify that its local imports still work independently of the caller\u2019s working directory.\n\n2. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** Declaring `openai` in script metadata moves dependency installation before Python execution. If resolution or installation fails, the existing \u201cpackage not installed\u201d fallback cannot run. Leaving that fallback and its tests untouched does not establish that release notes remain best-effort.  \n   **Suggestion:** Verify that the caller tolerates a nonzero uv exit and continues finalization. Add coverage for that failure path; adjust caller handling if necessary.\n\n3. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** Exporting dependencies and resolving a header from an empty directory do not demonstrate that the actual tools work there. The verifier\u2019s documented silent degradation makes a successful exit particularly weak evidence. Acceptance criteria also remain undefined.  \n   **Suggestion:** Define concrete acceptance criteria and exercise the actual bare `uv run <absolute-script-path>` commands from an unrelated directory. For the verifier, assert that dependency-backed checks execute and detect a known invalid fixture, rather than merely asserting successful startup.\n\nPEP 723 metadata is a sound, small solution for the two tools. The plan needs to address the explicitly scoped compliance launcher and verify best-effort behavior across uv failures before approval.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-11-11-u2-tools-declare-deps",
+    "at": "2026-11-11T23:07:29.448537+00:00"
+  },
+  "verdicts": {
+    "glm": "revise",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

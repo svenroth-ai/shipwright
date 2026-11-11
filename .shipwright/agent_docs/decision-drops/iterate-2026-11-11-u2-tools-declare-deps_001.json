@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-11-u2-tools-declare-deps",
+  "date": "2026-11-12",
+  "section": "Iterate — change: tools declare their own packages",
+  "title": "Verifier and release-notes scripts carry PEP 723 dependency headers",
+  "context": "Run bare from outside the monorepo root, the finalization verifier degraded silently and the release-notes condenser answered 'openai package not installed'; the packages came only from the root project.",
+  "decision": "Add a PEP 723 script header to verify_iterate_finalization and to condense/publish_release_notes; the compliance launcher keeps uv run --project, stated as the other half of one rule.",
+  "consequences": "A plain uv run works from any folder, also offline with a warm cache. A cold first run needs network; the changelog skill treats a uv failure as skipped.",
+  "rationale": "Hook scripts already use this rule. The compliance script keeps its lock and .venv, which the SBOM licence scan reads; a second source would drift.",
+  "rejected": "Documenting --with flags, or making every caller pass --project: each caller must remember. Giving update_compliance a header too: SBOM churn and two dependency sources.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

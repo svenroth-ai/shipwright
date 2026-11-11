@@ -1,0 +1,1 @@
+{"stage": "spec-compliance", "verdict": "PASS", "spec_citations": [], "summary": "PASS: verifier, condenser, release entry point and compliance script carry PEP 723 headers; finalize_iterate launcher folded into one rule; best-effort release notes and the not-installed test intact; clean-directory subprocess tests present."}
