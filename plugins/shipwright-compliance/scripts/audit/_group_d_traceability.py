@@ -48,6 +48,8 @@ from scripts.audit._group_d_manifest import (
     load_manifest,
 )
 from scripts.audit._group_d_render import (
+    UNBOUND_COVERS_REASON,
+    unbound_covers_line,
     ADVISORY_LAYER_REASONS,
     fold_defect_line,
     invalid_layer_line,
@@ -103,7 +105,10 @@ def _max_sev(sevs: set[str]) -> str:
 def check_orphan(manifest: dict) -> tuple[str, str, str, list[str], str | None]:
     """(status, severity, detail, evidence, suggested_cmd) for D-orphan."""
     orphans = manifest.get("orphans") or []
-    invalid_tags = manifest.get("invalid_tags") or []
+    all_invalid = manifest.get("invalid_tags") or []
+    # A covers comment that binds nothing is worded apart from a malformed tag and never fails D-orphan.
+    unbound = [iv for iv in all_invalid if iv.get("reason") == UNBOUND_COVERS_REASON]
+    invalid_tags = [iv for iv in all_invalid if iv.get("reason") != UNBOUND_COVERS_REASON]
     fold_defects = manifest.get("fold_defects") or []
     confirmed = [o for o in orphans if o.get("category") == "confirmed_orphan"]
     possible = [o for o in orphans if o.get("category") == "possible_orphan"]
@@ -132,10 +137,11 @@ def check_orphan(manifest: dict) -> tuple[str, str, str, list[str], str | None]:
         # test_group_d_empty_set_verdicts.py::
         # test_zero_requirements_plus_a_tagged_test_yields_a_nonempty_orphan_list
         # runs the real collector over zero requirements and one tagged test.
-        if unmapped:
-            return ("pass", "LOW",
-                    f"{len(unmapped)} unmapped test(s) (informational — not orphans)",
-                    [orphan_line(o, "unmapped") for o in unmapped], None)
+        if unmapped or unbound:
+            note = [f"{len(unmapped)} unmapped test(s) (informational — not orphans)"] if unmapped else []
+            note += [f"{len(unbound)} covers comment(s) binding no declaration (informational — not malformed tags)"] if unbound else []
+            return ("pass", "LOW", "; ".join(note),
+                    [orphan_line(o, "unmapped") for o in unmapped] + [unbound_covers_line(iv) for iv in unbound], None)
         return ("pass", "MEDIUM", "no test is tagged with a removed/absent FR", [], None)
 
     severity = "MEDIUM" if confirmed else "LOW"
@@ -145,6 +151,7 @@ def check_orphan(manifest: dict) -> tuple[str, str, str, list[str], str | None]:
         + [invalid_tag_line(iv) for iv in invalid_tags]
         + [fold_defect_line(fd) for fd in fold_defects]
         + [orphan_line(o, "unmapped") for o in unmapped]
+        + [unbound_covers_line(iv) for iv in unbound]
     )
     parts: list[str] = []
     if confirmed:
@@ -155,6 +162,8 @@ def check_orphan(manifest: dict) -> tuple[str, str, str, list[str], str | None]:
         parts.append(f"{len(invalid_tags)} malformed @FR tag(s)")
     if fold_defects:
         parts.append(f"{len(fold_defects)} FR-Fold-Map defect(s)")
+    if unbound:
+        parts.append(f"{len(unbound)} covers comment(s) binding no declaration (informational)")
     head = confirmed[0] if confirmed else (possible[0] if possible else None)
     ref = (f"; e.g. {head.get('test', '?')} → {head.get('tagged_fr')}") if head else ""
     detail = "test-tag defects — " + "; ".join(parts) + ref

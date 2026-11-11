@@ -54,6 +54,11 @@ Reader = Callable[[str, str], "str | None"]
 _SCOPE_RE = re.compile(r"^[^*?\[\]:]+::(?![*?]+$).+$")
 _TEST_DIRS = frozenset({"tests", "test", "__tests__", "e2e", "integration-tests"})
 _EXEMPTABLE = frozenset({"untagged-added", "untagged-modified"})
+#: ``invalid_tags`` reason of a ``// @covers`` comment that reached no declaration (collector,
+#: ``_suite_tags``): a WARNING here, never a finding - the comment binds nothing, it is not a malformed tag.
+_UNBOUND_COVERS = "unbound-covers-comment"
+_MODIFIED_REMEDY = ("tag the test with the requirement it exercises, or, if no requirement describes "
+                    "this behaviour, mint or extend a requirement in this run")
 
 
 @dataclass
@@ -175,13 +180,13 @@ def _flag(
             continue
         before, after = _digests(read, test, "base"), _digests(read, test, "head")
         if before is None or after is None:
-            v.findings.append(("untagged-modified", test, "cannot read the file to compare bodies"))
+            v.findings.append(("untagged-modified", test, f"cannot read the file to compare bodies; {_MODIFIED_REMEDY}"))
         elif not before and not after:
             continue  # a shape the identity layer cannot locate at either side: untouched
         elif not before or not after:
-            v.findings.append(("untagged-modified", test, "located at only one side, still no requirement tag"))
+            v.findings.append(("untagged-modified", test, f"located at only one side, still no requirement tag; {_MODIFIED_REMEDY}"))
         elif before != after:
-            v.findings.append(("untagged-modified", test, "body changed, still no requirement tag"))
+            v.findings.append(("untagged-modified", test, f"body changed, still no requirement tag; {_MODIFIED_REMEDY}"))
 
 
 def _flag_tags(base: dict, head: dict, v: TagVerdict) -> None:
@@ -189,6 +194,11 @@ def _flag_tags(base: dict, head: dict, v: TagVerdict) -> None:
     for item in head.get("invalid_tags") or []:
         if not isinstance(item, dict) or not _is_test_id(str(item.get("test") or "")):
             continue  # a fixture repo's deliberately malformed tag is not this project's test
+        if item.get("reason") == _UNBOUND_COVERS:
+            if (item.get("test"), item.get("raw")) not in base_invalid and _is_test_id(str(item.get("raw") or "").split(":", 1)[0]):
+                v.warnings.append(f"{item.get('raw')}: covers comment is not directly above a test or describe with a "
+                                  "literal title, so it binds nothing - put it directly above the declaration")
+            continue
         if (item.get("test"), item.get("raw")) not in base_invalid:
             v.findings.append(("invalid-tag", str(item.get("test") or "<unbound>"),
                                f"malformed tag {item.get('raw')!r} ({item.get('reason', '')})"))

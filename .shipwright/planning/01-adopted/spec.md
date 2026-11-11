@@ -1104,6 +1104,12 @@ _Where the work detail lives_ at the end of this document.
   verdict of matches or diverges against what was built, a divergence names the line that breaks it, and a divergence on a
   promise not confirmed by an operator (decided by auto) is only a visible warning that never holds the change back.
   (iterate-2026-11-07-ac-q2-post-build-check)
+- (E) [AC51] Given a test file whose suites contain text that only looks like curly braces (inside a string, a pattern, a
+  comment or a template), when the requirement names given to a suite are collected, then every test inside that suite
+  receives them and no test after it does; a requirement comment that reaches no test or suite is reported as a warning
+  naming it and never stops the change; and when finishing stops on an untagged test whose body changed, the message names
+  both ways out: name the requirement the test proves, or add or extend a requirement in the same change.
+  (iterate-2026-11-11-u1-tag-binding)
 
 <a id="fr-0112"></a>
 ### FR-01.12 — Local project preview
