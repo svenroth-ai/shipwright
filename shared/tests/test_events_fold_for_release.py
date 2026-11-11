@@ -122,6 +122,7 @@ def _failing_hook(root, tmp_path, body: str = "#!/bin/sh\necho no >&2\nexit 1\n"
     hooks = tmp_path / "hooks"
     hooks.mkdir()
     (hooks / "pre-commit").write_text(body, encoding="utf-8", newline="\n")
+    (hooks / "pre-commit").chmod(0o755)   # git ignores a hook without the executable bit (Linux CI)
     git(root, "config", "core.hooksPath", str(hooks))
 
 
@@ -373,6 +374,7 @@ def test_a_commit_that_landed_before_a_failing_later_hook_counts_as_folded(tmp_p
     hooks = tmp_path / "hooks"
     hooks.mkdir()
     (hooks / "post-commit").write_text("#!/bin/sh" + chr(10) + "echo late >&2" + chr(10) + "exit 1" + chr(10), encoding="utf-8", newline=chr(10))
+    (hooks / "post-commit").chmod(0o755)
     git(root, "config", "core.hooksPath", str(hooks))
     result = _run(root)
     assert result["status"] == "folded" and result["commit"]
