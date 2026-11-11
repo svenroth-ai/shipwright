@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -62,6 +63,8 @@ def _group_i_has_criteria(content: str, fr_id: str) -> bool:
         input=content,
         capture_output=True,
         text=True,
+        encoding="utf-8",   # both ends of the pipe speak UTF-8, not the console code page (cp1252 on Windows)
+        env={**os.environ, "PYTHONUTF8": "1"},
         cwd=str(REPO_ROOT),
     )
     assert result.returncode == 0, result.stderr
@@ -89,6 +92,8 @@ def _group_i_criteria_for(content: str, fr_id: str) -> list[str]:
         input=content,
         capture_output=True,
         text=True,
+        encoding="utf-8",   # both ends of the pipe speak UTF-8, not the console code page (cp1252 on Windows)
+        env={**os.environ, "PYTHONUTF8": "1"},
         cwd=str(REPO_ROOT),
     )
     assert result.returncode == 0, result.stderr
