@@ -1,0 +1,4 @@
+{"section":"iterate-2026-11-12-u3-g2-scope-audit","verdict":"approve","review":[
+{"severity":"low","category":"readability","file":"plugins/shipwright-compliance/scripts/audit/group_g.py","line":5,"finding":"Module docstring for G2 still describes a single scope; does not mention comma-joined scopes being judged per part.","suggestion":"Reword the existing docstring lines in place."},
+{"severity":"low","category":"correctness","file":"plugins/shipwright-compliance/scripts/audit/g2_scopes.py","line":74,"finding":"An alias-map or stoplist entry containing a comma can no longer match.","suggestion":"Docs note or accept."},
+{"severity":"low","category":"readability","file":"plugins/shipwright-compliance/tests/test_audit_g2_scopes.py","line":80,"finding":"Weak pins on disabled_checks / g2_alias_map words in the detector.","suggestion":"Rely on the never-skipped-automatically assertions."}]}

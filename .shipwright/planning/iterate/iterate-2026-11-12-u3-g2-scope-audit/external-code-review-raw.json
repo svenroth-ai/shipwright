@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "- Category: test\n  Severity: high\n  File: plugins/shipwright-compliance/tests/test_audit_g2_scopes.py:76\u201378 (`test_known_plus_unknown_flags_only_the_unknown_part`)\n  Finding: The test asserts `\"auth\" not in g2.detail`, but the G2 evidence appends `cs.full_subject` (group_g.py:221 appends the 3-tuple `(sha, scope, full_subject)` to `unmatched`), and the fixture subject is `\"feat(auth,daemon): half known\"`. If the finding detail renders the subject line (as G2 findings typically do), the string `\"auth\"` will appear via the subject and the assertion will fail \u2014 or, if the detail format omits subjects today, the test passes for the wrong reason and will break on any later detail-format change. The assertion doesn't validate \"only unknown parts flagged\"; it depends on the subject text coincidentally not containing \"auth\", which it does contain.\n  Suggestion: Assert on the extracted scope field instead, e.g. check `\"scope='daemon'\"` appears and there is no *second* scope entry (count occurrences or assert `\"scope='auth'\"` not in detail), and/or use a subject that doesn't contain the known scope name (e.g. `\"feat(auth,daemon): add feature\"` \u2014 still contains \"auth\"; pick `\"feat(auth,daemon): tweak\"` is fine but better to match on `scope='...'` tokens).\n\n- Category: edge-case\n  Severity: medium\n  File: plugins/shipwright-compliance/scripts/audit/g2_scopes.py:22\u201326 / group_g.py:217\u2013221\n  Finding: When a scope is entirely unparsable (`\",\"`), `unknown_scope_parts` returns `[scope]` i.e. `[\",\"]`, and the evidence line becomes `scope=','` \u2014 indistinguishable from a scope literally named `,`. More importantly, the walrus `if bad := ...` treats the empty-string case correctly, but `cs.scope` is passed straight in; if a commit has a whitespace-only scope like `\" \"` (some tools emit this), `scope_parts` drops it and the evidence shows the raw whitespace scope. Minor, but the \"names nothing\" fallback returning the raw string can produce confusing evidence for weird-but-real conventional-commit inputs like `\" ,\"` or `\" , , \"`.\n  Suggestion: For the no-usable-part case, return a stable placeholder (e.g. the stripped scope, or a literal marker like `\"(empty scope)\"`) so the evidence is unambiguous; at minimum confirm `\",\"`-only scopes don't collide with a legitimate alias.\n\n- Category: test\n  Severity: low\n  File: plugins/shipwright-compliance/tests/test_audit_g2_scopes.py:83 (`test_docs_promise_no_automatic_skip`)\n  Finding: The final assertion `assert \"never skipped automatically\" in hooks and \"never skipped automatically\" in detector` checks the *detector source file*, but the detector change only added that phrase inside a comment in `_DEFAULT_CONFIG` \u2014 this validates a comment, not behavior. The old skip *behavior* (adopted projects skipping the match) is not asserted to be gone anywhere; only the absence of one literal phrase is. A regression that re-introduces the skip with different wording would pass.\n  Suggestion: Add a behavioral test: run G2 against a repo whose config marks it adopted (or with empty splits) and assert the commit is still flagged rather than skipped.\n\nOverall: the implementation and docs changes match the spec (split parsing in a new module, evidence naming unknown parts, false-exemption text removed), but the `auth not in g2.detail` assertion is likely to fail or pass vacuously depending on how the detail renders the subject, and the \"no auto-skip\" guarantee is tested only by string-matching comments. Ship-with-fixes.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "No concrete defects found in the supplied diff. The change extracts comma parsing into a new module, checks each nonempty part independently, reports unknown parts, and corrects the automatic-skip documentation. Tests assert both passing and failing behavior.\n\nShip-as-is based on the supplied diff. Filesystem access was blocked, so I could not read the normative campaign brief, verify card closure, inspect surrounding code, or run tests.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-11-12-u3-g2-scope-audit",
+    "at": "2026-11-12T00:51:11.370593+00:00"
+  },
+  "verdicts": {
+    "glm": "revise",
+    "openai": "approve"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=approve"
+  }
+}
