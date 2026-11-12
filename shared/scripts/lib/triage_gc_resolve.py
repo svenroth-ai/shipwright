@@ -55,7 +55,7 @@ def resolve_tracked_only(project_root: Path | str) -> list[dict]:
         item_id = raw.get("id")
         if not isinstance(item_id, str):
             continue
-        item = {k: v for k, v in raw.items() if k != "event"}
+        item = triage.load_shared_lib("triage_status_normalize").initial_record(raw, triage.STATUSES)
         item["statusBy"] = None
         item["statusReason"] = None
         item[_amend.AMENDED_BY_FIELD] = None

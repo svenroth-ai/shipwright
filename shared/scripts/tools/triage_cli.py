@@ -184,6 +184,12 @@ def _build_parser() -> argparse.ArgumentParser:
     p_amend.add_argument("--json", action="store_true", help="emit the resulting resolved item as JSON")
     p_amend.set_defaults(func=cmd_amend)
 
+    # The root is accepted before AND after the subcommand. SUPPRESS keeps the
+    # subparser from writing its own default over a value given before the verb
+    # (the documented WebUI form); the parent's "." default still applies.
+    for sp in {id(q): q for q in sub.choices.values()}.values():
+        sp.add_argument("--project-root", default=argparse.SUPPRESS, help="Project root (same as before the subcommand)")
+
     return parser
 
 

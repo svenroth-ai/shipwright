@@ -1,0 +1,9 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"AC1-AC3 of run spec.md each covered by a test; grammar refinement recorded."},
+{"name":"Error Handling","verdict":"pass","note":"git log error is skip, triage module unavailable is skip, check crash isolated by run()."},
+{"name":"Security Basics","verdict":"pass","note":"commit text is matched by a bounded regex and only reported; nothing executed or written."},
+{"name":"Test Quality","verdict":"pass","note":"negative fixtures, both root positions, three malformed statuses, reader/GC agreement, seeded git repo end to end."},
+{"name":"Performance Basics","verdict":"pass","note":"one git log call, bounded range."},
+{"name":"Naming & Structure","verdict":"pass","note":"new modules group_g4.py and triage_status_normalize.py; triage.py net zero, at baseline."},
+{"name":"Affected Boundaries","verdict":"pass","note":"producer of status-less append (hand/old writers) vs consumers read_all_items and GC resolver probed with real JSONL; no serialized format changed."},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"scan_test_hygiene --diff clean."}]}

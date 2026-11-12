@@ -844,7 +844,7 @@ def read_all_items(
         # Initial record — strip "event" key (internal). A duplicate append for
         # the same id (post-sweep, pre-GC window) collapses to one record; the
         # later line's fields win, which is harmless (identical content).
-        item = {k: v for k, v in raw.items() if k != "event"}
+        item = load_shared_lib("triage_status_normalize").initial_record(raw, STATUSES)
         item["statusBy"] = None
         item["statusReason"] = None
         item["promotedTaskId"] = None

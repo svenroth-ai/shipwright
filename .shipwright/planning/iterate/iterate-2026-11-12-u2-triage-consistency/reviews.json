@@ -1,0 +1,344 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-12-u2-triage-consistency",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-11T23:38:15.509562+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "\"is_triage_record no longer requires `status` on appends\" loosens the integrity invariant globally. Any code path that validates records (exports, sync, other audit checks) may now silently accept genuinely malformed records; loosening corruption detection to accommodate one append path is a broad blast radius for a narrow fix.",
+          "suggestion": "Scope the relaxation: keep `is_triage_record` strict for its existing callers and apply the lenient check (or the normalize helper) only in the append path, or introduce a `strict=` flag with old behavior default.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "default=argparse.SUPPRESS` on the subparser-level `--project-root` handles \"before and after\" but SUPPRESS means the attribute is absent when the flag isn't given — any existing code doing `args.project_root` unconditionally will raise AttributeError. The plan doesn't mention auditing existing accesses or the both-given conflict resolution (which wins?).",
+          "suggestion": "Verify all `args.project_root` readers handle absence (likely already have a default computed elsewhere), and have tests pin explicit both-given precedence behavior as the spec requires.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "\"Range since latest release tag else last 500\" — unhandled: repos with no tags AND fewer than 500 commits (fine), but also annotated vs lightweight tag detection, and \"last 500\" says \"(printed)\" in the spec — plan omits printing the effective range in the report, which matters for the measured-finding-count claim being reproducible.",
+          "suggestion": "Print the effective range (tag or 500) in the report output; use a single `git describe`/`git rev-list` resolution consistent with existing audit checks in this codebase.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "Spec says \"register in gate_catalog.json if audit checks are listed\" — plan mentions the G composite registration but not gate_catalog.json. Easy to miss since it's conditional.",
+          "suggestion": "Check whether existing G1–G3 checks are listed there; if yes, add G4 in the same change.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "New lib helper `triage_status_normalize.initial_record` is fine, but confirm it's actually shared (append path + import path or future callers) rather than a single-use wrapper around a two-line `status or 'triage'` — if single-use, inlining with a comment is simpler than a new module surface.",
+          "suggestion": "If only the append path uses it, inline it; keep the helper only if read_all_items and append both call it.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "\"Unknown status resolves to 'triage' with an integrity warning\" — is \"unknown\" a closed allowlist (triage/snoozed/…)? If the status vocabulary grows, the allowlist in the helper must be defined once, not duplicated with `is_triage_record`'s set.",
+          "suggestion": "Define the status vocabulary as a single constant both functions reference.  Overall assessment: The approach is sound and appropriately scoped; the main risk is the globally loosened `is_triage_record` invariant, which should be scoped to the append path before merge. Otherwise findings are refinements.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk |",
+          "file": null,
+          "line": null,
+          "finding": "Registering G4 in the group G composite does not establish that its MEDIUM findings remain report-only. If composite findings affect gate outcomes, this could unexpectedly block existing workflows.",
+          "suggestion": "Explicitly preserve a non-blocking result and add an integration test showing that a known triage/snoozed match produces a MEDIUM finding without failing the gate.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach |",
+          "file": null,
+          "line": null,
+          "finding": "The reported measurement uses the last 1,500 commits, which does not demonstrate the required release-tag range or 500-commit fallback. “20 tokens” also does not establish the audit’s actual finding count.",
+          "suggestion": "Run the implemented check against this repository before merge. Record the selected tag/range, print when the fallback is used, and report the resulting finding count.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "Relaxing `is_triage_record` and normalizing during pass 1 can affect record classification and replay. The plan does not pin that only append records receive the fallback or that subsequent status updates still override it.",
+          "suggestion": "Add cases for missing/null/unknown append status followed by a valid update; verify the final status and integrity warning. Preserve existing corruption handling for malformed records and invalid non-append operations.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "The CLI step omits the explicitly required test where `--project-root` appears in both positions. `SUPPRESS` prevents an absent subparser argument from overwriting the root value, but precedence when both are supplied still needs pinning.",
+          "suggestion": "Test before-only, after-only, and both with different paths; document and assert which path wins.  The approach is appropriately scoped and the helper extraction fits the stated bloat constraint. Address the report-only guarantee, required measurement, and targeted regression cases before approval.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-11T23:28:31.143272+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Review Findings\n\n- **Category: risk — Severity: medium**\n  **Finding:** \"is_triage_record no longer requires `status` on appends\" loosens the integrity invariant globally. Any code path that validates records (exports, sync, other audit checks) may now silently accept genuinely malformed records; loosening corruption detection to accommodate one append path is a broad blast radius for a narrow fix.\n  **Suggestion:** Scope the relaxation: keep `is_triage_record` strict for its existing callers and apply the lenient check (or the normalize helper) only in the append path, or introduce a `strict=` flag with old behavior default.\n\n- **Category: edge-case — Severity: medium**\n  **Finding:** `default=argparse.SUPPRESS` on the subparser-level `--project-root` handles \"before and after\" but SUPPRESS means the attribute is absent when the flag isn't given — any existing code doing `args.project_root` unconditionally will raise AttributeError. The plan doesn't mention auditing existing accesses or the both-given conflict resolution (which wins?).\n  **Suggestion:** Verify all `args.project_root` readers handle absence (likely already have a default computed elsewhere), and have tests pin explicit both-given precedence behavior as the spec requires.\n\n- **Category: edge-case — Severity: low**\n  **Finding:** \"Range since latest release tag else last 500\" — unhandled: repos with no tags AND fewer than 500 commits (fine), but also annotated vs lightweight tag detection, and \"last 500\" says \"(printed)\" in the spec — plan omits printing the effective range in the report, which matters for the measured-finding-count claim being reproducible.\n  **Suggestion:** Print the effective range (tag or 500) in the report output; use a single `git describe`/`git rev-list` resolution consistent with existing audit checks in this codebase.\n\n- **Category: dependency — Severity: low**\n  **Finding:** Spec says \"register in gate_catalog.json if audit checks are listed\" — plan mentions  […truncated]\n\n[openai] The environment policy blocked reading the normative brief and source files, so this review is based on the supplied specification and mini-plan.\n\n1. **Category: risk | Severity: medium**  \n   **Finding:** Registering G4 in the group G composite does not establish that its MEDIUM findings remain report-only. If composite findings affect gate outcomes, this could unexpectedly block existing workflows.  \n   **Suggestion:** Explicitly preserve a non-blocking result and add an integration test showing that a known triage/snoozed match produces a MEDIUM finding without failing the gate.\n\n2. **Category: approach | Severity: medium**  \n   **Finding:** The reported measurement uses the last 1,500 commits, which does not demonstrate the required release-tag range or 500-commit fallback. “20 tokens” also does not establish the audit’s actual finding count.  \n   **Suggestion:** Run the implemented check against this repository before merge. Record the selected tag/range, print when the fallback is used, and report the resulting finding count.\n\n3. **Category: edge-case | Severity: medium**  \n   **Finding:** Relaxing `is_triage_record` and normalizing during pass 1 can affect record classification and replay. The plan does not pin that only append records receive the fallback or that subsequent status updates still override it.  \n   **Suggestion:** Add cases for missing/null/unknown append status followed by a valid update; verify the final status and integrity warning. Preserve existing corruption handling for malformed records and invalid non-append operations.\n\n4. **Category: edge-case | Severity: low**  \n   **Finding:** The CLI step omits the explicitly required test where `--project-root` appears in both positions. `SUPPRESS` prevents an absent subparser argument from overwriting the root value, but precedence when both are supplied still needs pinning.  \n   **Suggestion:** Test before-only, after-only, and both with different paths; document and assert which p […truncated]",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "G4 tests may depend on run order (triage import path). Not reproduced: test_silent_when_status_exists passes when run alone.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "partial-close exclusion also drops the finishing 'second half' commit and matches any parenthesis with 'part'; '(partial)' not covered. Accepted as documented limit.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "status_by_id.get(None) conflation; status is never None after the normaliser. Accepted.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "performance",
+          "file": null,
+          "line": null,
+          "finding": "load_shared_lib per append line; negligible, accepted (triage.py at baseline).",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": null,
+          "line": null,
+          "finding": "alias dedup in triage_cli, duplicated Finding construction, private helper reach-in; non-blocking follow-ups.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-12T00:21:22.676454+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "outbox blind spot is a CI-only limit",
+          "suggestion": "accepted for this PR, follow-up: the consumer is the merge-scope audit (detached worktree, no outbox); the finding only appears for a closing token on a card closed solely in main's outbox, which is rare; wording fix tracked as follow-up",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "G4 finding is actionable from the backlog card",
+          "suggestion": "follow-up: put up to 5 open card ids into the fail detail",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "G4 cannot interact with the backlog card carrying it",
+          "suggestion": "accepted: converges, one extra card of churn at most",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "status-less read as triage is only visibility",
+          "suggestion": "accepted: machine dismissal of a formerly unreadable producer card is the intended outcome; live store has 0 such appends",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-12T00:21:22.789800+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "plugins/shipwright-compliance/tests/test_audit_group_g4_close_tokens.py:123-126 (`test_registered_under_group_g`)",
+          "line": null,
+          "finding": "The test only asserts `\"G\" in audit_detector._GROUPS`. Group G was registered before this change too, so the test passes even if `group_g4` were never wired into `_group_g_combined` (or if the combined wrapper were deleted and the old `group_g.run` registered directly). It validates nothing about the new registration.",
+          "suggestion": "Assert that the registered \"G\" callable is the combined wrapper, or that a seeded G4 finding surfaces through `audit_detector` end-to-end (e.g., run the detector against the `_repo(..., None)` fixture and check a G4 finding appears).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/triage_status_normalize.py:31-40 (`initial_record`)",
+          "line": null,
+          "finding": "When the append line has no `id` key, `item_id` becomes the string `\"None\"` and is used both in the warning and the `_WARNED` dedupe key. Two different malformed records both missing ids collapse to one warning. Minor, but the message `append 'None'` is misleading.",
+          "suggestion": "Guard with `isinstance(item.get(\"id\"), str)` before warning/deduping, or surface the record's `ts`/`title` in the message instead.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "regression",
+          "file": "shared/scripts/tools/triage_cli.py:187-191",
+          "line": null,
+          "finding": "sp.add_argument(\"--project-root\", ...)` is added unconditionally to every subparser. If any existing subcommand (e.g., `amend`, or a future `list` variant) already defines `--project-root`, argparse raises `ArgumentError` at parser build time and the whole CLI dies. The tests only exercise `list`.",
+          "suggestion": "Skip subparsers that already define the option (check `sp._option_string_actions`), or at least add a smoke test that builds the parser and parses one arg per subcommand.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "plugins/shipwright-compliance/scripts/audit/group_g4.py:36-42 (`_ID_FULL` / `_TOKEN_RE`)",
+          "line": null,
+          "finding": "A partial close in the middle of a list silently truncates the token list: `\"Closes trg-A, trg-B (first half)\"` yields `[trg-A]` — trg-A is reported even though the commit author may have meant a mixed close. The spec only pins the list-starts-with-partial case, so this is a defined-but-undocumented gap; a commit like this produces a finding on A that the convention `Part of trg-X` was designed to avoid.",
+          "suggestion": "Either document this behavior in the grammar note in `docs/hooks-and-pipeline.md`, or, if a partial appears anywhere in a matched token group, drop the whole group (consistent with the conservative starts-with-partial rule).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "plugins/shipwright-compliance/scripts/audit/group_g4.py:110-118 (`_check` shallow check)",
+          "line": null,
+          "finding": "git_log_scan._run_git(...).strip()` will raise `AttributeError` if `_run_git` returns bytes on any code path; the surrounding `except Exception: pass` swallows it silently, so the shallow-clone annotation is lost rather than the spec's \"a shallow clone is named in the detail\". Swallowing is safe for findings but hides the lost annotation.",
+          "suggestion": "Degrade explicitly (`except Exception: scope += \", shallow-clone check unavailable\"` or log) so the known-limit annotation failure is visible.  Verified non-issues worth noting: the regex genuinely returns `[]` for a list starting with a partial id (the lookahead kills the first id and no restart point exists after the verb); the SUPPRESS-default subparser trick correctly preserves the pre-verb value and lets the post-verb value win (AC2 fully covered, including both-given and cwd-default); the GC resolver and reader now share `initial_record` so AC3's agreement is structural, not incidental; the changed `test_triage_expected_status.py` test would fail under the old behavior (`mark_status` previously raised `StatusPreconditionError`), so it's a real behavioral test.  Overall: the three ACs are implemented and mostly pinned by tests that fail on regressions; findings are refinements. Ship-with-fixes at most — the registry test is the one I'd insist on.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-compliance/scripts/audit/group_g4.py",
+          "line": 43,
+          "finding": "The ID pattern has no trailing boundary, so `Fixes trg-aaaaaaaa0` is parsed as closing `trg-aaaaaaaa`. If that eight-digit card exists and is open, G4 reports a false finding; otherwise it emits an incorrect unknown-ID line. This violates the grammar requiring an eight-hex-digit ID.",
+          "suggestion": "Add a trailing identifier boundary to `_ID` so longer identifiers cannot match a valid prefix. Add negative fixtures for nine-digit IDs and IDs followed by identifier characters, including within closing lists.  Overall assessment: ship-with-fixes. The diff appears to cover all three acceptance criteria, but the token parser needs this correction before shipping.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-11T23:38:00.180337+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- Category: test\n  Severity: medium\n  File: plugins/shipwright-compliance/tests/test_audit_group_g4_close_tokens.py:123-126 (`test_registered_under_group_g`)\n  Finding: The test only asserts `\"G\" in audit_detector._GROUPS`. Group G was registered before this change too, so the test passes even if `group_g4` were never wired into `_group_g_combined` (or if the combined wrapper were deleted and the old `group_g.run` registered directly). It validates nothing about the new registration.\n  Suggestion: Assert that the registered \"G\" callable is the combined wrapper, or that a seeded G4 finding surfaces through `audit_detector` end-to-end (e.g., run the detector against the `_repo(..., None)` fixture and check a G4 finding appears).\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/lib/triage_status_normalize.py:31-40 (`initial_record`)\n  Finding: When the append line has no `id` key, `item_id` becomes the string `\"None\"` and is used both in the warning and the `_WARNED` dedupe key. Two different malformed records both missing ids collapse to one warning. Minor, but the message `append 'None'` is misleading.\n  Suggestion: Guard with `isinstance(item.get(\"id\"), str)` before warning/deduping, or surface the record's `ts`/`title` in the message instead.\n\n- Category: regression\n  Severity: low\n  File: shared/scripts/tools/triage_cli.py:187-191\n  Finding: `sp.add_argument(\"--project-root\", ...)` is added unconditionally to every subparser. If any existing subcommand (e.g., `amend`, or a future `list` variant) already defines `--project-root`, argparse raises `ArgumentError` at parser build time and the whole CLI dies. The tests only exercise `list`.\n  Suggestion: Skip subparsers that already define the option (check `sp._option_string_actions`), or at least add a smoke test that builds the parser and parses one arg per subcommand.\n\n- Category: edge-case\n  Severity: low\n  File: plugins/shipwright-compliance/scripts/audit/group_g4.py:36-42 ( […truncated]\n\n[openai] - Category: bug\n- Severity: medium\n- File: plugins/shipwright-compliance/scripts/audit/group_g4.py:43\n- Finding: The ID pattern has no trailing boundary, so `Fixes trg-aaaaaaaa0` is parsed as closing `trg-aaaaaaaa`. If that eight-digit card exists and is open, G4 reports a false finding; otherwise it emits an incorrect unknown-ID line. This violates the grammar requiring an eight-hex-digit ID.\n- Suggestion: Add a trailing identifier boundary to `_ID` so longer identifiers cannot match a valid prefix. Add negative fixtures for nine-digit IDs and IDs followed by identifier characters, including within closing lists.\n\nOverall assessment: ship-with-fixes. The diff appears to cover all three acceptance criteria, but the token parser needs this correction before shipping.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-12T00:21:22.560393+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-11T23:33:20.078118+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-11T23:33:20.215995+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

@@ -3195,6 +3195,21 @@ Two surfaces (plan v7 Option Z, 2026-04-19):
    iterate-2026-07-23-tests-skipped-tracking **re-enabled D4**: it now keys on
    genuine failures — `total - passed - skipped` — so a host-gated-skip gap no
    longer reads as a failing build, and D4 passes honestly.)
+   **G4 (closing token vs triage status, report only, MEDIUM):** a commit
+   message that says `closes|fixes|resolves [triage [card]] trg-<8 hex>`
+   (case-insensitive, verb-adjacent rather than line-anchored; further ids may
+   follow after `,` or `and`) is a finding when that card's resolved status is
+   still `triage` or `snoozed`. Not tokens: a partial close (`Fixes trg-X (first
+   half)`; write `Part of trg-X`), `Related:`, `supersedes`, `triage
+   trg-X` with no verb, `fixed here, filed as trg-X`, `deferred to triage
+   trg-X`; a subject starting `Revert "` is ignored. `dismissed` / `promoted`
+   are silent; an id absent from the store is an `info:` evidence line, never a
+   finding. Range: since the latest release tag, else the last 500 commits (the
+   detail says so); one `git log` call. G4 never appends a status (a finding is a normal MEDIUM `fail`: it turns the audit verdict red and feeds the compliance backlog card). Known misses: hard-wrapped bodies, backticked ids, `Closes: trg-X`, past tense, negation still matches, and the original commit of a later Revert stays in range. Known limit:
+   a status that exists only in the gitignored outbox is invisible to CI, and
+   a close left unresolved when a release tag is cut drops out of the range.
+   A git error is a `skip`, not a finding. Not listed in `gate_catalog.json`
+   (it lists gates, not audit checks). Module: `scripts/audit/group_g4.py`.
    Separately, **D5** now exempts iterate events whose `change_type` ∈
    `{tooling,compliance,infra,docs}` (parity with the `record_event` ADR-C.1
    gate), not just `spec_impact=none`.
