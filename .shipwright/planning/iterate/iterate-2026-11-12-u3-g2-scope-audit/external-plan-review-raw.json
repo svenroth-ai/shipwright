@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "## Findings\n\n- **Category: approach** \u2014 Severity: medium\n  **Finding**: The comma-split semantics aren't fully pinned down. \"Every part must be known; evidence lists each unknown part\" \u2014 but it's unclear whether a comma-joined scope is *tolerated* (parts evaluated individually, unknown parts flagged but known parts still counted) or whether one unknown part fails the whole scope. The plan implies per-part evaluation, but the existing behavior (whole-string lookup) may have treated a comma-joined string as simply unknown. Changing to per-part evaluation changes G2 outcomes for existing configurations that previously failed \u2014 this is a behavior change, not just a doc fix, and it should be stated explicitly.\n  **Suggestion**: Confirm against the campaign brief and card trg-5acb749f whether per-part tolerance is the intent. If yes, note in the changelog that previously-failing comma-joined scopes now pass when all parts are known.\n\n- **Category: edge-case** \u2014 Severity: medium\n  **Finding**: Splitting on commas interacts with brackets. Many GitLab/GitHub-style scopes contain commas inside `[]` (e.g., `read:repo[status,deployment]` or `api[read,write]`). A naive `split(\",\")` will incorrectly split bracketed scope names into bogus \"unknown parts.\"\n  **Suggestion**: If any known scope grammar includes brackets, split comma-aware with a bracket depth counter, or document that bracketed scopes are unsupported. If the project's scope list is provably bracket-free, add a test pinning that assumption.\n\n- **Category: edge-case** \u2014 Severity: low\n  **Finding**: Whitespace-only parts (\"a ,, b\") \u2014 the plan says trim and drop empty parts, which covers this, but doesn't address trailing commas being silently accepted. That's probably fine, but a doc test or test case for `\"a, b,,\"` would pin it.\n  **Suggestion**: Include the `\"a, b,\"` case in the new test file.\n\n- **Category: risk** \u2014 Severity: low\n  **Finding**: audit_detector.py:122-123 is presented as a comment, but the plan says \"Pinned by a doc test.\" If the false exemption sentence describes *runtime behavior* (e.g., an actual exemption list) rather than only prose, editing the comment won't change behavior and the exemption would persist.\n  **Suggestion**: Verify the exemption is prose-only. If there's any corresponding code path or config default producing the exemption, fix that too \u2014 otherwise the doc test pins text that contradicts actual behavior.\n\n- **Category: approach** \u2014 Severity: low\n  **Finding**: Extracting `scope_parts`/`unknown_scope_parts` into a new module to keep group_g.py at a \"bloat baseline\" of 373 lines is reasonable, but ensure the new module doesn't create a circular import or force group_g to re-export for existing tests. Keep the public surface minimal (two functions) and have group_g import from it.\n  **Suggestion**: One-way dependency: `g2_scopes.py` imports nothing from group_g; group_g imports from g2_scopes.\n\n- **Category: dependency** \u2014 Severity: low\n  **Finding**: The plan mentions updating hooks-and-pipeline.md and SKILL.md, but the exemption text may appear in other locations (README, changelog history, aliases, or the card text itself).\n  **Suggestion**: Grep for the exemption phrasing across docs before closing the cards; a single stale mention undermines the \"no automatic skip\" clarification.\n\n- **Category: security** \u2014 Severity: low\n  **Finding**: Comma-splitting broadens what counts as a \"known\" scope. If a downstream consumer assumes a granted scope string matches a known scope exactly (e.g., for authorization checks), a previously-rejected scope like `\"read:api, admin\"` now partially matches. Confirm G2 is audit/detection only, not an enforcement point.\n  **Suggestion**: Confirm G2 is advisory; if any consumer branches on G2 pass/fail, re-check that per-part tolerance doesn't loosen enforcement.\n\n## Overall Assessment\n\nSound, appropriately scoped plan; the main substantive risks are the bracket-comma edge case and confirming that per-part tolerance is the intended semantic rather than a silent behavior loosening. Address the bracket question and verify the exemption is prose-only before shipping.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "Review limited to the supplied specification and mini-plan: environment policy blocked reading the normative brief and current source.\n\n1. **Category:** edge-case  \n   **Severity:** low  \n   **Finding:** The test outline does not explicitly cover the required trimming and empty-part behavior. Inputs such as `\"known, ,unknown,\"` and `\", ,\"` could behave differently after extraction.  \n   **Suggestion:** Add parser cases for surrounding whitespace, repeated/trailing commas, and all-empty input. Preserve the existing behavior for absent scopes.\n\n2. **Category:** risk  \n   **Severity:** low  \n   **Finding:** The proposed tests do not explicitly verify that per-part checking retains the project\u2019s existing recognition rules. A regression here could flag scopes recognized through `g2_alias_map` or `g2_stoplist`, despite the corrected documentation recommending those settings.  \n   **Suggestion:** Reuse the existing recognition logic for each parsed part, and add integration cases for configured aliases, stoplist entries, and `disabled_checks: [\"G2\"]`.\n\nThe approach is sound and appropriately scoped: extracting parsing satisfies the stated file constraints, and correcting documentation without adding an automatic exemption follows the operator decision. The findings are test refinements; compliance with the unread campaign brief remains unverified.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-11-12-u3-g2-scope-audit",
+    "at": "2026-11-12T00:46:15.251083+00:00"
+  },
+  "verdicts": {
+    "glm": "revise",
+    "openai": "approve"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=approve"
+  }
+}

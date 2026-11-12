@@ -239,6 +239,11 @@ and A5 (group_a5) findings.
   (generic / cross-cutting scopes that don't map to a split).
 - `g2_alias_map` — split-name → variant list. A scope passes G2 when it
   matches any alias-map value or a known `splits[].name`.
+  G2 is never skipped automatically, not even for an adopted project whose only
+  split is `01-adopted`: declare the project's own `g2_alias_map` / `g2_stoplist`,
+  or set `disabled_checks: ["G2"]`. A project list replaces the default list, so
+  copy the default entries you still want. A comma-joined scope (`feat(daemon,lib):`)
+  is split on commas and every part must resolve; only unknown parts are flagged.
 - `b7_exclusions.exclude_merge_commits`, `exclude_authors`,
   `exclude_path_prefixes` — rule data for B7.
 - `b7_exclusions.last_release_tag_pattern` (default `v*`) — glob passed

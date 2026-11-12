@@ -119,8 +119,8 @@ _DEFAULT_CONFIG: dict[str, Any] = {
         # Map split slugs / component names to the conventional-commit
         # scope variants that should be treated as equivalent. A scope
         # passes G2 when it appears in the alias-map values OR matches a
-        # known split name from project_config.splits[].name. Adopted
-        # projects with no plan-config splits skip the match check.
+        # known split name from project_config.splits[].name. G2 is never skipped automatically;
+        # declare your own scopes here (replaces this default) or set disabled_checks: ["G2"].
         # Variants are scope identifiers, NOT directory paths.
         "auth": ["auth", "authentication", "authn", "authz"],
         "payments": ["payments", "billing"],
