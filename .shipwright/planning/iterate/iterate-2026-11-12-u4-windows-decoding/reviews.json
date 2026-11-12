@@ -112,49 +112,47 @@
         {
           "severity": "low",
           "category": "readability",
-          "file": "plugins/shipwright-security/tests/test_pr_review_local_diff.py",
+          "file": null,
           "line": null,
-          "finding": "diff_call selection by position; redundant assertion.",
-          "suggestion": "optional",
+          "finding": "test name promises a garbled-copy comparison it does not build; follow-up rename.",
+          "suggestion": null,
           "source": "code-reviewer"
         },
         {
           "severity": "low",
           "category": "readability",
-          "file": "shared/tests/test_check_required_checks_decoding.py",
+          "file": null,
           "line": null,
-          "finding": "test name says more than it does.",
-          "suggestion": "optional rename",
+          "finding": "diff_call picked by position; follow-up.",
+          "suggestion": null,
           "source": "code-reviewer"
         },
         {
           "severity": "low",
-          "category": "readability",
-          "file": "shared/scripts/tools/check_required_checks.py",
+          "category": "architecture",
+          "file": null,
           "line": null,
-          "finding": "_decode str passthrough exists for test fakes.",
-          "suggestion": "acceptable",
+          "finding": "_decode str passthrough exists for test fakes; no action.",
+          "suggestion": null,
           "source": "code-reviewer"
         },
         {
           "severity": "low",
-          "category": "readability",
-          "file": "plugins/shipwright-security/scripts/lib/pr_review_local.py",
+          "category": "architecture",
+          "file": null,
           "line": null,
-          "finding": "_git decode inline, not tolerant of str fakes.",
-          "suggestion": "no action",
+          "finding": "deleted old iterate record is the automatic retention eviction; not a defect.",
+          "suggestion": null,
           "source": "code-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-11-12T01:28:13.509280+00:00",
+      "completed_at": "2026-11-12T01:51:39.173969+00:00",
       "disposition": null,
       "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "4d88f90f18c3885a428455706fd8da9bc3371228"
+      "model_tier": "opus"
     },
     "doubt": {
       "review_type": "doubt",
@@ -162,8 +160,8 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-11-12T01:28:13.668570+00:00",
-      "disposition": "Stage 3 not triggered: no migration, concurrency, cross-plugin import or irreversible operation; behaviour change is subprocess decoding only",
+      "completed_at": "2026-11-12T01:51:39.316164+00:00",
+      "disposition": "Stage 3 is conditional and did not trigger for this diff; Stage 2 passed at 3f-bis",
       "recorded_by": "none",
       "parse_status": null,
       "raw_excerpt": null,
@@ -219,14 +217,12 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-11-12T01:24:42.880579+00:00",
+      "completed_at": "2026-11-12T01:51:39.030824+00:00",
       "disposition": null,
       "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "4d88f90f18c3885a428455706fd8da9bc3371228"
+      "model_tier": "opus"
     },
     "plan_internal": {
       "review_type": "plan_internal",
