@@ -22,6 +22,8 @@ JSX_SUFFIXES = (".tsx", ".jsx", ".js")  # JSX text is lexed for these only, neve
 UNBOUND_COVERS = "unbound-covers-comment"
 
 _DESCRIBE_RE = re.compile(r"\bdescribe(?:\.\w+)?\s*\(\s*(['\"`])(?P<title>.*?)\1")
+# A describe call that ends its statement on its own line: ``describe('x', () => {});``.
+_CLOSED_ON_LINE_RE = re.compile(r"\{.*\}\s*\)\s*;?\s*(?://.*)?$")
 
 
 def _describe_tokens(line: str, dtest: str, grammar, pending, same_line_covers, invalid):
@@ -88,6 +90,7 @@ def propagate_suite_tags(source: str, path: str, grammar, origin=None):
     pending: str | None = None           # leading // @covers ids awaiting the next line
     pending_at = 0
     depth = 0
+    opened_here = False
     lines = source.splitlines()
     deltas, linenos = origin or (brace_deltas(lines, path.lower().endswith(JSX_SUFFIXES)), None)
 
@@ -104,6 +107,7 @@ def propagate_suite_tags(source: str, path: str, grammar, origin=None):
             tokens = _describe_tokens(line, dtest, grammar, pending, same_line_covers, invalid)
             pending = None
             stack.append([depth, tokens, False])
+            opened_here = bool(_CLOSED_ON_LINE_RE.search(line[describe.end():]))
         elif decl:
             test = f"{path}::{decl.group('title')}"
             for _open_depth, tokens, _entered in stack:
@@ -120,6 +124,10 @@ def propagate_suite_tags(source: str, path: str, grammar, origin=None):
             pending = None
 
         depth += deltas[lineno - 1]
+        if describe and not decl and opened_here and depth <= stack[-1][0]:
+            # Body opened AND closed on this line: nothing inside to tag, never leak. The covers
+            # comment above it is BOUND (to the describe, a declaration), so no unbound warning.
+            stack.pop()
         for entry in stack:
             if depth > entry[0]:
                 entry[2] = True   # the describe body has opened — now poppable on close

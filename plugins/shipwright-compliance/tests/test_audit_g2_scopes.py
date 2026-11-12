@@ -44,6 +44,12 @@ def test_unknown_scope_parts_reports_only_the_unknown():
     assert unknown_scope_parts(",", known) == [","]
 
 
+def test_whole_string_stoplist_entry_still_matches():
+    assert unknown_scope_parts("daemon,lib", {"daemon,lib"}) == []
+    assert unknown_scope_parts(" daemon,lib ", {"daemon,lib"}) == []
+    assert unknown_scope_parts("daemon,lib,x", {"daemon,lib"}) == ["daemon", "lib", "x"]
+
+
 def _g2(tmp_path, subject):
     _git_init(tmp_path)
     _git_commit(tmp_path, {"a.txt": "v1"}, "initial")
@@ -78,8 +84,8 @@ def test_docs_promise_no_automatic_skip():
         encoding="utf-8")
     skill = (PLUGIN_ROOT / "skills/compliance/SKILL.md").read_text(
         encoding="utf-8")
-    assert "skip the match check" not in detector
-    assert 'disabled_checks' in detector and "g2_alias_map" in detector
     hooks = (REPO_ROOT / "docs/hooks-and-pipeline.md").read_text(encoding="utf-8")
-    assert "never skipped automatically" in skill
-    assert "never skipped automatically" in hooks and "never skipped automatically" in detector
+    for name, text in (("detector", detector), ("skill", skill), ("hooks doc", hooks)):
+        assert "skip the match check" not in text, name
+        assert "never skipped automatically" in text, name
+    assert "disabled_checks" in detector and "g2_alias_map" in detector

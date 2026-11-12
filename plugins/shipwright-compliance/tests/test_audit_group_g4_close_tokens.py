@@ -17,7 +17,7 @@ from scripts.audit.triage_bundle import _triage_api  # noqa: E402
 
 A, B, C = "trg-aaaaaaaa", "trg-bbbbbbbb", "trg-cccccccc"
 
-pytestmark = pytest.mark.covers("FR-01.14/AC03")
+pytestmark = pytest.mark.covers("FR-01.14")
 
 
 
@@ -108,6 +108,7 @@ def test_reports_seeded_close_without_status(tmp_path):
     assert (f.check_id, f.status, f.severity) == ("G4", "fail", "MEDIUM")
     assert any(card in e and "'triage'" in e for e in f.evidence)
     assert "since v1.0.0" in f.detail
+    assert card in f.detail  # actionable from the backlog card: ids are named
 
 
 def test_silent_when_status_exists(tmp_path):

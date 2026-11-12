@@ -3,8 +3,8 @@
 Two detective-only checks that scan commits since the latest release tag:
 
 - **G2** — Conventional-commit scope match. Each commit subject is parsed
-  for a conventional-commit ``type(scope):`` prefix; the scope must
-  resolve to either:
+  for a conventional-commit ``type(scope):`` prefix; each comma-joined part
+  (or the whole string, if listed as-is) must resolve to either:
     1. an entry in ``audit_config.json.g2_alias_map`` (canonical scope or
        alias), OR
     2. a known split name in ``shipwright_project_config.json.splits[]``,

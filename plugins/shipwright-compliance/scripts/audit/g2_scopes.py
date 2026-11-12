@@ -19,7 +19,11 @@ def unknown_scope_parts(scope: str, known: Collection[str]) -> list[str]:
     """Return the parts of ``scope`` not in ``known``, in order of appearance.
 
     A scope with no usable part (``","``) is itself unknown: it names nothing.
+    A whole scope string that is itself known (a stoplist or alias entry such as
+    ``"daemon,lib"``) is accepted as written, before any splitting.
     """
+    if scope.strip() in known:
+        return []
     parts = scope_parts(scope)
     if not parts:
         return [scope]

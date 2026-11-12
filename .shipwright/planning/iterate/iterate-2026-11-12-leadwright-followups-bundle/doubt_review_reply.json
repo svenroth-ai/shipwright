@@ -1,0 +1,5 @@
+{"stage":"doubt","gating":"advisory-must-address","doubts":[
+{"severity":"medium","claim_under_doubt":"lexer fix drops a covers comment on a one-line empty describe without a report","what_would_resolve_it":"addressed by written reason: the comment is bound to the describe itself (a declaration); the existing contract test test_covers_directly_above_a_declaration_gives_no_warning[describe('s', () => {});] requires no warning; code comment added at the pop site; reporting it would contradict that contract"},
+{"severity":"low","claim_under_doubt":"leak fixed only for one exact one-line shape","what_would_resolve_it":"accepted: trailing-arg/comment forms are a follow-up; depth guard prevents false pops"},
+{"severity":"low","claim_under_doubt":"FR-level tag honest","what_would_resolve_it":"none needed; AC03 coverage remains in test_triage_promote/test_triage_cli"},
+{"severity":"low","claim_under_doubt":"G2 short-circuit cannot hide an unknown part","what_would_resolve_it":"accepted: spacing-sensitive whole-string match is an explicit operator opt-out; per-part check still applies"}]}
