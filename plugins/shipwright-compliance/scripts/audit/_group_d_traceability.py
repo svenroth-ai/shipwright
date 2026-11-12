@@ -51,7 +51,7 @@ from scripts.audit._group_d_render import (
     UNBOUND_COVERS_REASON,
     unbound_covers_line,
     ADVISORY_LAYER_REASONS,
-    _EMPTY_SKIP,
+    EMPTY_SKIP,
     fold_defect_line,
     invalid_layer_line,
     invalid_tag_line,
@@ -233,7 +233,7 @@ def check_layer(manifest: dict) -> tuple[str, str, str, list[str], str | None]:
     # that asserts a positive FACT about coverage. Over an empty requirement set
     # it is vacuously true and indistinguishable from a fully-covered project.
     if not reqs:
-        return _EMPTY_SKIP
+        return EMPTY_SKIP
     return "pass", "LOW", "every active FR is covered at its required layers", [], None
 
 

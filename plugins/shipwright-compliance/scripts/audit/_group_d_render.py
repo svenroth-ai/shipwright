@@ -121,7 +121,7 @@ def invalid_layer_line(iv: dict) -> str:
 
 
 __all__ = [
-    "UNBOUND_COVERS_REASON", "fold_defect_line", "invalid_layer_line", "invalid_tag_line", "unbound_covers_line", "layer_gap_line",
+    "EMPTY_SKIP", "UNBOUND_COVERS_REASON", "fold_defect_line", "invalid_layer_line", "invalid_tag_line", "unbound_covers_line", "layer_gap_line",
     "orphan_line", "suggest_layer", "suggest_orphan",
 ]
 
@@ -143,7 +143,7 @@ __all__ = [
 #: requirement". The wider predicate also swallowed the case where every
 #: requirement has been retired, which is a different (and separately tested)
 #: behaviour: there the check did examine a set and correctly found nothing owed.
-_EMPTY_SKIP = ("skip", "MEDIUM",
+EMPTY_SKIP = ("skip", "MEDIUM",
                "manifest declares no requirement — nothing was examined "
                "(a green verdict here would be a claim about an empty set)",
                [], None)
