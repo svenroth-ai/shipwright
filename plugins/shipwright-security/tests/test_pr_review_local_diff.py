@@ -152,3 +152,52 @@ class TestBuildLocalDiff:
         diff, error = pr_review_local.build_local_diff(tmp_path, base_sha)
         assert error == ""
         assert not marker.exists(), "the locally-configured clean filter must never run"
+
+
+class TestDiffDecoding:
+    """The diff call captures BYTES: no locale codec, no CR -> LF translation."""
+
+    def test_git_calls_capture_bytes_and_keep_a_lone_cr(self, monkeypatch, tmp_path):
+        seen: list[dict] = []
+        diff_bytes = "diff --git a/f b/f\n+caf\u00e9 \u2014 x\rdiff --git a/fake b/fake\n".encode("utf-8")
+
+        def _fake_run(argv, **kwargs):
+            seen.append(kwargs)
+            out = b"abc123\n" if "merge-base" in argv else (diff_bytes if "diff" in argv else b"")
+            return subprocess.CompletedProcess(argv, 0, out, b"")
+
+        monkeypatch.setattr(pr_review_local.subprocess, "run", _fake_run)
+        text, err = pr_review_local.build_local_diff(tmp_path, "main")
+        assert err == ""
+        assert text == diff_bytes.decode("utf-8")
+        assert "\r" in text and text.count("\ndiff --git") == 0 or "\r" in text
+        diff_call = [k for k in seen][-1]
+        assert not diff_call.get("text") and "encoding" not in diff_call
+
+    def test_filter_key_probe_declares_utf8(self, monkeypatch, tmp_path):
+        seen: list[dict] = []
+
+        def _fake_run(argv, **kwargs):
+            seen.append(kwargs)
+            return subprocess.CompletedProcess(argv, 0, "", "")
+
+        monkeypatch.setattr(pr_review_local.subprocess, "run", _fake_run)
+        pr_review_local._no_filter_overrides(tmp_path, {})
+        assert seen[0]["encoding"] == "utf-8"
+
+    def test_real_git_diff_utf8_and_lone_cr_byte_exact_under_non_utf8_mode(self, tmp_path):
+        _repo_with_branch_history(tmp_path)
+        (tmp_path / "u.txt").write_bytes("caf\u00e9 \u2014 a\rb\n".encode("utf-8"))
+        code = (
+            "import sys; from pathlib import Path; "
+            f"sys.path.insert(0, {str(PLUGIN_ROOT / 'scripts' / 'lib')!r}); "
+            "import pr_review_local as m; "
+            f"t, e = m.build_local_diff(Path({str(tmp_path)!r}), 'main'); "
+            "sys.stdout.buffer.write(('E=' + e + '|' + t).encode('utf-8'))"
+        )
+        env = {**_GIT_ENV, "PYTHONUTF8": "0", "PYTHONIOENCODING": "utf-8"}
+        proc = subprocess.run([sys.executable, "-c", code], env=env, capture_output=True, cwd=str(tmp_path))
+        assert proc.returncode == 0, proc.stderr
+        out = proc.stdout.decode("utf-8")
+        assert out.startswith("E=|"), out[:200]
+        assert "caf\u00e9 \u2014 a\rb" in out

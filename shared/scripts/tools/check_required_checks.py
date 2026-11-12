@@ -62,6 +62,11 @@ class GhError(RuntimeError):
         self.status = status
 
 
+def _decode(raw: bytes | str | None) -> str:
+    """UTF-8 text from captured bytes, no newline translation (a str passes through)."""
+    return raw if isinstance(raw, str) else (raw or b"").decode("utf-8", "replace")
+
+
 def _gh(args: list[str]) -> str:
     """Run `gh` and return stdout, or raise GhError.
 
@@ -71,7 +76,12 @@ def _gh(args: list[str]) -> str:
     documented exit 2.
     """
     try:
-        proc = subprocess.run(["gh", *args], capture_output=True, text=True, timeout=60)
+        # BYTES, decoded explicitly: `text=True` decodes with the locale codec
+        # (cp1252 on Windows), which garbles a non-ASCII check name into a
+        # different string so the drift comparison flags it twice.
+        proc = subprocess.run(["gh", *args], capture_output=True, timeout=60)
+        proc.stdout = _decode(proc.stdout)
+        proc.stderr = _decode(proc.stderr)
     except FileNotFoundError as exc:
         raise GhError(
             "`gh` is not installed or not on PATH. Install the GitHub CLI and "
@@ -93,7 +103,7 @@ def resolve_repo(project_root: Path) -> str:
     try:
         out = subprocess.run(
             ["git", "-C", str(project_root), "remote", "get-url", "origin"],
-            capture_output=True, text=True, timeout=30,
+            capture_output=True, encoding="utf-8", errors="replace", timeout=30,
         )
     except (OSError, subprocess.TimeoutExpired) as exc:
         raise RuntimeError(f"could not run `git` to resolve the origin remote: {exc}") from exc
