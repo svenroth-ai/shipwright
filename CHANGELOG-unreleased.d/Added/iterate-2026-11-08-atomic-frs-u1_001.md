@@ -1,1 +1,0 @@
-feat(requirements): scope rule 'can this FR still be split' (fr-authoring section 3c), advisory audit check I10 and fr_cluster_report.py list splittable FRs with test/file/wording evidence, and the project skill now blocks finishing an FR until it passes the capability test and fr_scope_check.py

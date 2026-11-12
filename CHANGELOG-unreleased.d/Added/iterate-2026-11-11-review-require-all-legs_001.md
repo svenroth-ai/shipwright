@@ -1,1 +1,0 @@
-External review reports `reviews_expected` and `missing_legs` next to `reviews_succeeded`, and `external_review.require_all_legs` (or `--require-all-legs` / `--min-reviews N`) makes a pass with fewer answering reviewers exit 1 with `success: false`; a one-reviewer pass is recorded in the review state as completed plus a `partial` marker (issue #1035).

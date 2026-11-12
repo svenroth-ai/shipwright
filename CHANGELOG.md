@@ -5,6 +5,49 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.36.0] - 2026-11-12
+
+### Added
+
+- feat(iterate): every iterate records what it promises before it is built; whether anything observable changed is computed from the diff, and the operator confirms one plain question (the requirement by name, ask / auto / off per project or campaign) only when an existing promise changes or goes away or no single requirement owns the new one - in a hands-off run Shipwright decides and lists every assignment it made without you
+- feat(iterate): after the build, the spec-reviewer checks each added or changed acceptance criterion against the code (matches or diverges, with the line); F11 reports it as a warning only and says when no AC review ran (ac-at-start Q2, phase 1)
+- feat(requirements): scope rule 'can this FR still be split' (fr-authoring section 3c), advisory audit check I10 and fr_cluster_report.py list splittable FRs with test/file/wording evidence, and the project skill now blocks finishing an FR until it passes the capability test and fr_scope_check.py
+- fr_split tool: cuts one oversized requirement into several with a dry run, a hard conservation check (every criterion exactly once, tags, coverage baseline, traceability manifest) and a ## AC-Move-Map so old criterion ids stay resolvable (atomic-frs U2)
+- The keystone AC gate, the pre-build AC check, ac_history and fr_history now follow the AC-Move-Map, so a criterion moved by fr_split is not reported as removed and added; fr_split also checks new FR numbers against origin/main and lists copied table rows and FR-level test files (atomic-frs U2b-prep)
+- A guide for plugin authors, `docs/building-skills-plugins-agents.md`, states which steps of a skill belong in code and which go to the AI, and that every AI step gets a chosen fallback.
+- feat(e2e): fork an earlier e2e run at a phase boundary (fork_run.py) and stop after a phase (SHIPWRIGHT_E2E_STOP_AFTER), so one area is replayed in about an hour instead of a ten-hour run; the resume identity is now the git trees of plugins/ and shared/, and the harness reads the Claude token from the env file itself
+- Releases now fold old per-run event files into the archive on their own, in a commit of their own; a fold that cannot finish puts everything back and never stops the release.
+- External review reports `reviews_expected` and `missing_legs` next to `reviews_succeeded`, and `external_review.require_all_legs` (or `--require-all-legs` / `--min-reviews N`) makes a pass with fewer answering reviewers exit 1 with `success: false`; a one-reviewer pass is recorded in the review state as completed plus a `partial` marker (issue #1035).
+- external_review.gpt_leg.routes: an ordered, opt-in list of GPT-reviewer routes (codex, openrouter, direct) that falls through when a route is unavailable or fails at runtime, recording every attempt (#1034)
+- main_health.py prints one warning when 150 or more event files are open in shipwright_events.d/, naming the manual fold command (advisory, never changes the exit code, silent on the legacy layout)
+- feat(compliance): audit check G4 reports a commit that says it closes a triage card (closes/fixes/resolves trg-...) while the card is still open; report only, since the last release tag
+
+### Changed
+
+- Build, Plan and Test learn four rules from e2e run 27: a local server's tests use a free port and a set listen queue plus one page-load burst test, a spec quotes a brief requirement instead of rewording it, a screenshot fail caused by a brief-required element is settled by rule, and the Test phase fixes a bug it finds instead of asking.
+- The deterministic-first programme brief (rev 5) and the changelog pilot brief are final: promise tests frozen per test are the change control, and the pilot starts right after the event-file flip.
+- Corrected the per-run event files notes: a plugin from before v0.35.0 does not stop on a repo that uses them, it silently keeps appending to the single event log, so every machine must be updated before the layout is switched on (docs/hooks-and-pipeline.md).
+- Requirement catalog: the dangerous-command guard criterion in FR-01.05 no longer promises that a failure of the guard never blocks work; it now says that when the precise check cannot decide, a coarser fallback errs towards stopping a forced push that mentions the main branch
+- The deterministic-first programme and changelog pilot briefs record that the fork tool, the code-versus-AI convention (now in `docs/`) and the Q1 order-check fix are merged.
+- The Shipwright repository now records its events one file per run, so parallel branches no longer conflict in the event log. The documentation for the layout was rewritten for users: how to switch a repo, what must be true first, how to roll back and when to fold.
+- The user guide now points to the per-run event file layout (how a repo opts in and what must be true first). Two test docstrings no longer call the layout dormant.
+- The iterate skill's finalization steps and the verifier's fix hint now cover both the single-file and the per-run event layout.
+
+### Fixed
+
+- Per-run event files: a retried event is no longer written twice, attaching the same commit twice no longer adds a second amendment, and sealing the main tree's event files no longer stops completely because of one damaged file (the damaged one is named and left behind). Nothing changes until the layout is switched on.
+- fix(iterate): the per-AC post-build check now also reaches the campaign runner / 3f-bis review path and the Codex-CLI driver, which used to print 'no AC review ran' on every run; both build the claims file and hand it to the spec-reviewer (warning only, unchanged when a run has no AC items)
+- The pre-build AC record check no longer warns that the record came after the code on branches with several commits when it did not.
+- Per-run event files: every tool now agrees on what a valid file name is, a run's events keep their order when a new file is started, and a half-written file is no longer appended to (the next event starts a new file).
+- The adopt event seeder writes LF line endings on Windows, and the adopt verifier's A7 message names both shipwright_events.jsonl and shipwright_events.d/
+- fix(compliance): suite-level requirement tags now scope by the shared lexer's brace count (braces in strings, regexes, comments and templates no longer end a suite early or leave it open); a covers comment that reaches no test or describe is reported as a warning; the untagged-modified stop names both remedies. Consumers: RTM coverage counts can move after upgrading (down where a double count disappears, up where a binding was lost)
+- fix(tools): the finalization verifier and the release-notes tools carry their own package list, so a plain uv run works from any folder without hand-added packages
+- Audit G2 keeps matching a comma-joined stoplist entry such as daemon,lib; G4 names up to five open card ids and the right audit for the outbox limit
+- The suite-tag lexer no longer hands a one-line describe's FR tag to later tests
+- fix(triage): triage_cli accepts --project-root before or after the subcommand; an append with a missing, null or unknown status now reads as triage with a warning instead of being unusable
+- fix(compliance): audit check G2 judges each part of a comma-joined commit scope (feat(daemon,lib):) on its own and names only the unknown parts, so a scope list whose parts are all known now passes; the audit docs no longer promise that G2 is skipped automatically for adopted projects - use disabled_checks [G2] or the project's own g2_alias_map / g2_stoplist
+- fix(decoding): the local PR-review diff and the required-checks drift detector read git/gh output as UTF-8 bytes, so non-ASCII check names and lone CRs survive on Windows; verifier text now says a late plan stub or AC record cannot be cleared in that run
+
 ## [0.35.0] - 2026-11-07
 
 ### Added

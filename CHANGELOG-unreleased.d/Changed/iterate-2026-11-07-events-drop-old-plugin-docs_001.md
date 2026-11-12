@@ -1,1 +1,0 @@
-Corrected the per-run event files notes: a plugin from before v0.35.0 does not stop on a repo that uses them, it silently keeps appending to the single event log, so every machine must be updated before the layout is switched on (docs/hooks-and-pipeline.md).

@@ -1,1 +1,0 @@
-- (2026-11-12) iterate/triage — `triage_integrity.is_triage_record` is consulted only by boundary resync, so a status-less append is fixed on the read side (`triage_status_normalize.initial_record`, used by `read_all_items` AND the GC resolver), not by a looser predicate; "closes trg-X" checks must skip partial closes ("Part of trg-X"). → iterate-2026-11-12-u2-triage-consistency

@@ -1,1 +1,0 @@
-- (2026-11-12) iterate/audit — a comment that promises behaviour (adopted projects skip G2) outlived the code that never had it; when an audit rule looks wrong for a project class, the fix is text pointing to the explicit opt-out (disabled_checks), never a hidden auto-skip. → iterate-2026-11-12-u3-g2-scope-audit

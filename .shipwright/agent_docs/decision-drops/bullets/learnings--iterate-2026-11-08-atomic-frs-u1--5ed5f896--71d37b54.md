@@ -1,1 +1,0 @@
-- (2026-11-08) atomic-frs — a cluster check over a real catalog needs a first run on it: singletons-as-groups and test ids inside string literals made 19 of 21 FRs look splittable; evidence from comments/decorators only and groups of >=3 gave 4. [→ iterate-2026-11-08-atomic-frs-u1]

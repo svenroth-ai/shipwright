@@ -1,1 +1,0 @@
-Build, Plan and Test learn four rules from e2e run 27: a local server's tests use a free port and a set listen queue plus one page-load burst test, a spec quotes a brief requirement instead of rewording it, a screenshot fail caused by a brief-required element is settled by rule, and the Test phase fixes a bug it finds instead of asking.
