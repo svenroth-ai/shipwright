@@ -1,0 +1,97 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-12-u3-g2-scope-audit",
+    "date": "2026-11-12",
+    "unit": {
+      "status": "passed",
+      "passed": 2221,
+      "skipped": 5,
+      "total": 2226
+    },
+    "integration": {
+      "status": "not_run",
+      "passed": 0,
+      "skipped": 0,
+      "total": 0
+    },
+    "pgtap": {
+      "status": "not_run",
+      "passed": 0,
+      "skipped": 0,
+      "total": 0
+    },
+    "e2e": {
+      "status": "not_run",
+      "passed": 0,
+      "skipped": 0,
+      "total": 0
+    },
+    "design_fidelity": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "scope_parts splits on commas, trims, drops empty parts",
+          "disposition": "tested",
+          "evidence": "test_audit_g2_scopes.py::test_scope_parts PASSED"
+        },
+        {
+          "behavior": "unknown_scope_parts reports only unknown parts; unusable scope is itself unknown",
+          "disposition": "tested",
+          "evidence": "test_audit_g2_scopes.py::test_unknown_scope_parts_reports_only_the_unknown PASSED"
+        },
+        {
+          "behavior": "G2: known+known passes; known+unknown flags only the unknown part; every unknown part listed",
+          "disposition": "tested",
+          "evidence": "test_audit_g2_scopes.py::test_known_plus_known_passes,test_known_plus_unknown_flags_only_the_unknown_part,test_every_unknown_part_is_listed PASSED"
+        },
+        {
+          "behavior": "single-scope G2 behaviour unchanged",
+          "disposition": "tested",
+          "evidence": "test_audit_group_g.py (17 tests) PASSED"
+        },
+        {
+          "behavior": "audit docs promise no automatic G2 skip",
+          "disposition": "tested",
+          "evidence": "test_audit_g2_scopes.py::test_docs_promise_no_automatic_skip PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 5,
+        "tested": 5,
+        "untestable": 0,
+        "untested_testable": 0
+      }
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run python plugins/shipwright-compliance/scripts/audit/run_audit.py --project-root . --only G --format json",
+      "exit_code": 0,
+      "tests_run": 1,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\campaign-leadwright-followups--U3\\.shipwright\\runs\\iterate-2026-11-12-u3-g2-scope-audit\\surface_verification.log",
+      "timestamp": "2026-11-12T00:47:10.128Z",
+      "attempts": 1
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-24-r5b-merge-lane",
+    "commit": "032d1ebbf0ef9c99eb98f240c8f1110e981a32a5",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

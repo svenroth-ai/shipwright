@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-12-u3-g2-scope-audit",
+  "date": "2026-11-12",
+  "section": "Iterate — change: audit G2 scope handling",
+  "title": "G2 judges each comma part; no automatic skip",
+  "context": "A comma-joined commit scope read as one unknown token, and a source comment promised G2 skips adopted projects, which it never did (adopted projects declare one split, 01-adopted).",
+  "decision": "Split a scope on commas and judge each part in a new module g2_scopes.py; evidence lists only unknown parts. Fix the false text and point to disabled_checks G2 or the project's own g2_alias_map / g2_stoplist.",
+  "consequences": "Scopes whose parts are all known now pass. A project list replaces the default list (documented). G2 for single scopes is unchanged.",
+  "rationale": "Operator decision 3.4: disabling a check stays an explicit declaration. Architecture review (GLM, GPT, internal) approved; external plan review revise points answered in the record.",
+  "rejected": "Automatic skip when only the adopted split exists (hidden rule, silent check-off); keep comma scopes as one token.",
+  "commit": "",
+  "architecture_impact": "convention",
+  "spec_ref": ""
+}

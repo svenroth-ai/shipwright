@@ -1,0 +1,1 @@
+fix(compliance): audit check G2 judges each part of a comma-joined commit scope (feat(daemon,lib):) on its own and names only the unknown parts, so a scope list whose parts are all known now passes; the audit docs no longer promise that G2 is skipped automatically for adopted projects - use disabled_checks [G2] or the project's own g2_alias_map / g2_stoplist

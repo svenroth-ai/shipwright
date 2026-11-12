@@ -1,0 +1,9 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"AC1-AC3 of the run spec each covered by a test; no automatic skip added."},
+{"name":"Error Handling","verdict":"pass","note":"a scope with no usable part is itself reported unknown, never vacuously known."},
+{"name":"Security Basics","verdict":"pass","note":"commit text only parsed in memory; G2 is detective-only, no enforcement point loosened."},
+{"name":"Test Quality","verdict":"pass","note":"parser cases incl. trailing commas, known+known, known+unknown, all unknown, doc pins for three files."},
+{"name":"Performance Basics","verdict":"pass","note":"one split per commit subject."},
+{"name":"Naming & Structure","verdict":"pass","note":"new module g2_scopes.py, new test file; group_g.py stays at 373, audit_detector.py at its 353 baseline."},
+{"name":"Affected Boundaries","verdict":"pass","note":"no serialized format changed; commit subject parsed in memory, probed through real git repos in tests."},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"no skips, no mocks of the unit under test."}]}

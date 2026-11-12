@@ -43,6 +43,7 @@ from scripts.audit.audit_adapters import (
     load_shared_lib,
 )
 from scripts.audit import git_log_scan
+from scripts.audit.g2_scopes import unknown_scope_parts
 
 
 adr_headers = load_shared_lib("adr_headers")
@@ -213,9 +214,8 @@ def _check_g2(
             # commitlint hooks).
             continue
         examined += 1
-        if cs.scope in known:
-            continue
-        unmatched.append((cs.sha, cs.scope, cs.full_subject))
+        if bad := unknown_scope_parts(cs.scope, known):
+            unmatched.append((cs.sha, ",".join(bad), cs.full_subject))
 
     if examined == 0:
         return "skip", (

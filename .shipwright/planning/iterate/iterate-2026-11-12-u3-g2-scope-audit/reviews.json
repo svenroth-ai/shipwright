@@ -1,0 +1,272 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-12-u3-g2-scope-audit",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-12T00:51:44.278156+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The comma-split semantics aren't fully pinned down. \"Every part must be known; evidence lists each unknown part\" — but it's unclear whether a comma-joined scope is tolerated (parts evaluated individually, unknown parts flagged but known parts still counted) or whether one unknown part fails the whole scope. The plan implies per-part evaluation, but the existing behavior (whole-string lookup) may have treated a comma-joined string as simply unknown. Changing to per-part evaluation changes G2 outcomes for existing configurations that previously failed — this is a behavior change, not just a doc fix, and it should be stated explicitly.",
+          "suggestion": "Confirm against the campaign brief and card trg-5acb749f whether per-part tolerance is the intent. If yes, note in the changelog that previously-failing comma-joined scopes now pass when all parts are known.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Splitting on commas interacts with brackets. Many GitLab/GitHub-style scopes contain commas inside `[]` (e.g., `read:repo[status,deployment]` or `api[read,write]`). A naive `split(\",\")` will incorrectly split bracketed scope names into bogus \"unknown parts.\"",
+          "suggestion": "If any known scope grammar includes brackets, split comma-aware with a bracket depth counter, or document that bracketed scopes are unsupported. If the project's scope list is provably bracket-free, add a test pinning that assumption.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Whitespace-only parts (\"a ,, b\") — the plan says trim and drop empty parts, which covers this, but doesn't address trailing commas being silently accepted. That's probably fine, but a doc test or test case for `\"a, b,,\"` would pin it.",
+          "suggestion": "Include the `\"a, b,\"` case in the new test file.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "audit_detector.py:122-123 is presented as a comment, but the plan says \"Pinned by a doc test.\" If the false exemption sentence describes runtime behavior (e.g., an actual exemption list) rather than only prose, editing the comment won't change behavior and the exemption would persist.",
+          "suggestion": "Verify the exemption is prose-only. If there's any corresponding code path or config default producing the exemption, fix that too — otherwise the doc test pins text that contradicts actual behavior.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Extracting `scope_parts`/`unknown_scope_parts` into a new module to keep group_g.py at a \"bloat baseline\" of 373 lines is reasonable, but ensure the new module doesn't create a circular import or force group_g to re-export for existing tests. Keep the public surface minimal (two functions) and have group_g import from it.",
+          "suggestion": "One-way dependency: `g2_scopes.py` imports nothing from group_g; group_g imports from g2_scopes.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan mentions updating hooks-and-pipeline.md and SKILL.md, but the exemption text may appear in other locations (README, changelog history, aliases, or the card text itself).",
+          "suggestion": "Grep for the exemption phrasing across docs before closing the cards; a single stale mention undermines the \"no automatic skip\" clarification.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "Comma-splitting broadens what counts as a \"known\" scope. If a downstream consumer assumes a granted scope string matches a known scope exactly (e.g., for authorization checks), a previously-rejected scope like `\"read:api, admin\"` now partially matches. Confirm G2 is audit/detection only, not an enforcement point.",
+          "suggestion": "Confirm G2 is advisory; if any consumer branches on G2 pass/fail, re-check that per-part tolerance doesn't loosen enforcement.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The test outline does not explicitly cover the required trimming and empty-part behavior. Inputs such as `\"known, ,unknown,\"` and `\", ,\"` could behave differently after extraction.",
+          "suggestion": "Add parser cases for surrounding whitespace, repeated/trailing commas, and all-empty input. Preserve the existing behavior for absent scopes.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The proposed tests do not explicitly verify that per-part checking retains the project’s existing recognition rules. A regression here could flag scopes recognized through `g2_alias_map` or `g2_stoplist`, despite the corrected documentation recommending those settings.",
+          "suggestion": "Reuse the existing recognition logic for each parsed part, and add integration cases for configured aliases, stoplist entries, and `disabled_checks: [\"G2\"]`.  The approach is sound and appropriately scoped: extracting parsing satisfies the stated file constraints, and correcting documentation without adding an automatic exemption follows the operator decision. The findings are test refinements; compliance with the unread campaign brief remains unverified.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-12T00:46:53.567338+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: approach** — Severity: medium\n  **Finding**: The comma-split semantics aren't fully pinned down. \"Every part must be known; evidence lists each unknown part\" — but it's unclear whether a comma-joined scope is *tolerated* (parts evaluated individually, unknown parts flagged but known parts still counted) or whether one unknown part fails the whole scope. The plan implies per-part evaluation, but the existing behavior (whole-string lookup) may have treated a comma-joined string as simply unknown. Changing to per-part evaluation changes G2 outcomes for existing configurations that previously failed — this is a behavior change, not just a doc fix, and it should be stated explicitly.\n  **Suggestion**: Confirm against the campaign brief and card trg-5acb749f whether per-part tolerance is the intent. If yes, note in the changelog that previously-failing comma-joined scopes now pass when all parts are known.\n\n- **Category: edge-case** — Severity: medium\n  **Finding**: Splitting on commas interacts with brackets. Many GitLab/GitHub-style scopes contain commas inside `[]` (e.g., `read:repo[status,deployment]` or `api[read,write]`). A naive `split(\",\")` will incorrectly split bracketed scope names into bogus \"unknown parts.\"\n  **Suggestion**: If any known scope grammar includes brackets, split comma-aware with a bracket depth counter, or document that bracketed scopes are unsupported. If the project's scope list is provably bracket-free, add a test pinning that assumption.\n\n- **Category: edge-case** — Severity: low\n  **Finding**: Whitespace-only parts (\"a ,, b\") — the plan says trim and drop empty parts, which covers this, but doesn't address trailing commas being silently accepted. That's probably fine, but a doc test or test case for `\"a, b,,\"` would pin it.\n  **Suggestion**: Include the `\"a, b,\"` case in the new test file.\n\n- **Category: risk** — Severity: low\n  **Finding**: audit_detector.py:122-123 is presented as a comment, but the […truncated]\n\n[openai] Review limited to the supplied specification and mini-plan: environment policy blocked reading the normative brief and current source.\n\n1. **Category:** edge-case  \n   **Severity:** low  \n   **Finding:** The test outline does not explicitly cover the required trimming and empty-part behavior. Inputs such as `\"known, ,unknown,\"` and `\", ,\"` could behave differently after extraction.  \n   **Suggestion:** Add parser cases for surrounding whitespace, repeated/trailing commas, and all-empty input. Preserve the existing behavior for absent scopes.\n\n2. **Category:** risk  \n   **Severity:** low  \n   **Finding:** The proposed tests do not explicitly verify that per-part checking retains the project’s existing recognition rules. A regression here could flag scopes recognized through `g2_alias_map` or `g2_stoplist`, despite the corrected documentation recommending those settings.  \n   **Suggestion:** Reuse the existing recognition logic for each parsed part, and add integration cases for configured aliases, stoplist entries, and `disabled_checks: [\"G2\"]`.\n\nThe approach is sound and appropriately scoped: extracting parsing satisfies the stated file constraints, and correcting documentation without adding an automatic exemption follows the operator decision. The findings are test refinements; compliance with the unread campaign brief remains unverified.\n\nSHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "approve"
+      },
+      "model_tier": "opus"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "A g2_stoplist/g2_alias_map entry containing a comma (e.g. 'daemon,lib') no longer matches as a whole string. Edge, accepted for this PR; follow-up: whole-string short-circuit in unknown_scope_parts plus one test.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": null,
+          "line": null,
+          "finding": "group_g.py G2 module docstring still singular; follow-up.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "two doc assertions in test_audit_g2_scopes.py were already true at merge-base; follow-up.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": null,
+          "line": null,
+          "finding": "assert on 'auth' in detail depends on detail format; follow-up.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": null,
+          "line": null,
+          "finding": "deleted 2026-09-20 iterate records are the automatic retention eviction; not a defect.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-12T01:01:38.124276+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-12T01:01:38.266004+00:00",
+      "disposition": "Stage 3 is conditional and did not trigger for this diff; Stage 2 passed at 3f-bis",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "diff-below-threshold"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "test",
+          "file": "plugins/shipwright-compliance/tests/test_audit_g2_scopes.py:76–78 (`test_known_plus_unknown_flags_only_the_unknown_part`)",
+          "line": null,
+          "finding": "The test asserts `\"auth\" not in g2.detail`, but the G2 evidence appends `cs.full_subject` (group_g.py:221 appends the 3-tuple `(sha, scope, full_subject)` to `unmatched`), and the fixture subject is `\"feat(auth,daemon): half known\"`. If the finding detail renders the subject line (as G2 findings typically do), the string `\"auth\"` will appear via the subject and the assertion will fail — or, if the detail format omits subjects today, the test passes for the wrong reason and will break on any later detail-format change. The assertion doesn't validate \"only unknown parts flagged\"; it depends on the subject text coincidentally not containing \"auth\", which it does contain.",
+          "suggestion": "Assert on the extracted scope field instead, e.g. check `\"scope='daemon'\"` appears and there is no second scope entry (count occurrences or assert `\"scope='auth'\"` not in detail), and/or use a subject that doesn't contain the known scope name (e.g. `\"feat(auth,daemon): add feature\"` — still contains \"auth\"; pick `\"feat(auth,daemon): tweak\"` is fine but better to match on `scope='...'` tokens).",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "plugins/shipwright-compliance/scripts/audit/g2_scopes.py:22–26 / group_g.py:217–221",
+          "line": null,
+          "finding": "When a scope is entirely unparsable (`\",\"`), `unknown_scope_parts` returns `[scope]` i.e. `[\",\"]`, and the evidence line becomes `scope=','` — indistinguishable from a scope literally named `,`. More importantly, the walrus `if bad := ...` treats the empty-string case correctly, but `cs.scope` is passed straight in; if a commit has a whitespace-only scope like `\" \"` (some tools emit this), `scope_parts` drops it and the evidence shows the raw whitespace scope. Minor, but the \"names nothing\" fallback returning the raw string can produce confusing evidence for weird-but-real conventional-commit inputs like `\" ,\"` or `\" , , \"`.",
+          "suggestion": "For the no-usable-part case, return a stable placeholder (e.g. the stripped scope, or a literal marker like `\"(empty scope)\"`) so the evidence is unambiguous; at minimum confirm `\",\"`-only scopes don't collide with a legitimate alias.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "plugins/shipwright-compliance/tests/test_audit_g2_scopes.py:83 (`test_docs_promise_no_automatic_skip`)",
+          "line": null,
+          "finding": "The final assertion `assert \"never skipped automatically\" in hooks and \"never skipped automatically\" in detector` checks the detector source file, but the detector change only added that phrase inside a comment in `_DEFAULT_CONFIG` — this validates a comment, not behavior. The old skip behavior (adopted projects skipping the match) is not asserted to be gone anywhere; only the absence of one literal phrase is. A regression that re-introduces the skip with different wording would pass.",
+          "suggestion": "Add a behavioral test: run G2 against a repo whose config marks it adopted (or with empty splits) and assert the commit is still flagged rather than skipped.  Overall: the implementation and docs changes match the spec (split parsing in a new module, evidence naming unknown parts, false-exemption text removed), but the `auth not in g2.detail` assertion is likely to fail or pass vacuously depending on how the detail renders the subject, and the \"no auto-skip\" guarantee is tested only by string-matching comments. Ship-with-fixes.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-12T00:51:40.807034+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] - Category: test\n  Severity: high\n  File: plugins/shipwright-compliance/tests/test_audit_g2_scopes.py:76–78 (`test_known_plus_unknown_flags_only_the_unknown_part`)\n  Finding: The test asserts `\"auth\" not in g2.detail`, but the G2 evidence appends `cs.full_subject` (group_g.py:221 appends the 3-tuple `(sha, scope, full_subject)` to `unmatched`), and the fixture subject is `\"feat(auth,daemon): half known\"`. If the finding detail renders the subject line (as G2 findings typically do), the string `\"auth\"` will appear via the subject and the assertion will fail — or, if the detail format omits subjects today, the test passes for the wrong reason and will break on any later detail-format change. The assertion doesn't validate \"only unknown parts flagged\"; it depends on the subject text coincidentally not containing \"auth\", which it does contain.\n  Suggestion: Assert on the extracted scope field instead, e.g. check `\"scope='daemon'\"` appears and there is no *second* scope entry (count occurrences or assert `\"scope='auth'\"` not in detail), and/or use a subject that doesn't contain the known scope name (e.g. `\"feat(auth,daemon): add feature\"` — still contains \"auth\"; pick `\"feat(auth,daemon): tweak\"` is fine but better to match on `scope='...'` tokens).\n\n- Category: edge-case\n  Severity: medium\n  File: plugins/shipwright-compliance/scripts/audit/g2_scopes.py:22–26 / group_g.py:217–221\n  Finding: When a scope is entirely unparsable (`\",\"`), `unknown_scope_parts` returns `[scope]` i.e. `[\",\"]`, and the evidence line becomes `scope=','` — indistinguishable from a scope literally named `,`. More importantly, the walrus `if bad := ...` treats the empty-string case correctly, but `cs.scope` is passed straight in; if a commit has a whitespace-only scope like `\" \"` (some tools emit this), `scope_parts` drops it and the evidence shows the raw whitespace scope. Minor, but the \"names nothing\" fallback returning the raw string can produce confusing evidence for weird-but-re […truncated]\n\n[openai] No concrete defects found in the supplied diff. The change extracts comma parsing into a new module, checks each nonempty part independently, reports unknown parts, and corrects the automatic-skip documentation. Tests assert both passing and failing behavior.\n\nShip-as-is based on the supplied diff. Filesystem access was blocked, so I could not read the normative campaign brief, verify card closure, inspect surrounding code, or run tests.\n\nSHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-12T01:01:38.015413+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-12T00:50:30.727888+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-12T00:50:30.854812+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

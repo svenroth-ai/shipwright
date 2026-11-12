@@ -3188,7 +3188,14 @@ Two surfaces (plan v7 Option Z, 2026-04-19):
    `run_all` rewrites a listed check's finding to `skip` (before the triage
    mirror, so it drops out of `any_fail` + the `compliance:backlog` bundle).
    Explicit, per-project declaration — never auto-detected; default `[]` runs
-   every check. The Shipwright framework monorepo disables A5.6/B7/G2 (each
+   every check. **G2 (commit scope match) is never skipped automatically** -
+   not even for an adopted project whose only split is the generic `01-adopted`
+   (it has no real splits to match, so every scope not in the stoplist or alias map is flagged):
+   declare the project's own `g2_alias_map` / `g2_stoplist` in `audit_config.json` (a project list REPLACES the default list: copy the default
+   entries you still want),
+   or list `G2` in `disabled_checks`. A comma-joined scope (`feat(daemon,lib):`) is
+   split on commas, trimmed, empty parts dropped; each part must resolve and the
+   evidence names only the unknown parts (`g2_scopes.py`). The Shipwright framework monorepo disables A5.6/B7/G2 (each
    with a documented reason) as an adopted, multi-component, active-CI repo.
    (BP-1 **re-enabled D1**: now that D1 uses all-time coverage and every FR is
    event-covered, it passes honestly rather than being suppressed.
