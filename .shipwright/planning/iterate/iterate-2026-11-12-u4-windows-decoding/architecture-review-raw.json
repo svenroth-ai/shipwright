@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "1. **The question, answered in one sentence.** No new standing mechanism is being created \u2014 this aligns two existing subprocess readers with a decode pattern that already exists in `fetch_pr_diff`, which is the right move.\n\n2. **The smallest thing that would do** Exactly what's proposed: capture bytes, decode `utf-8`/replace in the two named scripts. The shared decode helper is optional; if it's a one-line idiom already used elsewhere, duplicating the one line in two files is smaller than a helper both tools must import \u2014 take the helper only if it genuinely replaces the pattern in both places without widening scope.\n\n3. **What it costs to keep** Nothing standing. The two scripts now permanently carry the same decode convention as `fetch_pr_diff`; any future reader of these files must know why bytes+decode is used instead of `text=True`. That's ordinary code knowledge, not an obligation.\n\n4. **What it forecloses** none identified.\n\n5. **Findings**\n\nNo findings.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Should it exist?** Yes: correcting the existing subprocess readers is proportionate and adds no standing mechanism.\n2. **Smallest thing:** Capture bytes and decode explicitly as UTF-8 in the two affected tools, preserving lone CR characters; make the two finding-text changes. No shared helper is needed.\n3. **Cost to keep:** Maintain explicit decoding in these existing readers; no new operational obligation.\n4. **What it forecloses:** none identified.\n5. **Findings:** No findings.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "architecture",
+  "capture": {
+    "run_id": "iterate-2026-11-12-u4-windows-decoding",
+    "at": "2026-11-12T01:19:08.913010+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "approve"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}

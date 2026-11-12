@@ -1,0 +1,5 @@
+{"section":"U4-windows-decoding","review":[
+{"severity":"low","category":"readability","file":"plugins/shipwright-security/tests/test_pr_review_local_diff.py","finding":"diff_call selection by position; redundant assertion.","suggestion":"optional"},
+{"severity":"low","category":"readability","file":"shared/tests/test_check_required_checks_decoding.py","finding":"test name says more than it does.","suggestion":"optional rename"},
+{"severity":"low","category":"readability","file":"shared/scripts/tools/check_required_checks.py","finding":"_decode str passthrough exists for test fakes.","suggestion":"acceptable"},
+{"severity":"low","category":"readability","file":"plugins/shipwright-security/scripts/lib/pr_review_local.py","finding":"_git decode inline, not tolerant of str fakes.","suggestion":"no action"}]}

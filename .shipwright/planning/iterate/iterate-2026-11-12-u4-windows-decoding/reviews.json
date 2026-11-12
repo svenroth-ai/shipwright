@@ -1,0 +1,258 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-12-u4-windows-decoding",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-12T01:19:44.212953+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Duplicating the same decode pattern (bytes capture + `utf-8`/`replace`) across two tools instead of a shared helper is defensible given ADR-045 cross-tree import rules, but the brief explicitly allows a shared helper if both tools use it — the mini-plan rejects it without stating where a legal shared location (e.g., `shared/scripts/`) would fail. If `check_required_checks.py` already lives under `shared/scripts/tools/`, a helper there is importable by the plugin without crossing trees.",
+          "suggestion": "Either confirm the cross-tree rule genuinely blocks it, or place the ~3-line helper in `shared/scripts/tools/` where both can import it. If duplication stands, note the ADR justification in the code so a future refactor doesn't \"fix\" it.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The plan tests with `PYTHONUTF8=0` and a lone-CR requirement, but doesn't specify behavior for UTF-16 or Latin-1 encoded git/gh output (Windows legacy code pages like cp1252). `errors='replace'` handles this safely, but `check_required_checks` matching check names against required names could silently fail to match if a name gets mangled by replacement characters — the \"em-dash flagged at most once\" fixture partially covers this, but only for the flag path, not for a required-check name that fails to match due to decode and then gets flagged as missing.",
+          "suggestion": "Add or explicitly note a test where an em-dash-containing required check name in config matches a decoded gh output containing the same em-dash — i.e., round-trip consistency, not just the flag count.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "encoding='utf-8'` on the config probe (line 86) means a config file with a BOM or non-UTF-8 bytes now raises/inserts replacement chars where previously `open()` may have used locale encoding. On Windows this is a behavior change, likely a fix, but legacy `.cfg` files in cp1252 could regress.",
+          "suggestion": "Verify existing config fixtures still parse; if a BOM is plausible, `utf-8-sig` may be the safer choice — check what the brief's \"utf-8\" wording mandates.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Changing `_git` and `_gh` from text to bytes mode changes the return type of any callers assuming `str`. The plan covers the two named tools but doesn't mention auditing all call sites within those files (e.g., other `_git(...)` invocations in `build_local_diff`).",
+          "suggestion": "Confirm every call site of the modified helpers is updated or that decode is applied inside the helper (decode-on-return is the safer shape so callers see `str` unchanged).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan references the campaign brief by absolute path outside the worktree and lists \"AC-freeze check\" text changes as a separate deliverable; no acceptance criteria are filled in yet, so the text changes (\"cannot be rewritten in this run\") have no verifiable test hook named.",
+          "suggestion": "Add explicit text-substring assertions for the plan_stub_check warning and ac_record message, and fill in the AC checkboxes before implementation begins.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "“kwargs/bytes-level tests” does not explicitly cover the lone-CR preservation requirement. A UTF-8 test can pass while later newline normalization still alters the diff.",
+          "suggestion": "Assert the returned diff preserves an embedded `\\r` exactly, and that malformed UTF-8 produces replacement characters.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "An em-dash check-name fixture “flagged at most once” also passes when the check is never flagged.",
+          "suggestion": "Make the fixture a check that must be reported and assert exactly one finding, preserving its name.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Saying “the warning cannot be cleared” is less precise than the specified rule that a recorded event cannot be rewritten during this run.",
+          "suggestion": "Explicitly describe the recorded event as immutable for the current run in both messages, keeping the change text-only.  The approach is focused and sound; separate decoding in the two tools is proportionate, and the findings are refinements. File access was blocked by policy, so this assessment covers the supplied specification and mini-plan; the normative brief and existing code remain unverified.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        }
+      ],
+      "provider": "codex",
+      "completed_at": "2026-11-12T01:19:29.760187+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: approach — Severity: low**\n  **Finding:** Duplicating the same decode pattern (bytes capture + `utf-8`/`replace`) across two tools instead of a shared helper is defensible given ADR-045 cross-tree import rules, but the brief explicitly *allows* a shared helper if both tools use it — the mini-plan rejects it without stating where a legal shared location (e.g., `shared/scripts/`) would fail. If `check_required_checks.py` already lives under `shared/scripts/tools/`, a helper there is importable by the plugin without crossing trees.\n  **Suggestion:** Either confirm the cross-tree rule genuinely blocks it, or place the ~3-line helper in `shared/scripts/tools/` where both can import it. If duplication stands, note the ADR justification in the code so a future refactor doesn't \"fix\" it.\n\n- **Category: edge-case — Severity: medium**\n  **Finding:** The plan tests with `PYTHONUTF8=0` and a lone-CR requirement, but doesn't specify behavior for UTF-16 or Latin-1 encoded git/gh output (Windows legacy code pages like cp1252). `errors='replace'` handles this safely, but `check_required_checks` matching check *names* against required names could silently fail to match if a name gets mangled by replacement characters — the \"em-dash flagged at most once\" fixture partially covers this, but only for the flag path, not for a required-check *name* that fails to match due to decode and then gets flagged as missing.\n  **Suggestion:** Add or explicitly note a test where an em-dash-containing *required* check name in config matches a decoded gh output containing the same em-dash — i.e., round-trip consistency, not just the flag count.\n\n- **Category: edge-case — Severity: low**\n  **Finding:** `encoding='utf-8'` on the config probe (line 86) means a config file with a BOM or non-UTF-8 bytes now raises/inserts replacement chars where previously `open()` may have used locale encoding. On Windows this is a behavior change, likely a fix, but legacy `.cfg` fi […truncated]\n\n[openai] 1. **Category:** edge-case  \n   **Severity:** low  \n   **Finding:** “kwargs/bytes-level tests” does not explicitly cover the lone-CR preservation requirement. A UTF-8 test can pass while later newline normalization still alters the diff.  \n   **Suggestion:** Assert the returned diff preserves an embedded `\\r` exactly, and that malformed UTF-8 produces replacement characters.\n\n2. **Category:** edge-case  \n   **Severity:** low  \n   **Finding:** An em-dash check-name fixture “flagged at most once” also passes when the check is never flagged.  \n   **Suggestion:** Make the fixture a check that must be reported and assert exactly one finding, preserving its name.\n\n3. **Category:** approach  \n   **Severity:** low  \n   **Finding:** Saying “the warning cannot be cleared” is less precise than the specified rule that a recorded event cannot be rewritten during this run.  \n   **Suggestion:** Explicitly describe the recorded event as immutable for the current run in both messages, keeping the change text-only.\n\nThe approach is focused and sound; separate decoding in the two tools is proportionate, and the findings are refinements. File access was blocked by policy, so this assessment covers the supplied specification and mini-plan; the normative brief and existing code remain unverified.\n\nSHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "approve"
+      },
+      "model_tier": "opus"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-security/tests/test_pr_review_local_diff.py",
+          "line": null,
+          "finding": "diff_call selection by position; redundant assertion.",
+          "suggestion": "optional",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_check_required_checks_decoding.py",
+          "line": null,
+          "finding": "test name says more than it does.",
+          "suggestion": "optional rename",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/tools/check_required_checks.py",
+          "line": null,
+          "finding": "_decode str passthrough exists for test fakes.",
+          "suggestion": "acceptable",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-security/scripts/lib/pr_review_local.py",
+          "line": null,
+          "finding": "_git decode inline, not tolerant of str fakes.",
+          "suggestion": "no action",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-12T01:28:13.509280+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "4d88f90f18c3885a428455706fd8da9bc3371228"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-12T01:28:13.668570+00:00",
+      "disposition": "Stage 3 not triggered: no migration, concurrency, cross-plugin import or irreversible operation; behaviour change is subprocess decoding only",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "diff-below-threshold"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "plugins/shipwright-security/tests/test_pr_review_local_diff.py:174` (in `test_git_calls_capture_bytes_and_keep_a_lone_cr`)",
+          "line": null,
+          "finding": "The assertion `assert \"\\r\" in text and text.count(\"\\ndiff --git\") == 0 or \"\\r\" in text` is logically redundant — the second disjunct makes the first conjunct's CR check a no-op, and the whole expression reduces to `\"\\r\" in text`. It doesn't actually assert that a lone CR was not translated to LF (it can't distinguish `\\r` from `\\r\\n`), and the boundary-preservation claim (no `\\ndiff --git` from the fake second file) is buried in a confusingly-written expression.",
+          "suggestion": "Split into two clear assertions: `assert \"\\r\" in text` and `assert \"\\ndiff --git a/fake\" not in text` — the latter is the meaningful check proving the lone CR didn't become a line break.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_verifier_unrecoverable_text.py:24` (`test_late_ac_record_text_says_the_warning_cannot_be_cleared`)",
+          "line": null,
+          "finding": "This test greps the source file for substrings rather than exercising any function; it validates the file was edited, not behavior. `ac_record._order_problem` is importable and pure — calling it (or a public wrapper) would be a real test.",
+          "suggestion": "Invoke `_order_problem` against a fixture tree with a late AC record and assert the returned message contains \"cannot be cleared\".",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_verifier_unrecoverable_text.py",
+          "line": 27,
+          "finding": "The AC warning test searches the entire source file instead of checking the verifier’s returned warning. It would still pass if the required text were unreachable or appeared in an unrelated message.",
+          "suggestion": "Create a Git history with code committed before the AC record, invoke the verifier, and assert that its returned warning explains that the record remains late for this run.  Ship-as-is; the supplied diff implements the stated decoding changes and warning updates, with the test improvement above as a refinement. Policy blocked filesystem access, so I could not read the external campaign brief or execute tests.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        }
+      ],
+      "provider": "codex",
+      "completed_at": "2026-11-12T01:24:47.457660+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Review\n\n### Spec compliance\n\nThe three required changes are present:\n- `pr_review_local.py:86` — filter-probe now declares `encoding=\"utf-8\"` alongside the existing `errors=\"replace\"`; the diff call captures bytes and decodes with `utf-8/replace`, mirroring `fetch_pr_diff`. ✓\n- `check_required_checks.py` — `_gh` (line ~76) captures bytes and decodes via a local `_decode` helper; `resolve_repo` (line ~103) uses `encoding=\"utf-8\", errors=\"replace\"`. The helper is file-local (not \"shared\"), so the \"only if both tools use it\" constraint isn't violated. ✓\n- Verifier text — both `plan_stub_check.py` (no-plan_path branch) and `ac_record.py` (`_order_problem`) now state the warning cannot be cleared this run. ✓\n\n### Findings\n\n- Category: test\n  Severity: low\n  File: `plugins/shipwright-security/tests/test_pr_review_local_diff.py:174` (in `test_git_calls_capture_bytes_and_keep_a_lone_cr`)\n  Finding: The assertion `assert \"\\r\" in text and text.count(\"\\ndiff --git\") == 0 or \"\\r\" in text` is logically redundant — the second disjunct makes the first conjunct's CR check a no-op, and the whole expression reduces to `\"\\r\" in text`. It doesn't actually assert that a lone CR was not translated to LF (it can't distinguish `\\r` from `\\r\\n`), and the boundary-preservation claim (no `\\ndiff --git` from the fake second file) is buried in a confusingly-written expression.\n  Suggestion: Split into two clear assertions: `assert \"\\r\" in text` and `assert \"\\ndiff --git a/fake\" not in text` — the latter is the meaningful check proving the lone CR didn't become a line break.\n\n- Category: test\n  Severity: low\n  File: `shared/tests/test_verifier_unrecoverable_text.py:24` (`test_late_ac_record_text_says_the_warning_cannot_be_cleared`)\n  Finding: This test greps the source file for substrings rather than exercising any function; it validates the file was edited, not behavior. `ac_record._order_problem` is importable and pure — calling it (or a public wrapper) would be a real test.\n   […truncated]\n\n[openai] - Category: test\n- Severity: low\n- File: shared/tests/test_verifier_unrecoverable_text.py:27\n- Finding: The AC warning test searches the entire source file instead of checking the verifier’s returned warning. It would still pass if the required text were unreachable or appeared in an unrelated message.\n- Suggestion: Create a Git history with code committed before the AC record, invoke the verifier, and assert that its returned warning explains that the record remains late for this run.\n\nShip-as-is; the supplied diff implements the stated decoding changes and warning updates, with the test improvement above as a refinement. Policy blocked filesystem access, so I could not read the external campaign brief or execute tests.\n\nSHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-12T01:24:42.880579+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "4d88f90f18c3885a428455706fd8da9bc3371228"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-12T01:19:29.880327+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-12T01:19:30.015477+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}

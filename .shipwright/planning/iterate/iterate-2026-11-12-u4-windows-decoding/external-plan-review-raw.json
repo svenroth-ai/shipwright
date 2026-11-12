@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "## Findings\n\n- **Category: approach \u2014 Severity: low**\n  **Finding:** Duplicating the same decode pattern (bytes capture + `utf-8`/`replace`) across two tools instead of a shared helper is defensible given ADR-045 cross-tree import rules, but the brief explicitly *allows* a shared helper if both tools use it \u2014 the mini-plan rejects it without stating where a legal shared location (e.g., `shared/scripts/`) would fail. If `check_required_checks.py` already lives under `shared/scripts/tools/`, a helper there is importable by the plugin without crossing trees.\n  **Suggestion:** Either confirm the cross-tree rule genuinely blocks it, or place the ~3-line helper in `shared/scripts/tools/` where both can import it. If duplication stands, note the ADR justification in the code so a future refactor doesn't \"fix\" it.\n\n- **Category: edge-case \u2014 Severity: medium**\n  **Finding:** The plan tests with `PYTHONUTF8=0` and a lone-CR requirement, but doesn't specify behavior for UTF-16 or Latin-1 encoded git/gh output (Windows legacy code pages like cp1252). `errors='replace'` handles this safely, but `check_required_checks` matching check *names* against required names could silently fail to match if a name gets mangled by replacement characters \u2014 the \"em-dash flagged at most once\" fixture partially covers this, but only for the flag path, not for a required-check *name* that fails to match due to decode and then gets flagged as missing.\n  **Suggestion:** Add or explicitly note a test where an em-dash-containing *required* check name in config matches a decoded gh output containing the same em-dash \u2014 i.e., round-trip consistency, not just the flag count.\n\n- **Category: edge-case \u2014 Severity: low**\n  **Finding:** `encoding='utf-8'` on the config probe (line 86) means a config file with a BOM or non-UTF-8 bytes now raises/inserts replacement chars where previously `open()` may have used locale encoding. On Windows this is a behavior change, likely a fix, but legacy `.cfg` files in cp1252 could regress.\n  **Suggestion:** Verify existing config fixtures still parse; if a BOM is plausible, `utf-8-sig` may be the safer choice \u2014 check what the brief's \"utf-8\" wording mandates.\n\n- **Category: risk \u2014 Severity: low**\n  **Finding:** Changing `_git` and `_gh` from text to bytes mode changes the return type of any callers assuming `str`. The plan covers the two named tools but doesn't mention auditing all call sites within those files (e.g., other `_git(...)` invocations in `build_local_diff`).\n  **Suggestion:** Confirm every call site of the modified helpers is updated or that decode is applied inside the helper (decode-on-return is the safer shape so callers see `str` unchanged).\n\n- **Category: dependency \u2014 Severity: low**\n  **Finding:** The plan references the campaign brief by absolute path outside the worktree and lists \"AC-freeze check\" text changes as a separate deliverable; no acceptance criteria are filled in yet, so the text changes (\"cannot be rewritten in this run\") have no verifiable test hook named.\n  **Suggestion:** Add explicit text-substring assertions for the plan_stub_check warning and ac_record message, and fill in the AC checkboxes before implementation begins.\n\n## Overall Assessment\n\nThe approach is sound: byte-level capture with explicit UTF-8 decode is the correct fix, the test strategy (PYTHONUTF8=0 child process, em-dash fixture) targets the real failure mode, and the helper rejection is at least justified. Main refinements are decode-inside-the-helper to protect callers, and round-trip name-matching coverage in check_required_checks.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Category:** edge-case  \n   **Severity:** low  \n   **Finding:** \u201ckwargs/bytes-level tests\u201d does not explicitly cover the lone-CR preservation requirement. A UTF-8 test can pass while later newline normalization still alters the diff.  \n   **Suggestion:** Assert the returned diff preserves an embedded `\\r` exactly, and that malformed UTF-8 produces replacement characters.\n\n2. **Category:** edge-case  \n   **Severity:** low  \n   **Finding:** An em-dash check-name fixture \u201cflagged at most once\u201d also passes when the check is never flagged.  \n   **Suggestion:** Make the fixture a check that must be reported and assert exactly one finding, preserving its name.\n\n3. **Category:** approach  \n   **Severity:** low  \n   **Finding:** Saying \u201cthe warning cannot be cleared\u201d is less precise than the specified rule that a recorded event cannot be rewritten during this run.  \n   **Suggestion:** Explicitly describe the recorded event as immutable for the current run in both messages, keeping the change text-only.\n\nThe approach is focused and sound; separate decoding in the two tools is proportionate, and the findings are refinements. File access was blocked by policy, so this assessment covers the supplied specification and mini-plan; the normative brief and existing code remain unverified.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-11-12-u4-windows-decoding",
+    "at": "2026-11-12T01:18:47.337238+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "approve"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}

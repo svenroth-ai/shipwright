@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "## Review\n\n### Spec compliance\n\nThe three required changes are present:\n- `pr_review_local.py:86` \u2014 filter-probe now declares `encoding=\"utf-8\"` alongside the existing `errors=\"replace\"`; the diff call captures bytes and decodes with `utf-8/replace`, mirroring `fetch_pr_diff`. \u2713\n- `check_required_checks.py` \u2014 `_gh` (line ~76) captures bytes and decodes via a local `_decode` helper; `resolve_repo` (line ~103) uses `encoding=\"utf-8\", errors=\"replace\"`. The helper is file-local (not \"shared\"), so the \"only if both tools use it\" constraint isn't violated. \u2713\n- Verifier text \u2014 both `plan_stub_check.py` (no-plan_path branch) and `ac_record.py` (`_order_problem`) now state the warning cannot be cleared this run. \u2713\n\n### Findings\n\n- Category: test\n  Severity: low\n  File: `plugins/shipwright-security/tests/test_pr_review_local_diff.py:174` (in `test_git_calls_capture_bytes_and_keep_a_lone_cr`)\n  Finding: The assertion `assert \"\\r\" in text and text.count(\"\\ndiff --git\") == 0 or \"\\r\" in text` is logically redundant \u2014 the second disjunct makes the first conjunct's CR check a no-op, and the whole expression reduces to `\"\\r\" in text`. It doesn't actually assert that a lone CR was not translated to LF (it can't distinguish `\\r` from `\\r\\n`), and the boundary-preservation claim (no `\\ndiff --git` from the fake second file) is buried in a confusingly-written expression.\n  Suggestion: Split into two clear assertions: `assert \"\\r\" in text` and `assert \"\\ndiff --git a/fake\" not in text` \u2014 the latter is the meaningful check proving the lone CR didn't become a line break.\n\n- Category: test\n  Severity: low\n  File: `shared/tests/test_verifier_unrecoverable_text.py:24` (`test_late_ac_record_text_says_the_warning_cannot_be_cleared`)\n  Finding: This test greps the source file for substrings rather than exercising any function; it validates the file was edited, not behavior. `ac_record._order_problem` is importable and pure \u2014 calling it (or a public wrapper) would be a real test.\n  Suggestion: Invoke `_order_problem` against a fixture tree with a late AC record and assert the returned message contains \"cannot be cleared\".\n\n### Correctness / security / regression\n\n- Reassigning `proc.stdout`/`proc.stderr` on `subprocess.CompletedProcess` is safe (plain writable attributes), and all downstream consumers in both tools read `stdout`/`stderr` as `str`, so no bytes/str mismatches remain in the visible paths.\n- `_decode` correctly handles the `str` passthrough case (fakes that already return `CompletedProcess` with str stdout won't crash).\n- No security surface changes: same argv, same env, no new input sinks.\n- The subprocess-level tests (`test_real_git_diff_utf8...`) genuinely exercise real `git` under `PYTHONUTF8=0` and check the em-dash and lone CR survive byte-exact \u2014 these would catch a regression to `text=True`. The `check_required_checks` tests likewise assert both the kwargs shape and the \"flagged at most once\" behavior, not just that the function runs.\n\nOverall the implementation matches the spec, the byte-capture semantics are correct, and the only issues are two weak test assertions. Ship with those tightened.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "- Category: test\n- Severity: low\n- File: shared/tests/test_verifier_unrecoverable_text.py:27\n- Finding: The AC warning test searches the entire source file instead of checking the verifier\u2019s returned warning. It would still pass if the required text were unreachable or appeared in an unrelated message.\n- Suggestion: Create a Git history with code committed before the AC record, invoke the verifier, and assert that its returned warning explains that the record remains late for this run.\n\nShip-as-is; the supplied diff implements the stated decoding changes and warning updates, with the test improvement above as a refinement. Policy blocked filesystem access, so I could not read the external campaign brief or execute tests.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-11-12-u4-windows-decoding",
+    "at": "2026-11-12T01:19:44.392911+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "approve"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}

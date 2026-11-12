@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-12-u4-windows-decoding",
+  "date": "2026-11-12",
+  "section": "Iterate — fix: Windows decoding in two subprocess readers",
+  "title": "Decode git/gh subprocess output as UTF-8 bytes",
+  "context": "text=True decodes with the locale codec (cp1252 on Windows): an em-dash check name was garbled and flagged twice, and a lone CR in a diff became LF.",
+  "decision": "pr_review_local and check_required_checks capture bytes and decode utf-8/replace, like fetch_pr_diff; no shared helper, the tools sit in different plugin trees (ADR-045).",
+  "consequences": "Names and diffs round-trip on Windows; other text=True call sites are untouched by design. Two verifier texts now say a recorded event cannot be rewritten in this run.",
+  "rationale": "Same pattern as the existing fetch_pr_diff; smallest change that fixes the measured defect.",
+  "rejected": "A shared decode helper (cross-tree import rules); sweeping all text=True call sites (separate card).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

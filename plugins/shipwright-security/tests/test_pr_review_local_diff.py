@@ -11,6 +11,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 PLUGIN_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PLUGIN_ROOT / "scripts" / "lib"))
 
@@ -154,6 +156,7 @@ class TestBuildLocalDiff:
         assert not marker.exists(), "the locally-configured clean filter must never run"
 
 
+@pytest.mark.covers("FR-01.17")
 class TestDiffDecoding:
     """The diff call captures BYTES: no locale codec, no CR -> LF translation."""
 

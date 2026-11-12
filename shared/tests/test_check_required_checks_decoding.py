@@ -13,6 +13,8 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from _required_checks_fakes import load_producer  # noqa: E402
@@ -43,6 +45,7 @@ def _router(kwargs_seen: list[dict]):
     return _run
 
 
+@pytest.mark.covers("FR-01.17")
 def test_gh_asks_for_bytes_not_locale_text(monkeypatch) -> None:
     seen: list[dict] = []
     monkeypatch.setattr(crc.subprocess, "run", _router(seen))
@@ -50,6 +53,7 @@ def test_gh_asks_for_bytes_not_locale_text(monkeypatch) -> None:
     assert seen and all(not k.get("text") and "encoding" not in k for k in seen)
 
 
+@pytest.mark.covers("FR-01.17")
 def test_em_dash_check_name_survives_and_is_not_flagged(monkeypatch) -> None:
     monkeypatch.setattr(crc.subprocess, "run", _router([]))
     configured = crc.fetch_configured_contexts("o/r", "main")
@@ -58,6 +62,7 @@ def test_em_dash_check_name_survives_and_is_not_flagged(monkeypatch) -> None:
     assert result["in_sync"] and not result["unenforced"] and not result["phantom"]
 
 
+@pytest.mark.covers("FR-01.17")
 def test_garbled_copy_would_be_flagged_twice_but_decoded_name_at_most_once(monkeypatch) -> None:
     """A genuinely missing em-dash check shows up in ONE list, not both."""
     monkeypatch.setattr(crc.subprocess, "run", _router([]))
@@ -69,6 +74,7 @@ def test_garbled_copy_would_be_flagged_twice_but_decoded_name_at_most_once(monke
     assert (result["unenforced"] + result["phantom"]).count(NAME) == 1
 
 
+@pytest.mark.covers("FR-01.17")
 def test_stderr_is_decoded_too(monkeypatch) -> None:
     def _run(argv, **kwargs):
         return _BytesProc(b"", "gh: bad \u2014 thing (HTTP 403)".encode("utf-8"), 1)
