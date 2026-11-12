@@ -1,8 +1,8 @@
 # Software Bill of Materials (SBOM)
 
-Generated: 2026-11-07T12:24:08.955229+00:00 (dependency versions resolved from uv.lock)
-Source-State: run=iterate-2026-11-07-events-drop-upgrade-notes base=ac194e8ced01 release=v0.35.0
-Consistency-audit: last run 2026-07-28 (102 days earlier) — FAIL
+Generated: 2026-11-12T07:33:48.573135+00:00 (dependency versions resolved from uv.lock)
+Source-State: run=iterate-2026-11-12-leadwright-followups-bundle base=5f38ef07e992 release=v0.36.0
+Consistency-audit: last run 2026-07-28 (107 days earlier) — FAIL
 
 ## Summary
 

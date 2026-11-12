@@ -1,1 +1,0 @@
-Requirement catalog: the dangerous-command guard criterion in FR-01.05 no longer promises that a failure of the guard never blocks work; it now says that when the precise check cannot decide, a coarser fallback errs towards stopping a forced push that mentions the main branch

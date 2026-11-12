@@ -1,1 +1,0 @@
-Per-run event files: every tool now agrees on what a valid file name is, a run's events keep their order when a new file is started, and a half-written file is no longer appended to (the next event starts a new file).

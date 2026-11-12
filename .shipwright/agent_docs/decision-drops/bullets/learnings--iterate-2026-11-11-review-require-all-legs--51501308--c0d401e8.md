@@ -1,1 +1,0 @@
-- (2026-11-11) iterate — a flag meant for the review-state marker must be wired where the marker is actually written (record_review_pass → write_markers), not only on the CLI that nobody calls; the spec-reviewer caught it. [→ iterate-2026-11-11-review-require-all-legs]

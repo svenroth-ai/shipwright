@@ -1,1 +1,0 @@
-The keystone AC gate, the pre-build AC check, ac_history and fr_history now follow the AC-Move-Map, so a criterion moved by fr_split is not reported as removed and added; fr_split also checks new FR numbers against origin/main and lists copied table rows and FR-level test files (atomic-frs U2b-prep)

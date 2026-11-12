@@ -1,1 +1,0 @@
-fix(decoding): the local PR-review diff and the required-checks drift detector read git/gh output as UTF-8 bytes, so non-ASCII check names and lone CRs survive on Windows; verifier text now says a late plan stub or AC record cannot be cleared in that run

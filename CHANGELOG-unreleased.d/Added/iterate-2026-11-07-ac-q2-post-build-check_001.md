@@ -1,1 +1,0 @@
-feat(iterate): after the build, the spec-reviewer checks each added or changed acceptance criterion against the code (matches or diverges, with the line); F11 reports it as a warning only and says when no AC review ran (ac-at-start Q2, phase 1)

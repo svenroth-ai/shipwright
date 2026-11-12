@@ -1,19 +1,19 @@
 # Commit Change Log
 
-Generated: 2026-11-07T12:24:08.955229+00:00
-Source-State: run=iterate-2026-11-07-events-drop-upgrade-notes base=ac194e8ced01 release=v0.35.0
-Consistency-audit: last run 2026-07-28 (102 days earlier) — FAIL
-Total commits: 1773
+Generated: 2026-11-12T07:33:48.573135+00:00
+Source-State: run=iterate-2026-11-12-leadwright-followups-bundle base=5f38ef07e992 release=v0.36.0
+Consistency-audit: last run 2026-07-28 (107 days earlier) — FAIL
+Total commits: 1806
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 609
-    "feat" : 494
-    "chore" : 290
-    "docs" : 181
-    "refactor" : 105
+    "fix" : 621
+    "feat" : 506
+    "chore" : 291
+    "docs" : 187
+    "refactor" : 107
     "test" : 58
     "ci" : 22
     "other" : 12
@@ -23,10 +23,22 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 609 commits
+### Fixes (fix) — 621 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-11-12 | compliance | leadwright follow-ups - G2 stoplist match, G4 card ids, honest tags, lexer one-line describe (#1051) | 5f38ef07e992 |
+| 2026-11-12 | windows | pr_review_local and check_required_checks decode git/gh output as UTF-8; verifier text names the unrecoverable case (U4) (#1050) | 69fd477ff4e0 |
+| 2026-11-12 | compliance | audit G2 judges each part of a comma-joined scope; no automatic skip promised (U3) (#1049) | 38c2618f29f9 |
+| 2026-11-12 | tests | the three-way convergence test's child-process bridges speak UTF-8 explicitly (#1047) | 0268eced56b3 |
+| 2026-11-12 | tools | the finalization verifier and release-notes tools carry their own packages (#1046) | 22dcf93b2285 |
+| 2026-11-12 | compliance | lexer-based suite brace depth, unbound covers warning, untagged-modified text (U1) (#1043) | b74ab085f739 |
+| 2026-11-11 | tests | give the fold tests' git hooks the executable bit so Linux CI runs them (#1044) | 073c72cdb5af |
+| 2026-11-11 | events | one drop-file name rule, order across a rotation, no append to a torn file (#1039) | 7321174ac524 |
+| 2026-11-09 | iterate | the AC record's order check reads branches with several commits correctly (#1029) | 62a36252b30c |
+| 2026-11-08 | iterate | pass the AC claims to the spec-reviewer on the campaign and Codex review paths (ac-at-start Q2 follow-up) (#1023) | 6f0ca949414c |
+| 2026-11-07 | events | harden the per-run event file writer before the flip (#1018) | 6654dde12e1d |
+| 2026-11-07 | build,plan,test | four rules from e2e run 27 (local server tests, brief wording, brief element vs screenshot, test findings) (#1019) | aa52190beb46 |
 | 2026-11-07 | events | harden the drop-files layout before the flip (#1013) | 544363ffe249 |
 | 2026-11-06 | tests | loosen the no-wait bound of a Windows-flaky claim test (#1006) | 72781dca69cb |
 | 2026-11-04 | iterate | bare-python guard denies python - fed by an empty heredoc (#993) | 1b79e7d35fb9 |
@@ -637,10 +649,22 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 494 commits
+### Features (feat) — 506 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-11-12 | triage | G4 closing-token audit, project-root either side, status-less append reads as triage (U2) (#1048) | be73f19983de |
+| 2026-11-12 | events | warn at 150+ open event files, name both locations in A7, LF in adopt seeder (#1042) | 5c1977f7d746 |
+| 2026-11-11 | events | fold old per-run event files automatically at release, in a commit of their own (#1041) | 1ddf4bbdecd9 |
+| 2026-11-11 | external-review | ordered route list for the GPT reviewer leg that falls through on failure (#1040) | 51fb38671e35 |
+| 2026-11-11 | external-review | opt-in signal when fewer reviewers answered than configured (#1038) | 0dd39a748ee8 |
+| 2026-11-10 | events | record this repo's events one file per run (#1033) | 7b561994bcbe |
+| 2026-11-10 | requirements | the gates and readers follow the AC-Move-Map so a cut criterion is not removed + added (atomic-frs U2b-prep) (#1031) | d326f024636e |
+| 2026-11-09 | e2e | fork an earlier run at a phase boundary and stop after a phase (E2E fork run) (#1026) | 2fce3a9b7ad0 |
+| 2026-11-09 | requirements | fr_split cuts one requirement into several with a hard conservation check (atomic-frs U2) (#1027) | f0b146aad915 |
+| 2026-11-08 | requirements | scope rule "can this FR still be split" with code-found seams (atomic-frs U1) (#1025) | f42a28f5de05 |
+| 2026-11-08 | iterate | check each added or changed AC against the built code, warning only (ac-at-start Q2 phase 1) (#1022) | 8a575be301da |
+| 2026-11-07 | iterate | decide the acceptance criterion before the build (ac-at-start Q1) (#1014) | 856f4b7cdac2 |
 | 2026-11-07 | run | autonomous runs settle five more run-23 questions by rule (#1012) | dcb9d80b3664 |
 | 2026-11-07 | build | a test of delete code runs only in a temp copy (#1011) | 199e5fbccd49 |
 | 2026-11-07 | events | layout sentinel, evidence refusal and merge-base CI check for mixed versions (S7) (#1008) | bf4260dc7e3e |
@@ -1136,10 +1160,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 290 commits
+### Chores (chore) — 291 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-11-07 | release | v0.35.0 (#1016) | 72e56bd7c2ab |
 | 2026-11-03 | ci | bump the github-actions-minor-patch group across 2 directories with 1 update (#965) | dfe261d9ff03 |
 | 2026-10-24 | security | accept CVE-2023-54404 (zod, dev-only, no fix exists) (#895) | f72ef20a7469 |
 | 2026-10-18 | ci | bump the github-actions-minor-patch group across 2 directories with 1 update (#888) | 6219c16444ea |
@@ -1431,10 +1456,16 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 181 commits
+### Documentation (docs) — 187 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-11-11 | events | point the guide at the per-run event layout, drop stale dormant wording (#1036) | d29db3dda20e |
+| 2026-11-10 | planning | record the merged prerequisites in the deterministic-first briefs (#1032) | 215fa84827ea |
+| 2026-11-09 | — | add the code-versus-AI convention for building skills, plugins and agents (#1030) | 1d72ed7e3310 |
+| 2026-11-09 | planning | finalize deterministic-first programme brief rev 5 and the changelog pilot brief (#1028) | aa62fe6c0215 |
+| 2026-11-08 | spec | FR-01.05 AC09 states the guard's coarse fallback instead of promising it never blocks work (#1024) | 00455e6883bf |
+| 2026-11-07 | events | an old plugin does not fail on a drops repo, it appends silently (#1017) | 8104b6477aab |
 | 2026-11-07 | release | tell existing projects what the per-run event files ask of them (#1015) | ac194e8ced01 |
 | 2026-11-04 | planning | campaign brief and design for per-run event files (#978) (#995) | 163d3470ddb3 |
 | 2026-11-01 | planning | ac-at-start campaign brief, outcome note on baseline-package (#966) | 9d54d3dcb9aa |
@@ -1617,10 +1648,12 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Refactoring (refactor) — 105 commits
+### Refactoring (refactor) — 107 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-11-12 | tests | split the release-fold tests so both files stay under the size limit (#1045) | 987e2e5ce104 |
+| 2026-11-11 | iterate | make the finalization prose and verifier hint layout-neutral (#1037) | c689c249ad19 |
 | 2026-10-31 | catalog | tidy mixed ACs and rename command-named FR titles (baseline-package P5) (#960) | 726aa32a758e |
 | 2026-10-29 | e2e | harden resume identity, run lock and board checks (E6 follow-ups) (#951) | c28211ddefc2 |
 | 2026-10-25 | profiles | harden the stack-profile python guard and settle the S5 hand-offs (#908) | f77a4446f61a |
@@ -1850,7 +1883,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1773 |
+| Total commits | 1806 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1773 |
+| Human-authored commits | 1806 |
 

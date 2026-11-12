@@ -1,1 +1,0 @@
-fr_split tool: cuts one oversized requirement into several with a dry run, a hard conservation check (every criterion exactly once, tags, coverage baseline, traceability manifest) and a ## AC-Move-Map so old criterion ids stay resolvable (atomic-frs U2)

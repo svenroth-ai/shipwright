@@ -1,1 +1,0 @@
-Per-run event files: a retried event is no longer written twice, attaching the same commit twice no longer adds a second amendment, and sealing the main tree's event files no longer stops completely because of one damaged file (the damaged one is named and left behind). Nothing changes until the layout is switched on.

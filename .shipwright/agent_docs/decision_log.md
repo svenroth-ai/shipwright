@@ -8961,3 +8961,358 @@ shipwright/
 - **Rationale:** Target audience is solo maintainers; the check must run before the real aggregation because that deletes the drops it used.
 - **Consequences:** Solo maintainers are not pushed to GitHub CI. Without the CI check nothing flags a write to the wrong layout from a stale plugin; the page says so and tells mixed-version teams to update first.
 - **Rejected:** Shipping the CI checks in the CI templates by default (binds users to GitHub); placing the check at Step 5 (ships one release late).
+
+---
+
+### ADR-672: Pre-build AC decision is code, not prose; the operator confirms, or Shipwright decides and lists it
+- **Date:** 2026-11-01
+- **Section:** Iterate - feature: pre-build AC
+- **Run-ID:** iterate-2026-11-01-q1-pre-build-ac
+- **Context:** Eleven changes shipped without a written promise because the building agent chose the exemption by label.
+- **Decision:** Code decides what code can: observable change is computed from the diff, AC text is validated, the catalog is read at the merge-base, answers are signed. The operator is asked only for a changed or removed AC, a new AC with no single owner, or a new requirement. The question is one fixed shape (finding, part, the agent's exact wording, the requirement NAME); a small model only picks one requirement and drafts a new one, and code checks every line.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Operator decision 2026-11-01: everything code can decide is decided by code; AI only where code cannot. Architecture review: glm approve, openai revise (measure prose first); reconciled in the iterate plan: advisory only, one ask rule, measured on the first 20 iterates, reversible.
+- **Consequences:** Mode ask|auto|off; auto is the default only with --autonomous or SHIPWRIGHT_LOOP_UNIT_ID. F11 warns; answered_via is self-reported. Every skipped result has skip_reason (mode_off|base_unresolvable|catalog_unparsed): the key for the 20-iterate report. Follow-ups: file-history FR ranking (no Add-it-to list now); freeze via decide(); append-only check across commits; signed no should hold a unit; unparsed catalog skips repo-wide; F11 without marker reads finalize env; key file empty on crash.
+- **Rejected:** Skipping the question when code and the model agree (rarely fires; the model alone beat the vote); a 'requirement too broad' rule (broad requirements are re-sliced separately); a lexical HOW test as an ask trigger; hash-as-freeze; a wave-wide STRICT-STOP; label-based exemption
+
+---
+
+### ADR-673: Deterministic-first programme rev 5 and the re-cut changelog pilot
+- **Date:** 2026-11-09
+- **Section:** Iterate — change: deterministic-first programme brief rev 5
+- **Run-ID:** iterate-2026-11-06-dfp-brief-rev5
+- **Context:** BP was stopped on 2026-10-29; ac-at-start Q1 and Q2 phase 1 merged; atomic-frs and an E2E fork tool appeared; the operator decided on 2026-11-09 to start the pilot right after the events flip.
+- **Decision:** Promise tests through a driver, frozen per test body, are the change control; Q1's AC record is advisory and proves only what a runner declared, so a unit counts as unchanged only with equal traces and an unchanged lock.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Inferring touched FRs from diffs (BP) gave too much noise; a deterministic per-test lock trips only on locked tests.
+- **Consequences:** The changelog pilot gains a P2p unit and new start conditions (Q1 order-check fix, convention file, events flip, re-measured pins). L3 runs use claude -p with --setting-sources project.
+- **Rejected:** claude plugin eval for L3: its cases cannot stub PATH or scrub the environment.
+
+---
+
+### ADR-674: Check the built code against the recorded promise, warning only
+- **Date:** 2026-11-08
+- **Section:** Iterate - feature: ac-at-start Q2 post-build per-AC check (phase 1)
+- **Run-ID:** iterate-2026-11-07-ac-q2-post-build-check
+- **Context:** Q1 records the promise (AC) before the build but nothing checks the finished code keeps it; the reviewer never read the catalog ACs.
+- **Decision:** Code builds ac-claims.json from the committed record; the shared spec-reviewer takes it as an optional third input and answers matches or diverges per AC; F11 reports it as a warning and says when no AC review ran. Nothing blocks.
+- **Commit:** (assigned post-merge)
+- **Rationale:** An AI verdict is evidence, not proof; the seeded set (n=10) cannot show the real false-alarm rate, so measure on the first 20 iterates before any refusal.
+- **Consequences:** Visible per-AC evidence for a person. Unconfirmed auto items only warn. Phase 2 (refusing a spec row) is not wired and has two preconditions: a claims fingerprint and a reply cross-check.
+- **Rejected:** Blocking on divergence now; prose-only instruction to the reviewer; a new PR check.
+- **Details:** [iterate-2026-11-07-ac-q2-post-build-check-per-ac-post-build-check.md](../planning/adr/iterate-2026-11-07-ac-q2-post-build-check-per-ac-post-build-check.md)
+
+---
+
+### ADR-675: A plugin from before the drops campaign does not fail on a drops repo
+- **Date:** 2026-11-07
+- **Section:** Iterate - change: correct the old-plugin claim for the drops layout
+- **Run-ID:** iterate-2026-11-07-events-drop-old-plugin-docs
+- **Context:** The design, brief and flip-readiness notes said an old plugin running F11 on a drops repo fails loudly. Nobody had tried it.
+- **Decision:** Tested v0.34.0 on a repo with events_layout=drops: it appends silently to the legacy log (exit 0) and its reader never looks at the drop files. The three notes now say so, and docs/hooks-and-pipeline.md gets a paragraph: update every machine before the flip.
+- **Commit:** (assigned post-merge)
+- **Rationale:** A false safety claim in a flip checklist would let a team switch layouts with an old plugin still installed.
+- **Consequences:** The flip announcement must tell teams to update every machine first. Only the optional layout CI check flags a stale writer; the sentinel protects plugins of this generation only.
+- **Rejected:** Making old plugins fail closed: impossible, released code cannot be changed.
+
+---
+
+### ADR-676: Three writer fixes before the per-run event files are switched on
+- **Date:** 2026-11-07
+- **Section:** Iterate - bug: events drop-file writer hardening before the flip
+- **Run-ID:** iterate-2026-11-07-events-drop-writer-hardening
+- **Context:** Review of the drops layout left open: the F7b seal refused everything on one torn file, a retried event was written twice after the writer bumped its ts, and attaching a commit twice wrote two amendments.
+- **Decision:** Duplicate rule ignores ts; amend_commit skips only when the last amendment already gives that commit; the seal ships whole drops, names the torn ones and says partial when the just-written event is stranded. The run-key spoof and the subdirectory check were already safe; the test-only layout override stays by design.
+- **Commit:** (assigned post-merge)
+- **Rationale:** These could cost an event or double one in daily use once the layout is on.
+- **Consequences:** Torn drops still keep catching new events of their key until repaired (left_behind needs a manual fix). Writer ignores ts, reader still compares it: harmless, the writer only writes fewer lines.
+- **Rejected:** Making the test-only layout override refuse a mismatch: the replay gate and harness depend on forcing drops over a legacy config.
+
+---
+
+### ADR-677: Pass the AC claims file on the campaign and Codex review paths
+- **Date:** 2026-11-08
+- **Section:** Iterate - change: AC claims on every review path
+- **Run-ID:** iterate-2026-11-08-ac-q2-claims-all-paths
+- **Context:** Q2 phase 1 passed ac-claims.json to the spec-reviewer only in the standalone Step 8; the campaign runner/3f-bis and the Codex dispatch never did, so they always reported no AC review ran and the first-20-iterates measurement would be empty for Codex and campaign runs.
+- **Decision:** Both paths build the claims with the existing tool (ac_claims.py build) and pass it as the optional third input only when it holds claims. Codex: review_via_codex.py --claims-file (role spec only) and a required-nullable ac_verdicts key in codex_spec_review_schema.json (OpenAI strict mode); null when none passed. record_review_pass already copies ac_verdicts onto the spec row.
+- **Commit:** (assigned post-merge)
+- **Rationale:** One tool, no second builder; strict-mode schemas cannot have optional keys, so nullable-required. External plan/code review (GLM+GPT): GLM's 'wrong --project-root in runner 3.7' rejected (the runner's project_root IS the unit worktree); schema-consumer audit: only the transport validates it (full shared suite green).
+- **Consequences:** Same warning-only behaviour on every path; no-AC runs unchanged; the Codex spec reply always carries ac_verdicts (null if none). campaign-mode.md stays at 1708 lines. Follow-ups: write_claims writes an empty file at 0 claims (skip it); stacked-unit base differs between runner 3.7 and 3f-bis (stacked is deprecated); no claims fingerprint (phase-2 precondition); test_campaign_step_3f_bis docstring quotes removed prose.
+- **Rejected:** A separate Codex schema file or pseudo-role (ripples through three role tables); optional non-required key (breaks strict mode); building claims inside the transport.
+
+---
+
+### ADR-678: FR scope is 'can it still be split', not a count
+- **Date:** 2026-11-08
+- **Section:** Iterate — feature: atomic FRs scope rule (U1)
+- **Run-ID:** iterate-2026-11-08-atomic-frs-u1
+- **Context:** Huge FRs absorb new ACs: AI picks the right FR 57-62% on old catalogs vs 86-96% on clean ones. A count threshold would call 20-AC single capabilities wrong and miss 8-AC two-capability FRs.
+- **Decision:** fr-authoring §3c: one FR = one capability; code clusters an FR's ACs by bound tests, imported files and wording (fr_clusters, audit I10, advisory). 'yes' needs >=50% ACs bound to tests and >=2 groups of >=3 ACs (min group size 3: a new FR out of 1-2 ACs is too thin); smaller groups are loose. Project skill BLOCKS on capability test plus fr_scope_check exit 0.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Brief rev 3 principle: code finds seams, AI judges only the leftover; stop rule stops over-splitting. Parser question: S5 already reads adopt-format bare bullets via fr_criteria fallback, so no parser change. Follow-ups: python import lookup matches bare names/__init__ (over-joins); @covers marker edge cases; TS ESM ./a.js and path aliases unresolved; _STOP/words duplicated with ac_catalog; pre-existing lib collision (test_enforcement_hooks + group_i tests in one pytest process).
+- **Consequences:** Verdicts yes/no/partial/no evidence, I10 also reports no-evidence and could-not-read counts. Hub rule (files used by many FRs ignored) can still yield 'yes' across a shared utility. Gate is skill prose plus CLI exit code; no phase validator runs fr_scope_check. Operator confirms every cut. Also: 'covers' substring match in decorators; 'removed' heading match; 'Should Have' parsing; --fr zero-criteria message.
+- **Rejected:** A max-AC-count rule; blocking the audit on I10 (legacy CI red); clustering by vocabulary alone (guessing). Known lows: FR rows under Removed Requirements still count in I10/the report; tests run through subprocess or importlib are invisible to evidence; groups are test-file based. More follow-ups: JS comment scanner string state; import resolution by path suffix; pytestmark/trailing comment in a class.
+
+---
+
+### ADR-679: fr_split moves criteria with their numbers, records every move in an AC-Move-Map, and refuses anything it cannot prove
+- **Date:** 2026-11-09
+- **Section:** Iterate — feature: fr_split, the tool that cuts one requirement into several
+- **Run-ID:** iterate-2026-11-08-atomic-frs-u2-fr-split
+- **Context:** Atomic-FR campaign U2: an oversized requirement must be cut into smaller ones without losing, doubling or rewording a criterion, and without breaking the test tags, coverage baseline or traceability manifest that name those criteria.
+- **Decision:** A code tool takes an FR id plus one grouping, dry run by default. A moved criterion keeps its number (FR-01.11/AC21 becomes FR-01.22/AC21); each move is a row in a machine-readable ## AC-Move-Map in spec.md. A hard conservation check covers catalog, test bindings, traceability manifest (regenerated before and after) and the name fence; on --apply any failure restores every file. The AC registry gets the pre-cut high-water mark so a moved number is never minted again.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Keeping the number keeps every test tag, baseline entry and history reference valid with a one-line rewrite; the move map makes old ids resolvable instead of silently dead.
+- **Consequences:** The first real cut (FR-01.11) is a second PR with the list of cuts for the operator to approve. Gates that compare old and new AC sets (keystone, Q2 claims, spec-impact) and readers such as fr_history must learn resolve_ac before that PR; listed in the iterate spec.
+- **Rejected:** Renumbering moved criteria (breaks every reference) and one-shot auto-merge of cuts (operator wants to approve each cut).
+- **Details:** [2026-11-08-atomic-frs-u2-fr-split.md](../planning/iterate/2026-11-08-atomic-frs-u2-fr-split.md)
+
+---
+
+### ADR-680: Correct FR-01.05 AC09 to match the guard's fallback
+- **Date:** 2026-11-08
+- **Section:** Iterate - change: correct an overstated acceptance criterion
+- **Run-ID:** iterate-2026-11-08-fix-overstated-acs
+- **Context:** The ac-at-start Q2 seeded measurement showed AC09 promised that a failure of the command guard never blocks work, but the guard degrades to a deliberately over-blocking coarse check that can stop a forced push to a branch merely named like main.
+- **Decision:** The criterion sentence is corrected to the true promise: a forced overwrite of main is stopped, other commands run, and when the precise check cannot decide a coarser fallback errs towards stopping. Product code is unchanged.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Operator-delegated rule: the sentence follows the code, because making the guard fail open would be a product decision.
+- **Consequences:** Only AC09 was a catalog AC; the #920 sentence was an assistant-written seed AC, so the Q2 follow-up that named both AC09 and the #920 wording reduces to AC09 alone. Follow-up: the AC08 tags on the guard tests look like an old misbinding; re-check.
+- **Rejected:** Changing validate_command.sh to fail open (product decision, weakens the protection).
+
+---
+
+### ADR-681: One shared real_moves rule lets a cut criterion read as the same criterion in every catalog comparison
+- **Date:** 2026-11-09
+- **Section:** Iterate — feature: the gates and readers learn the AC-Move-Map
+- **Run-ID:** iterate-2026-11-09-atomic-frs-u2b-prep
+- **Context:** Atomic-FR campaign U2b-prep: after fr_split (PR #1027) a moved criterion showed as removed here + added there in the keystone AC gate, the pre-build catalog diff, ac_history and fr_history, which would stall the real FR-01.11 cut.
+- **Decision:** ac_move_map.real_moves is the one rule (same AC number, source gone at head, target absent at base, target FR new, one source per target). The keystone digest compares a moved criterion under its pre-move id and the binding check reads base links under the old id; changed_catalog uses the same rule across all spec files; ac_history and fr_history join old and new ids. fr_split also checks new FR numbers against every spec on origin/main and reports ids, rows and all FR-level test files.
+- **Commit:** (assigned post-merge)
+- **Rationale:** One function for the rule keeps the gate and the catalog diff from drifting apart; strictness limits what an author-written table can relax.
+- **Consequences:** A row the rule rejects reads as an ordinary removal + addition, so a hand-written map row cannot hide a removal. Bindings of a moved, unchanged criterion stay owned by fr_split's conservation check plus the coverage ratchet; running that check in CI when map rows are added is a PR 2 follow-up.
+- **Rejected:** Operator overrides per cut (trains people to override criterion gates), rewriting history ids (changes append-only records) and a central catalog-diff module (more change than needed).
+- **Details:** [2026-11-09-atomic-frs-u2b-prep.md](../planning/iterate/2026-11-09-atomic-frs-u2b-prep.md)
+
+---
+
+### ADR-682: Convention: checks in code, interpretation by the AI, code validates every AI output
+- **Date:** 2026-11-09
+- **Section:** Iterate — change: code-versus-AI convention file
+- **Run-ID:** iterate-2026-11-09-code-ai-convention
+- **Context:** The deterministic-first programme converts skill prose into code; the operator decided on 2026-11-02 what belongs in code and sharpened it on 2026-11-09 so that 'as deterministic as possible' cannot become false determinism.
+- **Decision:** A shared guidance file states the rule: checks and comparisons in code, interpretation and wording by the AI, code validates every AI output, a chosen fallback per AI step; decided by whether an answer can be checked without understanding language.
+- **Commit:** (assigned post-merge)
+- **Rationale:** A code heuristic that guesses meaning is wrong reliably and looks trustworthy; code checks form, a review or the operator judges truth.
+- **Consequences:** Runners of the changelog pilot are pointed at the file. Wiring it into Plan, Build and Iterate waits until after the pilot's stop 3.
+- **Rejected:** Pushing as much as possible into code regardless of whether the answer needs language understanding.
+
+---
+
+### ADR-683: Deterministic-first briefs record the merged prerequisites
+- **Date:** 2026-11-09
+- **Section:** Iterate — change: deterministic-first briefs status update
+- **Run-ID:** iterate-2026-11-09-dfp-brief-merged-status
+- **Context:** Rev 5 (#1028) named the fork tool, the convention file and the Q1 order-check fix as pending; all merged on 2026-11-09.
+- **Decision:** The briefs name the merged PRs and the convention file's path in docs/.
+- **Commit:** (assigned post-merge)
+- **Rationale:** A brief that lists merged work as pending misleads the pilot's runners.
+- **Consequences:** Pilot start conditions 1 and 7 read as met; the remaining ones are the events flip, budgets, the cross-cutting confirmation and the re-measurement.
+- **Rejected:** Leaving the status to the review log only.
+
+---
+
+### ADR-684: The AC record's order check ignores git's empty separator line, merged-in commits and records already at the base
+- **Date:** 2026-11-09
+- **Section:** Iterate — bug: AC record order check on multi-commit branches
+- **Run-ID:** iterate-2026-11-09-q1-order-check-empty-lines
+- **Context:** The F11 dry run for the deterministic-first pilot found that the order check counted the empty line git prints between a commit hash and its file names as a code file, so on any branch with several commits the first commit always looked like code.
+- **Decision:** Skip empty names, read the branch with --first-parent --no-merges so code merged in from main is not counted as the run's own, and run the order check only for a record that is new on the branch.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The check exists to show the promise was written before the build; a warning on every multi-commit branch teaches runners to ignore it.
+- **Consequences:** A record written after a docs-only or plan commit and before the code no longer gets a false warning; a record committed after the code is still flagged.
+- **Rejected:** Dropping the order check: it is the only signal that the record came first on an unsquashed branch.
+
+---
+
+### ADR-685: The Shipwright monorepo switches its event log to per-run drop files
+- **Date:** 2026-11-10
+- **Section:** Iterate - change: this repo records its events one file per run
+- **Run-ID:** iterate-2026-11-10-events-flip-drops
+- **Context:** Parallel branches kept conflicting in the single event log. The per-run layout, its fold and rollback tools and the layout check were released with plugin 0.35.0 and WebUI 0.31.0, and the writer was hardened afterwards.
+- **Decision:** Set events_layout to drops in this repo's sync config and rewrite the event-log section of the hooks-and-pipeline doc for users: what the layout is, how to switch a repo, what must be true first, what an old plugin does, rollback by fold (never git revert), checks, and when to fold.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The tooling, the WebUI and the machines are ready, and every later change then merges without event-log conflicts.
+- **Consequences:** Every event of this repo is now a drop file; an old plugin on a machine appends silently to the legacy log and nothing reports it unless the optional layout check is wired into CI. Folding is manual and due before about 300 open drops. The iterate prose (F11, F5b, SKILL F6 row) and one verifier hint still name only the legacy file: follow-up.
+- **Rejected:** Waiting for the optional CI checks: the operator keeps CI minimal and the layout check has a known gap with merge commits anyway.
+
+---
+
+### ADR-686: Point the user guide at the per-run event layout and drop stale dormant wording
+- **Date:** 2026-11-11
+- **Section:** Iterate - change: events layout follow-up (guide pointer, docstrings)
+- **Run-ID:** iterate-2026-11-10-events-layout-doc-pointers
+- **Context:** After the monorepo switched to per-run event files, the guide did not mention the layout and two test docstrings still called it dormant.
+- **Decision:** Add one paragraph to the Event Log section of the guide linking to the hooks-and-pipeline section, and reword the two docstrings.
+- **Commit:** (assigned post-merge)
+- **Rationale:** A user switching a repo should find the preconditions from the guide.
+- **Consequences:** None for behaviour. Other mentions of 'before the flip' stay: they describe PR history and are still true.
+- **Rejected:** Duplicating the whole procedure in the guide: it would drift from the hooks-and-pipeline section.
+
+---
+
+### ADR-687: The release folds old per-run event files by itself, in its own commit, and never blocks
+- **Date:** 2026-11-11
+- **Section:** Iterate - change: fold old event files automatically at release
+- **Run-ID:** iterate-2026-11-11-events-fold-at-release
+- **Context:** Folding old per-run event files into the archive was manual housekeeping (run the tool, stage, commit) that nobody does by default; the audience does not care about it and the product ships little CI.
+- **Decision:** /shipwright-changelog Step 5.3 runs tools/fold_events_for_release.py before the release is staged. It folds files that are on the trunk (planned against the merge-base, origin/HEAD by default), unchanged and older than 14 days, and commits exactly the touched paths with git commit --pathspec-from-file in a commit of its own. Every failure puts the tree back and the release goes on; the report carries open_files.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The release is the one serialized, single-actor point where the docs already say folds belong; it needs no scheduler, no CI token and no new service.
+- **Consequences:** One more commit per release when something is old enough. A failed fold leaves the tree as it was and is retried at the next release; a release that is reverted must leave the fold commit alone (revert only chore(release)). The fold only runs when releases happen: an open-count warning is the next iterate. A rollback that cannot finish keeps the archive and says so (rolled_back false).
+- **Rejected:** A scheduled CI workflow that opens a fold PR (needs write permission and PR churn in a product that keeps CI optional); folding inside every change (brings back the race with live runs); keep it manual with a warning only (still needs a person).
+
+---
+
+### ADR-688: One drop-file name rule, order across a rotation, no append to a torn file
+- **Date:** 2026-11-11
+- **Section:** Iterate - change: events writer hardening, round 2
+- **Run-ID:** iterate-2026-11-11-events-writer-hardening-2
+- **Context:** Probing the per-run event files after the flip found three name patterns in six modules, a rotated file whose first event could sort before the closed file's last event on a coarse clock, and a writer that kept appending to a half-written file.
+- **Decision:** DROP_NAME in events_read is the one rule (anchored with \Z, built from KEY_MAX) and every module uses it. The first event of a new file takes max ts of the run key's drops + 1 microsecond. A non-empty drop that does not end in a newline is never appended to; the next event opens one new file. CRLF under autocrlf was probed and is already covered.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Each gap could reorder or lose an event, or let a damaged file keep growing, now that this repo writes per-run files.
+- **Consequences:** A drop file named off the writer's shape now reads with key=None and is not staged (fail closed). A torn file stays as it is and blocks F6 staging and the run's absence gates until a person removes the cut-off line. A skewed clock on a shared implicit key pulls later events of that key forward (order and display only). Archived events are not seen by the ordering lookup.
+- **Rejected:** Repairing or quarantining a torn file automatically (a person decides what a cut-off line was); bounding the ts bump by the wall clock (brings the tie back).
+
+---
+
+### ADR-689: Make the iterate prose and the verifier hint layout-neutral
+- **Date:** 2026-11-11
+- **Section:** Iterate - change: layout-neutral iterate prose
+- **Run-ID:** iterate-2026-11-11-iterate-prose-layout-neutral
+- **Context:** This repo now records events one file per run, but several iterate references and one verifier message still named only the single event file.
+- **Decision:** Reword F11, F5b, the SKILL.md order note and rows, and F6 to name both layouts, and make the verifier message name git add for the legacy file and stage_event_drops.py for a drop.
+- **Commit:** (assigned post-merge)
+- **Rationale:** An agent on a per-run-layout repo should not be told to stage a file that does not exist.
+- **Consequences:** No behaviour change. One verifier message differs; a test asserts both fix hints.
+- **Rejected:** Leaving the prose and relying on F6.md alone: SKILL.md would contradict itself.
+
+---
+
+### ADR-690: External review: opt-in require-all-reviewers signal
+- **Date:** 2026-11-11
+- **Section:** Iterate — feature: external review strictness (#1035)
+- **Run-ID:** iterate-2026-11-11-review-require-all-legs
+- **Context:** A pass where one external reviewer failed and another answered exited 0 with success:true and was recorded as plain completed, so nothing acting on the JSON could tell a reviewer was missing (issue #1035, after #670).
+- **Decision:** The envelope always carries reviews_expected and missing_legs. Strictness is opt-in: external_review.require_all_legs, --require-all-legs or --min-reviews N turn a short pass into success:false, strict_failure and exit 1. record_review_pass derives a partial marker (completed + partial + missing_legs) from the recorded envelope and keeps it on the row so repair-markers preserves it.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Opt-in keeps #670's decision for existing users; deriving the marker in the recorder means no caller has to remember a flag; a roster count next to the success count lets callers gate without re-deriving the roster.
+- **Consequences:** Default behaviour is unchanged (one opinion is enough). Strict callers fail visibly; the no-keys state also fails under strictness. The logic lives in lib/external_review_strict.py so the bloat-capped CLI files do not grow.
+- **Rejected:** Parsing the stderr banner (prose, not a contract); making strictness the default (breaks #670); a marker status other than completed (the closed status vocabulary is read by verifiers and the webui).
+- **Details:** [plan.md](../planning/iterate/iterate-2026-11-11-review-require-all-legs/plan.md)
+
+---
+
+### ADR-691: Ordered fall-through routes for the GPT reviewer leg
+- **Date:** 2026-11-11
+- **Section:** Iterate - feature: GPT-leg route list
+- **Run-ID:** iterate-2026-11-11-review-route-list
+- **Context:** A codex exec runtime failure (quota, timeout) ended the GPT leg in error although an API key would have answered; provider picked one transport only (issue 1034).
+- **Decision:** Opt-in external_review.gpt_leg.routes list (codex/openrouter/direct) tried in order; moves on when a route is unavailable or fails; every attempt recorded in attempts.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Smallest change that fixes the observed failure; a closed route set and degrade-to-provider on malformed input keep it safe.
+- **Consequences:** No routes key = unchanged behaviour. Applies to external_review.py and availability checks, not llm_review.run_review. A metered fallback after a failed flat-cost route stays visible.
+- **Rejected:** Making provider a list (breaks existing configs); silently always falling back (hides metered cost); wiring llm_review.run_review (at size cap, out of scope).
+
+---
+
+### ADR-692: Advisory WARN at 150 open event drop files
+- **Date:** 2026-11-11
+- **Section:** Iterate — change: events open-file warning
+- **Run-ID:** iterate-2026-11-11-u1-events-open-warning
+- **Context:** The drops layout keeps one file per run in shipwright_events.d/; the fold runs automatically only at a release, so a repo that rarely releases accumulates files unnoticed.
+- **Decision:** main_health.py prints one stderr WARN at >=150 drop files (named constant, leaf module events_open_warning), naming the manual fold. Never changes the exit code; legacy layout silent. Also: A7 text names both locations; adopt seeder appends with newline LF.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Smallest thing that does: detection half of the fold, reusing a tool already run at both points; stderr keeps the JSON stdout contract intact.
+- **Consequences:** B1b and F11 (which run main_health) surface the line; no new gate. One constant to keep honest if the threshold or fold command changes.
+- **Rejected:** Do nothing; auto-fold on another trigger; a blocking gate on the count. Architecture review (GLM+GPT): approve/approve. Plan review findings accepted: unreadable folder returns no warning, not a wrong count; leaf module kept as it has two callers (tool + tests).
+
+---
+
+### ADR-693: Suite depth from the shared lexer; unbound covers comment is a warning
+- **Date:** 2026-11-11
+- **Section:** Iterate - bug: suite brace depth, unbound covers warning, gate text (U1)
+- **Run-ID:** iterate-2026-11-11-u1-tag-binding
+- **Context:** The collector counted braces textually so literals/comments mis-scoped suite tags (stale or lost FR); a covers comment reaching no declaration vanished silently.
+- **Decision:** propagate_suite_tags takes per-line brace deltas from ts_lexer. A dropped covers comment becomes an invalid_tags entry reason unbound-covers-comment (test empty, raw path:line) that the gate warns on and D-orphan words apart; untagged-modified text names both remedies, still a STOP.
+- **Commit:** (assigned post-merge)
+- **Rationale:** One lexer for collector and gate; warning-only because the comment binds nothing and is not a malformed tag.
+- **Consequences:** RTM counts can move in consumers; no new exemption code; frozen fr_tag_grammar untouched.
+- **Rejected:** Second quote tracker; emitting from flush_unbound (false-warns every suite tag); a deferral exemption (self-declared bypass).
+
+---
+
+### ADR-694: Verifier and release-notes scripts carry PEP 723 dependency headers
+- **Date:** 2026-11-12
+- **Section:** Iterate — change: tools declare their own packages
+- **Run-ID:** iterate-2026-11-11-u2-tools-declare-deps
+- **Context:** Run bare from outside the monorepo root, the finalization verifier degraded silently and the release-notes condenser answered 'openai package not installed'; the packages came only from the root project.
+- **Decision:** Add a PEP 723 script header to verify_iterate_finalization and to condense/publish_release_notes; the compliance launcher keeps uv run --project, stated as the other half of one rule.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Hook scripts already use this rule. The compliance script keeps its lock and .venv, which the SBOM licence scan reads; a second source would drift.
+- **Consequences:** A plain uv run works from any folder, also offline with a warm cache. A cold first run needs network; the changelog skill treats a uv failure as skipped.
+- **Rejected:** Documenting --with flags, or making every caller pass --project: each caller must remember. Giving update_compliance a header too: SBOM churn and two dependency sources.
+
+---
+
+### ADR-695: Leadwright follow-ups: G2/G4 audit polish, honest tags, lexer one-line describe
+- **Date:** 2026-11-12
+- **Section:** Iterate — change: leadwright follow-up bundle
+- **Run-ID:** iterate-2026-11-12-leadwright-followups-bundle
+- **Context:** Follow-ups left open by campaign leadwright-followups U1-U4: a comma stoplist entry stopped matching, G4 detail named no cards, a G4 test carried a false AC tag, one file crossed 300 lines, a one-line describe leaked its FR tag.
+- **Decision:** Whole-string short-circuit in unknown_scope_parts; G4 names up to 5 open card ids and blames the merge-scope audit for the outbox gap; G4 tests tagged FR-01.14 at FR level; _EMPTY_SKIP moved to _group_d_render.py; a one-line empty describe is popped at once.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Small, independent hardening items bundled in one PR; reviews spec/code/doubt (opus) passed.
+- **Consequences:** Behavior-preserving except the three visible fixes. A one-line describe with a trailing argument or comment still leaks (documented limit).
+- **Rejected:** Reporting a covers comment on an empty one-line describe as unbound: contradicts the existing contract that it is bound to the describe.
+
+---
+
+### ADR-696: Report-only G4 closing-token audit; tolerant status-less append; project-root either side
+- **Date:** 2026-11-12
+- **Section:** Iterate — change: triage consistency (closing-token audit, project-root order, status-less append)
+- **Run-ID:** iterate-2026-11-12-u2-triage-consistency
+- **Context:** Cards trg-52196e41, trg-87cd62db (root half), trg-87a3da4a (first half): closes-in-commits left cards open, --project-root worked only before the verb, and an append lacking a usable status was unreadable as an item.
+- **Decision:** New audit check G4 (group_g4.py, never writes a status, MEDIUM, verb-adjacent grammar, since last tag else last 500); triage_cli accepts --project-root on either side via argparse.SUPPRESS; read_all_items and the GC resolver read a missing/null/unknown append status as triage with a stderr warning (lib/triage_status_normalize.py).
+- **Commit:** (assigned post-merge)
+- **Rationale:** A report-only check keeps a human deciding; SUPPRESS stops the subparser default overwriting a value given before the verb; normalising in a lib helper keeps triage.py at its bloat baseline.
+- **Consequences:** G4 measured 0 findings on this repo (20 tokens in 1500 commits, all dismissed); a G4 finding is a normal MEDIUM fail. A status-less append appears open instead of vanishing; is_triage_record is unchanged, so no corruption and no validator class.
+- **Rejected:** A commit-msg hook writing statuses (second writer, local-only, wrong on squash/revert); treating status-less as corruption (breaks the WebUI contract); a validator class (blocks the sweep).
+
+---
+
+### ADR-697: G2 judges each comma part; no automatic skip
+- **Date:** 2026-11-12
+- **Section:** Iterate — change: audit G2 scope handling
+- **Run-ID:** iterate-2026-11-12-u3-g2-scope-audit
+- **Context:** A comma-joined commit scope read as one unknown token, and a source comment promised G2 skips adopted projects, which it never did (adopted projects declare one split, 01-adopted).
+- **Decision:** Split a scope on commas and judge each part in a new module g2_scopes.py; evidence lists only unknown parts. Fix the false text and point to disabled_checks G2 or the project's own g2_alias_map / g2_stoplist.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Operator decision 3.4: disabling a check stays an explicit declaration. Architecture review (GLM, GPT, internal) approved; external plan review revise points answered in the record.
+- **Consequences:** Scopes whose parts are all known now pass. A project list replaces the default list (documented). G2 for single scopes is unchanged.
+- **Rejected:** Automatic skip when only the adopted split exists (hidden rule, silent check-off); keep comma scopes as one token.
+
+---
+
+### ADR-698: Decode git/gh subprocess output as UTF-8 bytes
+- **Date:** 2026-11-12
+- **Section:** Iterate — fix: Windows decoding in two subprocess readers
+- **Run-ID:** iterate-2026-11-12-u4-windows-decoding
+- **Context:** text=True decodes with the locale codec (cp1252 on Windows): an em-dash check name was garbled and flagged twice, and a lone CR in a diff became LF.
+- **Decision:** pr_review_local and check_required_checks capture bytes and decode utf-8/replace, like fetch_pr_diff; no shared helper, the tools sit in different plugin trees (ADR-045).
+- **Commit:** (assigned post-merge)
+- **Rationale:** Same pattern as the existing fetch_pr_diff; smallest change that fixes the measured defect.
+- **Consequences:** Names and diffs round-trip on Windows; other text=True call sites are untouched by design. Two verifier texts now say a recorded event cannot be rewritten in this run.
+- **Rejected:** A shared decode helper (cross-tree import rules); sweeping all text=True call sites (separate card).
