@@ -124,14 +124,14 @@
     "code": {
       "review_type": "code",
       "status": "completed",
-      "findings_count": 4,
+      "findings_count": 5,
       "findings": [
         {
           "severity": "medium",
           "category": "correctness",
           "file": null,
           "line": null,
-          "finding": "partial-close exclusion too narrow ((root half), first half); fixed after review: parenthesis containing half/part, or 'first half'.",
+          "finding": "G4 tests may depend on run order (triage import path). Not reproduced: test_silent_when_status_exists passes when run alone.",
           "suggestion": null,
           "source": "code-reviewer"
         },
@@ -140,7 +140,7 @@
           "category": "correctness",
           "file": null,
           "line": null,
-          "finding": "no id end boundary; fixed (?![0-9a-z_])",
+          "finding": "partial-close exclusion also drops the finishing 'second half' commit and matches any parenthesis with 'part'; '(partial)' not covered. Accepted as documented limit.",
           "suggestion": null,
           "source": "code-reviewer"
         },
@@ -149,7 +149,16 @@
           "category": "correctness",
           "file": null,
           "line": null,
-          "finding": "registration test weak; fixed to run the registered G handler",
+          "finding": "status_by_id.get(None) conflation; status is never None after the normaliser. Accepted.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "performance",
+          "file": null,
+          "line": null,
+          "finding": "load_shared_lib per append line; negligible, accepted (triage.py at baseline).",
           "suggestion": null,
           "source": "code-reviewer"
         },
@@ -158,42 +167,31 @@
           "category": "readability",
           "file": null,
           "line": null,
-          "finding": "docs for G4 in SKILL.md and audit_detector docstring; fixed",
+          "finding": "alias dedup in triage_cli, duplicated Finding construction, private helper reach-in; non-blocking follow-ups.",
           "suggestion": null,
           "source": "code-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-11-11T23:41:23.394644+00:00",
+      "completed_at": "2026-11-12T00:21:22.676454+00:00",
       "disposition": null,
       "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "b74ab085f7390c18a76be1da5d49d022ea13fed3"
+      "model_tier": "opus"
     },
     "doubt": {
       "review_type": "doubt",
       "status": "completed",
-      "findings_count": 7,
+      "findings_count": 4,
       "findings": [
         {
           "severity": "medium",
           "category": null,
           "file": null,
           "line": null,
-          "finding": "G4 is report only",
-          "suggestion": "documented: never writes a status; a finding is a normal MEDIUM fail (decision 3.2)",
-          "source": "doubt-reviewer"
-        },
-        {
-          "severity": "medium",
-          "category": null,
-          "file": null,
-          "line": null,
-          "finding": "status-less warning actionable",
-          "suggestion": "documented as known limit (append-only, live store has 0 such appends)",
+          "finding": "outbox blind spot is a CI-only limit",
+          "suggestion": "accepted for this PR, follow-up: the consumer is the merge-scope audit (detached worktree, no outbox); the finding only appears for a closing token on a card closed solely in main's outbox, which is rare; wording fix tracked as follow-up",
           "source": "doubt-reviewer"
         },
         {
@@ -201,8 +199,8 @@
           "category": null,
           "file": null,
           "line": null,
-          "finding": "unknown status safely triage",
-          "suggestion": "documented in docstring",
+          "finding": "G4 finding is actionable from the backlog card",
+          "suggestion": "follow-up: put up to 5 open card ids into the fail detail",
           "source": "doubt-reviewer"
         },
         {
@@ -210,8 +208,8 @@
           "category": null,
           "file": null,
           "line": null,
-          "finding": "G4 grammar misses",
-          "suggestion": "word boundary after half/part added; other misses documented",
+          "finding": "G4 cannot interact with the backlog card carrying it",
+          "suggestion": "accepted: converges, one extra card of churn at most",
           "source": "doubt-reviewer"
         },
         {
@@ -219,38 +217,18 @@
           "category": null,
           "file": null,
           "line": null,
-          "finding": "revert original commit flagged",
-          "suggestion": "documented",
-          "source": "doubt-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": null,
-          "file": null,
-          "line": null,
-          "finding": "crash isolation fails",
-          "suggestion": "now skip",
-          "source": "doubt-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": null,
-          "file": null,
-          "line": null,
-          "finding": "stderr None",
-          "suggestion": "guarded",
+          "finding": "status-less read as triage is only visibility",
+          "suggestion": "accepted: machine dismissal of a formerly unreadable producer card is the intended outcome; live store has 0 such appends",
           "source": "doubt-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-11-11T23:47:54.452165+00:00",
+      "completed_at": "2026-11-12T00:21:22.789800+00:00",
       "disposition": null,
       "recorded_by": "doubt-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "b74ab085f7390c18a76be1da5d49d022ea13fed3"
+      "model_tier": "opus"
     },
     "external_code": {
       "review_type": "external_code",
@@ -329,14 +307,12 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-11-11T23:37:00.922299+00:00",
+      "completed_at": "2026-11-12T00:21:22.560393+00:00",
       "disposition": null,
       "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "b74ab085f7390c18a76be1da5d49d022ea13fed3"
+      "model_tier": "opus"
     },
     "plan_internal": {
       "review_type": "plan_internal",
