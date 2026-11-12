@@ -1,0 +1,64 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-12-leadwright-followups-bundle",
+    "date": "2026-11-12",
+    "unit": {
+      "status": "passed",
+      "passed": 2224,
+      "skipped": 5,
+      "total": 2229
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "G2 whole-string stoplist entry with comma still matches; extra parts still reported",
+          "disposition": "tested",
+          "evidence": "test_audit_g2_scopes.py::test_whole_string_stoplist_entry_still_matches PASSED"
+        },
+        {
+          "behavior": "G2 docs assertion checks all three docs per name",
+          "disposition": "tested",
+          "evidence": "test_audit_g2_scopes.py::test_docs_promise_no_automatic_skip PASSED"
+        },
+        {
+          "behavior": "G4 fail detail names open card ids",
+          "disposition": "tested",
+          "evidence": "test_audit_group_g4_close_tokens.py::test_reports_seeded_close_without_status PASSED"
+        },
+        {
+          "behavior": "one-line describe no longer leaks its tag; next-line-callback describe still propagates",
+          "disposition": "tested",
+          "evidence": "test_suite_tags_lexer.py::test_one_line_describe_does_not_leak_its_tag_to_later_tests,test_describe_with_body_on_next_line_still_tags_inner_tests PASSED; test_test_links_collector.py PASSED"
+        },
+        {
+          "behavior": "_EMPTY_SKIP moved to render module, D-layer empty-set verdict unchanged",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance tests (2224 passed) incl. test_group_d_empty_set_verdicts"
+        }
+      ],
+      "counts": {
+        "testable": 5,
+        "tested": 5,
+        "untestable": 0,
+        "untested_testable": 0
+      }
+    }
+  }
+}

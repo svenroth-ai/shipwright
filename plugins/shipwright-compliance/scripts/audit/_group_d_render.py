@@ -121,6 +121,29 @@ def invalid_layer_line(iv: dict) -> str:
 
 
 __all__ = [
-    "UNBOUND_COVERS_REASON", "fold_defect_line", "invalid_layer_line", "invalid_tag_line", "unbound_covers_line", "layer_gap_line",
+    "EMPTY_SKIP", "UNBOUND_COVERS_REASON", "fold_defect_line", "invalid_layer_line", "invalid_tag_line", "unbound_covers_line", "layer_gap_line",
     "orphan_line", "suggest_layer", "suggest_orphan",
 ]
+
+
+#: FV-2 (requirements-catalog campaign, S6). A manifest that is present and
+#: schema-valid but declares NO requirement at all means the collector walked the
+#: planning tree and found nothing — so D-layer examined nothing, and the sentence
+#: "every active FR is covered at its required layers" is a POSITIVE claim over a
+#: set that was never looked at. A reader cannot tell it apart from a genuinely
+#: fully-covered project. That is the whole of FV-2 in one string.
+#:
+#: ``skip`` rather than ``fail`` on purpose: a repo with no requirements yet is a
+#: real and legitimate state (a project before its first requirements run), so a
+#: hard verdict would trade a false-green for a false-red. What FV-2 names is the
+#: false CLAIM, not the absence of a block — and a skip that says WHICH state
+#: produced it removes the claim without inventing a defect.
+#:
+#: Scoped to ``not reqs`` — an EMPTY requirement set — rather than "no ACTIVE
+#: requirement". The wider predicate also swallowed the case where every
+#: requirement has been retired, which is a different (and separately tested)
+#: behaviour: there the check did examine a set and correctly found nothing owed.
+EMPTY_SKIP = ("skip", "MEDIUM",
+               "manifest declares no requirement — nothing was examined "
+               "(a green verdict here would be a claim about an empty set)",
+               [], None)

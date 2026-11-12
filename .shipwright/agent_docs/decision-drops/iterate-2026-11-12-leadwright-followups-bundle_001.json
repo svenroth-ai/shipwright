@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-12-leadwright-followups-bundle",
+  "date": "2026-11-12",
+  "section": "Iterate — change: leadwright follow-up bundle",
+  "title": "Leadwright follow-ups: G2/G4 audit polish, honest tags, lexer one-line describe",
+  "context": "Follow-ups left open by campaign leadwright-followups U1-U4: a comma stoplist entry stopped matching, G4 detail named no cards, a G4 test carried a false AC tag, one file crossed 300 lines, a one-line describe leaked its FR tag.",
+  "decision": "Whole-string short-circuit in unknown_scope_parts; G4 names up to 5 open card ids and blames the merge-scope audit for the outbox gap; G4 tests tagged FR-01.14 at FR level; _EMPTY_SKIP moved to _group_d_render.py; a one-line empty describe is popped at once.",
+  "consequences": "Behavior-preserving except the three visible fixes. A one-line describe with a trailing argument or comment still leaks (documented limit).",
+  "rationale": "Small, independent hardening items bundled in one PR; reviews spec/code/doubt (opus) passed.",
+  "rejected": "Reporting a covers comment on an empty one-line describe as unbound: contradicts the existing contract that it is bound to the describe.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

@@ -29,8 +29,9 @@ a hard-wrapped body, ``Closes `trg-X```, ``Closes: trg-X``, past tense
 original commit of a later Revert stays in range.
 
 **Known limit:** a status that exists only in the gitignored outbox
-(``triage.outbox.jsonl``) is invisible to CI, so CI can report a card the
-author's machine already closed.
+(``triage.outbox.jsonl``) is invisible to the merge-scope audit (it runs in a
+detached worktree, which has no outbox), so it can report a card the author's
+machine already closed.
 """
 
 from __future__ import annotations
@@ -134,7 +135,9 @@ def _check(project_root: Path, config: dict[str, Any]) -> Finding:
     if not findings:
         return finding("pass", f"{len(commits)} commit(s) {scope}; no closing token on an open card", info)
     evidence = [f"{sha[:12]} closes {cid}, still '{st}'" for sha, cid, st in findings] + info
-    detail = (f"{len(findings)} closing token(s) on cards still open ({scope}); "
+    ids = list(dict.fromkeys(cid for _, cid, _ in findings))
+    shown = ", ".join(ids[:5]) + (f" (+{len(ids) - 5} more)" if len(ids) > 5 else "")
+    detail = (f"{len(findings)} closing token(s) on cards still open ({scope}): {shown}; "
               "record the status with triage_cli dismiss/promote")
     return finding("fail", detail, evidence)
 

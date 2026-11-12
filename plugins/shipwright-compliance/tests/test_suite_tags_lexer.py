@@ -155,3 +155,21 @@ def test_the_reported_line_is_the_line_on_disk_not_in_the_joined_source():
     _, invalid = _parse(
         "it(\n  'wrapped head',\n  () => {},\n);\nit(\n  'another',\n  () => {},\n);\n// @covers FR-01.01\nimport x from 'y';\n")
     assert [i.raw for i in invalid] == [f"{PATH}:9: // @covers FR-01.01"]
+
+
+
+
+def test_one_line_describe_does_not_leak_its_tag_to_later_tests():
+    hits, _ = _run(
+        "// @covers FR-01.01\ndescribe('empty', () => {});\n"
+        "it('later', () => {\n  expect(1).toBe(1);\n});\n"
+    )
+    assert _by_test(hits) == {}
+
+
+def test_describe_with_body_on_next_line_still_tags_inner_tests():
+    hits, _ = _run(
+        "// @covers FR-01.01\ndescribe('suite',\n  () => {\n"
+        "  it('inner', () => {});\n});\nit('after', () => {});\n"
+    )
+    assert _by_test(hits) == {"inner": ["FR-01.01"]}

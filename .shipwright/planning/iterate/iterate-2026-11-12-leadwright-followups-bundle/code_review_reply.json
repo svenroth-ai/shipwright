@@ -1,0 +1,6 @@
+{"section": "iterate-2026-11-12-leadwright-followups-bundle", "review": [
+{"severity": "low", "category": "correctness", "finding": "one-line describe with a trailing argument or trailing block comment is not recognised and still leaks; accepted as documented limit (depth guard prevents false pops)"},
+{"severity": "low", "category": "readability", "finding": "opened_here is function-scoped but only read in the assigning iteration; accepted"},
+{"severity": "low", "category": "correctness", "finding": "whole-string match strips only outer whitespace ('daemon, lib' does not match stoplist 'daemon,lib'); accepted, per-part check still applies"},
+{"severity": "low", "category": "architecture", "finding": "_EMPTY_SKIP sits after __all__ and is a private cross-module import; accepted"},
+{"severity": "low", "category": "readability", "finding": "extra blank lines before new tests; accepted"}]}
