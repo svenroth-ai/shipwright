@@ -22,7 +22,7 @@ from tests.test_audit_group_g import (  # noqa: E402
 
 REPO_ROOT = PLUGIN_ROOT.parent.parent
 
-pytestmark = pytest.mark.covers("FR-01.10/AC07")
+pytestmark = pytest.mark.covers("FR-01.10")
 
 
 @pytest.mark.parametrize("scope,parts", [
