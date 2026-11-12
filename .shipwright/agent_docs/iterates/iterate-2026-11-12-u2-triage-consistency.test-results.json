@@ -1,0 +1,98 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-12-u2-triage-consistency",
+    "date": "2026-11-12",
+    "unit": {
+      "status": "passed",
+      "passed": 16774,
+      "skipped": 60,
+      "total": 16834
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [
+      "11 host-gated tests (Windows symlink privilege x6, ADR-044 cross-root sys.path x5) fail under CI=true on this Windows host; skipped or unrelated without it; none touches the diff"
+    ],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "G4 reports a seeded close with no status event",
+          "disposition": "tested",
+          "evidence": "test_audit_group_g4_close_tokens.py::test_reports_seeded_close_without_status PASSED"
+        },
+        {
+          "behavior": "G4 silent when the status exists / on negative and partial-close fixtures / Revert ignored",
+          "disposition": "tested",
+          "evidence": "test_audit_group_g4_close_tokens.py::test_silent_when_status_exists,test_not_tokens PASSED"
+        },
+        {
+          "behavior": "G4 no-tag fallback says so; unknown id is info only; wired into group G",
+          "disposition": "tested",
+          "evidence": "test_audit_group_g4_close_tokens.py::test_no_tag_says_so,test_unknown_id_is_info_only,test_registered_under_group_g PASSED"
+        },
+        {
+          "behavior": "--project-root before, after, both, neither read the intended store",
+          "disposition": "tested",
+          "evidence": "test_triage_cli_project_root_position.py (3 tests) PASSED"
+        },
+        {
+          "behavior": "append with missing/null/unknown status reads as triage, warns once, is not corruption, later status wins",
+          "disposition": "tested",
+          "evidence": "test_triage_status_less_append.py (11 tests) PASSED"
+        },
+        {
+          "behavior": "GC resolver agrees with read_all_items on malformed append status",
+          "disposition": "tested",
+          "evidence": "test_triage_status_less_append.py::test_gc_resolver_agrees_with_the_reader PASSED"
+        },
+        {
+          "behavior": "CLI list --json shows the malformed appends as open",
+          "disposition": "tested",
+          "evidence": "test_triage_status_less_append.py::test_cli_list_shows_all_three_as_open_with_warning PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 7,
+        "tested": 7,
+        "untestable": 0,
+        "untested_testable": 0
+      }
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run python shared/scripts/tools/triage_cli.py list --json --project-root .",
+      "exit_code": 0,
+      "tests_run": 1,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\campaign-leadwright-followups--U2\\.shipwright\\runs\\iterate-2026-11-12-u2-triage-consistency\\surface_verification.log",
+      "timestamp": "2026-11-11T23:38:19.268Z",
+      "attempts": 1
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-24-r5b-merge-lane",
+    "commit": "032d1ebbf0ef9c99eb98f240c8f1110e981a32a5",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

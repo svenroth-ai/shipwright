@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-12-u2-triage-consistency",
+  "date": "2026-11-12",
+  "section": "Iterate — change: triage consistency (closing-token audit, project-root order, status-less append)",
+  "title": "Report-only G4 closing-token audit; tolerant status-less append; project-root either side",
+  "context": "Cards trg-52196e41, trg-87cd62db (root half), trg-87a3da4a (first half): closes-in-commits left cards open, --project-root worked only before the verb, and an append lacking a usable status was unreadable as an item.",
+  "decision": "New audit check G4 (group_g4.py, never writes a status, MEDIUM, verb-adjacent grammar, since last tag else last 500); triage_cli accepts --project-root on either side via argparse.SUPPRESS; read_all_items and the GC resolver read a missing/null/unknown append status as triage with a stderr warning (lib/triage_status_normalize.py).",
+  "consequences": "G4 measured 0 findings on this repo (20 tokens in 1500 commits, all dismissed); a G4 finding is a normal MEDIUM fail. A status-less append appears open instead of vanishing; is_triage_record is unchanged, so no corruption and no validator class.",
+  "rationale": "A report-only check keeps a human deciding; SUPPRESS stops the subparser default overwriting a value given before the verb; normalising in a lib helper keeps triage.py at its bloat baseline.",
+  "rejected": "A commit-msg hook writing statuses (second writer, local-only, wrong on squash/revert); treating status-less as corruption (breaks the WebUI contract); a validator class (blocks the sweep).",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ""
+}

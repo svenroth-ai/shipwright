@@ -1,0 +1,8 @@
+{"stage":"doubt","gating":"advisory-must-address","doubts":[
+{"severity":"medium","claim_under_doubt":"G4 is report only","what_would_resolve_it":"documented: never writes a status; a finding is a normal MEDIUM fail (decision 3.2)"},
+{"severity":"medium","claim_under_doubt":"status-less warning actionable","what_would_resolve_it":"documented as known limit (append-only, live store has 0 such appends)"},
+{"severity":"low","claim_under_doubt":"unknown status safely triage","what_would_resolve_it":"documented in docstring"},
+{"severity":"low","claim_under_doubt":"G4 grammar misses","what_would_resolve_it":"word boundary after half/part added; other misses documented"},
+{"severity":"low","claim_under_doubt":"revert original commit flagged","what_would_resolve_it":"documented"},
+{"severity":"low","claim_under_doubt":"crash isolation fails","what_would_resolve_it":"now skip"},
+{"severity":"low","claim_under_doubt":"stderr None","what_would_resolve_it":"guarded"}]}

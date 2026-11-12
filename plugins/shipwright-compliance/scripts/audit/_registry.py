@@ -57,8 +57,15 @@ def register_all() -> None:
     audit_detector.register_group("F", group_f.run)
 
     # Group G — Agent-docs freshness vs. git activity (Step 8).
-    from scripts.audit import group_g
-    audit_detector.register_group("G", group_g.run)
+    # G4 (closing token vs triage status) lives in its own module and shares
+    # the group letter, like A5 above.
+    from scripts.audit import group_g, group_g4
+
+    def _group_g_combined(project_root, config, data):
+        return group_g.run(project_root, config, data) + \
+               group_g4.run(project_root, config, data)
+
+    audit_detector.register_group("G", _group_g_combined)
 
     # Group H — Bloat-policy detective audit (Campaign A.review).
     from scripts.audit import group_h

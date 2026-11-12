@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: bug\n- Severity: medium\n- File: plugins/shipwright-compliance/scripts/audit/group_g4.py:43\n- Finding: The ID pattern has no trailing boundary, so `Fixes trg-aaaaaaaa0` is parsed as closing `trg-aaaaaaaa`. If that eight-digit card exists and is open, G4 reports a false finding; otherwise it emits an incorrect unknown-ID line. This violates the grammar requiring an eight-hex-digit ID.\n- Suggestion: Add a trailing identifier boundary to `_ID` so longer identifiers cannot match a valid prefix. Add negative fixtures for nine-digit IDs and IDs followed by identifier characters, including within closing lists.\n\nOverall assessment: ship-with-fixes. The diff appears to cover all three acceptance criteria, but the token parser needs this correction before shipping.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "## Findings\n\n- Category: test\n  Severity: medium\n  File: plugins/shipwright-compliance/tests/test_audit_group_g4_close_tokens.py:123-126 (`test_registered_under_group_g`)\n  Finding: The test only asserts `\"G\" in audit_detector._GROUPS`. Group G was registered before this change too, so the test passes even if `group_g4` were never wired into `_group_g_combined` (or if the combined wrapper were deleted and the old `group_g.run` registered directly). It validates nothing about the new registration.\n  Suggestion: Assert that the registered \"G\" callable is the combined wrapper, or that a seeded G4 finding surfaces through `audit_detector` end-to-end (e.g., run the detector against the `_repo(..., None)` fixture and check a G4 finding appears).\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/lib/triage_status_normalize.py:31-40 (`initial_record`)\n  Finding: When the append line has no `id` key, `item_id` becomes the string `\"None\"` and is used both in the warning and the `_WARNED` dedupe key. Two different malformed records both missing ids collapse to one warning. Minor, but the message `append 'None'` is misleading.\n  Suggestion: Guard with `isinstance(item.get(\"id\"), str)` before warning/deduping, or surface the record's `ts`/`title` in the message instead.\n\n- Category: regression\n  Severity: low\n  File: shared/scripts/tools/triage_cli.py:187-191\n  Finding: `sp.add_argument(\"--project-root\", ...)` is added unconditionally to every subparser. If any existing subcommand (e.g., `amend`, or a future `list` variant) already defines `--project-root`, argparse raises `ArgumentError` at parser build time and the whole CLI dies. The tests only exercise `list`.\n  Suggestion: Skip subparsers that already define the option (check `sp._option_string_actions`), or at least add a smoke test that builds the parser and parses one arg per subcommand.\n\n- Category: edge-case\n  Severity: low\n  File: plugins/shipwright-compliance/scripts/audit/group_g4.py:36-42 (`_ID_FULL` / `_TOKEN_RE`)\n  Finding: A partial close in the *middle* of a list silently truncates the token list: `\"Closes trg-A, trg-B (first half)\"` yields `[trg-A]` \u2014 trg-A is reported even though the commit author may have meant a mixed close. The spec only pins the list-*starts*-with-partial case, so this is a defined-but-undocumented gap; a commit like this produces a finding on A that the convention `Part of trg-X` was designed to avoid.\n  Suggestion: Either document this behavior in the grammar note in `docs/hooks-and-pipeline.md`, or, if a partial appears anywhere in a matched token group, drop the whole group (consistent with the conservative starts-with-partial rule).\n\n- Category: bug\n  Severity: low\n  File: plugins/shipwright-compliance/scripts/audit/group_g4.py:110-118 (`_check` shallow check)\n  Finding: `git_log_scan._run_git(...).strip()` will raise `AttributeError` if `_run_git` returns bytes on any code path; the surrounding `except Exception: pass` swallows it silently, so the shallow-clone annotation is lost rather than the spec's \"a shallow clone is named in the detail\". Swallowing is safe for findings but hides the lost annotation.\n  Suggestion: Degrade explicitly (`except Exception: scope += \", shallow-clone check unavailable\"` or log) so the known-limit annotation failure is visible.\n\nVerified non-issues worth noting: the regex genuinely returns `[]` for a list starting with a partial id (the lookahead kills the first id and no restart point exists after the verb); the SUPPRESS-default subparser trick correctly preserves the pre-verb value and lets the post-verb value win (AC2 fully covered, including both-given and cwd-default); the GC resolver and reader now share `initial_record` so AC3's agreement is structural, not incidental; the changed `test_triage_expected_status.py` test would fail under the old behavior (`mark_status` previously raised `StatusPreconditionError`), so it's a real behavioral test.\n\nOverall: the three ACs are implemented and mostly pinned by tests that fail on regressions; findings are refinements. Ship-with-fixes at most \u2014 the registry test is the one I'd insist on.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-11-12-u2-triage-consistency",
+    "at": "2026-11-11T23:37:07.147455+00:00"
+  },
+  "verdicts": {
+    "openai": "revise",
+    "glm": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

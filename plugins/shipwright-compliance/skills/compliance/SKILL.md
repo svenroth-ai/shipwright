@@ -44,7 +44,7 @@ Groups:
   D — Event-log FR coverage (uncovered FRs, stale refs, promised-not-delivered, last-build state)
   E — Compliance-doc content staleness (regen + byte compare; --fix rewrites stale docs)
   F — ADR structural integrity (preventive re-run)
-  G — Agent-docs freshness vs. git activity (G2 conventional-commit scope, G3 ADR-ID body refs)
+  G — Agent-docs freshness vs. git activity (G2 conventional-commit scope, G3 ADR-ID body refs, G4 closing token vs triage status, report only)
   H — Bloat-policy detective audit (new crossings of the 300/400-line budgets + ratchets vs shipwright_bloat_baseline.json; Campaign A.review)
 
 Reports written (both gitignored — transient):

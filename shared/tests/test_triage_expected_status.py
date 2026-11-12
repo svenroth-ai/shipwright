@@ -221,13 +221,11 @@ def test_block_matching_terminal_requires_a_pair(tmp_path: Path, bad: object) ->
 # External finding #5 — an item that resolves to NO status
 # --------------------------------------------------------------------------
 
-def test_item_without_a_status_field_is_refused_not_written(tmp_path: Path) -> None:
-    """Executes the raise with `actual=None`.
-
-    A legacy / hand-written append line carrying no `status` key resolves to
-    None. `None not in ("triage",)` must refuse rather than write, and the
-    exception must format without blowing up on the None.
-    """
+@pytest.mark.covers("FR-01.14/AC01")
+def test_item_without_a_status_field_reads_as_triage(tmp_path: Path) -> None:
+    """U2 (trg-87a3da4a): a legacy / hand-written append with no `status` key
+    now resolves to `triage` (with an integrity warning), so a `triage`
+    precondition is satisfied instead of refused with `actual=None`."""
     _seed(tmp_path)  # creates the header
     path = tmp_path / ".shipwright" / "triage.jsonl"
     with open(path, "a", encoding="utf-8", newline="") as fp:
@@ -237,13 +235,9 @@ def test_item_without_a_status_field_is_refused_not_written(tmp_path: Path) -> N
             "severity": "low", "kind": "bug", "title": "t", "detail": "d",
         }) + "\n")
 
-    before = _store_bytes(tmp_path)
-    with pytest.raises(StatusPreconditionError) as exc:
-        mark_status(tmp_path, "trg-legacy01", new_status="dismissed",
-                    by="auto", expected_status="triage")
-    assert exc.value.actual is None
-    assert "trg-legacy01" in str(exc.value)
-    assert _store_bytes(tmp_path) == before
+    prev = mark_status(tmp_path, "trg-legacy01", new_status="dismissed",
+                       by="auto", expected_status="triage")
+    assert prev == "triage"
 
 
 # --------------------------------------------------------------------------
