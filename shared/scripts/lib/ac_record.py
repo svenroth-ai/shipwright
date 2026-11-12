@@ -167,7 +167,7 @@ def _order_problem(root: Path, rel: str, base: str, head: str) -> str:
         if code_at is None and any(f != rel and is_observable_path(f) for f in files):
             code_at = n
     if code_at is not None and (rec_at is None or rec_at > code_at):
-        return "the AC record was committed after the first code commit (or not at all) - it is instructed to be written before any code"
+        return "the AC record was committed after the first code commit (or not at all) - it is instructed to be written before any code. For this run the warning cannot be cleared: a record committed late stays late. Next time write it before the first code commit"
     return ""
 
 

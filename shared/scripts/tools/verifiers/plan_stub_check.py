@@ -48,7 +48,10 @@ def check_plan_stub_recorded(project_root: Path, run_id: str, commit_hash: str =
               "full when an AC changes or a catalog gap is declared) and put its path on the event as plan_path")
     recorded = event.get("plan_path")
     if not isinstance(recorded, str) or not recorded.strip():
-        return _warn(f"this iterate's event has no plan_path - {repair} (convention: {plan_rel_path(run_id)})")
+        return _warn(f"this iterate's event has no plan_path. For this run the warning cannot be cleared: the recorded event "
+                     f"cannot be rewritten, so writing the stub now does not add plan_path to it. Next time: {repair} "
+                     f"BEFORE finalization (F5b), which is the only step that folds plan_path into the event "
+                     f"(convention: {plan_rel_path(run_id)})")
     target = root / recorded
     if not safe_plan_path(recorded) or not target.is_file():
         return _warn(f"plan_path {recorded} names no file in the tree - {repair}")

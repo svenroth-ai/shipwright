@@ -84,7 +84,7 @@ def _no_filter_overrides(root: Path, env: dict[str, str]) -> list[str]:
         ["git", "-C", str(root), "config", "--get-regexp",
          r"^filter\..*\.(clean|smudge|process)$"],
         cwd=str(root), env=env, capture_output=True, text=True,
-        errors="replace", shell=False, timeout=30)
+        encoding="utf-8", errors="replace", shell=False, timeout=30)
     keys = [line.split(" ", 1)[0] for line in (result.stdout or "").splitlines() if line.strip()]
     overrides: list[str] = []
     for key in keys:
@@ -127,10 +127,15 @@ def build_local_diff(project_root: Path, base_ref: str) -> tuple[str, str]:
         env = _controlled_git_env(index)
 
         def _git(*args: str) -> subprocess.CompletedProcess:
-            return subprocess.run(  # nosec B603 - fixed argv, shell=False
+            # BYTES, decoded here: `text=True` would translate a lone CR to LF
+            # (a `diff --git` boundary depends on LF-only lines) and decode with
+            # the locale codec (cp1252 on Windows). Mirrors `fetch_pr_diff`.
+            proc = subprocess.run(  # nosec B603 - fixed argv, shell=False
                 ["git", "-C", str(root), *args], cwd=str(root), env=env,
-                capture_output=True, text=True, errors="replace",
-                shell=False, timeout=120)
+                capture_output=True, shell=False, timeout=120)
+            proc.stdout = (proc.stdout or b"").decode("utf-8", "replace")
+            proc.stderr = (proc.stderr or b"").decode("utf-8", "replace")
+            return proc
 
         base = _git("merge-base", base_ref, "HEAD")
         if base.returncode != 0 or not (base.stdout or "").strip():

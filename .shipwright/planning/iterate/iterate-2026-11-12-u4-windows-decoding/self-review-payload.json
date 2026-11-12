@@ -1,0 +1,9 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"All three brief items done: bytes+utf-8/replace in build_local_diff, encoding on config probe, check_required_checks _gh/resolve_repo, verifier text."},
+{"name":"Error Handling","verdict":"pass","note":"Decode uses errors=replace; str passthrough in _decode keeps existing fakes working."},
+{"name":"Security Basics","verdict":"pass","note":"No new inputs; argv unchanged, shell=False kept."},
+{"name":"Test Quality","verdict":"pass","note":"Kwargs-level, bytes-level and a real-git child with PYTHONUTF8=0; em-dash name fixture flagged at most once."},
+{"name":"Performance Basics","verdict":"pass","note":"No change in call count."},
+{"name":"Naming & Structure","verdict":"pass","note":"No shared helper: tools live in different plugin trees (ADR-045); new tests in new files where baselines apply."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Boundary is subprocess bytes to str; probed with real git under PYTHONUTF8=0."},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"No skips, xfails or .only added."}]}

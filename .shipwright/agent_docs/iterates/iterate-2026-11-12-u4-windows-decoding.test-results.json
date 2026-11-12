@@ -1,0 +1,71 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-12-u4-windows-decoding",
+    "date": "2026-11-12",
+    "unit": {
+      "status": "passed",
+      "passed": 15665,
+      "skipped": 63,
+      "total": 15728
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "local PR-review diff decodes git output as UTF-8 bytes and keeps a lone CR",
+          "disposition": "tested",
+          "evidence": "test_pr_review_local_diff.py::TestDiffDecoding (3 tests incl. real git child with PYTHONUTF8=0) PASSED"
+        },
+        {
+          "behavior": "required-checks drift detector reads gh output as UTF-8; em-dash name not flagged when matching, flagged once when missing",
+          "disposition": "tested",
+          "evidence": "test_check_required_checks_decoding.py 4 tests PASSED"
+        },
+        {
+          "behavior": "plan_stub_check and AC-record order warnings say the warning cannot be cleared in this run",
+          "disposition": "tested",
+          "evidence": "test_verifier_unrecoverable_text.py 2 tests PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 3,
+        "tested": 3,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 1,
+        "covered_acs": 1
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-11-12-u4-windows-decoding",
+    "commit": "4d88f90f18c3885a428455706fd8da9bc3371228",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
