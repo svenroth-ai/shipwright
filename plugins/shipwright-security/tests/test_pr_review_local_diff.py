@@ -170,7 +170,8 @@ class TestDiffDecoding:
         text, err = pr_review_local.build_local_diff(tmp_path, "main")
         assert err == ""
         assert text == diff_bytes.decode("utf-8")
-        assert "\r" in text and text.count("\ndiff --git") == 0 or "\r" in text
+        assert chr(13) in text  # the lone CR survived
+        assert chr(10) + "diff --git a/fake" not in text  # and did not become a line break
         diff_call = [k for k in seen][-1]
         assert not diff_call.get("text") and "encoding" not in diff_call
 

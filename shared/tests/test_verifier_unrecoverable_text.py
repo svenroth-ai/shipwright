@@ -21,7 +21,16 @@ def test_missing_plan_path_text_says_the_warning_cannot_be_cleared(tmp_path):
 
 
 @pytest.mark.covers("FR-01.11")
-def test_late_ac_record_text_says_the_warning_cannot_be_cleared():
-    from pathlib import Path
-    src = (Path(__file__).resolve().parents[1] / "scripts" / "lib" / "ac_record.py").read_text(encoding="utf-8")
-    assert "committed after the first code commit" in src and "cannot be cleared" in src
+def test_late_ac_record_text_says_the_warning_cannot_be_cleared(tmp_path):
+    from lib import ac_record as ar
+    from shared.tests.ac_test_helpers import PROMISE, SPEC, BASE_SPEC
+    from shared.tests.ac_test_helpers import commit, decided, git, repo
+
+    root = repo(tmp_path)
+    base = git(root, "rev-parse", "HEAD")
+    commit(root, {"shared/scripts/a.py": "x = 1" + chr(10), SPEC: BASE_SPEC + f"- (E) [AC06] {PROMISE}" + chr(10)})
+    ar.append_record(root, _RUN, decided([{"kind": "add", "owner_fr": "FR-01.03", "new_text": PROMISE}]))
+    head = commit(root, {})
+    detail = ar._order_problem(root, ar._rel(_RUN), base, head)
+    assert "committed after the first code commit" in detail
+    assert "cannot be cleared" in detail and "Next time" in detail
