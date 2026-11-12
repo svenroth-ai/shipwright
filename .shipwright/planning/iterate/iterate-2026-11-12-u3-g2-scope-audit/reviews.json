@@ -116,45 +116,61 @@
     "code": {
       "review_type": "code",
       "status": "completed",
-      "findings_count": 3,
+      "findings_count": 5,
       "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "A g2_stoplist/g2_alias_map entry containing a comma (e.g. 'daemon,lib') no longer matches as a whole string. Edge, accepted for this PR; follow-up: whole-string short-circuit in unknown_scope_parts plus one test.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
         {
           "severity": "low",
           "category": "readability",
-          "file": "plugins/shipwright-compliance/scripts/audit/group_g.py",
-          "line": 5,
-          "finding": "Module docstring for G2 still describes a single scope; does not mention comma-joined scopes being judged per part.",
-          "suggestion": "Reword the existing docstring lines in place.",
+          "file": null,
+          "line": null,
+          "finding": "group_g.py G2 module docstring still singular; follow-up.",
+          "suggestion": null,
           "source": "code-reviewer"
         },
         {
           "severity": "low",
           "category": "correctness",
-          "file": "plugins/shipwright-compliance/scripts/audit/g2_scopes.py",
-          "line": 74,
-          "finding": "An alias-map or stoplist entry containing a comma can no longer match.",
-          "suggestion": "Docs note or accept.",
+          "file": null,
+          "line": null,
+          "finding": "two doc assertions in test_audit_g2_scopes.py were already true at merge-base; follow-up.",
+          "suggestion": null,
           "source": "code-reviewer"
         },
         {
           "severity": "low",
           "category": "readability",
-          "file": "plugins/shipwright-compliance/tests/test_audit_g2_scopes.py",
-          "line": 80,
-          "finding": "Weak pins on disabled_checks / g2_alias_map words in the detector.",
-          "suggestion": "Rely on the never-skipped-automatically assertions.",
+          "file": null,
+          "line": null,
+          "finding": "assert on 'auth' in detail depends on detail format; follow-up.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": null,
+          "line": null,
+          "finding": "deleted 2026-09-20 iterate records are the automatic retention eviction; not a defect.",
+          "suggestion": null,
           "source": "code-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-11-12T00:52:56.338223+00:00",
+      "completed_at": "2026-11-12T01:01:38.124276+00:00",
       "disposition": null,
       "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "b441a25dfcdf8f48a4cd83381c8bcfbe89c9115d"
+      "model_tier": "opus"
     },
     "doubt": {
       "review_type": "doubt",
@@ -162,8 +178,8 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-11-12T00:52:56.480605+00:00",
-      "disposition": "Stage 3 applies to migrations, async/concurrency, cross-plugin imports, irreversible ops; this diff is a pure string-splitting helper plus text, with none of these",
+      "completed_at": "2026-11-12T01:01:38.266004+00:00",
+      "disposition": "Stage 3 is conditional and did not trigger for this diff; Stage 2 passed at 3f-bis",
       "recorded_by": "none",
       "parse_status": null,
       "raw_excerpt": null,
@@ -219,14 +235,12 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-11-12T00:52:10.774261+00:00",
+      "completed_at": "2026-11-12T01:01:38.015413+00:00",
       "disposition": null,
       "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "b441a25dfcdf8f48a4cd83381c8bcfbe89c9115d"
+      "model_tier": "opus"
     },
     "plan_internal": {
       "review_type": "plan_internal",
