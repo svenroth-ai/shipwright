@@ -122,6 +122,7 @@ def test_no_producer_still_emits_the_retired_source_column() -> None:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.covers("FR-01.10")
 def test_every_live_requirement_stays_on_legacy_provenance() -> None:
     """ZERO ``explicit``. If this fails, the next gate run hard-aborts."""
     rows = _census(LIVE_SPEC)
@@ -129,7 +130,7 @@ def test_every_live_requirement_stays_on_legacy_provenance() -> None:
     # 2026-09-20. The count moves; the invariant below does NOT — each new row
     # carries the (inferred) marker precisely so `explicit` stays empty and the
     # layer-coverage gate stays advisory.
-    assert len(rows) == 21
+    assert len(rows) == 22  # 21 -> 22: FR-01.22 cut out of FR-01.11, 2026-11-13
     explicit = [r["id"] for r in rows if r["source"] == "explicit"]
     assert explicit == [], (
         f"{len(explicit)} requirement(s) flipped to `explicit` provenance: "
@@ -140,13 +141,14 @@ def test_every_live_requirement_stays_on_legacy_provenance() -> None:
     assert {r["source"] for r in rows} <= {"inferred_legacy", "defaulted_legacy"}
 
 
+@pytest.mark.covers("FR-01.10")
 def test_every_live_layers_cell_carries_the_marker() -> None:
     """The AC, asserted on the artifact rather than on the intent."""
     rows = [
         line for line in LIVE_SPEC.read_text(encoding="utf-8").splitlines()
         if line.startswith("| FR-")
     ]
-    assert len(rows) == 21  # FR-01.20 appended 2026-08-07; FR-01.21 appended 2026-09-20
+    assert len(rows) == 22  # FR-01.22 cut out of FR-01.11 2026-11-13; FR-01.20 appended 2026-08-07; FR-01.21 appended 2026-09-20
     for line in rows:
         layers_cell = line.rstrip("|").rsplit("|", 1)[-1].strip()
         assert "(inferred)" in layers_cell, f"unmarked Layers cell: {line[:60]}…"
@@ -220,6 +222,9 @@ _EXPECTED_BASIS["FR-01.20"] = "code"
 #: (`codex-plugin-execution-reliability`), not read out of already-built code
 #: or a standalone operator interview.
 _EXPECTED_BASIS["FR-01.21"] = "other: campaign spec"
+#: FR-01.22 (cut out of FR-01.11 on 2026-11-13, iterate-2026-11-13-atomic-frs-
+#: cut-delivery) — fr_split copies the source row's Basis, which is `code`.
+_EXPECTED_BASIS["FR-01.22"] = "code"
 
 
 def test_every_live_requirement_carries_its_decided_basis() -> None:
@@ -252,6 +257,7 @@ def test_no_persisted_area_cell_disagrees_with_its_own_id() -> None:
     assert mismatched == [], f"Area cells disagreeing with their own id: {mismatched}"
 
 
+@pytest.mark.covers("FR-01.10")
 def test_the_migration_did_not_change_any_required_layers() -> None:
     """The marked cells record the inference that already ran; they add no claim.
 
@@ -263,7 +269,8 @@ def test_the_migration_did_not_change_any_required_layers() -> None:
     expected = {**_PRE_MIGRATION_LAYERS, "FR-01.16": ["unit"],
                 "FR-01.17": ["unit"], "FR-01.18": ["unit"],
                 "FR-01.19": ["unit"], "FR-01.20": ["unit"],
-                "FR-01.21": ["unit", "e2e"]}
+                "FR-01.21": ["unit", "e2e"],
+                "FR-01.22": ["unit"]}  # copied from FR-01.11 by fr_split
     assert {r["id"]: r["layers"] for r in _census(LIVE_SPEC)} == expected
 
 

@@ -64,7 +64,7 @@ def _unarmable_host(**kw):
     return _Host(**kw)
 
 
-@pytest.mark.covers("FR-01.11/AC21")
+@pytest.mark.covers("FR-01.22/AC21")
 def test_a_green_current_branch_is_merged_here_and_confirmed():
     """AC21: the base branch is not protected, so the host cannot arm — the
     change is merged once every check the host actually ran has passed,
@@ -85,7 +85,7 @@ def test_the_merge_is_pinned_to_the_verified_commit():
     assert SHA in merge_call
 
 
-@pytest.mark.covers("FR-01.11/AC25")
+@pytest.mark.covers("FR-01.22/AC25")
 def test_a_refresh_pushes_reverifies_and_waits_again_before_merging():
     """AC25: a change that fell behind while waiting is first brought up to
     date and checked again, and what gets merged is exactly what was
@@ -225,7 +225,7 @@ def test_a_host_error_while_watching_is_exit_five_not_a_crash():
         assert "could not be read" in result["reason"]
 
 
-@pytest.mark.covers("FR-01.11/AC25")
+@pytest.mark.covers("FR-01.22/AC25")
 def test_a_behind_branch_triggers_a_refresh_instead_of_waiting_forever():
     """The state readiness computes must be ACTED on. `refresh_needed` returned as
     `pending` would poll a BEHIND branch to the 1800s timeout — the very failure mode

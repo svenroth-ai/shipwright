@@ -27,11 +27,12 @@ CATALOG = REPO_ROOT / ".shipwright" / "planning" / "01-adopted" / "spec.md"
 #: The ids the catalog carries. S6 must not lose or renumber one; a later iterate may
 #: append the next free number (FR-01.16 minted 2026-07-23 REQ-3 Ph1; FR-01.19 2026-07-28
 #: iterate-2026-07-28-main-self-heal; FR-01.20 2026-08-07 iterate-2026-08-07-context-
-#: cost-meter; FR-01.21 2026-09-20 iterate-2026-09-20-codex-plugin-bundle-root-contract).
+#: cost-meter; FR-01.21 2026-09-20 iterate-2026-09-20-codex-plugin-bundle-root-contract;
+#: FR-01.22 2026-11-13 iterate-2026-11-13-atomic-frs-cut-delivery, cut out of FR-01.11 by fr_split).
 #: The bound moves only by APPENDING — a diff that makes this tuple
 #: shorter, or changes an id in it, is the loss this constant exists to catch, and the
 #: number must NOT be adjusted to match.
-EXPECTED_IDS = tuple(f"FR-01.{n:02d}" for n in range(1, 22))
+EXPECTED_IDS = tuple(f"FR-01.{n:02d}" for n in range(1, 23))
 
 _EXPLICIT_ANCHOR = re.compile(r'<a\s+id="([^"]+)"\s*>')
 _TABLE_ROW = re.compile(r"^\|\s*(FR-\d+\.\d+)\s*\|")
@@ -187,6 +188,7 @@ def test_the_catalog_path_is_covered_by_a_registered_artifact_migration():
     )
 
 
+@pytest.mark.covers("FR-01.10")
 def test_every_requirement_has_an_explicit_anchor(catalog):
     """One anchor per requirement, defined ONCE.
 
@@ -198,8 +200,10 @@ def test_every_requirement_has_an_explicit_anchor(catalog):
     # Derived from EXPECTED_IDS rather than repeating its bound: the two were
     # separate literals, so appending FR-01.19 moved one and left this one
     # behind. One source, one place to append.
-    assert fr_anchors == [i.replace("FR-", "fr-").replace(".", "")
-                          for i in EXPECTED_IDS]
+    # SORTED: fr_split puts a cut-out section right after its source (FR-01.22
+    # sits after FR-01.11), so document order is not number order.
+    assert sorted(fr_anchors) == [i.replace("FR-", "fr-").replace(".", "")
+                                  for i in EXPECTED_IDS]
     assert len(set(anchors)) == len(anchors), "duplicate anchor id"
 
 

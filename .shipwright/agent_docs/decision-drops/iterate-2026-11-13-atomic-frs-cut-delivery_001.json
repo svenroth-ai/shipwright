@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-13-atomic-frs-cut-delivery",
+  "date": "2026-11-14",
+  "section": "Iterate — change: atomic-frs cut 1, delivery criteria into FR-01.22",
+  "title": "Cut AC21-AC25 out of FR-01.11 into FR-01.22",
+  "context": "FR-01.11 holds unrelated behaviours; AC21-AC25 form one purpose, delivering a finished change when the host cannot merge it.",
+  "decision": "fr_split moved the five criteria verbatim into the new FR-01.22 with an AC-Move-Map and retagged the bound tests. Schnitt 2 (AC30-34, AC37) is not cut.",
+  "consequences": "Old ids FR-01.11/AC21-25 resolve through the move map. Three integration tests pinned the catalog size and were raised to 22 FRs, comparing section order sorted.",
+  "rationale": "One purpose per requirement keeps coverage and history readable; the tool's conservation check and the move-map gates guard the move.",
+  "rejected": "Hand-editing spec and tags; cutting several groups in one PR, which the operator wanted to approve one cut at a time.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

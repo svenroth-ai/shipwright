@@ -244,6 +244,13 @@ one capability and 8 can be two — but **can it still be split?**
   target in a new FR, a source that is gone); any other row reads as an ordinary
   removal plus addition. Map rows are append-only once merged: never edit or
   delete one, the history views keep using it.
+  **Known ripple the tool cannot see:** three tests under `integration-tests/`
+  pin the live catalog's size (`test_requirements_catalog_contract.py`,
+  `test_requirements_catalog_parsers.py`, `test_fr_table_shape_convergence.py`:
+  id range, priority list, row counts, Basis and Layers per FR). A cut adds one
+  FR, so raise those pins in the same PR and run `uv run pytest integration-tests/`
+  before pushing; the new section sits right after its source, so the heading and
+  anchor checks compare sorted ids.
 - **At spec time there is no code or test yet,** so `/shipwright-project` blocks
   on the capability test **plus the code form checks** (`step-6-fr-scope.md`): it
   may not finish an FR until each group of its criteria passes the capability

@@ -31,6 +31,7 @@ Shipwright is an AI-powered SDLC framework built on Claude Code. It is structure
 | FR-01.19 | Adopted | Recovery of a broken shared branch | Should | When the shared branch breaks after a change is merged, say so and name the single change that broke it, instead of leaving whoever comes next to discover it. That naming is only trustworthy because every merged change is checked on its own rather than only the newest one, and what a repair needs travels with it: what failed, and which other changes the broken one had never been tested alongside. A repair corrects the mismatch and is never allowed to make a test ask for less — that is refused outright, and refused again independently on the code host. Where repairing would be a guess rather than a correction — a security finding, too many changes implicated, or two attempts already spent — the matter is filed for a decision instead, with the way back included. Only one repair is ever under way for the same breakage, and one that is abandoned releases its place rather than blocking every later attempt. | interview | unit (inferred) |
 | FR-01.20 | Adopted | Context-Cost Meter | Should | Measure what a session actually costs, from the assistant's own record of what it sent and received, counted once per exchange no matter how many lines that exchange left behind — and break the total down by which pipeline phase spent it, shown as the session runs rather than only after it ends. Adds this real, priced figure as an alternative to a rough stand-in that only counted tool calls, usable at the same points that stand-in already warns at — the stand-in itself keeps running until a later change compares the two and switches over. Also checks, the way the existing pre-push checks do, whether the session's own auto-compaction setting and effort level are set sanely for its context window. | code | unit (inferred) |
 | FR-01.21 | Adopted | Codex Plugin Distribution | Should | Shipwright can be installed for Codex as a single, verifiably reproducible plugin bundle carrying every one of its skills, instead of the tool depending on a machine-specific cache directory that was only ever built for a different assistant. The environment variable a script reads to find its own plugin's files resolves the same way no matter which of the two assistants installed it. Its hooks also actually run under Codex, via a global config-layer sync — not just its skills. | other: campaign spec | unit, e2e (inferred) |
+| FR-01.22 | Adopted | Delivering a finished change when the host cannot merge it | Must | When the code host cannot or must not merge a finished change by itself, the tool delivers it: it waits for green checks, keeps the branch up to date and merges only where that is allowed. | code | unit (inferred) |
 
 ## Quality Requirements
 
@@ -937,32 +938,6 @@ _Where the work detail lives_ at the end of this document.
   impossible to determine. A change to the requirements that touches no
   requirement at all is still reported as undetermined for a person to settle,
   never passed in silence. (iterate-2026-07-27-name-the-blocker)
-- (E) [AC21] Given a finished change whose code host cannot be asked to merge it automatically
-  because the branch it merges into is **not protected**, when the change is delivered,
-  then it is merged once every check the host actually ran has passed, instead of being
-  left open for a person to merge by hand. Where the host merely refuses for the moment,
-  waiting continues as before; where the situation cannot be read at all, the previous
-  behaviour is kept. (iterate-2026-07-31-f11-delivery-truth)
-- (E) [AC22] Given the branch it merges into **is** protected and only the host's automatic-merge
-  setting is switched off, when the change is delivered, then it is reported as not
-  delivered and the one setting to change is named — a protected branch's required reviews
-  and checks are not something to merge past on the strength of the tests run on the
-  author's own machine, however the host words its refusal.
-  (iterate-2026-07-31-f11-delivery-truth)
-- (E) [AC23] Given a change was merged by the tool rather than by the host, when delivery
-  is reported, then the report names who merged it and how many checks the host
-  actually ran — so a delivery resting only on the checks run on the author's own
-  machine can never read as one the host confirmed.
-  (iterate-2026-07-31-f11-delivery-truth)
-- (E) [AC24] Given a project would rather nothing was ever merged on its behalf, when that
-  preference is recorded, then the tool only ever asks the host to merge, and a change it
-  cannot get merged is reported as not delivered **straight away** rather than waited on —
-  because waiting for a merge that nobody will perform is not waiting, it is stalling.
-  (iterate-2026-07-31-f11-delivery-truth)
-- (E) [AC25] Given a change fell behind the work it merges into while it was waiting, when
-  the tool merges it, then it is first brought up to date and checked again, and what
-  gets merged is exactly what was checked — never a stale copy, and never a newer one
-  that arrived in between. (iterate-2026-07-31-f11-delivery-truth)
 - (E) [AC26] Given the check that a change's record names the run now finishing, when the
   two names differ only in punctuation or in characters that cannot be seen, then
   they count as the same name — so the check can never report a mismatch while
@@ -1110,6 +1085,36 @@ _Where the work detail lives_ at the end of this document.
   naming it and never stops the change; and when finishing stops on an untagged test whose body changed, the message names
   both ways out: name the requirement the test proves, or add or extend a requirement in the same change.
   (iterate-2026-11-11-u1-tag-binding)
+
+<a id="fr-0122"></a>
+### FR-01.22 — Delivering a finished change when the host cannot merge it
+
+- (E) [AC21] Given a finished change whose code host cannot be asked to merge it automatically
+  because the branch it merges into is **not protected**, when the change is delivered,
+  then it is merged once every check the host actually ran has passed, instead of being
+  left open for a person to merge by hand. Where the host merely refuses for the moment,
+  waiting continues as before; where the situation cannot be read at all, the previous
+  behaviour is kept. (iterate-2026-07-31-f11-delivery-truth)
+- (E) [AC22] Given the branch it merges into **is** protected and only the host's automatic-merge
+  setting is switched off, when the change is delivered, then it is reported as not
+  delivered and the one setting to change is named — a protected branch's required reviews
+  and checks are not something to merge past on the strength of the tests run on the
+  author's own machine, however the host words its refusal.
+  (iterate-2026-07-31-f11-delivery-truth)
+- (E) [AC23] Given a change was merged by the tool rather than by the host, when delivery
+  is reported, then the report names who merged it and how many checks the host
+  actually ran — so a delivery resting only on the checks run on the author's own
+  machine can never read as one the host confirmed.
+  (iterate-2026-07-31-f11-delivery-truth)
+- (E) [AC24] Given a project would rather nothing was ever merged on its behalf, when that
+  preference is recorded, then the tool only ever asks the host to merge, and a change it
+  cannot get merged is reported as not delivered **straight away** rather than waited on —
+  because waiting for a merge that nobody will perform is not waiting, it is stalling.
+  (iterate-2026-07-31-f11-delivery-truth)
+- (E) [AC25] Given a change fell behind the work it merges into while it was waiting, when
+  the tool merges it, then it is first brought up to date and checked again, and what
+  gets merged is exactly what was checked — never a stale copy, and never a newer one
+  that arrived in between. (iterate-2026-07-31-f11-delivery-truth)
 
 <a id="fr-0112"></a>
 ### FR-01.12 — Local project preview
@@ -1596,6 +1601,16 @@ _Where the work detail lives_ at the end of this document.
   bundle's mandatory lifecycle step the way AC05 alone would still allow. A
   session whose first prompt did not arm it is never denied, regardless of
   what it calls first.
+
+## AC-Move-Map
+
+| Old id | New id |
+|---|---|
+| `FR-01.11/AC21` | `FR-01.22/AC21` |
+| `FR-01.11/AC22` | `FR-01.22/AC22` |
+| `FR-01.11/AC23` | `FR-01.22/AC23` |
+| `FR-01.11/AC24` | `FR-01.22/AC24` |
+| `FR-01.11/AC25` | `FR-01.22/AC25` |
 
 ## Provenance
 

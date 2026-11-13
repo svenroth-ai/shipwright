@@ -1,0 +1,1 @@
+{"stage": "spec-compliance", "verdict": "PASS", "spec_citations": [], "summary": "The Schnitt 1 cut matches all six points of the spec. AC21-AC25 moved from FR-01.11 to the new FR-01.22 word for word. Nothing was lost or duplicated, the move map, FR table row, test retags and registry are all correct, and Schnitt 2 was not touched."}

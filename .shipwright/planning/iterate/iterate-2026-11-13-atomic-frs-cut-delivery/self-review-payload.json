@@ -1,0 +1,10 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"Schnitt 1 only: AC21-AC25 of FR-01.11 moved verbatim to the new FR-01.22 by fr_split --apply (conservation ok); 5 AC-Move-Map rows; 7 covers retags; registry high-water mark. Schnitt 2 (AC30-34, AC37) not touched. Spec reviewer: PASS."},
+{"name":"Error Handling","verdict":"n/a","note":"No runtime code changed; the spec, test tags, registry and three catalog-pinning integration tests only."},
+{"name":"Security Basics","verdict":"n/a","note":"No code path, input or secret handled; documentation and test-pin changes."},
+{"name":"Test Quality","verdict":"pass","note":"The doubt reviewer found 10 integration tests pinning the catalog at 21 requirements; raised to 22 with a reason comment each, heading/anchor order compared sorted because fr_split places a section after its source. Full integration-tests root: 685 passed."},
+{"name":"Performance Basics","verdict":"n/a","note":"Nothing executes at runtime."},
+{"name":"Naming & Structure","verdict":"pass","note":"New FR title is plain language; section placed by the tool; no file crosses a size cap (test edits add a few lines each)."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Producer/consumer of the id move: spec.md move map read by real_moves in the keystone AC gate and ac_record. With a freshly regenerated manifest the keystone gate and the orphan-AC-binding gate are both clean; the committed manifest is a derived snapshot and stays out of the commit."},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"scan_test_hygiene.py --diff: no findings."}
+]}
