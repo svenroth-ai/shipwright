@@ -61,9 +61,9 @@
         }
       ],
       "provider": null,
-      "completed_at": "2026-11-13T22:34:19.384821+00:00",
+      "completed_at": "2026-11-13T23:18:16.734561+00:00",
       "disposition": null,
-      "recorded_by": "claude",
+      "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus"
@@ -111,9 +111,9 @@
         }
       ],
       "provider": null,
-      "completed_at": "2026-11-13T22:47:14.349896+00:00",
+      "completed_at": "2026-11-13T23:18:16.878882+00:00",
       "disposition": null,
-      "recorded_by": "claude",
+      "recorded_by": "doubt-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus"
@@ -137,9 +137,9 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-11-13T22:33:07.958093+00:00",
+      "completed_at": "2026-11-13T23:18:16.529979+00:00",
       "disposition": null,
-      "recorded_by": "claude",
+      "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus"
