@@ -188,6 +188,7 @@ def test_the_catalog_path_is_covered_by_a_registered_artifact_migration():
     )
 
 
+@pytest.mark.covers("FR-01.10")
 def test_every_requirement_has_an_explicit_anchor(catalog):
     """One anchor per requirement, defined ONCE.
 

@@ -8,9 +8,9 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-11-13T22:47:50.603860+00:00",
+      "completed_at": "2026-11-13T23:14:06.664382+00:00",
       "disposition": null,
-      "recorded_by": "claude",
+      "recorded_by": "self-review",
       "parse_status": null,
       "raw_excerpt": null
     },

@@ -21,6 +21,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import pytest
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 CATALOG = REPO_ROOT / ".shipwright" / "planning" / "01-adopted" / "spec.md"
 
@@ -44,6 +46,7 @@ if _SHARED_SCRIPTS not in sys.path:
     sys.path.insert(0, _SHARED_SCRIPTS)
 
 
+@pytest.mark.covers("FR-01.10")
 def test_the_fr_table_reader_still_sees_every_requirement():
     """Counting table rows with a regex is not enough — read it as the AUDIT does.
 
@@ -84,6 +87,7 @@ def test_the_fr_table_reader_still_sees_every_requirement():
     )
 
 
+@pytest.mark.covers("FR-01.10")
 def test_the_heading_parser_sees_the_same_set():
     """The SECOND production parser over this file — the one the name above hid.
 
@@ -103,6 +107,7 @@ def test_the_heading_parser_sees_the_same_set():
     assert tuple(sorted(h.id for h in headings)) == EXPECTED_IDS
 
 
+@pytest.mark.covers("FR-01.10")
 def test_the_fr_heading_coherence_report_is_no_longer_wrong_here():
     """S5's coherence report about THIS catalog used to be false. Fixed in
     campaign REQ3.04, sub-iterate R0 (2026-08-25).

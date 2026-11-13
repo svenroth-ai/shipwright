@@ -122,6 +122,7 @@ def test_no_producer_still_emits_the_retired_source_column() -> None:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.covers("FR-01.10")
 def test_every_live_requirement_stays_on_legacy_provenance() -> None:
     """ZERO ``explicit``. If this fails, the next gate run hard-aborts."""
     rows = _census(LIVE_SPEC)
@@ -140,6 +141,7 @@ def test_every_live_requirement_stays_on_legacy_provenance() -> None:
     assert {r["source"] for r in rows} <= {"inferred_legacy", "defaulted_legacy"}
 
 
+@pytest.mark.covers("FR-01.10")
 def test_every_live_layers_cell_carries_the_marker() -> None:
     """The AC, asserted on the artifact rather than on the intent."""
     rows = [
@@ -255,6 +257,7 @@ def test_no_persisted_area_cell_disagrees_with_its_own_id() -> None:
     assert mismatched == [], f"Area cells disagreeing with their own id: {mismatched}"
 
 
+@pytest.mark.covers("FR-01.10")
 def test_the_migration_did_not_change_any_required_layers() -> None:
     """The marked cells record the inference that already ran; they add no claim.
 
