@@ -1,12 +1,1 @@
-{"stage":1,"verdict":"PASS","spec_citations":[
-{"requirement":"(a) MEASURE section 8: re-measure on main aec0284d8","evidence":"2026-11-07-dfp-pre-q1-MEASURE.md:143-145","met":true},
-{"requirement":"(a) SKILL.md lines re-measured","evidence":"2026-11-07-dfp-pre-q1-MEASURE.md:149 (440, was 443)","met":true},
-{"requirement":"(a) ACs with a deterministic test","evidence":"2026-11-07-dfp-pre-q1-MEASURE.md:150 (13 of 15)","met":true},
-{"requirement":"(a) Prose pins found by breaking the prose","evidence":"2026-11-07-dfp-pre-q1-MEASURE.md:151-162 (30 tests in 13 files)","met":true},
-{"requirement":"(b) Budget = none","evidence":"2026-10-25-dfp-pilot-changelog-BRIEF.md:12","met":true},
-{"requirement":"(b) Cross-cutting confirmation = none","evidence":"2026-10-25-dfp-pilot-changelog-BRIEF.md:13","met":true},
-{"requirement":"(b) Overlap check result","evidence":"2026-10-25-dfp-pilot-changelog-BRIEF.md:10; MEASURE:166-171","met":true},
-{"requirement":"(b) LEARNINGS report per plugin, wired into the pilot","evidence":"BRIEF:15, :73, :102, :165, :202","met":true},
-{"requirement":"(b) LEARNINGS template: six headings","evidence":"BRIEF:209-214","met":true},
-{"requirement":"Docs only, no code","evidence":"Both changed files are planning markdown","met":true}
-]}
+{"stage": 1, "verdict": "PASS", "spec_citations": []}
