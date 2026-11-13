@@ -79,7 +79,7 @@ PLAN_ALLOWED_PREFIXES = (
     "shipwright_project_config.json",
     "shipwright_plan_config.json",
     "CHANGELOG-unreleased.d/",
-    "shipwright_events.jsonl", "shipwright_events.d/", "shipwright_events.archive/", "shipwright_events.quarantine/",  # the pipeline's own event log (file and drops folders): bookkeeping, not a breach
+    "shipwright_events.jsonl", ".shipwright/events/drops/", ".shipwright/events/archive/", ".shipwright/events/quarantine/",  # the pipeline's own event log (file and drops folders): bookkeeping, not a breach
 )
 
 

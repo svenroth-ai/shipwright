@@ -3,7 +3,7 @@
 ``read_events_assembled(root)`` returns every event of a tree as one ordered list:
 
 1. the legacy ``shipwright_events.jsonl`` in FILE order (a tree without the folders below is untouched), then
-2. the archive (``shipwright_events.archive/``) and drop files (``shipwright_events.d/``) merged and sorted by
+2. the archive (``.shipwright/events/archive/``) and drop files (``.shipwright/events/drops/``) merged and sorted by
    (parsed instant, id). Ties keep folder (archive, then drops), file-name, then in-file order.
 
 Layout independent: the folders are read whenever they exist, whatever ``events_layout`` says.
@@ -36,7 +36,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 try:
-    from .events_log import ARCHIVE_DIR, EVENT_FILE, event_files, resolve_events_path
+    from .events_log import ARCHIVE_DIR, EVENT_FILE, event_files, old_root_folders, resolve_events_path
     from .jsonl_records import RecordRead, read_jsonl_records
 except ImportError:  # sentinel / flat load (``audit_adapters.load_shared_lib``): no parent package
     import hashlib as _hashlib
@@ -64,7 +64,7 @@ except ImportError:  # sentinel / flat load (``audit_adapters.load_shared_lib``)
 
     _log, _jr = _sibling("events_log"), _sibling("jsonl_records")
     ARCHIVE_DIR, EVENT_FILE = _log.ARCHIVE_DIR, _log.EVENT_FILE
-    event_files, resolve_events_path = _log.event_files, _log.resolve_events_path
+    event_files, resolve_events_path, old_root_folders = _log.event_files, _log.resolve_events_path, _log.old_root_folders
     RecordRead, read_jsonl_records = _jr.RecordRead, _jr.read_jsonl_records
 
 KEY_MAX = 80
@@ -223,7 +223,7 @@ def _assemble_once(root: Path, include_legacy: bool) -> AssembledRead:
     legacy_path, result, extra = resolve_events_path(root), AssembledRead(), []
     for path in event_files(root):
         kind = "legacy" if path == legacy_path else (
-            "archive" if path.parent.name == ARCHIVE_DIR else "drop")
+            "archive" if path.parent == root / ARCHIVE_DIR else "drop")
         one = None if kind == "legacy" and (not include_legacy or not path.exists()) else _read_one(path, kind)
         if one is None:
             continue
@@ -235,6 +235,8 @@ def _assemble_once(root: Path, include_legacy: bool) -> AssembledRead:
         extra.sort(key=lambda e: (instant(e.get("ts")), str(e.get("id", ""))))
         extra, result.duplicate_ids = _dedup_extra(extra)
         result.records.extend(extra)
+    for old in old_root_folders(root):  # events may sit there unread: an unnamed unreadable drop blocks every run's absence gate
+        result.files.append(FileStatus(path=str(root / old), kind="drop", key=None, status="unreadable"))
     return result
 
 

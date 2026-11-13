@@ -49,7 +49,7 @@ def _ends_without_newline(path: Path) -> bool:
 # ``events_write`` (same ADR-045 reason as the terminator guard above): layout resolution, the
 # ``<key>--<wt8>--<nonce8>.jsonl`` name, the ``run`` stamp and the atomic first write. One drop file per
 # process (this writer takes no lock). ``test_events_writers_drops`` pins wt8 / name parity with the SSOT.
-_DROPS_DIR = "shipwright_events.d"
+_DROPS_DIR = ".shipwright/events/drops"
 _BAD_KEY = re.compile(r"[^A-Za-z0-9._-]")
 _drop_targets: dict[str, Path] = {}
 
@@ -105,7 +105,7 @@ def _append_drop(root: Path, event: dict[str, Any]) -> None:
     if target is not None and _is_closed(root, target):
         target = None  # staged / committed since: a closed file is never edited
     if target is None or not target.exists():
-        (root / _DROPS_DIR).mkdir(exist_ok=True)
+        (root / _DROPS_DIR).mkdir(parents=True, exist_ok=True)
         target = root / _DROPS_DIR / f"{_drop_key()}--{_wt8(root)}--{uuid4().hex[:8]}.jsonl"
         tmp = target.with_name("." + target.name + ".tmp")  # invisible to readers until the rename
         tmp.write_text(line, encoding="utf-8", newline="\n")

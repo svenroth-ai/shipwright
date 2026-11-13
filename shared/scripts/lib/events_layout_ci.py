@@ -107,5 +107,5 @@ def check_layout_ci(project_root: Path | str, base_ref: str, head_ref: str = "HE
     if _legacy_written_on_drops(root, base_ref, head_ref):
         out.append(Violation("legacy_write_after_flip", EVENT_FILE,
                              "the merge-base uses events_layout drops, but this change modifies the legacy log; "
-                             "write events through the Shipwright tools (shipwright_events.d/) or update the plugins"))
+                             "write events through the Shipwright tools (.shipwright/events/drops/) or update the plugins"))
     return out

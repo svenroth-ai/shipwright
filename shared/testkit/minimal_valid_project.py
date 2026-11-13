@@ -265,7 +265,7 @@ def read_events(root: Path) -> list[dict[str, Any]]:
     reads them the same way under ``legacy`` and ``drops``.
     """
     paths = [root / "shipwright_events.jsonl"]
-    for folder in ("shipwright_events.archive", "shipwright_events.d"):
+    for folder in (".shipwright/events/archive", ".shipwright/events/drops"):
         paths += sorted((root / folder).glob("*.jsonl")) if (root / folder).is_dir() else []
     rows: list[dict[str, Any]] = []
     for path in paths:

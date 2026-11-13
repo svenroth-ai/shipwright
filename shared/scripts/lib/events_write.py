@@ -152,7 +152,7 @@ def write_event_line(project_root: Path | str, event: dict, run_id: str | None =
         _monotonic_ts(root, path, event)
     line = json.dumps(event, ensure_ascii=False, separators=(",", ":")) + "\n"
     if drops and not path.exists():
-        (root / DROPS_DIR).mkdir(exist_ok=True)
+        (root / DROPS_DIR).mkdir(parents=True, exist_ok=True)
         _create_atomically(path, line)
         return path
     needs_separator = ends_without_newline(path)

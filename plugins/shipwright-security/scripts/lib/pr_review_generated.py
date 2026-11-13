@@ -36,9 +36,9 @@ _GENERATED_PREFIXES = (
     ".shipwright/agent_docs/iterates/",  # one regenerated JSON entry per iterate run
     ".shipwright/agent_docs/runtime/",   # regenerated runtime snapshots
     "CHANGELOG-unreleased.d/",           # per-run changelog drop files
-    "shipwright_events.d/",              # per-run event drop files
-    "shipwright_events.archive/",        # folded event drops
-    "shipwright_events.quarantine/",     # raw bytes of unreadable event drops
+    ".shipwright/events/drops/",              # per-run event drop files
+    ".shipwright/events/archive/",        # folded event drops
+    ".shipwright/events/quarantine/",     # raw bytes of unreadable event drops
 )
 
 # `.shipwright/agent_docs/` is NOT a blanket prefix, and that is deliberate.

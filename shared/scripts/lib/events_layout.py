@@ -1,7 +1,7 @@
 """Event-log LAYOUT: legacy single file vs per-run drop files.
 
 ``legacy`` (the one tracked ``shipwright_events.jsonl``) is the layout of every repo that does not
-set ``events_layout``; a repo that sets ``drops`` writes ``shipwright_events.d/<key>--<wt8>--<nonce8>.jsonl``
+set ``events_layout``; a repo that sets ``drops`` writes ``.shipwright/events/drops/<key>--<wt8>--<nonce8>.jsonl``
 instead (one file per run). The switch is the ``events_layout`` key in ``shipwright_sync_config.json``.
 
 Layout precedence (campaign BRIEF section 2):
@@ -206,7 +206,7 @@ def resolve_events_write_path(project_root: Path | str, run_id: str | None = Non
     key, wt8 = drop_key(root, (git_dir, is_main, branch), run_id), _wt8(git_dir)
     prefix = f"{key}--{wt8}--"
     drops = root / DROPS_DIR
-    drops.mkdir(exist_ok=True)
+    drops.mkdir(parents=True, exist_ok=True)
     committed = _names_in_head(root)
     for path in sorted(drops.iterdir()) if committed is not None else ():
         name = path.name

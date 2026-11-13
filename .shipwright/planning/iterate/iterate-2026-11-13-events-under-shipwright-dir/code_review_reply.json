@@ -1,0 +1,68 @@
+{
+ "section": "iterate-2026-11-13-events-under-shipwright-dir",
+ "review": [
+  {
+   "severity": "medium",
+   "category": "correctness",
+   "file": "shared/scripts/lib/events_sentinel.py",
+   "finding": "The abort message tells the user to run `git mv shipwright_events.d .shipwright/events/drops`. When .shipwright/events/drops already exists (main checkout after git pull) git mv nests the folder INSIDE it, so readers (glob *.jsonl directly in the folder) never see the events; with only untracked files git mv fails; the tool path in the message is monorepo-relative.",
+   "suggestion": "Lead with the tool (per-file, never nests, handles untracked files) with a plugin-root path; keep git mv only with the caveat 'only when the new folder does not exist yet'; add a test that runs the tool against a tree where the new folder already exists."
+  },
+  {
+   "severity": "medium",
+   "category": "correctness",
+   "file": "shared/scripts/tools/verifiers/_events_committed.py",
+   "finding": "`if drops_folder_ignored(...): return False` runs BEFORE the HEAD-blob loop, so a drop that IS committed in HEAD fails whenever the folder's ignore rule matches (tracked files inside an ignored folder, e.g. git mv into a not-yet-healed repo, or force-added files). In the other ignored cases the loop already falls through to the final return False.",
+   "suggestion": "Delete the early return; the ignored, uncommitted case still fails through the final return False and iterate_checks adds the hint. Add a test with a drop committed in HEAD inside an ignored folder expecting True."
+  },
+  {
+   "severity": "low",
+   "category": "correctness",
+   "file": "shared/scripts/tools/verifiers/iterate_checks.py",
+   "finding": "The 'event folder is git-ignored' hint is appended to every committed-is-False result, including legacy-layout failures.",
+   "suggestion": "Add the hint only when the event was found in a drop file / layout is drops."
+  },
+  {
+   "severity": "low",
+   "category": "correctness",
+   "file": "shared/scripts/lib/events_gitignore.py",
+   "finding": "_effective treats any check-ignore rc other than 1 as not effective; a git error (rc 128) silently drops all folder rules, contradicting its own keep-the-lines policy.",
+   "suggestion": "Return True (keep) if any rc is not in (0, 1); False only if some rc is 0."
+  },
+  {
+   "severity": "low",
+   "category": "correctness",
+   "file": "shared/scripts/tools/migrate_events_folder.py",
+   "finding": "_plan moves OS junk too (Thumbs.db etc land in the drops folder and trip the integrity check); an identical empty .keep in both places triggers the 'exists in both places' refusal.",
+   "suggestion": "Skip OS_JUNK_NAMES (delete them when emptying the old folder); treat a byte-identical collision as already moved."
+  },
+  {
+   "severity": "low",
+   "category": "correctness",
+   "file": "shared/scripts/tools/migrate_events_folder.py",
+   "finding": "Error handling gaps: shutil.move/mkdir raise uncaught OSError (traceback, partial move); missing git binary raises FileNotFoundError not exit 2; never-overwrites holds only at plan time; docstring exit codes omit migrated_incomplete.",
+   "suggestion": "Wrap the move loop in try/except returning move_failed with moved; re-check exists() before each untracked move; update the docstring."
+  },
+  {
+   "severity": "low",
+   "category": "readability",
+   "file": "shared/tests/test_events_folder_move.py",
+   "finding": "A side effect hidden in a conditional expression (mkdir inside `if ... is None else None`).",
+   "suggestion": "Use two plain statements."
+  },
+  {
+   "severity": "low",
+   "category": "correctness",
+   "file": "shared/tests/test_events_folder_move.py",
+   "finding": "Three integrity tests assert loose code sets; the rename test passes only through an incidental foreign_key on the add.",
+   "suggestion": "Assert the exact entry flagged (old path bad_path with 'moved to') and use own_keys=('run-a',)."
+  },
+  {
+   "severity": "low",
+   "category": "architecture",
+   "file": "shared/scripts/lib/events_sentinel.py",
+   "finding": "Name copies: OS_JUNK_NAMES defined twice, routing.real_dir duplicates real_event_dir, adopt events_layout_key.py hardcodes the folder; the guard test covers only some of them.",
+   "suggestion": "Extend the guard test to the junk set and the adopt literal."
+  }
+ ]
+}

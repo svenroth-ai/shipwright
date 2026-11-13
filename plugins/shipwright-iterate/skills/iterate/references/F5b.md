@@ -16,7 +16,7 @@ events_log history, iterate-2026-05-29-events-jsonl-worktree-commit), with
 `commit=""` since the F6 commit hasn't happened yet. **F6 stages
 the event log** so the event ships in the iterate PR and merges to
 `main` like every other artifact; the main tree is never written. (Under the
-drops layout the event goes to this run's own file `shipwright_events.d/<run_id>--<wt8>--<nonce>.jsonl`,
+drops layout the event goes to this run's own file `.shipwright/events/drops/<run_id>--<wt8>--<nonce>.jsonl`,
 stamped `run`, and F6 stages it by name with `stage_event_drops.py`.) The event
 keeps `commit=""` (F6.5 SHA patch is skipped in the worktree flow — the
 `Run-ID:` commit footer and `adr_id == run_id` carry the linkage).
@@ -177,7 +177,7 @@ same file directly if you want to see it at any point without waiting for
 F5b.
 
 Reads back: `result["steps"]["event"]["id"]` — capture it so F6 can confirm
-the event is present before staging the event log (`shipwright_events.jsonl`, or this run's file in `shipwright_events.d/` under the drops layout), and for the
+the event is present before staging the event log (`shipwright_events.jsonl`, or this run's file in `.shipwright/events/drops/` under the drops layout), and for the
 legacy F6.5 SHA patch, used only by non-worktree callers).
 
 The script is idempotent per `run_id` — re-invocations return the

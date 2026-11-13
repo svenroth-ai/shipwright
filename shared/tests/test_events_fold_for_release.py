@@ -31,7 +31,7 @@ def test_old_merged_files_are_folded_in_a_commit_of_their_own(tmp_path):
     assert git(root, "rev-parse", "HEAD~1").strip() == base, "exactly one new commit"
     assert git(root, "log", "-1", "--format=%s").startswith("chore(events): fold 1 event files")
     (archive,) = archive_names(root)
-    assert _head_files(root) == sorted([f"shipwright_events.archive/{archive}", f"{DROPS_DIR}/run-old--aaaaaaaa--00000001.jsonl",
+    assert _head_files(root) == sorted([f".shipwright/events/archive/{archive}", f"{DROPS_DIR}/run-old--aaaaaaaa--00000001.jsonl",
                                         f"{DROPS_DIR}/.keep"])   # the first fold also adds the empty .keep
     assert (root / DROPS_DIR / "run-new--aaaaaaaa--00000001.jsonl").exists()
     assert _hashes(root) == before, "no event lost or duplicated"
@@ -169,8 +169,8 @@ def test_every_status_carries_open_files_except_not_applicable(tmp_path, monkeyp
 def test_a_locally_modified_archive_is_not_swept_into_the_fold(tmp_path):
     root = _repo(tmp_path)
     name = events_fold.plan_fold(root, base_ref="main").archive_name
-    archive = root / "shipwright_events.archive" / name
-    archive.parent.mkdir()
+    archive = root / ".shipwright/events/archive" / name
+    archive.parent.mkdir(parents=True)
     archive.write_text(json.dumps(ev("zzz-other")) + chr(10), encoding="utf-8", newline=chr(10))
     commit(root, "an archive the fold would also write")
     archive.write_text(json.dumps(ev("zzz-other")) + chr(10) + json.dumps(ev("zzz-edit")) + chr(10), encoding="utf-8", newline=chr(10))

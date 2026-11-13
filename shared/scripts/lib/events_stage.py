@@ -11,7 +11,7 @@ sweep a sibling run's files into this run's commit.
 * :func:`commit_drops` -- explicit-path add + path-restricted commit, index restored on failure.
 
 All lookups are ``git ls-files --others --exclude-standard`` on the folder: an IGNORED folder
-yields nothing (the drops layout is then not tracked, the committed-check does not apply).
+yields nothing (a drop in an ignored folder can never be staged: the F11 committed-check FAILS the run).
 Everything here is a no-op for a tree without a drops folder, i.e. under the legacy layout.
 """
 

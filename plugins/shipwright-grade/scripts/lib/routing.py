@@ -174,7 +174,21 @@ def _within_root(path: Path, root: Path) -> bool:
 
 
 #: Event folders of the per-run layout that hold readable events; quarantine holds raw damaged bytes, never read.
-_EVENT_FOLDERS = ("shipwright_events.d", "shipwright_events.archive")
+_EVENT_FOLDERS = (".shipwright/events/drops", ".shipwright/events/archive")
+
+
+def real_dir(root: Path, rel: str) -> bool:
+    """``rel`` is a directory reached through real directories only (no symlink at ANY level below ``root``).
+
+    The event folders are nested (``.shipwright/events/drops``); a leaf-only check would follow a hostile clone's
+    ``.shipwright`` or ``.shipwright/events`` link out of the tree.
+    """
+    cur = root
+    for part in rel.split("/"):
+        cur = cur / part
+        if cur.is_symlink():
+            return False
+    return cur.is_dir()
 
 
 def _events_path(root: Path) -> Path | None:
@@ -186,7 +200,7 @@ def _events_path(root: Path) -> Path | None:
     is accepted as a fallback so routing and the authoritative ingestion agree on
     what "has an event log" means. A symlink escaping the root is ignored.
     """
-    folders = [p for d in _EVENT_FOLDERS if (root / d).is_dir() and not (root / d).is_symlink()
+    folders = [p for d in _EVENT_FOLDERS if real_dir(root, d)
                for p in islice((root / d).glob("*.jsonl"), 5_001)]  # bounded: an untrusted clone
     newest = []
     for p in folders:

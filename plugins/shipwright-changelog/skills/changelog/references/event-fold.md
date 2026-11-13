@@ -26,7 +26,7 @@ appears in them.
 ## When something is wrong
 
 - `rolled_back: false`: stop and repair before Step 6. Remove a left-behind `.git/index.lock` once no git runs, then
-  `git reset -- shipwright_events.d shipwright_events.archive` and `git checkout HEAD -- shipwright_events.d`. The archive
+  `git reset -- .shipwright/events/drops .shipwright/events/archive` and `git checkout HEAD -- .shipwright/events/drops`. The archive
   stays until the drops are back (it may hold their only copy).
 - Reverting a release: revert only the `chore(release)` commit, never the `chore(events)` fold commit (a revert deletes the
   archive, which the integrity check refuses as `deleted_existing`; the rollback of a fold is a fold, not `git revert`).

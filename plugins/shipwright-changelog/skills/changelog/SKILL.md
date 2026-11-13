@@ -254,7 +254,7 @@ If edit: apply changes and re-preview.
 
 ## Step 5.3: Fold Old Event Files (automatic housekeeping)
 
-Folds old per-run event files into `shipwright_events.archive/` in a commit of their own, BEFORE anything of the release is staged. It never blocks the release (always exit 0; every failure puts the tree back):
+Folds old per-run event files into `.shipwright/events/archive/` in a commit of their own, BEFORE anything of the release is staged. It never blocks the release (always exit 0; every failure puts the tree back):
 
 ```bash
 uv run "{shared_root}/scripts/tools/fold_events_for_release.py" --project-root "$(pwd)"
@@ -342,7 +342,7 @@ gh pr create \
 ```bash
 uv run "{shared_root}/scripts/tools/record_event.py" --project-root "$(pwd)" --type phase_completed --phase changelog --run-id "release-v{version}" --detail "v{version} — {PR_URL}" \
 && uv run "{shared_root}/scripts/tools/stage_event_drops.py" --project-root "$(pwd)" --run-id "release-v{version}" \
-&& { [ ! -f shipwright_events.jsonl ] || git add shipwright_events.jsonl; paths=$(git diff --cached --name-only -- shipwright_events.jsonl shipwright_events.d); [ -z "$paths" ] || git commit -m "chore(release): record changelog event for v{version}" -- $paths; } \
+&& { [ ! -f shipwright_events.jsonl ] || git add shipwright_events.jsonl; paths=$(git diff --cached --name-only -- shipwright_events.jsonl .shipwright/events/drops); [ -z "$paths" ] || git commit -m "chore(release): record changelog event for v{version}" -- $paths; } \
 && git push origin HEAD
 ```
 
@@ -357,7 +357,7 @@ gh pr merge --merge --delete-branch
 ```bash
 uv run "{shared_root}/scripts/tools/record_event.py" --project-root "$(pwd)" --type phase_completed --phase changelog --run-id "release-v{version}" --detail "v{version} — tagged on main" \
 && uv run "{shared_root}/scripts/tools/stage_event_drops.py" --project-root "$(pwd)" --run-id "release-v{version}" \
-&& { [ ! -f shipwright_events.jsonl ] || git add shipwright_events.jsonl; paths=$(git diff --cached --name-only -- shipwright_events.jsonl shipwright_events.d); [ -z "$paths" ] || git commit -m "chore(release): record changelog event for v{version}" -- $paths; }
+&& { [ ! -f shipwright_events.jsonl ] || git add shipwright_events.jsonl; paths=$(git diff --cached --name-only -- shipwright_events.jsonl .shipwright/events/drops); [ -z "$paths" ] || git commit -m "chore(release): record changelog event for v{version}" -- $paths; }
 ```
 
 **Push tags and updated main to remote:**

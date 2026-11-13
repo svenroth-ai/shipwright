@@ -31,8 +31,8 @@ TIP = "a" * 40
 
 def _tree(root: Path, layout: str, n: int) -> Path:
     (root / "shipwright_sync_config.json").write_text(json.dumps({"events_layout": layout}), encoding="utf-8")
-    d = root / "shipwright_events.d"
-    d.mkdir()
+    d = root / ".shipwright/events/drops"
+    d.mkdir(parents=True)
     for i in range(n):
         (d / f"r{i}--{i:08x}--{i:08x}.jsonl").write_text("{}\n", encoding="utf-8")
     return root
@@ -68,7 +68,7 @@ def test_legacy_layout_is_silent_even_with_many_files(tmp_path):
 
 def test_temp_and_foreign_files_are_not_counted(tmp_path):
     _tree(tmp_path, "drops", 3)
-    d = tmp_path / "shipwright_events.d"
+    d = tmp_path / ".shipwright/events/drops"
     (d / ".x.jsonl.tmp").write_text("x", encoding="utf-8")
     (d / "notes.txt").write_text("x", encoding="utf-8")
     (d / ".hidden.jsonl").write_text("x", encoding="utf-8")
@@ -87,8 +87,8 @@ def host(monkeypatch):
 def test_main_health_prints_the_line_without_changing_the_exit_code(host, tmp_path, capsys):
     quiet = tmp_path / "quiet"
     loud = tmp_path / "loud"
-    quiet.mkdir()
-    loud.mkdir()
+    quiet.mkdir(parents=True)
+    loud.mkdir(parents=True)
     _tree(quiet, "drops", 1)
     _tree(loud, "drops", eow.OPEN_FILES_WARN_THRESHOLD + 1)
 
@@ -115,7 +115,7 @@ def test_a_failing_warning_never_breaks_main_health(host, tmp_path, monkeypatch)
 def test_a7_failure_names_both_locations(tmp_path):
     finding = check_a7_adopted_event(tmp_path)
     text = json.dumps(finding)
-    assert "shipwright_events.jsonl" in text and "shipwright_events.d/" in text
+    assert "shipwright_events.jsonl" in text and ".shipwright/events/drops/" in text
 
 
 def _load_seeder():
@@ -175,7 +175,7 @@ def test_events_warning_only_flag_prints_the_line_makes_no_gh_call_and_exits_zer
     assert tool.main(["--events-warning-only", "--project-root", str(tmp_path)]) == 0
     assert "150 event files are open" in capsys.readouterr().err
     quiet = tmp_path / "q"
-    quiet.mkdir()
+    quiet.mkdir(parents=True)
     assert tool.main(["--events-warning-only", "--project-root", str(quiet)]) == 0
     assert capsys.readouterr().err == ""
 

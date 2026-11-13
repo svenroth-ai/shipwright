@@ -157,6 +157,9 @@ Spec/
 !/.shipwright/agent_docs/
 !/.shipwright/compliance/
 !/.shipwright/designs/
+# Event-log files of the drops layout (drops/, archive/, quarantine/): tracked, one file per run, so
+# parallel branches only ADD files. The legacy shipwright_events.jsonl stays at the repo root.
+!/.shipwright/events/
 !/.shipwright/planning/
 # Hand-authored custom stack profiles (campaign stack-profile-resolver, D10): committable so
 # every checkout, iterate worktree, teammate and CI sees them.

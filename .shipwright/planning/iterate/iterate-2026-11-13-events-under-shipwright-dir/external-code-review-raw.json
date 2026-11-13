@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: bug\n- Severity: medium\n- File: shared/scripts/tools/migrate_events_folder.py:98\n- Finding: Untracked leftovers are moved with `shutil.move` but never staged. The documented migration procedure says the tool stages its changes and instructs users to run only `git commit` afterward. After pulling main, a checkout containing untracked old-location events therefore reports `migrated`, yet those events remain outside the commit. The untracked migration tests check filesystem contents without checking the index, so they miss this failure.\n- Suggestion: Stage each moved untracked file by its exact destination path and report any staging failure. Add a test that migrates an untracked event, commits without an additional `git add`, and verifies the event exists in HEAD.\n\nOverall assessment: ship-with-fixes. The path relocation and refusal logic broadly implement the specification, but untracked-file migration must fulfill the documented staging contract.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "Findings:\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/tools/migrate_events_folder.py \u2014 `_plan` / final `rmdir` loop\n  Finding: A folder holding only OS junk is excluded by `old_event_folders` (by design), so `_plan` never sees it: the junk is never deleted, and the final `rmdir` loop skips it because it is non-empty. The tool never converges on a junk-only old folder (e.g. `shipwright_events.d/` with only `Thumbs.db`); it lingers on disk forever even though the tool reports \"migrated\". Harmless to writers (the sentinel ignores it too) but contradicts the tool's convergence claim.\n  Suggestion: In `_plan`, also walk `MOVED_FOLDERS` keys whose directory exists (not just `old_event_folders` results) and queue pure-junk contents for deletion, or at minimum rmdir-after-deleting-junk in the cleanup loop.\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/lib/events_integrity.py \u2014 `_entries` filter\n  Finding: The new filter (`low.startswith(EVENTS_ROOT + \"/\") or low.split(\"/\", 1)[0] in _OLD_ROOTS`) is case-sensitive on the new prefix. A path like `.SHIPWRIGHT/events/drops/x.jsonl` or `.shipwright/Events/drops/x.jsonl` matches neither branch, so the entry is silently dropped from the check \u2014 while the old code lowercased the first segment before comparing. A case-variant folder (Windows/macOS checkout weirdness, or a smuggled path) escapes the integrity check entirely instead of being flagged `bad_path`.\n  Suggestion: Compare the first three segments lowercased against the folder tuple (mirroring the old `lowered` set semantics), so any case variant is included and then rejected by the folder/name validation.\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/tools/migrate_events_folder.py \u2014 `_plan`\n  Finding: `_plan` iterates every entry of an old folder, including subdirectories. A directory `shipwright_events.d/sub/` is \"moved\" with one `git mv` into `.shipwright/events/drops/sub/`, producing a nested name the integrity check flags (`bad_path`) \u2014 the tool reports success while leaving the repo in a state its own check rejects.\n  Suggestion: Refuse (or flatten per-file) when an old-folder entry is a directory; at minimum surface it in the plan as a collision/manual item rather than a move.\n\n- Category: test\n  Severity: low\n  File: shared/tests/test_events_folder_move_migrate.py \u2014 `test_integrity_rejects_a_changed_file_even_if_it_claims_to_be_a_move` (and the cross-kind / rename tests)\n  Finding: These assert only `any(v.path == ...)` over the violation list; a broken implementation that flags every old-root deletion as `bad_path` (never recognizing any move) still passes all three, because the expected path is reported either way. Only the positive move test (`test_integrity_accepts_the_byte_identical_move`) discriminates.\n  Suggestion: Assert the exact code set for the old-path entry (e.g. `deleted_existing` with the \"moved to\" wording absent/present as appropriate) so the move-recognition logic is pinned on the negative side too.\n\n- Category: bug\n  Severity: low\n  File: shared/scripts/lib/events_gitignore.py \u2014 `reinclude_lines`\n  Finding: When `needed` is empty but the legacy-log `keep` line applies, the function correctly returns the keep lines; but when the folder rules are needed and `_effective` fails, the returned `keep` list may still contain the legacy `!/shipwright_events.jsonl` line appended earlier via `lines.extend(keep)` \u2014 this is correct behavior, yet the dedupe `if parent not in lines` only checks `lines`, so a parent chain segment that happens to equal a previously added keep line (not possible today, but the guard is on the wrong list semantics). Minor; no concrete failure with current constants.\n  Suggestion: None required; noted for the record only.\n\nVerified as correctly implemented (no defect): the `_events_committed` early-return removal, the parent-chain re-include ordering with the throwaway-repo effectiveness probe, the nested-path symlink guards (`real_event_dir`, grade's `real_dir`), the `archive` kind detection under relative roots (`path.parent == root / ARCHIVE_DIR`), the abort message leading with the tool and warning about `git mv` nesting, and the integrity move-recognition requiring identical blob + same name + matching kind folder.\n\nOverall assessment: ship-as-is \u2014 the change is thorough, the spec's acceptance criteria (hard abort, migration tool, gitignore whitelist, integrity recognition of the move, parent-chain self-heal) are all implemented and tested; the findings above are low-severity refinements that don't block the merge.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-11-13-events-under-shipwright-dir",
+    "at": "2026-11-13T20:48:48.415307+00:00"
+  },
+  "verdicts": {
+    "openai": "revise",
+    "glm": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

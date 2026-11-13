@@ -118,9 +118,9 @@ def test_campaign_wave_squash_sequence_and_retried_unit(tmp_path):
     _commit(retry, "retry of unit 1")
     branches = [f"iterate/w{n}" for n in (1, 2, 3, 4)] + ["iterate/w1-retry"]
     assert all(_clean(main, a, b) for i, a in enumerate(branches) for b in branches[i + 1:])
-    names = {p.name.split("--")[0] for w in wts for p in (w / "shipwright_events.d").glob("*.jsonl")}
+    names = {p.name.split("--")[0] for w in wts for p in (w / ".shipwright/events/drops").glob("*.jsonl")}
     assert names == {"run-1", "run-2", "run-3", "run-4"}
-    assert len(list((retry / "shipwright_events.d").glob("run-1--*"))) == 1
+    assert len(list((retry / ".shipwright/events/drops").glob("run-1--*"))) == 1
     _squash(main, "iterate/w1")
     _squash(main, "iterate/w2")
     third = _run(TOOLS / "ensure_current.py", wts[2], "--run-id", "run-3", "--default-branch", "main", "--no-regenerate", run_id="run-3")
@@ -129,7 +129,7 @@ def test_campaign_wave_squash_sequence_and_retried_unit(tmp_path):
     assert _git(wts[2], "status", "--porcelain").stdout.strip() == ""
     # continue-after-squash-merge: the squashed branch writes again; its closed file is not edited
     _record(wts[0], "run-1")
-    assert len(list((wts[0] / "shipwright_events.d").glob("run-1--*"))) == 2
+    assert len(list((wts[0] / ".shipwright/events/drops").glob("run-1--*"))) == 2
     assert _run(CHECKS / "check_events_integrity.py", wts[2], "--base-ref", "origin/main", "--head-ref", "HEAD").returncode == 0
     assert _run(CHECKS / "check_events_layout_ci.py", wts[2], "--base-ref", "origin/main", "--head-ref", "HEAD").returncode == 0
 
@@ -156,7 +156,7 @@ def test_old_writer_branch_and_a_pr_in_flight_at_the_flip(tmp_path):
     # mid-run flip: the old branch takes main in and its NEXT write goes to a drop; both histories stay readable
     _git(old, "merge", "-q", "--no-edit", "origin/main")
     _record(old, "run-old")
-    assert list((old / "shipwright_events.d").glob("run-old--*.jsonl"))
+    assert list((old / ".shipwright/events/drops").glob("run-old--*.jsonl"))
     texts = [e.get("description") for e in _read(old).records]
     assert texts.count("event of run-old") == 2
     # S7 follow-up closed here: taking main in must not blame the pre-flip appends (the layout at each commit's parent decides)
@@ -201,8 +201,8 @@ def test_mid_run_rollback_by_emergency_fold_then_full_fold(tmp_path):
 
 def test_a_corrupt_drop_on_main_is_repaired_by_quarantine_and_blocks_only_its_own_run(tmp_path):
     main = _main(tmp_path, "drops")
-    (main / "shipwright_events.d").mkdir(exist_ok=True)
-    (main / "shipwright_events.d" / "run-bad--aaaaaaaa--00000001.jsonl").write_bytes(b"\x00\x00 not json at all \xff\n")
+    (main / ".shipwright/events/drops").mkdir(parents=True, exist_ok=True)
+    (main / ".shipwright/events/drops" / "run-bad--aaaaaaaa--00000001.jsonl").write_bytes(b"\x00\x00 not json at all \xff\n")
     _commit(main, "a torn drop reached main")
     _git(main, "push", "-q", "origin", "main")
     from lib.events_read import EventLogNotReadable, require_readable_for_absence
@@ -223,12 +223,12 @@ def test_mixed_versions_fail_closed_through_the_real_writer_cli(tmp_path):
     wt = _worktree(main, "mixed")
     refused = _record(wt, "run-x", ok=False)
     assert refused.returncode != 0
-    assert not (wt / "shipwright_events.d").exists()
+    assert not (wt / ".shipwright/events/drops").exists()
     assert (wt / "shipwright_events.jsonl").read_text(encoding="utf-8") == BASE_LOG
     # live drops with the key removed: legacy writes are refused rather than silently splitting the log
     (wt / CONFIG).unlink()
-    (wt / "shipwright_events.d").mkdir()
-    (wt / "shipwright_events.d" / "run-y--aaaaaaaa--00000001.jsonl").write_text(
+    (wt / ".shipwright/events/drops").mkdir(parents=True)
+    (wt / ".shipwright/events/drops" / "run-y--aaaaaaaa--00000001.jsonl").write_text(
         '{"v":1,"id":"evt-y","ts":"2026-11-01T00:00:00+00:00","type":"task_created","run":"run-y"}\n', encoding="utf-8", newline="\n")
     assert _record(wt, "run-z", ok=False).returncode != 0
     assert (wt / "shipwright_events.jsonl").read_text(encoding="utf-8") == BASE_LOG
@@ -236,8 +236,8 @@ def test_mixed_versions_fail_closed_through_the_real_writer_cli(tmp_path):
 
 def test_fault_injection_corrupt_empty_duplicate_and_future_timestamps(tmp_path):
     main = _main(tmp_path, "drops")
-    folder = main / "shipwright_events.d"
-    folder.mkdir(exist_ok=True)
+    folder = main / ".shipwright/events/drops"
+    folder.mkdir(parents=True, exist_ok=True)
     good = '{"v":1,"id":"evt-dup","ts":"2026-11-01T00:00:00+00:00","type":"task_created","run":"run-a"}\n'
     (folder / "run-a--aaaaaaaa--00000001.jsonl").write_text(good, encoding="utf-8", newline="\n")
     (folder / "run-a--bbbbbbbb--00000002.jsonl").write_text(good, encoding="utf-8", newline="\n")      # duplicate id, same content
@@ -274,10 +274,10 @@ def test_two_run_ids_in_one_shared_worktree_f6_stages_only_its_own_key(tmp_path,
     assert [Path(p).name.split("--")[0] for p in mine] == ["run-a"]
     assert commit_drops(wt, mine, "F6 run-a")[0]
     _record(wt, "run-a")                                              # a post-F6 write rotates into a NEW file
-    assert len(list((wt / "shipwright_events.d").glob("run-a--*"))) == 2
+    assert len(list((wt / ".shipwright/events/drops").glob("run-a--*"))) == 2
     left = _git(wt, "status", "--porcelain").stdout.splitlines()
     assert sum("run-b--" in ln for ln in left) == 1 and sum("run-a--" in ln for ln in left) == 1
-    assert not [ln for ln in _git(wt, "ls-files", "shipwright_events.d").stdout.split() if "run-b--" in ln]
+    assert not [ln for ln in _git(wt, "ls-files", ".shipwright/events/drops").stdout.split() if "run-b--" in ln]
     # the hop: a sibling lands on main, then the real ensure_current runs for run-a with run-b's leftover drop in the tree
     sib = main.parent / "sib"
     _git(main.parent, "clone", "-q", str(main.parent / "o.git"), str(sib))
@@ -291,7 +291,7 @@ def test_two_run_ids_in_one_shared_worktree_f6_stages_only_its_own_key(tmp_path,
     hop = _run(TOOLS / "ensure_current.py", wt, "--run-id", "run-a", "--default-branch", "main", "--no-regenerate", run_id="run-a")
     assert json.loads(hop.stdout)["status"] == "ok", hop.stdout[-600:]
     assert (wt / "sibling.txt").exists()
-    committed = _git(wt, "ls-tree", "-r", "--name-only", "HEAD", "shipwright_events.d").stdout.split()
+    committed = _git(wt, "ls-tree", "-r", "--name-only", "HEAD", ".shipwright/events/drops").stdout.split()
     assert not [n for n in committed if "run-b--" in n], "the absorb committed a sibling run's gate event"
 
 

@@ -101,7 +101,7 @@ DESIGN_ALLOWED_PREFIXES = (
     "shipwright_project_config.json",
     "CHANGELOG-unreleased.d/",
     "CHANGELOG.md",  # the design verifier (C5) REQUIRES the "Design: N screens + M flows added" line there
-    "shipwright_events.jsonl", "shipwright_events.d/", "shipwright_events.archive/", "shipwright_events.quarantine/",  # the pipeline's own event log (file and drops folders): bookkeeping, not a breach
+    "shipwright_events.jsonl", ".shipwright/events/drops/", ".shipwright/events/archive/", ".shipwright/events/quarantine/",  # the pipeline's own event log (file and drops folders): bookkeeping, not a breach
 )
 
 

@@ -7,7 +7,7 @@ alone would read the unknown value as ``legacy`` and silently write the wrong la
 
 * unknown layout declaration -> :class:`UnsupportedEventsLayout` ("update the plugin");
 * legacy write while drop files exist and the key is ABSENT -> :class:`UnsupportedEventsLayout`: the
-  repo defaults to ``legacy`` yet already holds ``shipwright_events.d/*.jsonl`` -- a config that lost its
+  repo defaults to ``legacy`` yet already holds ``.shipwright/events/drops/*.jsonl`` -- a config that lost its
   key must not split the log. An EXPLICIT ``events_layout: legacy`` is a deliberate rollback (the folds
   set it, and may leave unfoldable corrupt drops behind) and is honoured, never a lockout.
 
@@ -25,8 +25,15 @@ from pathlib import Path
 
 SUPPORTED_LAYOUTS = ("legacy", "drops")
 SYNC_CONFIG = "shipwright_sync_config.json"
-DROPS_DIR = "shipwright_events.d"
+DROPS_DIR = ".shipwright/events/drops"
 UPDATE_HINT = "Update the Shipwright plugins to a version that supports this layout."
+#: Where the event folders lived before they moved under ``.shipwright/events/`` (old root name -> new name).
+#: A repo that still has one of these at its root is refused outright: no compatibility reader (decided).
+MOVED_FOLDERS = {
+    "shipwright_events.d": ".shipwright/events/drops",
+    "shipwright_events.archive": ".shipwright/events/archive",
+    "shipwright_events.quarantine": ".shipwright/events/quarantine",
+}
 
 
 class UnsupportedEventsLayout(RuntimeError):
@@ -63,8 +70,41 @@ def drops_present(project_root: Path | str) -> bool:
         return False
 
 
+OS_JUNK_NAMES = frozenset({".DS_Store", "Thumbs.db", "desktop.ini"})  # mirrors events_log (this module is flat-loaded)
+
+
+def old_event_folders(project_root: Path | str) -> list[str]:
+    """Old root-level event folders that still hold something (a real directory; OS junk alone does not count)."""
+    root = Path(project_root)
+    found = []
+    for old in MOVED_FOLDERS:
+        if (root / old).is_dir() and not (root / old).is_symlink():
+            try:
+                if any(p.name not in OS_JUNK_NAMES for p in (root / old).iterdir()):
+                    found.append(old)
+            except OSError:
+                found.append(old)
+    return found
+
+
+def moved_folders_message(old: list[str]) -> str:
+    """The refusal text: what moved, and the exact commands that fix it (run once at the repo root)."""
+    cmds = " && ".join(f"git mv {o} {MOVED_FOLDERS[o]}" for o in old)
+    return (f"the event folders moved under .shipwright/events/ (found at the repo root: {', '.join(old)}). "
+            "Move them once with the migration tool: uv run "
+            "<shipwright>/shared/scripts/tools/migrate_events_folder.py --project-root . "
+            "(it moves file by file, so it also works when the new folder already exists or holds untracked files), "
+            f"then commit. Never use a plain mv/cp -r for this. By hand, ONLY when .shipwright/events/ does not exist yet (otherwise git nests the folder "
+            f"inside the new one and the events are never read): mkdir -p .shipwright/events && {cmds}. "
+            "Nothing is read from or written to the old location. If you just moved them and they came back, a Shipwright "
+            "plugin that predates the move wrote them: update the plugins (and restart open sessions) first.")
+
+
 def require_writable_layout(project_root: Path | str, effective_layout: str) -> None:
     """Raise unless an event may be written under ``effective_layout`` (what ``events_layout()`` answered)."""
+    old = old_event_folders(project_root)
+    if old:
+        raise UnsupportedEventsLayout(moved_folders_message(old))
     bad = unsupported_layout(project_root)
     if bad is not None:
         raise UnsupportedEventsLayout(
@@ -79,6 +119,10 @@ def require_writable_layout(project_root: Path | str, effective_layout: str) -> 
 
 def evidence_refusal(project_root: Path | str, producer: str) -> dict | None:
     """A refusal record for a release-evidence producer, or ``None`` when it may run."""
+    old = old_event_folders(project_root)
+    if old:
+        return {"status": "refused_events_folder_moved", "producer": producer, "old_folders": old,
+                "error": f"{producer} will not produce release evidence: {moved_folders_message(old)}"}
     bad = unsupported_layout(project_root)
     if bad is None:
         return None
