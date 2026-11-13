@@ -1,0 +1,21 @@
+{
+  "run_id": "iterate-2026-11-14-dfp-pilot-measure-learnings",
+  "date": "2026-11-13T23:35:42.678590Z",
+  "event_at": "2026-11-13T21:12:10.697204+00:00",
+  "type": "change",
+  "complexity": "trivial",
+  "branch": "iterate/dfp-pilot-measure-learnings",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-11-14-dfp-pilot-measure-learnings",
+  "test_completeness": {
+    "status": "n/a",
+    "reason_code": "trivial-auto"
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}

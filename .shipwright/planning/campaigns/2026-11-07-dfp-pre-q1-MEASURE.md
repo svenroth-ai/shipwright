@@ -139,3 +139,33 @@ The events flip may add more. The pilot's P0 measures again on the tree it start
 **AC tests:** the test files that name each FR-01.09 AC (fixtures `test_baseline_*` excluded) are unchanged in kind. AC15 is still unnamed, and AC11 is still named only by the aggregator test.
 
 **Timing:** `shared/tests` took 1,802 s serial in this run, against 1,393 s on 2026-11-07, while other sessions were running on the machine. As in §3, this is not what an iterate pays.
+
+## 8. Re-measured on `origin/main` @ `aec0284d8` (2026-11-14, after the events flip #1033 and the events-folder move #1054)
+
+#1054 changed the changelog `SKILL.md` and `references/event-fold.md`, so the 2026-11-09 values were stale (pilot start condition 8). Same method as §2 and §7.3, in a throwaway worktree on `origin/main`; no file on `main` was changed.
+
+| Measure | 2026-11-09 | 2026-11-14 |
+|---|---|---|
+| `changelog/SKILL.md` lines | 443 | **440** (the bloat entry still says `current: 443`, limit 400, exception, ADR-348; the baseline is refreshed last, programme P12) |
+| FR-01.09 ACs with a deterministic test | 13 of 15 | **13 of 15**: AC01-AC10 and AC12-AC14 have a `covers` mark on a test; AC11 only the aggregator test (`oracle: trace`); AC15 none |
+| Prose pins (tests that fail with the prose replaced) | 30 tests in 13 files | **30 tests in 13 files**, the same set |
+
+**Pin list.** Method: the five roots (`integration-tests`, `shared/tests`, `shared/scripts/tests`, `shared/scripts/tools/tests`, `plugins/shipwright-changelog/tests`), one pytest process each, with `SKILL.md` and every reference except `release-notes-prompt.md` replaced by a placeholder. Only this broken pass was run on this tree; the 2026-11-09 baseline was all green, and every failing name is a changelog-prose test from that list.
+
+| Root | Failed | Files |
+|---|---|---|
+| `plugins/shipwright-changelog/tests` | 18 | `test_skill_event_blocks_behaviour.py` (7), `test_skill_release_flag_wiring.py` (4), `test_skill_event_ships_in_release_pr.py` (3), `test_skill_upgrade_notes_check.py` (2), `test_changelog_judgement_drift.py` (1), `test_setup_changelog_version_suggestion.py` (1) |
+| `shared/tests` | 10 | `test_events_drop_hardening.py` (4), `test_release_pathspec_doc_sync.py` (3), `test_canon_marker_write_contract.py`, `test_events_reference_guard.py`, `test_phase_gate_discipline_present.py` (1 each) |
+| `integration-tests` | 2 | `test_multi_session_removal_residue.py`, `test_phase_skill_invocation_mode_canon.py` |
+| `shared/scripts/tests`, `shared/scripts/tools/tests` | 0 | (704 and 1,502 passed) |
+
+The pin set is unchanged since 2026-11-09 (the flip #1033 and the folder move #1054 are among the merges since). P0 still measures once more on its own starting tree.
+
+**Timing.** The five roots ran in parallel on a busy machine: `shared/tests` 1,859 s, `integration-tests` 513 s, `shared/scripts/tools/tests` 241 s, the rest under a minute. Not what an iterate pays (as in §3).
+
+**Overlap check (pilot start condition 4), 2026-11-14.** No open unit names a file in the pilot's touch sets:
+- Events follow-ups U1-U3 (#1042, #1046, #1047) are merged; U2 had touched `condense_release_notes.py`.
+- The e2e-run-findings units E1-E6 are merged (#941, #943-#948, #950, #951). Campaign B units B0-B4 are not in the pilot's touch sets, and B5 is merged (#926).
+- Campaign U (`needs_input`, gate-pending result, preflight, harness) has not started. Its units name run-plugin status readers, `result_contract.py`, preflight, design `SKILL.md` and fixtures; none names the changelog plugin, `shared/testkit/`, the release tools under `shared/scripts/tools/`, `ci.yml`, `verify_local.py`, the hooks doc or the bloat baseline.
+- Branches that touch changelog files (`iterate/e6-judgement-drift-tests`, `iterate/changelog-event-ships-in-pr`, `iterate/events-under-shipwright-dir`, `iterate/release-event-before-merge`, `iterate/dfp-f11-dryrun-throwaway`) are merged, closed or throwaway. The only open PRs are two Dependabot bumps of `ci.yml` (#1020, #1021).
+- atomic-frs: FR-01.09 and FR-01.01 are not splittable (checked 2026-11-11).

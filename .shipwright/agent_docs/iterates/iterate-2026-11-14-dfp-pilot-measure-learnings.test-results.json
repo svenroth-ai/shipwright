@@ -1,0 +1,48 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-14-dfp-pilot-measure-learnings",
+    "date": "2026-11-14",
+    "unit": {
+      "status": "passed",
+      "passed": 25818,
+      "skipped": 111,
+      "total": 25929
+    },
+    "integration": {
+      "status": "skipped",
+      "passed": 0,
+      "skipped": 0,
+      "total": 0
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "n/a",
+      "reason_code": "trivial-auto"
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-11-14-dfp-pilot-measure-learnings",
+    "commit": "aec0284d896a1dd9edefd8668e3965a84ec91261",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

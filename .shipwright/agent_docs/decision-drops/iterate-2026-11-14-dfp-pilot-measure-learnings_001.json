@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-14-dfp-pilot-measure-learnings",
+  "date": "2026-11-14",
+  "section": "Iterate — change: pilot measurements, operator decisions and LEARNINGS template",
+  "title": "The changelog pilot records its start numbers and a per-plugin LEARNINGS report",
+  "context": "The pilot starts from a main after the events flip and the events-folder move, which made the 2026-11-09 measurements stale. The method is meant to become a skill for other repos after two or three migrated plugins.",
+  "decision": "Re-measure on main (440 lines, 13 of 15 ACs, 30 pins in 13 files) as MEASURE section 8, record the overlap check and the operator decisions (budget none, cross-cutting none), and add a fixed LEARNINGS template (steps and effort, code-or-AI decisions, patterns, pitfalls, generic versus Shipwright-specific tools, doable by a stranger) as pilot brief section 8.",
+  "consequences": "Planning documents only; no code or behaviour changes. P0 opens the LEARNINGS file and P7 closes it, so each later plugin campaign can reuse the template.",
+  "rationale": "",
+  "rejected": "",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}
