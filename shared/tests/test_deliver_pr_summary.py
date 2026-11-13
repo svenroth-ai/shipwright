@@ -20,7 +20,7 @@ from tools.deliver_pr import summary  # noqa: E402
 
 # --- the closing line ---------------------------------------------------------
 
-@pytest.mark.covers("FR-01.11/AC23")
+@pytest.mark.covers("FR-01.22/AC23")
 def test_the_summary_names_who_merged_and_on_what_evidence():
     """AC23: a change merged by the tool rather than by the host is reported
     by naming who merged it and how many checks the host actually ran."""
@@ -30,12 +30,12 @@ def test_the_summary_names_who_merged_and_on_what_evidence():
     assert "3 passing check(s)" in summary(merged_here)
 
 
-@pytest.mark.covers("FR-01.11/AC23")
+@pytest.mark.covers("FR-01.22/AC23")
 def test_the_summary_counts_passes_not_rollup_entries():
     """SKIPPED and NEUTRAL count as passes for the merge DECISION (a needs:-skipped
     required job is a pass) but they are not EVIDENCE. Reporting entries let an
     all-skipped rollup say "the host ran 3 check(s)" when the host confirmed nothing —
-    the exact sentence FR-01.11's criterion exists to make impossible (Stage 3)."""
+    the exact sentence FR-01.22's criterion exists to make impossible (Stage 3)."""
     all_skipped = {"status": "merged", "merged_by": "shipwright",
                    "checks_observed": 3, "checks_passed": 0}
     line = summary(all_skipped)

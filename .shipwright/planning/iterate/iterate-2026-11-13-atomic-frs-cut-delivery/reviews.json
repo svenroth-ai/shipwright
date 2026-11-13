@@ -1,0 +1,176 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-13-atomic-frs-cut-delivery",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-13T22:47:50.603860+00:00",
+      "disposition": null,
+      "recorded_by": "claude",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-13T22:47:50.738441+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "claude",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": ".shipwright/planning/01-adopted/spec.md",
+          "line": 1089,
+          "finding": "The new FR-01.22 section sits right after FR-01.11, not in number order. This is the contract of fr_split_spec; no parser relies on order.",
+          "suggestion": "Leave as is.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "correctness",
+          "file": "shipwright_ac_registry.json",
+          "line": 12,
+          "finding": "FR-01.11 goes from 29 to 51: a stale high-water mark corrected to the highest AC the spec already uses (AC51); FR-01.22 at 25 matches the highest moved number.",
+          "suggestion": "Say in the PR text that 29 to 51 corrects a stale value.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "correctness",
+          "file": ".shipwright/planning/campaigns/2026-10-27-baseline-protection-BL0B.json",
+          "line": 1430,
+          "finding": "Historical campaign record still names FR-01.11/AC21-25; not a live binding, the move map resolves them.",
+          "suggestion": "None.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-13T22:34:19.384821+00:00",
+      "disposition": null,
+      "recorded_by": "claude",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "hidden coupling & blast radius",
+          "file": "integration-tests/test_requirements_catalog_contract.py, test_requirements_catalog_parsers.py, test_fr_table_shape_convergence.py",
+          "line": null,
+          "finding": "Claim under doubt: the cut is safe to merge as is — Three integration test files pin the live catalog at 21 requirements (ids, priorities, counts, basis, layers) and compare section order; the diff updated none. Confirmed by running them: 10 failed.",
+          "suggestion": "Raise the pins to 22 incl. FR-01.22 and compare heading/anchor ids sorted. DONE in this run: 24 pass, full integration-tests root 685 passed; note added to shared/fr-authoring.md.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "concurrency & ordering",
+          "file": "shared/scripts/lib/fr_split_report.py",
+          "line": null,
+          "finding": "Claim under doubt: FR-01.22 cannot collide with parallel work — origin_numbers sees only origin/main as last fetched, not open PRs.",
+          "suggestion": "git fetch origin main and a fresh dry run right before the push (planned at F11).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling",
+          "file": "shared/tests/test_deliver_pr_summary.py",
+          "line": null,
+          "finding": "Claim under doubt: every text naming the moved criteria was updated — A docstring in test_deliver_pr_summary.py still said FR-01.11.",
+          "suggestion": "DONE: now says FR-01.22.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": ".shipwright/compliance/test-traceability.json",
+          "line": null,
+          "finding": "Claim under doubt: a stale committed manifest is harmless — Dashboards keep reading FR-01.11/AC21-25 until the next regeneration; no gate fails.",
+          "suggestion": "State it in the PR body.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-13T22:47:14.349896+00:00",
+      "disposition": null,
+      "recorded_by": "claude",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-13T22:47:51.129426+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "claude",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-13T22:33:07.958093+00:00",
+      "disposition": null,
+      "recorded_by": "claude",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-13T22:47:50.867201+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "claude",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-13T22:47:50.999259+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "claude",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}

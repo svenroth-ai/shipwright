@@ -1,0 +1,57 @@
+{
+  "run_id": "iterate-2026-11-13-atomic-frs-cut-delivery",
+  "date": "2026-11-13T23:09:49.420924Z",
+  "event_at": "2026-11-13T09:57:36.272720+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/atomic-frs-cut-delivery",
+  "spec": ".shipwright/planning/iterate/2026-11-13-atomic-frs-cut-delivery.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-11-13-atomic-frs-cut-delivery",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "AC21-AC25 are moved verbatim into FR-01.22 and each appears exactly once",
+        "disposition": "tested",
+        "evidence": "fr_split --apply conservation check ok; spec reviewer compared 26 removed vs 26 added lines"
+      },
+      {
+        "behavior": "the keystone AC gate and the orphan-AC-binding gate read the move as the same criterion (no added/removed/changed, no orphan)",
+        "disposition": "tested",
+        "evidence": "both gates status clean on a probe commit with a freshly regenerated manifest; shared/scripts/tools/tests/test_keystone_ac_moves.py PASSED"
+      },
+      {
+        "behavior": "the retagged deliver-PR tests still bind the criteria under FR-01.22",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_deliver_pr.py, test_deliver_pr_self_merge.py, test_deliver_pr_summary.py: 44 passed"
+      },
+      {
+        "behavior": "the live catalog is read as 22 requirements by the catalog-pinning tests",
+        "disposition": "tested",
+        "evidence": "integration-tests/test_requirements_catalog_contract.py, test_requirements_catalog_parsers.py, test_fr_table_shape_convergence.py: 24 passed; integration-tests root 685 passed"
+      }
+    ],
+    "counts": {
+      "testable": 4,
+      "tested": 4,
+      "untestable": 0,
+      "untested_testable": 0
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run pytest integration-tests/test_requirements_catalog_contract.py integration-tests/test_requirements_catalog_parsers.py integration-tests/test_fr_table_shape_convergence.py -q",
+    "exit_code": 0,
+    "tests_run": 24,
+    "evidence_path": ".shipwright/runs/iterate-2026-11-13-atomic-frs-cut-delivery/surface_verification.log",
+    "timestamp": "2026-11-13T23:08:14.784Z"
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}

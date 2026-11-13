@@ -102,7 +102,7 @@ def test_a_transient_arm_failure_still_just_watches():
 
 # --- the honest fast failure ---------------------------------------------------
 
-@pytest.mark.covers("FR-01.11/AC24")
+@pytest.mark.covers("FR-01.22/AC24")
 def test_no_merger_and_no_permission_stops_at_once_without_waiting():
     """AC24: a project that would rather nothing was ever merged on its
     behalf (SELF_MERGE=0) is reported as not delivered STRAIGHT AWAY rather
@@ -120,7 +120,7 @@ def test_no_merger_and_no_permission_stops_at_once_without_waiting():
     assert "switched off" in result["reason"]
 
 
-@pytest.mark.covers("FR-01.11/AC22")
+@pytest.mark.covers("FR-01.22/AC22")
 def test_a_protected_base_with_auto_merge_off_is_reported_not_delivered():
     """AC22: the base branch IS protected and only the host's automatic-merge
     setting is switched off — the change is reported as not delivered and

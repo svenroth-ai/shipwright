@@ -1,0 +1,5 @@
+{"section": "atomic-frs-cut-delivery", "review": [
+ {"severity":"low","category":"readability","file":".shipwright/planning/01-adopted/spec.md","line":1089,"finding":"The new FR-01.22 section sits right after FR-01.11, not in number order. This is the contract of fr_split_spec; no parser relies on order.","suggestion":"Leave as is."},
+ {"severity":"info","category":"correctness","file":"shipwright_ac_registry.json","line":12,"finding":"FR-01.11 goes from 29 to 51: a stale high-water mark corrected to the highest AC the spec already uses (AC51); FR-01.22 at 25 matches the highest moved number.","suggestion":"Say in the PR text that 29 to 51 corrects a stale value."},
+ {"severity":"info","category":"correctness","file":".shipwright/planning/campaigns/2026-10-27-baseline-protection-BL0B.json","line":1430,"finding":"Historical campaign record still names FR-01.11/AC21-25; not a live binding, the move map resolves them.","suggestion":"None."}
+]}
