@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-13-silent-measurement-gaps",
+  "date": "2026-11-13",
+  "section": "Iterate — change: origin-aware finding dedup + curried test declarations",
+  "title": "Dedup the GitHub finding sync against origin too; collect curried it.skipIf declarations",
+  "context": "A checkout behind origin lacks triage cards origin already holds, so the session-start sync re-filed four duplicates (measured 2026-11-12). Separately the FR-tag collector's declaration regex could not match it.skipIf(cond)('title'), leaving tagged tests silently uncounted.",
+  "decision": "The sync reads origin/<default>'s tracked triage log (bounded, non-interactive git fetch+show) and lets origin fill gaps only: keys the local view already knows stay with the local scan. Any fetch/parse failure gives an empty set. _TEST_DECL_RE accepts a curried skipIf/runIf call (two paren levels).",
+  "consequences": "A stale or unreachable origin never suppresses filing; local decisions (e.g. a machine close not yet pushed) are never outvoted. Each sync adds up to two 8s git calls. Curried declarations in consumer repos newly count as tests. A new test_exemption code was considered and dropped by the operator: bind such tests to a real requirement instead.",
+  "rationale": "Remedy 1 of the card (consult origin) chosen over refusing to file (trades a missed sync for a clean board) and over merge-on-collision (needs an unimplemented survivor rule).",
+  "rejected": "Refuse to file when behind origin; dedupKey-collision merge at reconciliation; a deliberately-unbound test_exemption code.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

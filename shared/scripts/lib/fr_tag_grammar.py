@@ -27,13 +27,11 @@ A ``pytest_marker`` value may additionally name an AC minted by ``lib.ac_identit
 ``@pytest.mark.covers("FR-01.11/AC07")``. ``canonical_fr_ac`` resolves the pair; a
 bare ``FR-01.11`` stays valid (``ac_id=None`` — E1: "covers the requirement, AC
 unspecified"), so every tag written before this grammar version keeps resolving.
-Python-only for now: the TS/JS forms (``covers_comment``, ``native_tag``,
-``title_suffix``) still bind at FR-granularity only — a deliberate scope cut
-(only the pytest form was asked for), widened additively later since
-``TagHit.ac_id`` already exists and just stays ``None`` there. Their candidate
-regexes' ``[\\w.-]*`` silently absorb a ``/ACnn`` suffix (KNOWN LIMITATION, not a
-validated rejection) — don't rely on it being flagged. Suffix *syntax* only is
-checked here, not AC existence — deferred to P3.4/P3.6 (external review; decision log).
+Python-only for now: the TS/JS forms (``covers_comment``, ``native_tag``, ``title_suffix``)
+bind at FR-granularity only — a deliberate scope cut, widened additively later
+(``TagHit.ac_id`` stays ``None`` there). Their candidate regexes' ``[\\w.-]*`` silently
+absorb a ``/ACnn`` suffix (KNOWN LIMITATION, not a validated rejection) — don't rely on it
+being flagged. Suffix *syntax* only is checked here, not AC existence — deferred to P3.4/P3.6.
 """
 
 from __future__ import annotations
@@ -77,11 +75,11 @@ _COVERS_CANDIDATE_RE = re.compile(r"\bFR[\w.-]*")
 
 # TS/JS surface matchers (limited, documented reference forms).
 _COVERS_COMMENT_RE = re.compile(r"//\s*@covers\s+(?P<ids>[^\n]+)")
-# ``it(``/``test(`` (+ .skip/.only) — NOT test.describe/test.step/a hook, nor a commented-out line.
+# ``it(``/``test(`` (+ .skip/.only; curried ``it.skipIf(cond)(title…`` / ``.runIf``, cond ≤2 paren levels) — NOT test.describe/test.step/a hook, nor a commented-out line.
 # A data-driven ``it.each(table)('title', …)`` / ``test.each`table`('title', …)`` is one test, id = the
 # title text (``%s``/``$x`` placeholders stay literal); the table must close on the title's line (a
 # wrapped one is folded onto it by ``_file_tags.join_multiline_decls`` before this matcher runs).
-_TEST_DECL_RE = re.compile(r"^(?!\s*(?://|/\*|\*)).*?\b(?:it|test)(?:\.(?!(?:describe|step|beforeEach|afterEach|beforeAll|afterAll|use|extend|each)\b)\w+)?(?:\.each\s*(?:\(.*?\)|`[^`]*?`))?\s*\(\s*(['\"`])(?P<title>.*?)\1")
+_TEST_DECL_RE = re.compile(r"^(?!\s*(?://|/\*|\*)).*?\b(?:it|test)(?:\.(?:skipIf|runIf)\s*\((?:[^()]|\((?:[^()]|\([^()]*\))*\))*\)|\.(?!(?:describe|step|beforeEach|afterEach|beforeAll|afterAll|use|extend|each)\b)\w+)?(?:\.each\s*(?:\(.*?\)|`[^`]*?`))?\s*\(\s*(['\"`])(?P<title>.*?)\1")
 # The documented "title suffix": one or more @FR tokens at the END of the title.
 _TITLE_SUFFIX_RE = re.compile(r"(?P<tags>(?:@FR[\w.-]*\s*)+)$")
 _TAG_ARRAY_RE = re.compile(r"tag\s*:\s*\[(?P<body>[^\]]*)\]")
