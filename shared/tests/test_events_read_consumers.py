@@ -64,7 +64,7 @@ def test_finalized_run_ids_is_none_when_nothing_exists_or_a_file_is_unreadable(t
 
 
 def test_empty_drops_folder_alone_reads_as_absent(tmp_path):
-    (tmp_path / DROPS_DIR).mkdir()
+    (tmp_path / DROPS_DIR).mkdir(parents=True)
     assert finalized_run_ids(tmp_path) is None
     assert read_events(tmp_path) == []
 
@@ -148,7 +148,7 @@ def test_kc1_newest_pickers_agree_when_legacy_is_out_of_ts_order(tmp_path):
     shuffled = tmp_path / "shuffled.jsonl"
     shuffled.write_text("\n".join(reversed(lines)) + "\n", encoding="utf-8", newline="\n")
     a = tmp_path / "a"
-    a.mkdir()
+    a.mkdir(parents=True)
     shutil.copyfile(shuffled, a / "shipwright_events.jsonl")
     b = _split_project(tmp_path)
     assert (generate_handoff(a, session_id="s", reason="r").replace(str(a), "<r>")

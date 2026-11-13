@@ -28,9 +28,9 @@ CONFIG_MARKERS: tuple[str, ...] = (
     "shipwright_plan_config.json",
     "shipwright_build_config.json",
     "shipwright_events.jsonl",
-    "shipwright_events.d",           # the drops layout leaves no legacy file behind
-    "shipwright_events.archive",
-    "shipwright_events.quarantine",
+    ".shipwright/events/drops",           # the drops layout leaves no legacy file behind
+    ".shipwright/events/archive",
+    ".shipwright/events/quarantine",
 )
 
 def is_shipwright_project(path: Path) -> bool:

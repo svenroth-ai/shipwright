@@ -130,7 +130,7 @@ def generate(data: ComplianceData) -> str:
     # NOTE: Reports now live at .shipwright/compliance/<file>.md (2-deep), so links
     # to project-root files use ../../ instead of ../. Sibling links under
     # .shipwright/ -- agent_docs and planning subdirs -- use the ../<sibling>/ form.
-    if log_rel := next((n for n in ("shipwright_events.jsonl", "shipwright_events.d") if (data.project_root / n).exists()), None):
+    if log_rel := next((n for n in ("shipwright_events.jsonl", ".shipwright/events/drops") if (data.project_root / n).exists()), None):
         artifact_rows.insert(0, f"| Event Log | [{log_rel}](../../{log_rel}) | Unified append-only event log |")
     if (data.project_root / "CHANGELOG.md").exists():
         artifact_rows.append("| Changelog | [CHANGELOG.md](../../CHANGELOG.md) | Release notes |")

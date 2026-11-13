@@ -81,8 +81,8 @@ def _world(tmp_path: Path, env_extra: dict[str, str]) -> dict[int, Path]:
         for i in range(2):
             _record(wt, f"run-{n}", f"event {i} of run {n}", env_extra)
         _git(wt, "add", "shipwright_events.jsonl")
-        if (wt / "shipwright_events.d").exists():
-            _git(wt, "add", "shipwright_events.d")
+        if (wt / ".shipwright/events/drops").exists():
+            _git(wt, "add", ".shipwright/events/drops")
         _git(wt, "commit", "-q", "-m", f"run {n}")
         wts[n] = wt
     return wts
@@ -106,7 +106,7 @@ def _merged_tree_files(main_wt: Path, a: int, b: int) -> dict[str, bytes]:
                f"iterate/r{a}", f"iterate/r{b}").stdout.split()[0]
     names = _git(main_wt, "ls-tree", "-r", "--name-only", out).stdout.split()
     return {n: subprocess.run(["git", "show", f"{out}:{n}"], cwd=main_wt, capture_output=True, check=True).stdout
-            for n in names if n.startswith("shipwright_events.d/")}
+            for n in names if n.startswith(".shipwright/events/drops/")}
 
 
 def test_legacy_layout_conflicts_on_every_pair(tmp_path):
@@ -114,7 +114,7 @@ def test_legacy_layout_conflicts_on_every_pair(tmp_path):
     assert [_merge_tree(wts[1], a, b) for a, b in PAIRS] == [False, False, False]
     # the conflict is caused by GitHub not honouring merge=union: locally it merges
     assert [_merge_tree(wts[1], a, b, honour_attributes=True) for a, b in PAIRS] == [True, True, True]
-    assert not (wts[1] / "shipwright_events.d").exists()
+    assert not (wts[1] / ".shipwright/events/drops").exists()
 
 
 def test_drops_layout_is_clean_on_every_pair(tmp_path):
@@ -124,20 +124,20 @@ def test_drops_layout_is_clean_on_every_pair(tmp_path):
         merged = _merged_tree_files(wts[1], a, b)
         assert len(merged) == 2
         for n in (a, b):
-            (own,) = sorted((wts[n] / "shipwright_events.d").glob("*.jsonl"))
-            assert merged[f"shipwright_events.d/{own.name}"] == own.read_bytes().replace(bytes([13, 10]), bytes([10]))
-            assert merged[f"shipwright_events.d/{own.name}"].count(b"of run %d" % n) == 2
+            (own,) = sorted((wts[n] / ".shipwright/events/drops").glob("*.jsonl"))
+            assert merged[f".shipwright/events/drops/{own.name}"] == own.read_bytes().replace(bytes([13, 10]), bytes([10]))
+            assert merged[f".shipwright/events/drops/{own.name}"].count(b"of run %d" % n) == 2
     for n, wt in wts.items():
-        files = sorted((wt / "shipwright_events.d").glob("*.jsonl"))
+        files = sorted((wt / ".shipwright/events/drops").glob("*.jsonl"))
         assert len(files) == 1 and files[0].name.startswith(f"run-{n}--")
         assert len(files[0].read_text(encoding="utf-8").splitlines()) == 2
         # the legacy log is untouched by the drops writer
         assert (wt / "shipwright_events.jsonl").read_text(encoding="utf-8") == BASE_LOG
         # the lock lives outside the tracked folder
-        assert not list((wt / "shipwright_events.d").glob("*.lock"))
+        assert not list((wt / ".shipwright/events/drops").glob("*.lock"))
 
 
 def test_plain_env_var_without_test_flag_stays_legacy(tmp_path):
     wts = _world(tmp_path, {"SHIPWRIGHT_EVENTS_LAYOUT": "drops"})
     assert [_merge_tree(wts[1], a, b) for a, b in PAIRS] == [False, False, False]
-    assert not (wts[1] / "shipwright_events.d").exists()
+    assert not (wts[1] / ".shipwright/events/drops").exists()

@@ -85,7 +85,7 @@ def _world(tmp_path: Path) -> tuple[Path, Path, Path]:
     _git(main, "worktree", "add", "-q", "-b", "iterate/ra", str(branch), "origin/main")
     _identity(branch)
     _record_work_completed(branch, "run-a")
-    _git(branch, "add", "shipwright_events.d")
+    _git(branch, "add", ".shipwright/events/drops")
     _git(branch, "commit", "-q", "-m", "run a")
     # a sibling PR lands on main (squash-like: one commit adding its own drop and a file)
     _git(tmp_path, "clone", "-q", str(origin), str(sibling))
@@ -121,7 +121,7 @@ def test_ensure_current_integrates_main_and_keeps_both_runs_drops(tmp_path):
     assert json.loads(result.stdout)["status"] == "ok"
     assert (branch / "sibling.txt").exists(), "main was not integrated"
     assert _runs(branch) == {"run-a", "run-b"}
-    drops = sorted(p.name.split("--")[0] for p in (branch / "shipwright_events.d").glob("*.jsonl"))
+    drops = sorted(p.name.split("--")[0] for p in (branch / ".shipwright/events/drops").glob("*.jsonl"))
     assert drops == ["run-a", "run-b"]
     assert _git(branch, "status", "--porcelain").stdout.strip() == ""
 
@@ -139,7 +139,7 @@ def test_campaign_status_is_regenerated_from_a_drop(tmp_path):
 
     branch, _sibling, _origin = _world(tmp_path)
     _record_work_completed(branch, "run-s1", "--commit", "abc1234")
-    log = branch / "shipwright_events.d"
+    log = branch / ".shipwright/events/drops"
     stamped = []
     for path in sorted(log.glob("run-s1--*.jsonl")):
         events = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
@@ -157,7 +157,7 @@ def test_campaign_status_is_regenerated_from_a_drop(tmp_path):
 
 def test_another_runs_damaged_drop_on_main_does_not_block_the_refresh(tmp_path):
     branch, sibling, _origin = _world(tmp_path)
-    (drop,) = sorted((sibling / "shipwright_events.d").glob("run-b--*.jsonl"))
+    (drop,) = sorted((sibling / ".shipwright/events/drops").glob("run-b--*.jsonl"))
     drop.write_bytes(drop.read_bytes() + b"{not json at all\n")
     _git(sibling, "add", "-A")
     _git(sibling, "commit", "-q", "-m", "damage run-b's drop")
@@ -178,8 +178,8 @@ def test_ensure_current_is_idempotent(tmp_path):
 
 
 def _tree(tmp_path: Path, *, own: bytes | None, other: bytes | None) -> Path:
-    drops = tmp_path / "shipwright_events.d"
-    drops.mkdir()
+    drops = tmp_path / ".shipwright/events/drops"
+    drops.mkdir(parents=True)
     if own is not None:
         (drops / "run-a--aaaaaaaa--00000001.jsonl").write_bytes(own)
     if other is not None:
@@ -211,6 +211,6 @@ def test_validate_event_folders_scopes_blocking_to_the_runs_own_drop(tmp_path):
     # a drop whose name does not follow the writer's shape cannot be ruled out: blocks
     (tmp_path / "t4").mkdir()
     root = _tree(tmp_path / "t4", own=None, other=None)
-    (root / "shipwright_events.d" / "oddname.jsonl").write_bytes(b"{broken\n")
+    (root / ".shipwright/events/drops" / "oddname.jsonl").write_bytes(b"{broken\n")
     errs = _validate(root, "run-a")
     assert errs and "cannot be concluded" in errs[0]

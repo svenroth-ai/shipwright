@@ -213,7 +213,7 @@ def test_cli_dry_run_and_conflict_exit_code(tmp_path):
     done = run("emergency", "--stage")
     assert done.returncode == 0, done.stderr
     status = git(root, "status", "--short").replace("\r", "")
-    assert "shipwright_events.archive/fold-" in status and "?? shipwright_events.d/notes.txt" in status
+    assert ".shipwright/events/archive/fold-" in status and "?? .shipwright/events/drops/notes.txt" in status
     assert "M  shipwright_sync_config.json" in status           # emergency resets the layout key, staged by name
     untracked.unlink()
     put(root, ".", "shipwright_events.jsonl", ev("x", description="legacy"))

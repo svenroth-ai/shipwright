@@ -60,7 +60,7 @@ SHAPE_SHIPWRIGHT_MONOREPO = "shipwright-monorepo"
 _BOOKKEEPING = (
     ".shipwright/**", "CHANGELOG-unreleased.d/**", "CHANGELOG.md",
     "shipwright_events.jsonl", "shipwright_test_results.json",
-    "shipwright_events.d/**", "shipwright_events.archive/**", "shipwright_events.quarantine/**",
+    ".shipwright/events/drops/**", ".shipwright/events/archive/**", ".shipwright/events/quarantine/**",
 )
 _DOCS = (
     "docs/**", "**/docs/**", "**/*.md", "**/*.rst", "**/*.adoc",  # not .mdx: it is executable

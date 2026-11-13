@@ -1,0 +1,1 @@
+BREAKING for repos on the drops layout: the event folders moved from the repo root to .shipwright/events/{drops,archive,quarantine}. A repo that still has shipwright_events.d/ is refused with the fix; run shared/scripts/tools/migrate_events_folder.py --project-root . once, then commit.

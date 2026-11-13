@@ -81,7 +81,7 @@ def apply_full_fold(root: Path | str, *, allow_conflicts: bool = False) -> dict:
         held = {content_hash(r) for r in parse_bytes(legacy.read_bytes() if legacy.exists() else b"").records}
         safe = [p for p in plan["files"] if all(content_hash(r) in held for r in parse_bytes(p.read_bytes()).records)]
         kept = set(unlink_all(safe))   # a file a reader holds open (Windows) stays; its events are in the legacy log already
-        gone = [f"{p.parent.name}/{p.name}" for p in safe if p.name not in kept]
+        gone = [p.relative_to(root).as_posix() for p in safe if p.name not in kept]  # repo-relative: --stage keeps only real paths
         ensure_keep(root)
         if not kept:  # the rollback is done only when no folder file is left to be read a second time
             set_layout(root, "legacy")

@@ -58,19 +58,19 @@ def test_a_run_key_in_the_extras_cannot_spoof_the_drop_run_stamp(drops_repo):
 def test_the_seal_ships_the_whole_drops_and_reports_the_torn_one(drops_repo):
     _append(drops_repo, _ev("evt-0000000000000c01"), "_main")
     from lib.events_layout import worktree_id
-    (drops_repo / "shipwright_events.d" / f"_main--{worktree_id(drops_repo)}--00000002.jsonl").write_text("{torn", encoding="utf-8")
+    (drops_repo / ".shipwright/events/drops" / f"_main--{worktree_id(drops_repo)}--00000002.jsonl").write_text("{torn", encoding="utf-8")
     out = commit_event_followup.commit_followup(drops_repo, "iterate-x")
     assert out["status"] == "committed" and len(out["sealed"]) == 1
     assert out["left_behind"] and "00000002" in out["left_behind"][0]
-    tracked = _git(drops_repo, "ls-files", "shipwright_events.d").split()
+    tracked = _git(drops_repo, "ls-files", ".shipwright/events/drops").split()
     assert len(tracked) == 1 and "00000002" not in tracked[0]
     assert len(_drop_names(drops_repo)) == 2  # the torn file stays in the working copy, nothing is deleted
 
 
 def _torn(root, nonce="00000002", text="{torn"):
     from lib.events_layout import worktree_id
-    path = root / "shipwright_events.d" / f"_main--{worktree_id(root)}--{nonce}.jsonl"
-    path.parent.mkdir(exist_ok=True)
+    path = root / ".shipwright/events/drops" / f"_main--{worktree_id(root)}--{nonce}.jsonl"
+    path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8")
     return path
 
@@ -79,7 +79,7 @@ def test_the_seal_still_refuses_when_every_pending_drop_is_torn(drops_repo):
     _torn(drops_repo)
     out = commit_event_followup.commit_followup(drops_repo, "iterate-x")
     assert out["status"] == "skipped" and out["reason"] == "invalid_drop"
-    assert _git(drops_repo, "ls-files", "shipwright_events.d").strip() == ""
+    assert _git(drops_repo, "ls-files", ".shipwright/events/drops").strip() == ""
 
 
 def test_the_seal_says_partial_when_the_just_written_event_sits_in_the_torn_file(drops_repo):

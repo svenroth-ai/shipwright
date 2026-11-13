@@ -2,7 +2,7 @@
 
 Stdlib only, no ``lib`` imports: usable from every pytest root (``sys.path.insert`` of
 ``shared/testkit``). A test that asserts "the event landed" must not care whether the
-layout wrote ``shipwright_events.jsonl`` or a file in ``shipwright_events.d/`` -- the
+layout wrote ``shipwright_events.jsonl`` or a file in ``.shipwright/events/drops/`` -- the
 standing replay gate runs the same tests under both. Tests that pin LEGACY BYTES keep
 reading the legacy file directly and pin the layout (``pin_legacy``).
 """
@@ -13,7 +13,7 @@ import json
 from pathlib import Path
 
 LEGACY = "shipwright_events.jsonl"
-FOLDERS = ("shipwright_events.archive", "shipwright_events.d")
+FOLDERS = (".shipwright/events/archive", ".shipwright/events/drops")
 
 
 def event_files(root: Path | str) -> list[Path]:

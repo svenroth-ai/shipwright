@@ -50,7 +50,7 @@ UNION_PATHS: tuple[str, ...] = ("shipwright_events.jsonl", ".shipwright/triage.j
 #: drop is an immutable, ADD-only file, so two branches never touch the same one and a
 #: line-union driver could only ever hide a forbidden modify. Pinned by a test against the template.
 EVENT_FOLDERS_NO_UNION: tuple[str, ...] = (
-    "shipwright_events.d", "shipwright_events.archive", "shipwright_events.quarantine",
+    ".shipwright/events/drops", ".shipwright/events/archive", ".shipwright/events/quarantine",
 )
 
 #: Curated agent-docs whose ``## …Updates`` / ``## Learnings`` append-sections

@@ -1,0 +1,63 @@
+{
+ "stage": "doubt",
+ "gating": "advisory-must-address",
+ "trigger": "irreversible operations, cross-plugin path contract",
+ "doubts": [
+  {
+   "severity": "medium",
+   "lens": "reversibility",
+   "claim_under_doubt": "Abort message named a tool path that does not exist; the plain-mv fallback nests events where nothing reads them",
+   "disproof_attempt": "Abort message named a tool path that does not exist; the plain-mv fallback nests events where nothing reads them",
+   "file": "shared/scripts/lib/events_sentinel.py",
+   "what_would_resolve_it": "FIXED: path is <shipwright>/shared/scripts/tools/..., 'never a plain mv/cp -r', test that the file exists"
+  },
+  {
+   "severity": "medium",
+   "lens": "reversibility",
+   "claim_under_doubt": "Identical-duplicate branch git-rm'd the tracked old copy while the new copy stayed untracked",
+   "disproof_attempt": "Identical-duplicate branch git-rm'd the tracked old copy while the new copy stayed untracked",
+   "file": "shared/scripts/tools/migrate_events_folder.py",
+   "what_would_resolve_it": "FIXED: the new copy is git-added first; regression test"
+  },
+  {
+   "severity": "medium",
+   "lens": "boundary",
+   "claim_under_doubt": "Spec claimed CI runs the integrity check; no workflow does",
+   "disproof_attempt": "Spec claimed CI runs the integrity check; no workflow does",
+   "file": "spec",
+   "what_would_resolve_it": "FIXED: disposition corrected (iterate F11 check only; direct push to main unchecked). Wiring into ci.yml is a follow-up, not this diff"
+  },
+  {
+   "severity": "low",
+   "lens": "boundary",
+   "claim_under_doubt": "Non-UTF-8 .gitignore crashes the self-heal",
+   "disproof_attempt": "Non-UTF-8 .gitignore crashes the self-heal",
+   "file": "shared/scripts/lib/events_gitignore.py",
+   "what_would_resolve_it": "FIXED: errors=replace"
+  },
+  {
+   "severity": "low",
+   "lens": "blast-radius",
+   "claim_under_doubt": "Doc told users to git add the whole events folder",
+   "disproof_attempt": "Doc told users to git add the whole events folder",
+   "file": "docs/migrations/events-drop-files.md",
+   "what_would_resolve_it": "FIXED: the tool stages itself; just commit"
+  },
+  {
+   "severity": "low",
+   "lens": "concurrency",
+   "claim_under_doubt": "L3-L7: open PRs conflict via directory-rename; no writer lock in the tool; writer/reader symlink asymmetry and adopt seeder not refusing; case-collision skipped for moved files; grade ignores the old folder silently",
+   "disproof_attempt": "L3-L7: open PRs conflict via directory-rename; no writer lock in the tool; writer/reader symlink asymmetry and adopt seeder not refusing; case-collision skipped for moved files; grade ignores the old folder silently",
+   "file": "various",
+   "what_would_resolve_it": "ACCEPTED: loud failures or very improbable; follow-ups, not in this diff"
+  },
+  {
+   "severity": "nit",
+   "lens": "docs",
+   "claim_under_doubt": "events_stage docstring said the committed-check does not apply to an ignored folder",
+   "disproof_attempt": "events_stage docstring said the committed-check does not apply to an ignored folder",
+   "file": "shared/scripts/lib/events_stage.py",
+   "what_would_resolve_it": "FIXED"
+  }
+ ]
+}

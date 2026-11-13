@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "## Findings\n\n- **Category: risk \u2014 Severity: medium**\n  **Finding:** The spec and the plan review contradict each other on WebUI rollout order. The spec says \"tracked as the last step of this run\"; the plan review disposition says \"WebUI change to land first or together, reading the new path and falling back to the old one.\" These are different plans, and the implemented sequencing determines whether the Command Center goes dark for every drops repo during the window.\n  **Suggestion:** Pick one order explicitly and record it. Landing the WebUI change (with old-path fallback) *before or with* this merge is strictly safer and costs nothing since the fallback reader already exists. If the operator insists on last-step, document the expected empty-history window in the migration notes.\n\n- **Category: risk \u2014 Severity: medium**\n  **Finding:** The old-plugin-skew scenario is \"accepted as designed\" but the catch is *afterwards and partially*: the F11 integrity check \"flags an add at an old name\" \u2014 but the same disposition notes \"no CI workflow runs that check: a direct push to main is not checked.\" So the primary detection path for the worst skew case is the next new-plugin write aborting, which requires a session to actually run. Meanwhile an old-plugin session can happily write events to the root folder on a branch for days.\n  **Suggestion:** Acceptable for a one-person population, but close the cheap gap: run the existing integrity check in CI (it already exists; wiring it in is config, not code), or at minimum have the migration tool's \"refuses while a name exists in both places\" report run as part of the plugin-cache sync step.\n\n- **Category: edge-case \u2014 Severity: medium**\n  **Finding:** Grade \"falls back to its heuristic grade for a repo without a readable log (its documented path), not to a zero.\" During the migration window (repo moved, session/plugin not yet synced), a repo graded by heuristic instead of its event log produces a *silently different* grade. A zero fails loudly; a heuristic grade looks plausible and may not be noticed.\n  **Suggestion:** Make the heuristic fallback distinguish \"no log ever existed\" from \"old root folder present\" \u2014 in the latter case grade should surface the layout error (or refuse), not quietly use the heuristic.\n\n- **Category: edge-case \u2014 Severity: low**\n  **Finding:** The gitignore fix relies on re-including the parent chain (`!/.shipwright/events/` plus implied parents). The probe was run on this repo's canonical block, but self-healed *managed repos* may have divergent blocks (the plan review already found one such class \u2014 wholesale `.shipwright` ignore). The throw-away-repo probe fix covers \"cannot take effect,\" but a repo where the healed rules take effect *partially* (e.g., a later `/.shipwright/events/*` rule elsewhere in the file overrides the re-include) would still silently drop drops.\n  **Suggestion:** The F11 committed-event check is the real backstop and covers this; note it in the migration doc so an operator diagnosing a \"run refused\" knows to check gitignore first. No code change needed.\n\n- **Category: edge-case \u2014 Severity: low**\n  **Finding:** The migration tool refuses to move anything \"while a file name exists in both places.\" After the main-branch move, in-flight branches that predate the move will, when merged, reintroduce old-name files next to the moved new-name files \u2014 hitting exactly the refuse state, with the tool only \"reporting them.\"\n  **Suggestion:** Document the resolution procedure for the refuse-report (which side wins for a same-name conflict \u2014 presumably the new one unless the branch's is newer). Otherwise the first person to hit it will guess.\n\n- **Category: security \u2014 Severity: low**\n  **Finding:** The symlink guard (`real_event_dir`) was extended to cover the nested path \u2014 good, and tested. One residual: the *old* root folder check (`old_event_folders`, \"a real directory only\") also benefits from the same guard; the disposition says it's covered via `old_root_folders`, confirm the sentinel's detection itself isn't tricked by a symlinked old folder into either missing an abort or aborting spuriously.\n  **Suggestion:** One test case: old root folder as a symlink to a real directory \u2014 assert the chosen behavior (treat as present or absent) is deliberate.\n\n## Overall Assessment\n\nThis is an unusually well-run iterate: the two internal reviews already caught the hard problems (fail-open readers, gitignore parent-chain re-include, nested-path symlink guards, migration tool overlap refusal), the probes are empirical rather than asserted, and the one genuinely debatable call \u2014 hard abort with no compatibility reader \u2014 is the operator's explicit decision with loud failure paths backing it. The remaining findings are sequencing documentation and window-period behavior, not design flaws.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** The migration tool is described as using `git mv` per file, but it must also handle \u201cuntracked leftovers\u201d after pulling main. `git mv` cannot move untracked files. Those leftovers could therefore keep the old folder present and block writers after migration.  \n   **Suggestion:** Explicitly distinguish tracked and untracked files: use `git mv` for tracked files and a filesystem move for untracked files, preserving the collision preflight and never overwriting. Test a post-pull checkout containing both an untracked event and OS junk, including a second migration run.\n\n2. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** The rollout instructions remain contradictory: the affected-boundary section calls the WebUI update the \u201clast step,\u201d while the review disposition requires it to land first or together. Following the former sequence causes a known interruption in event visibility.  \n   **Suggestion:** Make the WebUI update an explicit merge prerequisite and remove the superseded ordering. Verify its new-path reader against an actual migrated drops fixture before merging the producer change.\n\nThe path change is sound, and the recorded integrity, gitignore, and nested-directory fixes address the main implementation risks. Clarify untracked-file migration and make the rollout dependency unambiguous before proceeding.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-11-13-events-under-shipwright-dir",
+    "at": "2026-11-13T20:46:59.412053+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

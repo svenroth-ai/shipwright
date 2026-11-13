@@ -247,9 +247,9 @@ def test_boundary_roundtrip_worktree_producer_to_verifier(git_origin_repo, make_
     assert event_log_exists(wt) and not event_log_exists(work)
     # Legacy: the untracked log is not judged (committed-assertion only applies to TRACKED logs).
     # Drops: an unstaged drop FAILS, so F6 (here: the commit) must carry it.
-    if (wt / "shipwright_events.d").is_dir():
+    if (wt / ".shipwright/events/drops").is_dir():
         assert check_events_has_commit(wt, "r0undtr1p", run_id="iterate-rt").ok is False
-        _git(wt, "add", "shipwright_events.d")
+        _git(wt, "add", ".shipwright/events/drops")
         _git(wt, "commit", "-q", "-m", "F6")
     assert check_events_has_commit(wt, "r0undtr1p", run_id="iterate-rt").ok is True
 

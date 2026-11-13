@@ -58,7 +58,7 @@ def test_kc4_twelve_parallel_stop_hooks_record_one_phase_completed(tmp_path):
     again = _stop_hook(root, "run-plan-2")
     assert again.get("skipped") is True and again.get("reason") == "duplicate_phase"
     assert len(_phase_completed(root)) == 1
-    names = sorted(p.name for p in (root / "shipwright_events.d").glob("*.jsonl"))
+    names = sorted(p.name for p in (root / ".shipwright/events/drops").glob("*.jsonl"))
     assert len(names) == 1 and names[0].startswith("run-plan-1--")  # one file: the skipped writers created none
 
 
@@ -79,12 +79,12 @@ def test_a_real_ensure_current_absorbs_a_late_drop_but_leaves_the_gate_event_to_
     result = _ensure_current(branch, "run-a2")
     assert result.returncode == 0, result.stdout[-800:] + result.stderr[-800:]
     assert "events-absorbed" in json.loads(result.stdout)["steps"]
-    tracked = _git(branch, "ls-files", "shipwright_events.d").stdout.split()
+    tracked = _git(branch, "ls-files", ".shipwright/events/drops").stdout.split()
     assert any("late-key--" in t for t in tracked) and not any("run-a2--" in t for t in tracked)
 
     from tools.verifiers.iterate_checks import check_events_has_commit
     forgot = check_events_has_commit(branch, "", run_id="run-a2")
     assert forgot.ok is False and "NOT in any commit" in forgot.detail  # F6 forgot: F11 FAILS after the absorb
-    _git(branch, "add", "--", *[p for p in (branch / "shipwright_events.d").glob("run-a2--*.jsonl")])
+    _git(branch, "add", "--", *[p for p in (branch / ".shipwright/events/drops").glob("run-a2--*.jsonl")])
     _git(branch, "commit", "-q", "-m", "F6 (late)")
     assert check_events_has_commit(branch, "", run_id="run-a2").ok is True

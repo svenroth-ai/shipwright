@@ -164,11 +164,12 @@ class TestEventLogSizeGuard:
         assert authoritative._eventlog_over_cap(tmp_path) is True
         assert authoritative._eventlog_over_cap(tmp_path / "nonexistent") is False
 
+    @pytest.mark.covers("FR-01.18")
     def test_folders_named_jsonl_still_spend_the_file_budget(self, tmp_path: Path, monkeypatch):
         # A hostile clone pads the drops folder with directories named *.jsonl so the
         # scan budget is used up before any real (large) file is counted.
         monkeypatch.setattr(authoritative, "_MAX_AUTHORITATIVE_EVENT_FILES", 3)
-        drops = tmp_path / "shipwright_events.d"
+        drops = tmp_path / ".shipwright/events/drops"
         for i in range(5):
             (drops / f"a{i}.jsonl").mkdir(parents=True)
         assert authoritative._eventlog_over_cap(tmp_path) is True

@@ -1,0 +1,10 @@
+{"items": [
+ {"name": "Spec Compliance", "verdict": "pass", "note": "Folders moved to .shipwright/events/{drops,archive,quarantine}; hard abort on the old root location; migration tool; gitignore whitelist; docs. Config files and the legacy single file are untouched as specified."},
+ {"name": "Error Handling", "verdict": "pass", "note": "Writers and evidence producers refuse an old root folder with the exact fix; the migration tool never overwrites, reports collisions before moving anything, and exits non-zero on git failure."},
+ {"name": "Security Basics", "verdict": "pass", "note": "No secrets; the migration tool takes a project root only and moves files inside it; a symlink named like an old folder is not treated as one."},
+ {"name": "Test Quality", "verdict": "pass", "note": "15 new tests assert outcomes (refusal text, files on disk, git rename, gitignore probe via git check-ignore, integrity verdicts for move and three non-move shapes). Full shared, integration, scripts and all plugin roots ran; tests found and drove four real defects (first-segment assumption in the integrity check, reader kind detection, parents=True, test-side separators)."},
+ {"name": "Performance Basics", "verdict": "n/a", "note": "Path constants only; no new loops over data."},
+ {"name": "Naming & Structure", "verdict": "pass", "note": "New tool follows the tools/ layout; new lib functions sit in events_sentinel (stdlib only). Bloat/size gates checked at F0."},
+ {"name": "Affected Boundaries", "verdict": "pass", "note": "Producer/consumer pairs listed in the spec: event writers/readers over the three folders, gitignore canon, integrity check over git diffs; WebUI is a cross-repo consumer tracked as the last step. Round trip covered by integration suites and the real git-mv PR test."},
+ {"name": "Test Hygiene Probe", "verdict": "pass", "note": "scan_test_hygiene.py --diff: no findings."}
+]}

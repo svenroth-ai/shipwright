@@ -141,7 +141,7 @@ def test_a_left_alone_input_reaches_the_operator(compliance_refresh_repo):
     result, _ = produce_mod.produce(
         compliance_refresh_repo, RUN, head_sha(compliance_refresh_repo), None)
     # Under the drops layout the producer's own append lands in a NEW event file, which is the log that moved.
-    left = [p for p in result.get("inputs_left_alone", []) if p == "shipwright_events.jsonl" or p.startswith("shipwright_events.d/")]
+    left = [p for p in result.get("inputs_left_alone", []) if p == "shipwright_events.jsonl" or p.startswith(".shipwright/events/drops/")]
     assert left
 
 

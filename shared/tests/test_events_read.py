@@ -290,7 +290,7 @@ def test_event_context_source_splits_concatenated_records_of_a_drop(tmp_path):
     from lib.event_context_source import iter_event_lines
     _write(tmp_path / "shipwright_events.jsonl", _line(id="a", ts="2026-01-01T00:00:00Z"))
     path = tmp_path / DROPS_DIR / "run-c--aaaaaaaa--00000001.jsonl"
-    path.parent.mkdir()
+    path.parent.mkdir(parents=True)
     path.write_text(_line(id="b", ts="2026-01-02T00:00:00Z").strip() + _line(id="c", ts="2026-01-03T00:00:00Z"), encoding="utf-8")
     import json
     assert [json.loads(raw)["id"] for _seq, raw in iter_event_lines(tmp_path)] == ["a", "b", "c"]

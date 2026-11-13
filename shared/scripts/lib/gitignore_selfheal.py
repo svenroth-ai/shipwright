@@ -43,9 +43,9 @@ GITIGNORE_PATH = ".gitignore"
 MANAGED_MARKER_PATHS: tuple[str, ...] = (
     "shipwright_events.jsonl",
     ".shipwright/triage.jsonl",
-    "shipwright_events.d",           # drops layout: ``git ls-files`` takes a directory pathspec
-    "shipwright_events.archive",
-    "shipwright_events.quarantine",
+    ".shipwright/events/drops",           # drops layout: ``git ls-files`` takes a directory pathspec
+    ".shipwright/events/archive",
+    ".shipwright/events/quarantine",
 )
 
 

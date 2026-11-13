@@ -1,0 +1,389 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-13-events-under-shipwright-dir",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-13T20:16:25.625097+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The spec and the plan review contradict each other on WebUI rollout order. The spec says \"tracked as the last step of this run\"; the plan review disposition says \"WebUI change to land first or together, reading the new path and falling back to the old one.\" These are different plans, and the implemented sequencing determines whether the Command Center goes dark for every drops repo during the window.",
+          "suggestion": "Pick one order explicitly and record it. Landing the WebUI change (with old-path fallback) before or with this merge is strictly safer and costs nothing since the fallback reader already exists. If the operator insists on last-step, document the expected empty-history window in the migration notes.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The old-plugin-skew scenario is \"accepted as designed\" but the catch is afterwards and partially: the F11 integrity check \"flags an add at an old name\" — but the same disposition notes \"no CI workflow runs that check: a direct push to main is not checked.\" So the primary detection path for the worst skew case is the next new-plugin write aborting, which requires a session to actually run. Meanwhile an old-plugin session can happily write events to the root folder on a branch for days.",
+          "suggestion": "Acceptable for a one-person population, but close the cheap gap: run the existing integrity check in CI (it already exists; wiring it in is config, not code), or at minimum have the migration tool's \"refuses while a name exists in both places\" report run as part of the plugin-cache sync step.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Grade \"falls back to its heuristic grade for a repo without a readable log (its documented path), not to a zero.\" During the migration window (repo moved, session/plugin not yet synced), a repo graded by heuristic instead of its event log produces a silently different grade. A zero fails loudly; a heuristic grade looks plausible and may not be noticed.",
+          "suggestion": "Make the heuristic fallback distinguish \"no log ever existed\" from \"old root folder present\" — in the latter case grade should surface the layout error (or refuse), not quietly use the heuristic.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The gitignore fix relies on re-including the parent chain (`!/.shipwright/events/` plus implied parents). The probe was run on this repo's canonical block, but self-healed managed repos may have divergent blocks (the plan review already found one such class — wholesale `.shipwright` ignore). The throw-away-repo probe fix covers \"cannot take effect,\" but a repo where the healed rules take effect partially (e.g., a later `/.shipwright/events/` rule elsewhere in the file overrides the re-include) would still silently drop drops.",
+          "suggestion": "The F11 committed-event check is the real backstop and covers this; note it in the migration doc so an operator diagnosing a \"run refused\" knows to check gitignore first. No code change needed.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The migration tool refuses to move anything \"while a file name exists in both places.\" After the main-branch move, in-flight branches that predate the move will, when merged, reintroduce old-name files next to the moved new-name files — hitting exactly the refuse state, with the tool only \"reporting them.\"",
+          "suggestion": "Document the resolution procedure for the refuse-report (which side wins for a same-name conflict — presumably the new one unless the branch's is newer). Otherwise the first person to hit it will guess.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "The symlink guard (`real_event_dir`) was extended to cover the nested path — good, and tested. One residual: the old root folder check (`old_event_folders`, \"a real directory only\") also benefits from the same guard; the disposition says it's covered via `old_root_folders`, confirm the sentinel's detection itself isn't tricked by a symlinked old folder into either missing an abort or aborting spuriously.",
+          "suggestion": "One test case: old root folder as a symlink to a real directory — assert the chosen behavior (treat as present or absent) is deliberate.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The migration tool is described as using `git mv` per file, but it must also handle “untracked leftovers” after pulling main. `git mv` cannot move untracked files. Those leftovers could therefore keep the old folder present and block writers after migration.",
+          "suggestion": "Explicitly distinguish tracked and untracked files: use `git mv` for tracked files and a filesystem move for untracked files, preserving the collision preflight and never overwriting. Test a post-pull checkout containing both an untracked event and OS junk, including a second migration run.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The rollout instructions remain contradictory: the affected-boundary section calls the WebUI update the “last step,” while the review disposition requires it to land first or together. Following the former sequence causes a known interruption in event visibility.",
+          "suggestion": "Make the WebUI update an explicit merge prerequisite and remove the superseded ordering. Verify its new-path reader against an actual migrated drops fixture before merging the producer change.  The path change is sound, and the recorded integrity, gitignore, and nested-directory fixes address the main implementation risks. Clarify untracked-file migration and make the rollout dependency unambiguous before proceeding.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-13T20:48:26.651426+00:00",
+      "disposition": "Both legs answered revise: WebUI ordering wording unified in the spec (lands before/with this merge); untracked-file migration already implemented and tested; refuse-report resolution added to the migration doc; symlinked old folder test added; grade heuristic fallback and missing CI integrity check accepted/recorded as follow-ups.",
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: risk — Severity: medium**\n  **Finding:** The spec and the plan review contradict each other on WebUI rollout order. The spec says \"tracked as the last step of this run\"; the plan review disposition says \"WebUI change to land first or together, reading the new path and falling back to the old one.\" These are different plans, and the implemented sequencing determines whether the Command Center goes dark for every drops repo during the window.\n  **Suggestion:** Pick one order explicitly and record it. Landing the WebUI change (with old-path fallback) *before or with* this merge is strictly safer and costs nothing since the fallback reader already exists. If the operator insists on last-step, document the expected empty-history window in the migration notes.\n\n- **Category: risk — Severity: medium**\n  **Finding:** The old-plugin-skew scenario is \"accepted as designed\" but the catch is *afterwards and partially*: the F11 integrity check \"flags an add at an old name\" — but the same disposition notes \"no CI workflow runs that check: a direct push to main is not checked.\" So the primary detection path for the worst skew case is the next new-plugin write aborting, which requires a session to actually run. Meanwhile an old-plugin session can happily write events to the root folder on a branch for days.\n  **Suggestion:** Acceptable for a one-person population, but close the cheap gap: run the existing integrity check in CI (it already exists; wiring it in is config, not code), or at minimum have the migration tool's \"refuses while a name exists in both places\" report run as part of the plugin-cache sync step.\n\n- **Category: edge-case — Severity: medium**\n  **Finding:** Grade \"falls back to its heuristic grade for a repo without a readable log (its documented path), not to a zero.\" During the migration window (repo moved, session/plugin not yet synced), a repo graded by heuristic instead of its event log produces a *silently different* gra […truncated]\n\n[openai] 1. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** The migration tool is described as using `git mv` per file, but it must also handle “untracked leftovers” after pulling main. `git mv` cannot move untracked files. Those leftovers could therefore keep the old folder present and block writers after migration.  \n   **Suggestion:** Explicitly distinguish tracked and untracked files: use `git mv` for tracked files and a filesystem move for untracked files, preserving the collision preflight and never overwriting. Test a post-pull checkout containing both an untracked event and OS junk, including a second migration run.\n\n2. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** The rollout instructions remain contradictory: the affected-boundary section calls the WebUI update the “last step,” while the review disposition requires it to land first or together. Following the former sequence causes a known interruption in event visibility.  \n   **Suggestion:** Make the WebUI update an explicit merge prerequisite and remove the superseded ordering. Verify its new-path reader against an actual migrated drops fixture before merging the producer change.\n\nThe path change is sound, and the recorded integrity, gitignore, and nested-directory fixes address the main implementation risks. Clarify untracked-file migration and make the rollout dependency unambiguous before proceeding.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/events_sentinel.py",
+          "line": null,
+          "finding": "The abort message tells the user to run `git mv shipwright_events.d .shipwright/events/drops`. When .shipwright/events/drops already exists (main checkout after git pull) git mv nests the folder INSIDE it, so readers (glob *.jsonl directly in the folder) never see the events; with only untracked files git mv fails; the tool path in the message is monorepo-relative.",
+          "suggestion": "Lead with the tool (per-file, never nests, handles untracked files) with a plugin-root path; keep git mv only with the caveat 'only when the new folder does not exist yet'; add a test that runs the tool against a tree where the new folder already exists.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/_events_committed.py",
+          "line": null,
+          "finding": "`if drops_folder_ignored(...): return False` runs BEFORE the HEAD-blob loop, so a drop that IS committed in HEAD fails whenever the folder's ignore rule matches (tracked files inside an ignored folder, e.g. git mv into a not-yet-healed repo, or force-added files). In the other ignored cases the loop already falls through to the final return False.",
+          "suggestion": "Delete the early return; the ignored, uncommitted case still fails through the final return False and iterate_checks adds the hint. Add a test with a drop committed in HEAD inside an ignored folder expecting True.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/iterate_checks.py",
+          "line": null,
+          "finding": "The 'event folder is git-ignored' hint is appended to every committed-is-False result, including legacy-layout failures.",
+          "suggestion": "Add the hint only when the event was found in a drop file / layout is drops.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/events_gitignore.py",
+          "line": null,
+          "finding": "_effective treats any check-ignore rc other than 1 as not effective; a git error (rc 128) silently drops all folder rules, contradicting its own keep-the-lines policy.",
+          "suggestion": "Return True (keep) if any rc is not in (0, 1); False only if some rc is 0.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/migrate_events_folder.py",
+          "line": null,
+          "finding": "_plan moves OS junk too (Thumbs.db etc land in the drops folder and trip the integrity check); an identical empty .keep in both places triggers the 'exists in both places' refusal.",
+          "suggestion": "Skip OS_JUNK_NAMES (delete them when emptying the old folder); treat a byte-identical collision as already moved.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/migrate_events_folder.py",
+          "line": null,
+          "finding": "Error handling gaps: shutil.move/mkdir raise uncaught OSError (traceback, partial move); missing git binary raises FileNotFoundError not exit 2; never-overwrites holds only at plan time; docstring exit codes omit migrated_incomplete.",
+          "suggestion": "Wrap the move loop in try/except returning move_failed with moved; re-check exists() before each untracked move; update the docstring.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_events_folder_move.py",
+          "line": null,
+          "finding": "A side effect hidden in a conditional expression (mkdir inside `if ... is None else None`).",
+          "suggestion": "Use two plain statements.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_events_folder_move.py",
+          "line": null,
+          "finding": "Three integrity tests assert loose code sets; the rename test passes only through an incidental foreign_key on the add.",
+          "suggestion": "Assert the exact entry flagged (old path bad_path with 'moved to') and use own_keys=('run-a',).",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/scripts/lib/events_sentinel.py",
+          "line": null,
+          "finding": "Name copies: OS_JUNK_NAMES defined twice, routing.real_dir duplicates real_event_dir, adopt events_layout_key.py hardcodes the folder; the guard test covers only some of them.",
+          "suggestion": "Extend the guard test to the junk set and the adopt literal.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-13T20:33:35.806302+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "reversibility",
+          "file": "shared/scripts/lib/events_sentinel.py",
+          "line": null,
+          "finding": "Claim under doubt: Abort message named a tool path that does not exist; the plain-mv fallback nests events where nothing reads them — Abort message named a tool path that does not exist; the plain-mv fallback nests events where nothing reads them",
+          "suggestion": "FIXED: path is <shipwright>/shared/scripts/tools/..., 'never a plain mv/cp -r', test that the file exists",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "reversibility",
+          "file": "shared/scripts/tools/migrate_events_folder.py",
+          "line": null,
+          "finding": "Claim under doubt: Identical-duplicate branch git-rm'd the tracked old copy while the new copy stayed untracked — Identical-duplicate branch git-rm'd the tracked old copy while the new copy stayed untracked",
+          "suggestion": "FIXED: the new copy is git-added first; regression test",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary",
+          "file": "spec",
+          "line": null,
+          "finding": "Claim under doubt: Spec claimed CI runs the integrity check; no workflow does — Spec claimed CI runs the integrity check; no workflow does",
+          "suggestion": "FIXED: disposition corrected (iterate F11 check only; direct push to main unchecked). Wiring into ci.yml is a follow-up, not this diff",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary",
+          "file": "shared/scripts/lib/events_gitignore.py",
+          "line": null,
+          "finding": "Claim under doubt: Non-UTF-8 .gitignore crashes the self-heal — Non-UTF-8 .gitignore crashes the self-heal",
+          "suggestion": "FIXED: errors=replace",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "blast-radius",
+          "file": "docs/migrations/events-drop-files.md",
+          "line": null,
+          "finding": "Claim under doubt: Doc told users to git add the whole events folder — Doc told users to git add the whole events folder",
+          "suggestion": "FIXED: the tool stages itself; just commit",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "concurrency",
+          "file": "various",
+          "line": null,
+          "finding": "Claim under doubt: L3-L7: open PRs conflict via directory-rename; no writer lock in the tool; writer/reader symlink asymmetry and adopt seeder not refusing; case-collision skipped for moved files; grade ignores the old folder silently — L3-L7: open PRs conflict via directory-rename; no writer lock in the tool; writer/reader symlink asymmetry and adopt seeder not refusing; case-collision skipped for moved files; grade ignores the old folder silently",
+          "suggestion": "ACCEPTED: loud failures or very improbable; follow-ups, not in this diff",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "docs",
+          "file": "shared/scripts/lib/events_stage.py",
+          "line": null,
+          "finding": "Claim under doubt: events_stage docstring said the committed-check does not apply to an ignored folder — events_stage docstring said the committed-check does not apply to an ignored folder",
+          "suggestion": "FIXED",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-13T20:46:22.432904+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/migrate_events_folder.py — `_plan` / final `rmdir` loop",
+          "line": null,
+          "finding": "A folder holding only OS junk is excluded by `old_event_folders` (by design), so `_plan` never sees it: the junk is never deleted, and the final `rmdir` loop skips it because it is non-empty. The tool never converges on a junk-only old folder (e.g. `shipwright_events.d/` with only `Thumbs.db`); it lingers on disk forever even though the tool reports \"migrated\". Harmless to writers (the sentinel ignores it too) but contradicts the tool's convergence claim.",
+          "suggestion": "In `_plan`, also walk `MOVED_FOLDERS` keys whose directory exists (not just `old_event_folders` results) and queue pure-junk contents for deletion, or at minimum rmdir-after-deleting-junk in the cleanup loop.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/events_integrity.py — `_entries` filter",
+          "line": null,
+          "finding": "The new filter (`low.startswith(EVENTS_ROOT + \"/\") or low.split(\"/\", 1)[0] in _OLD_ROOTS`) is case-sensitive on the new prefix. A path like `.SHIPWRIGHT/events/drops/x.jsonl` or `.shipwright/Events/drops/x.jsonl` matches neither branch, so the entry is silently dropped from the check — while the old code lowercased the first segment before comparing. A case-variant folder (Windows/macOS checkout weirdness, or a smuggled path) escapes the integrity check entirely instead of being flagged `bad_path`.",
+          "suggestion": "Compare the first three segments lowercased against the folder tuple (mirroring the old `lowered` set semantics), so any case variant is included and then rejected by the folder/name validation.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/migrate_events_folder.py — `_plan",
+          "line": null,
+          "finding": "_plan` iterates every entry of an old folder, including subdirectories. A directory `shipwright_events.d/sub/` is \"moved\" with one `git mv` into `.shipwright/events/drops/sub/`, producing a nested name the integrity check flags (`bad_path`) — the tool reports success while leaving the repo in a state its own check rejects.",
+          "suggestion": "Refuse (or flatten per-file) when an old-folder entry is a directory; at minimum surface it in the plan as a collision/manual item rather than a move.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_events_folder_move_migrate.py — `test_integrity_rejects_a_changed_file_even_if_it_claims_to_be_a_move` (and the cross-kind / rename tests)",
+          "line": null,
+          "finding": "These assert only `any(v.path == ...)` over the violation list; a broken implementation that flags every old-root deletion as `bad_path` (never recognizing any move) still passes all three, because the expected path is reported either way. Only the positive move test (`test_integrity_accepts_the_byte_identical_move`) discriminates.",
+          "suggestion": "Assert the exact code set for the old-path entry (e.g. `deleted_existing` with the \"moved to\" wording absent/present as appropriate) so the move-recognition logic is pinned on the negative side too.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "shared/scripts/lib/events_gitignore.py — `reinclude_lines",
+          "line": null,
+          "finding": "When `needed` is empty but the legacy-log `keep` line applies, the function correctly returns the keep lines; but when the folder rules are needed and `_effective` fails, the returned `keep` list may still contain the legacy `!/shipwright_events.jsonl` line appended earlier via `lines.extend(keep)` — this is correct behavior, yet the dedupe `if parent not in lines` only checks `lines`, so a parent chain segment that happens to equal a previously added keep line (not possible today, but the guard is on the wrong list semantics). Minor; no concrete failure with current constants.",
+          "suggestion": "None required; noted for the record only.  Verified as correctly implemented (no defect): the `_events_committed` early-return removal, the parent-chain re-include ordering with the throwaway-repo effectiveness probe, the nested-path symlink guards (`real_event_dir`, grade's `real_dir`), the `archive` kind detection under relative roots (`path.parent == root / ARCHIVE_DIR`), the abort message leading with the tool and warning about `git mv` nesting, and the integrity move-recognition requiring identical blob + same name + matching kind folder.  Overall assessment: ship-as-is — the change is thorough, the spec's acceptance criteria (hard abort, migration tool, gitignore whitelist, integrity recognition of the move, parent-chain self-heal) are all implemented and tested; the findings above are low-severity refinements that don't block the merge.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/tools/migrate_events_folder.py",
+          "line": 98,
+          "finding": "Untracked leftovers are moved with `shutil.move` but never staged. The documented migration procedure says the tool stages its changes and instructs users to run only `git commit` afterward. After pulling main, a checkout containing untracked old-location events therefore reports `migrated`, yet those events remain outside the commit. The untracked migration tests check filesystem contents without checking the index, so they miss this failure.",
+          "suggestion": "Stage each moved untracked file by its exact destination path and report any staging failure. Add a test that migrates an untracked event, commits without an additional `git add`, and verifies the event exists in HEAD.  Overall assessment: ship-with-fixes. The path relocation and refusal logic broadly implement the specification, but untracked-file migration must fulfill the documented staging contract.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-13T20:50:59.729547+00:00",
+      "disposition": "GPT revise: untracked leftovers were moved but not staged -> FIXED (git add per moved file, not_staged reported, regression test). GLM approve; its low findings: sub-directory in old folder -> FIXED (refused_unexpected_entry), junk-only folder -> FIXED (cleaned up); case-variant claim on the integrity filter is wrong (path is lowercased at events_integrity.py:91); negative-test tightening already done to exact old-path assertions.",
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] Findings:\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/tools/migrate_events_folder.py — `_plan` / final `rmdir` loop\n  Finding: A folder holding only OS junk is excluded by `old_event_folders` (by design), so `_plan` never sees it: the junk is never deleted, and the final `rmdir` loop skips it because it is non-empty. The tool never converges on a junk-only old folder (e.g. `shipwright_events.d/` with only `Thumbs.db`); it lingers on disk forever even though the tool reports \"migrated\". Harmless to writers (the sentinel ignores it too) but contradicts the tool's convergence claim.\n  Suggestion: In `_plan`, also walk `MOVED_FOLDERS` keys whose directory exists (not just `old_event_folders` results) and queue pure-junk contents for deletion, or at minimum rmdir-after-deleting-junk in the cleanup loop.\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/lib/events_integrity.py — `_entries` filter\n  Finding: The new filter (`low.startswith(EVENTS_ROOT + \"/\") or low.split(\"/\", 1)[0] in _OLD_ROOTS`) is case-sensitive on the new prefix. A path like `.SHIPWRIGHT/events/drops/x.jsonl` or `.shipwright/Events/drops/x.jsonl` matches neither branch, so the entry is silently dropped from the check — while the old code lowercased the first segment before comparing. A case-variant folder (Windows/macOS checkout weirdness, or a smuggled path) escapes the integrity check entirely instead of being flagged `bad_path`.\n  Suggestion: Compare the first three segments lowercased against the folder tuple (mirroring the old `lowered` set semantics), so any case variant is included and then rejected by the folder/name validation.\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/tools/migrate_events_folder.py — `_plan`\n  Finding: `_plan` iterates every entry of an old folder, including subdirectories. A directory `shipwright_events.d/sub/` is \"moved\" with one `git mv` into `.shipwright/events/drops/sub/`, producing a nested name the integrit […truncated]\n\n[openai] - Category: bug\n- Severity: medium\n- File: shared/scripts/tools/migrate_events_folder.py:98\n- Finding: Untracked leftovers are moved with `shutil.move` but never staged. The documented migration procedure says the tool stages its changes and instructs users to run only `git commit` afterward. After pulling main, a checkout containing untracked old-location events therefore reports `migrated`, yet those events remain outside the commit. The untracked migration tests check filesystem contents without checking the index, so they miss this failure.\n- Suggestion: Stage each moved untracked file by its exact destination path and report any staging failure. Add a test that migrates an untracked event, commits without an additional `git add`, and verifies the event exists in HEAD.\n\nOverall assessment: ship-with-fixes. The path relocation and refusal logic broadly implement the specification, but untracked-file migration must fulfill the documented staging contract.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-13T20:29:12.014018+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-13T20:20:19.145910+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-13T20:17:38.054917+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

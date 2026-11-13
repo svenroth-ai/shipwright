@@ -1,0 +1,90 @@
+{
+  "run_id": "iterate-2026-11-13-events-under-shipwright-dir",
+  "date": "2026-11-13T21:11:47.153642Z",
+  "event_at": "2026-11-13T09:57:36.272720+00:00",
+  "type": "change",
+  "complexity": "large",
+  "prior_source": "keyword",
+  "branch": "iterate/events-under-shipwright-dir",
+  "spec": ".shipwright/planning/iterate/2026-11-13-events-under-shipwright-dir.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-11-13-events-under-shipwright-dir",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "Event folders live at .shipwright/events/{drops,archive,quarantine}; every writer/reader/fold/adopt/grade path uses the one definition",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_events_folder_move.py::test_new_constants_live_under_shipwright_events and the re-run event suites on the new paths PASSED"
+      },
+      {
+        "behavior": "A repo with an old root event folder is hard-refused by writers (library and real record_event CLI) and release evidence, with the exact fix and a tool path that exists",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_events_folder_move.py::test_old_root_folder_aborts_a_write_and_names_the_fix, ::test_the_real_writer_cli_aborts_with_a_visible_error_and_writes_nothing, ::test_old_root_folder_refuses_release_evidence, ::test_the_tool_path_named_in_the_abort_message_exists PASSED"
+      },
+      {
+        "behavior": "A reader never takes an old root folder for no events (absence gates fail closed); archive kind is detected under relative and absolute roots",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_events_folder_move.py::test_a_reader_never_takes_an_old_root_folder_for_no_events, ::test_an_archive_file_is_an_archive_whatever_the_root_spelling PASSED"
+      },
+      {
+        "behavior": "Symlinks and junk: nested symlink hides the folder, OS-junk-only or symlinked old folder is not an old folder",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_events_folder_move.py::test_a_symlink_anywhere_in_the_nested_path_hides_the_folder, ::test_a_folder_holding_only_os_junk_is_not_an_old_event_folder, ::test_a_symlink_named_like_the_old_folder_is_not_an_old_folder PASSED"
+      },
+      {
+        "behavior": "Migration tool moves tracked (git mv) and untracked (staged) files, never overwrites or nests, drops junk, refuses collisions/sub-directories, converges on rerun",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_events_folder_move_migrate.py::test_migrate_moves_tracked_files_with_git_mv, ::test_an_untracked_event_is_staged_so_a_plain_commit_ships_it, ::test_migrate_works_when_the_new_folder_already_exists, ::test_migrate_refuses_a_name_that_exists_in_both_places_and_moves_nothing, ::test_a_sub_directory_in_an_old_folder_is_refused_and_nothing_moves, ::test_a_tracked_old_file_with_an_untracked_identical_copy_keeps_the_copy_tracked PASSED"
+      },
+      {
+        "behavior": "gitignore canon and self-heal re-include the parent chain, and write nothing where it cannot work",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_events_folder_move_migrate.py::test_gitignore_heal_re_includes_the_parent_chain, shared/tests/test_events_folder_move.py::test_the_heal_writes_nothing_where_it_cannot_work PASSED"
+      },
+      {
+        "behavior": "Integrity check accepts exactly the byte-identical move and flags deletion, new file at old name, move+edit, cross-kind, rename, nested path",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_events_folder_move_migrate.py::test_integrity_accepts_the_byte_identical_move and the five negative integrity tests PASSED"
+      },
+      {
+        "behavior": "F11 committed-event check: a drop committed inside an ignored folder passes, an uncommitted one fails with the hint",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_events_folder_move_migrate.py::test_a_drop_committed_in_an_ignored_folder_still_passes_the_committed_check PASSED"
+      },
+      {
+        "behavior": "Rollback rehearsal on a copy of the real history works on the new folders (emergency and full fold stage deletions)",
+        "disposition": "tested",
+        "evidence": "integration-tests/test_events_drops_rollback_rehearsal.py PASSED (integration-tests 685 passed)",
+        "category": "integration"
+      }
+    ],
+    "counts": {
+      "testable": 9,
+      "tested": 9,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 1,
+      "covered_acs": 1
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run pytest shared/tests/test_events_folder_move.py shared/tests/test_events_folder_move_migrate.py -q",
+    "exit_code": 0,
+    "tests_run": 36,
+    "evidence_path": ".shipwright/runs/iterate-2026-11-13-events-under-shipwright-dir/surface_verification.json",
+    "timestamp": "2026-11-13T21:10:32.589Z"
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": [
+    "touches_migrations",
+    "cross_component"
+  ]
+}

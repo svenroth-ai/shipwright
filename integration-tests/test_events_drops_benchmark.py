@@ -50,8 +50,8 @@ def _real_bodies() -> list[dict]:
 def _build(root: Path) -> None:
     subprocess.run(["git", "init", "-q", "-b", "main", str(root)], check=True, capture_output=True)
     shutil.copyfile(REPO / "shipwright_events.jsonl", root / "shipwright_events.jsonl")
-    bodies, folder = _real_bodies(), root / "shipwright_events.d"
-    folder.mkdir()
+    bodies, folder = _real_bodies(), root / ".shipwright/events/drops"
+    folder.mkdir(parents=True)
     for i in range(FILES):
         rows = []
         for j in range(PER_FILE):
@@ -82,7 +82,7 @@ def test_kc5_run_scoped_and_whole_log_reads_and_per_write_cost_at_300_files(tmp_
     root = tmp_path / "bench"
     root.mkdir()
     _build(root)
-    legacy, folder = root / "shipwright_events.jsonl", root / "shipwright_events.d"
+    legacy, folder = root / "shipwright_events.jsonl", root / ".shipwright/events/drops"
 
     def run_scoped(prefilter: bool) -> list[dict]:
         own = [r for p in sorted(folder.glob(f"{RUN_KEY}--*.jsonl")) for r in read_jsonl_records(p).records]

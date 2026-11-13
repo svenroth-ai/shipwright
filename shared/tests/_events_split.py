@@ -12,7 +12,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-DROPS_DIR = "shipwright_events.d"
+DROPS_DIR = ".shipwright/events/drops"
 LEGACY_NAME = "shipwright_events.jsonl"
 FIXED_WT8 = "00000000"
 FIXED_NONCE = "00000000"
@@ -27,7 +27,7 @@ def content_key(event: dict) -> str:
 
 
 def split_log(unsplit: Path, out_root: Path) -> list[Path]:
-    """Write ``out_root/shipwright_events.d/<key>--00000000--00000000.jsonl`` files."""
+    """Write ``out_root/.shipwright/events/drops/<key>--00000000--00000000.jsonl`` files."""
     groups: dict[str, list[str]] = {}
     for raw in unsplit.read_text(encoding="utf-8").splitlines():
         if raw.strip():

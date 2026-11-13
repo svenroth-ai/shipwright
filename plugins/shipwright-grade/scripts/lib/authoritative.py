@@ -25,7 +25,7 @@ from engine_bridge import Engine
 from report_model import ReportModel, build_report_model
 from repo_context import RepoContext
 from reuse_bridge import load_compliance_ingest
-from routing import RoutingDecision
+from routing import RoutingDecision, real_dir
 
 _MODE_AUTHORITATIVE = "authoritative"
 
@@ -40,7 +40,7 @@ _MAX_AUTHORITATIVE_EVENTLOG_BYTES = 10_000_000
 # The per-run layout adds a folder a hostile clone can fill: bound the TOTAL bytes and the file COUNT
 # of the readable event folders too (quarantine holds raw damaged bytes and is never read).
 _MAX_AUTHORITATIVE_EVENT_FILES = 5_000
-_EVENT_FOLDERS = ("shipwright_events.d", "shipwright_events.archive")
+_EVENT_FOLDERS = (".shipwright/events/drops", ".shipwright/events/archive")
 
 # Per-dimension authoritative provenance sources (replace the heuristic
 # "deferred to G2" placeholders in report_model._DIM_META). ``disabled`` is empty:
@@ -86,7 +86,7 @@ def _eventlog_over_cap(root: Path) -> bool:
     seen = 0
     try:
         for d in _EVENT_FOLDERS:  # lazy: a hostile clone with millions of files costs at most cap+1 entries
-            if not (root / d).is_dir() or (root / d).is_symlink():
+            if not real_dir(root, d):
                 continue
             for p in islice((root / d).glob("*.jsonl"), _MAX_AUTHORITATIVE_EVENT_FILES + 1 - seen):
                 seen += 1  # EVERY entry spends budget: folders/symlinks named *.jsonl must not dodge the cap
