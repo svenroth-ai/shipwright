@@ -24,6 +24,7 @@ from triage import append_triage_item_idempotent, should_route_to_outbox
 
 from .finding_units import import_cards
 from .mappers import ci_action_unit, latest_failed_ci_runs, secrets_action_unit
+from .origin_dedup import origin_known_dedup_keys
 from .pr_ci import import_pr_ci_findings
 from .producer import (
     PREFIX_CI,
@@ -35,7 +36,7 @@ from .producer import (
     security_action_unit,
     security_action_unit_from_artifact,
 )
-from .resolve import SOURCE, migrate_legacy_items, resolve_stale
+from .resolve import SOURCE, migrate_legacy_items_safely, resolve_stale
 from .state import record_security_run
 
 
@@ -119,14 +120,7 @@ def import_findings(project_root) -> dict:
     }
 
     # Legacy-migration sweep FIRST: never races the append loop below.
-    try:
-        migrated = migrate_legacy_items(project_root, fetch_succeeded)
-    except Exception as exc:  # noqa: BLE001
-        sys.stderr.write(
-            f"[github-triage] legacy migration sweep failed: "
-            f"{type(exc).__name__}: {exc}\n"
-        )
-        migrated = 0
+    migrated = migrate_legacy_items_safely(project_root, fetch_succeeded)
 
     # Security needs BOTH GHAS feeds: a partial fetch would freeze a payload
     # claiming "0 X alerts" when X failed (iterate-2026-05-20 review MED #1).
@@ -180,10 +174,14 @@ def import_findings(project_root) -> dict:
     # Background producer → gitignored outbox on idle main (else main-tree drift +
     # orphan-quarantined dismisses); mirrors check_drift.py. Worktree → tracked.
     to_outbox = should_route_to_outbox(project_root)
+    # Behind origin, the local scan misses cards origin holds -> duplicates (fail-soft).
+    origin_keys = origin_known_dedup_keys(project_root, default_branch, source=SOURCE)
     def _maybe_append(unit):
         if unit is None:
             return None
         current_keys.add(unit["dedup_key"])
+        if unit["dedup_key"] in origin_keys:
+            return None
         try:
             return append_triage_item_idempotent(
                 project_root,

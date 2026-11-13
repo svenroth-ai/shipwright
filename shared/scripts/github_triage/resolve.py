@@ -237,3 +237,12 @@ def resolve_pr_ci(
             project_root, item["id"], reason=reason, label="pr-ci resolve",
         )
     return resolved
+
+
+def migrate_legacy_items_safely(project_root, fetch_succeeded: dict[str, bool]) -> int:
+    """:func:`migrate_legacy_items`, fail-soft: a failed sweep reports on stderr and counts 0."""
+    try:
+        return migrate_legacy_items(project_root, fetch_succeeded)
+    except Exception as exc:  # noqa: BLE001
+        sys.stderr.write(f"[github-triage] legacy migration sweep failed: {type(exc).__name__}: {exc}\n")
+        return 0

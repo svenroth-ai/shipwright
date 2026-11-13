@@ -1192,7 +1192,8 @@ _Where the work detail lives_ at the end of this document.
   them.
 - (E) [AC02] Given a finding from any local check, scan or audit, when it is recorded,
   then it lands in the project's Triage Inbox exactly once for that finding,
-  even when several producers record it at the same moment.
+  even when several producers record it at the same moment, and even when this
+  checkout is behind the default branch that already holds that finding's entry.
 - (E) [AC03] Given findings are waiting, when the operator works through them, then
   each one is taken into work, dismissed, or deliberately deferred until later
   — and whichever way that decision was made, the entry afterwards carries the

@@ -1,0 +1,77 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-13-silent-measurement-gaps",
+    "date": "2026-11-13",
+    "unit": {
+      "status": "passed",
+      "passed": 25780,
+      "skipped": 110,
+      "total": 25890
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run pytest shared/tests/test_silent_measurement_gaps.py -q -p no:cacheprovider",
+      "exit_code": 0,
+      "tests_run": 13,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\silent-measurement-gaps\\.shipwright\\runs\\iterate-2026-11-13-silent-measurement-gaps\\surface_verification.log",
+      "timestamp": "2026-11-13T09:55:49.754Z"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "a checkout behind origin learns the dedup keys origin's tracked log holds (real bare origin + stale clone)",
+          "disposition": "tested",
+          "evidence": "test_silent_measurement_gaps.py::test_a_checkout_behind_origin_still_learns_the_keys_origin_holds PASSED"
+        },
+        {
+          "behavior": "origin only fills gaps: a key the local view already knows is decided by the local scan",
+          "disposition": "tested",
+          "evidence": "test_silent_measurement_gaps.py::test_origin_never_outvotes_a_key_the_local_view_already_knows PASSED"
+        },
+        {
+          "behavior": "a failed fetch or unreachable origin never suppresses filing (fail-soft)",
+          "disposition": "tested",
+          "evidence": "test_silent_measurement_gaps.py::test_a_failed_fetch_never_suppresses_even_with_a_known_origin_ref + test_an_unreachable_origin_is_fail_soft PASSED"
+        },
+        {
+          "behavior": "origin status fold: open and operator-dismissed suppress; other sources and machine closes do not",
+          "disposition": "tested",
+          "evidence": "test_silent_measurement_gaps.py::test_open_and_operator_dismissed_origin_items_suppress_but_other_sources_and_machine_closes_do_not PASSED"
+        },
+        {
+          "behavior": "curried it.skipIf(cond)('title') / test.runIf(cond)(...) declarations are collected and bind their title-suffix tag",
+          "disposition": "tested",
+          "evidence": "test_silent_measurement_gaps.py 5 parametrized declaration cases + test_a_curried_declaration_binds_its_title_suffix_tag PASSED"
+        },
+        {
+          "behavior": "a 3-level nested condition and a commented-out curried line never bind a wrong title",
+          "disposition": "tested",
+          "evidence": "test_silent_measurement_gaps.py::test_a_condition_nested_three_levels_deep_is_the_documented_limit + test_a_commented_curried_declaration_is_still_not_a_declaration PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 6,
+        "tested": 6,
+        "untestable": 0,
+        "untested_testable": 0
+      }
+    }
+  }
+}
