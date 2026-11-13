@@ -82,8 +82,8 @@ def _rehearsal(tmp_path):
         key = _key(event)
         event["run"] = key
         groups.setdefault(key, []).append(json.dumps(event, separators=(",", ":"), ensure_ascii=False))
-    folder = root / "shipwright_events.d"
-    folder.mkdir()
+    folder = root / ".shipwright/events/drops"
+    folder.mkdir(parents=True)
     for n, (key, rows) in enumerate(sorted(groups.items())):   # a unique nonce: names that differ only in case must not collide
         (folder / f"{key}--aaaaaaaa--{n:08x}.jsonl").write_text("\n".join(rows) + "\n", encoding="utf-8", newline="\n")
     _git(root, "add", "-A")
@@ -112,8 +112,8 @@ def test_emergency_fold_on_a_copy_of_the_real_history(rehearsal):
     assert result["status"].startswith("folded")
     _git(root, "commit", "-q", "-m", "emergency fold")
     assert json.loads((root / "shipwright_sync_config.json").read_text(encoding="utf-8"))["events_layout"] == "legacy"
-    assert not list((root / "shipwright_events.d").glob("*.jsonl"))
-    assert list((root / "shipwright_events.archive").glob("fold-*.jsonl"))
+    assert not list((root / ".shipwright/events/drops").glob("*.jsonl"))
+    assert list((root / ".shipwright/events/archive").glob("fold-*.jsonl"))
     _assert_same_history(root, baseline)
     # the integrity checker accepts the fold commit
     check = subprocess.run([sys.executable, str(REPO / "shared" / "scripts" / "checks" / "check_events_integrity.py"),
@@ -135,8 +135,13 @@ def test_full_fold_gives_a_pre_change_reader_every_event_exactly_once(rehearsal)
     _git(root, "commit", "-q", "-m", "full fold")
     plain = [json.loads(ln) for ln in (root / "shipwright_events.jsonl").read_text(encoding="utf-8").splitlines() if ln.strip()]
     assert len(plain) == n and Counter(_body(r) for r in plain) == Counter(baseline)   # one plain file, no duplicates
-    assert not list((root / "shipwright_events.d").glob("*.jsonl"))
-    assert not list((root / "shipwright_events.archive").glob("*.jsonl"))
+    assert not list((root / ".shipwright/events/drops").glob("*.jsonl"))
+    assert not list((root / ".shipwright/events/archive").glob("*.jsonl"))
+    # the ROLLBACK COMMIT itself holds no event file: --stage must stage the deletions (repo-relative paths), not just
+    # leave them deleted in the working tree
+    left = _git(root, "ls-files", ".shipwright/events/drops", ".shipwright/events/archive").split()
+    assert [n for n in left if n.endswith(".jsonl")] == []
+    assert _git(root, "status", "--porcelain", "--", ".shipwright/events").strip() == ""
     _assert_same_history(root, baseline)
     again = _fold(root, "full")
     assert again["appended"] == 0                                                        # idempotent

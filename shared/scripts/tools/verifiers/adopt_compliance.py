@@ -217,7 +217,7 @@ def check_a7_adopted_event(project_root: Path) -> dict[str, Any]:
     """A7 (Tier-1): shipwright_events.jsonl has exactly 1 'adopted' event."""
     name = "A7 shipwright_events.jsonl has exactly 1 'adopted' event"
     if not any(p.exists() for p in event_files(project_root)):
-        return make_finding("A7", STATUS_FAIL, "missing shipwright_events.jsonl or shipwright_events.d/",
+        return make_finding("A7", STATUS_FAIL, "missing shipwright_events.jsonl or .shipwright/events/drops/",
                             name=name, provenance="adopt_event_check")
     # Record-boundary recovery via the shared SSoT: an 'adopted' event sitting
     # second on a merge=union concatenated line read as absent, FAILing A7 for a

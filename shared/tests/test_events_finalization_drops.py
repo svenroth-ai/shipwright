@@ -48,7 +48,7 @@ def test_f6_stages_only_this_runs_files_never_the_folder(drops_repo):
 
 def test_f6_refuses_a_torn_drop(drops_repo):
     _append(drops_repo, _ev("evt-00000000000000a2"), "run-a")
-    (path,) = (drops_repo / "shipwright_events.d").glob("*.jsonl")
+    (path,) = (drops_repo / ".shipwright/events/drops").glob("*.jsonl")
     path.write_bytes(path.read_bytes() + b'{"torn":')
     result, rc = stage_event_drops.stage(drops_repo, "run-a")
     assert rc == 1 and result["problems"] and _git(drops_repo, "diff", "--cached", "--name-only") == ""
@@ -58,7 +58,7 @@ def test_the_absorb_takes_late_drops_but_leaves_the_run_gate_event_to_f6(drops_r
     _append(drops_repo, _ev("evt-00000000000000c1", type="work_completed", adr_id="run-a"), "run-a")  # gate event
     _append(drops_repo, _ev("evt-00000000000000c2"), "late-key")  # a late write of another key
     assert absorb_wt_drops(drops_repo, "run-a") == "events-absorbed"
-    tracked = _git(drops_repo, "ls-files", "shipwright_events.d").split()
+    tracked = _git(drops_repo, "ls-files", ".shipwright/events/drops").split()
     assert len(tracked) == 1 and "late-key--" in tracked[0]
     untracked = wt_drops(drops_repo)
     assert len(untracked) == 1 and "run-a--" in untracked[0]  # still F6's job
@@ -66,7 +66,7 @@ def test_the_absorb_takes_late_drops_but_leaves_the_run_gate_event_to_f6(drops_r
 
 def test_the_absorb_refuses_a_torn_file_and_commits_nothing(drops_repo):
     _append(drops_repo, _ev("evt-00000000000000d1"), "late-key")
-    (path,) = (drops_repo / "shipwright_events.d").glob("*.jsonl")
+    (path,) = (drops_repo / ".shipwright/events/drops").glob("*.jsonl")
     path.write_bytes(path.read_bytes() + b"{garbage")
     head = _git(drops_repo, "rev-parse", "HEAD")
     assert absorb_wt_drops(drops_repo, "run-a") == "events-absorb-skipped-invalid"
@@ -84,10 +84,10 @@ def test_f6_forgets_to_stage_then_f11_fails_after_the_absorb_and_passes_once_sta
     assert drops_committed_state(drops_repo, "", "run-e", None) is True
 
 
-def test_an_ignored_drops_folder_does_not_apply_the_committed_assertion(drops_repo):
-    (drops_repo / ".gitignore").write_text("*.lock\nshipwright_events.d/\n", encoding="utf-8")
+def test_an_ignored_drops_folder_fails_the_committed_assertion(drops_repo):
+    (drops_repo / ".gitignore").write_text("*.lock\n.shipwright/events/drops/\n", encoding="utf-8")
     _append(drops_repo, _ev("evt-00000000000000f1", type="work_completed", adr_id="run-f"), "run-f")
-    assert drops_committed_state(drops_repo, "", "run-f", None) is None
+    assert drops_committed_state(drops_repo, "", "run-f", None) is False  # it can never ship: must fail, not pass
 
 
 def test_legacy_state_stands_when_the_event_is_not_in_a_drop(drops_repo):
@@ -100,8 +100,8 @@ def test_f7b_seals_untracked_main_tree_drops(drops_repo):
     (name,) = _drop_names(drops_repo)
     assert name.startswith("_main--")
     result = commit_event_followup.commit_followup(drops_repo, "run-x")
-    assert result["status"] == "committed" and result["sealed"] == [f"shipwright_events.d/{name}"]
-    assert _git(drops_repo, "ls-files", "shipwright_events.d").split() == [f"shipwright_events.d/{name}"]
+    assert result["status"] == "committed" and result["sealed"] == [f".shipwright/events/drops/{name}"]
+    assert _git(drops_repo, "ls-files", ".shipwright/events/drops").split() == [f".shipwright/events/drops/{name}"]
     assert commit_event_followup.commit_followup(drops_repo, "run-x")["status"] in ("clean", "ignored")
 
 
@@ -110,11 +110,11 @@ def test_a_merge_that_brings_a_torn_drop_of_the_runs_own_key_is_refused_other_ru
     _append(drops_repo, _ev("evt-0000000000000f10"), "run-other")
     _append(drops_repo, _ev("evt-0000000000000f11", type="work_completed", adr_id="run-x"), "run-x")
     assert validate_event_folders(drops_repo, "run-x") == []
-    (other,) = (drops_repo / "shipwright_events.d").glob("run-other--*.jsonl")
+    (other,) = (drops_repo / ".shipwright/events/drops").glob("run-other--*.jsonl")
     other.write_bytes(other.read_bytes() + b"{torn")
     assert validate_event_folders(drops_repo, "run-x") == []  # another run's damage never blocks this run
     _append(drops_repo, _ev("evt-0000000000000f12"), "run-y")
-    (mine,) = (drops_repo / "shipwright_events.d").glob("run-y--*.jsonl")
+    (mine,) = (drops_repo / ".shipwright/events/drops").glob("run-y--*.jsonl")
     mine.write_bytes(mine.read_bytes() + b"{torn")
     assert validate_event_folders(drops_repo, "run-y")  # its own damaged drop: "absent" cannot be concluded
 
@@ -141,10 +141,10 @@ def test_the_absorb_leaves_an_abandoned_runs_gate_event_alone(drops_repo):
 def test_the_absorb_takes_the_valid_files_when_one_is_torn(drops_repo):
     _append(drops_repo, _ev("evt-00000000000000e1"), "good-key")
     _append(drops_repo, _ev("evt-00000000000000e2"), "bad-key")
-    bad = next((drops_repo / "shipwright_events.d").glob("bad-key--*.jsonl"))
+    bad = next((drops_repo / ".shipwright/events/drops").glob("bad-key--*.jsonl"))
     bad.write_bytes(bad.read_bytes() + b'{"torn":')
     assert absorb_wt_drops(drops_repo, "run-x") == "events-absorbed"
-    assert [p for p in wt_drops(drops_repo)] == [f"shipwright_events.d/{bad.name}"]
+    assert [p for p in wt_drops(drops_repo)] == [f".shipwright/events/drops/{bad.name}"]
 
 
 def test_stage_and_absorb_wait_for_the_writers_lock(drops_repo, monkeypatch):
@@ -172,7 +172,7 @@ def test_a_coarse_clock_cannot_reorder_one_writers_events_and_drops_stay_lf(drop
     same = "2026-11-05T10:00:00+00:00"
     _append(drops_repo, _ev("evt-0000000000000a01", ts=same), "run-a")
     _append(drops_repo, _ev("evt-0000000000000a02", ts=same), "run-a")
-    (path,) = (drops_repo / "shipwright_events.d").glob("run-a--*.jsonl")
+    (path,) = (drops_repo / ".shipwright/events/drops").glob("run-a--*.jsonl")
     data = path.read_bytes()
     assert b"\r" not in data
     first, second = (json.loads(x) for x in data.splitlines())

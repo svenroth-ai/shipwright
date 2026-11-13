@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-13-events-under-shipwright-dir",
+  "date": "2026-11-13",
+  "section": "Iterate — change: event folders under .shipwright/events",
+  "title": "Event folders move under .shipwright/events/",
+  "context": "The per-run event folders sat at the repo root next to config files; everything else Shipwright produces lives under .shipwright/.",
+  "decision": "shipwright_events.{d,archive,quarantine} become .shipwright/events/{drops,archive,quarantine}. A repo with an old root folder is hard-refused (writers, evidence, integrity); tools/migrate_events_folder.py moves it; no compatibility reader.",
+  "consequences": "Every adopter runs the migration once; the managed .gitignore gains !/.shipwright/events/; the WebUI reader must follow. An old plugin can still write the old root, caught afterwards, not prevented.",
+  "rationale": "Hard abort over a transition reader: one known external adopter, and a second live location would hide split histories. The integrity check recognises the exact byte-identical move.",
+  "rejected": "Flat .shipwright/events.d siblings; staying at the root; a reader of both locations with a warning period.",
+  "commit": "",
+  "architecture_impact": "convention",
+  "spec_ref": ".shipwright/planning/iterate/2026-11-13-events-under-shipwright-dir.md"
+}

@@ -167,7 +167,7 @@ def test_layout_precedence_matrix(tmp_path, monkeypatch, config, env, flag, expe
         return
     # Writers and readers resolve through the same function: the write target agrees.
     target = resolve_events_write_path(tmp_path)
-    assert (target.parent.name == DROPS_DIR) == (expected == "drops")
+    assert (target.parent.as_posix().endswith("/" + DROPS_DIR)) == (expected == "drops")
 
 
 def _tools_record_event():

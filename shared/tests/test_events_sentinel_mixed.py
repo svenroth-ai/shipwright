@@ -64,8 +64,8 @@ def _commit(root: Path, msg: str) -> None:
 
 def test_old_writer_appends_legacy_and_new_reader_reads_both(repo):
     _cfg(repo, "drops")
-    (repo / "shipwright_events.d").mkdir()
-    (repo / "shipwright_events.d" / "r1--00000000--00000000.jsonl").write_text(json.dumps(_ev("a" * 16)) + "\n", encoding="utf-8")
+    (repo / ".shipwright/events/drops").mkdir(parents=True)
+    (repo / ".shipwright/events/drops" / "r1--00000000--00000000.jsonl").write_text(json.dumps(_ev("a" * 16)) + "\n", encoding="utf-8")
     # a pre-S2 plugin knows no drops folder: it appends to the legacy file by hand
     (repo / "shipwright_events.jsonl").write_text(json.dumps(_ev("b" * 8)) + "\n", encoding="utf-8")
     ids = {e["id"] for e in read_events_assembled(repo).records}
@@ -116,8 +116,8 @@ def test_env_override_cannot_hide_an_unknown_declaration(repo, monkeypatch):
 
 
 def test_legacy_write_refused_while_drop_files_exist_and_key_absent(repo):
-    (repo / "shipwright_events.d").mkdir()
-    (repo / "shipwright_events.d" / "r1--00000000--00000000.jsonl").write_text(json.dumps(_ev("a" * 16)) + "\n", encoding="utf-8")
+    (repo / ".shipwright/events/drops").mkdir(parents=True)
+    (repo / ".shipwright/events/drops" / "r1--00000000--00000000.jsonl").write_text(json.dumps(_ev("a" * 16)) + "\n", encoding="utf-8")
     with pytest.raises(UnsupportedEventsLayout, match="split the log"):
         require_writable_layout(repo, "legacy")
     with pytest.raises(UnsupportedEventsLayout):
@@ -127,16 +127,16 @@ def test_legacy_write_refused_while_drop_files_exist_and_key_absent(repo):
 
 def test_explicit_legacy_key_is_a_deliberate_rollback_even_with_leftover_drops(repo):
     _cfg(repo, "legacy")
-    (repo / "shipwright_events.d").mkdir()
-    (repo / "shipwright_events.d" / "bad--00000000--00000000.jsonl").write_text("{torn", encoding="utf-8")
+    (repo / ".shipwright/events/drops").mkdir(parents=True)
+    (repo / ".shipwright/events/drops" / "bad--00000000--00000000.jsonl").write_text("{torn", encoding="utf-8")
     require_writable_layout(repo, "legacy")
     record_event.append_event(repo, _ev("1" * 8))
     assert (repo / "shipwright_events.jsonl").exists()
 
 
 def test_legacy_write_allowed_when_folder_is_empty_or_only_keep(repo):
-    (repo / "shipwright_events.d").mkdir()
-    (repo / "shipwright_events.d" / ".keep").write_text("", encoding="utf-8")
+    (repo / ".shipwright/events/drops").mkdir(parents=True)
+    (repo / ".shipwright/events/drops" / ".keep").write_text("", encoding="utf-8")
     require_writable_layout(repo, "legacy")
     record_event.append_event(repo, _ev("e" * 8))
     assert (repo / "shipwright_events.jsonl").exists()
@@ -207,8 +207,8 @@ def test_adopt_sync_config_writes_the_key_and_keeps_an_existing_value(tmp_path):
 
 
 def test_adopt_sync_config_never_writes_legacy_over_live_drops(tmp_path):
-    (tmp_path / "shipwright_events.d").mkdir()
-    (tmp_path / "shipwright_events.d" / "r--00000000--00000000.jsonl").write_text("{}\n", encoding="utf-8")
+    (tmp_path / ".shipwright/events/drops").mkdir(parents=True)
+    (tmp_path / ".shipwright/events/drops" / "r--00000000--00000000.jsonl").write_text("{}\n", encoding="utf-8")
     assert "events_layout" not in _adopt_sync(tmp_path)
 
 
@@ -225,12 +225,12 @@ def test_reinclude_when_jsonl_ignored_and_drops_adopted(repo):
     (repo / ".gitignore").write_text("*.jsonl\n", encoding="utf-8")
     _cfg(repo, "drops")
     lines = reinclude_lines(repo)
-    assert "!/shipwright_events.d/*.jsonl" in lines and "!/shipwright_events.archive/*.jsonl" in lines
+    assert "!/.shipwright/events/drops/*.jsonl" in lines and "!/.shipwright/events/archive/*.jsonl" in lines
     text, added = apply_reinclude((repo / ".gitignore").read_text(encoding="utf-8"), lines)
     (repo / ".gitignore").write_text(text, encoding="utf-8")
-    (repo / "shipwright_events.d").mkdir()
-    (repo / "shipwright_events.d" / "x.jsonl").write_text("{}\n", encoding="utf-8")
-    assert subprocess.run(["git", "-C", str(repo), "check-ignore", "-q", "shipwright_events.d/x.jsonl"]).returncode == 1
+    (repo / ".shipwright/events/drops").mkdir(parents=True)
+    (repo / ".shipwright/events/drops" / "x.jsonl").write_text("{}\n", encoding="utf-8")
+    assert subprocess.run(["git", "-C", str(repo), "check-ignore", "-q", ".shipwright/events/drops/x.jsonl"]).returncode == 1
     assert reinclude_lines(repo) == []  # healed: a second run has nothing to add
     assert added
 
@@ -265,8 +265,8 @@ def _branch_with(repo: Path, *, base_layout, head_layout, touch_legacy: bool):
         with (repo / "shipwright_events.jsonl").open("a", encoding="utf-8") as fp:
             fp.write(json.dumps(_ev("9" * 8)) + "\n")
     else:
-        (repo / "shipwright_events.d").mkdir()
-        (repo / "shipwright_events.d" / "r--00000000--00000000.jsonl").write_text(
+        (repo / ".shipwright/events/drops").mkdir(parents=True)
+        (repo / ".shipwright/events/drops" / "r--00000000--00000000.jsonl").write_text(
             json.dumps(_ev("8" * 16)) + "\n", encoding="utf-8")
     _commit(repo, "pr change")
 
@@ -316,8 +316,8 @@ def test_ci_check_cli_exit_codes(repo):
 
 
 def test_ensure_layout_key_never_writes_legacy_over_live_drops(repo):
-    (repo / "shipwright_events.d").mkdir()
-    (repo / "shipwright_events.d" / "r--00000000--00000000.jsonl").write_text(json.dumps(_ev("a" * 16)) + "\n", encoding="utf-8")
+    (repo / ".shipwright/events/drops").mkdir(parents=True)
+    (repo / ".shipwright/events/drops" / "r--00000000--00000000.jsonl").write_text(json.dumps(_ev("a" * 16)) + "\n", encoding="utf-8")
     assert ensure_layout_key(repo) is False
     with pytest.raises(UnsupportedEventsLayout):
         require_writable_layout(repo, "legacy")
@@ -347,8 +347,8 @@ def test_ci_check_judges_the_pr_tip_behind_a_synthetic_merge_commit(repo):
 
 def test_ci_check_head_legacy_with_drop_files_left_is_not_a_rollback(repo):
     _branch_with(repo, base_layout="drops", head_layout="legacy", touch_legacy=True)
-    (repo / "shipwright_events.d").mkdir(exist_ok=True)
-    (repo / "shipwright_events.d" / "r--00000000--00000000.jsonl").write_text(json.dumps(_ev("7" * 16)) + "\n", encoding="utf-8")
+    (repo / ".shipwright/events/drops").mkdir(parents=True, exist_ok=True)
+    (repo / ".shipwright/events/drops" / "r--00000000--00000000.jsonl").write_text(json.dumps(_ev("7" * 16)) + "\n", encoding="utf-8")
     _commit(repo, "legacy key but drops left")
     assert [v.code for v in check_layout_ci(repo, "base-ref")] == ["legacy_write_after_flip"]
 
@@ -372,7 +372,7 @@ def test_explicit_json_null_is_an_unknown_declaration(repo):
 
 
 def test_reinclude_is_reappended_when_a_later_rule_overrides_an_earlier_one(repo):
-    (repo / ".gitignore").write_text("!/shipwright_events.d/*.jsonl\n*.jsonl\n", encoding="utf-8")
+    (repo / ".gitignore").write_text("!/.shipwright/events/drops/*.jsonl\n*.jsonl\n", encoding="utf-8")
     _cfg(repo, "drops")
     lines = reinclude_lines(repo)
     text, added = apply_reinclude((repo / ".gitignore").read_text(encoding="utf-8"), lines)
@@ -383,8 +383,8 @@ def test_reinclude_is_reappended_when_a_later_rule_overrides_an_earlier_one(repo
 def test_ci_check_two_commit_split_cannot_hide_a_legacy_append_behind_a_legacy_key(repo):
     # commit 1 only flips the key to legacy; commit 2 appends the legacy log (its parent is "legacy"), drops stay at the head
     _cfg(repo, "drops")
-    (repo / "shipwright_events.d").mkdir()
-    (repo / "shipwright_events.d" / "r--00000000--00000000.jsonl").write_text(json.dumps(_ev("6" * 16)) + "\n", encoding="utf-8")
+    (repo / ".shipwright/events/drops").mkdir(parents=True)
+    (repo / ".shipwright/events/drops" / "r--00000000--00000000.jsonl").write_text(json.dumps(_ev("6" * 16)) + "\n", encoding="utf-8")
     (repo / "shipwright_events.jsonl").write_text(json.dumps(_ev("f" * 8)) + "\n", encoding="utf-8")
     _commit(repo, "base state")
     _git(repo, "branch", "base-ref")

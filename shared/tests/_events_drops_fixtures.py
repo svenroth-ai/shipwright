@@ -49,7 +49,7 @@ def _append(root: Path, event: dict, run_id: str | None = None) -> None:
 
 
 def _drop_names(root: Path) -> list[str]:
-    d = root / "shipwright_events.d"
+    d = root / ".shipwright/events/drops"
     return sorted(p.name for p in d.glob("*.jsonl")) if d.is_dir() else []
 
 

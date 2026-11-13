@@ -5,7 +5,7 @@ Adopt writes the key EXPLICITLY (``legacy``; "absent = legacy" stays valid forev
 * an existing value is kept as is -- including a falsy, unknown or JSON-``null`` one: the key is never removed or
   overwritten here (an unknown value is the layout sentinel's business, not adopt's; it reads an explicit ``null``
   as an unsupported declaration, so turning it into ``legacy`` would silently switch the refusal off);
-* ``legacy`` is never written over live drop files (``shipwright_events.d/*.jsonl``): with the key absent
+* ``legacy`` is never written over live drop files (``.shipwright/events/drops/*.jsonl``): with the key absent
   the layout sentinel refuses a legacy write there, and an explicit ``legacy`` would switch that off.
   In that case no entry is returned.
 
@@ -26,6 +26,6 @@ def layout_entry(project_root: Path, config_path: Path) -> dict:
         cfg = None
     if isinstance(cfg, dict) and "events_layout" in cfg:   # presence, not value: an explicit null is a declaration too
         return {"events_layout": cfg["events_layout"]}
-    if any((project_root / "shipwright_events.d").glob("*.jsonl")):
+    if any((project_root / ".shipwright/events/drops").glob("*.jsonl")):
         return {}
     return {"events_layout": "legacy"}

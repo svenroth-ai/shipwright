@@ -44,7 +44,7 @@ def test_legacy_bytes_are_exactly_as_before(tmp_path, monkeypatch):
     _append(tmp_path, event, "some-run")
     raw = (tmp_path / "shipwright_events.jsonl").read_bytes()  # Windows text-mode appends CRLF, as ever: compare the line
     assert raw.splitlines() == [json.dumps(event, ensure_ascii=False, separators=(",", ":")).encode("utf-8")]
-    assert "run" not in event and not (tmp_path / "shipwright_events.d").exists()
+    assert "run" not in event and not (tmp_path / ".shipwright/events/drops").exists()
 
 
 def test_legacy_default_without_any_override_writes_the_legacy_file(tmp_path, monkeypatch):
@@ -52,7 +52,7 @@ def test_legacy_default_without_any_override_writes_the_legacy_file(tmp_path, mo
     monkeypatch.setenv("SHIPWRIGHT_EVENTS_LAYOUT", "drops")  # the plain var changes nothing
     assert events_layout(tmp_path) == "legacy"
     _append(tmp_path, _ev("evt-00000001"))
-    assert (tmp_path / "shipwright_events.jsonl").exists() and not (tmp_path / "shipwright_events.d").exists()
+    assert (tmp_path / "shipwright_events.jsonl").exists() and not (tmp_path / ".shipwright/events/drops").exists()
 
 
 def test_ensure_current_absorb_and_seal_are_noops_without_a_drops_folder(drops_repo, monkeypatch):
@@ -106,7 +106,7 @@ def test_a_crash_while_creating_a_drop_leaves_no_file_behind(drops_repo, monkeyp
     monkeypatch.setattr(ew.os, "replace", boom)
     with pytest.raises(OSError):
         write_event_line(drops_repo, _ev("evt-0000000000000004"), "r")
-    folder = drops_repo / "shipwright_events.d"
+    folder = drops_repo / ".shipwright/events/drops"
     assert not folder.exists() or list(folder.iterdir()) == []  # no empty *.jsonl, no stray temp file
 
 
@@ -122,23 +122,23 @@ def test_the_same_id_with_the_same_content_is_written_once_and_a_different_body_
 def test_a_closed_file_is_never_edited_the_next_write_rotates(drops_repo):
     _append(drops_repo, _ev("evt-0000000000000006"), "r")
     (first,) = _drop_names(drops_repo)
-    _git(drops_repo, "add", "shipwright_events.d")
+    _git(drops_repo, "add", ".shipwright/events/drops")
     _git(drops_repo, "commit", "-q", "-m", "F6")
-    committed = (drops_repo / "shipwright_events.d" / first).read_bytes()
+    committed = (drops_repo / ".shipwright/events/drops" / first).read_bytes()
     _append(drops_repo, _ev("evt-0000000000000007"), "r")
     names = _drop_names(drops_repo)
-    assert len(names) == 2 and (drops_repo / "shipwright_events.d" / first).read_bytes() == committed
+    assert len(names) == 2 and (drops_repo / ".shipwright/events/drops" / first).read_bytes() == committed
 
 
 def test_attach_commit_becomes_an_event_amended_in_a_new_drop(drops_repo):
     _append(drops_repo, _ev("evt-0000000000000008", type="work_completed", commit=""), "r")
-    _git(drops_repo, "add", "shipwright_events.d")
+    _git(drops_repo, "add", ".shipwright/events/drops")
     _git(drops_repo, "commit", "-q", "-m", "F6")
-    before = {p.name: p.read_bytes() for p in (drops_repo / "shipwright_events.d").glob("*.jsonl")}
+    before = {p.name: p.read_bytes() for p in (drops_repo / ".shipwright/events/drops").glob("*.jsonl")}
     assert record_event.attach_commit_to_event(drops_repo, "evt-0000000000000008", "abc1234", "r") is True
     assert record_event.attach_commit_to_event(drops_repo, "evt-unknown", "abc1234", "r") is False
     for name, raw in before.items():
-        assert (drops_repo / "shipwright_events.d" / name).read_bytes() == raw  # closed file untouched
+        assert (drops_repo / ".shipwright/events/drops" / name).read_bytes() == raw  # closed file untouched
     (target,) = [e for e in effective_records(drops_repo) if e["id"] == "evt-0000000000000008"]
     assert target["commit"] == "abc1234"
     assert any(e.get("type") == "event_amended" for e in event_records(drops_repo))
@@ -159,7 +159,7 @@ def test_context_index_hash_ignores_the_run_stamp_and_collapses_fold_duplicates(
     from lib.event_context_source import iter_event_lines, strip_run
     assert strip_run(b'{"a":1,"run":"r"}\n') == b'{"a":1}\n' and strip_run(b'{"a":1}\n') == b'{"a":1}\n'
     _append(drops_repo, _ev("evt-0000000000000b10"), "run-a")
-    folder = drops_repo / "shipwright_events.d"
+    folder = drops_repo / ".shipwright/events/drops"
     (src,) = folder.glob("*.jsonl")
     twin = folder / "run-a--00000000--00000000.jsonl"  # a fold-race twin: same event, stamped differently
     twin.write_text(src.read_text(encoding="utf-8").replace('"run":"run-a"', '"run":"run-z"'), encoding="utf-8")
@@ -170,7 +170,7 @@ def test_validate_event_log_reads_every_file_and_flags_a_damaged_drop(drops_repo
     from tools.validate_event_log import validate
     _append(drops_repo, _ev("evt-0000000000000c10"), "run-a")
     assert [i for i in validate(drops_repo) if i["severity"] == "error"] == []
-    (path,) = (drops_repo / "shipwright_events.d").glob("*.jsonl")
+    (path,) = (drops_repo / ".shipwright/events/drops").glob("*.jsonl")
     path.write_bytes(path.read_bytes() + b"{not json\n")
     errors = [i for i in validate(drops_repo) if i["severity"] == "error"]
     assert errors and any(e.get("file") == path.name for e in errors)
@@ -227,4 +227,4 @@ def test_the_adopt_seeder_still_writes_the_legacy_log_under_legacy(tmp_path, mon
     log = tmp_path / "shipwright_events.jsonl"
     seeder.seed_adopted_event(log, profile="p", scope="s", features_inferred=1, nested_excluded=[],
                               plugin_version="1", commit_sha=None)
-    assert log.exists() and not (tmp_path / "shipwright_events.d").exists() and seeder.events_target(log) == log
+    assert log.exists() and not (tmp_path / ".shipwright/events/drops").exists() and seeder.events_target(log) == log

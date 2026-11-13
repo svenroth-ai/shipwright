@@ -213,7 +213,7 @@ def main() -> int:
         with FileLock(events_lock_path(project_root)):
             for event in events:
                 write_event_line(project_root, event, "convert-configs")
-        out_path = project_root / "shipwright_events.d"
+        out_path = project_root / ".shipwright/events/drops"
     else:
         with open(out_path, "w", encoding="utf-8") as fp:
             for event in events:

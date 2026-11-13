@@ -5,14 +5,14 @@ modify/delete of a file that exists at the merge-base (``events_integrity`` reco
 
 * **fold** -- drops that are on the base ref (merged), unmodified since, and whose every event is older than
   :data:`FOLD_AGE_DAYS` (by event ``ts``, never mtime) move into ONE new archive file
-  ``shipwright_events.archive/fold-<hash>.jsonl`` and are deleted in the same change. The archive name is the
+  ``.shipwright/events/archive/fold-<hash>.jsonl`` and are deleted in the same change. The archive name is the
   hash of the folded set, so a second fold of the same set (concurrent, or a re-run) produces the same file
   (clean add/add; folds of OVERLAPPING sets are single-actor release work, git may call them a rename conflict --
   loud, never lossy) and a fold of nothing is a no-op. Files whose events are not all ok are left and reported.
 * **emergency fold** -- the first rollback: every ok drop (age and merge state ignored) into the archive, and
   ``events_layout`` back to ``legacy``. Post-change readers keep seeing everything (archive is read).
 * **quarantine** -- a drop with ZERO recoverable records that was already non-ok at the base ref moves,
-  byte for byte, to ``shipwright_events.quarantine/`` (never read). The CI checker re-derives the same facts.
+  byte for byte, to ``.shipwright/events/quarantine/`` (never read). The CI checker re-derives the same facts.
 
 Before folding, the whole log (legacy + archive + drops) is scanned for ids: the same id with DIFFERENT content
 as an event being folded is a conflict and stops the fold (``allow_conflicts`` keeps both). Never folds blindly.
@@ -158,7 +158,7 @@ def ensure_keep(root: Path) -> None:
     """Create the empty ``.keep`` in the drops folder (see ``events_fold_io.KEEP_NAME``); idempotent."""
     keep = root / DROPS_DIR / KEEP_NAME
     if not keep.exists():
-        keep.parent.mkdir(exist_ok=True)
+        keep.parent.mkdir(parents=True, exist_ok=True)
         durable_atomic_write(keep, b"")
 
 
@@ -204,7 +204,7 @@ def apply_fold(root: Path | str, plan: FoldPlan, *, allow_conflicts: bool = Fals
         if conflicts and not allow_conflicts:
             return {"status": "conflict", "conflicting_ids": conflicts, "skipped": plan.skipped}
         archive = root / ARCHIVE_DIR / name
-        archive.parent.mkdir(exist_ok=True)
+        archive.parent.mkdir(parents=True, exist_ok=True)
         if archive.exists() and not same_bytes(archive.read_bytes(), "".join(dump_line(r) + chr(10) for r in plan.records()).encode()):
             return {"status": "archive_incomplete", "missing": 0, "error": f"{name} exists with different content"}
         durable_atomic_write(archive, "".join(dump_line(r) + "\n" for r in plan.records()))
@@ -250,7 +250,7 @@ def apply_quarantine(root: Path | str, items: list[Selected]) -> dict:
                 unchanged = False
             if not unchanged:
                 return {"status": "changed_since_plan", "file": item.path.name}
-        (root / QUARANTINE_DIR).mkdir(exist_ok=True)
+        (root / QUARANTINE_DIR).mkdir(parents=True, exist_ok=True)
         for item in items:
             target = root / QUARANTINE_DIR / item.path.name
             durable_atomic_write(target, item.data)

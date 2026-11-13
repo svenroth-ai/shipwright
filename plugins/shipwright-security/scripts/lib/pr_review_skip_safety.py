@@ -35,8 +35,8 @@ _SKIP_REVIEW_CANONICAL_BASENAME_PATHS = frozenset({
     ".shipwright/triage.outbox.jsonl",
 })
 
-# The event folders (`shipwright_events.d/`, `shipwright_events.archive/`,
-# `shipwright_events.quarantine/`) are generated-hidden but DELIBERATELY NOT
+# The event folders (`.shipwright/events/drops/`, `.shipwright/events/archive/`,
+# `.shipwright/events/quarantine/`) are generated-hidden but DELIBERATELY NOT
 # skip-safe, for the same reason as `iterates/` below: an event drop is read as a
 # gate oracle (`work_completed`) with no provenance check, so a PR whose only change
 # is a shape-conforming forged drop must still get one model call. The legacy log is

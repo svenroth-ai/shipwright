@@ -86,8 +86,8 @@ def test_an_archive_that_does_not_hold_every_event_is_removed_again(tmp_path, mo
 def test_a_foreign_archive_with_different_content_is_never_deleted(tmp_path):
     root = _repo(tmp_path)
     plan_name = events_fold.plan_fold(root, base_ref="main").archive_name
-    foreign = root / "shipwright_events.archive" / plan_name
-    foreign.parent.mkdir()
+    foreign = root / ".shipwright/events/archive" / plan_name
+    foreign.parent.mkdir(parents=True)
     foreign.write_text("someone else's file" + chr(10), encoding="utf-8")
     result = _run(root)
     assert result["status"] == "skipped" and "rolled_back" not in result
@@ -107,8 +107,8 @@ def test_a_foreign_untracked_archive_with_the_same_bytes_survives_a_failed_commi
     root = _repo(tmp_path)
     _failing_hook(root, tmp_path)
     plan = events_fold.plan_fold(root, base_ref="main")
-    archive = root / "shipwright_events.archive" / plan.archive_name
-    archive.parent.mkdir()
+    archive = root / ".shipwright/events/archive" / plan.archive_name
+    archive.parent.mkdir(parents=True)
     archive.write_text("".join(json.dumps(r, separators=(",", ":"), ensure_ascii=False) + chr(10) for r in plan.records()), encoding="utf-8", newline=chr(10))
     result = _run(root)
     assert result["status"] == "commit_failed", result
@@ -118,8 +118,8 @@ def test_a_foreign_untracked_archive_with_the_same_bytes_survives_a_failed_commi
 def test_an_error_before_the_archive_check_never_deletes_a_foreign_archive(tmp_path, monkeypatch):
     root = _repo(tmp_path)
     plan = events_fold.plan_fold(root, base_ref="main")
-    archive = root / "shipwright_events.archive" / plan.archive_name
-    archive.parent.mkdir()
+    archive = root / ".shipwright/events/archive" / plan.archive_name
+    archive.parent.mkdir(parents=True)
     archive.write_text("someone else's file" + chr(10), encoding="utf-8", newline=chr(10))
 
     def boom(*_a, **_k):

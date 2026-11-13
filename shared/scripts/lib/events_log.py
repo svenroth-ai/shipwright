@@ -99,12 +99,49 @@ except ImportError:  # contexts 2 + 3 — see above.
     read_jsonl_records = _jr_mod.read_jsonl_records
 
 EVENT_FILE = "shipwright_events.jsonl"
-DROPS_DIR = "shipwright_events.d"
-ARCHIVE_DIR = "shipwright_events.archive"
-QUARANTINE_DIR = "shipwright_events.quarantine"
+DROPS_DIR = ".shipwright/events/drops"
+ARCHIVE_DIR = ".shipwright/events/archive"
+QUARANTINE_DIR = ".shipwright/events/quarantine"
 #: Every folder of the drops layout. Classifiers (paths that are bookkeeping, churn,
 #: generated, uncounted ...) must list ALL of them -- the S3 guard checks it.
 EVENT_FOLDERS = (DROPS_DIR, ARCHIVE_DIR, QUARANTINE_DIR)
+
+
+#: The pre-move root-level names. Not read, not written; their mere presence is reported (readers never take it for
+#: "no events") and refused (writers). Mirrors ``events_sentinel.MOVED_FOLDERS`` (flat-loaded, so it cannot import this).
+OLD_ROOT_FOLDERS = ("shipwright_events.d", "shipwright_events.archive", "shipwright_events.quarantine")
+
+
+#: Names an operating system leaves in a folder: a folder holding only these is not an event folder.
+OS_JUNK_NAMES = frozenset({".DS_Store", "Thumbs.db", "desktop.ini"})
+
+
+def real_event_dir(project_root: Path | str, rel: str) -> bool:
+    """``rel`` is a directory reached through real directories only: NO component below the root is a symlink.
+
+    The folders are nested now (``.shipwright/events/drops``), so a guard on the leaf alone would let a hostile
+    clone ship ``.shipwright`` or ``.shipwright/events`` as a link to a directory outside the tree.
+    """
+    cur = Path(project_root)
+    for part in rel.split("/"):
+        cur = cur / part
+        if cur.is_symlink():
+            return False
+    return cur.is_dir()
+
+
+def old_root_folders(project_root: Path | str) -> list[str]:
+    """Old root-level event folders that still hold something (a real directory; OS junk alone does not count)."""
+    root = Path(project_root)
+    found = []
+    for old in OLD_ROOT_FOLDERS:
+        if real_event_dir(root, old):
+            try:
+                if any(p.name not in OS_JUNK_NAMES for p in (root / old).iterdir()):
+                    found.append(old)
+            except OSError:
+                found.append(old)  # cannot tell what is in it: treat as present, never as "no events"
+    return found
 
 
 def is_event_folder_path(rel: str) -> bool:
@@ -169,7 +206,7 @@ def event_files(project_root: Path | str) -> list[Path]:
     # drops are LISTED before the archive (a fold adds its archive file first, deletes the drops after); a file
     # lost between listing and reading is redone by read_events_assembled; _all_records has no such retry (S6 note)
     listed = {f: sorted(p for p in (root / f).glob("*.jsonl") if p.is_file() and not p.is_symlink())
-              if (root / f).is_dir() and not (root / f).is_symlink() else [] for f in (DROPS_DIR, ARCHIVE_DIR)}
+              if real_event_dir(root, f) else [] for f in (DROPS_DIR, ARCHIVE_DIR)}
     return [resolve_events_path(root), *listed[ARCHIVE_DIR], *listed[DROPS_DIR]]
 
 

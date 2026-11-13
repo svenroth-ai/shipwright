@@ -50,4 +50,5 @@ def test_event_files_list_the_drops_before_the_archive(tmp_path, monkeypatch):
 
     monkeypatch.setattr(Path, "glob", spy)
     names = [p.parent.name for p in el.event_files(tmp_path)[1:]]
-    assert listed == [DROPS_DIR, ARCHIVE_DIR] and names == [ARCHIVE_DIR, DROPS_DIR]
+    drops, archive = Path(DROPS_DIR).name, Path(ARCHIVE_DIR).name  # the folders are nested now; Path.name is the last segment
+    assert listed == [drops, archive] and names == [archive, drops]

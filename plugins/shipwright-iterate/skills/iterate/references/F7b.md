@@ -30,7 +30,7 @@ the new commit SHA. Only those two produce a new commit on the branch; all other
 are noops. `partial` means the commit was made but your event was NOT sealed (drops layout, see below).
 
 > **Drops layout.** The tool also seals every UNTRACKED drop written from the main tree
-> (`shipwright_events.d/_main--*` and any file whose worktree id is the main git dir's): it lists them
+> (`.shipwright/events/drops/_main--*` and any file whose worktree id is the main git dir's): it lists them
 > with `git ls-files --others`, validates each is whole, and commits exactly those paths
 > (`chore(events): seal event drops for <run_id>`). The `committed` status then carries a `sealed`
 > list. A non-empty index (`staged_changes`) skips instead. A torn file stays in the working copy and is named in

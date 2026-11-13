@@ -90,7 +90,7 @@ def test_every_classifier_knows_the_folder(folder):
     from lib.change_type_paths import SHAPE_GENERIC, SHAPE_SHIPWRIGHT_MONOREPO, unclassified_paths
 
     assert is_event_folder_path(f"{folder}/x--aaaaaaaa--00000001.jsonl") and is_event_folder_path(f"./{folder}")
-    assert not is_event_folder_path(f"{folder}-other/x") and not is_event_folder_path("src/shipwright_events.d")
+    assert not is_event_folder_path(f"{folder}-other/x") and not is_event_folder_path("src/.shipwright/events/drops")
     for shape in (SHAPE_GENERIC, SHAPE_SHIPWRIGHT_MONOREPO):
         assert unclassified_paths([f"{folder}/x--aaaaaaaa--00000001.jsonl"], "tooling", shape) == []
     assert not review_diff_threshold.is_counted_path(f"{folder}/x--aaaaaaaa--00000001.jsonl")
@@ -118,7 +118,7 @@ def test_every_classifier_knows_the_folder(folder):
 def test_worktree_isolation_does_not_flag_event_folder_writes_as_a_leak():
     from lib import worktree_isolation as wi
 
-    out = "".join(l + chr(10) for l in ("?? shipwright_events.d/", "?? shipwright_events.d/a--b--c.jsonl", "?? shipwright_events.archive/f.jsonl", " M src/x.py"))
+    out = "".join(l + chr(10) for l in ("?? .shipwright/events/drops/", "?? .shipwright/events/drops/a--b--c.jsonl", "?? .shipwright/events/archive/f.jsonl", " M src/x.py"))
     paths, _ = wi._scan_porcelain(out)
     assert set(paths) == {"src/x.py"}
 

@@ -4,7 +4,7 @@
     check_events_integrity.py --project-root . --base-ref origin/main [--head-ref HEAD]
                               [--run-id <id> ...] [--allow-full-fold]
 
-A change may only ADD files under shipwright_events.d / .archive / .quarantine, judged against the merge-base
+A change may only ADD files under .shipwright/events/{drops,archive,quarantine}, judged against the merge-base
 of ``--base-ref`` and ``--head-ref``; fold and quarantine are the recognised exceptions (see
 ``lib/events_integrity.py``). Exit 0 = clean (also: no event folders at all), 1 = violations (JSON on stdout),
 2 = the refs could not be resolved. Wiring this into a workflow is an operator decision (CI trust boundary).

@@ -1,7 +1,7 @@
 """Integrity check of the event folders (issue 978, campaign unit S6, kill criterion 6).
 
-Judged against the MERGE-BASE of a change: a PR may only ADD files under ``shipwright_events.d/``,
-``shipwright_events.archive/`` and ``shipwright_events.quarantine/``. Anything that touches a file which
+Judged against the MERGE-BASE of a change: a PR may only ADD files under ``.shipwright/events/drops/``,
+``.shipwright/events/archive/`` and ``.shipwright/events/quarantine/``. Anything that touches a file which
 exists at the merge-base is a violation, except two recognised housekeeping shapes:
 
 * **fold** -- a deleted DROP whose every event (equal per-event hash) is present in an archive file this
@@ -36,6 +36,11 @@ from .events_fold_io import (
 )
 from .events_log import ARCHIVE_DIR, DROPS_DIR, EVENT_FILE, QUARANTINE_DIR
 from .events_read import sanitize_key
+from .events_sentinel import MOVED_FOLDERS
+
+#: The three event folders sit side by side under this directory; a path's FOLDER is its first three segments.
+EVENTS_ROOT = ".shipwright/events"
+_OLD_ROOTS = tuple(MOVED_FOLDERS)   # the pre-move root-level names: any change to one is flagged, never judged as a drop
 
 REGULAR_MODES = ("100644", "100755")
 ARCHIVE_FOLD_NAME = re.compile(r"^fold-[0-9a-f]{12}\.jsonl\Z")
@@ -58,12 +63,19 @@ class Entry:
     path: str
 
     @property
+    def _old_root(self) -> bool:
+        return self.path.split("/", 1)[0].lower() in _OLD_ROOTS
+
+    @property
     def folder(self) -> str:
-        return self.path.split("/", 1)[0]
+        segs = self.path.split("/")
+        return segs[0] if self._old_root else "/".join(segs[:3])
 
     @property
     def name(self) -> str:
-        return self.path.split("/", 1)[1] if "/" in self.path else ""
+        """Everything below the folder (a legal name has no ``/`` in it)."""
+        segs = self.path.split("/")
+        return "/".join(segs[1:] if self._old_root else segs[3:])
 
 
 def _entries(root: Path, base: str, head: str) -> list[Entry]:
@@ -74,12 +86,11 @@ def _entries(root: Path, base: str, head: str) -> list[Entry]:
     """
     raw = git(root, "diff", "--raw", "-z", "--no-abbrev", "--no-renames", base, head).stdout
     parts = raw.decode("utf-8", errors="surrogateescape").split("\0")
-    lowered = {f.lower() for f in FOLDERS}
     out = []
     for meta, path in zip(parts[0::2], parts[1::2]):
-        first = path.split("/", 1)[0]
+        low = path.lower()
         fields = meta.lstrip(":").split()
-        if len(fields) == 5 and first.lower() in lowered:
+        if len(fields) == 5 and (low.startswith(EVENTS_ROOT + "/") or low.split("/", 1)[0] in _OLD_ROOTS):
             out.append(Entry(fields[4][0], fields[0], fields[1], fields[2], fields[3], path))
     return out
 
@@ -117,11 +128,25 @@ def check_integrity(root: Path | str, base_ref: str, head_ref: str = "HEAD", *, 
     archives: list[tuple[Entry, list[dict]]] = []
     added_archive: set[str] = set()   # per-event hashes of archive files this change adds
     added_quarantine = {(e.new_sha, e.name): e for e in entries if e.status == "A" and e.folder == QUARANTINE_DIR}
+    # the one-off MOVE out of the pre-move root folders: a deleted old-root file whose identical blob (same name) is
+    # added under the matching new folder is a relocation, not a deletion; everything else at the old names is flagged.
+    added_at_new = {(e.new_sha, e.name, e.folder) for e in entries if e.status == "A" and e.folder in FOLDERS}
+    move_sources = {e.path for e in entries if e.status == "D" and e.folder in MOVED_FOLDERS
+                    and e.name and "/" not in e.name and not name_problem(MOVED_FOLDERS[e.folder], e.name)
+                    and (e.old_sha, e.name, MOVED_FOLDERS[e.folder]) in added_at_new}
+    moved_in = {(e.old_sha, e.name, MOVED_FOLDERS[e.folder]) for e in entries if e.path in move_sources}
     for e in entries:
-        if e.folder not in FOLDERS:
-            flag("bad_path", e, f"{e.folder!r} is a case variant of an event folder")
+        if e.path in move_sources:
             continue
-        if "/" not in e.path or e.path.count("/") != 1 or name_problem(e.folder, e.name):
+        if e.status == "A" and (e.new_sha, e.name, e.folder) in moved_in:
+            if e.new_mode not in REGULAR_MODES:
+                flag("not_a_regular_file", e, f"mode {e.new_mode}")
+            continue  # relocated, byte-identical content that was already judged where it lived
+        if e.folder not in FOLDERS:
+            flag("bad_path", e, (f"{e.folder!r} moved to {MOVED_FOLDERS[e.folder]!r}; the only change allowed at the old location is an exact move"
+                                 if e.folder in MOVED_FOLDERS else f"{e.folder!r} is not an event folder (or a case variant of one)"))
+            continue
+        if not e.name or "/" in e.name or name_problem(e.folder, e.name):
             flag("bad_path", e, name_problem(e.folder, e.name) or "not a single segment under its folder")
             continue
         if e.status == "A":
@@ -149,7 +174,7 @@ def check_integrity(root: Path | str, base_ref: str, head_ref: str = "HEAD", *, 
                 if e.name.lower() in collisions:
                     flag("case_collision", e, "differs only in letter case from another file in the folder")
     for e in entries:
-        if e.status == "A" or any(v.path == e.path for v in bad):
+        if e.status == "A" or e.path in move_sources or any(v.path == e.path for v in bad):
             continue
         if e.status != "D":
             flag("modified_existing", e, "a file that exists at the merge-base may not be modified")

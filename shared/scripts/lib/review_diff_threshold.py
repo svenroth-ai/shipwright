@@ -49,7 +49,7 @@ PLAN_REVIEW_DIFF_LOC_THRESHOLD = DIFF_LOC_THRESHOLD
 #: artifact tree and the per-run changelog drops.
 UNCOUNTED_PREFIXES: tuple[str, ...] = (
     ".shipwright/", "CHANGELOG-unreleased.d/",
-    "shipwright_events.d/", "shipwright_events.archive/", "shipwright_events.quarantine/",  # event folders
+    ".shipwright/events/drops/", ".shipwright/events/archive/", ".shipwright/events/quarantine/",  # event folders
 )
 
 #: Root-level ledgers that F5 / F5b rewrite on every run.

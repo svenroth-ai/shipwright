@@ -63,7 +63,7 @@ def _inherits_earlier_units(root: Path) -> bool:
 
 
 def _own_worktree_drop(path: str, wt8: str) -> bool:
-    """``shipwright_events.d/<key>--<wt8>--<nonce>.jsonl`` written from THIS worktree (the key may itself contain ``--``)."""
+    """``.shipwright/events/drops/<key>--<wt8>--<nonce>.jsonl`` written from THIS worktree (the key may itself contain ``--``)."""
     match = DROP_NAME.match(path.rsplit("/", 1)[-1])
     return bool(match) and match.group("wt8") == wt8
 

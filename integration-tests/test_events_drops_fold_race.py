@@ -19,7 +19,7 @@ REPO = Path(__file__).resolve().parents[1]
 FOLD = REPO / "shared" / "scripts" / "tools" / "fold_events.py"
 CHECK = REPO / "shared" / "scripts" / "checks" / "check_events_integrity.py"
 EMPTY_TREE = "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
-DROPS = "shipwright_events.d"
+DROPS = ".shipwright/events/drops"
 OLD_TS = "2026-01-05T10:00:00+00:00"
 pytestmark = pytest.mark.covers("FR-01.11")
 
@@ -32,7 +32,7 @@ def _git(cwd, *args, check=True):
 
 def _put(root: Path, name: str, event_id: str, ts: str = OLD_TS) -> None:
     key = name.split("--")[0]
-    (root / DROPS).mkdir(exist_ok=True)
+    (root / DROPS).mkdir(parents=True, exist_ok=True)
     line = json.dumps({"v": 1, "id": event_id, "ts": ts, "type": "task_created", "run": key}, separators=(",", ":"))
     (root / DROPS / name).write_text(line + "\n", encoding="utf-8", newline="\n")
 
@@ -101,7 +101,7 @@ def test_a_fold_racing_an_open_pr_that_only_adds_is_clean(world):
     # the fold emptied the drops folder, so it left the empty .keep: without it git reads the fold as a
     # directory rename (drops -> archive) and flags the PR's new drop as a "file location" conflict
     assert [n for n in names if n.startswith(DROPS)] == [f"{DROPS}/.keep", f"{DROPS}/pr-add--bbbbbbbb--00000002.jsonl"]
-    assert any(n.startswith("shipwright_events.archive/fold-") for n in names)
+    assert any(n.startswith(".shipwright/events/archive/fold-") for n in names)
 
 
 def test_a_pr_that_edited_a_folded_file_conflicts_and_the_checker_blocks_it(world):

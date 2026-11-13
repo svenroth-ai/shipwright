@@ -7,6 +7,37 @@ your project keeps working exactly as before. Switching to the new layout is a
 separate, deliberate step that you take later, per project (see "Switching a
 project over" below).
 
+## Event folders live under `.shipwright/events/`
+
+The three folders sit in `.shipwright/events/`, next to the other things Shipwright produces:
+
+| Folder | Holds |
+|---|---|
+| `.shipwright/events/drops/` | one file per run (the live layout) |
+| `.shipwright/events/archive/` | folded-away drop files |
+| `.shipwright/events/quarantine/` | unreadable drop files, kept byte for byte |
+
+A repo that still has one of the old root folders `shipwright_events.d/`, `shipwright_events.archive/` or
+`shipwright_events.quarantine/` is **refused**: writing an event, producing release evidence and the integrity check
+all stop with the fix in the message. Nothing is read from or written to the old location, so no event is lost
+silently. Move the folders once, at the repo root, and commit:
+
+```bash
+uv run <shipwright>/shared/scripts/tools/migrate_events_folder.py --project-root .   # --dry-run to preview; stages the moves itself
+git commit -m "chore(events): move event folders under .shipwright/events/"
+```
+
+or by hand, **only when `.shipwright/events/` does not exist yet** (otherwise `git mv` nests the folder inside the
+new one and the events are never read; use the tool then):
+`mkdir -p .shipwright/events && git mv shipwright_events.d .shipwright/events/drops` (and the same for
+`shipwright_events.archive` -> `.shipwright/events/archive`, `shipwright_events.quarantine` ->
+`.shipwright/events/quarantine`, whichever exist). The tool never overwrites: a name that exists in both places stops it
+before anything moves (same name, different content: keep the file you want under the new name, delete the other, re-run). The integrity check accepts exactly this move (same name, byte-identical content) and flags
+anything else at the old location. A repo whose `.gitignore` ignores `.shipwright/*` needs `!/.shipwright/events/`; the
+canonical block carries it, and the `.gitignore` self-heal adds it where it is missing. Do the move on every branch that
+still has old-location files: merge `main` first, then run the tool.
+The old-location refusal and the migration tool are meant to go once every known repo has moved; remove them then.
+
 ## What changed
 
 Until now every finished piece of work appended one line to a single file,
@@ -14,10 +45,10 @@ Until now every finished piece of work appended one line to a single file,
 both changed the end of that file, so merging the second one conflicted.
 
 The new layout, called `drops`, gives each run its own small file in the folder
-`shipwright_events.d/`. Two branches then add two different files and never
+`.shipwright/events/drops/`. Two branches then add two different files and never
 touch the same one, so there is nothing to conflict. Old, folded-away files live
-in `shipwright_events.archive/`. A file that cannot be read and holds nothing
-recoverable can be moved to `shipwright_events.quarantine/` with the fold
+in `.shipwright/events/archive/`. A file that cannot be read and holds nothing
+recoverable can be moved to `.shipwright/events/quarantine/` with the fold
 tool's `quarantine` mode; until someone does that, it is reported and the run
 it belongs to does not pass.
 
@@ -30,7 +61,7 @@ The layout is chosen by one key, `events_layout`, in `shipwright_sync_config.jso
 | Value | Meaning |
 |---|---|
 | absent or `legacy` | the single `shipwright_events.jsonl` (the default; nothing changes) |
-| `drops` | one file per run in `shipwright_events.d/` |
+| `drops` | one file per run in `.shipwright/events/drops/` |
 
 ## What an existing project must do
 
@@ -64,7 +95,7 @@ Two consequences to expect:
   it must re-record its own events as drop files. Nothing is lost, but nothing
   in the plugin warns you either; only the optional CI check flags it. After
   such a rebase, look at the branch: if its run's event sits in
-  `shipwright_events.jsonl` instead of a file in `shipwright_events.d/`,
+  `shipwright_events.jsonl` instead of a file in `.shipwright/events/drops/`,
   record it again.
 - Going back is supported (see "Going back" below).
 
@@ -96,7 +127,7 @@ check without GitHub.
 Rollback is a supported path, not an emergency. The fold tool
 (`fold_events.py`) has two modes, and they differ in who can read the result:
 
-- `emergency` moves every readable drop file into `shipwright_events.archive/`
+- `emergency` moves every readable drop file into `.shipwright/events/archive/`
   and sets `events_layout` back to `legacy`. Updated plugins read the archive;
   a plugin from before this release does not.
 - `full` appends the archive and the drops to the single

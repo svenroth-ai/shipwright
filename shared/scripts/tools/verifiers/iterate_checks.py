@@ -43,7 +43,7 @@ from lib.jsonl_records import split_records  # noqa: E402
 from lib.iterate_entry import find_entry_by_run_id, read_iterate_entries  # noqa: E402
 from lib.spec_impact_gate import SPEC_IMPACT_INTENTS, none_record_problem  # noqa: E402
 
-from ._events_committed import drops_committed_state  # noqa: E402
+from ._events_committed import drops_committed_state, event_stuck_in_ignored_drop  # noqa: E402
 from ._finalization_claims import run_claim_checks  # noqa: E402
 from ._entry_details import _no_entry_detail, _wrong_shape_detail  # noqa: E402, F401 — re-exported
 # The Test Completeness gate lives in its own module (size cap); re-exported here.
@@ -184,9 +184,12 @@ def check_events_has_commit(
     committed = drops_committed_state(
         project_root, commit_hash, run_id, _event_committed_in_head(project_root, events, commit_hash, run_id))
     if committed is False:
+        ignored = (" The event folder is git-ignored: add `!/.shipwright/events/` to .gitignore "
+                   "(the canonical block carries it; `gitignore_selfheal` adds it)."
+                   if event_stuck_in_ignored_drop(project_root, commit_hash, run_id) else "")
         return CheckResult(
             name, False,
-            f"{present_detail}, but it is NOT in any commit (HEAD blob) — F6 "
+            f"{present_detail}, but it is NOT in any commit (HEAD blob){ignored} — F6 "
             "must stage the event log so the event ships in the iterate PR "
             "(`git add shipwright_events.jsonl` under the legacy layout, "
             "`stage_event_drops.py` for a drop under the drops layout; it "

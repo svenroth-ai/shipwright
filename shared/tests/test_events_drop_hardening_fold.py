@@ -74,7 +74,7 @@ def test_fold_cli_exits_1_for_a_locked_file_and_a_rerun_with_stage_commits_a_con
     assert code == 1 and out["status"] == "folded_incomplete" and out["not_deleted"] == [locked]
     assert "do not commit" in out["error"]
     staged = git(root, "diff", "--cached", "--name-status")
-    assert "shipwright_events.archive/fold-" in staged and "run-b--" in staged and locked not in staged   # as far as it got
+    assert ".shipwright/events/archive/fold-" in staged and "run-b--" in staged and locked not in staged   # as far as it got
     assert _layout(root) == "drops"
     monkeypatch.undo()                                                             # the reader lets go: the finishing re-run
     assert fold_events.main(["emergency", "--project-root", str(root), "--stage"]) == 0

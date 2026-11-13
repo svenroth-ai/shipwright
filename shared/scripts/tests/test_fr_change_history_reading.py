@@ -269,13 +269,13 @@ def test_an_unreadable_drop_is_not_read_as_nothing_touched_this(tmp_path, monkey
     from lib._fr_history_events import EventLogUnreadable
 
     root = project(tmp_path, [work(affected_frs=["FR-01.01"], adr_id="run-a")])
-    drop = root / "shipwright_events.d" / "run-b--aaaaaaaa--00000001.jsonl"
-    drop.parent.mkdir()
+    drop = root / ".shipwright/events/drops" / "run-b--aaaaaaaa--00000001.jsonl"
+    drop.parent.mkdir(parents=True)
     drop.write_text('{"id": "x"}\n', encoding="utf-8")
     real = er.read_jsonl_records
 
     def locked(path, **kw):
-        if "shipwright_events.d" in str(path):
+        if ".shipwright/events/drops" in Path(path).as_posix():
             raise PermissionError("locked")
         return real(path, **kw)
 

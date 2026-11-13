@@ -117,7 +117,7 @@ CAMPAIGN_STATUS_GLOB = ".shipwright/planning/iterate/campaigns/*/status.json"
 #: They are deliberately NOT churn: a conflict inside one is a modify/delete the integrity
 #: rule forbids, so ``classify`` reports it as blocking and a human decides.
 EVENT_FOLDERS_NOT_CHURN: tuple[str, ...] = (
-    "shipwright_events.d", "shipwright_events.archive", "shipwright_events.quarantine",
+    ".shipwright/events/drops", ".shipwright/events/archive", ".shipwright/events/quarantine",
 )
 
 

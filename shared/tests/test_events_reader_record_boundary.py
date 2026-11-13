@@ -23,6 +23,8 @@ import sys
 import warnings
 from pathlib import Path
 
+import pytest
+
 _SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
 if str(_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS))
@@ -140,6 +142,7 @@ def test_read_events_jsonl_stays_silent_on_corruption(tmp_path: Path) -> None:
     assert caught == [], f"verifier reader must stay silent, emitted: {[str(w.message) for w in caught]}"
 
 
+@pytest.mark.covers("FR-01.11")
 def test_read_events_jsonl_reads_the_literal_path_without_worktree_redirect(tmp_path: Path) -> None:
     """The other half of G5. ``config.read_events`` resolves through
     ``resolve_events_path``; the verifiers deliberately do NOT, so a verifier run
@@ -147,7 +150,7 @@ def test_read_events_jsonl_reads_the_literal_path_without_worktree_redirect(tmp_
     inherit the redirect."""
     (tmp_path / "shipwright_events.jsonl").write_text(json.dumps(_A) + "\n", encoding="utf-8")
     nested = tmp_path / "nested"
-    nested.mkdir()
+    nested.mkdir(parents=True)
     assert read_events_jsonl(nested) == [], "verifier reader must not walk up to a parent log"
 
 

@@ -46,7 +46,7 @@ def _close(root) -> None:
 
 def _plant(root, name: str, *events: dict) -> Path:
     path = root / DROPS_DIR / name
-    path.parent.mkdir(exist_ok=True)
+    path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("".join(json.dumps(e, separators=(",", ":")) + "\n" for e in events), encoding="utf-8", newline="\n")
     return path
 
@@ -182,7 +182,7 @@ def test_the_first_event_after_a_torn_file_does_not_tie_with_its_last_valid_even
 
 def test_an_empty_drop_is_still_reused(drops_repo):
     empty = drops_repo / DROPS_DIR / f"r--{worktree_id(drops_repo)}--00000001.jsonl"   # named like this worktree's open drop
-    empty.parent.mkdir(exist_ok=True)
+    empty.parent.mkdir(parents=True, exist_ok=True)
     empty.write_bytes(b"")
     _append(drops_repo, _ev("evt-0000000000000a01"), "r")
     assert _drop_names(drops_repo) == [empty.name]
