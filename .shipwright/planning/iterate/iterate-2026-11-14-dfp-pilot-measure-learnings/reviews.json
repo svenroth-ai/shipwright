@@ -1,0 +1,173 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-14-dfp-pilot-measure-learnings",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-13T23:19:55.190655+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-13T23:20:59.568983+00:00",
+      "disposition": "closed by reason_code trivial-auto",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "trivial-auto"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "completeness",
+          "file": ".shipwright/planning/campaigns/2026-10-25-dfp-pilot-changelog-BRIEF.md",
+          "line": 12,
+          "finding": "Start condition 6 says budget = none satisfies programme 2.4, but 2.4 also asks for the L2 time budget, which was not mentioned.",
+          "suggestion": "Say that none also covers the L2 time budget. Fixed.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "consistency",
+          "file": ".shipwright/planning/campaigns/2026-10-25-dfp-pilot-changelog-BRIEF.md",
+          "line": 173,
+          "finding": "The LEARNINGS file is appended to by every unit but is in no unit's touch set.",
+          "suggestion": "Add it to P0's touch set and say it never counts toward observable files. Fixed.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": ".shipwright/planning/campaigns/2026-10-25-dfp-pilot-changelog-BRIEF.md",
+          "line": 180,
+          "finding": "fr_split listed as generic although it needs FR/AC and the AC-Move-Map, which the same sentence defines as Shipwright-specific.",
+          "suggestion": "Move fr_split and the promise lock's AC-id resolution to Shipwright-specific. Fixed.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "consistency",
+          "file": ".shipwright/planning/campaigns/2026-10-25-dfp-pilot-changelog-BRIEF.md",
+          "line": 10,
+          "finding": "Start condition 4 cites the 2026-11-08 atomic-frs check only; a newer check (2026-11-11) exists.",
+          "suggestion": "Add the date. Fixed.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "unsupported-claim",
+          "file": ".shipwright/planning/campaigns/2026-11-07-dfp-pre-q1-MEASURE.md",
+          "line": 162,
+          "finding": "Pins 'unchanged by #1033 and #1054' is more than the measurement shows (it compares two dates with other merges between).",
+          "suggestion": "Reword to unchanged since 2026-11-09. Fixed in both files.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": ".shipwright/planning/campaigns/2026-10-25-dfp-pilot-changelog-BRIEF.md",
+          "line": 171,
+          "finding": "Section 8 sits before section 7 and the rev 6 log entry is at the top of an oldest-first log.",
+          "suggestion": "Move section 8 after 7 and append the entry last. Fixed.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "consistency",
+          "file": ".shipwright/planning/campaigns/2026-10-25-dfp-pilot-changelog-BRIEF.md",
+          "line": 165,
+          "finding": "Section 8 says stop 3 reads LEARNINGS but the P7-op hand-over names only the findings report.",
+          "suggestion": "Add LEARNINGS to the hand-over. Fixed.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-13T23:20:59.366770+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-13T23:20:59.568983+00:00",
+      "disposition": "closed by reason_code trivial-auto",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "trivial-auto"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-13T23:20:59.568983+00:00",
+      "disposition": "closed by reason_code trivial-auto",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "trivial-auto"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-13T23:38:45.367413+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-13T23:20:59.568983+00:00",
+      "disposition": "closed by reason_code trivial-auto",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "trivial-auto"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-13T23:20:59.568983+00:00",
+      "disposition": "closed by reason_code trivial-auto",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "trivial-auto"
+    }
+  }
+}
