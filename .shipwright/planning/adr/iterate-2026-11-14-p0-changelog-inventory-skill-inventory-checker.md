@@ -34,3 +34,7 @@ External code review (openai: revise, glm: approve). Dispositions:
 | An emptied or shortened subprocess map passes (openai) | rejected-with-reason: coverage of call sites is the job of the P5 coverage check, not this scaffold; it verifies the entries that exist |
 | Runtime-input check per section vs per file; unbalanced fence message; missing `references/` exit 2; literal digest test (glm, low) | rejected-with-reason: edge cases of a scaffold retired at P7; today's data has one section in the runtime-input file |
 | Mini-plan counts differ from the artifact (glm, low) | rejected-with-reason: counts are outputs, recorded as measured in the reports |
+
+## Data file location (follow-up commit)
+
+The data files were first filed under `plugins/shipwright-changelog/skills/changelog/`; the PR-review sensitive-path rule blocks new data there, so they moved to `.shipwright/planning/campaigns/2026-10-25-dfp-pilot-changelog-inventory/` and the checker gained `--data-dir`. The F0.5 evidence in `.shipwright/agent_docs/iterates/<run_id>.test-results.json` is immutable and records the command as it ran before the move (exit 0, 40 tests); it is a point-in-time record and no gate re-executes it. The command that now checks the real skill is `uv run shared/scripts/tools/check_skill_inventory.py --skill-dir plugins/shipwright-changelog/skills/changelog --data-dir .shipwright/planning/campaigns/2026-10-25-dfp-pilot-changelog-inventory` (exit 0, 41 tests pass).
