@@ -66,6 +66,16 @@ def test_a_consistent_skill_passes(repo):
     assert csi.run(skill, root) == []
 
 
+def test_the_data_files_can_live_outside_the_skill_directory(repo):
+    root, skill = repo
+    data = root / "data"
+    data.mkdir()
+    for name in ("inventory.json", "truth_table.json", "subprocess_map.json"):
+        (skill / name).replace(data / name)
+    assert csi.run(skill, root, data_dir=data) == []
+    assert csi.main(["--skill-dir", str(skill), "--data-dir", str(data), "--repo-root", str(root)]) == 0
+
+
 def test_fenced_comment_is_not_a_heading():
     assert [s["path"] for s in csi.parse_sections(SKILL)] == ["T", "T > Step 1", "T > Step 2"]
 

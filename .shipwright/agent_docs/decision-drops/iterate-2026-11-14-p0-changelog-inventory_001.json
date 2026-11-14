@@ -4,7 +4,7 @@
   "section": "Iterate - change: DFP pilot P0 inventory data and checker for the changelog skill",
   "title": "Skill inventory data and checker for the pilot",
   "context": "The deterministic-first pilot converts /shipwright-changelog 1:1 and needs a checkable list of what its prose contains, who decides each question per mode, and what a release spawns.",
-  "decision": "Three data files next to SKILL.md plus check_skill_inventory.py (out of CI and verify_local, run by pilot units, retired at P7); no plugin behaviour changed.",
+  "decision": "Three data files in .shipwright/planning/campaigns/2026-10-25-dfp-pilot-changelog-inventory/ (not in the plugin) plus check_skill_inventory.py (out of CI and verify_local, run by pilot units, retired at P7); no plugin behaviour changed.",
   "consequences": "Findings D1-D20 and the FR-01.09 ledger reconcile are reported, not fixed; operator stop 1 decides the open questions; the pilot owns the checker until P7 deletes it.",
   "rationale": "Brief rev 6 and programme P8/P10 make the inventory and its coverage checks binding and retired per plugin. Architecture review: glm approve, openai reject, overruled by the brief (see the ADR file).",
   "rejected": "A report-only inventory with no checker (openai's alternative): rejected by the brief, which names the checker as a P0 deliverable; mitigated by keeping it out of CI.",

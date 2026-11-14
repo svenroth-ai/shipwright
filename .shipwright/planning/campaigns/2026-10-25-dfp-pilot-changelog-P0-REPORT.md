@@ -1,6 +1,6 @@
 # P0 report: deterministic-first pilot of `/shipwright-changelog`
 
-**Unit P0, 2026-11-14, tree `92dfee901` (origin/main at unit start).** Input of operator stop 1. Companion files: `...-FINDINGS.md` (what is wrong), `...-LEARNINGS.md` (what the method taught), and next to `SKILL.md`: `inventory.json`, `truth_table.json`, `subprocess_map.json`, checked by `shared/scripts/tools/check_skill_inventory.py`. Counts below are measured outputs, not targets.
+**Unit P0, 2026-11-14, tree `92dfee901` (origin/main at unit start).** Input of operator stop 1. Companion files: `...-FINDINGS.md` (what is wrong), `...-LEARNINGS.md` (what the method taught), and in `.shipwright/planning/campaigns/2026-10-25-dfp-pilot-changelog-inventory/`: `inventory.json`, `truth_table.json`, `subprocess_map.json`, checked by `shared/scripts/tools/check_skill_inventory.py`. Counts below are measured outputs, not targets.
 
 ## 1. Pin list (found by breaking the prose)
 

@@ -4,7 +4,7 @@ Unit P0 of the pilot for `/shipwright-changelog` (run `iterate-2026-11-14-p0-cha
 
 ## What was decided
 
-Three data files next to the skill (`inventory.json`, `truth_table.json`, `subprocess_map.json`) and `shared/scripts/tools/check_skill_inventory.py` with its tests keep the migration inventory honest while the pilot runs: every heading section of `SKILL.md` and its reference files has a class and a target, every cell of the decision table cites a real line, every spawn-map entry still finds its needle. A red result means "re-pin (`--refresh`, then classify what is new) or revert the edit". The checker stays out of shared CI and out of `verify_local.py`; the pilot's own units run it. Owner: the pilot campaign. Retirement: deliverable of pilot unit P7 (delete the checker, its tests and the three data files).
+Three data files with the campaign reports in `.shipwright/planning/campaigns/2026-10-25-dfp-pilot-changelog-inventory/` (`inventory.json`, `truth_table.json`, `subprocess_map.json`; not in the plugin, the PR-review sensitive-path rule blocks new data under `plugins/*/skills/`) and `shared/scripts/tools/check_skill_inventory.py` with its tests keep the migration inventory honest while the pilot runs: every heading section of `SKILL.md` and its reference files has a class and a target, every cell of the decision table cites a real line, every spawn-map entry still finds its needle. A red result means "re-pin (`--refresh`, then classify what is new) or revert the edit". The checker stays out of shared CI and out of `verify_local.py`; the pilot's own units run it. Owner: the pilot campaign. Retirement: deliverable of pilot unit P7 (delete the checker, its tests and the three data files).
 
 ## Architecture Review
 

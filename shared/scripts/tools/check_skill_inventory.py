@@ -4,18 +4,14 @@
 Deterministic-first pilot, unit P0. The inventory is a migration tool: it lists every section of
 ``SKILL.md`` and of every reference file, gives each a class and a target, and is retired for a
 plugin at its definition of done. This checker keeps it honest while the migration runs.
-
     uv run shared/scripts/tools/check_skill_inventory.py --skill-dir plugins/shipwright-changelog/skills/changelog \
-        [--repo-root .] [--json] [--refresh]
+        --data-dir .shipwright/planning/campaigns/2026-10-25-dfp-pilot-changelog-inventory [--repo-root .] [--json] [--refresh]
 
-The skill directory holds three data files next to ``SKILL.md``:
-
+``--data-dir`` holds three data files (default: the skill directory); they live with the campaign reports, not in the plugin:
 * ``inventory.json``      sections (anchor = file + heading path + content hash), class, target, runtime inputs
 * ``truth_table.json``    every {context} x {autonomy} x {question} cell with the line or gate it comes from
 * ``subprocess_map.json`` every binary, resolution, audit and network call on a scenario path, with its plan
-
 Checks (every failure is one line; exit 1 when any):
-
 1. every heading section of ``SKILL.md`` and ``references/*.md`` is inventoried, no entry is orphaned,
    and no content hash is stale (a section with several instructions is ``mixed`` and lists ``parts``) (``--refresh`` rewrites hashes and adds new anchors as ``unclassified``);
 2. every class and target is in the programme vocabulary; ``runtime-input`` goes with ``keep``, and
@@ -266,26 +262,29 @@ def _load(path: Path) -> dict:
     return data
 
 
-def run(skill_dir: Path, repo_root: Path, do_refresh: bool = False) -> list[str]:
-    inv_path = skill_dir / "inventory.json"
+def run(skill_dir: Path, repo_root: Path, do_refresh: bool = False, data_dir: Path | None = None) -> list[str]:
+    data_dir = data_dir or skill_dir
+    inv_path = data_dir / "inventory.json"
     inv = _load(inv_path)
     if do_refresh:
         refresh(inv_path, inv, skill_dir)
         inv = _load(inv_path)
     errs = check_inventory(inv, skill_dir, repo_root)
-    errs += check_truth_table(_load(skill_dir / "truth_table.json"), repo_root)
-    errs += check_subprocess_map(_load(skill_dir / "subprocess_map.json"), repo_root)
+    errs += check_truth_table(_load(data_dir / "truth_table.json"), repo_root)
+    errs += check_subprocess_map(_load(data_dir / "subprocess_map.json"), repo_root)
     return errs
 
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n", 1)[0])
     ap.add_argument("--skill-dir", required=True)
+    ap.add_argument("--data-dir", help="where the three data files live (default: --skill-dir)")
     ap.add_argument("--repo-root", default=".")
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--refresh", action="store_true", help="rewrite hashes; new sections become unclassified")
     args = ap.parse_args(argv)
-    errs = run(Path(args.skill_dir).resolve(), Path(args.repo_root).resolve(), args.refresh)
+    errs = run(Path(args.skill_dir).resolve(), Path(args.repo_root).resolve(), args.refresh,
+               Path(args.data_dir).resolve() if args.data_dir else None)
     if args.json:
         print(json.dumps({"ok": not errs, "errors": errs}, indent=2))
     else:
