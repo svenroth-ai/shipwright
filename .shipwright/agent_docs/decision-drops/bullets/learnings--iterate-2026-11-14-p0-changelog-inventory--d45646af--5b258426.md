@@ -1,0 +1,1 @@
+- (2026-11-14) iterate/dfp-pilot — a test that claims an AC must be traced from the skill's own step to the tool it runs, not read by name: the AC02 covers test hit lib/changelog.py, which no step calls; and a checker test on a real skill's prose is a CI pin, so test on throwaway fixtures. → iterate-2026-11-14-p0-changelog-inventory

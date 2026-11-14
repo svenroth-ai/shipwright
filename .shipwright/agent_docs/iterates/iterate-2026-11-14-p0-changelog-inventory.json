@@ -1,0 +1,86 @@
+{
+  "run_id": "iterate-2026-11-14-p0-changelog-inventory",
+  "date": "2026-11-14T00:28:35.883038Z",
+  "event_at": "2026-11-14T00:28:13.575138+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "keyword",
+  "branch": "iterate/campaign-dfp-pilot-changelog--P0",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-11-14-p0-changelog-inventory",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "an unlisted, removed, edited or unclassified section of the skill is reported (orphan, stale hash, not inventoried, unclassified; refresh keeps orphans)",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_check_skill_inventory.py::test_a_new_section_must_be_inventoried, ::test_an_edited_section_is_stale_until_refreshed, ::test_an_entry_for_a_removed_section_is_an_orphan, ::test_refresh_adds_new_sections_as_unclassified_which_still_fail, ::test_refresh_keeps_an_orphan_for_the_operator_to_see PASSED"
+      },
+      {
+        "behavior": "class and target come from the vocabulary; a mechanic cannot be deleted (section or part); a runtime input is kept and named by its reader; mixed needs parts",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_check_skill_inventory.py::test_an_unknown_class_is_reported, ::test_a_mechanic_part_cannot_be_deleted_either, ::test_a_runtime_input_must_be_kept, ::test_a_runtime_input_must_be_named_by_its_reader, ::test_a_mixed_section_must_list_its_parts PASSED"
+      },
+      {
+        "behavior": "heading parsing ignores fenced comments, even with an info string, and CRLF or trailing blanks do not change a hash",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_check_skill_inventory.py::test_fenced_comment_is_not_a_heading, ::test_a_fence_with_an_info_string_does_not_close_the_fence, ::test_crlf_and_trailing_blanks_do_not_change_a_hash PASSED"
+      },
+      {
+        "behavior": "the truth table needs exactly one cell per context/autonomy/question, a known behaviour and a source that exists",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_check_skill_inventory.py::test_the_truth_table_needs_every_cell, ::test_the_truth_table_refuses_a_duplicate_cell, ::test_a_cell_source_must_be_a_real_line PASSED"
+      },
+      {
+        "behavior": "a subprocess-map entry whose line moved, plan, file or line is invalid is reported",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_check_skill_inventory.py::test_a_moved_subprocess_line_is_reported, ::test_a_subprocess_entry_needs_a_valid_plan_file_and_line PASSED"
+      },
+      {
+        "behavior": "exit codes 0, 1 and 2, JSON output and a refresh that writes valid JSON",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_check_skill_inventory.py::test_main_returns_0_when_consistent_and_1_when_not, ::test_an_unreadable_data_file_exits_2, ::test_refresh_through_main_rewrites_valid_json_even_without_a_header PASSED"
+      },
+      {
+        "behavior": "the real changelog skill's three data files agree with its prose and the cited lines",
+        "disposition": "tested",
+        "evidence": "F0.5 cli runner: check_skill_inventory.py --skill-dir plugins/shipwright-changelog/skills/changelog exit 0 (.shipwright/runs/iterate-2026-11-14-p0-changelog-inventory/surface_verification.json)"
+      },
+      {
+        "behavior": "the FR-01.09 ledger reconcile leaves the table counts 0/25/15/26/98",
+        "disposition": "tested",
+        "evidence": "measure_ac_evidence_ledger.py after the edit: 2 partly tested, 15 untested, 98 tested, 72 enforced, 25 judgement, 26 unimplemented"
+      },
+      {
+        "behavior": "the pin list equals the brief's 30 tests in 13 files",
+        "disposition": "tested",
+        "evidence": "break-the-prose run in a throwaway worktree: changelog 18, shared/tests 10, integration-tests 2 failed; shared/scripts roots 0 (P0-REPORT section 1)"
+      }
+    ],
+    "counts": {
+      "testable": 9,
+      "tested": 9,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 1,
+      "covered_acs": 1
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run shared/scripts/tools/check_skill_inventory.py --skill-dir plugins/shipwright-changelog/skills/changelog",
+    "exit_code": 0,
+    "tests_run": 1,
+    "evidence_path": ".shipwright/runs/iterate-2026-11-14-p0-changelog-inventory/surface_verification.json",
+    "timestamp": "2026-11-14T00:26:49Z"
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}

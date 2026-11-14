@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "1. **Category: dependency | Severity: high**  \n   **Finding:** The plan omits the mandatory preflight: verify that this runner\u2019s `work_completed` event has `source: iterate` and `adr_id` equal to its run ID, with a strict stop on mismatch. It also omits `--ac-mode auto` and verification of start conditions 2\u20139.  \n   **Suggestion:** Add an explicit first step that reads the required documents, verifies all nine start conditions, records the event evidence, and stops if a prerequisite fails. Specify `--ac-mode auto` and `scope_frs: FR-01.09, FR-01.01`.\n\n2. **Category: approach | Severity: high**  \n   **Finding:** The pin measurement uses `origin/main`, while the specification requires measurement on the starting tree. These may differ, producing an inaccurate pin list and baseline.  \n   **Suggestion:** Capture the starting commit and any relevant working-tree changes, and reproduce that exact state in the disposable measurement tree. Record the revision, commands, exit statuses, and observed failures.\n\n3. **Category: edge-case | Severity: medium**  \n   **Finding:** Replacing all prose with a placeholder can identify affected test processes, but does not establish which individual prose sections they pin. A process may stop at its first failure, hiding additional pins.  \n   **Suggestion:** Use the broad replacement as an initial probe, then isolate the sections responsible for failures. Distinguish existing pins from the newly introduced inventory test and report the measurement\u2019s granularity.\n\n4. **Category: dependency | Severity: medium**  \n   **Finding:** The promise list is named, but its required candidate details and count of ACs capable of green driver-level tests are not explicit deliverables. With acceptance criteria still marked `TBD`, the count has no stated source or denominator.  \n   **Suggestion:** Identify the authoritative AC set from the briefs and ledger, map each candidate to its AC and proposed driver-level evidence, and report the supported count with exclusions explained. Include these results in the operator\u2019s PR decision material.\n\nThe approach is broadly appropriate for a behavior-preserving P0, but the prerequisite checks and measurement provenance need correction before proceeding. The referenced documents could not be inspected because workspace command access was blocked, so this assessment is limited to the supplied specification and mini-plan.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "## Findings\n\n- **Category: approach \u2014 Severity: high**\n  **Finding:** The acceptance criteria are \"TBD\" while the mini-plan hardcodes exact artifact sizes (30 truth-table cells, 29 subprocess-map entries, 16 tests, 259-line checker, 20 findings D1\u2013D20). If reality disagrees with any of these counts (a heading was added, a subprocess doesn't exist), the unit has no defined path forward \u2014 the numbers become unverified pins baked in before measurement.\n  **Suggestion:** Convert the counts into derivable invariants (\"every cell/needle found in the tree is recorded; checker validates coverage, not a magic number\") or make the counts outputs reported, not spec constants. At minimum, define how a count mismatch is handled in the PR body.\n\n- **Category: approach \u2014 Severity: medium**\n  **Finding:** \"Pin list found by breaking the prose\" is destructive measurement on a copy, but the plan measures on \"a throwaway worktree at origin/main,\" while the deliverable inventory is built on the working tree. If the working tree and origin/main have diverged (other merged PRs), the pin list and the inventory can disagree.\n  **Suggestion:** Measure the pin list on the exact starting tree the inventory was built against (the merge-base or the current HEAD at unit start), not origin/main; record the commit SHA in the P0 report.\n\n- **Category: risk \u2014 Severity: medium**\n  **Finding:** `check_skill_inventory.py` exits 1 on any problem and is presumably wired into CI/CI-adjacent tooling. Content hashes of every heading in 11 files make the checker extremely brittle: any legitimate edit to the changelog skill (a future unit) will red the pipeline unless the workflow for refreshing hashes is defined and trivial.\n  **Suggestion:** Ensure the checker is a P0-pilot tool, not added to shared CI gating, and document the hash-refresh procedure (ideally a `--update` mode that rewrites anchors) before it can block anyone.\n\n- **Category: edge-case \u2014 Severity: medium**\n  **Finding:** Content-hash anchors over prose will churn on whitespace/normalization (trailing spaces, editor formatters). The plan doesn't state the hash normalization rules.\n  **Suggestion:** Specify normalization (strip trailing whitespace, consistent line endings) in the inventory schema and test it.\n\n- **Category: edge-case \u2014 Severity: low**\n  **Finding:** The mixed-section classification (\"mixed sections list their parts\") is a judgment call; the checker validates \"vocabulary\" but the plan doesn't say who arbitrates when a section is arguably two classes.\n  **Suggestion:** Record the tie-breaking rule (e.g., primary purpose wins) in the FINDINGS report so re-measurement is deterministic.\n\n- **Category: risk \u2014 Severity: low**\n  **Finding:** The unit intentionally reds its own real-skill test when prose changes without hash refresh \u2014 acknowledged, but this test landing on the default branch means every subsequent PR touching the changelog skill fails tests until P1+ defines the refresh flow.\n  **Suggestion:** Mark that test `@pytest.mark.xfail(strict=False)` or skip-with-reason until the refresh tooling exists, and record the decision.\n\n- **Category: dependency \u2014 Severity: low**\n  **Finding:** Start condition 1 (verify the runner event carries `source: iterate` and matching `adr_id`) is a STRICT-STOP gate, but nothing says where the run id is checked from or what happens to partially-created files if the stop fires mid-unit.\n  **Suggestion:** Make the gate the literal first action before any file writes; document that a STRICT-STOP leaves a clean tree.\n\n- **Category: security \u2014 Severity: low**\n  **Finding:** No real security surface (data files, a local checker, no network, no user input beyond file paths). Only note: if `check_skill_inventory.py` takes a skill path argument, ensure it doesn't follow symlinks out of the repo in CI contexts.\n  **Suggestion:** Resolve paths against the repo root; low priority.\n\n## Overall assessment\n\nThe approach is sound in spirit \u2014 read-only instrumentation of a skill, no behavior change \u2014 but it over-specifies counts as fixed constants before measurement and under-specifies the maintenance story for hash-anchored pins, which will generate false CI failures almost immediately. Fix the count-hardcoding and the pin-refresh path, then this is shippable.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-11-14-p0-changelog-inventory",
+    "at": "2026-11-14T00:08:54.405052+00:00"
+  },
+  "verdicts": {
+    "openai": "revise",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

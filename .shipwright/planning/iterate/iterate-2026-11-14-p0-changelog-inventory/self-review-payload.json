@@ -1,0 +1,8 @@
+{"items": [
+{"name": "Spec Compliance", "verdict": "pass", "note": "all P0 deliverables present; 1:1 kept"},
+{"name": "Error Handling", "verdict": "pass", "note": "checker exits 2 on unreadable input, 1 on drift; bounds validated"},
+{"name": "Security Basics", "verdict": "pass", "note": "repo-local files only, no network or secrets"},
+{"name": "Test Quality", "verdict": "pass", "note": "40 single-rule tests on throwaway skills; real skill run via CLI"},
+{"name": "Performance Basics", "verdict": "pass", "note": "one pass over a handful of files"},
+{"name": "Naming & Structure", "verdict": "pass", "note": "checker exactly 300 lines, under the cap"},
+{"name": "Affected Boundaries", "verdict": "pass", "note": "inventory/truth-table/map JSON producer and checker consumer probed on the real skill (exit 0) and by refresh round-trip test"}]}
