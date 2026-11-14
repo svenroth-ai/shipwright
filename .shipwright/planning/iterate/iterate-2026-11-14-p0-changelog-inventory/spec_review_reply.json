@@ -1,0 +1,1 @@
+{"stage": "spec-compliance", "verdict": "PASS", "spec_citations": [], "summary": "All P0 deliverables are present and match the mini-plan, the ADR and brief section 5 P0. Strictly 1:1 holds: no plugin script or prose changed. The bounds-check fix is in place and tested."}

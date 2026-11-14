@@ -1,0 +1,404 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-14-p0-changelog-inventory",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-14T00:40:45.457879+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 12,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The acceptance criteria are \"TBD\" while the mini-plan hardcodes exact artifact sizes (30 truth-table cells, 29 subprocess-map entries, 16 tests, 259-line checker, 20 findings D1–D20). If reality disagrees with any of these counts (a heading was added, a subprocess doesn't exist), the unit has no defined path forward — the numbers become unverified pins baked in before measurement.",
+          "suggestion": "Convert the counts into derivable invariants (\"every cell/needle found in the tree is recorded; checker validates coverage, not a magic number\") or make the counts outputs reported, not spec constants. At minimum, define how a count mismatch is handled in the PR body.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "\"Pin list found by breaking the prose\" is destructive measurement on a copy, but the plan measures on \"a throwaway worktree at origin/main,\" while the deliverable inventory is built on the working tree. If the working tree and origin/main have diverged (other merged PRs), the pin list and the inventory can disagree.",
+          "suggestion": "Measure the pin list on the exact starting tree the inventory was built against (the merge-base or the current HEAD at unit start), not origin/main; record the commit SHA in the P0 report.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "check_skill_inventory.py` exits 1 on any problem and is presumably wired into CI/CI-adjacent tooling. Content hashes of every heading in 11 files make the checker extremely brittle: any legitimate edit to the changelog skill (a future unit) will red the pipeline unless the workflow for refreshing hashes is defined and trivial.",
+          "suggestion": "Ensure the checker is a P0-pilot tool, not added to shared CI gating, and document the hash-refresh procedure (ideally a `--update` mode that rewrites anchors) before it can block anyone.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Content-hash anchors over prose will churn on whitespace/normalization (trailing spaces, editor formatters). The plan doesn't state the hash normalization rules.",
+          "suggestion": "Specify normalization (strip trailing whitespace, consistent line endings) in the inventory schema and test it.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The mixed-section classification (\"mixed sections list their parts\") is a judgment call; the checker validates \"vocabulary\" but the plan doesn't say who arbitrates when a section is arguably two classes.",
+          "suggestion": "Record the tie-breaking rule (e.g., primary purpose wins) in the FINDINGS report so re-measurement is deterministic.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The unit intentionally reds its own real-skill test when prose changes without hash refresh — acknowledged, but this test landing on the default branch means every subsequent PR touching the changelog skill fails tests until P1+ defines the refresh flow.",
+          "suggestion": "Mark that test `@pytest.mark.xfail(strict=False)` or skip-with-reason until the refresh tooling exists, and record the decision.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "Start condition 1 (verify the runner event carries `source: iterate` and matching `adr_id`) is a STRICT-STOP gate, but nothing says where the run id is checked from or what happens to partially-created files if the stop fires mid-unit.",
+          "suggestion": "Make the gate the literal first action before any file writes; document that a STRICT-STOP leaves a clean tree.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "No real security surface (data files, a local checker, no network, no user input beyond file paths). Only note: if `check_skill_inventory.py` takes a skill path argument, ensure it doesn't follow symlinks out of the repo in CI contexts.",
+          "suggestion": "Resolve paths against the repo root; low priority.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "dependency |",
+          "file": null,
+          "line": null,
+          "finding": "The plan omits the mandatory preflight: verify that this runner’s `work_completed` event has `source: iterate` and `adr_id` equal to its run ID, with a strict stop on mismatch. It also omits `--ac-mode auto` and verification of start conditions 2–9.",
+          "suggestion": "Add an explicit first step that reads the required documents, verifies all nine start conditions, records the event evidence, and stops if a prerequisite fails. Specify `--ac-mode auto` and `scope_frs: FR-01.09, FR-01.01`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach |",
+          "file": null,
+          "line": null,
+          "finding": "The pin measurement uses `origin/main`, while the specification requires measurement on the starting tree. These may differ, producing an inaccurate pin list and baseline.",
+          "suggestion": "Capture the starting commit and any relevant working-tree changes, and reproduce that exact state in the disposable measurement tree. Record the revision, commands, exit statuses, and observed failures.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "Replacing all prose with a placeholder can identify affected test processes, but does not establish which individual prose sections they pin. A process may stop at its first failure, hiding additional pins.",
+          "suggestion": "Use the broad replacement as an initial probe, then isolate the sections responsible for failures. Distinguish existing pins from the newly introduced inventory test and report the measurement’s granularity.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency |",
+          "file": null,
+          "line": null,
+          "finding": "The promise list is named, but its required candidate details and count of ACs capable of green driver-level tests are not explicit deliverables. With acceptance criteria still marked `TBD`, the count has no stated source or denominator.",
+          "suggestion": "Identify the authoritative AC set from the briefs and ledger, map each candidate to its AC and proposed driver-level evidence, and report the supported count with exclusions explained. Include these results in the operator’s PR decision material.  The approach is broadly appropriate for a behavior-preserving P0, but the prerequisite checks and measurement provenance need correction before proceeding. The referenced documents could not be inspected because workspace command access was blocked, so this assessment is limited to the supplied specification and mini-plan.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-14T00:40:56.000850+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: approach — Severity: high**\n  **Finding:** The acceptance criteria are \"TBD\" while the mini-plan hardcodes exact artifact sizes (30 truth-table cells, 29 subprocess-map entries, 16 tests, 259-line checker, 20 findings D1–D20). If reality disagrees with any of these counts (a heading was added, a subprocess doesn't exist), the unit has no defined path forward — the numbers become unverified pins baked in before measurement.\n  **Suggestion:** Convert the counts into derivable invariants (\"every cell/needle found in the tree is recorded; checker validates coverage, not a magic number\") or make the counts outputs reported, not spec constants. At minimum, define how a count mismatch is handled in the PR body.\n\n- **Category: approach — Severity: medium**\n  **Finding:** \"Pin list found by breaking the prose\" is destructive measurement on a copy, but the plan measures on \"a throwaway worktree at origin/main,\" while the deliverable inventory is built on the working tree. If the working tree and origin/main have diverged (other merged PRs), the pin list and the inventory can disagree.\n  **Suggestion:** Measure the pin list on the exact starting tree the inventory was built against (the merge-base or the current HEAD at unit start), not origin/main; record the commit SHA in the P0 report.\n\n- **Category: risk — Severity: medium**\n  **Finding:** `check_skill_inventory.py` exits 1 on any problem and is presumably wired into CI/CI-adjacent tooling. Content hashes of every heading in 11 files make the checker extremely brittle: any legitimate edit to the changelog skill (a future unit) will red the pipeline unless the workflow for refreshing hashes is defined and trivial.\n  **Suggestion:** Ensure the checker is a P0-pilot tool, not added to shared CI gating, and document the hash-refresh procedure (ideally a `--update` mode that rewrites anchors) before it can block anyone.\n\n- **Category: edge-case — Severity: medium**\n  **Finding:** Content- […truncated]\n\n[openai] 1. **Category: dependency | Severity: high**  \n   **Finding:** The plan omits the mandatory preflight: verify that this runner’s `work_completed` event has `source: iterate` and `adr_id` equal to its run ID, with a strict stop on mismatch. It also omits `--ac-mode auto` and verification of start conditions 2–9.  \n   **Suggestion:** Add an explicit first step that reads the required documents, verifies all nine start conditions, records the event evidence, and stops if a prerequisite fails. Specify `--ac-mode auto` and `scope_frs: FR-01.09, FR-01.01`.\n\n2. **Category: approach | Severity: high**  \n   **Finding:** The pin measurement uses `origin/main`, while the specification requires measurement on the starting tree. These may differ, producing an inaccurate pin list and baseline.  \n   **Suggestion:** Capture the starting commit and any relevant working-tree changes, and reproduce that exact state in the disposable measurement tree. Record the revision, commands, exit statuses, and observed failures.\n\n3. **Category: edge-case | Severity: medium**  \n   **Finding:** Replacing all prose with a placeholder can identify affected test processes, but does not establish which individual prose sections they pin. A process may stop at its first failure, hiding additional pins.  \n   **Suggestion:** Use the broad replacement as an initial probe, then isolate the sections responsible for failures. Distinguish existing pins from the newly introduced inventory test and report the measurement’s granularity.\n\n4. **Category: dependency | Severity: medium**  \n   **Finding:** The promise list is named, but its required candidate details and count of ACs capable of green driver-level tests are not explicit deliverables. With acceptance criteria still marked `TBD`, the count has no stated source or denominator.  \n   **Suggestion:** Identify the authoritative AC set from the briefs and ledger, map each candidate to its AC and proposed driver-level evidence, and report the supp […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/tests/test_check_skill_inventory.py",
+          "line": 181,
+          "finding": "runtime-input-exists test uses any() rather than _only",
+          "suggestion": "isolate the rule",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/tests/test_check_skill_inventory.py",
+          "line": 245,
+          "finding": "one test checks several subprocess-entry rules in sequence",
+          "suggestion": "split",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/check_skill_inventory.py",
+          "line": 158,
+          "finding": "two small branches untested",
+          "suggestion": "add one-line tests",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": ".shipwright/planning/iterate/iterate-2026-11-14-p0-changelog-inventory/mini_plan.md",
+          "line": 8,
+          "finding": "stale 259-line claim",
+          "suggestion": "counts are outputs",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-14T00:40:45.728097+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "01c1401a8927c1939bf4dfa16687eb3ab863fbd4"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the checker cannot pass on stale truth-table citations — truth-table sources are range-checked only; inserting a line leaves citations off by one. Accepted for a scaffold retired at P7; docstring says re-check by hand.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the subprocess map is complete — an emptied map passes; completeness is an authoring claim. Accepted and documented.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: 14 of 15 ACs are protectable — four are conditional yeses, strictly 10 of 15. Both counts now stated in the report.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: inventory and truth table agree on legacy bullets — inventory says ask, table says no-question. Recorded in the ADR, not changed (1:1).",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: out-of-sequence cells match the gate catalog — the cited gate says fires never. Verdict rests on first-actions.md under single_session; recorded.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: no runtime effect from the new files — the data files ship in the plugin bundle until P7; nothing reads them. Accepted until P7.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-14T00:40:55.717337+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "01c1401a8927c1939bf4dfa16687eb3ab863fbd4"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "spec",
+          "file": "plugins/shipwright-changelog/skills/changelog/subprocess_map.json (whole file) — diff header vs mini-plan step 2",
+          "line": null,
+          "finding": "The mini-plan specifies \"subprocess_map.json (29 entries...)\", but the shipped file contains 32 entries (counting the `entries` array: 6 SKILL.md, 2 setup-changelog, 4 create_github_release, 3 condense_release_notes, 1 env.py, 1 refresh_compliance_docs, 1 compliance_audit_spawn, 3 git_utils, 1 repo_identity, 1 fold_events, 1 manifest_sync_core, 1 events_stage, 1 extract_changelog_section, 2 changelog_checks, 1 generate_session_handoff, 1 compliance_runner, 2 events.py). Similarly the checker is 300 lines vs the spec's 259.",
+          "suggestion": "The plan reviewers already converted these counts to \"outputs, not constants\", so this is a documentation drift only — update the mini-plan numbers (or note them as measured outputs) so the spec and the artifact don't disagree on their face.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/tools/check_skill_inventory.py — `check_inventory`, the line `if (cls == \"runtime-input\") != (e[\"file\"] in runtime_files)",
+          "line": null,
+          "finding": "The runtime-input agreement check is per-section but keyed on the file. If a runtime-input file (e.g. `references/release-notes-prompt.md`) ever gains a second heading section classified as `reference` or `mechanic`, that section will be flagged \"runtime-input class and runtime_inputs disagree\" even though the file is correctly declared once in `runtime_inputs`. Today's real data happens to have exactly one section in that file, so it passes, but the rule's semantics are wrong for the general case the checker claims to cover.",
+          "suggestion": "Change the check to \"a file listed in `runtime_inputs` must have at least one section classified `runtime-input`, and a section classified `runtime-input` requires its file to be listed\" (existential, not per-section equality).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/check_skill_inventory.py — `check_subprocess_map`, the `window = lines[e[\"line\"] - 1: e.get(\"end\", e[\"line\"])]` slice",
+          "line": null,
+          "finding": "A `line` of 0 or a negative value, or an `end` smaller than `line`, produces an empty (or, for negative indices, an arbitrary) slice: the entry is reported as \"needle not found (line moved?)\" — misleading — or, for `line = -1`, the slice `lines[-2:-1]` could coincidentally contain the needle and false-pass. There is no `1 <= line` / `end >= line` range validation, unlike `_source_ok` which does validate ranges.",
+          "suggestion": "Validate `line >= 1` and `end >= line` explicitly and report an invalid-range error before slicing.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/check_skill_inventory.py — `parse_sections` fence handling",
+          "line": null,
+          "finding": "An unclosed code fence swallows every subsequent heading into the previous section; the checker then reports a cascade of \"section not inventoried\" / \"orphan entry\" drift errors whose real cause (a missing closing fence) is not named. Also, a fence marker indented 4+ spaces (a list-item code block in CommonMark) is treated as a fence opener.",
+          "suggestion": "Acceptable for a pilot tool, but when the live anchors disagree with the inventory by more than a threshold, name the possibility of an unbalanced fence in the message.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/scripts/tools/tests/test_check_skill_inventory.py — `_inventory()` helper and `test_a_consistent_skill_passes",
+          "line": null,
+          "finding": "The fixture inventory is built by calling `csi.live_anchors` — the code under test. A self-consistent hashing/parsing defect (e.g. a wrong but stable digest, or a heading-path bug that both parser and checker share) would still pass every consistency test. The dedicated `parse_sections` tests (`test_fenced_comment_is_not_a_heading`, `test_a_repeated_heading_gets_a_numbered_anchor`, the CRLF test) pin the parser independently, which mitigates this — but the digest function itself is never pinned against a known-good expected hash.",
+          "suggestion": "Add one test asserting a literal expected 16-hex digest for a fixed small input so a silent change to `_digest`'s normalization cannot pass unnoticed.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/check_skill_inventory.py — `live_anchors",
+          "line": null,
+          "finding": "If the `references/` directory is missing, `glob` yields nothing and the failure surfaces only as orphan-entry drift errors (exit 1), not the intended exit 2 \"missing input\". A deleted `references/` dir on a real skill would produce a confusing wall of \"orphan entry\" lines.",
+          "suggestion": "Check `(skill_dir / \"references\").is_dir()` (when any inventory entry references it) and exit 2 with a clear message.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/tools/check_skill_inventory.py",
+          "line": 54,
+          "finding": "Truth-table citations can omit line numbers entirely (`\"SRC\"` passes the supplied tests). For numbered citations, the checker only checks that the range exists. Inserting lines into `gate_catalog.json` can therefore leave every citation pointing at unrelated text while the checker reports success, missing the required moved-line validation.",
+          "suggestion": "Require file-and-line citations and record an expected needle or content hash for each cited range. Add a throwaway test that inserts a line before a citation and expects failure.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/tools/check_skill_inventory.py",
+          "line": 214,
+          "finding": "Subprocess validation checks only entries still present in the map. Deleting an entry—or replacing the map with `{\"entries\":[]}`—passes, so the checker cannot detect missing subprocess coverage despite being required to verify the map against the tree.",
+          "suggestion": "Compare the map against independently discovered call sites or a separately validated coverage manifest. Test both deletion of an existing entry and addition of an unmapped call.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/tools/check_skill_inventory.py",
+          "line": 229,
+          "finding": "Subprocess line ranges are sliced without validating their bounds. For example, `line: 0` with `end` equal to the file length searches the final line and can pass if its needle matches; an oversized `end` is silently truncated. These invalid citations can receive a successful verdict.",
+          "suggestion": "Require integer bounds satisfying `1 <= line <= end <= len(lines)` before slicing, and test zero, negative, reversed and oversized ranges.  Overall assessment: ship-with-fixes. The change preserves plugin behavior and provides the requested artifacts, but the checker can report success for incomplete maps and stale or invalid citations.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "codex",
+      "completed_at": "2026-11-14T00:40:55.860941+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- Category: spec\n  Severity: low\n  File: plugins/shipwright-changelog/skills/changelog/subprocess_map.json (whole file) — diff header vs mini-plan step 2\n  Finding: The mini-plan specifies \"subprocess_map.json (29 entries...)\", but the shipped file contains 32 entries (counting the `entries` array: 6 SKILL.md, 2 setup-changelog, 4 create_github_release, 3 condense_release_notes, 1 env.py, 1 refresh_compliance_docs, 1 compliance_audit_spawn, 3 git_utils, 1 repo_identity, 1 fold_events, 1 manifest_sync_core, 1 events_stage, 1 extract_changelog_section, 2 changelog_checks, 1 generate_session_handoff, 1 compliance_runner, 2 events.py). Similarly the checker is 300 lines vs the spec's 259.\n  Suggestion: The plan reviewers already converted these counts to \"outputs, not constants\", so this is a documentation drift only — update the mini-plan numbers (or note them as measured outputs) so the spec and the artifact don't disagree on their face.\n\n- Category: bug\n  Severity: medium\n  File: shared/scripts/tools/check_skill_inventory.py — `check_inventory`, the line `if (cls == \"runtime-input\") != (e[\"file\"] in runtime_files)`\n  Finding: The runtime-input agreement check is per-section but keyed on the *file*. If a runtime-input file (e.g. `references/release-notes-prompt.md`) ever gains a second heading section classified as `reference` or `mechanic`, that section will be flagged \"runtime-input class and runtime_inputs disagree\" even though the file is correctly declared once in `runtime_inputs`. Today's real data happens to have exactly one section in that file, so it passes, but the rule's semantics are wrong for the general case the checker claims to cover.\n  Suggestion: Change the check to \"a file listed in `runtime_inputs` must have at least one section classified `runtime-input`, and a section classified `runtime-input` requires its file to be listed\" (existential, not per-section equality).\n\n- Category: edge-case\n  Severity: low\n  File: shared/s […truncated]\n\n[openai] - Category: spec\n- Severity: medium\n- File: shared/scripts/tools/check_skill_inventory.py:54\n- Finding: Truth-table citations can omit line numbers entirely (`\"SRC\"` passes the supplied tests). For numbered citations, the checker only checks that the range exists. Inserting lines into `gate_catalog.json` can therefore leave every citation pointing at unrelated text while the checker reports success, missing the required moved-line validation.\n- Suggestion: Require file-and-line citations and record an expected needle or content hash for each cited range. Add a throwaway test that inserts a line before a citation and expects failure.\n\n- Category: spec\n- Severity: medium\n- File: shared/scripts/tools/check_skill_inventory.py:214\n- Finding: Subprocess validation checks only entries still present in the map. Deleting an entry—or replacing the map with `{\"entries\":[]}`—passes, so the checker cannot detect missing subprocess coverage despite being required to verify the map against the tree.\n- Suggestion: Compare the map against independently discovered call sites or a separately validated coverage manifest. Test both deletion of an existing entry and addition of an unmapped call.\n\n- Category: bug\n- Severity: medium\n- File: shared/scripts/tools/check_skill_inventory.py:229\n- Finding: Subprocess line ranges are sliced without validating their bounds. For example, `line: 0` with `end` equal to the file length searches the final line and can pass if its needle matches; an oversized `end` is silently truncated. These invalid citations can receive a successful verdict.\n- Suggestion: Require integer bounds satisfying `1 <= line <= end <= len(lines)` before slicing, and test zero, negative, reversed and oversized ranges.\n\nOverall assessment: ship-with-fixes. The change preserves plugin behavior and provides the requested artifacts, but the checker can report success for incomplete maps and stale or invalid citations.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-14T00:40:45.601504+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "01c1401a8927c1939bf4dfa16687eb3ab863fbd4"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-14T00:40:56.144879+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "sub-iterate-runner",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-14T00:40:56.285561+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "sub-iterate-runner",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: spec\n- Severity: medium\n- File: shared/scripts/tools/check_skill_inventory.py:54\n- Finding: Truth-table citations can omit line numbers entirely (`\"SRC\"` passes the supplied tests). For numbered citations, the checker only checks that the range exists. Inserting lines into `gate_catalog.json` can therefore leave every citation pointing at unrelated text while the checker reports success, missing the required moved-line validation.\n- Suggestion: Require file-and-line citations and record an expected needle or content hash for each cited range. Add a throwaway test that inserts a line before a citation and expects failure.\n\n- Category: spec\n- Severity: medium\n- File: shared/scripts/tools/check_skill_inventory.py:214\n- Finding: Subprocess validation checks only entries still present in the map. Deleting an entry\u2014or replacing the map with `{\"entries\":[]}`\u2014passes, so the checker cannot detect missing subprocess coverage despite being required to verify the map against the tree.\n- Suggestion: Compare the map against independently discovered call sites or a separately validated coverage manifest. Test both deletion of an existing entry and addition of an unmapped call.\n\n- Category: bug\n- Severity: medium\n- File: shared/scripts/tools/check_skill_inventory.py:229\n- Finding: Subprocess line ranges are sliced without validating their bounds. For example, `line: 0` with `end` equal to the file length searches the final line and can pass if its needle matches; an oversized `end` is silently truncated. These invalid citations can receive a successful verdict.\n- Suggestion: Require integer bounds satisfying `1 <= line <= end <= len(lines)` before slicing, and test zero, negative, reversed and oversized ranges.\n\nOverall assessment: ship-with-fixes. The change preserves plugin behavior and provides the requested artifacts, but the checker can report success for incomplete maps and stale or invalid citations.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "## Findings\n\n- Category: spec\n  Severity: low\n  File: plugins/shipwright-changelog/skills/changelog/subprocess_map.json (whole file) \u2014 diff header vs mini-plan step 2\n  Finding: The mini-plan specifies \"subprocess_map.json (29 entries...)\", but the shipped file contains 32 entries (counting the `entries` array: 6 SKILL.md, 2 setup-changelog, 4 create_github_release, 3 condense_release_notes, 1 env.py, 1 refresh_compliance_docs, 1 compliance_audit_spawn, 3 git_utils, 1 repo_identity, 1 fold_events, 1 manifest_sync_core, 1 events_stage, 1 extract_changelog_section, 2 changelog_checks, 1 generate_session_handoff, 1 compliance_runner, 2 events.py). Similarly the checker is 300 lines vs the spec's 259.\n  Suggestion: The plan reviewers already converted these counts to \"outputs, not constants\", so this is a documentation drift only \u2014 update the mini-plan numbers (or note them as measured outputs) so the spec and the artifact don't disagree on their face.\n\n- Category: bug\n  Severity: medium\n  File: shared/scripts/tools/check_skill_inventory.py \u2014 `check_inventory`, the line `if (cls == \"runtime-input\") != (e[\"file\"] in runtime_files)`\n  Finding: The runtime-input agreement check is per-section but keyed on the *file*. If a runtime-input file (e.g. `references/release-notes-prompt.md`) ever gains a second heading section classified as `reference` or `mechanic`, that section will be flagged \"runtime-input class and runtime_inputs disagree\" even though the file is correctly declared once in `runtime_inputs`. Today's real data happens to have exactly one section in that file, so it passes, but the rule's semantics are wrong for the general case the checker claims to cover.\n  Suggestion: Change the check to \"a file listed in `runtime_inputs` must have at least one section classified `runtime-input`, and a section classified `runtime-input` requires its file to be listed\" (existential, not per-section equality).\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/tools/check_skill_inventory.py \u2014 `check_subprocess_map`, the `window = lines[e[\"line\"] - 1: e.get(\"end\", e[\"line\"])]` slice\n  Finding: A `line` of 0 or a negative value, or an `end` smaller than `line`, produces an empty (or, for negative indices, an arbitrary) slice: the entry is reported as \"needle not found (line moved?)\" \u2014 misleading \u2014 or, for `line = -1`, the slice `lines[-2:-1]` could coincidentally contain the needle and false-pass. There is no `1 <= line` / `end >= line` range validation, unlike `_source_ok` which does validate ranges.\n  Suggestion: Validate `line >= 1` and `end >= line` explicitly and report an invalid-range error before slicing.\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/tools/check_skill_inventory.py \u2014 `parse_sections` fence handling\n  Finding: An unclosed code fence swallows every subsequent heading into the previous section; the checker then reports a cascade of \"section not inventoried\" / \"orphan entry\" drift errors whose real cause (a missing closing fence) is not named. Also, a fence marker indented 4+ spaces (a list-item code block in CommonMark) is treated as a fence opener.\n  Suggestion: Acceptable for a pilot tool, but when the live anchors disagree with the inventory by more than a threshold, name the possibility of an unbalanced fence in the message.\n\n- Category: test\n  Severity: low\n  File: shared/scripts/tools/tests/test_check_skill_inventory.py \u2014 `_inventory()` helper and `test_a_consistent_skill_passes`\n  Finding: The fixture inventory is built by calling `csi.live_anchors` \u2014 the code under test. A self-consistent hashing/parsing defect (e.g. a wrong but stable digest, or a heading-path bug that both parser and checker share) would still pass every consistency test. The dedicated `parse_sections` tests (`test_fenced_comment_is_not_a_heading`, `test_a_repeated_heading_gets_a_numbered_anchor`, the CRLF test) pin the parser independently, which mitigates this \u2014 but the digest function itself is never pinned against a known-good expected hash.\n  Suggestion: Add one test asserting a literal expected 16-hex digest for a fixed small input so a silent change to `_digest`'s normalization cannot pass unnoticed.\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/tools/check_skill_inventory.py \u2014 `live_anchors`\n  Finding: If the `references/` directory is missing, `glob` yields nothing and the failure surfaces only as orphan-entry drift errors (exit 1), not the intended exit 2 \"missing input\". A deleted `references/` dir on a real skill would produce a confusing wall of \"orphan entry\" lines.\n  Suggestion: Check `(skill_dir / \"references\").is_dir()` (when any inventory entry references it) and exit 2 with a clear message.\n\n## What is sound\n\nThe checker's core logic (orphan/stale-hash/vocabulary/mixed-parts/truth-table cell coverage/duplicate-cell/source-range/moved-needle checks) is genuinely behavior-validating: tests break exactly one rule each and assert exactly one error via `_only`, covering happy and error paths, exit codes 0/1/2, refresh semantics (orphans preserved, new sections unclassified-but-failing). The real-skill consistency is exercised via the CLI (F0.5), avoiding the CI-pin trap the spec explicitly calls out. The truth table does carry exactly 30 cells with citations, and the ledger/FINDINGS/P0-report/LEARNINGS deliverables are all present and internally consistent (counts 0/25/15/26/98 match across the ledger, FINDINGS and P0 report). No security surface is introduced: all inputs are trusted repo-local files, no network, no secrets.\n\nOverall: ship-as-is; the findings above are refinements, with the per-section runtime-input check being the one worth fixing before it bites a later pilot unit.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-11-14-p0-changelog-inventory",
+    "at": "2026-11-14T00:30:24.514473+00:00"
+  },
+  "verdicts": {
+    "openai": "revise",
+    "glm": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

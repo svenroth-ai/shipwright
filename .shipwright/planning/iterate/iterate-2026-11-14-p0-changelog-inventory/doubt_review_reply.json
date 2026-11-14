@@ -1,0 +1,7 @@
+{"stage": "doubt", "verdict": "PASS", "doubts": [
+{"claim_under_doubt": "the checker cannot pass on stale truth-table citations", "disproof_attempt": "truth-table sources are range-checked only; inserting a line leaves citations off by one. Accepted for a scaffold retired at P7; docstring says re-check by hand."},
+{"claim_under_doubt": "the subprocess map is complete", "disproof_attempt": "an emptied map passes; completeness is an authoring claim. Accepted and documented."},
+{"claim_under_doubt": "14 of 15 ACs are protectable", "disproof_attempt": "four are conditional yeses, strictly 10 of 15. Both counts now stated in the report."},
+{"claim_under_doubt": "inventory and truth table agree on legacy bullets", "disproof_attempt": "inventory says ask, table says no-question. Recorded in the ADR, not changed (1:1)."},
+{"claim_under_doubt": "out-of-sequence cells match the gate catalog", "disproof_attempt": "the cited gate says fires never. Verdict rests on first-actions.md under single_session; recorded."},
+{"claim_under_doubt": "no runtime effect from the new files", "disproof_attempt": "the data files ship in the plugin bundle until P7; nothing reads them. Accepted until P7."}]}
