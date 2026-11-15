@@ -20,6 +20,7 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 _ADDED = _HERE not in sys.path
 if _ADDED:
     sys.path.append(_HERE)
+import profile_architecture_rules as _par  # noqa: E402
 import profile_schema_check as _psc  # noqa: E402
 
 if _ADDED:  # leave sys.path as found (shared/scripts holds a `tools` package)
@@ -89,6 +90,17 @@ class ResolvedProfile:
     def custom(self) -> bool:
         """True unless bundled/builtin: gates every bundled-only default (D9)."""
         return self.source not in ("bundled", "builtin")
+
+    def shadow_warnings(self) -> list:
+        """Warnings for a custom profile that shadows a bundled one (empty otherwise)."""
+        if not (self.custom and self.shadows_bundled):
+            return []
+        out = [
+            f"WARNING: {self.source} profile {self.path} shadows the bundled "
+            f"profile {self.name!r}; ITS commands run instead of the bundled ones."
+        ]
+        rules = _par.shadow_rules_warning(self.data, self.shadows, bundled_dir())
+        return out + [rules] if rules else out
 
     def to_dict(self, include_data: bool = False) -> dict:
         out = {

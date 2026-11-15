@@ -192,11 +192,7 @@ def resolve_profile(name: str, project_root=None, *, search_dirs=None) -> Resolv
         )
     winner.shadows, winner.shadows_bundled = shadows, shadows_bundled
     winner.searched = [d for _, d in searched]
-    if winner.custom and shadows_bundled:
-        winner.warnings.append(
-            f"WARNING: {winner.source} profile {winner.path} shadows the bundled "
-            f"profile {name!r}; ITS commands run instead of the bundled ones."
-        )
+    winner.warnings.extend(winner.shadow_warnings())
     return winner
 
 
@@ -222,11 +218,7 @@ def load_profile_file(path, expected_name: str | None = None, *, project_root=No
         if i > idx and os.path.isfile(other) and os.path.realpath(other) != real:
             res.shadows.append(other)
             res.shadows_bundled = res.shadows_bundled or src == "bundled"
-    if res.custom and res.shadows_bundled:
-        res.warnings.append(
-            f"WARNING: {res.source} profile {res.path} shadows the bundled profile "
-            f"{res.name!r}; ITS commands run instead of the bundled ones."
-        )
+    res.warnings.extend(res.shadow_warnings())
     return res
 
 

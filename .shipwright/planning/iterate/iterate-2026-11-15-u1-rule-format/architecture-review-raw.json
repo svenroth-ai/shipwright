@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "1. **The question, answered in one sentence.** Yes \u2014 a rule format with validation is a genuinely shared, load-bearing shape that five scheduled units in this same repo will consume, so it should exist as a standing module; the smallest version is close to what's proposed.\n\n2. **The smallest thing that would do.** One module (rule object + shape validation + old-string-list loader) plus the enforcement-combination table. That is essentially option A, and A is the right call: B pays for enum/oneOf in the schema checker to solve a problem the new module solves anyway; C keeps two files to keep in sync for no gain; D forces U2's renderer to define the format implicitly and pushes the freeze later, at higher cost.\n\n3. **What it costs to keep.** (a) The vocabulary copy plus drift test is a permanent sync obligation against the constitution register \u2014 deliberately so, but it is one more thing every future vocabulary change must touch. (b) The combination table is a small policy artefact that must be explained to every future rule author. (c) Phase-local error semantics (bad rule dropped, profile stays valid) is a behavioural contract that every future consumer must reason about \u2014 the right trade, but now a fixed thing.\n\n4. **What it forecloses.** The frozen format makes per-profile divergent rule shapes or enforcement vocabularies much harder later; acceptable given the campaign, worth naming. Extending the JSON schema checker (option B) is made unnecessary, not harder.\n\n5. **Findings**\n\n- Category: proportionality\n- Severity: low\n- Finding: The explicit empty `architecture_rules` lists in two profiles plus the shadow-warning add a small standing convention (\"no rules\" vs \"key absent\") that no scheduled unit consumes yet.\n- Suggestion: Keep the empty lists (cheap, one-time), but consider deferring the shadow-warning to U5 when a real shadowing profile exists; it is code that must stay correct against a scenario not yet present.\n\n- Category: ownership\n- Severity: low\n- Finding: The drift test is a human-must-notice-it gate: if someone adds a vocabulary term to the register without updating the copy, nothing breaks until CI runs, and the fix is manual forever.\n- Suggestion: Acceptable given the no-import constraint, but state in the module docstring that the drift test is the sole guardian, so future editors know to run both sides of it.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Yes\u2014option A is proportionate:** one shared rule loader and validator gives the scheduled consumers a consistent format without making rule errors invalidate unrelated profile use.\n\n2. **Smallest thing that would do:** the proposed module, accepting legacy strings and rule objects, validating enforcement combinations, and returning valid rules alongside diagnostics. Keep rendering and enforcement in their planned consumers; extending the general schema checker is unnecessary.\n\n3. **What it costs to keep:** maintain the rule format, compatibility loader, enforcement-combination table, copied vocabulary and drift test, and shadowing warning. Future enforcement changes require coordinated updates; the drift test makes vocabulary divergence visible.\n\n4. **What it forecloses:** consumers lose freedom to invent separate rule formats, and future format changes must preserve compatibility or coordinate migration. That is a reasonable constraint for shared profile data.\n\n5. **Findings**\n\nNo findings.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "architecture",
+  "capture": {
+    "run_id": "iterate-2026-11-15-u1-rule-format",
+    "at": "2026-11-15T22:11:36.343589+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "approve"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}

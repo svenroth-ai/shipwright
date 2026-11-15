@@ -1,0 +1,5 @@
+{"section": "U1-rule-format", "verdict": "PASS", "review": [
+{"severity":"low","category":"readability","file":"shared/scripts/profile_architecture_rules.py","finding":"Rule.paths() had no caller","disposition":"fixed (removed)"},
+{"severity":"low","category":"architecture","file":"shared/scripts/profile_architecture_rules.py","finding":"containment check duplicates profile_model.path_within (import would be circular)","disposition":"accepted, documented in the plan"},
+{"severity":"low","category":"correctness","file":"shared/scripts/profile_architecture_rules.py","finding":"duplicate-id detection ignored ids of invalid first rules","disposition":"fixed (claimed set + test)"},
+{"severity":"low","category":"correctness","file":"shared/scripts/profile_model.py","finding":"a project profile shadowing supabase-nextjs gets one more stderr warning","disposition":"intended; recorded in changelog and ADR"}]}

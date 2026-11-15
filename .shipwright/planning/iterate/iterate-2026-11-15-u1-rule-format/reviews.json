@@ -1,0 +1,323 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-15-u1-rule-format",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-15T22:20:45.999742+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The vocabulary drift test compares against `lib.constitution_register.ENFORCEMENT`, but the new module lives in `shared/scripts/`. If `lib` isn't importable from the shared test environment (path setup, packaging), the drift test either fails or silently imports nothing. The plan doesn't state how `shared/tests` resolves `lib.constitution_register`.",
+          "suggestion": "Pin the import mechanism explicitly (sys.path manipulation in the test, or a conftest fixture) and verify the import works in CI before freezing the ENFORCEMENT copy.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "\"Rule diagnostics are NOT an exit-code concern\" is a behavioural change for any existing CI or script consumer of `resolve_profile.py validate`. Today a malformed `architecture_rules` presumably fails validation (or is silently ignored); after U1 it exits 0. The plan asserts no raw consumers exist in code, but external/CI consumers aren't addressed — and the claim \"CI consumers read `rule_errors`\" describes consumers that don't exist yet.",
+          "suggestion": "Confirm no CI workflow or script invokes validate on profiles with rules; if any do, decide the exit policy per consumer. At minimum document the exit-0-with-rule-errors contract in the CLI help and docs/stack-profiles.md.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Moving the two inline shadow-warning blocks into `ResolvedProfile.shadow_warnings()` risks subtle behaviour drift (ordering, dedup, which profiles emit it) even though the text is claimed unchanged. Existing resolver warning tests are re-run, which mitigates this.",
+          "suggestion": "Ensure the re-run covers the exact warning-order assertions, not just presence.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Legacy normalisation assigns `legacy-<n>` ids. If a profile mixes objects and strings, a user-authored rule could legitimately have id `legacy-1`, colliding with a normalised string — \"first wins, later is an error\" would then reject a valid user rule. The plan doesn't say whether legacy ids are collision-checked against declared ids.",
+          "suggestion": "Either namespace legacy ids (e.g. `legacy-string-<n>`) or make the collision check report which one is the legacy rule; mixed lists are presumably allowed by the loader contract, so this is reachable.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "check_paths` uses realpath + containment, which resolves symlinks at check time but the path can be repointed afterwards (TOCTOU). For a config-validation use case this is mostly fine — the check is diagnostic, not a security gate — but the docstring shouldn't imply containment is guaranteed.",
+          "suggestion": "Document the check as point-in-time validation only. No code change needed.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Bundled profiles skip `check_paths` at runtime (different installed-cache layout), relying solely on a repo test. If a future bundled profile adds a mechanism with a wrong path and the repo test is skipped or not wired into the default test target, the gap goes unnoticed.",
+          "suggestion": "Make sure the bundled-profile validation test runs in the default test invocation and asserts it exercised mechanism paths (the plan already flags it as \"vacuous in U1\" — add an assertion that would fail vacuously, e.g. the test explicitly knows the expected empty set).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "enforcement` for legacy rules is None (\"undeclared\"), but the closed vocabulary has no \"undeclared\" member. Consumers (U2+) need a defined way to handle None vs the string vocabulary; the contract freeze here doesn't say which.",
+          "suggestion": "State explicitly in the frozen contract that None means \"treat as prompt-only/judgement, warn\" or map legacy to a specific vocabulary member at load time.  Overall assessment  The approach is sound and well-scoped — the phase-local error model, legacy migration path, and frozen contract for U2-U6 are the right shape. The main revisions needed are the legacy-id collision edge, clarifying None-enforcement semantics in the contract, and verifying the `lib` import path for the drift test; none are structural.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Mixed-list behavior is ambiguous. The contract describes lists of objects or strings, while the tests explicitly include a mixed list. Generated IDs such as `legacy-1` can also collide with an explicit object ID.",
+          "suggestion": "State whether mixed lists are supported, define how legacy IDs are numbered, and test a collision between a generated ID and an explicit ID.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "load_rules` has a defined recovery contract, but the relationship between `check_paths` failures and returned valid rules is unspecified. Later phases need to know whether a rule with a missing or escaping path remains usable.",
+          "suggestion": "Define how path diagnostics identify their rule and whether failed rules are excluded from downstream execution. Preserve the intended profile-level validity and CLI exit behavior.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The proposed CLI tests cover legacy warnings in `validate`, but do not explicitly cover the broader promise of no behavior change for existing project commands. Adding diagnostics through shared loading code could accidentally expose warnings elsewhere.",
+          "suggestion": "Add a regression assertion that ordinary resolution of the existing legacy bundled profile preserves its output and emits no legacy-format warning.  The approach is sound and appropriately scoped, with sensible separation between profile validity and rule diagnostics. These are contract and regression-test refinements; repository verification was unavailable because command execution was blocked by policy.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-15T22:16:34.415347+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] **Findings**\n\n- Category: dependency — Severity: medium\n  Finding: The vocabulary drift test compares against `lib.constitution_register.ENFORCEMENT`, but the new module lives in `shared/scripts/`. If `lib` isn't importable from the shared test environment (path setup, packaging), the drift test either fails or silently imports nothing. The plan doesn't state how `shared/tests` resolves `lib.constitution_register`.\n  Suggestion: Pin the import mechanism explicitly (sys.path manipulation in the test, or a conftest fixture) and verify the import works in CI before freezing the ENFORCEMENT copy.\n\n- Category: risk — Severity: medium\n  Finding: \"Rule diagnostics are NOT an exit-code concern\" is a behavioural change for any existing CI or script consumer of `resolve_profile.py validate`. Today a malformed `architecture_rules` presumably fails validation (or is silently ignored); after U1 it exits 0. The plan asserts no raw consumers exist in code, but external/CI consumers aren't addressed — and the claim \"CI consumers read `rule_errors`\" describes consumers that don't exist yet.\n  Suggestion: Confirm no CI workflow or script invokes validate on profiles with rules; if any do, decide the exit policy per consumer. At minimum document the exit-0-with-rule-errors contract in the CLI help and docs/stack-profiles.md.\n\n- Category: risk — Severity: low\n  Finding: Moving the two inline shadow-warning blocks into `ResolvedProfile.shadow_warnings()` risks subtle behaviour drift (ordering, dedup, which profiles emit it) even though the text is claimed unchanged. Existing resolver warning tests are re-run, which mitigates this.\n  Suggestion: Ensure the re-run covers the exact warning-order assertions, not just presence.\n\n- Category: edge-case — Severity: medium\n  Finding: Legacy normalisation assigns `legacy-<n>` ids. If a profile mixes objects and strings, a user-authored rule could legitimately have id `legacy-1`, colliding with a normalised string — \"first wins, later […truncated]\n\n[openai] 1. **Category:** edge-case  \n   **Severity:** low  \n   **Finding:** Mixed-list behavior is ambiguous. The contract describes lists of objects or strings, while the tests explicitly include a mixed list. Generated IDs such as `legacy-1` can also collide with an explicit object ID.  \n   **Suggestion:** State whether mixed lists are supported, define how legacy IDs are numbered, and test a collision between a generated ID and an explicit ID.\n\n2. **Category:** dependency  \n   **Severity:** low  \n   **Finding:** `load_rules` has a defined recovery contract, but the relationship between `check_paths` failures and returned valid rules is unspecified. Later phases need to know whether a rule with a missing or escaping path remains usable.  \n   **Suggestion:** Define how path diagnostics identify their rule and whether failed rules are excluded from downstream execution. Preserve the intended profile-level validity and CLI exit behavior.\n\n3. **Category:** risk  \n   **Severity:** low  \n   **Finding:** The proposed CLI tests cover legacy warnings in `validate`, but do not explicitly cover the broader promise of no behavior change for existing project commands. Adding diagnostics through shared loading code could accidentally expose warnings elsewhere.  \n   **Suggestion:** Add a regression assertion that ordinary resolution of the existing legacy bundled profile preserves its output and emits no legacy-format warning.\n\nThe approach is sound and appropriately scoped, with sensible separation between profile validity and rule diagnostics. These are contract and regression-test refinements; repository verification was unavailable because command execution was blocked by policy.\n\nSHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "approve"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/profile_architecture_rules.py",
+          "line": null,
+          "finding": "Rule.paths() had no caller",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/scripts/profile_architecture_rules.py",
+          "line": null,
+          "finding": "containment check duplicates profile_model.path_within (import would be circular)",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/profile_architecture_rules.py",
+          "line": null,
+          "finding": "duplicate-id detection ignored ids of invalid first rules",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/profile_model.py",
+          "line": null,
+          "finding": "a project profile shadowing supabase-nextjs gets one more stderr warning",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-15T22:20:38.170803+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "65f380846a5cccd296267a909a6c2018f8f1e374"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "hidden coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: adding the new module import to profile_model breaks no existing load path — three plugin cache-layout tests copy a fixed file list lacking profile_architecture_rules.py and would fail with ModuleNotFoundError. DISPOSITION: fixed, module added to the three copy lists, plugin profile tests re-run green.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: existing warnings are unchanged for every phase — the shadow-rules warning is new output in every phase when a custom profile shadows a bundled one with rules. DISPOSITION: intended by the brief, recorded in ADR and changelog.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the shadow warning only fires when the custom profile declares none — a wrong-typed key was told it declares none. DISPOSITION: fixed, warns only when absent or null.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "windows paths",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: check_paths messages are accurate on Windows — device-name segments and trailing dots are not rejected; message accuracy only, nothing raises. DISPOSITION: accepted, left for the first consumer.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-15T22:26:51.062124+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "65f380846a5cccd296267a909a6c2018f8f1e374"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/profile_architecture_rules.py` — `load_rules`, legacy loop at the end",
+          "line": null,
+          "finding": "Legacy rules are appended to `RuleSet.rules` after all object rules, so a mixed list `[\"Old.\", rule_a, rule_b]` yields ordering `[a, b, legacy-string-1]` rather than profile order. A future renderer that assumes rules follow profile order will render legacy sentences last. This is documented behaviour (\"a declared id always beats a generated one\") but the reordering side effect is not.",
+          "suggestion": "Either sort the output back into profile position order, or note the reordering in the frozen-contract docstring so the U2+ renderer units don't assume positional fidelity.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/profile_architecture_rules.py` — `shadow_rules_warning",
+          "line": null,
+          "finding": "On a corrupt/unreadable bundled file the function `return None`s immediately instead of `continue`-ing to the next bundled shadow path. With the current lookup model (one bundled profile per name) this is unreachable, but the `shadows` list is a list precisely because callers may pass several.",
+          "suggestion": "continue` instead of `return None` on `OSError/ValueError/AttributeError`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_profile_architecture_rules.py` — `test_shadow_warning_survives_a_corrupt_bundled_file",
+          "line": null,
+          "finding": "The corrupt-file test only asserts \"no crash / None\"; it would also pass if the warning were silently never emitted for a valid bundled file in the same directory. The happy-path shadow warning (bundled has rules → warning emitted) is only covered indirectly through the CLI test in the other file; a direct unit test of `shadow_rules_warning` returning the warning string is missing.",
+          "suggestion": "Add one assertion where a readable bundled JSON with non-empty `architecture_rules` produces the warning string.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/profile_architecture_rules.py` — `load_rules",
+          "line": null,
+          "finding": "A rule with a valid but duplicate id short-circuits at the `elif rid in seen` branch, so a duplicate that also has shape problems reports only \"duplicate id\", and conversely a shape-error rule never registers its id in `seen`, so two invalid rules sharing an id each get shape errors rather than a duplicate error. Harmless for consumers (both are dropped), but the diagnostic can mislead.",
+          "suggestion": "Acceptable as-is; if tightened, report both problems per rule.",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-15T22:18:19.068107+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] ## Review\n\nI read the spec (rule format with lint/mechanism split, loader for legacy string lists, validation module, vocabulary copy with drift test, explicit empty lists for the two bundled profiles, no behaviour change) against the diff.\n\n### Spec compliance\n\n- Rule object with lint/mechanism exclusivity, closed vocabulary, `NOTE_REQUIRED` classes, per-class allowed carriers — implemented in `profile_architecture_rules.py` (`ALLOWED`, `_object_problem`).\n- Legacy loader with warning-only handling — implemented (`load_rules` legacy branch) and only surfaced by `validate` (CLI test confirms `resolve` prints nothing rule-related).\n- Phase-local errors, profile stays valid (exit 0, `rule_errors`/`rules_valid` in JSON) — implemented and tested.\n- Vocabulary drift test against `lib.constitution_register.ENFORCEMENT` — present (`test_vocabulary_copy_equals_constitution_register`, plus the `ALLOWED` completeness check, which is a nice touch).\n- Explicit `[]` for vite-hono and skill-companion-app — present, with a pinning test (`test_bundled_declared_rules_are_pinned`) that also locks the supabase-nextjs legacy count.\n- No behaviour change for other projects: the only resolver change is moving the shadow warning into `ResolvedProfile.shadow_warnings()` with identical text; bundled profiles with no shadow get no new output.\n\n### Findings\n\n- Category: edge-case\n  Severity: low\n  File: `shared/scripts/profile_architecture_rules.py` — `load_rules`, legacy loop at the end\n  Finding: Legacy rules are appended to `RuleSet.rules` **after** all object rules, so a mixed list `[\"Old.\", rule_a, rule_b]` yields ordering `[a, b, legacy-string-1]` rather than profile order. A future renderer that assumes rules follow profile order will render legacy sentences last. This is documented behaviour (\"a declared id always beats a generated one\") but the reordering side effect is not.\n  Suggestion: Either sort the output back into profile position order, or note the reordering in  […truncated]\n\n[openai] No concrete defects found in the diff. The implementation covers the stated acceptance criteria: legacy strings produce validate-only warnings, malformed rules remain local errors, bundled profiles are checked, and enforcement vocabulary drift has a dedicated test.\n\nShip-as-is based on static review. I could not run the tests because command execution was blocked by the environment.\n\nSHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "openai": "approve",
+        "glm": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-15T22:18:18.931446+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "65f380846a5cccd296267a909a6c2018f8f1e374"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-15T22:16:34.564381+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-15T22:16:34.701768+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}
