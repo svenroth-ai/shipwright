@@ -31,4 +31,4 @@ Four scheduled units read this shape. A project profile that shadows `supabase-n
 
 The new shadow warning also lands in the `warnings[]` of the resolved profile (`res.warnings`), which adopt and the brief resolver pass on, not only on stderr; both consumers just forward the lines.
 
-Renumbering (orchestrator review): this run's three new requirements are FR-01.23, FR-01.24 and FR-01.25, because open PR #1055 mints FR-01.22 with a different meaning.
+Requirements: no new FR is minted. The three acceptance criteria are folded into FR-01.01 (AC13-AC15, next to the profile lookup criteria) and the drift criterion is FR-01.10/AC17, because the integration tests pin the FR set (21) and open PR #1055 mints FR-01.22.

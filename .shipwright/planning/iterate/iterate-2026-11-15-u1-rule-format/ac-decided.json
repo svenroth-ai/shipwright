@@ -7,13 +7,8 @@
       "files": [
         "shared/scripts/profile_architecture_rules.py"
       ],
-      "new_fr": {
-        "id": "FR-01.23",
-        "title": "Structured stack profile architecture rules",
-        "summary": "Lets stack profiles declare architecture rules as structured entries while keeping old plain lists and bundled profiles valid."
-      },
-      "owner_fr": "FR-01.23",
-      "decided_by": "auto",
+      "owner_fr": "FR-01.01",
+      "decided_by": "code",
       "confirmed": false
     },
     {
@@ -22,13 +17,8 @@
       "files": [
         "shared/scripts/tools/resolve_profile.py"
       ],
-      "new_fr": {
-        "id": "FR-01.24",
-        "title": "Warning for outdated architecture rule format in profiles",
-        "summary": "Tells users when a profile still uses the old plain-sentence architecture rules, shown only when they request a check."
-      },
-      "owner_fr": "FR-01.24",
-      "decided_by": "auto",
+      "owner_fr": "FR-01.01",
+      "decided_by": "code",
       "confirmed": false
     },
     {
@@ -37,13 +27,8 @@
       "files": [
         "shared/scripts/profile_architecture_rules.py"
       ],
-      "new_fr": {
-        "id": "FR-01.25",
-        "title": "Architecture rule validation within a project profile",
-        "summary": "This makes sure a project profile flags any architecture rule that names both a linter fragment and checking files, while keeping the other rules usable and the profile valid."
-      },
-      "owner_fr": "FR-01.25",
-      "decided_by": "auto",
+      "owner_fr": "FR-01.01",
+      "decided_by": "code",
       "confirmed": false
     },
     {
@@ -53,76 +38,45 @@
         "shared/scripts/profile_architecture_rules.py"
       ],
       "owner_fr": "FR-01.10",
-      "decided_by": "auto",
+      "decided_by": "code",
       "confirmed": false
     }
   ],
   "ac_decisions": [
     {
-      "ac": "FR-01.23.new",
-      "mode": "auto-assigned",
+      "ac": "FR-01.01.new",
+      "mode": "auto",
       "answer": "auto",
       "kind": "add",
       "answered_via": "none",
-      "unconfirmed": true,
-      "assigned_fr": "FR-01.23",
-      "created_fr": true,
-      "note": "new requirement FR-01.23 \"Structured stack profile architecture rules\" for the new criterion \"Given a stack profile declares its architecture rules as structured entries, when the profile is checked, then every bundled profile is still reported valid,...\"",
-      "suggestion_source": "model",
-      "suggestion_fr_id": null,
-      "suggestion_model": "anthropic/claude-haiku-5.5",
-      "suggestion_prompt_sha": "sha256:90718d0e858b5f8a5a23901868ac88fec084254bf9a9eb186eaafc26de489f4e",
-      "decided_by": "auto",
+      "decided_by": "code",
       "confirmed": false
     },
     {
-      "ac": "FR-01.24.new",
-      "mode": "auto-assigned",
+      "ac": "FR-01.01.new",
+      "mode": "auto",
       "answer": "auto",
       "kind": "add",
       "answered_via": "none",
-      "unconfirmed": true,
-      "assigned_fr": "FR-01.24",
-      "created_fr": true,
-      "note": "new requirement FR-01.24 \"Warning for outdated architecture rule format in profiles\" for the new criterion \"Given a profile still uses the old plain-sentence list of architecture rules, when the profile is checked on request, then a warning is shown, and no other p...\"",
-      "suggestion_source": "model",
-      "suggestion_fr_id": null,
-      "suggestion_model": "anthropic/claude-haiku-5.5",
-      "suggestion_prompt_sha": "sha256:90718d0e858b5f8a5a23901868ac88fec084254bf9a9eb186eaafc26de489f4e",
-      "decided_by": "auto",
+      "decided_by": "code",
       "confirmed": false
     },
     {
-      "ac": "FR-01.25.new",
-      "mode": "auto-assigned",
+      "ac": "FR-01.01.new",
+      "mode": "auto",
       "answer": "auto",
       "kind": "add",
       "answered_via": "none",
-      "unconfirmed": true,
-      "assigned_fr": "FR-01.25",
-      "created_fr": true,
-      "note": "new requirement FR-01.25 \"Architecture rule validation within a project profile\" for the new criterion \"Given one architecture rule names both a linter fragment and a list of checking files, when the profile is checked on request, then that rule is reported as ...\"",
-      "suggestion_source": "model",
-      "suggestion_fr_id": null,
-      "suggestion_model": "anthropic/claude-haiku-5.5",
-      "suggestion_prompt_sha": "sha256:90718d0e858b5f8a5a23901868ac88fec084254bf9a9eb186eaafc26de489f4e",
-      "decided_by": "auto",
+      "decided_by": "code",
       "confirmed": false
     },
     {
       "ac": "FR-01.10.new",
-      "mode": "auto-assigned",
+      "mode": "auto",
       "answer": "auto",
       "kind": "add",
       "answered_via": "none",
-      "unconfirmed": true,
-      "assigned_fr": "FR-01.10",
-      "note": "new criterion \"Given the list of allowed ways a rule can be kept is copied into the profile checker, when the tests run, then a test fails as soon as that copy differs from...\" under FR-01.10 (Audit-ready compliance evidence)",
-      "suggestion_source": "model",
-      "suggestion_fr_id": "FR-01.10",
-      "suggestion_model": "anthropic/claude-haiku-5.5",
-      "suggestion_prompt_sha": "sha256:90718d0e858b5f8a5a23901868ac88fec084254bf9a9eb186eaafc26de489f4e",
-      "decided_by": "auto",
+      "decided_by": "code",
       "confirmed": false
     }
   ],
@@ -134,17 +88,10 @@
     "restore": 0,
     "unchanged": 0,
     "answered_inline": 0,
-    "unconfirmed": 4,
+    "unconfirmed": 0,
     "exempt_share": 0.0,
     "restore_share": 0.0
   },
-  "unconfirmed_assignments": [
-    "Assignments made without you (auto-assigned, unconfirmed):",
-    "1. new requirement FR-01.23 \"Structured stack profile architecture rules\" for the new criterion \"Given a stack profile declares its architecture rules as structured entries, when the profile is checked, then every bundled profile is still reported valid,...\" (decided_by=auto, confirmed=false, requirement created)",
-    "2. new requirement FR-01.24 \"Warning for outdated architecture rule format in profiles\" for the new criterion \"Given a profile still uses the old plain-sentence list of architecture rules, when the profile is checked on request, then a warning is shown, and no other p...\" (decided_by=auto, confirmed=false, requirement created)",
-    "3. new requirement FR-01.25 \"Architecture rule validation within a project profile\" for the new criterion \"Given one architecture rule names both a linter fragment and a list of checking files, when the profile is checked on request, then that rule is reported as ...\" (decided_by=auto, confirmed=false, requirement created)",
-    "4. new criterion \"Given the list of allowed ways a rule can be kept is copied into the profile checker, when the tests run, then a test fails as soon as that copy differs from...\" under FR-01.10 (Audit-ready compliance evidence) (decided_by=auto, confirmed=false)"
-  ],
   "status": "ok",
   "ac_mode": {
     "mode": "auto",
@@ -152,10 +99,18 @@
   },
   "run_id": "iterate-2026-11-15-u1-rule-format",
   "bind_id": "profile-architecture-rules--U1@2026-11-15T14:24:03.494683+00:00",
-  "exemption_check": "tested against the current diff (2 file(s), 2 not observable)",
+  "exemption_check": "tested against the current diff (51 file(s), 44 not observable)",
   "surface": {
-    "observable": false,
-    "files": [],
-    "ignored": 2
+    "observable": true,
+    "files": [
+      "shared/profiles/skill-companion-app.json",
+      "shared/profiles/vite-hono.json",
+      "shared/schemas/stack_profile.schema.json",
+      "shared/scripts/profile_architecture_rules.py",
+      "shared/scripts/profile_model.py",
+      "shared/scripts/profile_resolver.py",
+      "shared/scripts/tools/resolve_profile.py"
+    ],
+    "ignored": 44
   }
 }

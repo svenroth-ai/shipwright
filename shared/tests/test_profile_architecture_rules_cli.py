@@ -14,7 +14,7 @@ import profile_resolver as pr  # noqa: E402
 from shared.tests.profile_test_fixtures import proj_dir, write_profile  # noqa: E402
 from shared.tests.profile_test_fixtures import profile_project, profile_user_dir  # noqa: E402,F401
 
-pytestmark = pytest.mark.covers("FR-01.23/AC01")
+pytestmark = pytest.mark.covers("FR-01.01/AC13")
 
 GOOD = {"id": "r1", "text": "A.", "why": "B.", "enforcement": "prompt-only (judgement)"}
 
@@ -30,7 +30,7 @@ def _validate_json(capsys, project, name):
     return code, json.loads(out), err
 
 
-@pytest.mark.covers("FR-01.24/AC01")
+@pytest.mark.covers("FR-01.01/AC14")
 def test_bundled_legacy_profile_warns_only_in_validate(project, capsys):
     code, data, err = _validate_json(capsys, project, "supabase-nextjs")
     assert code == 0 and data["valid"] is True and data["rule_errors"] == []
@@ -42,7 +42,7 @@ def test_bundled_legacy_profile_warns_only_in_validate(project, capsys):
     assert res.warnings == []
 
 
-@pytest.mark.covers("FR-01.25/AC01")
+@pytest.mark.covers("FR-01.01/AC15")
 def test_lint_plus_mechanism_rule_is_reported_but_profile_stays_valid(project, capsys):
     bad = {**GOOD, "id": "both", "enforcement": "validator", "mechanism": ["a.py"],
            "lint": {"tool": "eslint", "target": "e.mjs", "block": {"rules": {"no-restricted-imports": "error"}}}}

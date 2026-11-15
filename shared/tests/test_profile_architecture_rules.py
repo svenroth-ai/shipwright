@@ -14,7 +14,7 @@ import profile_architecture_rules as par  # noqa: E402
 import profile_resolver as pr  # noqa: E402
 from lib import constitution_register as cr  # noqa: E402
 
-pytestmark = pytest.mark.covers("FR-01.23/AC01")
+pytestmark = pytest.mark.covers("FR-01.01/AC13")
 ROOT = Path(__file__).resolve().parents[2]
 
 
@@ -72,7 +72,7 @@ def test_bad_rule_is_an_error_and_dropped(bad):
     assert [r.id for r in rs.rules] == ["ok"] and len(rs.errors) == 1
 
 
-@pytest.mark.covers("FR-01.25/AC01")
+@pytest.mark.covers("FR-01.01/AC15")
 def test_lint_plus_mechanism_keeps_the_other_rules():
     rs = par.load_rules([rule(id="a"), rule(id="b", enforcement="validator", lint=LINT, mechanism=["x.py"]), rule(id="c")])
     assert [r.id for r in rs.rules] == ["a", "c"]
@@ -84,7 +84,7 @@ def test_duplicate_id_first_wins():
     assert [r.text for r in rs.rules] == ["first"] and "duplicate" in rs.errors[0]
 
 
-@pytest.mark.covers("FR-01.24/AC01")
+@pytest.mark.covers("FR-01.01/AC14")
 def test_legacy_strings_normalised_with_one_warning_and_undeclared_class():
     rs = par.load_rules(["One.", "Two."])
     assert [(r.id, r.legacy, r.enforcement) for r in rs.rules] == [("legacy-string-1", True, None), ("legacy-string-2", True, None)]
