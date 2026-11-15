@@ -1,0 +1,10 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"Both findings closed: F6 (CLAUDE.md 203 -> 199 lines) and H1 (all 29 oversize files now in baseline; recheck lists zero drift)."},
+{"name":"Error Handling","verdict":"n/a","note":"No runtime code changed."},
+{"name":"Security Basics","verdict":"n/a","note":"Data/doc change only."},
+{"name":"Test Quality","verdict":"pass","note":"Full F0 suite plus verify_local run; no tests weakened."},
+{"name":"Performance Basics","verdict":"n/a","note":"None."},
+{"name":"Naming & Structure","verdict":"pass","note":"Entries follow the existing grandfathered shape, sorted by path, same JSON escaping, so the diff is 203 pure additions. Removed Testing block duplicated the Development block; added missing shared/testkit Structure line."},
+{"name":"Affected Boundaries","verdict":"n/a","note":"Baseline JSON is read by bloat_baseline.load/scan; rechecked via the same scan."},
+{"name":"Test Hygiene Probe","verdict":"n/a","note":"No tests touched."}
+]}

@@ -1,0 +1,31 @@
+{
+  "run_id": "iterate-2026-11-15-compliance-f6-h1-cleanup",
+  "date": "2026-11-15T14:51:14.983902Z",
+  "event_at": "2026-11-15T10:02:48.777904+00:00",
+  "type": "change",
+  "complexity": "trivial",
+  "prior_source": "keyword",
+  "branch": "iterate/compliance-f6-h1-cleanup",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-11-15-compliance-f6-h1-cleanup",
+  "test_completeness": {
+    "status": "n/a",
+    "reason_code": "trivial-auto"
+  },
+  "surface_verification": {
+    "surface": "none",
+    "runner": "",
+    "exit_code": 0,
+    "tests_run": 0,
+    "evidence_path": "",
+    "justification": "Data and docs only: baseline JSON entries and CLAUDE.md; no behavior surface.",
+    "reason_code": "docs-only-surface"
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}

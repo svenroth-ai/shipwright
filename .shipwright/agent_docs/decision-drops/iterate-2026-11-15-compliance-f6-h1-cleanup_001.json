@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-15-compliance-f6-h1-cleanup",
+  "date": "2026-11-15",
+  "section": "Iterate — change: clear compliance findings F6 and H1",
+  "title": "Baseline 29 oversize files and trim CLAUDE.md under the cap",
+  "context": "Compliance audit flagged CLAUDE.md at 203 lines (F6) and 29 oversize files missing from shipwright_bloat_baseline.json (H1).",
+  "decision": "Added the 29 files as grandfathered entries at their current size, dropped the duplicate test commands from CLAUDE.md and listed shared/testkit.",
+  "consequences": "F6 and H1 pass; the anti-ratchet now blocks any of these files from growing further.",
+  "rationale": "Same remedy as PR #806; the files are only 1-33 lines over except two large lib/test pairs that need their own split work.",
+  "rejected": "Splitting all 29 files in one change: too large and risky for a compliance cleanup.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}
