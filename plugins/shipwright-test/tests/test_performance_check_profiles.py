@@ -130,7 +130,7 @@ def test_resolver_imports_through_the_plugin_cache_layout(tmp_path):
     shutil.copytree(_PLUGIN / "scripts" / "lib", lib, ignore=shutil.ignore_patterns("__pycache__"))
     scripts = cache / "shared" / "scripts"
     scripts.mkdir(parents=True)
-    for name in ("profile_resolver.py", "profile_model.py", "profile_schema_check.py", "profile_consumer.py"):
+    for name in ("profile_resolver.py", "profile_model.py", "profile_schema_check.py", "profile_architecture_rules.py", "profile_consumer.py"):
         shutil.copy(_SHARED / "scripts" / name, scripts / name)
     shutil.copytree(_SHARED / "schemas", cache / "shared" / "schemas")
     shutil.copytree(_SHARED / "profiles", cache / "shared" / "profiles", ignore=shutil.ignore_patterns("deploy"))

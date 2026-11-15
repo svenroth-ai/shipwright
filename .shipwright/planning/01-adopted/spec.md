@@ -124,6 +124,9 @@ _Where the work detail lives_ at the end of this document.
   unusable is never swapped for another profile or silently dropped, and instead the run
   stops and shows the name asked for and the reason it cannot be used.
   (iterate-2026-10-25-b2b-wizard-brief-explicit-profile)
+- (E) [AC13] Given a stack profile declares its architecture rules as structured entries, when the profile is checked, then every bundled profile is still reported valid, and an old-style list of plain sentences is accepted too.
+- (E) [AC14] Given a profile still uses the old plain-sentence list of architecture rules, when the profile is checked on request, then a warning is shown, and no other phase prints that warning.
+- (E) [AC15] Given one architecture rule names both a linter fragment and a list of checking files, when the profile is checked on request, then that rule is reported as an error, the remaining rules stay usable, and the profile itself stays valid.
 
 <a id="fr-0102"></a>
 ### FR-01.02 — Project decomposition into scoped units
@@ -816,6 +819,8 @@ _Where the work detail lives_ at the end of this document.
   produced (the default folders apply and one line says why), and the merge check
   looks in the same folders as a local run, provided the file naming the stack is
   committed. Run `iterate-2026-11-02-profile-declared-test-roots`.
+
+- (E) [AC17] Given the list of allowed ways a rule can be kept is copied into the profile checker, when the tests run, then a test fails as soon as that copy differs from the constitution register, and the constitution register tests still pass.
 
 <a id="fr-0111"></a>
 ### FR-01.11 — Ongoing change at the depth it deserves

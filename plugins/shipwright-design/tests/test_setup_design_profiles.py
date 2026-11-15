@@ -107,7 +107,7 @@ def test_resolver_imports_through_the_plugin_cache_layout(tmp_path):
     shutil.copytree(_PLUGIN / "scripts", plugin / "scripts", ignore=shutil.ignore_patterns("__pycache__"))
     scripts = cache / "shared" / "scripts"
     (scripts / "lib").mkdir(parents=True)
-    for name in ("profile_resolver.py", "profile_model.py", "profile_schema_check.py", "profile_consumer.py",
+    for name in ("profile_resolver.py", "profile_model.py", "profile_schema_check.py", "profile_architecture_rules.py", "profile_consumer.py",
                  "shared_lib_loader.py"):
         shutil.copy(_SHARED / "scripts" / name, scripts / name)
     for name in ("planning_discovery.py", "phase_boundary_baseline.py"):  # the boundary baseline is shared with plan

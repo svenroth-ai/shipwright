@@ -1,0 +1,96 @@
+{
+  "run_id": "iterate-2026-11-15-u1-rule-format",
+  "date": "2026-11-15T22:27:55.456058Z",
+  "event_at": "2026-11-15T22:27:31.350127+00:00",
+  "type": "feature",
+  "complexity": "medium",
+  "prior_source": "history",
+  "branch": "iterate/campaign-profile-architecture-rules--U1",
+  "spec": ".shipwright/planning/iterate/campaigns/profile-architecture-rules/sub-iterates/U1-rule-format.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-11-15-u1-rule-format",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "every enforcement class loads with its allowed lint/mechanism combination and a wrong combination is a rule error",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_profile_architecture_rules.py::test_valid_objects_of_every_class_load, ::test_bad_rule_is_an_error_and_dropped PASSED"
+      },
+      {
+        "behavior": "a rule with both lint and mechanism is dropped and reported while the other rules and the profile stay valid (validate exit 0, rules_valid false)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_profile_architecture_rules.py::test_lint_plus_mechanism_keeps_the_other_rules; shared/tests/test_profile_architecture_rules_cli.py::test_lint_plus_mechanism_rule_is_reported_but_profile_stays_valid PASSED"
+      },
+      {
+        "behavior": "the old sentence list loads as legacy-string rules with one warning shown only by validate, never by resolve",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_profile_architecture_rules.py::test_legacy_strings_normalised_with_one_warning_and_undeclared_class; shared/tests/test_profile_architecture_rules_cli.py::test_bundled_legacy_profile_warns_only_in_validate PASSED"
+      },
+      {
+        "behavior": "mixed lists, id collisions and first-use-owns-id are deterministic",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_profile_architecture_rules.py::test_mixed_list_and_legacy_id_collision_declared_object_wins, ::test_duplicate_id_first_wins, ::test_first_use_of_an_id_owns_it_even_when_that_rule_is_invalid PASSED"
+      },
+      {
+        "behavior": "absent, null, empty and wrong-typed architecture_rules are told apart without raising",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_profile_architecture_rules.py::test_absent_null_empty_and_wrong_type; shared/tests/test_profile_architecture_rules_cli.py::test_wrong_top_level_type_is_phase_local PASSED"
+      },
+      {
+        "behavior": "mechanism paths are checked for existence and containment (absolute, .., symlink escape) against the project root",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_profile_architecture_rules.py::test_check_paths_existence_and_escape; shared/tests/test_profile_architecture_rules_cli.py::test_project_profile_paths_are_checked_against_project_root PASSED"
+      },
+      {
+        "behavior": "the vocabulary copy equals lib.constitution_register.ENFORCEMENT",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_profile_architecture_rules.py::test_vocabulary_copy_equals_constitution_register; constitution register tests in shared/tests PASSED PASSED"
+      },
+      {
+        "behavior": "every bundled profile validates with no rule errors; vite-hono and skill-companion-app declare an explicit empty list",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_profile_architecture_rules.py::test_every_bundled_profile_validates_and_its_rules_load, ::test_bundled_declared_rules_are_pinned; shared/tests/test_profile_architecture_rules_cli.py::test_validate_every_bundled_profile_has_no_rule_errors PASSED"
+      },
+      {
+        "behavior": "shadow warning appears after the existing shadow warning only when the bundled profile has rules; corrupt bundled file never raises",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_profile_architecture_rules_cli.py::test_shadow_warning_only_when_bundled_has_rules, ::test_explicit_empty_list_in_shadowing_profile_is_not_warned; shared/tests/test_profile_architecture_rules.py::test_shadow_warning_survives_a_corrupt_bundled_file, ::test_shadow_warning_is_emitted_for_a_readable_bundled_file_with_rules PASSED"
+      },
+      {
+        "behavior": "control characters in rule ids do not reach the terminal",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_profile_architecture_rules_cli.py::test_control_characters_in_rule_text_do_not_reach_the_terminal PASSED"
+      },
+      {
+        "behavior": "cache-layout copies of the resolver family still import (plugin shipwright-test and shipwright-design profile tests)",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-test/tests/test_test_runner_profiles.py, test_performance_check_profiles.py, plugins/shipwright-design/tests/test_setup_design_profiles.py PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 11,
+      "tested": 11,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 4,
+      "covered_acs": 4
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run pytest shared/tests/test_profile_architecture_rules_cli.py shared/tests/test_profile_architecture_rules.py -q -p no:cacheprovider",
+    "exit_code": 0,
+    "tests_run": 56,
+    "evidence_path": ".shipwright/runs/iterate-2026-11-15-u1-rule-format/surface_verification.json",
+    "timestamp": "2026-11-15T22:19:01.293Z"
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}

@@ -1,0 +1,6 @@
+{"stage": "spec-compliance", "verdict": "PASS", "spec_citations": [], "per_criterion": [
+{"ac": "AC1 All bundled profiles validate", "result": "met"},
+{"ac": "AC2 Old string list validates, warning only from validate", "result": "met"},
+{"ac": "AC3 lint+mechanism is a phase-local error, profile stays valid", "result": "met"},
+{"ac": "AC4 vocabulary drift test against ENFORCEMENT", "result": "met (by inspection)"}],
+"summary": "All 4 acceptance criteria are present and implemented as the spec says; no scope creep. Stage 2 may proceed."}

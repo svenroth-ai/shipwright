@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "**Findings**\n\n- Category: dependency \u2014 Severity: medium\n  Finding: The vocabulary drift test compares against `lib.constitution_register.ENFORCEMENT`, but the new module lives in `shared/scripts/`. If `lib` isn't importable from the shared test environment (path setup, packaging), the drift test either fails or silently imports nothing. The plan doesn't state how `shared/tests` resolves `lib.constitution_register`.\n  Suggestion: Pin the import mechanism explicitly (sys.path manipulation in the test, or a conftest fixture) and verify the import works in CI before freezing the ENFORCEMENT copy.\n\n- Category: risk \u2014 Severity: medium\n  Finding: \"Rule diagnostics are NOT an exit-code concern\" is a behavioural change for any existing CI or script consumer of `resolve_profile.py validate`. Today a malformed `architecture_rules` presumably fails validation (or is silently ignored); after U1 it exits 0. The plan asserts no raw consumers exist in code, but external/CI consumers aren't addressed \u2014 and the claim \"CI consumers read `rule_errors`\" describes consumers that don't exist yet.\n  Suggestion: Confirm no CI workflow or script invokes validate on profiles with rules; if any do, decide the exit policy per consumer. At minimum document the exit-0-with-rule-errors contract in the CLI help and docs/stack-profiles.md.\n\n- Category: risk \u2014 Severity: low\n  Finding: Moving the two inline shadow-warning blocks into `ResolvedProfile.shadow_warnings()` risks subtle behaviour drift (ordering, dedup, which profiles emit it) even though the text is claimed unchanged. Existing resolver warning tests are re-run, which mitigates this.\n  Suggestion: Ensure the re-run covers the exact warning-order assertions, not just presence.\n\n- Category: edge-case \u2014 Severity: medium\n  Finding: Legacy normalisation assigns `legacy-<n>` ids. If a profile mixes objects and strings, a user-authored rule could legitimately have id `legacy-1`, colliding with a normalised string \u2014 \"first wins, later is an error\" would then reject a valid user rule. The plan doesn't say whether legacy ids are collision-checked against declared ids.\n  Suggestion: Either namespace legacy ids (e.g. `legacy-string-<n>`) or make the collision check report which one is the legacy rule; mixed lists are presumably allowed by the loader contract, so this is reachable.\n\n- Category: edge-case \u2014 Severity: low\n  Finding: `check_paths` uses realpath + containment, which resolves symlinks at check time but the path can be repointed afterwards (TOCTOU). For a config-validation use case this is mostly fine \u2014 the check is diagnostic, not a security gate \u2014 but the docstring shouldn't imply containment is guaranteed.\n  Suggestion: Document the check as point-in-time validation only. No code change needed.\n\n- Category: edge-case \u2014 Severity: low\n  Finding: Bundled profiles skip `check_paths` at runtime (different installed-cache layout), relying solely on a repo test. If a future bundled profile adds a mechanism with a wrong path and the repo test is skipped or not wired into the default test target, the gap goes unnoticed.\n  Suggestion: Make sure the bundled-profile validation test runs in the default test invocation and asserts it exercised mechanism paths (the plan already flags it as \"vacuous in U1\" \u2014 add an assertion that would fail vacuously, e.g. the test explicitly knows the expected empty set).\n\n- Category: edge-case \u2014 Severity: low\n  Finding: `enforcement` for legacy rules is None (\"undeclared\"), but the closed vocabulary has no \"undeclared\" member. Consumers (U2+) need a defined way to handle None vs the string vocabulary; the contract freeze here doesn't say which.\n  Suggestion: State explicitly in the frozen contract that None means \"treat as prompt-only/judgement, warn\" or map legacy to a specific vocabulary member at load time.\n\n**Overall assessment**\n\nThe approach is sound and well-scoped \u2014 the phase-local error model, legacy migration path, and frozen contract for U2-U6 are the right shape. The main revisions needed are the legacy-id collision edge, clarifying None-enforcement semantics in the contract, and verifying the `lib` import path for the drift test; none are structural.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Category:** edge-case  \n   **Severity:** low  \n   **Finding:** Mixed-list behavior is ambiguous. The contract describes lists of objects or strings, while the tests explicitly include a mixed list. Generated IDs such as `legacy-1` can also collide with an explicit object ID.  \n   **Suggestion:** State whether mixed lists are supported, define how legacy IDs are numbered, and test a collision between a generated ID and an explicit ID.\n\n2. **Category:** dependency  \n   **Severity:** low  \n   **Finding:** `load_rules` has a defined recovery contract, but the relationship between `check_paths` failures and returned valid rules is unspecified. Later phases need to know whether a rule with a missing or escaping path remains usable.  \n   **Suggestion:** Define how path diagnostics identify their rule and whether failed rules are excluded from downstream execution. Preserve the intended profile-level validity and CLI exit behavior.\n\n3. **Category:** risk  \n   **Severity:** low  \n   **Finding:** The proposed CLI tests cover legacy warnings in `validate`, but do not explicitly cover the broader promise of no behavior change for existing project commands. Adding diagnostics through shared loading code could accidentally expose warnings elsewhere.  \n   **Suggestion:** Add a regression assertion that ordinary resolution of the existing legacy bundled profile preserves its output and emits no legacy-format warning.\n\nThe approach is sound and appropriately scoped, with sensible separation between profile validity and rule diagnostics. These are contract and regression-test refinements; repository verification was unavailable because command execution was blocked by policy.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-11-15-u1-rule-format",
+    "at": "2026-11-15T22:11:49.312396+00:00"
+  },
+  "verdicts": {
+    "glm": "revise",
+    "openai": "approve"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=approve"
+  }
+}

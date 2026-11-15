@@ -1,0 +1,9 @@
+{"items": [
+{"name":"Spec Compliance","verdict":"pass","note":"All four acceptance criteria met; rule object, lint/mechanism split, loader, vocabulary copy with drift test, empty lists for two profiles, shadow warning, docs. supabase-nextjs deliberately stays legacy until U3a."},
+{"name":"Error Handling","verdict":"pass","note":"load_rules never raises; a bad rule is dropped and named; wrong top-level type, corrupt bundled file and escaping paths are reported, not raised."},
+{"name":"Security Basics","verdict":"pass","note":"Paths must be relative with no .., drive or backslash; check_paths resolves realpath and requires containment; rule text goes through the control-character filter on stderr."},
+{"name":"Test Quality","verdict":"pass","note":"57 new tests: every class/combination, mixed lists, recovery, path escape, CLI exit and JSON, shadow warning order, drift test, bundled pins."},
+{"name":"Performance Basics","verdict":"pass","note":"Shape check is linear in the rule count; one extra JSON read only when a custom profile shadows a bundled one."},
+{"name":"Naming & Structure","verdict":"pass","note":"New module beside profile_model, under 300 lines; the resolver got shorter (296 to 288)."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Producer: a hand-written profile JSON (BOM, CRLF, non-ASCII probed through the real CLI); consumer: load_rules via validate. The probe found a doubled prefix in two messages, fixed and re-run."},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"tmp_path only, no sleeps, no shared state; the symlink test skips where symlinks are unavailable."}]}

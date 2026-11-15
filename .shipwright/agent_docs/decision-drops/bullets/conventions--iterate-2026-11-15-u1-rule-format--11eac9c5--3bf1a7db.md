@@ -1,0 +1,1 @@
+- **iterate-2026-11-15-u1-rule-format** (2026-11-15): Convention — Stack profiles may declare architecture_rules as rule objects (id, text, why, enforcement, lint XOR mechanism); shared/scripts/profile_architecture_rules.py is the shape check, a bad rule is a validate-only error and never invalidates the profile. → decision_log (ADR via Run-ID: iterate-2026-11-15-u1-rule-format)

@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "No concrete defects found in the diff. The implementation covers the stated acceptance criteria: legacy strings produce validate-only warnings, malformed rules remain local errors, bundled profiles are checked, and enforcement vocabulary drift has a dedicated test.\n\nShip-as-is based on static review. I could not run the tests because command execution was blocked by the environment.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "## Review\n\nI read the spec (rule format with lint/mechanism split, loader for legacy string lists, validation module, vocabulary copy with drift test, explicit empty lists for the two bundled profiles, no behaviour change) against the diff.\n\n### Spec compliance\n\n- Rule object with lint/mechanism exclusivity, closed vocabulary, `NOTE_REQUIRED` classes, per-class allowed carriers \u2014 implemented in `profile_architecture_rules.py` (`ALLOWED`, `_object_problem`).\n- Legacy loader with warning-only handling \u2014 implemented (`load_rules` legacy branch) and only surfaced by `validate` (CLI test confirms `resolve` prints nothing rule-related).\n- Phase-local errors, profile stays valid (exit 0, `rule_errors`/`rules_valid` in JSON) \u2014 implemented and tested.\n- Vocabulary drift test against `lib.constitution_register.ENFORCEMENT` \u2014 present (`test_vocabulary_copy_equals_constitution_register`, plus the `ALLOWED` completeness check, which is a nice touch).\n- Explicit `[]` for vite-hono and skill-companion-app \u2014 present, with a pinning test (`test_bundled_declared_rules_are_pinned`) that also locks the supabase-nextjs legacy count.\n- No behaviour change for other projects: the only resolver change is moving the shadow warning into `ResolvedProfile.shadow_warnings()` with identical text; bundled profiles with no shadow get no new output.\n\n### Findings\n\n- Category: edge-case\n  Severity: low\n  File: `shared/scripts/profile_architecture_rules.py` \u2014 `load_rules`, legacy loop at the end\n  Finding: Legacy rules are appended to `RuleSet.rules` **after** all object rules, so a mixed list `[\"Old.\", rule_a, rule_b]` yields ordering `[a, b, legacy-string-1]` rather than profile order. A future renderer that assumes rules follow profile order will render legacy sentences last. This is documented behaviour (\"a declared id always beats a generated one\") but the reordering side effect is not.\n  Suggestion: Either sort the output back into profile position order, or note the reordering in the frozen-contract docstring so the U2+ renderer units don't assume positional fidelity.\n\n- Category: edge-case\n  Severity: low\n  File: `shared/scripts/profile_architecture_rules.py` \u2014 `shadow_rules_warning`\n  Finding: On a corrupt/unreadable bundled file the function `return None`s immediately instead of `continue`-ing to the next bundled shadow path. With the current lookup model (one bundled profile per name) this is unreachable, but the `shadows` list is a list precisely because callers may pass several.\n  Suggestion: `continue` instead of `return None` on `OSError/ValueError/AttributeError`.\n\n- Category: test\n  Severity: low\n  File: `shared/tests/test_profile_architecture_rules.py` \u2014 `test_shadow_warning_survives_a_corrupt_bundled_file`\n  Finding: The corrupt-file test only asserts \"no crash / None\"; it would also pass if the warning were silently never emitted for a *valid* bundled file in the same directory. The happy-path shadow warning (bundled has rules \u2192 warning emitted) is only covered indirectly through the CLI test in the other file; a direct unit test of `shadow_rules_warning` returning the warning string is missing.\n  Suggestion: Add one assertion where a readable bundled JSON with non-empty `architecture_rules` produces the warning string.\n\n- Category: edge-case\n  Severity: low\n  File: `shared/scripts/profile_architecture_rules.py` \u2014 `load_rules`\n  Finding: A rule with a *valid but duplicate* id short-circuits at the `elif rid in seen` branch, so a duplicate that also has shape problems reports only \"duplicate id\", and conversely a shape-error rule never registers its id in `seen`, so two invalid rules sharing an id each get shape errors rather than a duplicate error. Harmless for consumers (both are dropped), but the diagnostic can mislead.\n  Suggestion: Acceptable as-is; if tightened, report both problems per rule.\n\n### Checks that came up clean\n\n- `check_paths`: symlink/junction escape via `realpath` + `commonpath` is handled (test covers the symlink case, with a skip for platforms without symlinks); Windows drive-mismatch `ValueError` is caught; lint targets checked for containment only, mechanisms for existence \u2014 matches the documented contract.\n- Control-character sanitisation of rule ids on stderr (`_plain` + dedicated test) \u2014 no terminal-injection via profile data.\n- The bundled-profile path check is correctly excluded from runtime `validate` (cache layout) and covered instead by the repo-root test \u2014 the comment in the CLI explains why.\n- `profile_model.py` regression risk: `shadow_warnings()` reproduces the previous warning text verbatim and is gated on the same `custom and shadows_bundled` condition; both call sites (`resolve_profile`, `load_profile_file`) set `shadows`/`shadows_bundled` before invoking it.\n- Schema change only adds an intentionally untyped, documented key; no `additionalProperties` break.\n\n### Overall assessment\n\nSolid, well-tested implementation that meets all four acceptance criteria; the findings above are refinements, none block. Ship-as-is is defensible; the ordering note is worth addressing before the renderer unit builds on it.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-11-15-u1-rule-format",
+    "at": "2026-11-15T22:17:05.721806+00:00"
+  },
+  "verdicts": {
+    "openai": "approve",
+    "glm": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}
