@@ -31,9 +31,9 @@ Shipwright is an AI-powered SDLC framework built on Claude Code. It is structure
 | FR-01.19 | Adopted | Recovery of a broken shared branch | Should | When the shared branch breaks after a change is merged, say so and name the single change that broke it, instead of leaving whoever comes next to discover it. That naming is only trustworthy because every merged change is checked on its own rather than only the newest one, and what a repair needs travels with it: what failed, and which other changes the broken one had never been tested alongside. A repair corrects the mismatch and is never allowed to make a test ask for less — that is refused outright, and refused again independently on the code host. Where repairing would be a guess rather than a correction — a security finding, too many changes implicated, or two attempts already spent — the matter is filed for a decision instead, with the way back included. Only one repair is ever under way for the same breakage, and one that is abandoned releases its place rather than blocking every later attempt. | interview | unit (inferred) |
 | FR-01.20 | Adopted | Context-Cost Meter | Should | Measure what a session actually costs, from the assistant's own record of what it sent and received, counted once per exchange no matter how many lines that exchange left behind — and break the total down by which pipeline phase spent it, shown as the session runs rather than only after it ends. Adds this real, priced figure as an alternative to a rough stand-in that only counted tool calls, usable at the same points that stand-in already warns at — the stand-in itself keeps running until a later change compares the two and switches over. Also checks, the way the existing pre-push checks do, whether the session's own auto-compaction setting and effort level are set sanely for its context window. | code | unit (inferred) |
 | FR-01.21 | Adopted | Codex Plugin Distribution | Should | Shipwright can be installed for Codex as a single, verifiably reproducible plugin bundle carrying every one of its skills, instead of the tool depending on a machine-specific cache directory that was only ever built for a different assistant. The environment variable a script reads to find its own plugin's files resolves the same way no matter which of the two assistants installed it. Its hooks also actually run under Codex, via a global config-layer sync — not just its skills. | other: campaign spec | unit, e2e (inferred) |
-| FR-01.22 | Adopted | Structured architecture rules in stack profiles | Should | A stack profile can declare, in a machine-checkable form, which architecture rules a project of that stack must keep and how each rule is kept (by the stack's own linter, by a named checking file, or by instruction only). The older plain-sentence list is still accepted, and every bundled profile stays valid. | code | unit (inferred) |
-| FR-01.23 | Adopted | Warning for the outdated rule format in stack profiles | Should | When a profile still lists its architecture rules as plain sentences, the on-request profile check says so and shows how to convert them; no other phase prints that warning, so nothing changes for a project that does not ask. | code | unit (inferred) |
-| FR-01.24 | Adopted | A wrong architecture rule never breaks the profile | Should | One badly written architecture rule is reported as an error on request, the other rules of that profile stay usable, and the profile itself stays valid for every phase. | code | unit (inferred) |
+| FR-01.23 | Adopted | Structured architecture rules in stack profiles | Should | A stack profile can declare, in a machine-checkable form, which architecture rules a project of that stack must keep and how each rule is kept (by the stack's own linter, by a named checking file, or by instruction only). The older plain-sentence list is still accepted, and every bundled profile stays valid. | code | unit (inferred) |
+| FR-01.24 | Adopted | Warning for the outdated rule format in stack profiles | Should | When a profile still lists its architecture rules as plain sentences, the on-request profile check says so and shows how to convert them; no other phase prints that warning, so nothing changes for a project that does not ask. | code | unit (inferred) |
+| FR-01.25 | Adopted | A wrong architecture rule never breaks the profile | Should | One badly written architecture rule is reported as an error on request, the other rules of that profile stay usable, and the profile itself stays valid for every phase. | code | unit (inferred) |
 
 ## Quality Requirements
 
@@ -1602,18 +1602,18 @@ _Where the work detail lives_ at the end of this document.
   session whose first prompt did not arm it is never denied, regardless of
   what it calls first.
 
-<a id="fr-0122"></a>
-### FR-01.22 — Structured architecture rules in stack profiles
+<a id="fr-0123"></a>
+### FR-01.23 — Structured architecture rules in stack profiles
 
 - (E) [AC01] Given a stack profile declares its architecture rules as structured entries, when the profile is checked, then every bundled profile is still reported valid, and an old-style list of plain sentences is accepted too.
 
-<a id="fr-0123"></a>
-### FR-01.23 — Warning for the outdated rule format in stack profiles
+<a id="fr-0124"></a>
+### FR-01.24 — Warning for the outdated rule format in stack profiles
 
 - (E) [AC01] Given a profile still uses the old plain-sentence list of architecture rules, when the profile is checked on request, then a warning is shown, and no other phase prints that warning.
 
-<a id="fr-0124"></a>
-### FR-01.24 — A wrong architecture rule never breaks the profile
+<a id="fr-0125"></a>
+### FR-01.25 — A wrong architecture rule never breaks the profile
 
 - (E) [AC01] Given one architecture rule names both a linter fragment and a list of checking files, when the profile is checked on request, then that rule is reported as an error, the remaining rules stay usable, and the profile itself stays valid.
 

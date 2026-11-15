@@ -14,7 +14,7 @@ import profile_resolver as pr  # noqa: E402
 from shared.tests.profile_test_fixtures import proj_dir, write_profile  # noqa: E402
 from shared.tests.profile_test_fixtures import profile_project, profile_user_dir  # noqa: E402,F401
 
-pytestmark = pytest.mark.covers("FR-01.22/AC01")
+pytestmark = pytest.mark.covers("FR-01.23/AC01")
 
 GOOD = {"id": "r1", "text": "A.", "why": "B.", "enforcement": "prompt-only (judgement)"}
 
@@ -30,7 +30,7 @@ def _validate_json(capsys, project, name):
     return code, json.loads(out), err
 
 
-@pytest.mark.covers("FR-01.23/AC01")
+@pytest.mark.covers("FR-01.24/AC01")
 def test_bundled_legacy_profile_warns_only_in_validate(project, capsys):
     code, data, err = _validate_json(capsys, project, "supabase-nextjs")
     assert code == 0 and data["valid"] is True and data["rule_errors"] == []
@@ -42,14 +42,16 @@ def test_bundled_legacy_profile_warns_only_in_validate(project, capsys):
     assert res.warnings == []
 
 
-@pytest.mark.covers("FR-01.24/AC01")
+@pytest.mark.covers("FR-01.25/AC01")
 def test_lint_plus_mechanism_rule_is_reported_but_profile_stays_valid(project, capsys):
     bad = {**GOOD, "id": "both", "enforcement": "validator", "mechanism": ["a.py"],
-           "lint": {"tool": "eslint", "target": "e.mjs", "block": {"x": 1}}}
+           "lint": {"tool": "eslint", "target": "e.mjs", "block": {"rules": {"no-restricted-imports": "error"}}}}
     write_profile(proj_dir(project), "custom-one", architecture_rules=[GOOD, bad])
     code, data, _ = _validate_json(capsys, project, "custom-one")
     assert code == 0 and data["valid"] is True
-    assert len(data["rule_errors"]) == 1 and "rule both" in data["rule_errors"][0]
+    assert len(data["rule_errors"]) == 1
+    assert "rule both" in data["rule_errors"][0]
+    assert "never both" in data["rule_errors"][0]
     # the profile still resolves for every other phase
     assert pr.resolve_profile("custom-one", project).data["architecture_rules"][0]["id"] == "r1"
 
@@ -98,4 +100,4 @@ def test_control_characters_in_rule_text_do_not_reach_the_terminal(project, caps
     esc = chr(27)
     write_profile(proj_dir(project), "custom-four", architecture_rules=[{**GOOD, "id": "ok" + esc + "[31m"}])
     _, _, err = _run(capsys, "validate", "--project-root", str(project), "--name", "custom-four")
-    assert esc not in err and "rule ok" in err
+    assert esc not in err and "rule 'ok" in err

@@ -182,7 +182,7 @@ def load_rules(raw: object) -> RuleSet:
             out.errors.append(f"rule {pos}: must be an object or a legacy sentence")
             continue
         rid = item.get("id")
-        label = rid if isinstance(rid, str) and rid else f"#{pos}"
+        label = repr(rid) if isinstance(rid, str) and rid else f"#{pos}"
         if not isinstance(rid, str) or not ID_RE.fullmatch(rid):
             out.errors.append(f"rule {label}: 'id' must match {ID_RE.pattern}")
         elif rid in claimed:
@@ -192,7 +192,7 @@ def load_rules(raw: object) -> RuleSet:
             out.errors.append(f"rule {rid}: {problem}")
         else:
             claimed.add(rid)
-            extra = sorted(k for k in item if k not in _KEYS and not str(k).startswith("_"))
+            extra = sorted(map(str, (k for k in item if k not in _KEYS and not str(k).startswith("_"))))
             if extra:
                 out.warnings.append(f"rule {rid}: unknown key(s) {', '.join(map(repr, extra))} ignored")
             seen[rid] = Rule(rid, item["text"], item["why"], item["enforcement"],

@@ -15,8 +15,9 @@ Lookup order: ``<project>/.shipwright/profiles`` -> ``~/.shipwright/profiles``
 Exit codes: 0 ok, 2 not found, 3 invalid / schema drift, 4 usage.
 ``validate`` also reports architecture-rule problems (stderr, and ``rule_errors`` /
 ``rule_warnings`` in ``--json``). They never change the exit code: a profile with a
-malformed rule is still a valid profile (exit 0); read ``rule_errors`` / ``rules_valid`` to gate on them. Mechanism paths of a non-bundled
-profile are checked against ``--project-root`` (default ``.``): run from the project.
+malformed rule is still a valid profile (exit 0); read ``rule_errors`` /
+``rules_valid`` to gate on them. Mechanism paths of a non-bundled profile are checked
+against ``--project-root`` (default ``.``): run from the project.
 stdout carries ONLY the requested output; provenance (source, shadows,
 shadow warning) goes to stderr. ``resolve --path-only`` for ``generic`` /
 ``detecting`` prints nothing and exits 0 (empty path = built-in defaults).
@@ -110,7 +111,8 @@ def _run(args, parser) -> int:
         rs = load_rules(res.data.get("architecture_rules"))
         errors = [f"architecture_rules: {e}" for e in rs.errors]
         if res.custom:  # a bundled profile's paths are checked by a repo test (cache layout differs)
-            errors += [f"architecture_rules: rule {rid}: {m} (project root {args.project_root})" for rid, m in check_paths(rs.rules, args.project_root)]
+            for rid, msg in check_paths(rs.rules, args.project_root):
+                errors.append(f"architecture_rules: rule {rid}: {msg} (project root {args.project_root})")
         warnings = [f"architecture_rules: {w}" for w in rs.warnings]
         for kind, lines in ("error", errors), ("warning", warnings):
             for line in lines:

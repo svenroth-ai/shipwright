@@ -28,3 +28,7 @@ Attempt 2 (rewritten brief), verbatim verdicts from `architecture-review-raw.jso
 ## Consequences
 
 Four scheduled units read this shape. A project profile that shadows `supabase-nextjs` now prints one more stderr warning on resolve (intended). The legacy sentence list is accepted until U3a converts the last bundled user.
+
+The new shadow warning also lands in the `warnings[]` of the resolved profile (`res.warnings`), which adopt and the brief resolver pass on, not only on stderr; both consumers just forward the lines.
+
+Renumbering (orchestrator review): this run's three new requirements are FR-01.23, FR-01.24 and FR-01.25, because open PR #1055 mints FR-01.22 with a different meaning.

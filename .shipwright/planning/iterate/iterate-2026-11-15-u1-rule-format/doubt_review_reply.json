@@ -1,5 +1,42 @@
-{"stage":"doubt","gating":"advisory-must-address","doubts":[
-{"severity":"high","lens":"hidden coupling","claim_under_doubt":"adding the new module import to profile_model breaks no existing load path","disproof_attempt":"three plugin cache-layout tests copy a fixed file list lacking profile_architecture_rules.py and would fail with ModuleNotFoundError. DISPOSITION: fixed, module added to the three copy lists, plugin profile tests re-run green."},
-{"severity":"low","lens":"contract","claim_under_doubt":"existing warnings are unchanged for every phase","disproof_attempt":"the shadow-rules warning is new output in every phase when a custom profile shadows a bundled one with rules. DISPOSITION: intended by the brief, recorded in ADR and changelog."},
-{"severity":"low","lens":"contract","claim_under_doubt":"the shadow warning only fires when the custom profile declares none","disproof_attempt":"a wrong-typed key was told it declares none. DISPOSITION: fixed, warns only when absent or null."},
-{"severity":"low","lens":"windows paths","claim_under_doubt":"check_paths messages are accurate on Windows","disproof_attempt":"device-name segments and trailing dots are not rejected; message accuracy only, nothing raises. DISPOSITION: accepted, left for the first consumer."}]}
+{
+ "stage": "doubt",
+ "gating": "advisory-must-address",
+ "doubts": [
+  {
+   "severity": "high",
+   "lens": "hidden coupling",
+   "claim_under_doubt": "adding the new module import to profile_model breaks no existing load path",
+   "disproof_attempt": "three plugin cache-layout tests copy a fixed file list lacking profile_architecture_rules.py and would fail with ModuleNotFoundError. DISPOSITION: fixed, module added to the three copy lists, plugin profile tests re-run green."
+  },
+  {
+   "severity": "low",
+   "lens": "contract",
+   "claim_under_doubt": "existing warnings are unchanged for every phase",
+   "disproof_attempt": "the shadow-rules warning is new output in every phase when a custom profile shadows a bundled one with rules. DISPOSITION: intended by the brief, recorded in ADR and changelog."
+  },
+  {
+   "severity": "low",
+   "lens": "contract",
+   "claim_under_doubt": "the shadow warning only fires when the custom profile declares none",
+   "disproof_attempt": "a wrong-typed key was told it declares none. DISPOSITION: fixed, warns only when absent or null."
+  },
+  {
+   "severity": "low",
+   "lens": "windows paths",
+   "claim_under_doubt": "check_paths messages are accurate on Windows",
+   "disproof_attempt": "device-name segments and trailing dots are not rejected; message accuracy only, nothing raises. DISPOSITION: accepted, left for the first consumer."
+  },
+  {
+   "severity": "medium",
+   "lens": "cross-PR contract",
+   "claim_under_doubt": "FR-01.22 is free to mint",
+   "disproof_attempt": "open PR #1055 mints FR-01.22 with a different meaning and tags tests FR-01.22/AC24. DISPOSITION: fixed, this run's requirements renumbered to FR-01.23/24/25 in the spec, anchors, test tags, AC record, event drop, plan stub and ADR."
+  },
+  {
+   "severity": "low",
+   "lens": "contract",
+   "claim_under_doubt": "the shadow warning only reaches stderr",
+   "disproof_attempt": "it also lands in the resolved profile warnings list that adopt and the brief resolver forward. DISPOSITION: recorded in the ADR Consequences."
+  }
+ ]
+}

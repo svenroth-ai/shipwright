@@ -124,7 +124,7 @@
     "code": {
       "review_type": "code",
       "status": "completed",
-      "findings_count": 4,
+      "findings_count": 8,
       "findings": [
         {
           "severity": "low",
@@ -161,22 +161,58 @@
           "finding": "a project profile shadowing supabase-nextjs gets one more stderr warning",
           "suggestion": null,
           "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/profile_architecture_rules.py",
+          "line": null,
+          "finding": "orchestrator round: sorted() over mixed-type rule keys could raise",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_profile_architecture_rules_cli.py",
+          "line": null,
+          "finding": "orchestrator round: lint+mechanism CLI test used an invalid eslint block, so it did not isolate the 'never both' error",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/tools/resolve_profile.py",
+          "line": null,
+          "finding": "orchestrator round: 170-char comprehension and long docstring line",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/profile_architecture_rules.py",
+          "line": null,
+          "finding": "orchestrator round: invalid-id message printed the raw label",
+          "suggestion": null,
+          "source": "code-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-11-15T22:20:38.170803+00:00",
+      "completed_at": "2026-11-15T22:39:43.943515+00:00",
       "disposition": null,
       "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus",
       "verdict": "pass",
-      "reviewed_commit": "65f380846a5cccd296267a909a6c2018f8f1e374"
+      "reviewed_commit": "621d5d22413d96bcc58129dc2f2bad4c43979b2f"
     },
     "doubt": {
       "review_type": "doubt",
       "status": "completed",
-      "findings_count": 4,
+      "findings_count": 6,
       "findings": [
         {
           "severity": "high",
@@ -213,17 +249,35 @@
           "finding": "Claim under doubt: check_paths messages are accurate on Windows — device-name segments and trailing dots are not rejected; message accuracy only, nothing raises. DISPOSITION: accepted, left for the first consumer.",
           "suggestion": null,
           "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "cross-PR contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: FR-01.22 is free to mint — open PR #1055 mints FR-01.22 with a different meaning and tags tests FR-01.22/AC24. DISPOSITION: fixed, this run's requirements renumbered to FR-01.23/24/25 in the spec, anchors, test tags, AC record, event drop, plan stub and ADR.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the shadow warning only reaches stderr — it also lands in the resolved profile warnings list that adopt and the brief resolver forward. DISPOSITION: recorded in the ADR Consequences.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-11-15T22:26:51.062124+00:00",
+      "completed_at": "2026-11-15T22:39:44.097225+00:00",
       "disposition": null,
       "recorded_by": "doubt-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus",
       "verdict": "pass",
-      "reviewed_commit": "65f380846a5cccd296267a909a6c2018f8f1e374"
+      "reviewed_commit": "621d5d22413d96bcc58129dc2f2bad4c43979b2f"
     },
     "external_code": {
       "review_type": "external_code",

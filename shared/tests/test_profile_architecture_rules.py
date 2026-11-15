@@ -14,7 +14,7 @@ import profile_architecture_rules as par  # noqa: E402
 import profile_resolver as pr  # noqa: E402
 from lib import constitution_register as cr  # noqa: E402
 
-pytestmark = pytest.mark.covers("FR-01.22/AC01")
+pytestmark = pytest.mark.covers("FR-01.23/AC01")
 ROOT = Path(__file__).resolve().parents[2]
 
 
@@ -72,7 +72,7 @@ def test_bad_rule_is_an_error_and_dropped(bad):
     assert [r.id for r in rs.rules] == ["ok"] and len(rs.errors) == 1
 
 
-@pytest.mark.covers("FR-01.24/AC01")
+@pytest.mark.covers("FR-01.25/AC01")
 def test_lint_plus_mechanism_keeps_the_other_rules():
     rs = par.load_rules([rule(id="a"), rule(id="b", enforcement="validator", lint=LINT, mechanism=["x.py"]), rule(id="c")])
     assert [r.id for r in rs.rules] == ["a", "c"]
@@ -84,7 +84,7 @@ def test_duplicate_id_first_wins():
     assert [r.text for r in rs.rules] == ["first"] and "duplicate" in rs.errors[0]
 
 
-@pytest.mark.covers("FR-01.23/AC01")
+@pytest.mark.covers("FR-01.24/AC01")
 def test_legacy_strings_normalised_with_one_warning_and_undeclared_class():
     rs = par.load_rules(["One.", "Two."])
     assert [(r.id, r.legacy, r.enforcement) for r in rs.rules] == [("legacy-string-1", True, None), ("legacy-string-2", True, None)]
@@ -105,6 +105,11 @@ def test_absent_null_empty_and_wrong_type():
     assert empty.declared is True and empty.rules == [] and empty.errors == [] and empty.warnings == []
     wrong = par.load_rules({"id": "x"})
     assert wrong.rules == [] and "must be a list" in wrong.errors[0] and wrong.declared is False
+
+
+def test_mixed_type_keys_never_raise():
+    rs = par.load_rules([{**rule(), 5: "x", "zz": 1}])
+    assert len(rs.rules) == 1 and rs.errors == [] and "'5'" in rs.warnings[0] and "'zz'" in rs.warnings[0]
 
 
 def test_unknown_key_warns_but_comment_keys_do_not():

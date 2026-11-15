@@ -1,5 +1,62 @@
-{"section": "U1-rule-format", "verdict": "PASS", "review": [
-{"severity":"low","category":"readability","file":"shared/scripts/profile_architecture_rules.py","finding":"Rule.paths() had no caller","disposition":"fixed (removed)"},
-{"severity":"low","category":"architecture","file":"shared/scripts/profile_architecture_rules.py","finding":"containment check duplicates profile_model.path_within (import would be circular)","disposition":"accepted, documented in the plan"},
-{"severity":"low","category":"correctness","file":"shared/scripts/profile_architecture_rules.py","finding":"duplicate-id detection ignored ids of invalid first rules","disposition":"fixed (claimed set + test)"},
-{"severity":"low","category":"correctness","file":"shared/scripts/profile_model.py","finding":"a project profile shadowing supabase-nextjs gets one more stderr warning","disposition":"intended; recorded in changelog and ADR"}]}
+{
+ "section": "U1-rule-format",
+ "verdict": "PASS",
+ "review": [
+  {
+   "severity": "low",
+   "category": "readability",
+   "file": "shared/scripts/profile_architecture_rules.py",
+   "finding": "Rule.paths() had no caller",
+   "disposition": "fixed (removed)"
+  },
+  {
+   "severity": "low",
+   "category": "architecture",
+   "file": "shared/scripts/profile_architecture_rules.py",
+   "finding": "containment check duplicates profile_model.path_within (import would be circular)",
+   "disposition": "accepted, documented in the plan"
+  },
+  {
+   "severity": "low",
+   "category": "correctness",
+   "file": "shared/scripts/profile_architecture_rules.py",
+   "finding": "duplicate-id detection ignored ids of invalid first rules",
+   "disposition": "fixed (claimed set + test)"
+  },
+  {
+   "severity": "low",
+   "category": "correctness",
+   "file": "shared/scripts/profile_model.py",
+   "finding": "a project profile shadowing supabase-nextjs gets one more stderr warning",
+   "disposition": "intended; recorded in changelog and ADR"
+  },
+  {
+   "severity": "low",
+   "category": "correctness",
+   "file": "shared/scripts/profile_architecture_rules.py",
+   "finding": "orchestrator round: sorted() over mixed-type rule keys could raise",
+   "disposition": "fixed (keys mapped to str; unit test test_mixed_type_keys_never_raise)"
+  },
+  {
+   "severity": "low",
+   "category": "test",
+   "file": "shared/tests/test_profile_architecture_rules_cli.py",
+   "finding": "orchestrator round: lint+mechanism CLI test used an invalid eslint block, so it did not isolate the 'never both' error",
+   "disposition": "fixed (valid eslint block; asserts 'never both')"
+  },
+  {
+   "severity": "low",
+   "category": "readability",
+   "file": "shared/scripts/tools/resolve_profile.py",
+   "finding": "orchestrator round: 170-char comprehension and long docstring line",
+   "disposition": "fixed (short loop, wrapped docstring)"
+  },
+  {
+   "severity": "low",
+   "category": "correctness",
+   "file": "shared/scripts/profile_architecture_rules.py",
+   "finding": "orchestrator round: invalid-id message printed the raw label",
+   "disposition": "fixed (repr of the label)"
+  }
+ ]
+}
