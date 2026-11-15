@@ -111,3 +111,48 @@ def resolve_effective(project_root: Path, override: str | None, snapshot: dict):
             f"resolves from {res.source} ({res.path}). Re-run analyze_codebase.py, or pass --profile."
         )
     return res
+
+
+def _report(notes: list[str]) -> list[str]:
+    for note in notes:  # also on stderr: the notes in the result JSON are easy to miss
+        sys.stderr.write(f"warning: {note}\n")
+    return notes
+
+
+def write_rules_block(conventions_md: Path, resolved) -> list[str]:
+    """Put the effective profile's architecture rules into ``conventions_md`` (one marked block).
+
+    The shared render tool is loaded by file path (``shared/scripts/tools`` is a ``tools``
+    package that would shadow adopt's own). Returns the stderr-style notes (rule errors) for
+    the caller's result; a missing shared tree raises ImportError like ``load_resolver``.
+    """
+    import importlib.util
+
+    previous = None
+    tool = Path(_SHARED_SCRIPTS) / "tools" / "render_architecture_rules.py"
+    load_resolver()  # the same "shared tree missing" ImportError
+    if not tool.is_file():
+        return _report([f"architecture_rules block NOT written: {tool} is missing (incomplete shared tree)"])
+    added = _SHARED_SCRIPTS not in sys.path
+    if added:
+        sys.path.append(_SHARED_SCRIPTS)
+    try:
+        spec = importlib.util.spec_from_file_location("render_architecture_rules", tool)
+        mod = importlib.util.module_from_spec(spec)
+        previous = sys.modules.get(spec.name)
+        sys.modules[spec.name] = mod  # register before exec (dataclass/typing lookups)
+        spec.loader.exec_module(mod)
+        rules = mod.load_rules(resolved.data.get("architecture_rules"))
+        notes = [f"architecture_rules: {m}" for m in (*rules.errors, *rules.warnings)]
+        try:
+            mod.render_into(str(conventions_md), resolved.name, rules)
+        except (OSError, UnicodeError, mod.DamagedMarkers) as exc:  # the rest of adoption is already written
+            notes.append(f"architecture_rules block NOT written to {conventions_md}: {exc}")
+    finally:
+        if previous is None:
+            sys.modules.pop("render_architecture_rules", None)
+        else:
+            sys.modules["render_architecture_rules"] = previous
+        if added and _SHARED_SCRIPTS in sys.path:
+            sys.path.remove(_SHARED_SCRIPTS)
+    return _report(notes)

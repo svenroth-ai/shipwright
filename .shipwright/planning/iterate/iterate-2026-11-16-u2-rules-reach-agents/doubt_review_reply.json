@@ -1,0 +1,48 @@
+{
+ "stage": "doubt",
+ "gating": "advisory-must-address",
+ "doubts": [
+  {
+   "severity": "medium",
+   "lens": "hidden coupling",
+   "claim_under_doubt": "CRLF heading branch corrupts line endings",
+   "disproof_attempt": "CRLF heading branch corrupts line endings -- fixed",
+   "disposition": "fixed"
+  },
+  {
+   "severity": "medium",
+   "lens": "hidden coupling",
+   "claim_under_doubt": "block placed above old bullets or inside the imported section",
+   "disproof_attempt": "block placed above old bullets or inside the imported section -- imported section fixed; old bullets documented",
+   "disposition": "imported section fixed; old bullets documented"
+  },
+  {
+   "severity": "low",
+   "lens": "hidden coupling",
+   "claim_under_doubt": "missing shared tool crashed adopt",
+   "disproof_attempt": "missing shared tool crashed adopt -- fixed (note)",
+   "disposition": "fixed (note)"
+  },
+  {
+   "severity": "low",
+   "lens": "hidden coupling",
+   "claim_under_doubt": "notes not surfaced",
+   "disproof_attempt": "notes not surfaced -- fixed (stderr)",
+   "disposition": "fixed (stderr)"
+  },
+  {
+   "severity": "low",
+   "lens": "hidden coupling",
+   "claim_under_doubt": "quoted markers / fenced text",
+   "disproof_attempt": "quoted markers / fenced text -- markers fixed; fenced text accepted",
+   "disposition": "markers fixed; fenced text accepted"
+  },
+  {
+   "severity": "low",
+   "lens": "hidden coupling",
+   "claim_under_doubt": "sys.modules cleanup",
+   "disproof_attempt": "sys.modules cleanup -- fixed",
+   "disposition": "fixed"
+  }
+ ]
+}

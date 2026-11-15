@@ -127,6 +127,8 @@ _Where the work detail lives_ at the end of this document.
 - (E) [AC13] Given a stack profile declares its architecture rules as structured entries, when the profile is checked, then every bundled profile is still reported valid, and an old-style list of plain sentences is accepted too.
 - (E) [AC14] Given a profile still uses the old plain-sentence list of architecture rules, when the profile is checked on request, then a warning is shown, and no other phase prints that warning.
 - (E) [AC15] Given one architecture rule names both a linter fragment and a list of checking files, when the profile is checked on request, then that rule is reported as an error, the remaining rules stay usable, and the profile itself stays valid.
+- (E) [AC16] Given a project's stack profile declares architecture rules, when the project is scaffolded or adopted, then its conventions file carries them in one marked block, and rules that are only instructions say so; a profile with no rules gets an explicit line saying none are declared.
+- (E) [AC17] Given the rules block is already in the conventions file, when the tool runs again on an unchanged profile, then nothing changes, and text outside the block is never touched.
 
 <a id="fr-0102"></a>
 ### FR-01.02 — Project decomposition into scoped units

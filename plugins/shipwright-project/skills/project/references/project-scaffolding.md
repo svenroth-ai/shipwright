@@ -94,8 +94,14 @@ Initialize with project name and profile name. No entries yet — shipwright-bui
 Load template from `{plugin_root}/../../shared/templates/agent-docs/conventions.md.template`.
 
 Fill with:
-- `{ARCHITECTURE_RULES}` — from profile's `architecture_rules` (as bullet list)
 - `{FOLDER_STRUCTURE}` — from profile's `folder_structure` (as tree)
+- Leave `{ARCHITECTURE_RULES}` as it is, write the file, then run the render tool; it replaces that placeholder with one marked block of the profile's `architecture_rules` (a profile with none gets a "none declared" line; instruction-only rules are marked as such). Do not compose the rules yourself:
+
+```bash
+uv run --no-project "{shared_root}/scripts/tools/render_architecture_rules.py" --project-root "{project_root}" --profile "{profile_name}"
+```
+
+Exit 0 = written or unchanged. Exit 2 (profile does not resolve) or 3 (file unusable): stop and show the message. A rule with a shape error is reported on stderr and left out; that is not a failure.
 
 ## Config Output
 

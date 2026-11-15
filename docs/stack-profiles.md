@@ -180,6 +180,8 @@ A profile can say which architecture rules a project of that stack must keep, an
 
 If your own profile has a bundled name and declares no `architecture_rules`, but the bundled one does, the resolver adds a warning next to the usual shadow warning; copy the rules in, or write `"architecture_rules": []` to say you mean none.
 
+**How the rules reach agents.** `render_architecture_rules.py` writes the rules of the project's profile into one marked block of `.shipwright/agent_docs/conventions.md` (`--profile`, else the run config's `profile`). `/shipwright-project` step 7 and `/shipwright-adopt` call it; you can run it yourself after changing the profile. Running it again changes nothing unless the profile changed; text outside the block is never touched. A profile with no rules gets a "none declared" line, and an instruction-only rule says so. If a project's `conventions.md` already has hand-written rules under that heading (older scaffolds), delete them first: the block is placed under the heading and never removes text.
+
 ## Discovery versus selection
 
 Where Shipwright only *lists or suggests* profiles (the interview's candidate list,

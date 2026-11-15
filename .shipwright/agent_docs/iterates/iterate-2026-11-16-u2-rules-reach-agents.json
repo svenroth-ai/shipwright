@@ -1,0 +1,82 @@
+{
+  "run_id": "iterate-2026-11-16-u2-rules-reach-agents",
+  "date": "2026-11-15T23:41:34.923802Z",
+  "event_at": "2026-11-15T23:41:29.378227+00:00",
+  "type": "feature",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/campaign-profile-architecture-rules--U2",
+  "spec": ".shipwright/planning/iterate/campaigns/profile-architecture-rules/sub-iterates/U2-rules-reach-agents.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-11-16-u2-rules-reach-agents",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "scaffolded conventions.md carries the rules block with the template heading kept and the rest untouched",
+        "disposition": "tested",
+        "evidence": "test_render_architecture_rules.py::test_scaffolded_conventions_carry_the_block, ::test_existing_heading_gets_the_block_underneath, ::test_no_heading_no_placeholder_appends_with_heading PASSED"
+      },
+      {
+        "behavior": "adopt on a profile with rules writes the block into conventions.md; a bad rule is reported in the result",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-adopt/tests/test_adopt_architecture_rules.py::test_adopt_on_a_profile_with_rules_gets_the_block, ::test_bad_rule_is_reported_in_the_result_not_fatal PASSED"
+      },
+      {
+        "behavior": "running the tool twice changes nothing (LF and CRLF), --check reports stale only when the profile changed",
+        "disposition": "tested",
+        "evidence": "test_render_architecture_rules.py::test_second_run_changes_nothing_and_check_says_so, ::test_crlf_file_stays_crlf_and_is_idempotent, ::test_changed_profile_replaces_the_block_only PASSED; adopt test_adopt_twice_gives_the_same_conventions PASSED"
+      },
+      {
+        "behavior": "a profile with no rules (empty list or key absent) writes an explicit none-declared line; only-invalid rules never read as none declared",
+        "disposition": "tested",
+        "evidence": "test_render_architecture_rules.py::test_profile_without_rules_says_none_declared, ::test_only_invalid_rules_is_not_reported_as_none_declared; adopt test_adopt_on_a_profile_without_rules_says_none_declared PASSED"
+      },
+      {
+        "behavior": "legacy sentences and judgement rules are labelled instruction only",
+        "disposition": "tested",
+        "evidence": "test_render_architecture_rules.py::test_legacy_sentences_are_instruction_only, ::test_bundled_legacy_profile_renders_its_sentences PASSED"
+      },
+      {
+        "behavior": "damaged markers stop without writing; rule text cannot close the markers",
+        "disposition": "tested",
+        "evidence": "test_render_architecture_rules.py::test_damaged_markers_stop_without_writing, ::test_rule_text_cannot_close_the_markers PASSED"
+      },
+      {
+        "behavior": "unknown profile, missing file and missing profile name exit non-zero with a message",
+        "disposition": "tested",
+        "evidence": "test_render_architecture_rules.py::test_unknown_profile_and_missing_file, ::test_profile_comes_from_the_run_config PASSED"
+      },
+      {
+        "behavior": "cross-plugin composition: shared render tool + project scaffold template + adopt generator on the same profile file",
+        "disposition": "tested",
+        "evidence": "integration-tests full run 685 passed; adopt generate() through real resolver PASSED",
+        "category": "integration"
+      }
+    ],
+    "counts": {
+      "testable": 8,
+      "tested": 8,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 2,
+      "covered_acs": 2
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run pytest shared/tests/test_render_architecture_rules.py -q -p no:cacheprovider",
+    "exit_code": 0,
+    "tests_run": 17,
+    "evidence_path": ".shipwright/runs/iterate-2026-11-16-u2-rules-reach-agents/surface_verification.log",
+    "timestamp": "2026-11-15T23:40:58.055Z"
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}

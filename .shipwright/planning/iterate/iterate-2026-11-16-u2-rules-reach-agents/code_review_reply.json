@@ -1,0 +1,6 @@
+{"section":"U2-rules-reach-agents","verdict":"PASS","review":[
+{"severity":"medium","category":"correctness","file":"shared/scripts/tools/render_architecture_rules.py","finding":"heading branch mixed line endings on a CRLF file","disposition":"fixed"},
+{"severity":"low","category":"correctness","file":"shared/scripts/tools/render_architecture_rules.py","finding":"loader warnings were dropped","disposition":"fixed (stderr and adopt notes)"},
+{"severity":"low","category":"correctness","file":"plugins/shipwright-adopt/scripts/tools/generate_adoption_artifacts.py","finding":"harvested text could contain the heading or marker text","disposition":"fixed (imported section is never a target; markers count at line start)"},
+{"severity":"low","category":"readability","file":"shared/scripts/tools/render_architecture_rules.py","finding":"nested wording instruction only (prompt-only (...))","disposition":"fixed"},
+{"severity":"low","category":"readability","file":"plugins/shipwright-project/skills/project/references/project-scaffolding.md","finding":"extra spaces before --project-root","disposition":"fixed"}]}
