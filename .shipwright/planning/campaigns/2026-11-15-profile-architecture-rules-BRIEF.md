@@ -1,0 +1,83 @@
+# Campaign brief: architecture rules per stack profile (`profile-architecture-rules`)
+
+Date: 2026-11-15 · Status: rev 3, approved for campaign setup after two Opus review rounds · Source: operator conversation after PR #1059 (constitution register).
+Branch strategy: `serial` (build -> PR -> CI green -> merge -> next unit from fresh `origin/main`). Each unit builds on the format the one before froze. Autonomous: every decision a runner would need is settled in section 4.
+
+## 0. Goal
+Every stack profile says, in machine-readable form, which architecture rules a project of that stack must keep, and says per rule how it is kept: by the stack's own linter, by something that is actually run, or by instruction only. Judgement rules stay instruction and are recorded as such. The rules reach the agents that work in the project, in new and in adopted projects. Plugin projects get their own profile, so every plugin a customer writes follows the same rules as Shipwright's own (code versus prose, Anthropic's skill limits).
+
+## 1. What exists today (verified 2026-11-15)
+- Bundled profiles: `supabase-nextjs`, `vite-hono`, `chat-first-json` (retired in a separate track), `skill-companion-app`, `python-plugin-monorepo`. Lookup order project > user > bundled; a project profile with a bundled name replaces the bundled file whole, no merge (`docs/stack-profiles.md`).
+- `python-plugin-monorepo` is **not** a plugin-only profile. Adopt picks it for every Python-only repo (libraries, CLIs, FastAPI services; `test_profile_matcher.py:24-33`). Plugin-specific rules cannot go there.
+- Only `supabase-nextjs` has `architecture_rules`: six sentences (`supabase-nextjs.json:211-218`). Only `/shipwright-project` step 7 (full-application scope) writes them, into `conventions.md`. Adopt writes `conventions.md` without them, and Shipwright's own `conventions.md` has no such section. In an adopted repo the rules reach no agent today.
+- Four of the six rules also sit as hand-written prose in `conventions.md.template` and the `.claude/rules/*.md` templates, with different paths.
+- `supabase-nextjs` declares ESLint 10 (flat config) and its CI template runs `npx eslint .`, but Shipwright ships no `eslint.config` template and no scaffold step writes one.
+- Test and integration templates import `createClient` from `@supabase/supabase-js` outside `src/lib/supabase/`; a second API route example writes to the database (`api.md.template`).
+- `check_skill_authoring.py` ships under `shared/` but nothing invokes it (no hook, CI job or phase); it is a report.
+- The constitution register (PR #1059) is the model: per rule id, enforcement class from a closed list, mechanism, note, drift test.
+
+## 2. Design
+1. **One rule = one object in the profile file** (`architecture_rules`): `id`, `text` (one sentence), `why` (one or two sentences), `enforcement` (the constitution's closed list), `lint` (config fragment for the stack's linter: tool, target file, rule block) **or** `mechanism` (a list of paths) **or** neither (instruction only), `note`. Never both `lint` and `mechanism`. A lint rule counts as class `validator`.
+2. **What a class claims.** `hook`, `validator` and `test` need a mechanism that a shipped hook, phase, CI template or lint config actually invokes in the user's project. A tool that exists but is not invoked is `prompt-only (mechanisable)` and the note says so. `mechanism` is required for hook, validator and test (as in the constitution register).
+3. **Mechanical rules go into the project's own lint config at scaffold time** (ESLint flat config for the JS stacks; ruff where it can express the rule). They then run wherever the project already runs lint. Per-line disables and per-file ignores are the exception and grandfathering mechanism.
+4. **Judgement rules never gate.** They reach agents through the project's `conventions.md`.
+5. **Rules reach agents in every kind of project** through one render tool that writes the rules of the profile named in the run config into a marked block of `conventions.md`. New projects (project step 7), adopted projects (adopt's artifact writer) and this repo all use it. Nothing is committed as a render in the Shipwright repo; the render comes from the resolved profile (bundled, user or project).
+6. **Home and validation.** Rules sit in the profile, not in `conventions.json`. The rule shape is validated in Python (a new module next to `profile_model.py`; `profile_resolver.py` is at the 300-line cap) and in `resolve_profile.py validate`, not in the JSON schema, whose mini-language has no `enum`/`oneOf` and would make a profile with a wrong-shaped key invalid for every phase. The schema types the key loosely. A rule-shape error is a phase-local message. The closed vocabulary is copied into the new module, with a drift test that it equals `lib.constitution_register.ENFORCEMENT`; `shared/scripts/lib/` is not edited and `shared/contracts/` is not used. Path existence of a bundled profile's mechanisms is checked by a repo test, not at runtime (the installed cache has a different layout); runtime `validate` checks shape only, and checks a project profile's paths against the project root.
+7. **Deliberately not built now** (architecture review: premature for one stack and four mechanical rules): a generic home-grown checker, a baseline format, an iterate late verifier, a build per-section run, a test-phase layer `architecture` (its name would be a cross-plugin contract change in about 17 files). **Trigger to build one:** a second stack needs a mechanical rule its linter cannot express. Then it is one test-phase gate step with a warn/block switch like `testing.performance.gate`, and each regex rule carries a visible precision note.
+
+## 3. Units (each one iterate, one PR)
+Order and edges: U1; U2 after U1; U3a after U1; U3b after U3a and U2; U4 after U1 and U2; U5 after U4 and U2; U6 after U2, U3b, U4 and U5.
+
+**U1 (rule format, loader, validation): medium.** No behaviour change for any project.
+Rule object and the `lint`/`mechanism` split frozen here, including the fragment shape per tool. Loader accepts old string lists; the warning for them appears only in `resolve_profile.py validate` and in the render, not in every phase. `vite-hono` and `skill-companion-app` get an explicit empty `architecture_rules` with a note (decided, 4.2). A loader warning when a project profile shadows a bundled name and lacks `architecture_rules`. Closed vocabulary copied with its drift test (2.6). Update `docs/stack-profiles.md`.
+Done when: all bundled profiles validate; an old string list validates with a warning only from `validate`; a rule with both `lint` and `mechanism` is a phase-local error that does not invalidate the profile; the vocabulary drift test is green; the constitution register tests still pass.
+
+**U2 (rules reach agents): medium.** Protected paths touched (project and adopt skills): the PR review findings are fixed in the unit.
+New `render_architecture_rules.py` writes a marked, replaceable block of the rules into `conventions.md` (instruction-only rules marked as such). Called from project step 7 (replacing the prose that fills `{ARCHITECTURE_RULES}`) and from adopt's artifact writer; run once for this repo (the block is empty until U5).
+Done when: a scaffolded fixture's `conventions.md` carries the block; an adopt fixture on a profile with rules gets it; running the tool twice changes nothing; a profile with no rules writes an explicit "none declared" line.
+
+**U3a (`supabase-nextjs` rule meaning and templates): medium.**
+Meaning, decided in 4.3: components and everything under `src/**` except `src/lib/supabase/**` and test files must not import `createClient` or `@supabase/supabase-js`; they use the helpers in `src/lib/supabase/` (so a Server Component that imports the server client from there complies). `fetch()` in components is forbidden (use `lib/api/`). "Server Components by default", "no business logic in API routes" and the migrations rule stay instruction only. The feature-module rule stays as instruction only until a project has a features folder (decided, 4.4). The six rules become objects with a `why`. Both API route examples (`conventions.md.template`, `api.md.template`) are changed so they obey the rules. The duplicated prose in `conventions.md.template` and the rules templates is removed or made conditional on the profile.
+Done when: the profile validates; a committed fixture tree built from the templates' own examples (including the test templates, which are exempt) passes every mechanical rule as a drift test; no template example breaks a rule.
+
+**U3b (ESLint template for scaffolds): medium.** Protected path (project skill).
+New `shared/templates/eslint/eslint.config.mjs.template` carrying the lint fragments of U3a, and a step in `step-7-scaffolding.md` that writes it into new Supabase projects.
+Done when: a drift test always runs and checks that each rule's fragment appears in the template; the ESLint seeded-violation run (one violation per mechanical rule, flagged) is executed once in the iterate and its output recorded as evidence; a pytest that skips without Node is allowed but is not the evidence.
+
+**U4 (new bundled profile for plugin projects): medium.**
+New `claude-plugin` profile, built from the generic Python one, so it carries the same Python data (Python 3.11+, pytest via `uv run pytest`, ruff via `uv run ruff check`, the plugin folder layout: `plugins/*` each with `.claude-plugin/`, `hooks/`, `skills/`, `agents/`, `scripts/`, `tests/`, `pyproject.toml`; `shared/`, `docs/`) and adds the plugin-project rules. Its description says plainly that it is the profile for Claude Code plugin repositories whose code is Python, and the description of `python-plugin-monorepo` is rewritten to say it is the generic Python-project profile: code versus prose (what goes into scripts, what goes to the AI), Anthropic's skill limits, scripts run via `uv run`, hooks resolve paths through `${CLAUDE_PLUGIN_ROOT}`, generated files live next to their source. Mechanisms count as enforcement only if something invokes them; the skill-authoring checker is a report today, so that rule is `prompt-only (mechanisable)` with a note (wiring it in is not part of this campaign). Adopt gets a matching signal: a repo with a `.claude-plugin/` folder matches the new profile; a Python-only repo without it still matches `python-plugin-monorepo`. `/shipwright-project` can select the new profile by name. Docs: `docs/stack-profiles.md`.
+Done when: the profile validates; adopt fixtures prove both matches (plugin repo gets the new profile, plain Python CLI keeps the old one); every mechanism path named exists under `shared/` or `plugins/` (repo test).
+
+**U5 (Shipwright's own project profile): medium.**
+Shipwright's repo keeps its internal rules (those that name repo-only mechanisms: the root `conftest.py` test-root guard, the pre-commit hook, the bundle-size baseline) in `.shipwright/profiles/shipwright-monorepo.json`: a copy of `claude-plugin` plus the internal rules, under its own name. The profile in `shipwright_run_config.json`, `shipwright_project_config.json` and `shipwright_build_config.json` switches to it. Accepted: re-adopting this repo would lose the bundled CI and CodeQL template defaults; test, compliance and dev-server resolution are unaffected. The render tool runs for this repo.
+Done when: `resolve_profile.py resolve` from all three configs gives `source=project`; a test pins that the copy equals the bundled profile on every key except `name`, `description` and `architecture_rules`, and that it contains every bundled rule; repo-only mechanism paths exist (drift test); this repo's `conventions.md` carries the rendered block; `check_plugin_cache_sync.py --strict` is green.
+
+**U6 (reviewers, docs, hand-over): medium.** Protected path (the build plugin's `code-reviewer` agent).
+`plugins/shipwright-build/agents/code-reviewer.md` (used by build, iterate and campaign review) gets one instruction: check the diff against the architecture rules in `conventions.md`. The context-loading matrix in `docs/hooks-and-pipeline.md` is updated in the same diff. New section "how to add an architecture rule" in `docs/building-skills-plugins-agents.md`; the changelog pilot's P1 links it.
+Done when: a test pins the instruction in the agent file; the docs section exists with an example rule that validates; the pilot's P1 plan links the section.
+
+## 4. Decisions (settled; a runner does not ask)
+1. **Plugin rules ship to customers** in the new `claude-plugin` profile (U4), not only for Shipwright. Operator, 2026-11-15.
+2. **Empty rule lists** for `vite-hono` and `skill-companion-app`, with a note. Default, operator can reverse later.
+3. **Client rule meaning** is import-based (U3a).
+4. **Feature-module rule** stays instruction only. Operator, 2026-11-15.
+5. **ESLint template is built** (U3b). Operator, 2026-11-15.
+6. **The home-grown checker is deferred** with the trigger in 2.7. Operator, 2026-11-15.
+7. **Changelog pilot** waits until this campaign (U1-U6) is through. Operator, 2026-11-15.
+8. **`chat-first-json`** is a separate track (T1 the profile, T2 the Brief `ux_shape` vocabulary after the outside Brief producers are checked; neither webui, leadwright, aiportal, Content-Manager nor codextender mentions it). It does not gate U1-U6.
+9. **Reviews and merge.** Normal iterate process per unit; every reviewer spawned with `model=opus` passed explicitly; medium units get the architecture review before build. Merge by automerge on green CI; no admin merge. U2, U3b and U6 touch protected paths: their PR review findings are fixed inside the unit; after two red review rounds the runner stops and reports, never an admin merge. After each merge: `update-marketplace.sh` and `check_plugin_cache_sync.py --strict`.
+
+## 5. Risks
+- **Shadowing.** A project profile with a bundled name replaces the bundled file whole, so a copy of `supabase-nextjs` never gets the new rules (the loader warns; docs say how to copy them in). Existing scaffolded projects are untouched: lint fragments appear only on a new scaffold.
+- **Template churn (U3a, U3b).** The shipped examples change what new projects get; the fixture tree and drift tests pin it.
+- **Adopt matching (U4).** A new profile signal must not move any existing match; a fixture proves the plain Python case.
+- **Profile switch (U5).** Three configs name the profile; name-keyed CI/CodeQL defaults apply only to bundled profiles (accepted above).
+- **Rules without a mechanism look enforced.** Every entry carries its class; judgement rules say so; no coverage percentage.
+- **Trust.** A project profile that shadows a bundled one decides its own architecture rules; the Trust section in `docs/stack-profiles.md` says so.
+- Editing `plugins/*` or `shared/scripts` does not reach the runtime plugin cache by itself (4.9).
+
+## 6. Not in this campaign
+- Renaming `python-plugin-monorepo` (the name is misleading: adopt gives it to every Python-only repo). About 30 live files name it (12 tests, four docs, the CI template file, the CI and CodeQL tables keyed by profile name, three Shipwright configs) and projects that carry the old name need a retired-names message or alias. Its own small job after this campaign; only the description changes here (U4).
+- The home-grown checker, baseline, iterate verifier, build run or test layer (2.7).
+- Wiring `check_skill_authoring.py` into a phase or CI.
+- Per-project rule overrides beyond the project-profile lookup; architecture rules for `deploy` profiles; the constitution's own rules (PR #1059).
