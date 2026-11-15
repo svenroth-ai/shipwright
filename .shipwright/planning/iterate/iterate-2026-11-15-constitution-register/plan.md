@@ -1,0 +1,1 @@
+Goal: Declare per rule of the constitution how it is enforced, machine-readable in conventions.json, with a drift test | Reason: Pre-build AC mode off: no FR owns this change (a rule or quality of the constitution, not a phase output). | Reference: shared/config/conventions.json

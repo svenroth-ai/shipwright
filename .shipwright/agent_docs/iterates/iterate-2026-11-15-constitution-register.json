@@ -1,0 +1,33 @@
+{
+  "run_id": "iterate-2026-11-15-constitution-register",
+  "date": "2026-11-15T10:02:48.498936Z",
+  "event_at": "2026-11-15T08:49:54.658617+00:00",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/constitution-register",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-11-15-constitution-register",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "every rule unit of the constitution must have a register entry and every entry a rule",
+        "disposition": "tested",
+        "evidence": "test_constitution_register.py 12 tests PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 1,
+      "tested": 1,
+      "untestable": 0,
+      "untested_testable": 0
+    }
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}
