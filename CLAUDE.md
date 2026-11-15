@@ -32,6 +32,7 @@ shared/                     # Shared across all plugins
   config/                   # Shared config (external_review.json)
   scripts/                  # Shared Python utilities
   tests/                    # Tests for shared scripts and hooks
+  testkit/                  # Shared test fixtures (minimal_valid_project, event_log_probe)
   constitution.md           # ALWAYS / ASK FIRST / NEVER rules for all agents
 scripts/                    # Top-level scripts (install.sh, verify-setup.sh)
 docs/                       # User-facing docs (guide.md, hooks-and-pipeline.md)
@@ -131,11 +132,6 @@ parking lot — relocating an unread file into a read directory is filing, not
 deciding.
 
 ### Testing
-```bash
-cd plugins/shipwright-build && uv run pytest tests/ -v   # single plugin
-uv run pytest integration-tests/ -v                      # integration
-```
-
 **One test root per pytest process — a hard rule, enforced by the repo-root
 `conftest.py` (exit 4).** Roots: `integration-tests`, `shared/tests`,
 `shared/scripts/tests`, `shared/scripts/tools/tests`, each `plugins/*/tests`.

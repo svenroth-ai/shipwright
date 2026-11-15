@@ -1,0 +1,59 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-15-compliance-f6-h1-cleanup",
+    "date": "2026-11-15",
+    "unit": {
+      "status": "passed",
+      "passed": 25894,
+      "skipped": 111,
+      "total": 26005
+    },
+    "integration": {
+      "status": "skipped",
+      "passed": 0,
+      "skipped": 0,
+      "total": 0
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "n/a",
+      "reason_code": "trivial-auto"
+    },
+    "surface_verification": {
+      "surface": "none",
+      "runner": "",
+      "exit_code": 0,
+      "tests_run": 0,
+      "evidence_path": "",
+      "timestamp": "2026-11-15T14:50:57.111Z",
+      "attempts": 0,
+      "justification": "Data and docs only: baseline JSON entries and CLAUDE.md; no behavior surface.",
+      "reason_code": "docs-only-surface"
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-24-r5b-merge-lane",
+    "commit": "032d1ebbf0ef9c99eb98f240c8f1110e981a32a5",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
