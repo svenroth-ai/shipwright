@@ -166,19 +166,16 @@ These rules are also enforced by hooks (see `docs/hooks-and-pipeline.md`):
 |---|---|
 | `validate_command.sh` | Blocks rm -rf, push --force to main, DROP DATABASE |
 | `check_secrets.sh` | Scans for API keys, tokens, passwords in written files |
-| `check_destructive_migration.sh` | Warns on DROP/DELETE in .sql without down.sql |
+| `check_destructive_migration.sh` | Warns on DROP/TRUNCATE/DELETE in migration .sql files (does not check for down.sql) |
 | `check_file_size.py` | Warns if file exceeds size limit |
 
 The constitution documents the complete set of rules. Hooks provide a programmatic safety net for the most critical subset.
 
-**This table is a seed, not the register.** Four hooks are named here against
-roughly forty rules, which invites the reader to assume the rulebook is enforced
-when most of it is instruction only. The honest position: a rule may be enforced
-by a hook, by a phase validator, by a test, or by nothing but this document —
-and which of those holds must be *declared per rule*, not inferred. The
-**constitution enforcement register** (`shared/config/gate_catalog.json` +
-generated doc + doc-sync drift test is the working pattern to copy) makes that
-declaration mandatory: a rule added here without a register entry fails CI.
-Design: `.shipwright/planning/campaigns/2026-07-24-req3-constitution-enforcement-register-DESIGN.md`
-(REQ-3 Phase 3). Until it lands, treat every rule not named in the table above as
-instruction-only.
+**This table is a seed; the register is the full answer.** Which rule is enforced
+how (a hook, a phase validator, a test, or this document alone) is declared per
+rule in `shared/config/conventions.json` (section `constitution`) and rendered in
+`shared/config/constitution_register.md`. A rule added, reworded or removed here
+without a matching register entry fails `shared/tests/test_constitution_register.py`.
+A rule marked `prompt-only (judgement)` is instruction only by design; the
+register carries no coverage percentage. Design:
+`.shipwright/planning/campaigns/2026-07-24-req3-constitution-enforcement-register-DESIGN.md`.

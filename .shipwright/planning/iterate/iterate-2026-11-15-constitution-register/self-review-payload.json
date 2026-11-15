@@ -1,0 +1,7 @@
+{"items": [
+{"name": "Spec Compliance", "verdict": "pass", "note": "Constitution rules are a machine-readable section of conventions.json (67 entries, one per rule), with a parser, drift test, generated doc and updated constitution/guide text. Architecture rules and profile pluggability are deferred on purpose, with reasons."},
+{"name": "Error Handling", "verdict": "pass", "note": "CLI exits 2 on a missing or unreadable file, 1 on drift; entries with missing keys are reported, not raised."},
+{"name": "Security Basics", "verdict": "pass", "note": "Reads local files only; no network, no secrets."},
+{"name": "Test Quality", "verdict": "pass", "note": "12 tests: parser units, each drift class on throwaway fixtures, hook registration, CLI, plus the real-repo drift and doc-sync checks."},
+{"name": "Naming", "verdict": "pass", "note": "constitution_register across lib, tool, test and doc; enforcement vocabulary is closed."}
+]}

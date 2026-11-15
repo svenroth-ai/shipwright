@@ -1,0 +1,1 @@
+shared/config/conventions.json carries a constitution section that declares, per rule, whether a hook, a validator, a test or the prose alone enforces it; a drift test fails when the constitution and the register disagree, and constitution_register.md is generated from it.

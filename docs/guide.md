@@ -1717,11 +1717,11 @@ The **constitution** (`shared/constitution.md`) defines behavioral boundaries fo
 - Test every acceptance criterion at the layer that can actually falsify it: a promise about what a user can do needs an end-to-end test, one about a calculation a unit test, one about who may read a row a database test, one about reachability a smoke test. Testing one layer too low looks like coverage and proves nothing. A criterion with no test is unfinished work -- blocking in a planned project, a tracked follow-up in an adopted one.
 - Read state from where it is authoritative, not from the copy nearest to hand. The triage log, the plugin cache and the compliance snapshots are kept per tree or per clone, so a worktree's copy can be behind `main`, ahead of what anyone else sees, or both. When you report such state, say which tree you read it from.
 
-> **The enforcement table in the constitution is a seed, not the register.** Four
-> hooks are named against roughly forty rules, which invites the reader to assume
-> the rulebook is enforced when most of it is instruction only. Until the
-> constitution enforcement register lands (REQ-3 Phase 3), treat every rule not
-> named in that table as instruction-only.
+> **The enforcement table in the constitution is a seed; the register is the full answer.**
+> `shared/config/constitution_register.md` (generated from `shared/config/conventions.json`)
+> says per rule whether a hook, a phase validator, a test or the prose alone enforces it.
+> Most rules are instruction only, and the register says so rather than implying otherwise;
+> a rule added to the constitution without a register entry fails CI.
 
 **ASK FIRST (require user confirmation):**
 - Destructive database operations (`DROP TABLE`, `DROP COLUMN`, `TRUNCATE`).

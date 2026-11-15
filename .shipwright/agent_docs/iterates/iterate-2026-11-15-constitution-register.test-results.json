@@ -1,0 +1,91 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-15-constitution-register",
+    "date": "2026-11-15",
+    "unit": {
+      "status": "passed",
+      "passed": 25894,
+      "skipped": 111,
+      "total": 26005
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run shared/scripts/tools/constitution_register.py --check",
+      "exit_code": 0,
+      "tests_run": 1,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\constitution-register\\.shipwright\\runs\\iterate-2026-11-15-constitution-register\\surface_verification.log",
+      "timestamp": "2026-11-15T10:00:55.306Z",
+      "attempts": 1
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "every rule unit of the constitution is parsed and must have a register entry",
+          "disposition": "tested",
+          "evidence": "test_constitution_register.py::test_every_rule_is_declared_and_every_declaration_matches PASSED"
+        },
+        {
+          "behavior": "reworded, removed, undeclared, duplicate and mis-tiered rules are reported",
+          "disposition": "tested",
+          "evidence": "test_constitution_register.py::test_check_reports_undeclared_reworded_and_bad_vocabulary PASSED"
+        },
+        {
+          "behavior": "unplaced lines and unknown sections are reported",
+          "disposition": "tested",
+          "evidence": "test_constitution_register.py::test_parser_reports_lines_and_sections_it_cannot_place PASSED"
+        },
+        {
+          "behavior": "a hook entry must be registered in a plugin hooks.json and paths stay in the repo",
+          "disposition": "tested",
+          "evidence": "test_constitution_register.py::test_a_hook_entry_must_be_registered_and_paths_must_stay_in_the_repo PASSED"
+        },
+        {
+          "behavior": "the generated doc equals a fresh render and sits beside its JSON",
+          "disposition": "tested",
+          "evidence": "test_constitution_register.py::test_generated_doc_is_current_and_beside_its_source PASSED"
+        },
+        {
+          "behavior": "the CLI check, render and exit codes",
+          "disposition": "tested",
+          "evidence": "test_constitution_register.py::test_cli_check_write_and_render PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 6,
+        "tested": 6,
+        "untestable": 0,
+        "untested_testable": 0
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-11-15-constitution-register",
+    "commit": "1245cfdb8f134b421f73f384c0f014a60471081a",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

@@ -1,0 +1,346 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-15-constitution-register",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-15T10:02:06.736368+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-15T10:02:07.292253+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 14,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "shared/config/conventions.json",
+          "line": 503,
+          "finding": "The ask-destructive-db note said TRUNCATE and DELETE without WHERE are not matched; the hook matches them, and the note left out that it is a post-write reminder on migration .sql only and fails open without Python.",
+          "suggestion": "Rewritten for ask-destructive-db and esc-destructive-sql. Fixed.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "shared/config/conventions.json",
+          "line": 385,
+          "finding": "compliance-after-phase claimed a hook; the Stop audit hook is diagnostic and never blocks.",
+          "suggestion": "Reclassified prompt-only (mechanisable) with a note. Fixed.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/config/conventions.json",
+          "line": 354,
+          "finding": "self-review-before-commit named the recorder, not the check; review-in-stages was classed inconsistently with the same F11 gate.",
+          "suggestion": "Both now validator via verifiers/review_record_check.py with an iterate-only, post-commit note. Fixed.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/config/conventions.json",
+          "line": 549,
+          "finding": "ask-override-gates was under-claimed; the code enforces a force reason and the autonomy allowlist.",
+          "suggestion": "Now validator with the three orchestrator files. Fixed.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/config/conventions.json",
+          "line": 514,
+          "finding": "ask-prod-deploy and esc-prod-deploy were judgement-only though release.py refuses prod without confirm_prod.",
+          "suggestion": "Now validator via release.py with a scope note. Fixed.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/constitution_register.py",
+          "line": 165,
+          "finding": "The parser silently dropped unplaced lines and unknown sections, so a new rule in an unrecognised shape needed no entry.",
+          "suggestion": "parse() now returns strays (unplaced lines, unknown headings); check() fails on them; tests added. Fixed.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/constitution_register.py",
+          "line": 203,
+          "finding": "A hook entry only had to exist on disk, not be registered; absolute paths bypassed the repo root.",
+          "suggestion": "A hook entry must name a script registered in a plugin hooks.json; absolute and .. paths are rejected. Fixed.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/config/conventions.json",
+          "line": 587,
+          "finding": "never-recursive-delete-root overstated the hook and cited an unregistered copy.",
+          "suggestion": "Note rewritten. Fixed.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/config/conventions.json",
+          "line": 533,
+          "finding": "Test-layer and skip rows were broader than the validator and had empty notes.",
+          "suggestion": "Notes added: final outcome only, retries are prose, pgTAP skip unchecked, run pipeline only. Fixed.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/constitution_register.py",
+          "line": 277,
+          "finding": "Regenerating the doc by shell redirection writes UTF-16 in Windows PowerShell.",
+          "suggestion": "Added --write (UTF-8, LF) and documented it instead of redirection. Fixed.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/constitution_register.py",
+          "line": 193,
+          "finding": "An entry without text_hash raised KeyError; two identical rule texts collapsed to one hash.",
+          "suggestion": "Missing keys and identical rule texts are reported as problems. Fixed.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/config/conventions.json",
+          "line": 396,
+          "finding": "file-size-caps omitted the pre-commit anti-ratchet.",
+          "suggestion": "Added scripts/hooks/pre-commit and anti_ratchet.py with a note. Fixed.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_constitution_register.py",
+          "line": 15,
+          "finding": "The FR-01.11 tag is a doubtful binding.",
+          "suggestion": "Kept deliberately: the tag gate needs one tag; the test states that no AC is claimed. Not changed.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": ".shipwright/triage.jsonl",
+          "line": 2578,
+          "finding": "Triage sweep lines in the diff are scope noise.",
+          "suggestion": "Standard sweep behaviour; not changed.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-15T10:02:06.999334+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 12,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: ask-destructive-db note is honest — The hook matches TRUNCATE and DELETE; it is post-write, migration-path .sql only, fails open without Python.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: compliance-after-phase is enforced by a hook — The named Stop hook never blocks and does not update compliance.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: self-review and review-in-stages classes are right — The mechanism was the recorder; the check is review_record_check.py at F11, iterate only; two rules on one gate had two classes.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: test-layer rows are enforced by a validator — pgTAP skip reason unchecked, retries are prose, pipeline only, severity ask.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: never-recursive-delete-root note is accurate — Regex depends on flag spelling, over-blocks absolute paths; the shared copy is registered nowhere.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: ac-at-falsifying-layer is judgement-only — The design seeded it as unimplemented; part of the rule is mechanisable; a mechanism listed next to a prompt-only class reads as enforcement.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: a rule added to the constitution fails CI — Unrecognised shapes, a new section and identical texts passed silently.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "reversibility / decision trace",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the deviation from the design is recorded — The design still said Not built and named other files; no decision drop.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: conventions.json is the right home and the change is local — Top-level description was stale; the file is meant for every project while this section inventories Shipwright's own enforcement; both tools share one file.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the FR tag on the drift test is honest — FR-01.11 is the iterate FR; the register is cross-cutting tooling.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: hook notes are complete — Secrets hook is post-write and fails open; the drop-database guard reads Bash only; the bare-python guard covers Bash only.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the seed table no longer misleads — The row for the destructive-migration hook said it checks for down.sql; it does not.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-15T10:02:07.147990+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-15T10:02:07.292253+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-15T10:02:06.865270+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-15T10:02:07.292253+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-15T10:02:07.292253+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}

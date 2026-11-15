@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "description": "Machine-readable conventions that hold for EVERY project, whatever its stack. One file, one section per topic; a topic moves here from prose when a tool can read it. Profile-dependent values do not belong here: they live in the stack profiles (shared/profiles/*.json, and .shipwright/profiles/ for a project's own), which refine these conventions, never contradict them. Sections today: skill_authoring (the machine-readable half of docs/building-skills-plugins-agents.md). The constitution and the architecture rules are prose and stack-profile keys today and are the next candidates.",
+  "description": "Machine-readable conventions that hold for EVERY project, whatever its stack. One file, one section per topic; a topic moves here from prose when a tool can read it. Profile-dependent values do not belong here: they live in the stack profiles (shared/profiles/*.json, and .shipwright/profiles/ for a project's own), which refine these conventions, never contradict them. Sections today: skill_authoring (the machine-readable half of docs/building-skills-plugins-agents.md) and constitution (how each rule of shared/constitution.md is enforced; an inventory of Shipwright's own enforcement kept here so the rules and their register sit beside each other). The architecture rules stay stack-profile keys for now: only one profile carries them.",
   "sections": {
     "skill_authoring": {
       "description": "The numeric limits and the alignment with Anthropic's 'Skill authoring best practices' (platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices, read 2026-11-15). The four rules themselves are prose and live only in docs/building-skills-plugins-agents.md, which explains and links and repeats no number here. Read by shared/scripts/tools/check_skill_authoring.py. On any conflict the Shipwright rule wins.",
@@ -253,6 +253,591 @@
           "anthropic": "Visual analysis: render inputs as images where layout matters",
           "status": "not-applicable",
           "shipwright": "no Shipwright skill reads documents by layout; the design and test phases use screenshots through their own browser tooling"
+        }
+      ]
+    },
+    "constitution": {
+      "description": "How each rule of shared/constitution.md is enforced. One entry per rule unit, matched by a hash of the rule text; shared/scripts/lib/constitution_register.py checks it, shared/tests/test_constitution_register.py fails on drift. Enforcement vocabulary is closed: hook, validator, test, prompt-only (mechanisable), prompt-only (judgement), unimplemented. Judgement rules are never turned into gates and no coverage number is computed.",
+      "rules": [
+        {
+          "id": "think-before-coding",
+          "tier": "pre-phase",
+          "text_hash": "1d15c9d93966",
+          "enforcement": "prompt-only (judgement)",
+          "mechanism": [],
+          "note": "Drift test only."
+        },
+        {
+          "id": "simplicity-first",
+          "tier": "pre-phase",
+          "text_hash": "c399614cfde5",
+          "enforcement": "prompt-only (judgement)",
+          "mechanism": [],
+          "note": ""
+        },
+        {
+          "id": "surgical-changes",
+          "tier": "pre-phase",
+          "text_hash": "f551b3f9ef7c",
+          "enforcement": "prompt-only (judgement)",
+          "mechanism": [],
+          "note": ""
+        },
+        {
+          "id": "goal-driven-execution",
+          "tier": "pre-phase",
+          "text_hash": "080a71f8b493",
+          "enforcement": "prompt-only (judgement)",
+          "mechanism": [],
+          "note": "Pre-build AC record (ac_decision.py) covers part of this in iterate; the rule itself needs judgement."
+        },
+        {
+          "id": "tests-before-commit",
+          "tier": "always",
+          "text_hash": "53127e09b804",
+          "enforcement": "prompt-only (mechanisable)",
+          "mechanism": [],
+          "note": "Iterate F0 runs the suite; no commit-time gate."
+        },
+        {
+          "id": "down-sql-rollback",
+          "tier": "always",
+          "text_hash": "27b5b4f1bb9f",
+          "enforcement": "prompt-only (mechanisable)",
+          "mechanism": [],
+          "note": "A commit-time check that every up.sql has a down.sql is possible."
+        },
+        {
+          "id": "apply-migrations-before-tests",
+          "tier": "always",
+          "text_hash": "35d13ec61342",
+          "enforcement": "prompt-only (mechanisable)",
+          "mechanism": [],
+          "note": ""
+        },
+        {
+          "id": "conventional-commits",
+          "tier": "always",
+          "text_hash": "344835895d9c",
+          "enforcement": "prompt-only (mechanisable)",
+          "mechanism": [],
+          "note": "A commit-msg hook could check the prefix."
+        },
+        {
+          "id": "parameterized-queries",
+          "tier": "always",
+          "text_hash": "801b89f3659b",
+          "enforcement": "prompt-only (judgement)",
+          "mechanism": [],
+          "note": ""
+        },
+        {
+          "id": "validate-at-boundaries",
+          "tier": "always",
+          "text_hash": "5119a5606073",
+          "enforcement": "prompt-only (judgement)",
+          "mechanism": [],
+          "note": ""
+        },
+        {
+          "id": "new-commit-after-hook-fail",
+          "tier": "always",
+          "text_hash": "973cc3b96a13",
+          "enforcement": "prompt-only (mechanisable)",
+          "mechanism": [],
+          "note": ""
+        },
+        {
+          "id": "self-review-before-commit",
+          "tier": "always",
+          "text_hash": "b81dc72f8d7b",
+          "enforcement": "validator",
+          "mechanism": [
+            "shared/scripts/tools/verifiers/review_record_check.py"
+          ],
+          "note": "Iterate only; checked at F11 after the commit, build and run are ungated."
+        },
+        {
+          "id": "review-in-stages",
+          "tier": "always",
+          "text_hash": "941195341557",
+          "enforcement": "validator",
+          "mechanism": [
+            "shared/scripts/tools/verifiers/review_record_check.py"
+          ],
+          "note": "Iterate only; F11 checks the stage order and the code-review floor after the commit."
+        },
+        {
+          "id": "browser-verify-frontend",
+          "tier": "always",
+          "text_hash": "7b96d2a3050a",
+          "enforcement": "prompt-only (mechanisable)",
+          "mechanism": [],
+          "note": ""
+        },
+        {
+          "id": "log-deviations",
+          "tier": "always",
+          "text_hash": "05817cc90679",
+          "enforcement": "prompt-only (judgement)",
+          "mechanism": [],
+          "note": ""
+        },
+        {
+          "id": "compliance-after-phase",
+          "tier": "always",
+          "text_hash": "17ccb88f40dc",
+          "enforcement": "prompt-only (mechanisable)",
+          "mechanism": [],
+          "note": "The Stop audit hook is diagnostic and never blocks; the per-phase update is the orchestrator calling update_compliance.py (run pipeline only)."
+        },
+        {
+          "id": "file-size-caps",
+          "tier": "always",
+          "text_hash": "3560e051b2cd",
+          "enforcement": "hook",
+          "mechanism": [
+            "shared/scripts/hooks/check_file_size.py",
+            "shared/scripts/hooks/bloat_gate_on_stop.py",
+            "scripts/hooks/pre-commit",
+            "shared/scripts/lib/anti_ratchet.py"
+          ],
+          "note": "check_file_size.py is advisory; the hard block is the pre-commit anti-ratchet on allowlisted entries."
+        },
+        {
+          "id": "ac-at-falsifying-layer",
+          "tier": "always",
+          "text_hash": "94bb32dc9f67",
+          "enforcement": "prompt-only (mechanisable)",
+          "mechanism": [],
+          "note": "Parts are mechanisable (a criterion with no test); which layer can falsify it needs judgement. The drift test test_constitution_ac_layer_rule_drift.py only pins the wording."
+        },
+        {
+          "id": "fix-code-not-test",
+          "tier": "always",
+          "text_hash": "0991908e6a27",
+          "enforcement": "prompt-only (judgement)",
+          "mechanism": [],
+          "note": ""
+        },
+        {
+          "id": "never-weaken-rls",
+          "tier": "always",
+          "text_hash": "ae63e1ae6bf5",
+          "enforcement": "prompt-only (judgement)",
+          "mechanism": [],
+          "note": ""
+        },
+        {
+          "id": "service-role-setup-only",
+          "tier": "always",
+          "text_hash": "8c41302f9265",
+          "enforcement": "prompt-only (mechanisable)",
+          "mechanism": [],
+          "note": ""
+        },
+        {
+          "id": "integration-localhost-only",
+          "tier": "always",
+          "text_hash": "cd6a12df73be",
+          "enforcement": "prompt-only (mechanisable)",
+          "mechanism": [],
+          "note": ""
+        },
+        {
+          "id": "diagnose-before-skipping",
+          "tier": "always",
+          "text_hash": "5bca7e916a19",
+          "enforcement": "prompt-only (judgement)",
+          "mechanism": [],
+          "note": ""
+        },
+        {
+          "id": "generate-missing-prerequisites",
+          "tier": "always",
+          "text_hash": "db9c67365ac3",
+          "enforcement": "prompt-only (judgement)",
+          "mechanism": [],
+          "note": ""
+        },
+        {
+          "id": "verify-after-edits",
+          "tier": "always",
+          "text_hash": "6bf8b3991494",
+          "enforcement": "prompt-only (mechanisable)",
+          "mechanism": [],
+          "note": ""
+        },
+        {
+          "id": "reread-in-long-sessions",
+          "tier": "always",
+          "text_hash": "6a78257b1a43",
+          "enforcement": "prompt-only (judgement)",
+          "mechanism": [],
+          "note": ""
+        },
+        {
+          "id": "state-truncation",
+          "tier": "always",
+          "text_hash": "e0b37b78dfff",
+          "enforcement": "prompt-only (judgement)",
+          "mechanism": [],
+          "note": ""
+        },
+        {
+          "id": "read-authoritative-state",
+          "tier": "always",
+          "text_hash": "440761ef83c5",
+          "enforcement": "prompt-only (judgement)",
+          "mechanism": [],
+          "note": ""
+        },
+        {
+          "id": "ask-destructive-db",
+          "tier": "ask-first",
+          "text_hash": "b4d8200b6bad",
+          "enforcement": "hook",
+          "mechanism": [
+            "plugins/shipwright-build/scripts/hooks/check_destructive_migration.sh"
+          ],
+          "note": "PostToolUse reminder on Write/Edit of migration-path .sql (DROP TABLE/COLUMN, ALTER TYPE, TRUNCATE, DELETE without WHERE): the file is already written; SQL run through Bash is not covered; fails open without Python."
+        },
+        {
+          "id": "ask-mixed-migration",
+          "tier": "ask-first",
+          "text_hash": "d06d194a3b45",
+          "enforcement": "prompt-only (mechanisable)",
+          "mechanism": [],
+          "note": ""
+        },
+        {
+          "id": "ask-prod-deploy",
+          "tier": "ask-first",
+          "text_hash": "b6f7e24df785",
+          "enforcement": "validator",
+          "mechanism": [
+            "plugins/shipwright-deploy/scripts/lib/release.py"
+          ],
+          "note": "release.py refuses target prod without confirm_prod; other deploy paths are not gated."
+        },
+        {
+          "id": "ask-rollback",
+          "tier": "ask-first",
+          "text_hash": "5442b92fd2a7",
+          "enforcement": "prompt-only (judgement)",
+          "mechanism": [],
+          "note": ""
+        },
+        {
+          "id": "ask-skip-test-layer",
+          "tier": "ask-first",
+          "text_hash": "6717d1c06a5c",
+          "enforcement": "validator",
+          "mechanism": [
+            "plugins/shipwright-run/scripts/lib/phase_validators_late.py"
+          ],
+          "note": "Run pipeline only; severity is ask, not a stop; a pgTAP skip is not checked for a reason."
+        },
+        {
+          "id": "ask-migration-apply-failure",
+          "tier": "ask-first",
+          "text_hash": "e6d5aab3868a",
+          "enforcement": "prompt-only (judgement)",
+          "mechanism": [],
+          "note": ""
+        },
+        {
+          "id": "ask-override-gates",
+          "tier": "ask-first",
+          "text_hash": "c2dfcc4ef97c",
+          "enforcement": "validator",
+          "mechanism": [
+            "plugins/shipwright-run/scripts/lib/orchestrator_pkg/cli_update_step.py",
+            "plugins/shipwright-run/scripts/lib/orchestrator_pkg/phase_gate.py",
+            "plugins/shipwright-run/scripts/lib/orchestrator_pkg/validation_record.py"
+          ],
+          "note": "Force needs a non-blank reason; only guided or autonomous runs may override."
+        },
+        {
+          "id": "ask-profile-change",
+          "tier": "ask-first",
+          "text_hash": "b447c211bf02",
+          "enforcement": "prompt-only (judgement)",
+          "mechanism": [],
+          "note": ""
+        },
+        {
+          "id": "ask-after-3-failed-fixes",
+          "tier": "ask-first",
+          "text_hash": "2f85134746ab",
+          "enforcement": "prompt-only (judgement)",
+          "mechanism": [],
+          "note": ""
+        },
+        {
+          "id": "ask-plain-language",
+          "tier": "ask-first",
+          "text_hash": "0ca69b7c92e8",
+          "enforcement": "prompt-only (judgement)",
+          "mechanism": [],
+          "note": ""
+        },
+        {
+          "id": "never-recursive-delete-root",
+          "tier": "never",
+          "text_hash": "68f65e5d64ed",
+          "enforcement": "hook",
+          "mechanism": [
+            "plugins/shipwright-build/scripts/hooks/validate_command.sh"
+          ],
+          "note": "Matches the literal form rm -rf followed by / ~ or $HOME only; other flag spellings and orders pass, and any absolute path is over-blocked. The copy under shared/scripts/hooks is registered nowhere."
+        },
+        {
+          "id": "never-force-push-main",
+          "tier": "never",
+          "text_hash": "9bf2f9c521b0",
+          "enforcement": "hook",
+          "mechanism": [
+            "plugins/shipwright-build/scripts/hooks/force_push_guard.py",
+            "plugins/shipwright-build/scripts/hooks/validate_command.sh"
+          ],
+          "note": ""
+        },
+        {
+          "id": "never-reset-hard",
+          "tier": "never",
+          "text_hash": "0ac6d683f6c7",
+          "enforcement": "prompt-only (mechanisable)",
+          "mechanism": [],
+          "note": "No hook found that blocks it."
+        },
+        {
+          "id": "never-no-verify",
+          "tier": "never",
+          "text_hash": "cf07d9677ae6",
+          "enforcement": "prompt-only (mechanisable)",
+          "mechanism": [],
+          "note": "The pre-commit hook exists, but nothing stops bypassing it."
+        },
+        {
+          "id": "never-drop-database",
+          "tier": "never",
+          "text_hash": "3b393fbb643c",
+          "enforcement": "hook",
+          "mechanism": [
+            "plugins/shipwright-build/scripts/hooks/validate_command.sh"
+          ],
+          "note": "Reads Bash commands only; the statement inside a .sql file run by a tool is not seen."
+        },
+        {
+          "id": "never-skip-or-weaken-tests",
+          "tier": "never",
+          "text_hash": "03f1f7092e90",
+          "enforcement": "prompt-only (judgement)",
+          "mechanism": [],
+          "note": ""
+        },
+        {
+          "id": "never-yagni",
+          "tier": "never",
+          "text_hash": "a774acdc3d17",
+          "enforcement": "prompt-only (judgement)",
+          "mechanism": [],
+          "note": ""
+        },
+        {
+          "id": "never-hardcode-secrets",
+          "tier": "never",
+          "text_hash": "bcfba5296743",
+          "enforcement": "hook",
+          "mechanism": [
+            "shared/scripts/hooks/check_secrets.sh"
+          ],
+          "note": "PostToolUse on Write/Edit (file already written); skips fixtures; pattern-based; fails open without Python."
+        },
+        {
+          "id": "never-commit-env",
+          "tier": "never",
+          "text_hash": "fae6045eae38",
+          "enforcement": "prompt-only (mechanisable)",
+          "mechanism": [],
+          "note": ""
+        },
+        {
+          "id": "never-sensitive-detail",
+          "tier": "never",
+          "text_hash": "81b63991b4f6",
+          "enforcement": "prompt-only (judgement)",
+          "mechanism": [],
+          "note": ""
+        },
+        {
+          "id": "never-triage-own-work",
+          "tier": "never",
+          "text_hash": "5f153b22c63b",
+          "enforcement": "prompt-only (judgement)",
+          "mechanism": [],
+          "note": ""
+        },
+        {
+          "id": "never-bare-python-stdin",
+          "tier": "never",
+          "text_hash": "e0ffd0d6a747",
+          "enforcement": "hook",
+          "mechanism": [
+            "plugins/shipwright-iterate/scripts/hooks/bare_python_stdin_guard.py"
+          ],
+          "note": "Bash tool only; the PowerShell tool is not guarded."
+        },
+        {
+          "id": "never-blind-retry",
+          "tier": "never",
+          "text_hash": "5d9d4380684f",
+          "enforcement": "prompt-only (judgement)",
+          "mechanism": [],
+          "note": ""
+        },
+        {
+          "id": "never-amend-blocked-commit",
+          "tier": "never",
+          "text_hash": "ba177ac4a0fe",
+          "enforcement": "prompt-only (mechanisable)",
+          "mechanism": [],
+          "note": ""
+        },
+        {
+          "id": "never-loop-over-3",
+          "tier": "never",
+          "text_hash": "da830fca992f",
+          "enforcement": "prompt-only (judgement)",
+          "mechanism": [],
+          "note": ""
+        },
+        {
+          "id": "never-claim-all-pass",
+          "tier": "never",
+          "text_hash": "6d4a8a0e5f55",
+          "enforcement": "prompt-only (judgement)",
+          "mechanism": [],
+          "note": ""
+        },
+        {
+          "id": "esc-two-same-root",
+          "tier": "escalation",
+          "text_hash": "f9c04e915189",
+          "enforcement": "prompt-only (judgement)",
+          "mechanism": [],
+          "note": ""
+        },
+        {
+          "id": "esc-three-failed",
+          "tier": "escalation",
+          "text_hash": "44ad22771187",
+          "enforcement": "prompt-only (judgement)",
+          "mechanism": [],
+          "note": ""
+        },
+        {
+          "id": "esc-e2e-groups",
+          "tier": "escalation",
+          "text_hash": "6588e56c9fb2",
+          "enforcement": "prompt-only (judgement)",
+          "mechanism": [],
+          "note": ""
+        },
+        {
+          "id": "esc-missing-dependency",
+          "tier": "escalation",
+          "text_hash": "71588264c0b1",
+          "enforcement": "prompt-only (judgement)",
+          "mechanism": [],
+          "note": ""
+        },
+        {
+          "id": "esc-prod-deploy",
+          "tier": "escalation",
+          "text_hash": "3cb269750129",
+          "enforcement": "validator",
+          "mechanism": [
+            "plugins/shipwright-deploy/scripts/lib/release.py"
+          ],
+          "note": "Same gate as ask-prod-deploy."
+        },
+        {
+          "id": "esc-destructive-sql",
+          "tier": "escalation",
+          "text_hash": "62b722d97cee",
+          "enforcement": "hook",
+          "mechanism": [
+            "plugins/shipwright-build/scripts/hooks/check_destructive_migration.sh"
+          ],
+          "note": "PostToolUse reminder on Write/Edit of migration-path .sql (DROP TABLE/COLUMN, ALTER TYPE, TRUNCATE, DELETE without WHERE): the file is already written; SQL run through Bash is not covered; fails open without Python."
+        },
+        {
+          "id": "layer-unit",
+          "tier": "test-layer",
+          "text_hash": "ccaddb6f42e9",
+          "enforcement": "validator",
+          "mechanism": [
+            "plugins/shipwright-run/scripts/lib/phase_validators_late.py"
+          ],
+          "note": "Run pipeline only; severity is ask."
+        },
+        {
+          "id": "layer-integration",
+          "tier": "test-layer",
+          "text_hash": "e7ee271a4fdf",
+          "enforcement": "validator",
+          "mechanism": [
+            "plugins/shipwright-run/scripts/lib/phase_validators_late.py"
+          ],
+          "note": "Checks the final outcome only; the autofix retries are prose; run pipeline only."
+        },
+        {
+          "id": "layer-pgtap",
+          "tier": "test-layer",
+          "text_hash": "e9ea2de26b0c",
+          "enforcement": "validator",
+          "mechanism": [
+            "plugins/shipwright-run/scripts/lib/phase_validators_late.py"
+          ],
+          "note": "Checks the final outcome only; the autofix retries and a pgTAP skip reason are not checked; run pipeline only."
+        },
+        {
+          "id": "layer-smoke",
+          "tier": "test-layer",
+          "text_hash": "bf26e11ac3b7",
+          "enforcement": "validator",
+          "mechanism": [
+            "plugins/shipwright-run/scripts/lib/phase_validators_late.py"
+          ],
+          "note": "Run pipeline only; severity is ask."
+        },
+        {
+          "id": "layer-e2e",
+          "tier": "test-layer",
+          "text_hash": "cff1b7b14a6f",
+          "enforcement": "validator",
+          "mechanism": [
+            "plugins/shipwright-run/scripts/lib/phase_validators_late.py"
+          ],
+          "note": "Run pipeline only; severity is ask."
+        },
+        {
+          "id": "question-stop-after-ask",
+          "tier": "question-discipline",
+          "text_hash": "e0883da1ba00",
+          "enforcement": "prompt-only (mechanisable)",
+          "mechanism": [],
+          "note": ""
+        },
+        {
+          "id": "question-use-askuserquestion",
+          "tier": "question-discipline",
+          "text_hash": "78db92a10457",
+          "enforcement": "prompt-only (mechanisable)",
+          "mechanism": [],
+          "note": ""
         }
       ]
     }

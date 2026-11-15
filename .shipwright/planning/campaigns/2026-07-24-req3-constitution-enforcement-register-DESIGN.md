@@ -2,7 +2,7 @@
 
 Filed 2026-07-24 during the Phase-2 content round
 (`iterate-2026-07-23-req3-phase2-content-mono`), campaign `trg-eb19ada4`.
-**Not built.** Sibling work unit to
+**Built 2026-11-15 (iterate-2026-11-15-constitution-register) with deviations:** the register is section `constitution` of `shared/config/conventions.json` (not a separate `constitution_catalog.json`), rendered to `shared/config/constitution_register.md`; the `binds` field was left out (every rule reaches every plugin that loads the constitution); the check is `shared/tests/test_constitution_register.py` over `shared/scripts/lib/constitution_register.py`. The text below is the original sketch. Sibling work unit to
 `2026-07-24-req3-grill-trace-enforcement-DESIGN.md` — same class of problem.
 
 ## The problem (operator, 2026-07-24)
