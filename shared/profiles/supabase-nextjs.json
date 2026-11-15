@@ -218,7 +218,7 @@
     },
     {
       "id": "supabase-client-through-helpers",
-      "text": "Code under src/ outside src/lib/supabase/ and outside test files must not create a Supabase client (createClient, createBrowserClient, createServerClient from the Supabase packages); it uses the helpers in src/lib/supabase/.",
+      "text": "Code under src/ outside src/lib/supabase/ and outside test files must not import @supabase/supabase-js or @supabase/ssr at runtime (type imports are allowed); it uses the helpers in src/lib/supabase/.",
       "why": "One place builds the Supabase client, so session handling, keys and typing are configured once and a component cannot reach the database around the helpers.",
       "enforcement": "validator",
       "lint": {
@@ -241,17 +241,12 @@
                 "paths": [
                   {
                     "name": "@supabase/supabase-js",
-                    "importNames": [
-                      "createClient"
-                    ],
+                    "allowTypeImports": true,
                     "message": "Use the helpers in src/lib/supabase/ instead of creating a client here."
                   },
                   {
                     "name": "@supabase/ssr",
-                    "importNames": [
-                      "createBrowserClient",
-                      "createServerClient"
-                    ],
+                    "allowTypeImports": true,
                     "message": "Use the helpers in src/lib/supabase/ instead of creating a client here."
                   }
                 ]
@@ -260,7 +255,7 @@
           }
         }
       },
-      "note": "Restricts the client factories of the two packages by name, so type imports (User, Session, SupabaseClient) stay allowed; a namespace import of either package is flagged. Static imports only: dynamic import() and require() are not caught. A name pattern across all modules is deliberately absent: it would flag every `import * as React`, and helpers may be called createClient. Session-refresh code for Next.js middleware also belongs in src/lib/supabase/ (a helper that src/middleware.ts calls). A per-line disable with a reason is the grandfathering mechanism."
+      "note": "Runtime imports of the two packages are flagged, type-only imports (`import type`, inline `type X`) pass. Narrower than 'createClient from anywhere' on purpose: a name pattern across all modules flags every namespace import such as `import * as React`, and project helpers may be called createClient, so a helper-named createClient is not caught. Static imports only: dynamic import() and require() are not caught. Session-refresh code for Next.js middleware also belongs in src/lib/supabase/ (a helper that src/middleware.ts calls). A per-line disable with a reason is the grandfathering mechanism."
     },
     {
       "id": "no-fetch-in-components",

@@ -99,19 +99,22 @@ _IMPORT = re.compile(r"""^\s*(?:import|export)\s+(?P<clause>[^'"]*?)\s*(?:from\s
 
 
 def _imports(source: str) -> list:
-    """[(module, imported_names)]; ``import type`` counts (the core rule flags it too)."""
+    """[(module, runtime_names, runtime)]: ``runtime`` is False only for a type-only import
+    (``import type ...`` or braces holding nothing but ``type X`` specifiers)."""
     found = []
     for m in _IMPORT.finditer(source):
-        clause, names = m.group("clause"), set()
-        if re.search(r"\*", clause):
+        clause, names = m.group("clause").strip(), set()
+        decl_type = bool(re.match(r"(?:import|export)\s+type\b", m.group(0).strip()))
+        runtime = not decl_type
+        if "*" in clause:
             names.add("*")  # a namespace import / export-star can carry any restricted name
         braces = re.search(r"\{(.*?)\}", clause, re.S)
-        if braces:
-            for part in braces.group(1).split(","):
-                part = re.sub(r"^\s*type\s+", "", part.strip())
-                if part:
-                    names.add(part.split(" as ")[0].strip())
-        found.append((m.group("src"), names))
+        specs = [p.strip() for p in braces.group(1).split(",") if p.strip()] if braces else []
+        if specs and all(re.match(r"type\s", p) for p in specs) and not re.sub(r"\{.*?\}", "", clause, flags=re.S).strip().strip(","):
+            runtime = False  # braces hold only inline types
+        for part in specs:
+            names.add(re.sub(r"^\s*type\s+", "", part).split(" as ")[0].strip())
+        found.append((m.group("src"), names, runtime))
     return found
 
 
@@ -124,10 +127,12 @@ def _lint(block: dict, source: str) -> list:
     for name, conf in block["rules"].items():
         opts = conf[1:] if isinstance(conf, list) else []
         if name == "no-restricted-imports":
-            for module, names in _imports(source):
+            for module, names, runtime in _imports(source):
                 for opt in opts:
                     for path in opt.get("paths", []):
-                        if module == path["name"] and (not path.get("importNames") or names & ({"*"} | set(path["importNames"]))):
+                        if module != path["name"] or (path.get("allowTypeImports") and not runtime):
+                            continue
+                        if not path.get("importNames") or names & ({"*"} | set(path["importNames"])):
                             problems.append(f"import of {module}")
         elif name == "no-restricted-globals":
             for opt in opts:
