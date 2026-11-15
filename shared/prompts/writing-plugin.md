@@ -58,6 +58,13 @@ build/merge/verify design.
 
 ## Conventions to honor
 
+- **Read `docs/building-skills-plugins-agents.md` first** when you build or
+  change a skill, hook or agent: it decides what goes in code and what goes to
+  the AI. Anthropic's limits (description length, `SKILL.md` body size,
+  reference depth) are in `shared/config/conventions.json`; `uv run
+  shared/scripts/tools/check_skill_authoring.py --all` reports the skills that
+  break one. A skill that passes it can still break the stricter size cap
+  under "Size limits" below, which the anti-ratchet hook enforces.
 - **Hooks** resolve paths via `${CLAUDE_PLUGIN_ROOT}` and reach shared scripts
   as `${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/...`. Quote the placeholder.
   Python hooks run via `uv run --no-project`; shell hooks via `bash`.

@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-15-skill-rule-findable",
+  "date": "2026-11-15",
+  "section": "Iterate — change: skill-building rule made findable, numbers moved into conventions.json",
+  "title": "The skill-building rule is linked from the agent entry points and its numbers live in conventions.json",
+  "context": "docs/building-skills-plugins-agents.md was linked only from campaign briefs, so a session without a brief did not know it. Anthropic's Skill authoring best practices add measurable limits (description length, SKILL.md body size, reference depth) that belong in data, not prose.",
+  "decision": "Link the rule from CLAUDE.md, AGENTS.md and writing-plugin.md; add shared/config/conventions.json (one section per topic, today skill_authoring: numeric limits and a 21-row alignment list with Anthropic's guidance; stack-dependent values stay in the stack profiles); add a report-only checker, check_skill_authoring.py, that reads the limits from it.",
+  "consequences": "The checker reports 155 findings on today's skills, one hard (the compliance skill description is 1130 characters, limit 1024); none is fixed here, the skill conversions do that. It is not in CI. The two Claude Code runtime caps are recorded as unverified. The constitution and the architecture rules are the next candidates for conventions.json.",
+  "rationale": "A rule a new session never reads is not a rule; numbers kept in one data file cannot drift between prose copies.",
+  "rejected": "Copying the four prose rules into the JSON: nothing reads them and the two copies would drift. A CI gate on the checker: most current skills would fail it.",
+  "commit": "",
+  "architecture_impact": "convention",
+  "spec_ref": ""
+}

@@ -1,0 +1,33 @@
+{
+  "run_id": "iterate-2026-11-15-skill-rule-findable",
+  "date": "2026-11-15T08:49:54.383049Z",
+  "event_at": "2026-11-14T00:28:13.575138+00:00",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/skill-rule-findable",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-11-15-skill-rule-findable",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "the checker reports each skill-authoring limit it reads from conventions.json",
+        "disposition": "tested",
+        "evidence": "test_check_skill_authoring.py 23 tests PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 1,
+      "tested": 1,
+      "untestable": 0,
+      "untested_testable": 0
+    }
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}

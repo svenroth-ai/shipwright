@@ -1,0 +1,94 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-15-skill-rule-findable",
+    "date": "2026-11-15",
+    "unit": {
+      "status": "passed",
+      "passed": 25882,
+      "skipped": 111,
+      "total": 25993
+    },
+    "integration": {
+      "status": "skipped",
+      "passed": 0,
+      "skipped": 0,
+      "total": 0
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "every limit the checker reads exists in conventions.json and is marked checkable",
+          "disposition": "tested",
+          "evidence": "test_check_skill_authoring.py::test_rules_file_carries_every_limit_the_checker_reads PASSED"
+        },
+        {
+          "behavior": "a clean skill gives no finding; a description at the limit passes",
+          "disposition": "tested",
+          "evidence": "test_check_skill_authoring.py::test_clean_skill_has_no_finding and test_a_description_at_the_limit_passes PASSED"
+        },
+        {
+          "behavior": "name length, charset, reserved words and a missing name are hard findings",
+          "disposition": "tested",
+          "evidence": "test_check_skill_authoring.py::test_name_limits and test_missing_name_is_a_hard_finding PASSED"
+        },
+        {
+          "behavior": "description missing, too long or holding an XML tag is a hard finding",
+          "disposition": "tested",
+          "evidence": "test_check_skill_authoring.py::test_description_missing_and_too_long and test_xml_tag_in_description PASSED"
+        },
+        {
+          "behavior": "body size counts the body, not the frontmatter, and 500 lines or more is reported",
+          "disposition": "tested",
+          "evidence": "test_check_skill_authoring.py::test_body_line_limit_counts_the_body_not_the_frontmatter PASSED"
+        },
+        {
+          "behavior": "references: not linked, nested by link or by plain path, a same-named file elsewhere does not count",
+          "disposition": "tested",
+          "evidence": "test_check_skill_authoring.py::test_reference_not_linked_and_nested_reference, test_nested_reference_named_by_plain_path_is_found and test_a_link_to_a_same_named_file_elsewhere_does_not_count PASSED"
+        },
+        {
+          "behavior": "a long reference file needs a table of contents; backslash paths are found with a word boundary",
+          "disposition": "tested",
+          "evidence": "test_check_skill_authoring.py::test_long_reference_needs_a_table_of_contents and test_backslash_check_needs_a_word_boundary PASSED"
+        },
+        {
+          "behavior": "frontmatter survives a BOM, trailing space, single quotes and block scalars",
+          "disposition": "tested",
+          "evidence": "test_check_skill_authoring.py::test_frontmatter_survives_bom_trailing_space_and_single_quotes and test_frontmatter_block_scalar_is_read PASSED"
+        },
+        {
+          "behavior": "exit codes 0/1/2, --strict, --json shape and the --all message",
+          "disposition": "tested",
+          "evidence": "test_check_skill_authoring.py::test_cli_exit_codes_and_json, test_cli_missing_input_is_exit_2 and test_all_with_no_skills_names_the_root PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 9,
+        "tested": 9,
+        "untestable": 0,
+        "untested_testable": 0
+      }
+    }
+  },
+  "source_state": {
+    "run_id": "iterate-2026-11-15-skill-rule-findable",
+    "commit": "39ab7b5b88bfb2cb77848d758d679ea5ce356413",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
