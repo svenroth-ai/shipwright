@@ -175,6 +175,10 @@ afterwards. Why, plus the two gaps the guard does not cover:
 ## Context
 - **Guide**: docs/guide.md (primary user-facing documentation)
 - **Hooks & Pipeline**: docs/hooks-and-pipeline.md (context loading, hooks registry, between-phase actions)
+- **Building skills, hooks, agents**: docs/building-skills-plugins-agents.md
+  (mandatory-read before you build or change one: what goes in code, what goes
+  to the AI; Anthropic's limits live in `shared/config/conventions.json`, the
+  stricter size cap in `shared/prompts/writing-plugin.md`)
 - **Glossary**: shared/glossary.md (mandatory-read — shared vocabulary
   used by hooks, agents, subagents, and compliance audits — Allowlist,
   Ratchet, Anti-Ratchet, Producer, Action-Unit, Canon-Gate, …)

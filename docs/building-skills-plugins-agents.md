@@ -83,11 +83,42 @@ A step that has no written fallback is not finished.
   sentence protects the sentence, not the behaviour. Checks of a `SKILL.md`'s
   structure, and tests of a file that code reads at runtime, are behaviour
   and stay.
+- A script reports a documented exit code and a message that names the fix;
+  it handles its own errors instead of leaving them for the AI to cope with.
+  A number a script uses carries its reason next to it.
+
+## The machine-readable half
+
+Whatever a tool can read, and that is true for every project whatever its
+stack, lives in `shared/config/conventions.json`: one file, one section per
+topic. The `skill_authoring` section holds, once, **every number** (name and
+description length, `SKILL.md` body size, reference depth, table-of-contents
+threshold, the two Claude Code runtime caps, which are still unverified) and
+the alignment list with Anthropic's guidance. The four rules above are prose
+and stay only here. This file explains and links; it does not repeat a
+number, so a limit changes in one place. Values that depend on the stack do not
+go there: they live in the stack profiles (`shared/profiles/`), which refine
+the conventions and never contradict them.
+
+`uv run shared/scripts/tools/check_skill_authoring.py --all` reports every
+skill that breaks a limit. It is a report, not a gate: it is not in CI, a
+`hard` finding exits 1, a `recommended` one only with `--strict`. A rule that
+can be written as data belongs in that file, not in prose here; the
+deterministic-first conversion of a skill moves such rules out of its
+`SKILL.md` the same way.
 
 ## Relation to Anthropic's skill guidance
 
 Anthropic's [Skill authoring best practices](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices)
 gives the same direction: scripts for fragile operations that must be exact,
-prose for steps that need judgement. This file is stricter in two ways: it
-requires code to validate every AI output, and it requires a chosen fallback
-per AI step. **On any conflict, the Shipwright rule in this file wins.**
+prose for steps that need judgement. It adds measurable limits, which the JSON
+file carries, and the point that references stay one level deep and that a long
+reference opens with a table of contents. This file is stricter in two ways:
+it requires code to validate every AI output, and it requires a chosen
+fallback per AI step. The `alignment` list in the JSON says, rule by rule,
+whether it is adopted, already covered, not adopted (with the reason) or left
+to a reviewer. **On any conflict, the Shipwright rule in this file wins.**
+
+**Read this before** building or changing a skill, hook or agent, and before
+running the deterministic-first conversion of a plugin. `CLAUDE.md` and
+`shared/prompts/writing-plugin.md` point here for that reason.

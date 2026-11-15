@@ -1,0 +1,260 @@
+{
+  "schemaVersion": 1,
+  "description": "Machine-readable conventions that hold for EVERY project, whatever its stack. One file, one section per topic; a topic moves here from prose when a tool can read it. Profile-dependent values do not belong here: they live in the stack profiles (shared/profiles/*.json, and .shipwright/profiles/ for a project's own), which refine these conventions, never contradict them. Sections today: skill_authoring (the machine-readable half of docs/building-skills-plugins-agents.md). The constitution and the architecture rules are prose and stack-profile keys today and are the next candidates.",
+  "sections": {
+    "skill_authoring": {
+      "description": "The numeric limits and the alignment with Anthropic's 'Skill authoring best practices' (platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices, read 2026-11-15). The four rules themselves are prose and live only in docs/building-skills-plugins-agents.md, which explains and links and repeats no number here. Read by shared/scripts/tools/check_skill_authoring.py. On any conflict the Shipwright rule wins.",
+      "limits": [
+        {
+          "id": "name-required",
+          "applies_to": "frontmatter.name",
+          "kind": "hard",
+          "value": true,
+          "unit": "bool",
+          "source": "anthropic",
+          "checkable": true,
+          "note": "name and description are the two required fields"
+        },
+        {
+          "id": "name-max-length",
+          "applies_to": "frontmatter.name",
+          "kind": "hard",
+          "value": 64,
+          "unit": "chars",
+          "source": "anthropic",
+          "checkable": true
+        },
+        {
+          "id": "name-charset",
+          "applies_to": "frontmatter.name",
+          "kind": "hard",
+          "value": "^[a-z0-9-]+$",
+          "unit": "regex",
+          "source": "anthropic",
+          "checkable": true,
+          "note": "lowercase letters, numbers and hyphens only"
+        },
+        {
+          "id": "name-reserved-words",
+          "applies_to": "frontmatter.name",
+          "kind": "hard",
+          "value": [
+            "anthropic",
+            "claude"
+          ],
+          "unit": "words",
+          "source": "anthropic",
+          "checkable": true
+        },
+        {
+          "id": "description-required",
+          "applies_to": "frontmatter.description",
+          "kind": "hard",
+          "value": true,
+          "unit": "bool",
+          "source": "anthropic",
+          "checkable": true,
+          "note": "name and description are the two required fields; description must be non-empty"
+        },
+        {
+          "id": "description-max-length",
+          "applies_to": "frontmatter.description",
+          "kind": "hard",
+          "value": 1024,
+          "unit": "chars",
+          "source": "anthropic",
+          "checkable": true
+        },
+        {
+          "id": "no-xml-tags",
+          "applies_to": "frontmatter.name+description",
+          "kind": "hard",
+          "value": "<[A-Za-z/][^>]*>",
+          "unit": "regex",
+          "source": "anthropic",
+          "checkable": true
+        },
+        {
+          "id": "body-max-lines",
+          "applies_to": "SKILL.md body (after frontmatter)",
+          "kind": "recommended",
+          "value": 500,
+          "unit": "lines",
+          "source": "anthropic",
+          "checkable": true,
+          "note": "Anthropic: 'under 500 lines', so a body of this many lines or more is reported. The page names no token limit. Shipwright's own, stricter runtime-prompt size limit and its anti-ratchet baseline are enforced elsewhere (see shared/prompts/writing-plugin.md) and not repeated here"
+        },
+        {
+          "id": "references-one-level",
+          "applies_to": "references/*.md",
+          "kind": "recommended",
+          "value": 1,
+          "unit": "levels",
+          "source": "anthropic",
+          "checkable": true,
+          "note": "every reference file is linked from SKILL.md; a reference that links on to another reference file makes Claude preview it with head and read it incompletely"
+        },
+        {
+          "id": "reference-toc-threshold",
+          "applies_to": "references/*.md",
+          "kind": "recommended",
+          "value": 100,
+          "unit": "lines",
+          "source": "anthropic",
+          "checkable": true,
+          "note": "a reference file longer than this starts with a table of contents; 'starts with' is read as: within the first 'window' lines (a heading named Contents, or an in-page anchor link). The window is a judgement call, small enough that a partial read (head -100) still sees it",
+          "window": 40
+        },
+        {
+          "id": "forward-slash-paths",
+          "applies_to": "SKILL.md and references/*.md",
+          "kind": "hard",
+          "value": "\\b(scripts|references|assets)\\\\",
+          "unit": "regex",
+          "source": "anthropic",
+          "checkable": true,
+          "note": "write scripts/helper.py, never scripts\\helper.py"
+        },
+        {
+          "id": "description-third-person",
+          "applies_to": "frontmatter.description",
+          "kind": "hard",
+          "value": true,
+          "unit": "bool",
+          "source": "anthropic",
+          "checkable": false,
+          "note": "judgement, not countable: a description says what the skill does and when to use it, in third person. Reviewed by a person or the AI."
+        },
+        {
+          "id": "listing-description-cut",
+          "applies_to": "Claude Code skill listing",
+          "kind": "runtime-cap",
+          "value": 1536,
+          "unit": "chars",
+          "source": "Claude Code docs, UNVERIFIED: second-hand from a research report of a parallel session (2026-11-14); check code.claude.com/docs/en/skills.md and context-window.md before relying on it",
+          "verified": false,
+          "checkable": false,
+          "note": "if the number holds it is looser than description-max-length, which would already keep us under it"
+        },
+        {
+          "id": "post-compaction-skill-cap",
+          "applies_to": "Claude Code after compaction",
+          "kind": "runtime-cap",
+          "value": 5000,
+          "unit": "tokens per skill (25000 total)",
+          "source": "Claude Code docs, UNVERIFIED: second-hand from a research report of a parallel session (2026-11-14); check code.claude.com/docs/en/skills.md and context-window.md before relying on it",
+          "verified": false,
+          "checkable": false,
+          "note": "a skill body longer than this is cut when re-injected after compaction; verify against the current docs before relying on it"
+        }
+      ],
+      "alignment": [
+        {
+          "anthropic": "Prefer scripts for deterministic operations; run, don't read, unless the algorithm itself is the point",
+          "status": "already-covered",
+          "shipwright": "P1; 'When building a skill' in the document"
+        },
+        {
+          "anthropic": "Degrees of freedom: low freedom (exact script, no flags) for fragile steps, high freedom (text) for judgement",
+          "status": "already-covered",
+          "shipwright": "P1/P2 split; the deciding question"
+        },
+        {
+          "anthropic": "Plan, validate, execute; verbose validator messages; run validator, fix, repeat",
+          "status": "already-covered",
+          "shipwright": "P3 (code validates every AI output) is stricter: a failed answer is never used"
+        },
+        {
+          "anthropic": "Scripts solve problems rather than defer to Claude: handle their own errors",
+          "status": "adopted",
+          "shipwright": "document, 'When building a skill': a script reports a documented exit code and a message that names the fix"
+        },
+        {
+          "anthropic": "No voodoo constants: every config value is justified",
+          "status": "adopted",
+          "shipwright": "document, 'When building a skill'; a number a script uses carries its reason next to it"
+        },
+        {
+          "anthropic": "Evaluation-driven: at least three evaluations before extensive documentation; baseline without the skill",
+          "status": "planned",
+          "shipwright": "planned, not done: the deterministic-first programme plans a replay baseline (P2b, in the changelog pilot brief) and promise tests (P18/P19, in the programme brief) before any conversion; the pilot has only reached its inventory unit"
+        },
+        {
+          "anthropic": "Test with Haiku, Sonnet and Opus",
+          "status": "not-adopted",
+          "shipwright": "open: worth doing once a skill is mostly script; today the phases pin their own model tier (ModelConfig)"
+        },
+        {
+          "anthropic": "SKILL.md body under 500 lines; references one level deep; table of contents over 100 lines",
+          "status": "adopted",
+          "shipwright": "limits above, checked by check_skill_authoring.py"
+        },
+        {
+          "anthropic": "Description: specific, what and when, third person, max 1,024 characters",
+          "status": "adopted",
+          "shipwright": "limits above; third person is a review item"
+        },
+        {
+          "anthropic": "Gerund names (processing-pdfs)",
+          "status": "not-adopted",
+          "shipwright": "a skill name is the slash-command suffix (/shipwright-changelog); the page calls gerunds a suggestion"
+        },
+        {
+          "anthropic": "Forward slashes in all paths",
+          "status": "adopted",
+          "shipwright": "limit forward-slash-paths"
+        },
+        {
+          "anthropic": "MCP tools by fully qualified ServerName:tool_name",
+          "status": "not-applicable",
+          "shipwright": "no Shipwright skill calls an MCP tool today; revisit if one does"
+        },
+        {
+          "anthropic": "Consistent terminology; no time-sensitive prose; concrete examples",
+          "status": "review-item",
+          "shipwright": "not countable; a reviewer checks it"
+        },
+        {
+          "anthropic": "Be concise: add only context Claude does not already have; every paragraph must justify its token cost",
+          "status": "review-item",
+          "shipwright": "not countable; the deterministic-first conversion applies it by moving what code can do out of the prose, and the body-max-lines limit bounds it"
+        },
+        {
+          "anthropic": "Complex workflows: sequential steps and a copyable checklist so steps are not skipped",
+          "status": "already-covered",
+          "shipwright": "phase skills carry numbered steps and the iterate flow creates a task checklist; the deterministic-first programme goes further and replaces a skippable step by a script that does it"
+        },
+        {
+          "anthropic": "Do not offer too many options: give a default with an escape hatch",
+          "status": "review-item",
+          "shipwright": "not countable; the plain-language question rule in CLAUDE.md asks for concrete, comparable options"
+        },
+        {
+          "anthropic": "List required packages and do not assume tools are installed; know the runtime (claude.ai can install, the API cannot)",
+          "status": "already-covered",
+          "shipwright": "phase skills declare their compatibility (uv, git, gh) in the frontmatter (the grade skill does not yet) and scripts run through uv, which resolves their dependencies"
+        },
+        {
+          "anthropic": "Iterate with two Claude instances (A writes, B uses) and watch how Claude navigates the skill; test file access paths",
+          "status": "not-adopted",
+          "shipwright": "a method for the human author, not a check; the replay baseline and promise tests of the deterministic-first programme are the Shipwright counterpart"
+        },
+        {
+          "anthropic": "Template and example patterns; conditional workflow pattern (route to a file per case)",
+          "status": "review-item",
+          "shipwright": "not countable; references/ files per case already follow the conditional pattern, the one-level rule keeps the routing readable"
+        },
+        {
+          "anthropic": "Name the script's purpose: run it or read it; error messages that say what to fix",
+          "status": "adopted",
+          "shipwright": "document, 'When building a skill': a documented exit code and a message that names the fix"
+        },
+        {
+          "anthropic": "Visual analysis: render inputs as images where layout matters",
+          "status": "not-applicable",
+          "shipwright": "no Shipwright skill reads documents by layout; the design and test phases use screenshots through their own browser tooling"
+        }
+      ]
+    }
+  }
+}

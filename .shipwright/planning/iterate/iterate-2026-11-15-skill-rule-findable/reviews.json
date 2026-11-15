@@ -1,0 +1,255 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-15-skill-rule-findable",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-15T08:48:34.877944+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-15T08:48:39.002314+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/tests/test_check_skill_authoring.py",
+          "line": 129,
+          "finding": "The JSON-output check was dead code (`if False`), so the --json shape was never asserted.",
+          "suggestion": "Parse the output and assert skills and findings. Fixed.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/check_skill_authoring.py",
+          "line": 65,
+          "finding": "A missing name was never reported although name and description are the two required fields.",
+          "suggestion": "Add a hard name-required limit and check. Fixed.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/check_skill_authoring.py",
+          "line": 36,
+          "finding": "A BOM or trailing space on the closing frontmatter line hid the frontmatter and produced a false hard finding.",
+          "suggestion": "Strip the BOM, find the closing line by strip(). Fixed.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/check_skill_authoring.py",
+          "line": 53,
+          "finding": "Single-quoted values kept their quotes.",
+          "suggestion": "Unquote single quotes. Fixed.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/check_skill_authoring.py",
+          "line": 89,
+          "finding": "A plain path mention inside a reference file did not count as nesting, and a same-named file elsewhere counted as a link.",
+          "suggestion": "Resolve links against their source directory; apply the plain-path rule to references. Fixed.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/config/conventions.json",
+          "line": 141,
+          "finding": "The forward-slash regex had no word boundary.",
+          "suggestion": "Anchor with a word boundary. Fixed.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/check_skill_authoring.py",
+          "line": 99,
+          "finding": "The body limit was inclusive although Anthropic says under 500 lines.",
+          "suggestion": "Report a body of 500 lines or more. Fixed.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "maintainability",
+          "file": "shared/scripts/tools/check_skill_authoring.py",
+          "line": 120,
+          "finding": "The 40-line table-of-contents window was a hard-coded number without a reason.",
+          "suggestion": "Move it into the limit with its reason. Fixed.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "usability",
+          "file": "shared/scripts/tools/check_skill_authoring.py",
+          "line": 146,
+          "finding": "--all with a wrong root printed a misleading message.",
+          "suggestion": "Name the searched root. Fixed.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-15T08:48:35.014373+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "hidden coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the four rules live once, in the JSON — The JSON held a near-verbatim copy of the document's rules that no tool read, with no drift test.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the SKILL.md size has one number — writing-plugin.md still names the stricter 400-line runtime-prompt cap enforced by the anti-ratchet hook.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "false claim",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: evaluation-driven development is already covered — P2b/P18/P19 are planned units of a campaign that has only reached P0.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "false claim",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: CLAUDE.md asks for a recommended default; the build flow has a task checklist; every skill declares compatibility — None of the three holds as worded.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "unverifiable source",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the runtime-cap numbers are honestly marked — The source named a report that is not in the repo.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "blast radius",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the pointer reaches every agent — AGENTS.md had no such bullet.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "fragility",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the BOM handling is tested — An invisible literal BOM could be stripped by an editor, leaving a green test that tests nothing.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-15T08:48:35.300889+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-15T08:48:39.002314+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-15T08:48:35.169368+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-15T08:48:39.002314+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-15T08:48:39.002314+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}

@@ -1,0 +1,3 @@
+Goal: Make the code-versus-AI skill rule findable (CLAUDE.md, writing-plugin.md), align it with Anthropic's Skill authoring best practices, and move its numbers into a machine-readable conventions.json with a report-only checker.
+Reason: The rule doc was linked only from campaign briefs. A new session without a brief did not know it. Anthropic's page adds measurable limits (description length, SKILL.md body size, reference depth) that belong in data, not prose. No FR owns this: per the deterministic-first programme P22 a rule or quality goes into the constitution or a gate, and its tests are not promise tests, so the pre-build AC record runs in mode off.
+Reference: origin/main
