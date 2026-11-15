@@ -1,0 +1,18 @@
+
+src\components\bad1.tsx
+  1:10  error  'createClient' import from '@supabase/supabase-js' is restricted. Use the helpers in src/lib/supabase/ instead of creating a client here  no-restricted-imports
+
+src\components\bad2.tsx
+  1:45  error  Unexpected use of 'fetch'. Call the API through src/lib/api/ instead of fetch() in a component                     no-restricted-globals
+  1:74  error  'window.fetch' is restricted from being used. Call the API through src/lib/api/ instead of fetch() in a component  no-restricted-properties
+
+src\components\bad4.tsx
+  1:10  error  'createBrowserClient' import from '@supabase/ssr' is restricted. Use the helpers in src/lib/supabase/ instead of creating a client here  no-restricted-imports
+
+src\components\bad5.tsx
+  1:8  error  * import is invalid because 'createClient' from '@supabase/supabase-js' is restricted. Use the helpers in src/lib/supabase/ instead of creating a client here  no-restricted-imports
+
+✖ 5 problems (5 errors, 0 warnings)
+
+
+(real ESLint 10 + typescript-eslint parser, config assembled from the profile's two lint fragments (client factories restricted by importNames per package; fetch rule). Committed fixture tree (src/, tests/): no finding. Seeded and flagged: bad1 (createClient from supabase-js), bad4 (createBrowserClient from @supabase/ssr), bad5 (namespace import of supabase-js), bad2 (fetch, window.fetch). Not flagged: src/lib/api/ok.ts (fetch in the API layer), tests/ (supabase-js imports), ui/button.tsx (namespace import of react), okhelper.tsx (helper named createClient), okt.tsx (type-only import of User), src/app/opengraph-image.tsx (fetch).)

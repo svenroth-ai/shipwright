@@ -213,3 +213,4 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [Post-build per-AC check, phase 1 (warning only)](iterate-2026-11-07-ac-q2-post-build-check-per-ac-post-build-check.md)
 - [Skill inventory data and checker for the deterministic-first pilot](iterate-2026-11-14-p0-changelog-inventory-skill-inventory-checker.md)
 - [Architecture rules in stack profiles: rule format, loader, validation (campaign profile-architecture-rules, U1)](iterate-2026-11-15-u1-rule-format-rule-format.md)
+- [supabase-nextjs architecture rules as rule objects, template examples obey them (campaign profile-architecture-rules, U3a)](iterate-2026-11-16-u3a-supabase-rules-supabase-rules.md)

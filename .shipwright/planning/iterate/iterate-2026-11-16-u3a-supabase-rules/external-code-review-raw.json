@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: spec\n- Severity: high\n- File: shared/tests/test_supabase_nextjs_rules_drift.py:35\n- Finding: The test references a committed `fixtures/supabase_nextjs_scaffold/` tree, but the diff adds none of its 16 required files. The fixture equality tests therefore fail with `FileNotFoundError`, and the mechanical-rule test finds zero files. The committed-fixture acceptance criterion is unmet.\n- Suggestion: Commit all fixture files mapped by `BLOCKS` and `WHOLE_FILES`, copied from their corresponding template examples, and run the drift suite against that tree.\n\nOverall assessment: ship-with-fixes. The missing fixture tree prevents the added tests from passing and leaves a required acceptance criterion incomplete. Execution was unavailable because the environment rejected shell access; this finding follows from the supplied diff.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "## Findings\n\n- Category: spec\n  Severity: high\n  File: shared/tests/test_supabase_nextjs_rules_drift.py (FIXTURE constant / BLOCKS map)\n  Finding: The drift test depends on a committed fixture tree at `shared/tests/fixtures/supabase_nextjs_scaffold/` containing every mapped example file (16 mapped blocks + 1 whole file), but the diff contains no fixture files. The acceptance criterion \"Committed fixture tree built from the templates' own examples passes every mechanical rule\" cannot be met by this diff alone \u2014 the suite will fail with `FileNotFoundError` on a fresh checkout unless the fixtures were committed in a separate change not shown here.\n  Suggestion: Commit the fixture tree in this change (or point to the commit that adds it); verify the test suite passes end-to-end from a clean clone.\n\n- Category: test\n  Severity: medium\n  File: shared/tests/test_supabase_nextjs_rules_drift.py \u2014 `_lint` / `no-restricted-globals` branch\n  Finding: The emulation strips comments but not string literals, so `const s = \"no fetch here\"` in a component would be flagged as a `fetch` violation. This only produces false positives inside the test (not shipped ESLint), but it means the drift test could report a spurious failure for a template example that mentions `fetch` in prose-in-strings, and the \"compliant\" tests never cover that case.\n  Suggestion: Either strip string literals before the global-name search, or accept and document the divergence; add a negative test for a string containing \"fetch\".\n\n- Category: test\n  Severity: medium\n  File: shared/tests/test_supabase_nextjs_rules_drift.py \u2014 `_imports`\n  Finding: The test comment claims \"`import type` counts (the core rule flags it too)\", but this is asserted rather than verified. In real ESLint, `no-restricted-imports` pattern matching with `importNames` historically did not flag `import type` declarations the same way (type-only imports were excluded from import-name checks in several ESLint versions). If the emulator is stricter than real ESLint, a future real-ESLint run (the stated replacement) could silently disagree with the drift test in the permissive direction \u2014 which is the dangerous direction.\n  Suggestion: Verify against a real ESLint run once (the planned unit) that `import type { createClient } from '@supabase/supabase-js'` is actually flagged; if not, the rule text \"must not import createClient\" needs a lint pattern that covers type imports, or the note should scope the guarantee.\n\n- Category: bug\n  Severity: low\n  File: shared/profiles/supabase-nextjs.json \u2014 `supabase-client-through-helpers` `ignores`\n  Finding: The ignore list omits `**/*.stories.*` and dev-only patterns, but more importantly the `files` glob `src/**/*.{ts,tsx,js,jsx,mjs}` combined with ignoring only `src/lib/supabase/**` means `src/middleware.ts` (the standard place a Next.js Supabase SSR project refreshes sessions via `@supabase/ssr`) is in scope and must use an eslint-disable. This is defensible but the note doesn't mention middleware, which is the most common legitimate hit.\n  Suggestion: Either add `src/middleware.*` to ignores or document it in the note as a per-line-disable case.\n\n- Category: edge-case\n  Severity: low\n  File: shared/profiles/supabase-nextjs.json \u2014 `no-fetch-in-components` `files`\n  Finding: `src/app/**/*.{tsx,jsx}` excludes `.ts` files under `src/app/`, so a `src/app/some-layout-helper.ts` or a custom `src/app/*.ts` module that calls `fetch()` escapes the rule. The note explains route.ts exclusion but not the broader `.ts` gap under `src/app/`.\n  Suggestion: Consider `src/app/**/*.{ts,tsx,js,jsx}` with an explicit ignore for `**/route.ts` if the intent is \"route handlers excluded, everything else under app/ covered\" \u2014 or document the current scope precisely.\n\nTest quality is otherwise good: seeded-violation and compliant/exempt parameterized tests exercise real behavior, unknown-rule emulation fails loudly, and the fixture-equality tests pin template drift.\n\n## Overall assessment\n\nThe profile and template changes are sound and well-tested, but the acceptance criterion \"committed fixture tree\" is not visible in this diff \u2014 if the fixtures are genuinely absent the whole suite fails. Ship-with-fixes after confirming/committing the fixtures and resolving the `import type` emulation-vs-ESLint question.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-11-16-u3a-supabase-rules",
+    "at": "2026-11-15T23:33:34.111288+00:00"
+  },
+  "verdicts": {
+    "openai": "revise",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}
