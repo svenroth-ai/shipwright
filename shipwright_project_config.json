@@ -1,7 +1,7 @@
 {
   "status": "complete",
   "scope": "library",
-  "profile": "python-plugin-monorepo",
+  "profile": "shipwright-monorepo",
   "planning_dir": ".shipwright/planning",
   "splits": [
     {

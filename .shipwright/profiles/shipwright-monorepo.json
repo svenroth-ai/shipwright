@@ -1,0 +1,140 @@
+{
+  "name": "shipwright-monorepo",
+  "description": "Project profile of the Shipwright repository itself: a copy of the bundled claude-plugin profile (same Python toolchain, same plugin-project architecture rules) plus the rules that name mechanisms which exist only in this repository: the root conftest.py test-root guard, the pre-commit bloat anti-ratchet hook and the size baseline shipwright_bloat_baseline.json. It lives in .shipwright/profiles/ and replaces nothing bundled; other plugin repositories use claude-plugin. The notes copied from claude-plugin are written for other repositories; where one differs from a rule added for this repository (the no-bare-python-stdin path exists here, and hooks.json quoting is tested here), the added rule takes precedence.",
+  "version": "0.1.0",
+  "stack": {
+    "runtime": {
+      "python": "3.11+",
+      "claude-plugin": ".claude-plugin/"
+    },
+    "_comment_runtime": "Adopt scores a profile by the other dependency names declared here; the claude-plugin key never counts toward a score, it only makes this profile a candidate (when the repository has a .claude-plugin folder) and settles a same-source tie against the generic Python profile.",
+    "frontend": {},
+    "backend": {}
+  },
+  "dev_server": null,
+  "services": [],
+  "testing": {
+    "unit": "pytest",
+    "command": "uv run pytest"
+  },
+  "linting": {
+    "tool": "ruff",
+    "command": "uv run ruff check"
+  },
+  "deploy": null,
+  "folder_structure": {
+    "plugins/": "One Claude Code plugin per folder (each with .claude-plugin/, hooks/, skills/, agents/, scripts/, tests/, pyproject.toml)",
+    "shared/": "Cross-plugin scripts, profiles, templates, prompts",
+    "docs/": "User-facing documentation (guide.md is canonical)",
+    "integration-tests/": "Cross-plugin integration tests",
+    "scripts/": "Top-level developer scripts (install.sh, update-marketplace.sh)"
+  },
+  "required_env_vars": {
+    "build": [],
+    "deploy": [],
+    "plugin": []
+  },
+  "architecture_rules": [
+    {
+      "id": "logic-in-scripts-judgement-to-ai",
+      "text": "Checks, counts, comparisons and format rules go into scripts, tests or hooks; reading intent, judging wording and writing prose go to the AI. A SKILL.md names the decision and the script that makes it and does not restate the script's logic.",
+      "why": "Code checks the same way every time and prose that copies code drifts from it, while a script that guesses meaning is wrong reliably and looks trustworthy.",
+      "enforcement": "prompt-only (judgement)"
+    },
+    {
+      "id": "skill-authoring-limits",
+      "text": "Every skill keeps to the limits for name, description, SKILL.md body size and reference depth in Shipwright's shared/config/conventions.json (skill_authoring, shipped with the Shipwright plugins).",
+      "why": "A skill over Anthropic's limits is loaded badly or not at all, and the failure is silent.",
+      "enforcement": "prompt-only (mechanisable)",
+      "note": "shared/scripts/tools/check_skill_authoring.py checks these limits but is a report today: no phase and no CI job runs it, so nothing stops a skill that breaks a limit. Wiring it in is outside this profile's first release."
+    },
+    {
+      "id": "scripts-run-via-uv-run",
+      "text": "Python scripts are started with uv run, never with a bare python or pip.",
+      "why": "uv run gives the script the project's pinned interpreter and dependencies, so it behaves the same on every machine.",
+      "enforcement": "prompt-only (mechanisable)",
+      "note": "No checker scans skills, hooks or scripts for a bare python call. The only mechanism is the narrower hook of the rule no-bare-python-stdin."
+    },
+    {
+      "id": "no-bare-python-stdin",
+      "text": "Never run python - (an interpreter that reads its program from standard input) without a heredoc or pipe feeding it.",
+      "why": "Such a call waits on an input nobody answers and keeps a core busy for hours.",
+      "enforcement": "hook",
+      "mechanism": [
+        "plugins/shipwright-iterate/scripts/hooks/bare_python_stdin_guard.py"
+      ],
+      "note": "The hook is registered by the shipwright-iterate plugin and denies the command only in Claude Code sessions where that plugin is active, and only for the Bash tool (the PowerShell tool is not guarded); it also refuses an empty or unterminated heredoc feeding python -. It does not look at files in the repository. The mechanism path is relative to the Shipwright repository: a copy of this profile in a project's .shipwright/profiles/ must change this rule to prompt-only or drop the mechanism, or validate reports the path as missing."
+    },
+    {
+      "id": "hooks-resolve-plugin-root",
+      "text": "Hook commands and scripts reach plugin files through ${CLAUDE_PLUGIN_ROOT} (in double quotes), never through an absolute or working-directory-relative path.",
+      "why": "The plugin is installed into a cache folder that differs per machine and per version, and the quotes keep a path with spaces in one piece.",
+      "enforcement": "prompt-only (mechanisable)",
+      "note": "No checker is wired into this profile. A test that checks the quoting of the placeholder exists only inside the Shipwright repository."
+    },
+    {
+      "id": "generated-files-next-to-source",
+      "text": "A generated file lives next to the source it is generated from, not among hand-written files.",
+      "why": "Source and render are then read and reviewed together, and a stale render is easy to spot.",
+      "enforcement": "prompt-only (judgement)"
+    },
+    {
+      "id": "one-pytest-root-per-process",
+      "text": "Run the tests of one test root per pytest process, never several roots in one command.",
+      "why": "The roots need the names scripts, lib and tools to mean different directories, and Python caches whichever one loads first, so a mixed session fails with errors that name files the change never touched.",
+      "enforcement": "validator",
+      "mechanism": [
+        "conftest.py"
+      ],
+      "note": "The repository-root conftest.py refuses a session that selects more than one test root (exit 4). It runs only when the repository root is pytest's rootdir: a session started inside a plugin folder never loads it, and CI runs one root per process from the repository root."
+    },
+    {
+      "id": "bloat-anti-ratchet-pre-commit",
+      "text": "Never commit a file that has grown past the size recorded for it in the bloat baseline.",
+      "why": "A grandfathered oversized file that is allowed to keep growing turns the baseline into a sliding ceiling that no longer limits anything.",
+      "enforcement": "hook",
+      "mechanism": [
+        "scripts/hooks/pre-commit",
+        "shared/scripts/hooks/anti_ratchet_check.py"
+      ],
+      "note": "A git hook, so it runs only in a clone that installed it once with scripts/install-hooks.sh (core.hooksPath), and --no-verify skips it. It compares the measured size with the entry in the baseline file as it is in the working tree, so a commit that also edits the recorded size passes; only review catches that. It blocks growth of an existing baseline entry only; a new crossing is reported, not blocked."
+    },
+    {
+      "id": "bloat-no-growth-past-baseline-in-ci",
+      "text": "No file in a pull request or on main is larger than the size recorded for it in the committed bloat baseline.",
+      "why": "A grandfathered oversized file that keeps growing turns the baseline into a ceiling that no longer limits anything.",
+      "enforcement": "validator",
+      "mechanism": [
+        ".github/workflows/bloat-check.yml"
+      ],
+      "note": "The Bloat Check workflow runs the anti-ratchet script on every pull request and on every push to main and fails when a file is larger than its committed entry. It reads the baseline from the change itself, so raising the entry in the same change passes and shows only as a changed row in the pull request comment; a new crossing missing from the baseline is only reported there too (the Group H compliance audit, H1, reports it after merge, without blocking)."
+    },
+    {
+      "id": "bloat-stop-gate-new-crossings",
+      "text": "A Claude Code session that leaves a file over its size limit without a baseline entry, or a baseline entry grown past its recorded value, does not stop until that is fixed.",
+      "why": "A new oversized file is cheapest to split while the agent that wrote it still has the context.",
+      "enforcement": "hook",
+      "mechanism": [
+        "shared/scripts/hooks/bloat_gate_on_stop.py"
+      ],
+      "note": "A Stop hook registered by every Shipwright plugin: it blocks the session's stop on a new crossing outside the baseline or a grown entry. It runs only in Claude Code sessions where a Shipwright plugin is active, it fails open on its own errors, and it does not run at merge."
+    },
+    {
+      "id": "bloat-baseline-discipline",
+      "text": "A file that crosses its size limit is listed in shipwright_bloat_baseline.json before its change merges, the current value of an existing entry is never raised, and the pre-commit hook is never bypassed with --no-verify.",
+      "why": "The baseline records files grandfathered at one moment; raising an entry hides growth instead of stopping it.",
+      "enforcement": "prompt-only (mechanisable)",
+      "note": "Only partly mechanised: the Stop hook of the rule bloat-stop-gate-new-crossings blocks a session on a new crossing, the pull request comment lists new and changed entries for the reviewer, and the Group H compliance audit (H1) reports a new crossing after merge without blocking. Nothing checks the entry's current value against the base, which would mechanise the second half; a hook cannot enforce that it is not skipped."
+    },
+    {
+      "id": "hooks-json-quote-plugin-root",
+      "text": "Every hooks.json in this repository writes the plugin-root placeholder inside double quotes.",
+      "why": "A plugin installed under a path with spaces breaks an unquoted hook command, and the hook then fails silently.",
+      "enforcement": "test",
+      "mechanism": [
+        "shared/tests/test_hooks_json_quoting.py"
+      ],
+      "note": "A shared test, run by CI, checks every hooks.json of the repository; it exists only here, which is why the bundled rule hooks-resolve-plugin-root stays instruction only."
+    }
+  ]
+}

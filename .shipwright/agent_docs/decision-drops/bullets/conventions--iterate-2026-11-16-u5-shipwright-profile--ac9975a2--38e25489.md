@@ -1,0 +1,1 @@
+- **iterate-2026-11-16-u5-shipwright-profile** (2026-11-16): Convention — Shipwright's own rules live in the project profile shipwright-monorepo (a claude-plugin copy plus repo-only rules); a test pins the copy, and conventions.md carries the rendered block. → decision_log (ADR via Run-ID: iterate-2026-11-16-u5-shipwright-profile)

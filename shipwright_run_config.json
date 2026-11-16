@@ -21,7 +21,7 @@
     "test",
     "changelog"
   ],
-  "profile": "python-plugin-monorepo",
+  "profile": "shipwright-monorepo",
   "scope": "library",
   "autonomy": "supervised",
   "standalone": false,

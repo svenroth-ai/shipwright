@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-16-u5-shipwright-profile",
+  "date": "2026-11-16",
+  "section": "Iterate — feature: Shipwright's own project profile",
+  "title": "Shipwright monorepo project profile with repo-only architecture rules",
+  "context": "This repo named the generic Python profile, so its agents saw no architecture rules and the repo-only rules sat in prose.",
+  "decision": "A project profile copy of claude-plugin plus repo-only rules (test-root guard, pre-commit hook, bloat checks) replaces the generic name in three configs; the rules block is rendered into conventions.md.",
+  "consequences": "Agents in this repo read the rules; re-adopt loses bundled CI and CodeQL defaults; a test pins the copy against the bundled profile.",
+  "rationale": "Operator brief U5: repo-only rules must not ship to customers, so they live in a project profile.",
+  "rejected": "Repo-only rules in the bundled profile (leaks to customers); keeping the generic name (no rules reach agents); a profile extends feature (new loader mechanism for one consumer).",
+  "commit": "",
+  "architecture_impact": "convention",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-11-16-u5-shipwright-profile-shipwright-profile.md"
+}

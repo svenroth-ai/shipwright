@@ -54,7 +54,7 @@ flowchart TB
 
 ## Key Architecture Decisions
 
-See `decision_log.md` for detailed ADRs. Profile-level decisions (stack, auth pattern, DB strategy, folder structure) are defined by the stack profile (`python-plugin-monorepo`).
+See `decision_log.md` for detailed ADRs. Profile-level decisions (stack, auth pattern, DB strategy, folder structure) are defined by the stack profile (`shipwright-monorepo`, a project profile in `.shipwright/profiles/`).
 
 ## Data Flow
 
