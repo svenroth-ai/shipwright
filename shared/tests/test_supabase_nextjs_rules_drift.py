@@ -289,3 +289,26 @@ def test_duplicated_prose_is_gone_from_the_templates():
 
 def test_every_mapped_template_is_scanned():
     assert {t for t, _ in BLOCKS} <= set(SCANNED)
+
+
+def test_render_lists_all_six_rules_with_their_class_and_the_validator_caveat(tmp_path):
+    sys.path.append(str(ROOT / "shared" / "scripts" / "tools"))
+    import render_architecture_rules as rar
+    template = _read(TEMPLATES / "agent-docs/conventions.md.template")
+    assert "## Architecture Rules" in template and "{ARCHITECTURE_RULES}" in template
+    conv = tmp_path / ".shipwright" / "agent_docs" / "conventions.md"
+    conv.parent.mkdir(parents=True)
+    conv.write_text(template.replace("{PROJECT_NAME}", "demo").replace("{PROFILE_NAME}", "supabase-nextjs")
+                    .replace("{FOLDER_STRUCTURE}", "src/"), encoding="utf-8")
+    assert rar._main(["--project-root", str(tmp_path), "--profile", "supabase-nextjs"]) == 0
+    first = conv.read_text(encoding="utf-8")
+    assert rar._main(["--project-root", str(tmp_path), "--profile", "supabase-nextjs"]) == 0
+    assert conv.read_text(encoding="utf-8") == first  # idempotent
+    bullets = {m.group(1): m.group(0) for m in re.finditer(r"^- \*\*([a-z0-9-]+)\*\*.*$", first, re.M)}
+    assert list(bullets) == [r.id for r in _rules().rules]
+    for rule in _rules().rules:
+        if rule.lint:
+            assert "checked by the linter `eslint`" in bullets[rule.id]
+            assert "only for projects whose eslint config carries this fragment" in bullets[rule.id]  # the caveat survives the render
+        else:
+            assert f"instruction only ({rule.enforcement.split('(')[1]}" in bullets[rule.id]
