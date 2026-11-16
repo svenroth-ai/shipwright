@@ -1,0 +1,87 @@
+// eslint.config.mjs - written by /shipwright-project for the supabase-nextjs profile.
+// Needs: npm install --save-dev eslint@10 typescript-eslint@8 typescript@5
+//
+// The architecture-rule blocks at the end come from the profile (shared/profiles/supabase-nextjs.json).
+// Keep them LAST: in a flat config a later object that sets the same rule replaces its options,
+// it does not merge. A legitimate exception takes a per-line `eslint-disable-next-line` with a reason.
+import tseslint from "typescript-eslint";
+
+export default [
+  { ignores: [".next/**", "node_modules/**", "dist/**", "coverage/**", "next-env.d.ts"] },
+  // typescript-eslint parser: `allowTypeImports` in no-restricted-imports needs it to see `import type`.
+  {
+    files: ["**/*.{ts,tsx,js,jsx,mjs}"],
+    languageOptions: { parser: tseslint.parser },
+  },
+  // BEGIN architecture-rule: supabase-client-through-helpers
+  {
+    "files": [
+      "src/**/*.{ts,tsx,js,jsx,mjs}"
+    ],
+    "ignores": [
+      "src/lib/supabase/**",
+      "**/*.test.{ts,tsx,js,jsx}",
+      "**/*.spec.{ts,tsx,js,jsx}",
+      "**/__tests__/**"
+    ],
+    "rules": {
+      "no-restricted-imports": [
+        "error",
+        {
+          "paths": [
+            {
+              "name": "@supabase/supabase-js",
+              "allowTypeImports": true,
+              "message": "Use the helpers in src/lib/supabase/ instead of creating a client here."
+            },
+            {
+              "name": "@supabase/ssr",
+              "allowTypeImports": true,
+              "message": "Use the helpers in src/lib/supabase/ instead of creating a client here."
+            }
+          ]
+        }
+      ]
+    }
+  },
+  // END architecture-rule: supabase-client-through-helpers
+  // BEGIN architecture-rule: no-fetch-in-components
+  {
+    "files": [
+      "src/components/**/*.{ts,tsx,js,jsx}",
+      "src/app/**/*.{tsx,jsx}"
+    ],
+    "ignores": [
+      "**/*.test.{ts,tsx,js,jsx}",
+      "**/*.spec.{ts,tsx,js,jsx}",
+      "**/__tests__/**",
+      "**/opengraph-image.*",
+      "**/twitter-image.*",
+      "**/icon.*",
+      "**/apple-icon.*"
+    ],
+    "rules": {
+      "no-restricted-globals": [
+        "error",
+        {
+          "name": "fetch",
+          "message": "Call the API through src/lib/api/ instead of fetch() in a component."
+        }
+      ],
+      "no-restricted-properties": [
+        "error",
+        {
+          "object": "window",
+          "property": "fetch",
+          "message": "Call the API through src/lib/api/ instead of fetch() in a component."
+        },
+        {
+          "object": "globalThis",
+          "property": "fetch",
+          "message": "Call the API through src/lib/api/ instead of fetch() in a component."
+        }
+      ]
+    }
+  },
+  // END architecture-rule: no-fetch-in-components
+];

@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "## Findings\n\n**Category: edge-case \u2014 Severity: medium**\n**Finding:** Step 2's \"if absent, else merge the two blocks last\" logic for existing `eslint.config.mjs` files is the riskiest part of the plan and is underspecified. \"Merge the two blocks last\" is not a mechanical operation \u2014 existing configs may have other rules after the insertion point, may already contain a (possibly divergent) BEGIN/END block, or may be `.ts`/flat-config variants with incompatible shapes. Nothing says what \"merge\" means here (string splice? parse the array?).\n**Suggestion:** Constrain the merge to: if markers exist, replace the marked block; if no markers, append the block at the end of the `plugins`/`rules` array; if the file can't be parsed as flat config, skip with a warning and log the manual step. Specify this in the step doc so the drift test can target it.\n\n**Category: approach \u2014 Severity: medium**\n**Finding:** The seeded-violation ESLint run in the plan requires `npm install eslint + typescript-eslint` into a tmp dir. That's a network-dependent, slow test that will be flaky in CI sandboxes and offline environments. The AC itself says a pytest that skips without Node \"is allowed but is not the evidence\" \u2014 the evidence is one recorded run \u2014 so the risk is investing in a fragile automated install path when the acceptance only demands a recorded artifact.\n**Suggestion:** Either cache/resolve the install (existing `node_modules` from U3a run, a lockfile-pinned `npm ci`) or make the automated test use a pre-resolved fixture. Confirm whether the drift test (cheap, deterministic) plus recorded evidence is actually the contract, and treat the live-run pytest as best-effort.\n\n**Category: edge-case \u2014 Severity: low**\n**Finding:** \"Typescript-eslint parser block\" ordering is asserted in the drift test (parser, then fragments last), but ESLint flat-config semantics matter here: fragment rules placed last only \"win\" if they're in the same config object the drift test asserts order of. If the template spreads fragments across separate array entries, last-entry-wins applies at the entry level, not rule level \u2014 a partially-overriding earlier rule entry could silently shadow individual rules.\n**Suggestion:** Confirm the fragments live in one config object at the end of the array (or one entry per fragment, both after all other entries) and assert entry-level ordering, not just substring position, in the drift test.\n\n**Category: dependency \u2014 Severity: low**\n**Finding:** Step 2 mentions \"devDependencies named\" but doesn't state where they're verified. The drift test asserts typescript-eslint is named in the template context, but if the scaffold step installs into the scaffolded app, the step doc needs the exact package names/versions or the scaffold will produce a config referencing an uninstalled parser (silent no-op or error at lint time).\n**Suggestion:** Add an explicit assertion that the step names both `eslint` and `typescript-eslint` (with any pinned version policy) in the devDependency block, and state the failure mode if they're missing.\n\n**Category: security \u2014 Severity: low**\n**Finding:** \"No shell command, no quoted placeholders\" is a good guard, but the doc-level test (\"no placeholder inside double quotes\") only covers double quotes. Placeholder leakage into backticks or single quotes in a `.mjs` template would produce syntactically-valid-but-wrong config that passes the doc test.\n**Suggestion:** Broaden the doc-level test to any quote context, or better, assert the rendered template is valid JS (parseable by `node --check` or an AST parse) in the fixture test.\n\n**Category: risk \u2014 Severity: low**\n**Finding:** The \"replace the emulation with a real ESLint run\" step removes existing coverage. If the emulation test currently checks rule behavior (e.g., a specific violation fires) and the real-run pytest skips in environments without Node, some environments lose all behavioral verification.\n**Suggestion:** Keep the cheap emulation/syntax-level test alongside the live-run test rather than replacing it \u2014 they test different things (template correctness vs. rule behavior).\n\n## Overall Assessment\n\nThe approach is directionally sound and well-scoped; the main gaps are the underspecified merge semantics for pre-existing configs and the fragility of a network-dependent real-run test. Tighten those two and this is ready.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Category: risk | Severity: medium**  \n   **Finding:** \u201cMerge the two blocks last\u201d does not define how existing ESLint configurations are preserved. Flat-config precedence depends on file matching and rule keys; an existing parser setup, duplicate architecture blocks, or a later matching override could change enforcement.  \n   **Suggestion:** Define an idempotent merge: preserve existing Next.js configuration, replace existing marked architecture blocks, and append missing blocks once. Ensure the TypeScript parser applies to the same files as the rules. Validate both a fresh scaffold and an existing configuration.\n\n2. **Category: dependency | Severity: medium**  \n   **Finding:** Naming devDependencies leaves their compatible versions unspecified. Installing unversioned `eslint` and `typescript-eslint` in the test could validate a different toolchain from the generated application and introduce network-dependent failures into routine tests.  \n   **Suggestion:** Use the scaffold\u2019s supported versions consistently in dependency instructions and execution tests. Keep the always-running fragment drift test independent of Node and npm installation; run the real integration check with explicitly provisioned dependencies.\n\n3. **Category: edge-case | Severity: medium**  \n   **Finding:** \u201cSeeded violations\u201d and recorded output do not establish that both architecture rules actually execute. ESLint can fail because of configuration errors or report unrelated diagnostics, producing misleading evidence.  \n   **Suggestion:** Run the rendered template against a clean fixture and a violation fixture for each rule. Assert the expected rule IDs and diagnostics, clean-fixture success, and absence of configuration errors. Record the command, tool versions, exit status, and diagnostics as the required execution evidence.\n\nThe approach is sound and appropriately scoped, but merge behavior and execution validation need to be explicit before implementation. Repository inspection was blocked by the environment policy, so these findings are based on the supplied specification and mini-plan.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-11-16-u3b-eslint-template",
+    "at": "2026-11-16T02:28:34.039520+00:00"
+  },
+  "verdicts": {
+    "glm": "revise",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

@@ -1,0 +1,1 @@
+{"stage": "spec-compliance", "verdict": "PASS", "spec_citations": [], "summary": "AC36 and AC37 are both present and implemented as specified, and the work stays within the spec's Out of Scope boundaries. Code-reviewer may run next."}

@@ -1,0 +1,9 @@
+{"items": [
+{"name":"Spec Compliance","verdict":"pass","note":"All four criteria met: scaffold fixture carries the block, adopt fixture gets it, a second run changes nothing, empty profile writes a none-declared line."},
+{"name":"Error Handling","verdict":"pass","note":"Unresolvable profile exits 2, damaged markers or missing file exit 3 without writing, bad rules are left out and counted in the block, never fatal."},
+{"name":"Security Basics","verdict":"pass","note":"Profile text is flattened to one line and comment delimiters are neutralised so it cannot close the markers; no shell, paths only from the project root."},
+{"name":"Test Quality","verdict":"pass","note":"17 shared tests (placement paths, idempotency, CRLF, damaged markers, injection, legacy, invalid-only) and 4 adopt tests through the real generator."},
+{"name":"Performance Basics","verdict":"pass","note":"One file read and at most one write per run."},
+{"name":"Naming & Structure","verdict":"pass","note":"New tool under 300 lines; adopt files at their bloat ceiling were kept net-small (artifact_writer untouched, generator +2 lines)."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Producer: profile JSON (BOM, non-ASCII, CRLF conventions.md); consumer: render CLI; two probes run through the real CLI, no finding on the second, asymptote reached."},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"tmp_path only, no sleeps, no shared state."}]}

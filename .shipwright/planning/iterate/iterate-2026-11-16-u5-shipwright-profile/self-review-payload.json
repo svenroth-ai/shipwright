@@ -1,0 +1,9 @@
+{"items": [
+{"name":"Spec Compliance","verdict":"pass","note":"Profile copy plus repo-only rules, three configs switched, block rendered, equality and mechanism tests added, guide sentence made true."},
+{"name":"Error Handling","verdict":"pass","note":"Data and tests only; rule shape validated with no errors or warnings."},
+{"name":"Security Basics","verdict":"pass","note":"No commands or secrets added; the profile adds no testing or service commands beyond the bundled copy."},
+{"name":"Test Quality","verdict":"pass","note":"Tests pin deep equality of the copy, every bundled rule unchanged, invocation of each mechanism, and a current rendered block."},
+{"name":"Performance Basics","verdict":"pass","note":"Not applicable; no runtime code."},
+{"name":"Naming & Structure","verdict":"pass","note":"Kebab-case rule ids, one small test file, no rename of any bundled profile."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Producer: project profile file; consumers: resolver from all three configs and the render tool; real round-trip via resolve and render --check."},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"Read-only tests, no shared state."}]}

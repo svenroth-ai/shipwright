@@ -17,7 +17,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 
 from lib import codex_review_transport as transport  # noqa: E402
 
-VALID_CODE_REVIEW = {"section": "s1", "review": []}
+VALID_CODE_REVIEW = {"section": "s1", "review": [], "notes": None}
 
 
 def _stub_resolve(role: str, worktree_root: Path, model: str | None, default: str) -> tuple[str, str]:

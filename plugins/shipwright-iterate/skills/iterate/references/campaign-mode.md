@@ -90,9 +90,9 @@ If campaign directory doesn't exist yet:
      --sub-iterates '{json_array}' \
      --expands-triage "{trg-id}"   # optional — anchor to a triage item
    ```
-   Each sub-iterate object in `{json_array}` may carry `"depends_on":
-   ["<id>", ...]` (bare sub-iterate ids from step 2's conversation, default
-   `[]`) — validated at write time (see "Dependency Graphs" below).
+   Each sub-iterate object in `{json_array}` may carry `"depends_on": ["<id>", ...]`
+   (bare ids, default `[]`; see "Dependency Graphs") and MUST carry `"complexity":
+   "<level>"` for every unit whose brief states a tier: a floor the runner never lowers.
 4. Review generated
    `.shipwright/planning/iterate/campaigns/{slug}/campaign.md` with user.
 
@@ -896,7 +896,7 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
        the `spec-reviewer` prompt (a) adds: "Also read the AC claims file at `<path>`." Never commit `ac-claims.json`.
 
        a) `spec-reviewer`  — Stage 1, HARD-GATE. A REJECT blocks the rest.
-       b) `code-reviewer`  — Stage 2, only once Stage 1 PASSES.
+       b) `code-reviewer`  — Stage 2, only once Stage 1 PASSES. Put the line `Project root: <the resolved absolute path of the unit worktree>` in its prompt.
        c) `doubt-reviewer` — Stage 3, conditional, advisory-must-address.
 
        Pass `model=<review tier resolved at loop step 2>` to each of the three

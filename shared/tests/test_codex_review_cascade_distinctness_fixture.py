@@ -54,6 +54,7 @@ _SPEC_PAYLOAD = {
 }
 _CODE_PAYLOAD = {
     "section": "m4-codex-subagent-dispatch",
+    "notes": None,
     "review": [{
         "severity": "medium", "category": "readability", "file": "lib/x.py",
         "line": 12, "finding": "code-reviewer finding: helper could be inlined",

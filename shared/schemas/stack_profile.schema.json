@@ -53,6 +53,7 @@
     },
     "required_env_vars": {"type": ["object", "null"]},
     "rules": {"type": ["array", "null"]},
+    "architecture_rules": {"description": "Optional. Architecture rules of the stack: rule objects or, in the legacy format, plain sentences. Deliberately NOT typed here: shared/scripts/profile_architecture_rules.py checks the shape and reports a wrong shape per rule without invalidating the profile for every phase."},
     "folder_structure": {"type": ["object", "null"]},
     "migrations": {"type": ["object", "null"]},
     "design_system": {"type": ["object", "null"]},

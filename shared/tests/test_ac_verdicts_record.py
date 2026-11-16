@@ -81,3 +81,76 @@ def test_an_unreadable_payload_yields_no_fields_instead_of_failing_the_record(tm
     bad.write_text("not json at all", encoding="utf-8")
     assert av.verdict_fields("spec", "completed", str(bad)) == {}
     assert av.verdict_fields("spec", "not_run", str(bad)) == {} and av.verdict_fields("spec", "completed", None) == {}
+
+
+@pytest.mark.covers("FR-01.01/AC39")
+def test_code_reviewer_notes_are_kept_beside_the_findings_and_are_not_findings(project, tmp_path):
+    code, out = _record_spec(project, tmp_path, {"section": "x", "review": [], "notes": "architecture rules: conventions file unreadable, check did not run"}, review_type="code")
+    assert code == 0, out
+    row = read_record(project, RUN_ID)["reviews"]["code"]
+    assert row["reviewer_notes"] == "architecture rules: conventions file unreadable, check did not run"
+    assert row["findings"] == [] and row["findings_count"] == 0
+    assert validate_record(read_record(project, RUN_ID)) == (True, None)
+
+
+@pytest.mark.covers("FR-01.01/AC39")
+def test_a_code_reply_without_notes_or_with_unusable_notes_records_no_notes_key(project, tmp_path):
+    for i, reply in enumerate(({"review": []}, {"review": [], "notes": "   "}, {"review": [], "notes": ["x"]})):
+        sub = tmp_path / str(i)
+        sub.mkdir()
+        p = make_project(sub)
+        code, out = _record_spec(p, sub, reply, review_type="code")
+        assert code == 0, out
+        assert "reviewer_notes" not in read_record(p, RUN_ID)["reviews"]["code"]
+
+
+@pytest.mark.covers("FR-01.01/AC39")
+def test_long_notes_are_bounded_and_other_review_types_never_carry_notes(project, tmp_path):
+    code, out = _record_spec(project, tmp_path, {"review": [], "notes": "n" * 5000}, review_type="code")
+    assert code == 0, out
+    assert len(read_record(project, RUN_ID)["reviews"]["code"]["reviewer_notes"]) <= 1000
+    sub = tmp_path / "spec"
+    sub.mkdir()
+    p2 = make_project(sub)
+    code, out = _record_spec(p2, sub, {**_REPLY, "notes": "should not land"})
+    assert code == 0, out
+    assert "reviewer_notes" not in read_record(p2, RUN_ID)["reviews"]["spec"]
+
+
+@pytest.mark.covers("FR-01.01/AC39")
+def test_a_codex_shaped_code_reply_carries_its_notes_and_a_null_note_records_none(project, tmp_path):
+    schema = json.loads((_SHARED / "schemas" / "codex_code_review_schema.json").read_text(encoding="utf-8"))
+    assert "notes" in schema["properties"] and "notes" in schema["required"]  # the Codex transport can emit it
+    code, out = _record_spec(project, tmp_path, {"section": "x", "review": [], "notes": "architecture check did not run"}, review_type="code")
+    assert code == 0, out
+    assert read_record(project, RUN_ID)["reviews"]["code"]["reviewer_notes"] == "architecture check did not run"
+    sub = tmp_path / "null"
+    sub.mkdir()
+    p2 = make_project(sub)
+    code, out = _record_spec(p2, sub, {"section": "x", "review": [], "notes": None}, review_type="code")
+    assert code == 0, out
+    assert "reviewer_notes" not in read_record(p2, RUN_ID)["reviews"]["code"]
+
+
+@pytest.mark.covers("FR-01.01/AC39")
+def test_notes_fields_in_process(tmp_path):
+    from types import SimpleNamespace
+
+    from lib.review_notes import MAX_NOTES, notes_fields
+
+    reply = tmp_path / "code_review_reply.json"
+
+    def args(**kw):
+        base = {"review_type": "code", "review_from": "code-reviewer", "status": "completed", "payload_file": str(reply)}
+        return SimpleNamespace(**{**base, **kw})
+
+    reply.write_text(json.dumps({"review": [], "notes": "  check could not run  "}), encoding="utf-8")
+    assert notes_fields(args()) == {"reviewer_notes": "check could not run"}
+    reply.write_text(json.dumps({"review": [], "notes": "n" * 5000}), encoding="utf-8")
+    assert len(notes_fields(args())["reviewer_notes"]) == MAX_NOTES
+    reply.write_text(json.dumps({"review": [], "notes": None}), encoding="utf-8")
+    assert notes_fields(args()) == {}
+    reply.write_text("not json at all", encoding="utf-8")
+    assert notes_fields(args()) == {}
+    assert notes_fields(args(payload_file=str(tmp_path / "missing.json"))) == {}
+    assert notes_fields(args(review_type="spec")) == {} and notes_fields(args(status="not_run")) == {}

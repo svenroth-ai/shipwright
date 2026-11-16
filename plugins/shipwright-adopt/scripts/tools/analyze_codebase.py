@@ -34,6 +34,7 @@ SNAPSHOT_SCHEMA_VERSION = "1.1"  # 1.1: additive profile.source / profile.warnin
 def _load_lib(lib_dir: Path) -> dict[str, Any]:
     sys.path.insert(0, str(lib_dir))
     from stack_detector import detect_stack  # type: ignore
+    from plugin_signal import add_plugin_signal  # type: ignore
     from profile_matcher import match_profile  # type: ignore
     from convention_detector import detect_conventions  # type: ignore
     from test_framework_detector import detect_test_frameworks  # type: ignore
@@ -44,6 +45,7 @@ def _load_lib(lib_dir: Path) -> dict[str, Any]:
     from git_analyzer import analyze_git  # type: ignore
     return {
         "detect_stack": detect_stack,
+        "add_plugin_signal": add_plugin_signal,
         "match_profile": match_profile,
         "detect_conventions": detect_conventions,
         "detect_test_frameworks": detect_test_frameworks,
@@ -89,7 +91,7 @@ def analyze(
     # Discovery over project > user > bundled (D1). A missing bundled dir raises
     # (FileNotFoundError) instead of silently degrading every project to `generic`.
     from adopt_profile import discovery_dirs  # type: ignore
-    stack = fns["detect_stack"](project_root, excludes_set)
+    stack = fns["add_plugin_signal"](fns["detect_stack"](project_root, excludes_set), project_root, excludes_set)
     profile = fns["match_profile"](stack, discovery_dirs(project_root))
     if profile_hint:
         from adopt_profile import hint_warning  # type: ignore

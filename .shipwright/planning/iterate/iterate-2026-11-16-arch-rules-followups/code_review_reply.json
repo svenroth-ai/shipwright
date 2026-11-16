@@ -1,0 +1,4 @@
+{"section":"arch-rules-followups","review":[
+{"severity":"high","category":"architecture","file":"shared/scripts/lib/review_payloads.py","line":285,"finding":"Rule bloat-baseline-discipline: adding notes_fields takes review_payloads.py past the 300-line limit with no baseline entry.","suggestion":"Move notes_fields into a sibling module like ac_verdicts. FIXED: now lib/review_notes.py; review_payloads.py is 292 lines."},
+{"severity":"low","category":"readability","file":"shared/scripts/lib/review_payloads.py","line":306,"finding":"entry_extras docstring did not mention reviewer notes.","suggestion":"Mention it. FIXED."}],
+"notes":"Checked the diff against all 13 architecture rules of the block in conventions.md (profile shipwright-monorepo): block intact, ids match the profile, diff does not edit them. Intents (a), (b), (c) met. No external LLM review was run."}

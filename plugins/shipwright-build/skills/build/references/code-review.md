@@ -158,7 +158,7 @@ git diff HEAD > "$(uv run "{shared_root}/scripts/tools/review_scratch.py" resolv
 ```
 
 2. Spawn code-reviewer subagent with:
-   - Section spec file path
+   - Section spec file path, and the line `Project root: <project root>`
    - Diff file path
 
 3. Receive structured review JSON

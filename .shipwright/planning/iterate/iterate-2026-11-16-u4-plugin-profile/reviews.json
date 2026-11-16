@@ -1,0 +1,221 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-16-u4-plugin-profile",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-16T02:33:32.712186+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The fixtures cover the intended matches, but do not specify negative boundaries for the new directory signal. A file named `.claude-plugin` or a directory deeper than `plugins//.claude-plugin/` should not accidentally select the profile.",
+          "suggestion": "Use directory checks at exactly the two supported depths and add negative fixtures for these cases.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The new profile retains Python requirements, while its distinguishing signal is deliberately excluded from spec constraints. The planned tests should verify that this exclusion preserves Python runtime and version constraints; selection by directory alone would otherwise permit an incompatible profile.",
+          "suggestion": "Add a matcher regression showing that the plugin signal distinguishes eligible Python profiles without bypassing their existing compatibility checks.  Overall, the approach is sound and proportionate: it reuses the existing profile and resolver mechanisms and includes the key positive and regression coverage. The findings are test refinements; repository inspection was blocked by the environment, so this assessment is based on the supplied plan.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-16T02:33:32.570046+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: edge-case — Severity: medium**\n  The plan says the signal `has-claude-plugin-dir` fires on `.claude-plugin/` at root or `plugins/*/`, but doesn't define precedence. If a repo is both a plugin *and* a monorepo with multiple plugins, does the claude-plugin profile beat python-plugin-monorepo? The AC \"plain Python CLI keeps the old one\" covers the easy case; the plugin-monorepo case (a repo with `.claude-plugin/` *and* multiple plugins) is unaddressed. The adopt fixture tests should include a python-plugin-monorepo-shaped repo showing which profile wins, and the detector ordering (signal-based match vs. monorepo match) should be explicit.\n\n- **Category: risk — Severity: medium**\n  Rewriting `python-plugin-monorepo`'s description \"as the generic Python profile\" changes what an existing population of users gets described to them, while its *name* still says \"plugin-monorepo.\" A generic Python project that already matched python-plugin-monorepo keeps it (per scope) — fine — but the name/description mismatch is a long-term confusion hazard, and any existing content (docs, skills, prompts) that references \"plugin monorepo\" semantics of that profile may now be wrong. Suggestion: grep the repo for `python-plugin-monorepo` references beyond the two docs files listed and update all of them; note the mismatch explicitly in the profile description so adopters aren't misled.\n\n- **Category: approach — Severity: low**\n  Copying the entire generic Python profile JSON into `claude-plugin.json` duplicates stack data that now must be kept in sync across two files (Python version, uv, pytest, ruff, env vars, folder layout). If the plan doesn't already have a mechanism (or at least a test asserting equality — which it does: \"Python data equal\"), this is acceptable, but consider whether the profile schema supports extension/inheritance. If not, the equality test is the pragmatic mitigation; make sure it's a deep comparison, not spot-checks.\n\n- **Cate […truncated]\n\n[openai] - **Category:** edge-case\n  **Severity:** low\n  **Finding:** The fixtures cover the intended matches, but do not specify negative boundaries for the new directory signal. A file named `.claude-plugin` or a directory deeper than `plugins/*/.claude-plugin/` should not accidentally select the profile.\n  **Suggestion:** Use directory checks at exactly the two supported depths and add negative fixtures for these cases.\n\n- **Category:** risk\n  **Severity:** low\n  **Finding:** The new profile retains Python requirements, while its distinguishing signal is deliberately excluded from spec constraints. The planned tests should verify that this exclusion preserves Python runtime and version constraints; selection by directory alone would otherwise permit an incompatible profile.\n  **Suggestion:** Add a matcher regression showing that the plugin signal distinguishes eligible Python profiles without bypassing their existing compatibility checks.\n\nOverall, the approach is sound and proportionate: it reuses the existing profile and resolver mechanisms and includes the key positive and regression coverage. The findings are test refinements; repository inspection was blocked by the environment, so this assessment is based on the supplied plan.\n\nSHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "approve"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-16T03:17:27.909683+00:00",
+      "disposition": "runner spawn cap reached (3 code-reviewer runs); final-state code review left to 3f-bis",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "delegated-to-orchestrator"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "AC31 says exactly what the code does",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "profile descriptions",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "any profile declaring the key is scored as before",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "candidates list unchanged",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "hook note",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-16T03:26:42.690807+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "cec25a14acafe8631ad4cb4941f56d8ef2f90370"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-adopt/scripts/tools/generate_adoption_artifacts.py:131–133 (and plugin_signal.py:28)",
+          "line": null,
+          "finding": "The `claude-plugin` runtime key is a matching signal, not a version, but it is written into the same `stack.runtime` dict whose values every other consumer treats as \"<tool> version: <version>\". `_extract_constraints` special-cases it, but any other reader of `stack.runtime` in the snapshot (brief generators, docs writers, downstream tooling) will render it as e.g. \"Claude-plugin version: .claude-plugin/\". Only one consumer is patched.",
+          "suggestion": "Either namespace the signal outside `runtime` (e.g. `stack.plugin_signal`), or grep the codebase for other `stack[\"runtime\"]` consumers and skip the key there too. Also bump `SNAPSHOT_SCHEMA_VERSION` since the runtime shape changed.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "plugins/shipwright-project/tests/test_claude_plugin_profile_select.py:12–16",
+          "line": null,
+          "finding": "test_bundled_claude_plugin_profile_can_be_selected_by_name` only calls `check_profile`, which validates the name against the resolver — the test's own docstring concedes \"nothing is special-cased\". It would pass for any existing profile name and doesn't demonstrate that `/shipwright-project` (the interview listing) actually surfaces `claude-plugin` to the user.",
+          "suggestion": "Add an assertion against the profile-listing path the skill uses (e.g. that `claude-plugin` appears in the offered names), so a regression in listing wouldn't slip through.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "plugins/shipwright-adopt/scripts/lib/plugin_signal.py:24–26",
+          "line": null,
+          "finding": "stack.setdefault(\"signals\", []).append(SIGNAL)` appends without deduplication; if `analyze` were ever re-run on an already-annotated stack (or the signal logic is reused on a cached snapshot), the signal appears twice. Harmless today because `analyze` runs it once, but fragile.",
+          "suggestion": "Guard with `if SIGNAL not in stack[\"signals\"]` before appending.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "plugins/shipwright-adopt/tests/test_profile_matcher.py",
+          "line": 73,
+          "finding": "assert result[\"confidence\"] >= 0.30` pins an arbitrary internal threshold; the AC only requires the generic profile still matches. If the matcher's confidence scale changes, this test breaks for a non-defect.",
+          "suggestion": "Drop the numeric threshold and assert only the match and score ordering (which is the actual AC).  Spec compliance: AC30–AC32 all appear implemented — the profile validates, Python data matches the generic profile, adopt fixtures cover both branches end-to-end (including the full `analyze` path), and mechanism paths are checked for existence and hook registration. Docs and CI/CodeQL wiring are updated consistently.  Overall assessment: ship-with-fixes; the work is sound and well-tested, but the `claude-plugin` key leaking into `stack.runtime` for unpatched consumers is worth cleaning up before merge.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-16T02:36:40.847839+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] Findings:\n\n- Category: bug\n  Severity: medium\n  File: plugins/shipwright-adopt/scripts/tools/generate_adoption_artifacts.py:131–133 (and plugin_signal.py:28)\n  Finding: The `claude-plugin` runtime key is a matching signal, not a version, but it is written into the same `stack.runtime` dict whose values every other consumer treats as \"<tool> version: <version>\". `_extract_constraints` special-cases it, but any other reader of `stack.runtime` in the snapshot (brief generators, docs writers, downstream tooling) will render it as e.g. \"Claude-plugin version: .claude-plugin/\". Only one consumer is patched.\n  Suggestion: Either namespace the signal outside `runtime` (e.g. `stack.plugin_signal`), or grep the codebase for other `stack[\"runtime\"]` consumers and skip the key there too. Also bump `SNAPSHOT_SCHEMA_VERSION` since the runtime shape changed.\n\n- Category: test\n  Severity: low\n  File: plugins/shipwright-project/tests/test_claude_plugin_profile_select.py:12–16\n  Finding: `test_bundled_claude_plugin_profile_can_be_selected_by_name` only calls `check_profile`, which validates the name against the resolver — the test's own docstring concedes \"nothing is special-cased\". It would pass for any existing profile name and doesn't demonstrate that `/shipwright-project` (the interview listing) actually surfaces `claude-plugin` to the user.\n  Suggestion: Add an assertion against the profile-listing path the skill uses (e.g. that `claude-plugin` appears in the offered names), so a regression in listing wouldn't slip through.\n\n- Category: edge-case\n  Severity: low\n  File: plugins/shipwright-adopt/scripts/lib/plugin_signal.py:24–26\n  Finding: `stack.setdefault(\"signals\", []).append(SIGNAL)` appends without deduplication; if `analyze` were ever re-run on an already-annotated stack (or the signal logic is reused on a cached snapshot), the signal appears twice. Harmless today because `analyze` runs it once, but fragile.\n  Suggestion: Guard with `if SIGNAL not in stack[\"si […truncated]\n\n[openai] No concrete defects found in the supplied diff. It adds the bundled profile, preserves the Python toolchain and folder layout, integrates adoption matching and CI defaults, and tests both plugin and plain Python repositories plus mechanism registration.\n\nShip-as-is based on static review. Local inspection and test execution were blocked by the environment’s command policy, so runtime results remain unverified.\n\nSHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "openai": "approve",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-16T03:26:42.533514+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "24852a86a73ee25d4d566889acf365e57fa6b43f"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-16T03:12:43.526155+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-16T03:12:43.387396+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

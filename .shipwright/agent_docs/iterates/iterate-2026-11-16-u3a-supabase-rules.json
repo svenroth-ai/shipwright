@@ -1,0 +1,82 @@
+{
+  "run_id": "iterate-2026-11-16-u3a-supabase-rules",
+  "date": "2026-11-15T23:48:22.529143Z",
+  "event_at": "2026-11-15T23:48:15.842099+00:00",
+  "type": "feature",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/campaign-profile-architecture-rules--U3a",
+  "spec": ".shipwright/planning/iterate/campaigns/profile-architecture-rules/sub-iterates/U3a-supabase-rules.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-11-16-u3a-supabase-rules",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "the six supabase-nextjs rules load as objects with a why, with no rule errors or warnings",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_supabase_nextjs_rules_drift.py::test_profile_declares_six_rules_each_with_a_why PASSED; resolve_profile.py validate --name supabase-nextjs ok"
+      },
+      {
+        "behavior": "only the client-factory and no-fetch rules are mechanical (validator, eslint); the other four stay instruction only with the right class",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_supabase_nextjs_rules_drift.py::test_only_the_two_import_and_fetch_rules_are_mechanical PASSED"
+      },
+      {
+        "behavior": "every TypeScript example of the templates is mapped to a fixture file and the fixture equals the template",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_supabase_nextjs_rules_drift.py::test_every_code_example_is_in_the_fixture_tree, ::test_fixture_equals_the_template_example, ::test_fixture_equals_the_template_file PASSED"
+      },
+      {
+        "behavior": "the fixture tree passes both mechanical rules, exempt paths and compliant imports are not flagged, seeded violations are flagged",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_supabase_nextjs_rules_drift.py::test_fixture_tree_passes_every_mechanical_rule, ::test_a_seeded_violation_is_flagged, ::test_a_compliant_or_exempt_file_is_not_flagged PASSED"
+      },
+      {
+        "behavior": "the fragments behave as designed under real ESLint 10 (fixture clean, seeded flagged, namespace/type/helper imports clean)",
+        "disposition": "tested",
+        "evidence": ".shipwright/planning/iterate/iterate-2026-11-16-u3a-supabase-rules/eslint-seeded-run.txt (real ESLint run, boundary probe)"
+      },
+      {
+        "behavior": "duplicated architecture prose is gone from the conventions and components templates",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_supabase_nextjs_rules_drift.py::test_duplicated_prose_is_gone_from_the_templates PASSED"
+      },
+      {
+        "behavior": "an unknown ESLint rule in a fragment fails the drift test loudly",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_supabase_nextjs_rules_drift.py::test_unknown_eslint_rule_in_a_fragment_fails_loudly PASSED"
+      },
+      {
+        "behavior": "the converted bundled profile and the legacy-list warning path still behave (U1 tests updated)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_profile_architecture_rules.py::test_bundled_declared_rules_are_pinned; shared/tests/test_profile_architecture_rules_cli.py::test_legacy_profile_warns_only_in_validate PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 8,
+      "tested": 8,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 3,
+      "covered_acs": 3
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run pytest shared/tests/test_supabase_nextjs_rules_drift.py shared/tests/test_profile_architecture_rules.py shared/tests/test_profile_architecture_rules_cli.py -q -p no:cacheprovider",
+    "exit_code": 0,
+    "tests_run": 104,
+    "evidence_path": ".shipwright/runs/iterate-2026-11-16-u3a-supabase-rules/surface_verification.log",
+    "timestamp": "2026-11-15T23:47:40.992Z",
+    "attempts": 1
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}

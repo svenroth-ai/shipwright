@@ -2,8 +2,8 @@
 
 A **stack profile** is a small JSON file that tells Shipwright how your technology stack
 works: which commands run the tests, which services make up the dev server, which
-environment variables are needed, which budgets apply. Shipwright ships five
-(`supabase-nextjs`, `vite-hono`, `python-plugin-monorepo`, `chat-first-json`, `skill-companion-app`). If none of them fits your
+environment variables are needed, which budgets apply. Shipwright ships six
+(`supabase-nextjs`, `vite-hono`, `python-plugin-monorepo`, `claude-plugin`, `chat-first-json`, `skill-companion-app`). If none of them fits your
 stack, you can write your own and every phase uses it.
 
 Two names are special and are not files: `generic` means "no stack file, use the
@@ -132,6 +132,16 @@ What each phase does with a plugin-shaped app today (recorded by unit E2 of camp
 A Brief package for this class names `profile: skill-companion-app` and sets `ux_shape: classic` and `ui_host: served-board`
 (the brief vocabulary `classic`, `chat-first` is unchanged here; `skill-companion` is the profile's own value). Design composes this class's screens from the Untitled UI kit and the package's tokens and never builds a chat layout; the chat-first layout is retired for this class (an older chat-first package of another profile keeps working; this profile is always composed as a board, and a package of this profile that says `chat-first` is a defect to re-approve as `classic`).
 
+## Plugin projects (`claude-plugin`) and the generic Python profile
+
+`claude-plugin` is the bundled profile for repositories that are Claude Code plugins (or plugin monorepos) whose code is Python. It carries the same Python data as `python-plugin-monorepo` (Python 3.11+, `uv run pytest`, `uv run ruff check`, no dev server, no deploy, the same CI and CodeQL templates) and adds six architecture rules: what goes into scripts and what goes to the AI, Anthropic's skill limits, scripts run through `uv run`, no bare `python -` reading stdin, hook paths through `${CLAUDE_PLUGIN_ROOT}`, generated files next to their source. Only one rule has a mechanism that something invokes (the bare-`python -` hook of the shipwright-iterate plugin, active in Claude Code sessions where that plugin is installed). The skill-limits checker (`check_skill_authoring.py`) is a report today and nothing runs it, so that rule is `prompt-only (mechanisable)` with a note saying so.
+
+**Copying `claude-plugin` into your own `.shipwright/profiles/`:** the rule `no-bare-python-stdin` names a mechanism path that is relative to the Shipwright repository (`plugins/shipwright-iterate/...`), which does not exist in your project, so `validate` reports `rules_valid=false` for the copy. Also, any profile that declares the `claude-plugin` key is a candidate only in a Python repository with the folder and the key never counts toward its score, so a copy adapted to a non-Python stack must drop that key or it will never be matched. Change that rule to `prompt-only (mechanisable)` or `prompt-only (judgement)` (drop its `mechanism`) in the copy. The hook behind it only guards the Claude Code Bash tool in sessions where the shipwright-iterate plugin is installed (not PowerShell), and it also refuses an empty or unterminated heredoc. The Shipwright repository itself is the worked example: `.shipwright/profiles/shipwright-monorepo.json` is a copy of `claude-plugin` that keeps that rule (the path exists there) and adds rules for mechanisms found only in that repository (the root test-root guard, the pre-commit anti-ratchet hook, the bloat Stop gate, the bloat check in CI, the hooks.json quoting test) and one note rule that says which copied notes do not apply there. A test pins that the copy equals the bundled profile on every key except `name`, `description` and `architecture_rules`.
+
+`python-plugin-monorepo` is now described as the generic Python-project profile; its name is historical and is not changed here (about thirty files name it).
+
+**How adopt chooses between them.** `/shipwright-adopt` scores each profile by the dependency names it declares under `stack`. When the repository root is a Python repository (a `pyproject.toml` and no JavaScript dependencies in the root `package.json`) and has a `.claude-plugin/` folder at its root or one level down under `plugins/*/`, the analysis adds a `claude-plugin` entry to the runtime part of the stack signature. That entry never enters a score: every profile, bundled or your own, is scored exactly as before. The plugin profile (which declares the entry) is a candidate only when the signature carries it, and it wins a tie against the generic Python profile; a project profile still wins a tie over a bundled one. So a repository that would have matched `python-plugin-monorepo` now gets `claude-plugin` (and `claude-plugin` joins that repository's list of alternative candidates, which the adopt interview shows), and nothing else moves: a Python repository without the folder keeps the match it had (typically `python-plugin-monorepo`), a markdown-only, TypeScript or mixed plugin (JavaScript dependencies at the root, even only for tooling) keeps the match it had (pick the plugin profile by name there: `/shipwright-project`, or the adopt profile hint), and a repository that matched nothing before (for example a pyproject with no `requires-python` and no known dependencies) stays `generic`. `/shipwright-project` picks the profile by name like any other bundled one (`--profile claude-plugin`).
+
 ## What a Shipwright update can change
 
 If a later Shipwright changes the profile format, a file written for the newer format
@@ -154,6 +164,34 @@ reports the profile source (`project`, `user` or `bundled`). Two consequences:
   `no CI template for profile ...` and `AUTOMERGE_SETUP.md` lists fewer required checks.
 * A repository can therefore change what a phase runs for a bundled name; see the trust
   paragraph below.
+
+## Architecture rules (`architecture_rules`)
+
+A profile can say which architecture rules a project of that stack must keep, and for each rule how it is kept. The key is optional: absent (or `null`) means "not declared", `[]` means "explicitly none". Each rule is one object:
+
+```json
+{
+  "id": "no-direct-db-client",
+  "text": "Only src/lib/db/ creates a database client.",
+  "why": "One place to change connection handling.",
+  "enforcement": "validator",
+  "lint": {"tool": "eslint", "target": "eslint.config.mjs", "block": {"rules": {"no-restricted-imports": "error"}}},
+  "note": "Optional extra context."
+}
+```
+
+- `enforcement` is one of `hook`, `validator`, `test`, `prompt-only (mechanisable)`, `prompt-only (judgement)`, `unimplemented` (the same list as the constitution register).
+- A rule carries `lint` **or** `mechanism` (a list of repo-relative paths), never both. `validator` needs one of them; `hook` and `test` need `mechanism`; the other classes carry neither, and `prompt-only (mechanisable)` and `unimplemented` need a `note`. A lint rule is class `validator`; its rendered line says the fragment comes with the scaffold template and is enforced only where the project's linter config carries it (an adopted or older project may not).
+- `lint` is `{tool, target, block}`: `tool` is `eslint` or `ruff`, `target` the config file in the project, `block` the config fragment (for `eslint` an object with a non-empty `rules` object). `mechanism` paths are relative to the Shipwright repo for a bundled profile and to the project root for your own profile; they must not be absolute or contain `..`.
+- An `eslint` fragment reaches the project through the scaffold template (`/shipwright-project` step 7) and is kept there by the build phase: the verifier check `eslint_architecture_rules_present` (run at the end of build, or by hand with `verify_phase.py --phase build`) reports a missing, unpaired or out-of-array block as an error and a changed block as a warning, and the repair command that finding prints (`check_eslint_architecture_rules.py --apply`, run with `uv run` only after a finding, never by default) restores missing blocks (never `package.json`; a config it cannot edit safely is reported, not guessed; `--replace-stale` overwrites a block that differs).
+- A mechanism only counts as enforcement if something invokes it in the user's project; a checker that exists but is not run is `prompt-only (mechanisable)`.
+- The old format, a list of plain sentences, is still accepted until the last bundled profile is converted. Such a sentence is treated as an instruction whose class is not declared; `validate` warns about it, no other command does.
+
+**A wrong rule never invalidates the profile.** `resolve_profile.py validate` prints rule errors and warnings to stderr and lists them as `rule_errors` / `rule_warnings` (and `rules_valid`) with `--json`, but still exits `0` as long as the profile itself is valid: read `rule_errors` or `rules_valid` to gate on them. The bad rule is left out; the others stay usable. For your own profile `validate` also checks that each mechanism path exists under `--project-root` (default `.`, so run it from the project) and stays inside it.
+
+If your own profile has a bundled name and declares no `architecture_rules`, but the bundled one does, the resolver adds a warning next to the usual shadow warning; copy the rules in, or write `"architecture_rules": []` to say you mean none.
+
+**How the rules reach agents.** `render_architecture_rules.py` writes the rules of the project's profile into one marked block of `.shipwright/agent_docs/conventions.md` (`--profile`, else the run config's `profile`). `/shipwright-project` step 7 and `/shipwright-adopt` call it; you can run it yourself after changing the profile. Running it again changes nothing unless the profile changed; text outside the block is never touched. A profile with no rules gets a "none declared" line, and an instruction-only rule says so. If a project's `conventions.md` already has hand-written rules under that heading (older scaffolds), delete them first: the block is placed under the heading and never removes text. `conventions.md` is merged with the union strategy, so if two branches each re-render the block with different content, a merge can keep both bodies; the tool then stops with exit 3 (two blocks) without writing. Delete one block by hand and run it again.
 
 ## Discovery versus selection
 

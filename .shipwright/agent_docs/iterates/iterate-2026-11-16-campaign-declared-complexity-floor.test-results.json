@@ -1,0 +1,98 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-16-campaign-declared-complexity-floor",
+    "date": "2026-11-16",
+    "unit": {
+      "status": "passed",
+      "passed": 26149,
+      "skipped": 112,
+      "total": 26261
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [
+      "F0 verified by a RESUMED run: 16 of 18 units were green in the first full run of this tree; the two red units (ADR index) were re-run green after regenerating the index, the rest reused (resumed-local evidence)."
+    ],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "a unit declaring medium classifies medium at Stage 1 for a message that otherwise estimates below it; a unit declaring nothing is classified as before",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-iterate/tests/test_declared_complexity_floor.py::test_stage1_declared_medium_stays_medium_for_a_small_message, ::test_stage1_without_declaration_is_unchanged PASSED"
+        },
+        {
+          "behavior": "the Step 3.4 re-check keeps a declared medium unit at medium on a 113-line ordinary diff, never lowers a stale stage-1 value, still raises a declared small unit on a cross-component diff and does not pin a large result",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-iterate/tests/test_declared_complexity_floor.py::test_recheck_declared_medium_with_a_100_line_inert_diff_stays_medium, ::test_recheck_declared_medium_beats_a_stale_low_stage1, ::test_recheck_declared_small_is_still_raised_by_the_diff, ::test_recheck_declared_medium_is_a_floor_not_a_pin PASSED"
+        },
+        {
+          "behavior": "the declaration parser reads only the header line, refuses a typo or trailing punctuation, ignores prose and scope text, and an unreadable spec path stops both command line tools",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-iterate/tests/test_declared_complexity_floor.py::test_parse_accepts_the_declaring_line, ::test_the_first_declaring_header_line_decides_and_must_be_clean, ::test_only_the_header_declares_so_scope_prose_cannot_raise_or_fail_a_unit, ::test_stage1_cli_stops_on_an_unreadable_spec, ::test_cli_stops_on_an_unreadable_spec PASSED"
+        },
+        {
+          "behavior": "the campaign planner writes the Complexity line from the unit complexity key, writes today's spec when none is given, rejects an unknown level or large in any unit before writing anything",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-iterate/tests/test_declared_complexity_floor.py::test_planner_emits_the_line_and_it_round_trips, ::test_planner_without_complexity_writes_the_unchanged_spec, ::test_planner_rejects_an_unknown_tier_in_any_unit_before_writing_anything, ::test_planner_rejects_large_which_the_runner_would_stop_on PASSED"
+        },
+        {
+          "behavior": "risk_recheck.json carries declared_complexity and the F11 gate fails an effective tier below it, an unknown declared tier and an F5c tier below the floor, and passes agreeing, legacy and undeclared records",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-iterate/tests/test_declared_complexity_floor.py::test_cli_reads_the_spec_and_persists_the_declared_tier; shared/tests/test_risk_recheck_declared_floor.py (6 tests) PASSED"
+        },
+        {
+          "behavior": "planner, classifier, re-check CLI, git change set and the registered F11 gate compose: a declared medium unit with a 120-line ordinary diff stays medium, an under-recorded small F5c fails, the agreeing record passes, an undeclared unit stays small",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "integration-tests/test_campaign_declared_complexity_floor_integration.py::test_declared_medium_unit_with_a_small_diff_stays_medium_end_to_end, ::test_unit_declaring_nothing_keeps_todays_small PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 6,
+        "tested": 6,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 1,
+        "covered_acs": 1
+      }
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run pytest integration-tests/test_campaign_declared_complexity_floor_integration.py -q -p no:cacheprovider",
+      "exit_code": 0,
+      "tests_run": 2,
+      "evidence_path": ".shipwright/runs/iterate-2026-11-16-campaign-declared-complexity-floor/surface_verification.log",
+      "timestamp": "2026-11-16T09:43:48.162Z",
+      "attempts": 1
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-11-16-campaign-declared-complexity-floor",
+    "commit": "cd775fa3ecc39c376c79bfb14cefa00a6802a018",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

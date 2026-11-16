@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "## Findings\n\n- **Category: edge-case \u2014 Severity: medium**\n  The plan says the signal `has-claude-plugin-dir` fires on `.claude-plugin/` at root or `plugins/*/`, but doesn't define precedence. If a repo is both a plugin *and* a monorepo with multiple plugins, does the claude-plugin profile beat python-plugin-monorepo? The AC \"plain Python CLI keeps the old one\" covers the easy case; the plugin-monorepo case (a repo with `.claude-plugin/` *and* multiple plugins) is unaddressed. The adopt fixture tests should include a python-plugin-monorepo-shaped repo showing which profile wins, and the detector ordering (signal-based match vs. monorepo match) should be explicit.\n\n- **Category: risk \u2014 Severity: medium**\n  Rewriting `python-plugin-monorepo`'s description \"as the generic Python profile\" changes what an existing population of users gets described to them, while its *name* still says \"plugin-monorepo.\" A generic Python project that already matched python-plugin-monorepo keeps it (per scope) \u2014 fine \u2014 but the name/description mismatch is a long-term confusion hazard, and any existing content (docs, skills, prompts) that references \"plugin monorepo\" semantics of that profile may now be wrong. Suggestion: grep the repo for `python-plugin-monorepo` references beyond the two docs files listed and update all of them; note the mismatch explicitly in the profile description so adopters aren't misled.\n\n- **Category: approach \u2014 Severity: low**\n  Copying the entire generic Python profile JSON into `claude-plugin.json` duplicates stack data that now must be kept in sync across two files (Python version, uv, pytest, ruff, env vars, folder layout). If the plan doesn't already have a mechanism (or at least a test asserting equality \u2014 which it does: \"Python data equal\"), this is acceptable, but consider whether the profile schema supports extension/inheritance. If not, the equality test is the pragmatic mitigation; make sure it's a deep comparison, not spot-checks.\n\n- **Category: edge-case \u2014 Severity: low**\n  `plugins/*/` globbing: what happens with `plugins/` present but empty, or containing non-directory files? A `plugins/foo.txt` shouldn't trigger the signal. Specify directory-only matching. Also consider `.claude-plugin/` appearing only in a subdirectory that isn't `plugins/*` (nested plugin) \u2014 confirm it's intentionally out of scope.\n\n- **Category: dependency \u2014 Severity: low**\n  The skill-limits rule is \"prompt-only (mechanisable) with a 'report only' note\" \u2014 verify the rule-registry test and any pinned-rules test actually distinguish prompt-only vs. mechanised rules; the plan says pinned-rules tests are \"updated\" but doesn't say the prompt-only classification is asserted. Also confirm `shipwright-iterate` hooks.json registration for the hook mechanism is shipped in the same change, not deferred \u2014 AC \"mechanism path exists\" would pass even if the hook registration file itself is missing.\n\n- **Category: risk \u2014 Severity: low**\n  CI/CodeQL registries get \"the new name (same template, `[python]`).\" Any consumer that enumerates profiles or has a fixed allowlist (e.g., `/shipwright-project` UI, validation schemas, docs tables) should be checked for completeness \u2014 the plan lists profile-list tests being updated, which likely covers it, but confirm nothing else keys off an exhaustive profile set (e.g., a docs check or a release-notes generator).\n\n**Overall assessment:** Sound, well-scoped plan with good test coverage of the acceptance criteria. The main gaps are precedence between the new profile and python-plugin-monorepo in overlapping repos, and completeness of the python-plugin-monorepo reference sweep \u2014 both cheap to close before implementation.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "- **Category:** edge-case\n  **Severity:** low\n  **Finding:** The fixtures cover the intended matches, but do not specify negative boundaries for the new directory signal. A file named `.claude-plugin` or a directory deeper than `plugins/*/.claude-plugin/` should not accidentally select the profile.\n  **Suggestion:** Use directory checks at exactly the two supported depths and add negative fixtures for these cases.\n\n- **Category:** risk\n  **Severity:** low\n  **Finding:** The new profile retains Python requirements, while its distinguishing signal is deliberately excluded from spec constraints. The planned tests should verify that this exclusion preserves Python runtime and version constraints; selection by directory alone would otherwise permit an incompatible profile.\n  **Suggestion:** Add a matcher regression showing that the plugin signal distinguishes eligible Python profiles without bypassing their existing compatibility checks.\n\nOverall, the approach is sound and proportionate: it reuses the existing profile and resolver mechanisms and includes the key positive and regression coverage. The findings are test refinements; repository inspection was blocked by the environment, so this assessment is based on the supplied plan.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-11-16-u4-plugin-profile",
+    "at": "2026-11-16T02:32:43.228819+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "approve"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}

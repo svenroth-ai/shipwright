@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "1. **The question, answered in one sentence.** Yes \u2014 but this is not a new standing mechanism; it changes an existing one (the code-reviewer agent prompt), and Option A is the right shape.\n\n2. **The smallest thing that would do.** Option A: a short section in the existing `code-reviewer` prompt telling it to Read `conventions.md`'s marked block, cite rule ids, and flag stale/duplicated blocks. No new script, no new input plumbing at spawn sites, no third input path.\n\n3. **What it costs to keep.** The reviewer now does one more Read per review and its findings depend on the rendered block being current \u2014 the existing `--check` flag already covers staleness. The prompt section must stay coherent with future rule-object changes; that's the whole obligation.\n\n4. **What it forecloses.** Slightly ties the reviewer's contract to the marked-block format in `conventions.md`. Renaming or restructuring that block format now has two consumers (the renderer and the reviewer prompt text). Minor.\n\n5. **Findings.**\n\n- Category: proportionality\n- Severity: low\n- Finding: Options B and D would each add real standing cost \u2014 D is a new script to maintain, B is a contract change at three spawn sites plus the agent's input schema \u2014 for capability the reviewer already has via the Read tool.\n- Suggestion: Take A; it keeps the mechanism surface at zero new files and zero new call sites.\n\n- Category: existence\n- Severity: low\n- Finding: Option C under-delivers: the campaign's premise is instruction-only rules with no linter, so \"rely on linters\" means those rules never reach a reviewer.\n- Suggestion: None needed beyond choosing A.\n\nThe test-pinned prompt instruction, docs row, and one linked section are the right size for a campaign-closing unit.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Yes\u2014extending the existing reviewer to consume the rendered rules is proportionate and needs no separate standing mechanism.**\n\n2. **Smallest thing:** Option A: have the reviewer read the architecture-rules block in `conventions.md` and assess the diff against applicable rules, citing rule IDs and lines. Keep freshness checking with the existing renderer\u2019s `--check`; no third input, extractor, or additional spawn-site wiring is needed.\n\n3. **What it costs to keep:** Review context and attention on every diff, plus keeping the reviewer instruction, pin test, and documentation aligned with the rule format. Instruction-only rules remain dependent on reviewer judgment; this does not make them deterministic enforcement.\n\n4. **What it forecloses:** None identified. Reading the existing rendered block leaves rule storage and reviewer invocation unchanged.\n\n5. **Findings:** No findings.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "architecture",
+  "capture": {
+    "run_id": "iterate-2026-11-16-u6-reviewers-docs",
+    "at": "2026-11-16T06:26:47.150286+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "approve"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}

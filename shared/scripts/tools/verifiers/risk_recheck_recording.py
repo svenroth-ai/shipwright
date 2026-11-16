@@ -27,6 +27,12 @@ codebase's existing acknowledgement that every runner-contract step is
 contract-enforced, not independently gated — this is not a new category of
 that gap).
 
+**Declared floor (FR-01.11/AC52).** The block may carry `declared_complexity` (the unit
+spec's `Complexity:` line); `effective_complexity` must not sit below it. A block with
+the field absent or null passes: undeclared units and records predating the field are
+unchanged. Residual, stated like the one above: a runner that omits `--spec` records no
+declaration and this gate cannot tell; the review cascade is the backstop.
+
 **Campaign-only, by absence.** Step 3.4 never runs for a standalone iterate,
 so the artifact this gate reads is only ever produced by a campaign
 sub-iterate-runner. Its absence is a SKIP, not a failure — every standalone
@@ -178,7 +184,8 @@ def check_risk_recheck_recorded(project_root: Path, run_id: str) -> CheckResult:
     """Recording-integrity gate — see module docstring for the full rationale.
 
     FAILs when the F5c-recorded complexity is outranked by Step 3.4's recorded
-    `effective_complexity`. SKIPs when no Step 3.4 artifact exists for this run.
+    `effective_complexity`, or when that effective tier sits below the unit's
+    recorded `declared_complexity` (the operator's floor). SKIPs when no Step 3.4 artifact exists for this run.
     """
     name = "risk re-check recording integrity"
     block, err = _read_recheck_record(project_root, run_id)
@@ -212,6 +219,23 @@ def check_risk_recheck_recorded(project_root: Path, run_id: str) -> CheckResult:
             f"the recorded risk re-check has an unrecognized effective_complexity "
             f"({effective!r}) — expected one of {_COMPLEXITY_ORDER}",
         )
+
+    declared = block.get("declared_complexity")
+    if declared is not None:
+        decl_rank = _rank(declared)
+        if decl_rank is None:
+            return CheckResult(
+                name, False,
+                f"the recorded risk re-check has an unrecognized declared_complexity "
+                f"({declared!r}) — fix the Complexity line in the unit spec and re-run Step 3.4",
+            )
+        if decl_rank > eff_rank:
+            return CheckResult(
+                name, False,
+                f"the recorded risk re-check declares complexity={declared!r} (the operator's "
+                f"floor) but records effective_complexity={effective!r} — a declared tier may be "
+                "raised by the diff, never lowered. Re-run the Step 3.4 re-check with --spec.",
+            )
 
     complexity, f5c_err = _read_f5c_complexity(project_root, run_id)
     if f5c_err:

@@ -1,0 +1,18 @@
+{
+  "section": "iterate-2026-11-16-campaign-declared-complexity-floor",
+  "review": [
+    {"severity": "low", "category": "readability", "file": "plugins/shipwright-iterate/scripts/lib/classify_complexity.py", "line": 205,
+     "finding": "The --declared-complexity CLI option has no production caller (the runner passes only --spec); declared = declared_complexity is a no-op alias.",
+     "suggestion": "Remove the option and the merge list; use the parameter directly."},
+    {"severity": "low", "category": "correctness", "file": "plugins/shipwright-iterate/scripts/lib/classify_complexity.py", "line": 152,
+     "finding": "classify() does not validate declared_complexity when called directly; apply_floor fails with an opaque ValueError while recheck() names the problem.",
+     "suggestion": "Validate in apply_floor so both entry points raise the same named error."},
+    {"severity": "low", "category": "correctness", "file": "plugins/shipwright-iterate/scripts/lib/declared_complexity.py", "line": 33,
+     "finding": "Parser accepted only spaces and ignored trailing punctuation; a scope line such as Complexity: TBD or Complexity: large in free text could fail or floor a unit.",
+     "suggestion": "Allow tabs, treat trailing punctuation as malformed, scan only the header before the first level-2 heading, add tests."},
+    {"severity": "low", "category": "readability", "file": "plugins/shipwright-iterate/scripts/lib/diff_risk_recheck.py", "line": 62,
+     "finding": "The noqa F401 on the _split_flags import is misleading because main() calls it directly.",
+     "suggestion": "Drop F401."}
+  ],
+  "notes": "Fixed: option removed, apply_floor validates, parser header-only with tab and punctuation handling and tests, noqa trimmed. Anti-ratchet respected: diff_risk_recheck.py 303 lines against grandfathered 305."
+}

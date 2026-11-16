@@ -1,0 +1,88 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-16-u6-reviewers-docs",
+    "date": "2026-11-16",
+    "unit": {
+      "status": "passed",
+      "passed": 26214,
+      "skipped": 0,
+      "total": 26214
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "the code-reviewer agent tells the reviewer to read conventions.md, take the marked block, report per rule id, treat judgement rules as needing a cited line, skip with a note when none are declared, say the check could not run for an unreadable file, and report duplicated or stale blocks",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_code_reviewer_architecture_rules.py::test_agent_checks_the_rules_block_of_conventions_md PASSED"
+        },
+        {
+          "behavior": "the markers named in the agent are exactly the ones the renderer writes, and the agent has the Read tool",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_code_reviewer_architecture_rules.py::test_markers_named_in_the_agent_are_the_ones_the_renderer_writes, ::test_agent_can_read_conventions_md PASSED"
+        },
+        {
+          "behavior": "every code-reviewer spawn site hands the reviewer its project root",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_code_reviewer_architecture_rules.py::test_spawn_sites_hand_the_reviewer_its_project_root PASSED"
+        },
+        {
+          "behavior": "the example rules in the building guide load with the real rule loader and their mechanism path exists",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_code_reviewer_architecture_rules.py::test_docs_example_rules_validate_with_the_real_loader PASSED"
+        },
+        {
+          "behavior": "the guide section names the closed enforcement list, the render tool, the union-merge limit, the eslint.config limit and links the profile docs",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_code_reviewer_architecture_rules.py::test_docs_section_names_the_closed_vocabulary_and_the_limits PASSED"
+        },
+        {
+          "behavior": "the changelog pilot P1 plan links the guide section by a relative anchor that resolves",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_code_reviewer_architecture_rules.py::test_pilot_p1_plan_links_the_section PASSED"
+        },
+        {
+          "behavior": "a real render of the shipwright-monorepo profile gives one block whose begin line names the profile; a duplicated block makes render --check refuse with exit 3",
+          "disposition": "tested",
+          "evidence": "manual probe with render_architecture_rules.py on a scratch conventions file: one begin marker, profile name present, unchanged on re-run, duplicate refused; shared/tests/test_render_architecture_rules.py PASSED",
+          "category": "integration"
+        }
+      ],
+      "counts": {
+        "testable": 7,
+        "tested": 7,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 2,
+        "covered_acs": 2
+      }
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run --with pytest --with pytest-mock pytest shared/tests/test_code_reviewer_architecture_rules.py shared/tests/test_profile_architecture_rules.py shared/tests/test_render_architecture_rules.py -q -p no:cacheprovider",
+      "exit_code": 0,
+      "tests_run": 94,
+      "evidence_path": ".shipwright/runs/iterate-2026-11-16-u6-reviewers-docs/surface_verification.log",
+      "timestamp": "2026-11-16T06:31:38.292Z",
+      "attempts": 1
+    }
+  }
+}

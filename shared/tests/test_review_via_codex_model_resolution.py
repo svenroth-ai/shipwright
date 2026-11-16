@@ -28,7 +28,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 from lib import codex_review_transport as transport  # noqa: E402
 from tools import review_via_codex  # noqa: E402
 
-VALID_CODE_REVIEW = {"section": "s1", "review": []}
+VALID_CODE_REVIEW = {"section": "s1", "review": [], "notes": None}
 
 
 def _patch_available(monkeypatch: pytest.MonkeyPatch) -> None:

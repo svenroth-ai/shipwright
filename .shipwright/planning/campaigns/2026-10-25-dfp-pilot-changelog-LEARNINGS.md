@@ -66,3 +66,16 @@ Changed after review: nothing yet (P0 only).
 | operator questions in plain language | yes |
 
 **Convention file** (`docs/building-skills-plugins-agents.md`): the migration showed one gap so far. It has no class for an *outward command* (a literal command that is neither judgement nor safe to move into code, e.g. `gh pr merge`); P0 recorded them as `mechanic` with target `keep` and a note.
+
+
+## 7. Ideas from outside, to test against the pilot (added 2026-11-16, not decisions)
+
+Source: a read of NVIDIA NeMo Guardrails and its Colang 2.0 runtime (github.com/NVIDIA-NeMo/Guardrails, develop branch; flow parser, `runtime/flows.py`, `runtime/statemachine.py`, `tests/utils.py`, `nemoguardrails/testing/chat_harness.py`). Colang guards a chat between a user and a bot at run time; it is not our guardrail problem and we do not adopt it. Three of its design ideas fit the CLI steps of P3 and P4. The pilot should say at the end (section 2 or 3 of this report) whether each one held.
+
+1. **A process as data.** Colang parses a flow into plain data (dataclasses with a `_type`), lowers it to a flat list of steps with labels and jumps, and can dump that list as JSON before anything runs. For us: the step order and allowed transitions of a skill as a JSON step list. Question for the pilot: does `release.py` end up with a step list that a validator can check without running it? Colang's weakness to avoid: a misspelled flow name fails silently, and there is no separate validator. We validate in Python before anything runs.
+2. **Paired lifecycle events.** Every action has a command (`Start`, `Change`, `Stop`) and results (`Started`, `Updated`, `Finished`, `Failed`), a uid, and an explicit status (initialized, starting, started, stopping, finished). For us: each CLI step reports started and finished (or failed) with a step id, so a checker can name the step a run skipped. Question for the pilot: can the golden traces of P2a be written as these pairs, and does that make the "skipped step" failure readable? The CLI as a pure function (state plus event in, new state plus events out) is what makes the trace replayable.
+3. **The model only at declared seams.** Event matching, lifecycle and priorities are plain Python; the LLM is used only through opt-in steps, and its output must come back as a typed event the engine validates. An event nobody handles is emitted explicitly. For us: this is the line between the CLI and the questions in the thin `SKILL.md` (P5). Question for the pilot: does every answer the model gives come back through a typed value the CLI checks?
+
+Also noted from their tests, for P2a and P2b: they compare event lists as an ordered subset with exact length, drop volatile keys (uids, timestamps), and feed scripted model answers in order. Our golden files are recorded, theirs are written by hand, so ours is a step further. Colang 2.0 is documented as beta, and open issues name rails that fail open on missing globals. That is another reason not to depend on it.
+
+Older workflow tools (state machines, BPMN, job schedulers) have the same shape, so none of this is new. The pilot is the cheap test of whether it pays for skills.

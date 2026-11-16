@@ -129,6 +129,8 @@ Source: P0 report §5. Each answer is a behaviour change, so none of them is bui
 ### P1
 Every seam is an environment variable named `SHIPWRIGHT_TEST_*`, read in one place, documented, inert when unset, and covered by an L1 test that the default path is unchanged. On Windows `gh` is spawned as `["gh", ...]`, so the seam is an argv prefix (interpreter + stub script), not a `.cmd`. `create_github_release` refuses to publish fixture-model text unless the `gh` seam is also set, so a stray variable cannot publish fixture notes for real.
 
+Architecture rules: the code reviewer checks this unit's diff against the rules block in `conventions.md`; how a rule is written, enforced and re-rendered is in [how to add an architecture rule](../../../docs/building-skills-plugins-agents.md#how-to-add-an-architecture-rule).
+
 ### P2a
 1. Scratch project = `minimal_valid_project` + a git repository + a local bare `origin` with a fake GitHub-style URL (for `resolve_repo_identity`) and a file push URL.
 2. Environment built explicitly: no API keys, no `SHIPWRIGHT_ROOT`, `GIT_ALLOW_PROTOCOL=file`, working directory = the scratch repo; the test fails if a key leaks in.

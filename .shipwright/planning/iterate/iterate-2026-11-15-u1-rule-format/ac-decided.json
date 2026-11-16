@@ -1,0 +1,116 @@
+{
+  "unattended": true,
+  "resolved_items": [
+    {
+      "kind": "add",
+      "new_text": "Given a stack profile declares its architecture rules as structured entries, when the profile is checked, then every bundled profile is still reported valid, and an old-style list of plain sentences is accepted too.",
+      "files": [
+        "shared/scripts/profile_architecture_rules.py"
+      ],
+      "owner_fr": "FR-01.01",
+      "decided_by": "code",
+      "confirmed": false
+    },
+    {
+      "kind": "add",
+      "new_text": "Given a profile still uses the old plain-sentence list of architecture rules, when the profile is checked on request, then a warning is shown, and no other phase prints that warning.",
+      "files": [
+        "shared/scripts/tools/resolve_profile.py"
+      ],
+      "owner_fr": "FR-01.01",
+      "decided_by": "code",
+      "confirmed": false
+    },
+    {
+      "kind": "add",
+      "new_text": "Given one architecture rule names both a linter fragment and a list of checking files, when the profile is checked on request, then that rule is reported as an error, the remaining rules stay usable, and the profile itself stays valid.",
+      "files": [
+        "shared/scripts/profile_architecture_rules.py"
+      ],
+      "owner_fr": "FR-01.01",
+      "decided_by": "code",
+      "confirmed": false
+    },
+    {
+      "kind": "add",
+      "new_text": "Given the list of allowed ways a rule can be kept is copied into the profile checker, when the tests run, then a test fails as soon as that copy differs from the constitution register, and the constitution register tests still pass.",
+      "files": [
+        "shared/scripts/profile_architecture_rules.py"
+      ],
+      "owner_fr": "FR-01.10",
+      "decided_by": "code",
+      "confirmed": false
+    }
+  ],
+  "ac_decisions": [
+    {
+      "ac": "FR-01.01.new",
+      "mode": "auto",
+      "answer": "auto",
+      "kind": "add",
+      "answered_via": "none",
+      "decided_by": "code",
+      "confirmed": false
+    },
+    {
+      "ac": "FR-01.01.new",
+      "mode": "auto",
+      "answer": "auto",
+      "kind": "add",
+      "answered_via": "none",
+      "decided_by": "code",
+      "confirmed": false
+    },
+    {
+      "ac": "FR-01.01.new",
+      "mode": "auto",
+      "answer": "auto",
+      "kind": "add",
+      "answered_via": "none",
+      "decided_by": "code",
+      "confirmed": false
+    },
+    {
+      "ac": "FR-01.10.new",
+      "mode": "auto",
+      "answer": "auto",
+      "kind": "add",
+      "answered_via": "none",
+      "decided_by": "code",
+      "confirmed": false
+    }
+  ],
+  "counts": {
+    "total": 4,
+    "auto": 4,
+    "asked": 0,
+    "exempt": 0,
+    "restore": 0,
+    "unchanged": 0,
+    "answered_inline": 0,
+    "unconfirmed": 0,
+    "exempt_share": 0.0,
+    "restore_share": 0.0
+  },
+  "status": "ok",
+  "ac_mode": {
+    "mode": "auto",
+    "source": "--ac-mode"
+  },
+  "run_id": "iterate-2026-11-15-u1-rule-format",
+  "bind_id": "profile-architecture-rules--U1@2026-11-15T14:24:03.494683+00:00",
+  "exemption_check": "tested against the current diff (51 file(s), 44 not observable)",
+  "surface": {
+    "observable": true,
+    "files": [
+      "shared/profiles/skill-companion-app.json",
+      "shared/profiles/vite-hono.json",
+      "shared/schemas/stack_profile.schema.json",
+      "shared/scripts/profile_architecture_rules.py",
+      "shared/scripts/profile_model.py",
+      "shared/scripts/profile_resolver.py",
+      "shared/scripts/tools/resolve_profile.py"
+    ],
+    "ignored": 44
+  }
+}
