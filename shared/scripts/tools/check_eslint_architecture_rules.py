@@ -15,7 +15,10 @@ never changes package.json. ``--replace-stale`` also overwrites blocks that diff
 (a block folded by hand with an existing option differs on purpose: replace it only knowingly).
 
 Exit codes: 0 every block present (or the profile has no ESLint rule), 1 findings remain,
-2 the profile cannot be resolved, 3 ``--apply`` refused (message says why; nothing was written).
+2 the profile cannot be resolved, 3 ``--apply`` refused (message says why; nothing was written),
+4 the config cannot be read (not UTF-8, or an I/O error); nothing was written.
+
+Without ``--apply`` the tool only reads. ``--apply`` is the explicit repair, run only after a finding.
 """
 
 from __future__ import annotations
@@ -51,10 +54,14 @@ def _main(argv: list[str] | None = None) -> int:
         sys.stderr.write(f"error: profile cannot be loaded: {type(exc).__name__}: {exc}\n")
         return 2
     refused = ""
-    if args.apply and rules:
-        done = ear.apply(args.project_root, rules, replace_stale=args.replace_stale)
-        refused = done.message if done.status == "cannot" else ""
-    report = ear.check(args.project_root, rules)
+    try:
+        if args.apply and rules:
+            done = ear.apply(args.project_root, rules, replace_stale=args.replace_stale)
+            refused = done.message if done.status == "cannot" else ""
+        report = ear.check(args.project_root, rules)
+    except (UnicodeDecodeError, OSError, ValueError) as exc:
+        sys.stderr.write(f"error: the ESLint config cannot be read: {type(exc).__name__}: {exc}\n")
+        return 4
     bad = report.bad
     if args.json:
         sys.stdout.write(json.dumps({

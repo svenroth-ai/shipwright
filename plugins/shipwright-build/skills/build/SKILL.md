@@ -290,7 +290,7 @@ When invoked with `--autonomous` (or run `autonomy: unattended`), build all pend
 
 ## Step 12: Completion
 
-Verify: all tests pass, code review complete, commit on feature branch, decision log updated; for a profile with architecture-rule lint blocks (`supabase-nextjs`) run `uv run {shared_root}/scripts/tools/check_eslint_architecture_rules.py --project-root . --apply` from the project root once the app exists (create-next-app replaces the scaffold's eslint config; a refusal or remaining finding is reported in the summary, never dropped). Print the SHIPWRIGHT-BUILD COMPLETE summary block (Section / Branch / Commit / Tests / Review counts / Next steps).
+Verify: all tests pass, code review complete, commit on feature branch, decision log updated; for a profile with architecture-rule lint blocks (`supabase-nextjs`) run the check-only form `uv run {shared_root}/scripts/tools/check_eslint_architecture_rules.py --project-root .` from the project root once the app exists (create-next-app replaces the scaffold's eslint config) and report every finding in the summary, never drop one. The tool changes nothing without `--apply`: only when the check reports lost blocks, run it again with `--apply` as a deliberate repair, show the resulting diff in the summary and commit message, and never apply without a finding. Print the SHIPWRIGHT-BUILD COMPLETE summary block (Section / Branch / Commit / Tests / Review counts / Next steps).
 
 ---
 

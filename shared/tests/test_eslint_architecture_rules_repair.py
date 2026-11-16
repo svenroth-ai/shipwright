@@ -148,6 +148,16 @@ def test_cli_reports_repairs_and_exits_with_the_documented_codes(tmp_path):
     assert run("--profile", "no-such-profile-xyz").returncode == 2
 
 
+@pytest.mark.covers("FR-01.01/AC37")
+def test_cli_reports_an_unreadable_config_with_its_own_exit_code(tmp_path):
+    _project(tmp_path, NEXT16)
+    (tmp_path / "eslint.config.mjs").write_bytes(b"export default [];" + bytes([10, 255, 254]) + b" not utf-8" + bytes([10]))
+    for extra in ([], ["--apply"]):
+        r = subprocess.run([sys.executable, str(TOOL), "--project-root", str(tmp_path), *extra],
+                           capture_output=True, text=True, timeout=120)
+        assert r.returncode == 4 and "cannot be read" in r.stderr and "Traceback" not in r.stderr
+
+
 # ---- the contract around it ---------------------------------------------------------------
 
 @pytest.mark.covers("FR-01.01/AC37")
