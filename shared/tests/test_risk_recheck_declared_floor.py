@@ -13,6 +13,10 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
+pytestmark = pytest.mark.covers("FR-01.11/AC52")
+
 _SCRIPTS_ROOT = Path(__file__).resolve().parent.parent / "scripts"
 if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
