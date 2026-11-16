@@ -1,0 +1,414 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-16-u2-rules-reach-agents",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-15T23:33:05.533326+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "risk /",
+          "file": null,
+          "line": null,
+          "finding": "Project step 7 \"leaves the placeholder\" and runs the tool in the same step — but the acceptance criterion \"running twice changes nothing\" depends on the placeholder being removed after first fill, not left in place. If the placeholder text remains in the file alongside the filled block, a second run (or later marker damage) could double-write or confuse placement resolution. The three-way placement logic (placeholder → `## Architecture Rules` → append) means a scaffolded file that already had the heading added by another step could take a different path than intended.",
+          "suggestion": "Specify explicitly: first fill consumes the placeholder (replaces it with markers+block) and add a test that placeholder is gone after run one.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case /",
+          "file": null,
+          "line": null,
+          "finding": "Rule content \"sanitised so it cannot close the markers\" is underspecified — what does sanitisation do to legitimate rule text? Silently mutating rule text (e.g., stripping `-->` or whatever the closing marker is) can hide real content, and the spec doesn't say whether sanitisation is reported to the user.",
+          "suggestion": "Define sanitisation concretely (e.g., replace marker-closing sequences with a safe stand-in) and log/emit a warning when it fires, so rule authors know their text was altered.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case /",
+          "file": null,
+          "line": null,
+          "finding": "\"Damaged markers = exit 3 no write\" — but what counts as damaged? A lone opening marker, mismatched counts, nested markers, and a marker pair inside a code fence (rules frequently contain fenced examples!) are distinct cases. A fenced code block containing marker-like text would cause false \"damaged\" exits and block all future updates.",
+          "suggestion": "Handle fenced-code awareness or at minimum document that marker-like text inside rules must be sanitised at render time (see above). Clarify exit-3 detection: count of open vs close markers.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach /",
+          "file": null,
+          "line": null,
+          "finding": "Adopt loads the tool \"by file path\" from `write_rules_block` — this bypasses whatever module/packaging path the project-side step uses. Two invocation styles for one tool invites drift.",
+          "suggestion": "If a shared import mechanism exists in `shared/scripts`, use it for both; otherwise fine, but note it and keep the CLI the single tested surface.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency /",
+          "file": null,
+          "line": null,
+          "finding": "\"Run once for this repo\" is a manual step with no gate. If forgotten, the acceptance criterion for this repo's own conventions.md fails silently.",
+          "suggestion": "Make the one-time run part of the task checklist or verify via a repo-level test/assertion.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case /",
+          "file": null,
+          "line": null,
+          "finding": "CRLF preservation: the spec says line endings are preserved, but the rendered block's internal newlines and the marker lines themselves must match the file's existing ending style, not just \"preserve\" the file's. Mixed-ending files are unaddressed.",
+          "suggestion": "Normalize the inserted block to the file's dominant/first line ending; add a CRLF fixture test (presumably already among the 16).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security /",
+          "file": null,
+          "line": null,
+          "finding": "Rule text originates from profile definitions; if profiles are ever user-supplied, injecting marker text is the injection vector. The sanitisation covers it, but there's no auth/trust statement about where rules come from.",
+          "suggestion": "A one-line note in docs/stack-profiles.md that rules are maintainer-authored; sanitisation is defence-in-depth.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "over-production /",
+          "file": null,
+          "line": null,
+          "finding": "16 unit tests + 4 adopt tests is reasonable, not bloated — no reduction needed. The four-function module surface (render_block/apply_block/render_into/CLI) is appropriate for the reuse across project step and adopt.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Reporting rule errors on stderr and omitting those rules can produce a successful-looking conventions block that lacks declared architecture constraints. If every rule fails, this could also misrepresent the profile as having no rules.",
+          "suggestion": "Distinguish an empty rule declaration from invalid rules. Validate before writing, return a nonzero status for invalid declarations, and preserve the existing block on failure. Ensure scaffolding and adoption propagate that failure.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "“Damaged markers” needs an explicit definition. Duplicate complete blocks or reversed markers could otherwise cause replacement of the wrong range or leave conflicting rules in the document.",
+          "suggestion": "Accept either no markers or exactly one correctly ordered pair; reject other combinations without writing. Include these cases in the planned tests, alongside LF/CRLF preservation and byte-for-byte second-run idempotency.  The approach is focused and generally sound, including its reuse across scaffolding and adoption. Explicit failure handling for invalid rules should be resolved before implementation is accepted; repository inspection was blocked by the environment, so this assessment is based on the supplied plan.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-15T23:29:22.993677+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n**Category: risk / Severity: medium**\n**Finding:** Project step 7 \"leaves the placeholder\" and runs the tool in the same step — but the acceptance criterion \"running twice changes nothing\" depends on the placeholder being *removed* after first fill, not left in place. If the placeholder text remains in the file alongside the filled block, a second run (or later marker damage) could double-write or confuse placement resolution. The three-way placement logic (placeholder → `## Architecture Rules` → append) means a scaffolded file that already had the heading added by another step could take a different path than intended.\n**Suggestion:** Specify explicitly: first fill *consumes* the placeholder (replaces it with markers+block) and add a test that placeholder is gone after run one.\n\n**Category: edge-case / Severity: medium**\n**Finding:** Rule content \"sanitised so it cannot close the markers\" is underspecified — what does sanitisation do to legitimate rule text? Silently mutating rule text (e.g., stripping `-->` or whatever the closing marker is) can hide real content, and the spec doesn't say whether sanitisation is reported to the user.\n**Suggestion:** Define sanitisation concretely (e.g., replace marker-closing sequences with a safe stand-in) and log/emit a warning when it fires, so rule authors know their text was altered.\n\n**Category: edge-case / Severity: low**\n**Finding:** \"Damaged markers = exit 3 no write\" — but what counts as damaged? A lone opening marker, mismatched counts, nested markers, and a marker pair inside a code fence (rules frequently contain fenced examples!) are distinct cases. A fenced code block containing marker-like text would cause false \"damaged\" exits and block all future updates.\n**Suggestion:** Handle fenced-code awareness or at minimum document that marker-like text inside rules must be sanitised at render time (see above). Clarify exit-3 detection: count of open vs close markers.\n\n**Category: approach / Sever […truncated]\n\n[openai] 1. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** Reporting rule errors on stderr and omitting those rules can produce a successful-looking conventions block that lacks declared architecture constraints. If every rule fails, this could also misrepresent the profile as having no rules.  \n   **Suggestion:** Distinguish an empty rule declaration from invalid rules. Validate before writing, return a nonzero status for invalid declarations, and preserve the existing block on failure. Ensure scaffolding and adoption propagate that failure.\n\n2. **Category:** edge-case  \n   **Severity:** low  \n   **Finding:** “Damaged markers” needs an explicit definition. Duplicate complete blocks or reversed markers could otherwise cause replacement of the wrong range or leave conflicting rules in the document.  \n   **Suggestion:** Accept either no markers or exactly one correctly ordered pair; reject other combinations without writing. Include these cases in the planned tests, alongside LF/CRLF preservation and byte-for-byte second-run idempotency.\n\nThe approach is focused and generally sound, including its reuse across scaffolding and adoption. Explicit failure handling for invalid rules should be resolved before implementation is accepted; repository inspection was blocked by the environment, so this assessment is based on the supplied plan.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      },
+      "model_tier": "opus"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/render_architecture_rules.py",
+          "line": null,
+          "finding": "heading branch mixed line endings on a CRLF file",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/render_architecture_rules.py",
+          "line": null,
+          "finding": "loader warnings were dropped",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-adopt/scripts/tools/generate_adoption_artifacts.py",
+          "line": null,
+          "finding": "harvested text could contain the heading or marker text",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/tools/render_architecture_rules.py",
+          "line": null,
+          "finding": "nested wording instruction only (prompt-only (...))",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-project/skills/project/references/project-scaffolding.md",
+          "line": null,
+          "finding": "extra spaces before --project-root",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "completeness",
+          "file": "docs/hooks-and-pipeline.md",
+          "line": null,
+          "finding": "who-writes-what row for conventions.md lacked the render tool and adopt",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": "shared/scripts/tools/render_architecture_rules.py",
+          "line": null,
+          "finding": "lint tool / enforcement not passed through _one_line; CLI traceback exit 1 ambiguous with --check stale",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-16T00:07:41.138941+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "dfd3c0ed446c4818df55df3b0350d852a2ed8d2e"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "hidden coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: CRLF heading branch corrupts line endings — CRLF heading branch corrupts line endings -- fixed",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: block placed above old bullets or inside the imported section — block placed above old bullets or inside the imported section -- imported section fixed; old bullets documented",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: missing shared tool crashed adopt — missing shared tool crashed adopt -- fixed (note)",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: notes not surfaced — notes not surfaced -- fixed (stderr)",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: quoted markers / fenced text — quoted markers / fenced text -- markers fixed; fenced text accepted",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: sys.modules cleanup — sys.modules cleanup -- fixed",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: orchestrator doubt: block after Convention Updates strands appended bullets — orchestrator doubt: block after Convention Updates strands appended bullets -- fixed: section placed before first Updates/Learnings; repo file re-rendered; test",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: orchestrator doubt: marker scan / placeholder too wide, heading case — orchestrator doubt: marker scan / placeholder too wide, heading case -- fixed: head-only scan, placeholder alone on its line, case-insensitive heading; tests",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: orchestrator doubt: union merge can duplicate block bodies — orchestrator doubt: union merge can duplicate block bodies -- documented in docs/stack-profiles.md and ADR; tool refuses two blocks (exit 3)",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: orchestrator doubt: template anchor and adopt exceptions — orchestrator doubt: template anchor and adopt exceptions -- fixed: anchor test; any exception in adopt becomes a NOT written note",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-16T00:07:41.303493+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "dfd3c0ed446c4818df55df3b0350d852a2ed8d2e"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-adopt/scripts/lib/adopt_profile.py` (~new `write_rules_block`, lines added after 111) and `generate_adoption_artifacts.py",
+          "line": 459,
+          "finding": "write_rules_block` propagates `OSError` and `DamagedMarkers` (both raised by `render_into`) uncaught. The CLI path handles these with exit code 3, but the adopt path crashes the entire `generate()` run — e.g. if `.shipwright/agent_docs/conventions.md` was not written (missing path, docs step skipped/failed earlier) or has damaged markers, adopt aborts after all other artifacts are already written, leaving a half-generated adoption. The docstring even claims the shared tool \"never fails the run\" for rule problems, but file-level problems were not given the same treatment.",
+          "suggestion": "Catch `OSError` and the `DamagedMarkers` exception in `write_rules_block` (or in `generate`) and record them into `results[\"architecture_rules_notes\"]` / an error field instead of letting them escape.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "plugins/shipwright-adopt/tests/test_adopt_architecture_rules.py",
+          "line": null,
+          "finding": "Adopt tests cover only the happy paths. There is no test for the missing-`conventions.md` or damaged-marker case — precisely the case that currently crashes `generate()` (previous finding). A broken implementation (uncaught exception) would pass this suite.",
+          "suggestion": "Add a test where `conventions.md` is absent or has a stray `BEGIN` marker, asserting `generate()` completes and reports the problem instead of raising.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "spec",
+          "file": "plugins/shipwright-project/skills/project/references/project-scaffolding.md",
+          "line": null,
+          "finding": "AC1 (\"scaffolded fixture conventions.md carries the block\") is implemented only via prose instructions to an agent plus the shared tool test; no test verifies the project scaffold path end-to-end (that step 7 actually leaves the placeholder and runs the tool in the documented order). The AC is validated at tool level, not at the scaffold level. Also the documented command line in the markdown has stray double spaces before `--project-root`, which some shells won't care about but a strict copy-runner might.",
+          "suggestion": "Acceptable if agent-follows-docs is the established pattern here; otherwise add a project-plugin test or note the reliance. Fix the whitespace in the fenced command.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/render_architecture_rules.py` — `apply_block` heading insertion",
+          "line": null,
+          "finding": "When inserting under an existing `## Architecture Rules` heading, the block is placed immediately after the heading with no blank separation preserved between block end and the content that followed the heading (`text[heading.end():]` starts with `\\n\\n...` — actually that's fine), but if the heading is the last line with no trailing newline the output ends `block + text[...]` where the tail is empty — the regex requires `\\r?$`, so a heading at EOF without newline won't match and the append-at-end branch duplicates the heading. Minor and self-consistent, but worth confirming intended.",
+          "suggestion": "Verify behavior for a file ending exactly in `## Architecture Rules` with no trailing newline; currently the heading is duplicated.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "plugins/shipwright-adopt/scripts/lib/adopt_profile.py` — `write_rules_block",
+          "line": null,
+          "finding": "rules.errors` is referenced in the return statement after the `finally` block, but `rules` is assigned inside `try`. If `exec_module` or `load_rules` raises, the `finally` runs and then the exception propagates — fine — but if `mod.render_into` raises after `rules` was computed (the DamagedMarkers case), the rule-error notes are lost entirely. Combined with the first finding, the caller gets neither the notes nor a clean failure.",
+          "suggestion": "Once exceptions are caught (finding 1), return/record what is available.",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-15T23:47:08.506915+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] ### Findings\n\n- **Category: bug**\n  **Severity: medium**\n  File: `plugins/shipwright-adopt/scripts/lib/adopt_profile.py` (~new `write_rules_block`, lines added after 111) and `generate_adoption_artifacts.py:459`\n  Finding: `write_rules_block` propagates `OSError` and `DamagedMarkers` (both raised by `render_into`) uncaught. The CLI path handles these with exit code 3, but the adopt path crashes the entire `generate()` run — e.g. if `.shipwright/agent_docs/conventions.md` was not written (missing path, docs step skipped/failed earlier) or has damaged markers, adopt aborts after all other artifacts are already written, leaving a half-generated adoption. The docstring even claims the shared tool \"never fails the run\" for rule problems, but file-level problems were not given the same treatment.\n  Suggestion: Catch `OSError` and the `DamagedMarkers` exception in `write_rules_block` (or in `generate`) and record them into `results[\"architecture_rules_notes\"]` / an error field instead of letting them escape.\n\n- **Category: test**\n  **Severity: medium**\n  File: `plugins/shipwright-adopt/tests/test_adopt_architecture_rules.py`\n  Finding: Adopt tests cover only the happy paths. There is no test for the missing-`conventions.md` or damaged-marker case — precisely the case that currently crashes `generate()` (previous finding). A broken implementation (uncaught exception) would pass this suite.\n  Suggestion: Add a test where `conventions.md` is absent or has a stray `BEGIN` marker, asserting `generate()` completes and reports the problem instead of raising.\n\n- **Category: spec**\n  **Severity: low**\n  File: `plugins/shipwright-project/skills/project/references/project-scaffolding.md`\n  Finding: AC1 (\"scaffolded fixture conventions.md carries the block\") is implemented only via prose instructions to an agent plus the shared tool test; no test verifies the project scaffold path end-to-end (that step 7 actually leaves the placeholder and runs the tool in the documented  […truncated]\n\n[openai] No concrete defects found in the supplied diff. The implementation covers all four acceptance criteria, and the tests check rendered content, adoption integration, idempotence, and the explicit none-declared case, plus several error paths.\n\nShip-as-is based on static review. Environment policy blocked shell access, so I could not inspect surrounding files or independently run the tests.\n\nSHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "openai": "approve",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-16T00:07:40.990042+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "dfd3c0ed446c4818df55df3b0350d852a2ed8d2e"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-16T00:07:32.115092+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-16T00:07:32.278797+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

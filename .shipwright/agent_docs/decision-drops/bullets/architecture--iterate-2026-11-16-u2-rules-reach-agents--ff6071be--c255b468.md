@@ -1,0 +1,1 @@
+- **iterate-2026-11-16-u2-rules-reach-agents** (2026-11-16): Component — Component — `shared/scripts/tools/render_architecture_rules.py` writes the resolved profile architecture rules into one marked block of `conventions.md` (project step 7 and adopt call it; idempotent, text outside the block untouched). → decision_log (ADR via Run-ID: iterate-2026-11-16-u2-rules-reach-agents)

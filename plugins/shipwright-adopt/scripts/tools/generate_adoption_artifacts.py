@@ -262,7 +262,7 @@ def generate(
 
     project_name = project_root.name
     # EFFECTIVE profile (override, else snapshot match): resolved BEFORE any write, reused below.
-    from adopt_profile import resolve_effective  # type: ignore
+    from adopt_profile import resolve_effective, write_rules_block  # type: ignore
     try:
         resolved = resolve_effective(project_root, profile_override, snapshot)
     except (ValueError, ImportError) as e:
@@ -456,6 +456,9 @@ def generate(
         changelog_link=changelog_link,
     ):
         results["written"].append(str(p))
+    results["architecture_rules_notes"] = write_rules_block(project_root / ".shipwright/agent_docs/conventions.md", resolved)
+    for _note in results["architecture_rules_notes"]:
+        print(f"warning: {_note}", file=sys.stderr)
     # Two paths: the spec + the derived/unconfirmed summary of its own FR table.
     for p in write_spec(
         project_root, project_name=project_name, split_name=split_name,
