@@ -90,9 +90,9 @@ If campaign directory doesn't exist yet:
      --sub-iterates '{json_array}' \
      --expands-triage "{trg-id}"   # optional — anchor to a triage item
    ```
-   Each sub-iterate object in `{json_array}` may carry `"depends_on":
-   ["<id>", ...]` (bare sub-iterate ids from step 2's conversation, default
-   `[]`) — validated at write time (see "Dependency Graphs" below).
+   Each sub-iterate object in `{json_array}` may carry `"depends_on": ["<id>", ...]`
+   (bare ids, default `[]`; see "Dependency Graphs") and MUST carry `"complexity":
+   "<level>"` for every unit whose brief states a tier: a floor the runner never lowers.
 4. Review generated
    `.shipwright/planning/iterate/campaigns/{slug}/campaign.md` with user.
 

@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "1. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** The plan adds `declared_complexity` to the record and runner schema without defining compatibility for existing records. Requiring the field unconditionally could make F11 reject previously valid, undeclared runs, contrary to the requirement to preserve existing behavior.  \n   **Suggestion:** Define the representation explicitly: accept an absent field on legacy records as \u201cno declared floor,\u201d emit a consistent value for new undeclared records, and reject unknown non-null levels. Test legacy records through both schema validation and the registered gate.\n\n2. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** \u201cRejects an unknown level before writing anything\u201d requires campaign-wide preflight validation. Validating `complexity` only when rendering each unit can leave a partially written campaign when a later unit contains an invalid value. The work breakdown does not specify this ordering.  \n   **Suggestion:** Validate every sub-iterate\u2019s supplied complexity before any campaign output is created or modified. Test an invalid second unit and assert that no outputs were created or changed.\n\n3. **Category:** approach  \n   **Severity:** low  \n   **Finding:** Stage 1 gains both a parsed spec declaration and `--declared-complexity`, but their interaction is unspecified. An override that replaces the spec value could accidentally lower the operator\u2019s floor.  \n   **Suggestion:** Define precedence explicitly. If both inputs represent floors, use their maximum alongside the inferred tier; test a `medium` spec with a `small` CLI argument.\n\nThe persisted declaration and shared floor logic are sound, and the proposed integration coverage targets the important boundaries. Clarify backward compatibility, campaign-wide validation ordering, and competing declaration inputs before implementation.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "## Findings\n\n- **Category: edge-case** \u2014 **Severity: medium** \u2014 The `Complexity:` line is human-editable markdown, and `parse_declared_complexity` must tolerate more than the probed cases (trailing whitespace, `Complexity (size):`, the line appearing in a code fence or quoted brief excerpt inside the spec). The plan probes prose/wrong-case/bold/quote but doesn't specify the fallback behavior on ambiguity.\n  **Suggestion:** Define parse failure explicitly: an unrecognized level in the spec should be a hard error at the *classifier/recheck* side (fail loudly, don't silently treat as undeclared \u2014 otherwise a typo silently drops the floor, recreating the original bug). Consider a checksum-free sanity: log a warning when a declared value is present but unparseable.\n\n- **Category: edge-case** \u2014 **Severity: medium** \u2014 Work breakdown order: recheck (step 3) reads the spec line before the planner emits it (step 4). Within one merged change that's fine, but if the steps land in separate commits, the recheck will parse specs that never contain the line and the floor is silently inert \u2014 same failure mode as today, invisible.\n  **Suggestion:** Add an integration assertion (step 7 already exists) that an end-to-end run actually produces `declared_complexity: medium` in `risk_recheck.json`, not just that the components accept it individually \u2014 this is the guard that catches silent-inert regressions. Make it explicit in the plan that step 7 gates steps 2\u20134, not just accompanies them.\n\n- **Category: risk** \u2014 **Severity: low** \u2014 `campaign_init.py` \"rejects an unknown level before writing anything\" \u2014 verify the rejection happens before any partial spec render, and that the sub-iterate `complexity` key values that historically existed (any old runs with unexpected casing?) don't now hard-fail the planner on replay/re-run of a prior campaign.\n  **Suggestion:** Normalize case at the planner boundary and reject only genuinely unknown tokens; confirm the runner contract schema change is backward-compatible (old sub-iterate payloads without `complexity` still accepted).\n\n- **Category: approach** \u2014 **Severity: low** \u2014 Three new modules (`declared_complexity.py`, `campaign_unit_spec.py`, `risk_flag_args.py`) for one floor feature. The `campaign_unit_spec` and `risk_flag_args` splits are motivated by bloat caps rather than the change itself; that's defensible in this codebase's rules, but `declared_complexity.py` is essentially parse + one max() operation.\n  **Suggestion:** Fine to keep given the stated caps, but keep `declared_complexity.py` minimal \u2014 parse, validate, `apply_floor(declared, effective)` \u2014 and resist adding a general complexity-hierarchy abstraction. If `apply_floor` stays one expression, consider folding it into the classifier and recheck via a two-line import of the parser only.\n\n- **Category: edge-case** \u2014 **Severity: low** \u2014 The floor interacts with the \"unit declaring `small` is still raised to `medium` by a cross-component diff\" case, but the inverse is untested: declared `medium`, diff genuinely *large* \u2014 does effective stay `large` (floor, not pin)? The spec implies yes; make it an explicit AC/test so a future implementation doesn't cap at the declared level.\n  **Suggestion:** Add a one-line test: declared `medium` + large-risk diff \u21d2 `effective: large`.\n\n- **Category: security** \u2014 **Severity: low** \u2014 No meaningful surface; the spec file is operator-controlled input already trusted by the pipeline. No injection concern beyond the parse-strictness point above.\n\n## Overall Assessment\n\nThe approach is sound: persisting the operator's declaration in the unit spec (where both classification points can read it) is the right fix versus a runner-side CLI override, and the F11 transcription-integrity framing is consistent. The findings are refinements \u2014 chiefly making parse-failure loud and ensuring the end-to-end integration test actually proves the floor is live.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-11-16-campaign-declared-complexity-floor",
+    "at": "2026-11-16T09:06:10.046120+00:00"
+  },
+  "verdicts": {
+    "openai": "revise",
+    "glm": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

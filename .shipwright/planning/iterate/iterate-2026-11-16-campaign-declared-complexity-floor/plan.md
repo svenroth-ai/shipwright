@@ -1,0 +1,5 @@
+Goal: A campaign unit's declared complexity becomes a floor for Stage 1 classification and the Step 3.4 re-check
+Reason: Campaign units declared medium were classified small from diff size, so plan, architecture and doubt reviews were closed not-applicable
+Reference: profile-architecture-rules campaign U1,U2,U4,U5,U6 finding
+AC item: {"ac": "FR-01.11/AC52", "confirmed": false, "decided_by": "code", "files": ["plugins/shipwright-iterate/scripts/lib/classify_complexity.py"], "kind": "add", "new_text": "Given the operator declares a size for a unit of a hands-off multi-change run, when that unit is sized at the start and again after its code exists, then the declared size is a floor: the code may raise it but never lower it, so a declared medium unit with a small change still gets the full plan, architecture and doubt reviews; the size recorded for the unit never sits below the declared one, and a unit that declares none is sized as before.", "owner_fr": "FR-01.11"}
+AC decisions: [{"ac": "FR-01.11/AC52", "mode": "auto", "answer": "auto", "kind": "add", "answered_via": "none", "decided_by": "code", "confirmed": false}]

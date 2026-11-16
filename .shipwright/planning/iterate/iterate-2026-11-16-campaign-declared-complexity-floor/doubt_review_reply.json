@@ -1,0 +1,20 @@
+{
+  "stage": "doubt",
+  "gating": "advisory-must-address",
+  "trigger": "cross-plugin boundary (plugin lib to shared F11 verifier via risk_recheck.json), gate semantics, runner-contract change",
+  "doubts": [
+    {"severity": "medium", "lens": "boundary & contract", "claim_under_doubt": "a unit declared medium in the brief can no longer be recorded small",
+     "disproof_attempt": "The floor exists only if the orchestrator copies the brief tier into a complexity key when it calls campaign_init; wording said may carry and nothing checks the copy. A missing key reads as undeclared and passes F11.",
+     "what_would_resolve_it": "Make the wording mandatory, or record each unit declared tier in campaign.md so the setup review shows the omission."},
+    {"severity": "medium", "lens": "reversibility / hidden coupling", "claim_under_doubt": "the runner always passes --spec",
+     "disproof_attempt": "A runner launched from the stale plugin cache uses the old contract without --spec; declared_complexity is null and F11 cannot tell undeclared from omitted.",
+     "what_would_resolve_it": "Record that a spec was consulted, or state that the post-merge cache sync is mandatory before any campaign dispatch."},
+    {"severity": "low", "lens": "boundary & contract", "claim_under_doubt": "a spec with no declaration behaves exactly as before",
+     "disproof_attempt": "The parser searched the whole spec, so free scope or acceptance-criteria text such as Complexity: large or Complexity: TBD could raise the tier or hard-fail a unit; a malformed header line was skipped when a valid line appeared later.",
+     "what_would_resolve_it": "Parse only the header region and let the first declaring line decide."},
+    {"severity": "low", "lens": "hidden coupling & blast radius", "claim_under_doubt": "the floor is local to campaign units",
+     "disproof_attempt": "F5c entries recorded at the declared floor feed the history-prior median used by standalone iterates.",
+     "what_would_resolve_it": "Accept in writing or exclude declared-sourced entries."}
+  ],
+  "summary": "Two medium doubts are the same opt-in gap at two hand-offs (brief to key, runner to --spec under a lagging plugin cache); two low doubts on parser scope and history-prior drift."
+}
