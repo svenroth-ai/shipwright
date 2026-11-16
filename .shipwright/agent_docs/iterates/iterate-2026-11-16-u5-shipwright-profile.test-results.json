@@ -1,0 +1,95 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-16-u5-shipwright-profile",
+    "date": "2026-11-16",
+    "unit": {
+      "status": "passed",
+      "passed": 14807,
+      "skipped": 55,
+      "total": 14862
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "the run, project and build configs all name shipwright-monorepo and each resolves to the project profile file (source=project)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_shipwright_monorepo_profile.py::test_every_config_names_the_profile_and_resolves_to_the_project_file[3 configs] PASSED"
+        },
+        {
+          "behavior": "the copy equals the bundled claude-plugin profile on every key except name, description and architecture_rules, and keeps the test, lint, dev-server, services, deploy and env data of the generic profile this repo used before",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_shipwright_monorepo_profile.py::test_copy_equals_the_bundled_profile_on_every_key_but_its_own, ::test_test_lint_dev_server_and_compliance_data_equal_the_generic_profile_the_repo_used_before PASSED"
+        },
+        {
+          "behavior": "the copy contains every bundled rule unchanged and in order, adds exactly the five repo-only rules, and all load without errors or warnings",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_shipwright_monorepo_profile.py::test_copy_contains_every_bundled_rule_unchanged_and_adds_repo_only_ones PASSED"
+        },
+        {
+          "behavior": "repo-only mechanism paths exist, validate against the repo root, and each is invoked by something (hook script, CI workflow, session guard, hooks installer, shared test)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_shipwright_monorepo_profile.py::test_repo_only_mechanism_paths_exist_and_validate_against_the_repo_root, ::test_each_repo_only_mechanism_is_invoked_by_something PASSED"
+        },
+        {
+          "behavior": "resolve_profile validate reports the project profile valid with no rule errors",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_shipwright_monorepo_profile.py::test_resolve_cli_validates_the_project_profile_without_rule_errors PASSED"
+        },
+        {
+          "behavior": "conventions.md carries the current rendered block of the profile (render --check exits 0)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_shipwright_monorepo_profile.py::test_conventions_md_carries_the_current_rendered_block PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 6,
+        "tested": 6,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 1,
+        "covered_acs": 1
+      }
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run --with pytest --with pytest-mock pytest shared/tests/test_shipwright_monorepo_profile.py shared/tests/test_claude_plugin_profile.py shared/tests/test_render_architecture_rules.py shared/tests/test_resolve_profile_cli.py -q -p no:cacheprovider",
+      "exit_code": 0,
+      "tests_run": 75,
+      "evidence_path": ".shipwright/runs/iterate-2026-11-16-u5-shipwright-profile/surface_verification.log",
+      "timestamp": "2026-11-16T05:11:12.126Z",
+      "attempts": 1
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-24-r5b-merge-lane",
+    "commit": "032d1ebbf0ef9c99eb98f240c8f1110e981a32a5",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

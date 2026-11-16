@@ -1,0 +1,1 @@
+feat(profiles): Shipwright's own project profile shipwright-monorepo (claude-plugin plus the repo-only rules for the test-root guard, the pre-commit hook and the bloat checks); the repository's configs name it and conventions.md carries the rendered rules (U5)

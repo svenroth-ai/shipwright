@@ -1,0 +1,278 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-16-u5-shipwright-profile",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-16T04:57:20.643713+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "dependency |",
+          "file": null,
+          "line": null,
+          "finding": "check_plugin_cache_sync.py --strict` is an acceptance criterion but the mini-plan doesn't state what that check compares against. If it hashes/diffs the profiles directory against a bundled cache manifest, the new `shipwright-monorepo.json` must be registered in whatever the sync check reads, or the criterion fails for an unexamined reason.",
+          "suggestion": "Before writing the profile, run the strict check and read its comparison logic; confirm the new file's inclusion path (or confirm it only covers bundled profiles, in which case say so explicitly in the plan).",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk |",
+          "file": null,
+          "line": null,
+          "finding": "The copy-drift test pins containment of bundled rules but doesn't guarantee the behavioral equivalence of the rest. If upstream `claude-plugin` later changes or removes an existing rule, containment passes only on rule identity as written today; the test will force additions but a modified rule (same key, changed content) needs an equality check on the rule objects, not just \"contained.\"",
+          "suggestion": "Make the containment check deep-equality per rule key (rule object identical), not just presence — cheap and closes the modify-silently drift path.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "The conftest.py guard's caveat \"only when repo root is rootdir\" means running pytest from a subdirectory (or with a nested tox/pytest config) silently drops the guard. The plan records the caveat in the rule text but the test doesn't pin the condition.",
+          "suggestion": "Either add a test invocation from a subdirectory showing the guard is skipped (documenting the boundary), or make the rule's note explicit that the test only asserts mechanism paths exist, not rootdir behavior.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk |",
+          "file": null,
+          "line": null,
+          "finding": "Re-adoption losing bundled CI/CodeQL defaults is \"accepted by the brief,\" but nothing in the plan records what is lost — a future reader can't evaluate whether the loss still holds after upstream changes.",
+          "suggestion": "Add a comment or doc line enumerating the defaults the project profile doesn't carry, so the acceptance is auditable rather than implicit.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach |",
+          "file": null,
+          "line": null,
+          "finding": "No issues with the overall shape — profile copy with pinned drift test, config switch, rendered block via tool rather than hand-edit, and honest mechanism classes are all the right calls. The plan is proportionate; no over-production.  Overall assessment: The approach is sound and appropriately scoped; the main gap is confirming the `--strict` cache-sync check knows about the new profile before committing to it, plus tightening the drift test to deep-equality per rule.  SHIPWRIGHT_VERDICT: approve",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan omits an explicit run of `check_plugin_cache_sync.py --strict`, although a green result is an acceptance criterion. Profile resolution and renderer `--check` do not establish cache synchronization.",
+          "suggestion": "Add the strict cache-sync command to final validation and address any reported drift before completing U5.  The approach is sound and proportional: copying the bundled profile, pinning inherited content, and generating the conventions block directly address the scope. Repository inspection was blocked by the execution policy, so this assessment covers the supplied plan rather than verified implementation behavior.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        }
+      ],
+      "provider": "codex",
+      "completed_at": "2026-11-16T04:53:16.879011+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] **Findings**\n\n- **Category: dependency | Severity: medium**\n  Finding: `check_plugin_cache_sync.py --strict` is an acceptance criterion but the mini-plan doesn't state what that check compares against. If it hashes/diffs the profiles directory against a bundled cache manifest, the new `shipwright-monorepo.json` must be registered in whatever the sync check reads, or the criterion fails for an unexamined reason.\n  Suggestion: Before writing the profile, run the strict check and read its comparison logic; confirm the new file's inclusion path (or confirm it only covers bundled profiles, in which case say so explicitly in the plan).\n\n- **Category: risk | Severity: medium**\n  Finding: The copy-drift test pins containment of bundled rules but doesn't guarantee the *behavioral* equivalence of the rest. If upstream `claude-plugin` later *changes or removes* an existing rule, containment passes only on rule identity as written today; the test will force additions but a modified rule (same key, changed content) needs an equality check on the rule objects, not just \"contained.\"\n  Suggestion: Make the containment check deep-equality per rule key (rule object identical), not just presence — cheap and closes the modify-silently drift path.\n\n- **Category: edge-case | Severity: low**\n  Finding: The conftest.py guard's caveat \"only when repo root is rootdir\" means running pytest from a subdirectory (or with a nested tox/pytest config) silently drops the guard. The plan records the caveat in the rule text but the test doesn't pin the condition.\n  Suggestion: Either add a test invocation from a subdirectory showing the guard is skipped (documenting the boundary), or make the rule's note explicit that the test only asserts mechanism paths exist, not rootdir behavior.\n\n- **Category: risk | Severity: low**\n  Finding: Re-adoption losing bundled CI/CodeQL defaults is \"accepted by the brief,\" but nothing in the plan records *what* is lost — a future reader can't evaluate wheth […truncated]\n\n[openai] 1. **Category:** dependency  \n   **Severity:** low  \n   **Finding:** The plan omits an explicit run of `check_plugin_cache_sync.py --strict`, although a green result is an acceptance criterion. Profile resolution and renderer `--check` do not establish cache synchronization.  \n   **Suggestion:** Add the strict cache-sync command to final validation and address any reported drift before completing U5.\n\nThe approach is sound and proportional: copying the bundled profile, pinning inherited content, and generating the conventions block directly address the scope. Repository inspection was blocked by the execution policy, so this assessment covers the supplied plan rather than verified implementation behavior.\n\nSHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "approve"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": ".shipwright/profiles/shipwright-monorepo.json",
+          "line": null,
+          "finding": "bloat-anti-ratchet-pre-commit puts two promises under class hook: no growth past the baseline, and never bypass the hook with --no-verify; a git hook cannot enforce that it is not skipped.",
+          "suggestion": "Remove the --no-verify clause from text or move it to the prompt-only rule; re-render. (Fixed: moved to bloat-baseline-discipline, re-rendered.)",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": ".shipwright/profiles/shipwright-monorepo.json",
+          "line": null,
+          "finding": "Notes on the two bloat rules omit the Group H audit (H1). (Fixed: clause added to both.)",
+          "suggestion": "Add one clause.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": ".shipwright/agent_docs/conventions.md",
+          "line": null,
+          "finding": "Two copied bundled notes read wrongly in this repo (no-bare-python-stdin copy caveat, hooks-resolve-plugin-root says no checker). (Fixed: description says the added rules take precedence.)",
+          "suggestion": "Say so once in the description.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_shipwright_monorepo_profile.py",
+          "line": null,
+          "finding": "The invocation test checks weak strings. (Fixed: len(roots) > 1, exit 1 in the bloat workflow, shared/tests in ci.yml added.)",
+          "suggestion": "Add cheap anchors.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_shipwright_monorepo_profile.py",
+          "line": null,
+          "finding": "Test name says compliance_data but compares none. (Fixed: renamed.)",
+          "suggestion": "Rename.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-16T05:16:39.269216+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "65520d4e4e1b71dc8f686fd30dfbd945243b84e3"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "boundary and contract (rule honesty)",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: each added rule's enforcement class and note is honest — The note said nothing blocks a new crossing, but the bloat Stop hook registered by every plugin blocks a session's stop on a new crossing outside the baseline. (Fixed: a hook-class rule for it added, notes corrected, invocation check added, conventions re-rendered.)",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "concurrency and ordering",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the render block keeps conventions.md correct — conventions.md is union-merged, so two branches changing a rule line can duplicate lines; the render test catches it as stale. (Accepted; the test failure message now says to re-run the render tool.)",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-16T05:20:26.446575+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "65520d4e4e1b71dc8f686fd30dfbd945243b84e3"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "test |",
+          "file": "shared/tests/test_shipwright_monorepo_profile.py:18-21 — `sys.path.append(... shared/scripts)` then `import profile_resolver` / `import profile_architecture_rules` mutates the process-wide module search path for the whole pytest session. If shared/scripts ever contains a module name that collides with another test's import (or a stdlib/pytest name), this test root will fail intermitte […truncated]",
+          "line": null,
+          "finding": "import via `importlib.util.spec_from_file_location` on the two files, or move the shared scripts under a package, instead of appending to `sys.path`.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test |",
+          "file": "shared/tests/test_shipwright_monorepo_profile.py:91-108 (`test_each_repo_only_mechanism_is_invoked_by_something`) — the invocation checks are bare substring assertions (e.g. `\"def pytest_sessionstart\" in conftest`, `\"anti_ratchet_check.py\" in hook`). They confirm the strings appear somewhere, not that the mechanism is actually wired in (e.g. the workflow could reference the script in  […truncated]",
+          "line": null,
+          "finding": "if cheapness is the point, leave it; otherwise parse the YAML workflow and assert the script appears under a `run:` step.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "spec |",
+          "file": null,
+          "line": null,
+          "finding": "none needed in the diff; just confirm the orchestrator runs it post-merge as the ADR states.  Everything else checks out: all three configs are switched, resolver source is pinned to `project` for each, the copy-equality and containment tests are real behavioral pins (editing a bundled rule or a non-rule key breaks them), the mechanism-path drift test exercises `par.check_paths` against the repo root, conventions.md carries the rendered block and the test verifies it via the renderer's own `--check` mode, and the rendered block's profile name matches the profile's `name` field (no stale `python-plugin-monorepo` label). No security issues — this is declarative JSON plus tests with no untrusted input reaching sensitive sinks.  Overall assessment: ship-as-is; the findings are refinements and none block the change.  SHIPWRIGHT_VERDICT: approve",
+          "suggestion": null,
+          "source": "external-review"
+        }
+      ],
+      "provider": "codex",
+      "completed_at": "2026-11-16T05:12:50.118925+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] Findings:\n\n- Category: test | Severity: medium\n  File: shared/tests/test_shipwright_monorepo_profile.py:18-21 — `sys.path.append(... shared/scripts)` then `import profile_resolver` / `import profile_architecture_rules` mutates the process-wide module search path for the whole pytest session. If shared/scripts ever contains a module name that collides with another test's import (or a stdlib/pytest name), this test root will fail intermittently in ways that point elsewhere. Since the repo's own new rule warns about mixed-root module caching, this is an in-repo instance of the same class of problem.\n  Suggestion: import via `importlib.util.spec_from_file_location` on the two files, or move the shared scripts under a package, instead of appending to `sys.path`.\n\n- Category: test | Severity: low\n  File: shared/tests/test_shipwright_monorepo_profile.py:91-108 (`test_each_repo_only_mechanism_is_invoked_by_something`) — the invocation checks are bare substring assertions (e.g. `\"def pytest_sessionstart\" in conftest`, `\"anti_ratchet_check.py\" in hook`). They confirm the strings appear somewhere, not that the mechanism is actually wired in (e.g. the workflow could reference the script in a comment while the job was removed). Weak, but acceptable as a drift tripwire; note the ADR itself calls these \"cheap invocation string checks,\" so it's a known limit.\n  Suggestion: if cheapness is the point, leave it; otherwise parse the YAML workflow and assert the script appears under a `run:` step.\n\n- Category: test | Severity: low\n  File: shared/tests/test_shipwright_monorepo_profile.py:66-70 — `test_copy_equals_the_bundled_profile_on_every_key_but_its_own` asserts equality key-by-key but `architecture_rules` is deliberately excluded from deep equality and only checked as a prefix in a separate test. That is per spec, but note `version` is compared against `claude-plugin` here and separately against `python-plugin-monorepo` — a version bump of only one bundled profile passe […truncated]\n\n[openai] No concrete defects found in the supplied diff. It switches all three configs, adds the project profile, renders the conventions block, and includes tests for copy equality, bundled-rule preservation, mechanism paths, project resolution, and render freshness.\n\nThe remaining unverified acceptance criterion is `check_plugin_cache_sync.py --strict` being green. The ADR defers that check until after merge; no passing result is supplied. Local inspection and test execution were blocked by the environment.\n\nOverall assessment: ship-as-is based on the diff, subject to completing the required strict cache-sync check.\n\nSHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "openai": "approve",
+        "glm": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-16T05:13:00.175273+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "65520d4e4e1b71dc8f686fd30dfbd945243b84e3",
+      "ac_verdicts": [
+        {
+          "ac": "item-1",
+          "verdict": "matches",
+          "diff_location": ".shipwright/profiles/shipwright-monorepo.json:1",
+          "reason": "All three configs name the project profile, which resolves with source=project. It equals claude-plugin except for name, description and rules, and contains every bundled rule unchanged. The added rules' mechanisms exist and are each run. conventions.md carries the rendered block, which a --check test pins as current.",
+          "weakens": false
+        }
+      ]
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-16T04:57:14.060140+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-16T04:57:14.188391+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

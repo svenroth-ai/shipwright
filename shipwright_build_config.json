@@ -1,7 +1,7 @@
 {
   "status": "adopted",
   "dev_url": null,
-  "profile": "python-plugin-monorepo",
+  "profile": "shipwright-monorepo",
   "test_cmd": null,
   "sections": [
     {
