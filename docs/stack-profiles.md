@@ -138,7 +138,7 @@ A Brief package for this class names `profile: skill-companion-app` and sets `ux
 
 `python-plugin-monorepo` is now described as the generic Python-project profile; its name is historical and is not changed here (about thirty files name it).
 
-**How adopt chooses between them.** `/shipwright-adopt` scores each profile by the dependency names it declares under `stack`. When the repository has a `.claude-plugin/` folder at its root, or one level down under `plugins/*/`, the analysis adds a `claude-plugin` entry to the runtime part of the stack signature, and the plugin profile (which declares that entry) scores higher than the generic one. A Python-only repository without such a folder keeps `python-plugin-monorepo`. `/shipwright-project` picks the profile by name like any other bundled one (`--profile claude-plugin`).
+**How adopt chooses between them.** `/shipwright-adopt` scores each profile by the dependency names it declares under `stack`. When the repository has a `.claude-plugin/` folder at its root, or one level down under `plugins/*/`, the analysis adds a `claude-plugin` entry to the runtime part of the stack signature, and the plugin profile (which declares that entry) scores higher than the generic one. The signal is only added for a Python repository (a `pyproject.toml` and no JavaScript dependencies); a markdown-only, TypeScript or mixed plugin keeps the profile it matched before. A Python-only repository without such a folder keeps `python-plugin-monorepo`. `/shipwright-project` picks the profile by name like any other bundled one (`--profile claude-plugin`).
 
 ## What a Shipwright update can change
 

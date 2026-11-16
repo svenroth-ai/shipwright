@@ -146,3 +146,27 @@ def test_non_python_repos_keep_their_match_with_a_plugin_folder(tmp_path: Path, 
     for root in (md_only, ts):
         sig = add_plugin_signal(detect_stack(root), root)
         assert match_profile(sig, _profiles_dir())["matched"] == "generic", root.name
+
+
+PYPROJECT_WITH_VERSION = chr(10).join(["[project]", 'name = "x"', 'requires-python = ">=3.11"', ""])
+PYPROJECT_BARE = chr(10).join(["[project]", 'name = "x"', ""])
+
+
+@pytest.mark.covers("FR-01.01/AC31")
+def test_mixed_js_and_python_repo_keeps_its_match_and_a_pyproject_without_python_version_gets_the_signal(
+    tmp_path: Path, nextjs_repo: Path
+) -> None:
+    import shutil
+
+    mixed = tmp_path / "mixed"
+    shutil.copytree(nextjs_repo, mixed)
+    (mixed / "pyproject.toml").write_text(PYPROJECT_WITH_VERSION, encoding="utf-8")
+    (mixed / ".claude-plugin").mkdir()
+    sig = add_plugin_signal(detect_stack(mixed), mixed)
+    assert "claude-plugin" not in sig["runtime"]
+    assert match_profile(sig, _profiles_dir())["matched"] == "supabase-nextjs"
+
+    bare = tmp_path / "bare"
+    (bare / ".claude-plugin").mkdir(parents=True)
+    (bare / "pyproject.toml").write_text(PYPROJECT_BARE, encoding="utf-8")  # no requires-python
+    assert match_profile(add_plugin_signal(detect_stack(bare), bare), _profiles_dir())["matched"] == "claude-plugin"
