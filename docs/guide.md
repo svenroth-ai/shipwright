@@ -1380,7 +1380,7 @@ A **stack profile** is a JSON file that defines everything about your technology
 
 When you run `/shipwright-run`, Shipwright infers the correct profile from your project description (or asks you to confirm). Every downstream skill -- project decomposition, planning, build, test, deploy -- reads the profile to make consistent decisions without you repeating configuration.
 
-Five profiles ship out-of-the-box:
+Six profiles ship out-of-the-box:
 
 | Profile | Layout | When to use |
 |---------|--------|-------------|
@@ -1393,7 +1393,7 @@ Five profiles ship out-of-the-box:
 
 **Your own profile.** If none of them fits, write one. Shipwright looks for `<name>.json` in `<project>/.shipwright/profiles/` (commit it, so every checkout and iterate worktree sees it), then `~/.shipwright/profiles/` (all your projects), then the built-in ones; the first file found wins, and a broken file is an error, never a silent fallback to another stack. The `/shipwright-project` interview offers custom profiles next to the built-in ones, `/shipwright-adopt --profile <name>` selects one, and results report where the profile came from (`project`, `user` or `bundled`). A profile with the name of a built-in one replaces it and triggers a prominent warning. Locations, how to start from a copy, minimum fields, `schema_version`, and the trust note: [docs/stack-profiles.md](stack-profiles.md).
 
-The `vite-hono` profile uses the multi-service `services: [...]` declaration documented in Section 7.3 (topo-ordered start, `depends_on` between services, partial-failure rollback). Legacy single-service profiles continue to use `dev_server: {...}`. The `python-plugin-monorepo` profile sets `dev_server: null` and `deploy: null`, so `/shipwright-preview` and `/shipwright-deploy` skip cleanly for projects that have nothing to serve or ship. (The Shipwright monorepo itself uses this profile.)
+The `vite-hono` profile uses the multi-service `services: [...]` declaration documented in Section 7.3 (topo-ordered start, `depends_on` between services, partial-failure rollback). Legacy single-service profiles continue to use `dev_server: {...}`. The `python-plugin-monorepo` profile sets `dev_server: null` and `deploy: null`, so `/shipwright-preview` and `/shipwright-deploy` skip cleanly for projects that have nothing to serve or ship. (The `claude-plugin` profile carries the same data. The Shipwright monorepo itself currently names `python-plugin-monorepo` in its configs; a later unit of the architecture-rules campaign moves it to its own project profile.)
 
 **Sibling concept -- Deploy Profiles.** Where stack profiles describe the build-and-run shape of a project, **deploy profiles** describe the deploy-target shape (auth, environments, smoke test, rollback discipline). They live at `shared/profiles/deploy/<target_id>.json`, are validated against `shared/profiles/deploy-profile.schema.json`, and are introduced in Section 4.9. Three reference deploy profiles ship today: `jelastic` (full implementation), `vercel` (declarative stub), `compose-vps` (declarative stub). The validator at `shared/scripts/tools/validate_deploy_profile.py --all` enforces both JSON-Schema structure and a layer of cross-field semantic checks.
 

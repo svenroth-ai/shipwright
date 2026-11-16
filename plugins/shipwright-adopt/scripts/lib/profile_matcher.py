@@ -15,6 +15,12 @@ except ImportError:  # test / package context: scripts/ on sys.path, lib is a pa
     from lib.adopt_profile import load_resolver
 
 
+# Signature keys that are matching SIGNALS, not dependencies (plugin_signal.py). A profile that does not declare
+# one is scored against the signature WITHOUT it, so adding a signal never changes the score of an existing,
+# custom or bundled, profile; only a profile that declares the key can gain from it.
+SIGNAL_KEYS = frozenset({"claude-plugin"})
+
+
 def _flatten_profile_deps(profile: dict[str, Any]) -> set[str]:
     """Extract dependency-like identifiers from a profile's stack block."""
     names: set[str] = set()
@@ -95,8 +101,9 @@ def match_profile(signature: dict[str, Any], profile_dirs: Any) -> dict[str, Any
         profile_deps = _flatten_profile_deps(item["profile"])
         if not profile_deps:
             continue
-        intersection = sig_deps & profile_deps
-        union = sig_deps | profile_deps
+        scored = sig_deps if profile_deps & SIGNAL_KEYS else sig_deps - SIGNAL_KEYS
+        intersection = scored & profile_deps
+        union = scored | profile_deps
         score = len(intersection) / len(union) if union else 0.0
         candidates.append({
             "name": item["name"],
@@ -106,7 +113,8 @@ def match_profile(signature: dict[str, Any], profile_dirs: Any) -> dict[str, Any
         })
 
     rank = {"project": 0, "user": 1, "explicit": 2, "bundled": 3}  # D1: a tie goes to the higher source
-    candidates.sort(key=lambda c: (-c["score"], rank.get(c["source"], 9), c["name"]))
+    # a tie within one source prefers the profile whose matched names include a signal (never the profile NAME order)
+    candidates.sort(key=lambda c: (-c["score"], rank.get(c["source"], 9), -bool(SIGNAL_KEYS & set(c["matched_deps"])), c["name"]))
     if candidates and candidates[0]["score"] >= 0.30:
         return {
             "matched": candidates[0]["name"],

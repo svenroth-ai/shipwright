@@ -89,3 +89,9 @@ def test_a_named_hook_mechanism_is_actually_registered():
 def test_ci_and_codeql_defaults_follow_the_generic_python_profile():
     assert TEMPLATE_BY_PROFILE[NAME] == TEMPLATE_BY_PROFILE[GENERIC]
     assert CODEQL_LANGUAGES_BY_PROFILE[NAME] == CODEQL_LANGUAGES_BY_PROFILE[GENERIC] == ["python"]
+
+
+def test_the_hook_rule_note_states_its_real_coverage_and_the_copy_caveat():
+    rs = par.load_rules(_bundled(NAME)["architecture_rules"])
+    note = {r.id: r for r in rs.rules}["no-bare-python-stdin"].note
+    assert "Bash tool" in note and "PowerShell" in note and "copy of this profile" in note

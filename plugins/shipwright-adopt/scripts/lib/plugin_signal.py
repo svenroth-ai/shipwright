@@ -3,8 +3,11 @@
 A ``.claude-plugin/`` FOLDER at the repository root (a plugin or a marketplace) or exactly one level
 down under ``plugins/*/`` (a plugin monorepo) adds the runtime key ``claude-plugin`` and the signal
 ``has-claude-plugin-dir``. The profile matcher scores profiles by the dependency names they declare
-under ``stack``; the ``claude-plugin`` profile declares this key, so it outscores the generic Python
-profile for a plugin repository, while a Python-only repository without the folder keeps the generic one.
+under ``stack``; the ``claude-plugin`` profile declares this key, so it ties or beats the generic Python
+profile for a plugin repository. A profile that does NOT declare the key (bundled or a project's own) is
+scored against the signature without it (``profile_matcher.SIGNAL_KEYS``), so its score and its win over a
+bundled profile on a tie do not change; a Python-only repository without the folder keeps the generic one.
+The key also appears in the snapshot's ``stack.runtime`` (additive; hidden from rendered runtime lists).
 Only for a Python repository (``primary_language`` is ``python``: a pyproject and no JavaScript dependencies): the promoted profile carries Python commands, CI and
 CodeQL, so a markdown-only or TypeScript plugin keeps the match it had (typically ``generic``).
 A file of that name, a deeper folder or a folder outside ``plugins/`` is not a signal.

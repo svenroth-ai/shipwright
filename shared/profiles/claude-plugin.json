@@ -63,7 +63,7 @@
       "mechanism": [
         "plugins/shipwright-iterate/scripts/hooks/bare_python_stdin_guard.py"
       ],
-      "note": "The hook is registered by the shipwright-iterate plugin and denies the command in Claude Code sessions where that plugin is active; it does not look at files in the repository."
+      "note": "The hook is registered by the shipwright-iterate plugin and denies the command only in Claude Code sessions where that plugin is active, and only for the Bash tool (the PowerShell tool is not guarded); it also refuses an empty heredoc feeding python -. It does not look at files in the repository. The mechanism path is relative to the Shipwright repository: a copy of this profile in a project's .shipwright/profiles/ must change this rule to prompt-only or drop the mechanism, or validate reports the path as missing."
     },
     {
       "id": "hooks-resolve-plugin-root",
