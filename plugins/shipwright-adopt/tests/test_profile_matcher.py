@@ -119,6 +119,7 @@ def test_analysis_snapshot_gives_each_repo_its_profile(tmp_path: Path, python_cl
     assert analyze(plugin, [], None)["profile"]["matched"] == "claude-plugin"
 
 
+@pytest.mark.covers("FR-01.01/AC31")
 def test_adding_the_signal_twice_changes_nothing(tmp_path: Path, python_cli: Path) -> None:
     root = _python_repo(tmp_path, python_cli)
     (root / ".claude-plugin").mkdir()
