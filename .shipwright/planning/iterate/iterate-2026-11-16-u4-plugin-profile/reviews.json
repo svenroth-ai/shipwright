@@ -51,77 +51,77 @@
     },
     "code": {
       "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-16T03:17:27.909683+00:00",
+      "disposition": "runner spawn cap reached (3 code-reviewer runs); final-state code review left to 3f-bis",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "delegated-to-orchestrator"
+    },
+    "doubt": {
+      "review_type": "doubt",
       "status": "completed",
       "findings_count": 5,
       "findings": [
         {
-          "severity": "high",
-          "category": "correctness",
-          "file": "plugins/shipwright-adopt/scripts/lib/plugin_signal.py",
-          "line": 26,
-          "finding": "Round 1: signal promoted markdown-only and TypeScript plugins from generic to the Python profile. Fixed and closed in round 2 (Python-only gate).",
-          "suggestion": null,
-          "source": "code-reviewer"
-        },
-        {
           "severity": "medium",
-          "category": "correctness",
-          "file": "plugins/shipwright-adopt/scripts/lib/plugin_signal.py",
-          "line": 28,
-          "finding": "Round 2: a mixed JS plus Python repo could still move; gate changed to primary_language python and a Next.js plus pyproject fixture added. Fixed.",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "AC31 says exactly what the code does",
           "suggestion": null,
-          "source": "code-reviewer"
+          "source": "doubt-reviewer"
         },
         {
           "severity": "low",
-          "category": "correctness",
-          "file": "plugins/shipwright-adopt/tests/test_profile_matcher.py",
-          "line": 54,
-          "finding": "No non-Python fixtures; added. Hook registration test now parses hooks.json. Signal key hidden in rendered runtime lines. Fixed.",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "profile descriptions",
           "suggestion": null,
-          "source": "code-reviewer"
+          "source": "doubt-reviewer"
         },
         {
           "severity": "low",
-          "category": "architecture",
-          "file": "plugins/shipwright-adopt/scripts/lib/plugin_signal.py",
-          "line": 22,
-          "finding": "Exclusion predicate duplicates stack_detector._is_excluded; the key literal appears in three places. Accepted: render_helpers is a leaf module and stack_detector sits at its size ceiling.",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "any profile declaring the key is scored as before",
           "suggestion": null,
-          "source": "code-reviewer"
+          "source": "doubt-reviewer"
         },
         {
           "severity": "low",
-          "category": "readability",
-          "file": "shared/profiles/claude-plugin.json",
-          "line": 25,
-          "finding": "folder_structure is the generic profile's monorepo layout; follow-up to describe a customer plugin layout. Accepted (spec asks for the same layout).",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "candidates list unchanged",
           "suggestion": null,
-          "source": "code-reviewer"
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "hook note",
+          "suggestion": null,
+          "source": "doubt-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-11-16T02:46:12.931675+00:00",
+      "completed_at": "2026-11-16T03:26:42.690807+00:00",
       "disposition": null,
-      "recorded_by": "code-reviewer",
+      "recorded_by": "doubt-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus",
       "verdict": "pass",
-      "reviewed_commit": "55f52fcf01103efb6515275f1d195e202ca63555"
-    },
-    "doubt": {
-      "review_type": "doubt",
-      "status": "not_applicable",
-      "findings_count": 0,
-      "findings": [],
-      "provider": null,
-      "completed_at": "2026-11-16T02:46:13.153258+00:00",
-      "disposition": "closed by reason_code diff-below-threshold",
-      "recorded_by": "none",
-      "parse_status": null,
-      "raw_excerpt": null,
-      "reason_code": "diff-below-threshold"
+      "reviewed_commit": "cec25a14acafe8631ad4cb4941f56d8ef2f90370"
     },
     "external_code": {
       "review_type": "external_code",
@@ -182,40 +182,40 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-11-16T02:37:08.285165+00:00",
+      "completed_at": "2026-11-16T03:26:42.533514+00:00",
       "disposition": null,
       "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus",
       "verdict": "pass",
-      "reviewed_commit": "e47c962032140777a0b002fa5ef338bcb5921f04"
+      "reviewed_commit": "24852a86a73ee25d4d566889acf365e57fa6b43f"
     },
     "plan_internal": {
       "review_type": "plan_internal",
-      "status": "not_applicable",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-11-16T02:36:43.385465+00:00",
-      "disposition": "closed by reason_code complexity-below-threshold",
-      "recorded_by": "none",
+      "completed_at": "2026-11-16T03:12:43.526155+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "complexity-below-threshold"
+      "model_tier": "opus"
     },
     "architecture_internal": {
       "review_type": "architecture_internal",
-      "status": "not_applicable",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-11-16T02:36:43.535061+00:00",
-      "disposition": "closed by reason_code complexity-below-threshold",
-      "recorded_by": "none",
+      "completed_at": "2026-11-16T03:12:43.387396+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "complexity-below-threshold"
+      "model_tier": "opus"
     }
   }
 }

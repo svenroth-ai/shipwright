@@ -1,1 +1,1 @@
-{"stage": "spec-compliance", "verdict": "PASS", "spec_citations": [], "summary": "U4 matches BRIEF section 3/U4, decision 4.1, and the three acceptance criteria in the sub-iterate spec. Code-reviewer may run."}
+{"stage": "spec-compliance", "verdict": "PASS", "spec_citations": [], "summary": "PASS on the final state (HEAD 24852a86a): AC30-AC32 as reworded match the code and tests; scope and shared-table edits are minimal."}
