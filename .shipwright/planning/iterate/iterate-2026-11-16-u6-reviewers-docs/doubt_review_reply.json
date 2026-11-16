@@ -1,0 +1,6 @@
+{"stage": "doubt", "gating": "advisory-must-address", "doubts": [
+{"severity": "medium", "lens": "boundary & contract", "claim_under_doubt": "the reviewer reads the right tree", "what_would_resolve_it": "Project root line at every spawn site. ADDRESSED: the line was added to the runner cascade, the standalone invocation, build's protocol and campaign 3f-bis, and a test pins all four."},
+{"severity": "medium", "lens": "hidden coupling", "claim_under_doubt": "the reviewer reports a stale block", "what_would_resolve_it": "Narrow the claim or give the check a capable owner. ADDRESSED: the reviewer now compares rule ids with the profile named on the begin line; the docs say only render --check is the full staleness test."},
+{"severity": "low", "lens": "boundary & contract", "claim_under_doubt": "the docs call note optional", "what_would_resolve_it": "State the required classes. ADDRESSED."},
+{"severity": "low", "lens": "boundary & contract", "claim_under_doubt": "instruction only means judgement", "what_would_resolve_it": "ADDRESSED in the code-review fix: only the judgement class needs the cited line."}
+]}

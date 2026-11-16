@@ -1,0 +1,6 @@
+{"section": "U6-reviewers-docs", "review": [
+{"severity": "medium", "category": "correctness", "file": "plugins/shipwright-build/agents/code-reviewer.md", "line": 76, "finding": "Staleness of a well-formed block cannot be caught by the instruction (no shell); the exit code remark is wrong for two blocks (exit 3 only).", "suggestion": "Compare the profile's rule ids with the ids in the block using Read; fix the exit-code remark. FIXED after review."},
+{"severity": "low", "category": "correctness", "file": "plugins/shipwright-build/agents/code-reviewer.md", "line": 70, "finding": "'instruction only' merges the judgement and mechanisable classes.", "suggestion": "Apply the cited-rule-and-line threshold to the judgement class only. FIXED after review."},
+{"severity": "low", "category": "readability", "file": "plugins/shipwright-build/agents/code-reviewer.md", "line": 79, "finding": "One dense paragraph of about twelve conditionals.", "suggestion": "Split into bullets. FIXED after review."},
+{"severity": "low", "category": "correctness", "file": "docs/hooks-and-pipeline.md", "line": 4427, "finding": "Only the campaign spawn passes the project root; other spawn sites rely on the working directory.", "suggestion": "Accepted: the working directory is the reviewed tree there; recorded in the ADR."}
+]}

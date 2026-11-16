@@ -46,7 +46,7 @@ Below medium: `not_applicable --reason-code complexity-below-threshold`.
 ## Step 3.7 — the cascade
 
 `spec-reviewer` (Stage 1, HARD-GATE) → `code-reviewer` (Stage 2) → `doubt-reviewer` (Stage 3,
-conditional) over the merge-base diff, as `SKILL.md` Step 8. A Stage-1 REJECT blocks Stage 2: fix
+conditional) over the merge-base diff, as `SKILL.md` Step 8, the `code-reviewer` prompt carrying `Project root: {project_root}`. A Stage-1 REJECT blocks Stage 2: fix
 the diff and re-review. Record `spec`, `code` (`--from code-reviewer`) and `doubt` `completed`
 (`doubt` is `not_applicable --reason-code diff-below-threshold` when Stage 3 did not apply), and set
 `reviews.code.status: "completed"` in the result JSON.

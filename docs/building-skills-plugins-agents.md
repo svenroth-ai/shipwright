@@ -107,6 +107,82 @@ can be written as data belongs in that file, not in prose here; the
 deterministic-first conversion of a skill moves such rules out of its
 `SKILL.md` the same way.
 
+## How to add an architecture rule
+
+An architecture rule says what a project of a stack must keep and how that is
+kept. Rules live in a stack profile under `architecture_rules`; the format and
+the profile lookup are in [stack-profiles.md](stack-profiles.md#architecture-rules-architecture_rules),
+which this section does not repeat. The code reviewer reads the rendered rules
+from `conventions.md` and checks every diff against them.
+
+**The fields.** `id` (lowercase letters, digits, hyphens), `text` (what is
+required), `why` (the reason, one sentence), `enforcement` (how it is kept),
+and either `lint` or `mechanism`, never both, plus a `note` (required for `prompt-only (mechanisable)` and `unimplemented`, optional otherwise). A rule
+with a lint fragment is class `validator`; `hook`, `test` and `validator` carry
+the files that do the checking, the other classes carry neither.
+
+**Enforcement is a closed list:** `hook`, `validator`, `test`,
+`prompt-only (mechanisable)`, `prompt-only (judgement)`, `unimplemented`. Be
+honest: a mechanism counts only if something invokes it in the project. A checker
+nobody runs is `prompt-only (mechanisable)` with a `note` saying so. A rule that
+needs judgement is `prompt-only (judgement)`; the reviewer then needs a cited rule
+and the offending line before it raises a finding.
+
+An example of a judgement rule:
+
+```json
+{
+  "id": "one-place-for-retry-policy",
+  "text": "Retry and backoff settings are defined once in the shared client module, never per call site.",
+  "why": "One place to change how the project behaves under failure.",
+  "enforcement": "prompt-only (judgement)"
+}
+```
+
+And a rule whose check is a test that runs (the path must exist, relative to the
+repository for a bundled profile and to the project root for your own):
+
+```json
+{
+  "id": "rules-keep-their-shape",
+  "text": "Every architecture rule declares an id, a text, a why and an enforcement class.",
+  "why": "A rule without its class looks enforced when it is not.",
+  "enforcement": "test",
+  "mechanism": ["shared/tests/test_profile_architecture_rules.py"]
+}
+```
+
+A test loads both examples with the real loader, so they cannot drift from it.
+
+**Where the profile lives.** A bundled profile is a file in `shared/profiles/`;
+a project's own profile is a file in `.shipwright/profiles/` and wins over a
+bundled one of the same name. To start from a bundled profile, copy it under
+your own name. Mechanism paths of a bundled profile are relative to the
+Shipwright repository and do not exist in your project: change such a rule to
+`prompt-only (mechanisable)` or `prompt-only (judgement)` in the copy, or point
+it at a file of your own. The Shipwright repository's own
+`.shipwright/profiles/shipwright-monorepo.json` is the worked example.
+
+**Check and re-render.** `uv run shared/scripts/tools/resolve_profile.py validate`
+reports rule errors (a wrong rule never invalidates the profile, it is left out).
+`uv run shared/scripts/tools/render_architecture_rules.py --project-root .`
+writes the rules into the marked block of `.shipwright/agent_docs/conventions.md`;
+with `--check` it writes nothing and exits 1 when the block is stale. The drift and
+pin tests (`shared/tests/test_profile_architecture_rules.py`,
+`test_render_architecture_rules.py`, `test_claude_plugin_profile.py`,
+`test_shipwright_monorepo_profile.py`) fail when a profile, its mechanism paths or
+this repository's rendered block go out of step.
+
+**Known limits.**
+- `conventions.md` is merged with the union strategy, so a parallel merge can leave
+  a stale or duplicated block. `render_architecture_rules.py --check` catches a stale
+  one (exit 1) and a duplicated one (exit 3). The reviewer has no shell: it reports
+  duplicated or unpaired markers and, for a project profile found under the project
+  root, rule ids that differ from it (a bundled or user-level profile is noted as
+  uncheckable); only `--check` is the full staleness test.
+- For `supabase-nextjs` the build phase can replace `eslint.config`, which drops the
+  lint fragments of its rules. This is an open follow-up.
+
 ## Relation to Anthropic's skill guidance
 
 Anthropic's [Skill authoring best practices](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices)

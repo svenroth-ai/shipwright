@@ -1,0 +1,9 @@
+{"items": [
+{"name":"Spec Compliance","verdict":"pass","note":"Reviewer instruction, pin test, matrix row, docs section with validating examples, pilot P1 link; two ACs under FR-01.01, no new FR."},
+{"name":"Error Handling","verdict":"pass","note":"The reviewer instruction covers no block, unreadable file, duplicated or unpaired markers; the reviewer cannot run the render check and judges only what it can see."},
+{"name":"Security Basics","verdict":"pass","note":"Rule entries are criteria only and never waive another review axis; no commands or secrets added."},
+{"name":"Test Quality","verdict":"pass","note":"Tests pin the instruction words, the renderer's marker constants, the Read tool, the real loader on the docs examples, and the pilot link."},
+{"name":"Performance Basics","verdict":"pass","note":"One extra file read per review; the agent file stays at 331 lines, under the cap."},
+{"name":"Naming & Structure","verdict":"pass","note":"One small test file, one new docs section, one matrix row, no new scripts."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Producer: render tool writes the marked block; consumer: reviewer prompt names the same markers (pinned against the renderer constants); docs examples go through the real loader."},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"Read-only tests, no shared state."}]}

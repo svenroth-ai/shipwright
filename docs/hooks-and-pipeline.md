@@ -4424,6 +4424,7 @@ Each plugin reads project context at startup to ensure consistency. This table s
 | constitution.md | read | read | read | read | read | read | read | read |
 | CLAUDE.md | ext | C2 | C2 | C2 | — | — | B2 | — |
 | conventions.md | ext | — | C2 | C2 | — | — | B2 | — |
+| conventions.md architecture-rules block (the marked block `render_architecture_rules.py` writes) | — | — | — | `code-reviewer` subagent (section review) | — | — | `code-reviewer` subagent (review cascade, campaign sub-iterates and 3f-bis) | — |
 | decision_log.md | ext | — | C2 | C2 | — | — | B2 | read |
 | decision-drops/*.json (pending only, bounded 20 most recent) | — | — | — | — | — | — | B2 | — |
 | decision-drops/bullets/*.md (pending only: 20 newest + `N more pending`, warning > 40; `fold_bullets.py --summary`) | — | — | — | — | — | — | B2 | — |

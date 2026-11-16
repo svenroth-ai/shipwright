@@ -1,0 +1,1 @@
+feat(reviewers): the code reviewer checks every diff against the architecture rules block in conventions.md (per rule id; judgement rules need a cited line; duplicated or stale blocks are reported), and the building guide explains how to add an architecture rule (U6)

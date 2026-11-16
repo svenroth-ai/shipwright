@@ -1,0 +1,287 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-16-u6-reviewers-docs",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-16T06:28:42.554718+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Have the reviewer instruction distinguish mechanism rules (already machine-enforced — reviewer should not re-report) from judgment-only rules, or state explicitly how to dedupe against existing findings.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Add an explicit reviewer instruction branch: \"if the marker pattern described here is absent from the file, report a note and skip the check\" rather than silently passing.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "Pin the example to a specific profile or mark it clearly as \"validated by test X\" so a future loader change fails the test with an obvious cause rather than a mysterious docs drift.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The plan handles absent and malformed blocks, but does not define what happens when `conventions.md` cannot be read. A read failure must not become “none declared,” which would imply the architecture check completed successfully.",
+          "suggestion": "Explicitly distinguish “no rules declared” from “check unavailable.” For an unreadable file, report the failed check and its reason without claiming compliance or inventing a rule violation.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "“Plainly stale” lacks an actionable definition. Without running the renderer’s check, reviewers could report staleness based on assumptions, producing inconsistent findings.",
+          "suggestion": "Require concrete evidence for staleness, such as a referenced mechanism path that no longer exists. State that freshness is otherwise unverified, and pin that distinction in the instruction test.  Overall, this is a proportionate, sound approach that reuses existing reviewer capabilities and the real rule loader. The findings are instruction refinements; supporting repository files could not be inspected because command execution was blocked by policy.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-16T06:28:42.742995+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] **Findings**\n\n- **Category: risk — Severity: medium** — Instruction-only rules reported as `architecture` findings rely on the LLM reviewer's judgment, with only \"cited rule id and offending line\" as guardrails. Deterministic rules will be double-enforced if build tooling (e.g. lint) also checks them, producing noisy duplicate findings; purely judgment-based rules will fire inconsistently run to run.\n  **Suggestion:** Have the reviewer instruction distinguish mechanism rules (already machine-enforced — reviewer should not re-report) from judgment-only rules, or state explicitly how to dedupe against existing findings.\n\n- **Category: edge-case — Severity: medium** — Staleness detection (\"plainly stale block\") is vague and unverifiable. Without the ability to run `--check`, the reviewer will either under-flag (missing real drift) or make ad-hoc calls that aren't testable. Also unhandled: what if conventions.md exists but the markers were renamed/changed by the renderer since the agent file was written — the test pins marker equality against renderer constants (good), but there's no runtime fallback instruction when the markers don't match what the reviewer was told to look for.\n  **Suggestion:** Add an explicit reviewer instruction branch: \"if the marker pattern described here is absent from the file, report a note and skip the check\" rather than silently passing.\n\n- **Category: edge-case — Severity: low** — \"Two blocks is a finding, never trusted\" — but which block does the reviewer cite? Also, large conventions.md files: the reviewer reads the whole file to find the block; if conventions.md grows, this inflates review context. Probably fine at current scale; worth a note in known limits.\n\n- **Category: dependency — Severity: low** — AC \"docs example rules load with the real loader\" couples the docs page to the loader's validation forever. Docs examples that must stay machine-valid tend to rot when the loader schema evolves.\n  **Suggestion:** Pin the exa […truncated]\n\n[openai] - **Category:** edge-case  \n  **Severity:** medium  \n  **Finding:** The plan handles absent and malformed blocks, but does not define what happens when `conventions.md` cannot be read. A read failure must not become “none declared,” which would imply the architecture check completed successfully.  \n  **Suggestion:** Explicitly distinguish “no rules declared” from “check unavailable.” For an unreadable file, report the failed check and its reason without claiming compliance or inventing a rule violation.\n\n- **Category:** approach  \n  **Severity:** low  \n  **Finding:** “Plainly stale” lacks an actionable definition. Without running the renderer’s check, reviewers could report staleness based on assumptions, producing inconsistent findings.  \n  **Suggestion:** Require concrete evidence for staleness, such as a referenced mechanism path that no longer exists. State that freshness is otherwise unverified, and pin that distinction in the instruction test.\n\nOverall, this is a proportionate, sound approach that reuses existing reviewer capabilities and the real rule loader. The findings are instruction refinements; supporting repository files could not be inspected because command execution was blocked by policy.\n\nSHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "approve"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-build/agents/code-reviewer.md",
+          "line": 76,
+          "finding": "Staleness of a well-formed block cannot be caught by the instruction (no shell); the exit code remark is wrong for two blocks (exit 3 only).",
+          "suggestion": "Compare the profile's rule ids with the ids in the block using Read; fix the exit-code remark. FIXED after review.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-build/agents/code-reviewer.md",
+          "line": 70,
+          "finding": "'instruction only' merges the judgement and mechanisable classes.",
+          "suggestion": "Apply the cited-rule-and-line threshold to the judgement class only. FIXED after review.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-build/agents/code-reviewer.md",
+          "line": 79,
+          "finding": "One dense paragraph of about twelve conditionals.",
+          "suggestion": "Split into bullets. FIXED after review.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "docs/hooks-and-pipeline.md",
+          "line": 4427,
+          "finding": "Only the campaign spawn passes the project root; other spawn sites rely on the working directory.",
+          "suggestion": "Accepted: the working directory is the reviewed tree there; recorded in the ADR.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-16T06:31:32.191248+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "0e7a52f4a796f581b48a6252438d44199dd1355d"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "the reviewer reads the right tree",
+          "suggestion": "Project root line at every spawn site. ADDRESSED: the line was added to the runner cascade, the standalone invocation, build's protocol and campaign 3f-bis, and a test pins all four.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling",
+          "file": null,
+          "line": null,
+          "finding": "the reviewer reports a stale block",
+          "suggestion": "Narrow the claim or give the check a capable owner. ADDRESSED: the reviewer now compares rule ids with the profile named on the begin line; the docs say only render --check is the full staleness test.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "the docs call note optional",
+          "suggestion": "State the required classes. ADDRESSED.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "instruction only means judgement",
+          "suggestion": "ADDRESSED in the code-review fix: only the judgement class needs the cited line.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-16T06:32:18.128108+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "0e7a52f4a796f581b48a6252438d44199dd1355d"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": "plugins/shipwright-build/agents/code-reviewer.md (new \"Architecture Rules Check\" section, \"A rule whose mechanism file is missing is an `architecture` finding on that rule\")",
+          "line": null,
+          "finding": "The agent treats a missing mechanism file as a finding without distinguishing bundled-profile paths (relative to the Shipwright repo) from project-profile paths (relative to the project root). A project that copied a bundled profile without downgrading its rules — exactly the situation the new docs section warns about — will get false-positive findings on rules that were never meant to point at the project.",
+          "suggestion": "Add one clause: \"if the profile's mechanism paths are the bundled Shipwright ones (paths that exist only in the Shipwright repository), note the rule is uncheckable here rather than raising a finding.\"",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test |",
+          "file": "shared/tests/test_code_reviewer_architecture_rules.py — `test_agent_can_read_conventions_md",
+          "line": null,
+          "finding": "The test only asserts the string \"Read\" appears in the `tools:` frontmatter line; it doesn't verify the agent is actually granted Read (e.g. the frontmatter parses, the value isn't in a comment, no deny rule elsewhere). A broken frontmatter (e.g. `tools:` under a wrong key) could still pass.",
+          "suggestion": "Parse the frontmatter with the repo's frontmatter loader if one exists, or at least assert the tools list contains exactly `Read` and the line is inside the frontmatter block.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test |",
+          "file": "shared/tests/test_code_reviewer_architecture_rules.py — `test_pilot_p1_plan_links_the_section",
+          "line": null,
+          "finding": "The test silently skips if the brief is deleted, so the AC \"the changelog pilot P1 plan links the section\" can silently stop being enforced once the pilot completes and the brief is removed. That's acknowledged in a comment, but it means the AC has no durable pin.",
+          "suggestion": "Either assert the link while the pilot is active and accept the skip consciously, or pin the link target in a doc that persists (e.g. the docs themselves cross-reference).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": "plugins/shipwright-build/agents/code-reviewer.md — \"(a root named in your spawn prompt wins, else your working directory)\"",
+          "line": null,
+          "finding": "The agent relies on parsing a \"root\" out of the spawn prompt prose, with no specified format; the campaign-mode change only says \"Name `$unit_wt` as its project root in the prompt\", so a prompt that omits it falls back to the working directory, which may be the repo root rather than the unit directory — reading the wrong conventions.md.",
+          "suggestion": "Specify the exact prompt phrasing in both files (e.g. \"Project root: <path>\") so the fallback path and the win path are deterministic.  Otherwise: the diff satisfies the three ACs — the test pins the agent instructions (test_agent_checks_the_rules_block_of_conventions_md), the docs section exists with two example rules validated against the real loader in test_docs_example_rules_validate_with_the_real_loader, and the P1 plan links the section. The renderer-marker consistency test (test_markers_named_in_the_agent_are_the_ones_the_renderer_writes) is a genuinely useful drift pin. No security or regression issues.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "plugins/shipwright-build/agents/code-reviewer.md",
+          "line": 77,
+          "finding": "The instructions detect duplicated or unpaired markers, but never verify that a single, well-formed block matches the current profile. Such a block can be stale while passing every stated check, so the reviewer would trust outdated rules. This leaves AC34 partially implemented; the new substring tests also pass with this omission.",
+          "suggestion": "Require the reviewer to run `render_architecture_rules.py --check` against the resolved project root, or perform an equivalent freshness comparison, and report stale output as a finding. Pin that requirement in the agent test.  Ship-with-fixes: the documentation, examples, and pilot link address the requested scope, but stale-block detection needs an explicit verification step.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-16T06:30:40.201122+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] Findings:\n\n- Category: edge-case | Severity: low\n- File: plugins/shipwright-build/agents/code-reviewer.md (new \"Architecture Rules Check\" section, \"A rule whose mechanism file is missing is an `architecture` finding on that rule\")\n- Finding: The agent treats a missing mechanism file as a finding without distinguishing bundled-profile paths (relative to the Shipwright repo) from project-profile paths (relative to the project root). A project that copied a bundled profile without downgrading its rules — exactly the situation the new docs section warns about — will get false-positive findings on rules that were never meant to point at the project.\n- Suggestion: Add one clause: \"if the profile's mechanism paths are the bundled Shipwright ones (paths that exist only in the Shipwright repository), note the rule is uncheckable here rather than raising a finding.\"\n\n- Category: test | Severity: low\n- File: shared/tests/test_code_reviewer_architecture_rules.py — `test_agent_can_read_conventions_md`\n- Finding: The test only asserts the string \"Read\" appears in the `tools:` frontmatter line; it doesn't verify the agent is actually granted Read (e.g. the frontmatter parses, the value isn't in a comment, no deny rule elsewhere). A broken frontmatter (e.g. `tools:` under a wrong key) could still pass.\n- Suggestion: Parse the frontmatter with the repo's frontmatter loader if one exists, or at least assert the tools list contains exactly `Read` and the line is inside the frontmatter block.\n\n- Category: test | Severity: low\n- File: shared/tests/test_code_reviewer_architecture_rules.py — `test_pilot_p1_plan_links_the_section`\n- Finding: The test silently skips if the brief is deleted, so the AC \"the changelog pilot P1 plan links the section\" can silently stop being enforced once the pilot completes and the brief is removed. That's acknowledged in a comment, but it means the AC has no durable pin.\n- Suggestion: Either assert the link while the pilot is active and accept th […truncated]\n\n[openai] - Category: spec\n- Severity: medium\n- File: plugins/shipwright-build/agents/code-reviewer.md:77\n- Finding: The instructions detect duplicated or unpaired markers, but never verify that a single, well-formed block matches the current profile. Such a block can be stale while passing every stated check, so the reviewer would trust outdated rules. This leaves AC34 partially implemented; the new substring tests also pass with this omission.\n- Suggestion: Require the reviewer to run `render_architecture_rules.py --check` against the resolved project root, or perform an equivalent freshness comparison, and report stale output as a finding. Pin that requirement in the agent test.\n\nShip-with-fixes: the documentation, examples, and pilot link address the requested scope, but stale-block detection needs an explicit verification step.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-16T06:30:35.724645+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "0d82f2083c9c1bf7605c7da9abfa6a21aa8a0070"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-16T06:29:16.431357+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-16T06:28:42.961995+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}
