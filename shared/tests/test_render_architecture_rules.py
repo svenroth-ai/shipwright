@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -269,8 +270,8 @@ def test_legacy_warning_reaches_stderr(project, capsys):
     assert "old plain-sentence format" in _run(project, capsys, "--profile", "demo-stack")[2]
 
 
-@pytest.mark.parametrize("name", ['a"b', "a$(touch x)", "a`id`", "../x", "a/b", "a\\b", "", "Upper", "-lead", "a b", "a;b", "a"+chr(10)+"b"],
-                         ids=["quote", "subshell", "backtick", "dotdot", "slash", "backslash", "empty", "upper", "dash-lead", "space", "semicolon", "newline"])
+@pytest.mark.parametrize("name", ['a"b', "a$(touch x)", "a`id`", "../x", "a/b", "a\\b", "Upper", "-lead", "a b", "a;b", "a"+chr(10)+"b"],
+                         ids=["quote", "subshell", "backtick", "dotdot", "slash", "backslash", "upper", "dash-lead", "space", "semicolon", "newline"])
 def test_unsafe_profile_names_are_refused_before_anything_happens(project, capsys, name):
     path = _scaffold(project)
     before = path.read_bytes()
@@ -290,3 +291,45 @@ def test_sentinel_and_hyphenated_names_stay_valid(project, capsys):
     path = _scaffold(project)
     assert _run(project, capsys, "--profile", "generic")[0] == 0
     assert "no architecture rules declared" in path.read_text(encoding="utf-8").lower()
+
+
+def test_name_comes_from_the_environment_and_is_checked_there_too(project, capsys, monkeypatch):
+    write_profile(proj_dir(project), "demo-stack", architecture_rules=RULES[1:2])
+    path = _scaffold(project)
+    monkeypatch.setenv(rar.ENV_PROFILE, "demo-stack")
+    assert _run(project, capsys)[0] == 0 and "**judge**" in path.read_text(encoding="utf-8")
+    monkeypatch.setenv(rar.ENV_PROFILE, "a$(id)")
+    before = path.read_bytes()
+    assert _run(project, capsys)[0] == 4 and path.read_bytes() == before
+
+
+def test_no_name_anywhere_is_exit_2(project, capsys, monkeypatch):
+    monkeypatch.delenv(rar.ENV_PROFILE, raising=False)
+    _scaffold(project)
+    assert _run(project, capsys, "--profile=")[0] == 2
+
+
+def test_stray_marker_inside_the_imported_section_does_not_break_the_head_block(project, capsys):
+    write_profile(proj_dir(project), "demo-stack", architecture_rules=RULES[1:2])
+    path = _scaffold(project)
+    assert _run(project, capsys, "--profile=demo-stack")[0] == 0
+    nl = chr(10)
+    path.write_text(path.read_text(encoding="utf-8") + nl + "## Imported from `CLAUDE.md`" + nl + nl + rar.BEGIN + " (quoted) -->" + nl,
+                    encoding="utf-8")
+    before = path.read_bytes()
+    assert _run(project, capsys, "--profile=demo-stack")[0] == 0 and path.read_bytes() == before
+
+
+def test_skill_prose_never_interpolates_project_values_inside_double_quotes():
+    """The shell expands a placeholder before the tool can check it: no project-supplied value may sit
+    inside double quotes in a command that runs the render tool."""
+    root = Path(__file__).resolve().parents[2] / "plugins"
+    hits = []
+    for md in root.glob("*/skills/**/*.md"):
+        for line in md.read_text(encoding="utf-8").splitlines():
+            if "render_architecture_rules.py" not in line or "uv run" not in line:
+                continue
+            hits.append(md.name)
+            for quoted in re.findall(r'"[^"]*"', line):
+                assert "{project_root}" not in quoted and "{profile_name}" not in quoted, (md.name, line)
+    assert "project-scaffolding.md" in hits  # the scan found the command it guards

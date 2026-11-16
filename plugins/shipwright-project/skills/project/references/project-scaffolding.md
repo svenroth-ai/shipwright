@@ -97,11 +97,13 @@ Fill with:
 - `{FOLDER_STRUCTURE}` — from profile's `folder_structure` (as tree)
 - Leave `{ARCHITECTURE_RULES}` as it is, write the file, then run the render tool; it replaces that placeholder with one marked block of the profile's `architecture_rules` (a profile with none gets a "none declared" line; instruction-only rules are marked as such). Do not compose the rules yourself:
 
+Before composing the command: check `{profile_name}` against `^[a-z0-9][a-z0-9-]*$` (the resolver's own rule) and ABORT without running anything if it does not match; the shell expands a value before the tool can check it, so a name containing `$(`, a backtick or a quote would execute. Also refuse a `{project_root}` that contains a single quote. Only a validated name goes into the command, as a bare word that the tool reads from the environment, and the project root goes in single quotes:
+
 ```bash
-uv run --no-project "{shared_root}/scripts/tools/render_architecture_rules.py" --project-root "{project_root}" --profile "{profile_name}"
+SHIPWRIGHT_RULES_PROFILE={profile_name} uv run --no-project "{shared_root}/scripts/tools/render_architecture_rules.py" --project-root '{project_root}'
 ```
 
-The profile name must match `^[a-z0-9][a-z0-9-]*$` (the resolver's own rule); never paste an unvalidated name into the command. The tool refuses any other value with exit 4 before it resolves or writes anything. Exit 0 = written or unchanged. Exit 2 (profile does not resolve), 3 (file unusable) or 4 (invalid profile name): stop and show the message. A rule with a shape error is reported on stderr and left out; that is not a failure.
+The tool checks the name again and refuses any other value with exit 4 before it resolves or writes anything. Exit 0 = written or unchanged. Exit 2 (profile does not resolve), 3 (file unusable) or 4 (invalid profile name): stop and show the message. A rule with a shape error is reported on stderr and left out; that is not a failure.
 
 ## Config Output
 

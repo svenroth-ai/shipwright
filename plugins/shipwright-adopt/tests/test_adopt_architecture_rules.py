@@ -58,9 +58,10 @@ def test_adopt_on_a_profile_with_rules_gets_the_block(tmp_path):
 def test_adopt_twice_gives_the_same_conventions(tmp_path):
     root = _project(tmp_path, [RULE])
     _generate(root)
-    first = _conventions(root)
+    path = root / ".shipwright" / "agent_docs" / "conventions.md"
+    first = path.read_bytes()
     _generate(root)
-    assert _conventions(root) == first
+    assert path.read_bytes() == first
 
 
 def test_adopt_on_a_profile_without_rules_says_none_declared(tmp_path):

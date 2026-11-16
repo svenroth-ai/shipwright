@@ -7,7 +7,7 @@
 
     render_architecture_rules.py --project-root R [--profile NAME] [--conventions FILE] [--check]
 
-The profile is ``--profile`` or the ``profile`` of ``shipwright_run_config.json`` (resolved
+The profile is ``--profile``, else the environment variable ``SHIPWRIGHT_RULES_PROFILE``, else the ``profile`` of ``shipwright_run_config.json`` (resolved
 project > user > bundled, like every phase). The rules go into ONE marked block; running the
 tool again replaces that block and nothing else, so a second run on unchanged input changes no
 byte. Where the block goes the first time: the unfilled ``{ARCHITECTURE_RULES}`` placeholder of
@@ -51,6 +51,7 @@ END = "<!-- shipwright:architecture-rules:end -->"
 HEADING = "## Architecture Rules"
 PLACEHOLDER = "{ARCHITECTURE_RULES}"
 DEFAULT_CONVENTIONS = ".shipwright/agent_docs/conventions.md"
+ENV_PROFILE = "SHIPWRIGHT_RULES_PROFILE"  # lets a caller keep the name out of the shell command line
 # Markers count only at the start of a line, so prose that quotes them mid-line is never mistaken for the block.
 _BEGIN_RE = re.compile("^" + re.escape(BEGIN), re.MULTILINE)
 _END_RE = re.compile("^" + re.escape(END) + r"[ \t\r]*$", re.MULTILINE)
@@ -152,9 +153,9 @@ def _main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
     path = args.conventions or os.path.join(args.project_root, DEFAULT_CONVENTIONS)
     try:
-        name = args.profile if args.profile is not None else profile_consumer.config_profile(args.project_root)
-        if name is None or (name == "" and args.profile is None):
-            raise ValueError("no profile: pass --profile or set `profile` in shipwright_run_config.json")
+        name = args.profile or os.environ.get(ENV_PROFILE) or profile_consumer.config_profile(args.project_root)
+        if not name:
+            raise ValueError(f"no profile: pass --profile, set {ENV_PROFILE}, or set `profile` in shipwright_run_config.json")
         if not isinstance(name, str) or not NAME_RE.fullmatch(name):  # the name may reach an agent's shell command
             sys.stderr.write(f"error: invalid profile name {str(name)[:60]!r}: it must match {NAME_RE.pattern} "
                              "(lowercase letters, digits, '-'); nothing was resolved or written\n")

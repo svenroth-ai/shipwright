@@ -75,6 +75,13 @@ architecture-internal-reviewer: approve (option A is the smallest that reaches a
 | profile name pasted into the step 7 shell command could inject (blocking) | accepted-and-fixed: the tool refuses any name not matching the resolver's own pattern (`^[a-z0-9][a-z0-9-]*$`, from `profile_model.NAME_RE`) with exit 4 before resolving or writing, for `--profile` and for the run config's name; the skill states the pattern; tests for quote, subshell, backtick, path separators, empty, uppercase, space, semicolon, newline. Adopt passes no shell: it hands the already-resolved profile object to the library |
 | regex concatenation style; library writing to stderr | accepted-and-fixed: `write_rules_block` returns notes only, the generator prints them |
 
+## PR review round 2
+
+| Finding | Disposition |
+|---|---|
+| the shell expands `{profile_name}` / `{project_root}` before the tool's own check (blocking) | accepted-and-fixed at the source: the skill makes the agent validate the name against `^[a-z0-9][a-z0-9-]*$` and abort first; only a validated name is placed in the command, as a bare word handed over through the new `SHIPWRIGHT_RULES_PROFILE` environment variable (the tool still re-checks it); the project root is single-quoted and a root containing a single quote is refused; `--profile` still works; a test scans every skill markdown line that runs the tool and fails if a project value sits inside double quotes |
+| style: explicit `if not name:`, byte-identical adopt rerun, imported heading before markers | accepted-and-fixed |
+
 ## Consequences
 
 Rules reach agents in new and adopted projects. The block is a snapshot: a changed profile reaches `conventions.md` only on a rerun. No new requirement is minted; criteria are FR-01.01 AC16 and AC17.
