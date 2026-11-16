@@ -585,6 +585,7 @@ _No architecture rules declared by stack profile `python-plugin-monorepo`._
 - (2026-11-11) iterate — a flag meant for the review-state marker must be wired where the marker is actually written (record_review_pass → write_markers), not only on the CLI that nobody calls; the spec-reviewer caught it. [→ iterate-2026-11-11-review-require-all-legs]
 - (2026-11-12) iterate/triage — `triage_integrity.is_triage_record` is consulted only by boundary resync, so a status-less append is fixed on the read side (`triage_status_normalize.initial_record`, used by `read_all_items` AND the GC resolver), not by a looser predicate; "closes trg-X" checks must skip partial closes ("Part of trg-X"). → iterate-2026-11-12-u2-triage-consistency
 - (2026-11-12) iterate/audit — a comment that promises behaviour (adopted projects skip G2) outlived the code that never had it; when an audit rule looks wrong for a project class, the fix is text pointing to the explicit opt-out (disabled_checks), never a hidden auto-skip. → iterate-2026-11-12-u3-g2-scope-audit
+- (2026-11-16) adopt — a new matching signal for a bundled profile must be gated so it cannot move an existing match (Python-only, mixed JS+Python, TS, markdown-only): the Jaccard score of every other profile changes when the signature gains a key; pin each case with a fixture. [→ iterate-2026-11-16-u4-plugin-profile]
 
 ## Contributing
 

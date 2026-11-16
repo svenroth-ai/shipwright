@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "No concrete defects found in the supplied diff. It adds the bundled profile, preserves the Python toolchain and folder layout, integrates adoption matching and CI defaults, and tests both plugin and plain Python repositories plus mechanism registration.\n\nShip-as-is based on static review. Local inspection and test execution were blocked by the environment\u2019s command policy, so runtime results remain unverified.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "Findings:\n\n- Category: bug\n  Severity: medium\n  File: plugins/shipwright-adopt/scripts/tools/generate_adoption_artifacts.py:131\u2013133 (and plugin_signal.py:28)\n  Finding: The `claude-plugin` runtime key is a matching signal, not a version, but it is written into the same `stack.runtime` dict whose values every other consumer treats as \"<tool> version: <version>\". `_extract_constraints` special-cases it, but any other reader of `stack.runtime` in the snapshot (brief generators, docs writers, downstream tooling) will render it as e.g. \"Claude-plugin version: .claude-plugin/\". Only one consumer is patched.\n  Suggestion: Either namespace the signal outside `runtime` (e.g. `stack.plugin_signal`), or grep the codebase for other `stack[\"runtime\"]` consumers and skip the key there too. Also bump `SNAPSHOT_SCHEMA_VERSION` since the runtime shape changed.\n\n- Category: test\n  Severity: low\n  File: plugins/shipwright-project/tests/test_claude_plugin_profile_select.py:12\u201316\n  Finding: `test_bundled_claude_plugin_profile_can_be_selected_by_name` only calls `check_profile`, which validates the name against the resolver \u2014 the test's own docstring concedes \"nothing is special-cased\". It would pass for any existing profile name and doesn't demonstrate that `/shipwright-project` (the interview listing) actually surfaces `claude-plugin` to the user.\n  Suggestion: Add an assertion against the profile-listing path the skill uses (e.g. that `claude-plugin` appears in the offered names), so a regression in listing wouldn't slip through.\n\n- Category: edge-case\n  Severity: low\n  File: plugins/shipwright-adopt/scripts/lib/plugin_signal.py:24\u201326\n  Finding: `stack.setdefault(\"signals\", []).append(SIGNAL)` appends without deduplication; if `analyze` were ever re-run on an already-annotated stack (or the signal logic is reused on a cached snapshot), the signal appears twice. Harmless today because `analyze` runs it once, but fragile.\n  Suggestion: Guard with `if SIGNAL not in stack[\"signals\"]` before appending.\n\n- Category: test\n  Severity: low\n  File: plugins/shipwright-adopt/tests/test_profile_matcher.py:73\n  Finding: `assert result[\"confidence\"] >= 0.30` pins an arbitrary internal threshold; the AC only requires the generic profile still matches. If the matcher's confidence scale changes, this test breaks for a non-defect.\n  Suggestion: Drop the numeric threshold and assert only the match and score ordering (which is the actual AC).\n\nSpec compliance: AC30\u2013AC32 all appear implemented \u2014 the profile validates, Python data matches the generic profile, adopt fixtures cover both branches end-to-end (including the full `analyze` path), and mechanism paths are checked for existence and hook registration. Docs and CI/CodeQL wiring are updated consistently.\n\nOverall assessment: ship-with-fixes; the work is sound and well-tested, but the `claude-plugin` key leaking into `stack.runtime` for unpatched consumers is worth cleaning up before merge.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-11-16-u4-plugin-profile",
+    "at": "2026-11-16T02:35:59.864250+00:00"
+  },
+  "verdicts": {
+    "openai": "approve",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=approve"
+  }
+}
