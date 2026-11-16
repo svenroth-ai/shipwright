@@ -81,6 +81,7 @@ def test_a_named_hook_mechanism_is_actually_registered():
     assert hooks
     for rule in hooks:
         for path in rule.mechanism:
+            assert path.startswith("plugins/"), f"{rule.id}: a hook mechanism must live in a plugin, got {path}"
             plugin, rel = Path(path).parts[1], "/".join(Path(path).parts[2:])
             data = json.loads((ROOT / "plugins" / plugin / "hooks" / "hooks.json").read_text(encoding="utf-8"))
             assert any(c.rstrip('"').endswith("${CLAUDE_PLUGIN_ROOT}/" + rel) for c in _hook_commands(data)), path

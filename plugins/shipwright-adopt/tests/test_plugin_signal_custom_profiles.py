@@ -43,8 +43,10 @@ def test_project_profile_with_only_python_still_wins_a_plugin_repo(tmp_path, nam
     for r in (root, plugin):
         _profile(r, name, ["python"])
     before, after = analyze(root, [], None)["profile"], analyze(plugin, [], None)["profile"]
-    assert (before["matched"], before["source"]) == (after["matched"], after["source"]) == (name, "project")
-    assert before["confidence"] == after["confidence"] == 1.0  # the score of a profile without the key is unchanged
+    assert (before["matched"], before["source"]) == (name, "project")
+    assert (after["matched"], after["source"]) == (name, "project")
+    assert before["confidence"] == 1.0
+    assert after["confidence"] == 1.0  # the score of a profile without the key is unchanged
 
 
 def test_project_profile_with_more_dependencies_wins_and_keeps_its_score(tmp_path):
@@ -53,14 +55,17 @@ def test_project_profile_with_more_dependencies_wins_and_keeps_its_score(tmp_pat
     for r in (plain, plugin):
         _profile(r, "my-api", ["python"], ["fastapi", "uvicorn"])
     a, b = analyze(plain, [], None)["profile"], analyze(plugin, [], None)["profile"]
-    assert (a["matched"], a["source"]) == (b["matched"], b["source"]) == ("my-api", "project")
+    assert (a["matched"], a["source"]) == ("my-api", "project")
+    assert (b["matched"], b["source"]) == ("my-api", "project")
     assert a["confidence"] == b["confidence"]
 
 
 def test_bundled_profiles_not_declaring_the_key_keep_their_scores(tmp_path):
     plain = _repo(tmp_path / "plain", ("fastapi",), plugin=False)
     plugin = _repo(tmp_path / "plugin", ("fastapi",), plugin=True)
-    score = lambda root: {c["name"]: c["score"] for c in analyze(root, [], None)["profile"]["candidates"]}  # noqa: E731
+    def score(root):
+        return {c["name"]: c["score"] for c in analyze(root, [], None)["profile"]["candidates"]}
+
     assert score(plain)["python-plugin-monorepo"] == score(plugin)["python-plugin-monorepo"]
 
 
@@ -78,7 +83,9 @@ def test_a_plain_plugin_repo_wins_the_tie_by_its_signal_not_by_name_order(tmp_pa
     root = _repo(tmp_path / "plugin", (), plugin=True)
     res = analyze(root, [], None)["profile"]
     scores = {c["name"]: c["score"] for c in res["candidates"]}
-    assert scores["claude-plugin"] == scores["python-plugin-monorepo"] == 1.0 and res["matched"] == "claude-plugin"
+    assert scores["claude-plugin"] == 1.0
+    assert scores["python-plugin-monorepo"] == 1.0
+    assert res["matched"] == "claude-plugin"
 
     # the same decision with names that sort the other way round
     pdir = tmp_path / "profiles"
@@ -97,10 +104,29 @@ def test_a_partly_matching_project_profile_keeps_winning_over_the_bundled_plugin
     for r in (plain, plugin):
         _profile(r, "my-api", ["python"], ["fastapi", "uvicorn", "pydantic"])
     a, b = analyze(plain, [], None)["profile"], analyze(plugin, [], None)["profile"]
-    assert (a["matched"], a["source"], a["confidence"]) == (b["matched"], b["source"], b["confidence"]) == ("my-api", "project", 0.5)
+    assert (a["matched"], a["source"], a["confidence"]) == ("my-api", "project", 0.5)
+    assert (b["matched"], b["source"], b["confidence"]) == ("my-api", "project", 0.5)
 
 
 def test_a_python_repo_without_the_folder_is_not_offered_the_plugin_profile(tmp_path):
     """The plugin profile is a candidate only where the signature carries its key (candidates feed the adopt interview)."""
     plain = _repo(tmp_path / "plain", ("fastapi",), plugin=False)
     assert "claude-plugin" not in {c["name"] for c in analyze(plain, [], None)["profile"]["candidates"]}
+
+
+def test_the_facts_the_no_match_moves_proof_rests_on():
+    """claude-plugin declares exactly the generic profile's names plus the signal; no other bundled profile ties it on Python signatures."""
+    from lib.profile_matcher import SIGNAL_KEYS, match_profile
+
+    root = Path(__file__).resolve().parents[3] / "shared" / "profiles"
+
+    def deps(name):
+        stack = json.loads((root / f"{name}.json").read_text(encoding="utf-8"))["stack"]
+        return {k for group in ("runtime", "frontend", "backend") for k in stack.get(group, {}) if not k.startswith("_")}
+
+    assert deps("claude-plugin") - SIGNAL_KEYS == deps("python-plugin-monorepo")
+    for sig in ({"runtime": {"python": ">=3.11"}}, {"runtime": {"python": ">=3.11"}, "backend": {"fastapi": "x"}, "database": {"psycopg": "x"}}):
+        scores = {c["name"]: c["score"] for c in match_profile(sig, root)["candidates"]}
+        generic = scores["python-plugin-monorepo"]
+        for other in ("chat-first-json", "skill-companion-app"):
+            assert scores.get(other, 0.0) < generic, (other, scores)

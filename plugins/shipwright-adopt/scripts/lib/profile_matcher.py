@@ -17,8 +17,8 @@ except ImportError:  # test / package context: scripts/ on sys.path, lib is a pa
 
 # Signature keys that are matching SIGNALS, not dependencies (plugin_signal.py). They never enter a score: every
 # profile is scored on the dependency names alone, exactly as before the signal existed. A profile that declares
-# one is a candidate only when the signature carries it, and then wins a tie within the same source over a
-# profile that declares none; so a signal can never move a match, it only settles a tie.
+# one is a candidate only when the signature carries it. A tie at the same source and the same score goes to the
+# signal profile (never to name order); a signal therefore changes no score and no match, it only settles that tie.
 SIGNAL_KEYS = frozenset({"claude-plugin"})
 
 
