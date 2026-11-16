@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: bug\n- Severity: medium\n- File: shared/scripts/eslint_architecture_rules.py:126\n- Finding: The position check only compares the block\u2019s end with the exported array\u2019s closing bracket. Blocks in an unused array declared before `export default []` are therefore treated as present, with at most a shadowing warning. The architecture rules are inactive, but the build does not report the required error.\n- Suggestion: Track both exported-array boundaries and verify that each marked fragment is a direct element of that array. Report fragments in other arrays or nested objects as outside.\n\n- Category: bug\n- Severity: medium\n- File: shared/scripts/eslint_architecture_rules.py:210\n- Finding: Wrapped arrays bypass the expression-suffix safety check. For example, `export default defineConfig([]).concat(more);` is accepted and edited, even though `more` can override the appended architecture rules. Reinspection then reports the blocks as valid because it only examines the inner array.\n- Suggestion: Validate the expression after the closing `defineConfig(...)` call as well. Refuse chained calls and other expressions, leaving the file untouched, and add a refusal test for this case.\n\nShip-with-fixes. The intended Next.js fixtures are covered, but the array recognition permits inactive rules and an unsafe repair shape that undermine AC36 and AC37.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "Findings:\n\n- **Category: spec / edge-case**\n  **Severity: medium**\n  File: shared/scripts/eslint_architecture_rules.py \u2014 `inspect()` (the `if same and close is not None and span[1].end() > close:` line)\n  Finding: The \"outside\" status is only detected when the block is byte-equal to the profile (`same`). A block that sits beyond the exported array *and* differs from the profile (e.g. a hand-edited block that was also moved, or a Prettier-reformatted block pasted after `];`) is reported only as `stale` \u2014 a WARNING. The spec and docs (`docs/hooks-and-pipeline.md`, module docstring, `eslint_rules_check._HARD`) state an out-of-array block is an ERROR. So the error contract for \"outside\" silently downgrades to a warning in exactly the combination where the block is dead *and* wrong.\n  Suggestion: Evaluate the position check independently of `same`: if `close is not None and span[1].end() > close`, report `outside` regardless of content equality (stale-ness can be a second line of the detail).\n\n- **Category: bug (verify)**\n  **Severity: low**\n  File: shared/scripts/eslint_architecture_rules.py \u2014 `inspect()` and `_insert_blocks()`\n  Finding: Offsets from the raw `text` (marker spans via `_MARK.finditer(text)`, `text.rfind(\"\\n\", 0, close)`) are compared/interleaved with offsets into `lex(text).code_only` (`close`, `prev`). This is only correct if `_ts_lexer.lex` masks comments/strings with same-length filler. The tests (NEXT16 with comments, the regex/template-literal fixture) pass, which suggests it does, but nothing in this diff pins that property; a lexer that *strips* rather than masks would corrupt every insertion position while `_array_close` still succeeds.\n  Suggestion: Add a one-line invariant test asserting `len(lex(text).code_only) == len(text)` for the fixtures, or a comment in `_ts_lexer` documenting the length-preservation contract this module depends on.\n\n- **Category: edge-case**\n  **Severity: low**\n  File: shared/scripts/eslint_architecture_rules.py \u2014 `inspect()`, shadowed detection\n  Finding: `shadowed` requires the last block's status to be `ok`. Config code after a *stale* last block that overrides its rules is not reported as shadowing \u2014 the shadowing object is exactly the dangerous case and gets only the stale warning. Minor, since both are warnings, but the shadow detail is lost.\n  Suggestion: Drop the `out[idx].status == \"ok\"` condition, or append shadowing as an additional detail rather than replacing the finding.\n\n- **Category: bug**\n  **Severity: low**\n  File: shared/scripts/tools/check_eslint_architecture_rules.py \u2014 `_main`, `--replace-stale` handling\n  Finding: `--replace-stale` without `--apply` is silently ignored (no error, no effect). The help text says \"with --apply\" but the tool exits 0/1 as if nothing was requested. A user repairing a stale block by hand will believe the flag did something.\n  Suggestion: Either error out (`--replace-stale requires --apply`) or note in the output that it was ignored.\n\n- **Category: edge-case**\n  **Severity: low**\n  File: shared/scripts/eslint_architecture_rules.py \u2014 `_MARK`\n  Finding: Marker ids are restricted to `[a-z0-9][a-z0-9-]*`. `render_fragment` writes whatever `rule.id` is; a profile rule id with an underscore or uppercase produces markers the regex never matches, so the check reports the rule missing forever and `--apply` would insert blocks that then re-verify as missing (safe, but a permanent false error). No validation tying rule ids to this charset is visible in this diff.\n  Suggestion: Validate `rule.id` against the marker charset in `eslint_rules()` (or at load time) and report a clear error instead of an unsatisfiable \"missing\".\n\nPositive notes: the refusal paths are well covered (unbalanced shapes, chained expressions, existing `no-restricted-*`, unpaired markers, legacy-only), apply re-verifies before writing and writes atomically, idempotency and CRLF are pinned by tests, and the check/apply split with severity rules matches AC36/AC37. No security issues: no untrusted input reaches a sensitive sink beyond rewriting a config file the tool refuses to guess at.\n\nOverall: ship-with-fixes \u2014 the implementation is sound and well tested, but the stale+outside downgrade contradicts the documented error contract (AC36) and should be fixed before this is called done.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-11-16-eslint-rules-survive-build",
+    "at": "2026-11-16T09:14:42.276346+00:00"
+  },
+  "verdicts": {
+    "openai": "revise",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

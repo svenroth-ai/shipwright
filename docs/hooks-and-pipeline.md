@@ -6036,6 +6036,8 @@ shared/scripts/tools/
     plan_gate_checks.py            # The four Step-9 gates: dependency order, FR coverage,
                                    #   section->requirement trace, section quality — appended to run_plan_checks
     build_checks.py                # Build phase-own + canon hybrid + check-plan B3/B6 imports      — 12.3
+    eslint_rules_check.py          # Build: the profile's architecture-rule ESLint blocks survived the
+                                   #   app creation (`eslint_architecture_rules_present`; no hook change)
     test_checks.py                 # Test phase-own + canon (skip C4+C5)         — 12.4
     changelog_checks.py            # Changelog canon + git-tag/version Sonder-Checks — 12.4
     deploy_checks.py               # Deploy phase-own + canon (skip C4+C5)       — 12.4
@@ -6065,7 +6067,7 @@ Legend: ✅ present · ⏭ skip by policy · n/a not applicable
 | **project** | ✅ | ✅ | ✅ (canon-marker) | ✅ (Step 7) | ✅ | ✅ | `project_checks.py` | `_validate_project` |
 | **design** | ✅ | ✅ | ✅ (canon-marker) | ⏭ transformation | ✅ | ✅ | `design_checks.py` + FR coverage (check-plan C1 import) | `_validate_design` |
 | **plan** | ✅ | ✅ | ✅ (canon-marker) | ✅ (Step 2/5) | ⏭ internal | ✅ | `plan_checks.py` + section-manifest/FR-orphan/section-id (check-plan C2/C3/C4 imports) + `plan_gate_checks.py` (dependency order, FR coverage, section trace, section quality) | `_validate_plan` |
-| **build** | ✅ per section | ✅ per section | ✅ phase-level | ✅ per section | ✅ phase-level (one bullet per section) | ✅ with `sections[]` sub-array | `build_checks.py` + B3 test-files + B6 commit-sha (check-plan imports) | `_validate_build` |
+| **build** | ✅ per section | ✅ per section | ✅ phase-level | ✅ per section | ✅ phase-level (one bullet per section) | ✅ with `sections[]` sub-array | `build_checks.py` + B3 test-files + B6 commit-sha (check-plan imports) + `eslint_architecture_rules_present` (skipped unless the profile has an ESLint rule; error: a missing, unpaired or out-of-array block once `package.json` exists; warning: stale block, legacy `.eslintrc*` only, config code after the blocks; repair: `check_eslint_architecture_rules.py --apply`, also named in build Step 12) | `_validate_build` |
 | **test** | ✅ (`phase_completed` alongside `test_run`) | ✅ | ✅ (canon-marker) | ⏭ events, not decisions | ⏭ results in `shipwright_test_results.json` | ✅ | `test_checks.py` + `check_test_results_file_fresh` | `_validate_test` |
 | **changelog** | ✅ | ✅ | ✅ (canon-marker) | ⏭ process management | n/a (plugin owns prepend) | ✅ | `changelog_checks.py` + `check_git_tag_exists` + `check_changelog_version_matches_tag` Sonder-Checks | `_validate_changelog` |
 | **deploy** | ✅ | ✅ | ✅ (canon-marker) | ⏭ execution | ⏭ operational history | ✅ | `deploy_checks.py` + `check_test_gate_passed` phase-own | `_validate_deploy` |

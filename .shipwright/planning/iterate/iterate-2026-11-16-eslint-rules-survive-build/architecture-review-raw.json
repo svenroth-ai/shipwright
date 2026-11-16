@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "1. The missing-rule check should exist, but the automatic merge tool is disproportionate; choose option C.\n\n2. Add the deterministic check to the existing build verifier, naming each missing rule and pointing to its profile fragment and the existing step 7 repair instructions. Let the build agent repair the configuration and rerun verification.\n\n3. Keeping this requires maintaining the check against the profile\u2019s rule definitions and supported ESLint configuration formats. Automatic repair would additionally require maintaining a source editor across configuration styles and generator changes; the brief establishes no repair frequency that justifies that obligation.\n\n4. Automatic repair makes future changes to ESLint configuration structure harder because the editor\u2019s supported shapes become another compatibility constraint. The check alone leaves repair methods flexible.\n\n5. Findings\n\nCategory: simpler-alternative\nSeverity: medium\nFinding: The proposal couples necessary detection with a permanent automatic editor for an occasional, recoverable scaffold overwrite. Existing repair instructions and a build agent already provide a repair path once failure becomes visible.\nSuggestion: Implement option C: a build verifier check with actionable findings, followed by agent repair using the existing profile fragments and step 7 instructions. Add automatic merging only if repeated repair effort demonstrates its value.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "1. **The question, answered in one sentence.** Yes, a standing check should exist \u2014 a missing lint rule must fail loudly \u2014 but it does not need a new library module, a new CLI, and a second automated writer of eslint config; the check alone, folded into the existing build verifier, is the smallest thing that would do.\n\n2. **The smallest thing that would do.** Add the \"missing architecture-rule fragment\" detection to the existing `verifiers/build_checks.py` (it already runs at the right moment, end of build, and via `verify_phase.py`). Repair is the agent redoing the step 7 merge from existing prose \u2014 the situation is rare (once per project, at build time, with an agent already in the loop), not a recurring failure needing automation. Drop the standalone library module, the standalone CLI, and the merge tool.\n\n3. **What it costs to keep.** Option A's cost is not the scripts \u2014 it's that eslint.config.* now has **four producers** (create-next-app, step 7, the merge tool, and humans) that all future lint-config changes must reason about, plus a merge tool whose \"cannot edit safely\" path is a failure mode someone must keep correct as ESLint config formats drift.\n\n4. **What it forecloses.** A merge tool that appends to create-next-app's config makes any future decision to own the whole config (option D) or change config shape harder: the merge path must be maintained in parallel. Check-only forecloses nothing.\n\n5. **Findings**\n\n- Category: simpler-alternative\n  - Severity: medium\n  - Finding: Option A buys automation for a failure that occurs at most once per project, at a moment an agent is already active and equipped with merge instructions (step 7 prose). The loud-failure requirement \u2014 the actual AC \u2014 is satisfied by the check alone.\n  - Suggestion: Take option C, but implement the check inside the existing build verifier rather than as a new CLI + library module; one new check function, one line in the build skill, no new tool.\n\n- Category: proportionality\n  - Severity: medium\n  - Finding: The merge tool is a third deterministic writer of eslint config text alongside create-next-app and step 7; every producer added to that file raises the cost of all future changes to lint configuration, for a repair that is cheap and recoverable by hand.\n  - Suggestion: Treat the repair as agent work guided by the existing step 7 instructions; keep only the detection as standing machinery.\n\n- Category: existence\n  - Severity: low\n  - Finding: A separate library module and CLI under shared/scripts for a single check duplicates surface the existing phase-verifier already provides and will need its own invocation convention and docs forever.\n  - Suggestion: One function in `build_checks.py`; no new entry point.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "architecture",
+  "capture": {
+    "run_id": "iterate-2026-11-16-eslint-rules-survive-build",
+    "at": "2026-11-16T09:11:28.929350+00:00"
+  },
+  "verdicts": {
+    "openai": "revise",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

@@ -1,0 +1,122 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-16-eslint-rules-survive-build",
+    "date": "2026-11-16",
+    "unit": {
+      "status": "passed",
+      "passed": 12253,
+      "skipped": 51,
+      "total": 12304
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 1,
+      "total": 1
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run pytest shared/tests/test_eslint_architecture_rules.py shared/tests/test_eslint_architecture_rules_repair.py -q -p no:cacheprovider",
+      "exit_code": 0,
+      "tests_run": 39,
+      "evidence_path": ".shipwright/runs/iterate-2026-11-16-eslint-rules-survive-build/surface_verification.log",
+      "timestamp": "2026-11-16T09:42:59.360Z",
+      "attempts": 1
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "A create-next-app style config (Next 15 and 16) without the blocks is a build verifier ERROR naming every rule and the repair command",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_eslint_architecture_rules.py::test_replaced_config_without_the_blocks_is_an_error_naming_every_rule_and_the_repair PASSED"
+        },
+        {
+          "behavior": "The verifier passes once the blocks are back; a config that already carries them passes",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_eslint_architecture_rules.py::test_verifier_passes_once_the_rules_are_back PASSED"
+        },
+        {
+          "behavior": "No config is an ERROR once package.json exists and a WARNING before; legacy eslintrc only is a WARNING",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_eslint_architecture_rules.py::test_no_config_at_all_is_an_error_once_the_app_exists_and_a_warning_before PASSED"
+        },
+        {
+          "behavior": "A hand-folded (stale) block is only a WARNING",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_eslint_architecture_rules.py::test_a_hand_folded_block_is_only_a_warning PASSED"
+        },
+        {
+          "behavior": "Damaged markers and a block not live in the exported array (after the array, earlier const, commented out) are ERRORs; config code after the blocks is shadowing",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_eslint_architecture_rules.py::test_a_block_that_is_not_live_in_the_exported_array_is_an_error PASSED"
+        },
+        {
+          "behavior": "Missing dev dependencies and an unreadable config are warnings, never a clean pass or a crash; other profiles are skipped; the check runs in the build suite",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_eslint_architecture_rules.py::test_missing_dev_dependencies_and_an_unreadable_config_are_warnings_never_a_clean_pass_or_a_crash PASSED"
+        },
+        {
+          "behavior": "apply appends the blocks last, keeps every original line, is byte-idempotent (Next 15 and 16)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_eslint_architecture_rules_repair.py::test_apply_appends_the_blocks_last_keeps_the_rest_and_is_idempotent PASSED"
+        },
+        {
+          "behavior": "apply handles cjs, inline, defineConfig with comment, typed const, regex and template brackets; keeps CRLF",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_eslint_architecture_rules_repair.py::test_apply_handles_the_supported_shapes PASSED"
+        },
+        {
+          "behavior": "apply refuses unsafe shapes (call, chained, two exports, unterminated, await, wrapped chain) and leaves the file untouched",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_eslint_architecture_rules_repair.py::test_unsafe_shape_is_refused_and_the_file_is_left_alone PASSED"
+        },
+        {
+          "behavior": "apply does not override existing no-restricted options; stale is replaced only on request; unpaired never; no config gets the template; legacy and workspace are reported",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_eslint_architecture_rules_repair.py::test_existing_restricted_rule_options_are_not_overridden_silently PASSED"
+        },
+        {
+          "behavior": "CLI exit codes 0/1/2/3 and JSON output; package.json never edited",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_eslint_architecture_rules_repair.py::test_cli_reports_repairs_and_exits_with_the_documented_codes PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 11,
+        "tested": 11,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 2,
+        "covered_acs": 2
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-11-16-eslint-rules-survive-build",
+    "commit": "cd775fa3ecc39c376c79bfb14cefa00a6802a018",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

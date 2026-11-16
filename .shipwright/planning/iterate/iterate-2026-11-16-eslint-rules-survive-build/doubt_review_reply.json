@@ -1,0 +1,8 @@
+{"stage": "doubt", "gating": "advisory-must-address", "doubts": [
+{"severity":"medium","lens":"boundary & contract","claim_under_doubt":"the check only warns about missing dev dependencies","disproof_attempt":"the verifier dropped the dependency note, so an app without eslint passed after apply wrote the template","what_would_resolve_it":"fixed: a present-but-not-runnable setup returns a WARNING, test added"},
+{"severity":"medium","lens":"blast radius","claim_under_doubt":"the check cannot break the build gate","disproof_attempt":"a non-UTF-8 or locked eslint config raised out of the verifier","what_would_resolve_it":"fixed: OSError/ValueError become a WARNING result, test added"},
+{"severity":"low","lens":"reversibility","claim_under_doubt":"CRLF is kept on replace_stale","disproof_attempt":"the END match swallowed the CR","what_would_resolve_it":"fixed, CRLF test added"},
+{"severity":"low","lens":"boundary","claim_under_doubt":"present means live","disproof_attempt":"unrecognised export shapes skipped the position checks","what_would_resolve_it":"fixed in part: a commented-out block is reported outside even then; other positions stay a documented limit"},
+{"severity":"low","lens":"boundary","claim_under_doubt":"app sits at the root","disproof_attempt":"workspace layout","what_would_resolve_it":"fixed: no template write when package.json declares workspaces"},
+{"severity":"low","lens":"reversibility","claim_under_doubt":"atomic write","disproof_attempt":"locked target or symlink","what_would_resolve_it":"fixed: OSError returns cannot, symlink refused, tmp removed"}
+], "summary": "6 doubts (2 medium, 4 low), all addressed in code."}

@@ -45,6 +45,7 @@ from .common import (
     read_run_config,
 )
 from .build_split import build_config_for_split
+from .eslint_rules_check import check_eslint_architecture_rules
 from .handoff_phase_canon import check_c3_session_handoff_fresh_after_phase
 
 
@@ -427,6 +428,9 @@ def run_build_checks(
     # Phase history (standard + build-specific sub-array check)
     results.append(check_phase_history_has_run(project_root, "build", run_id))
     results.append(check_phase_history_build_has_sections(project_root, run_id, split_id))
+
+    # Profile architecture-rule lint blocks survived the app creation (skipped unless the profile has any)
+    results.append(check_eslint_architecture_rules(project_root))
 
     # ADR integrity (phase-agnostic)
     results.append(check_adr_ids_sequential(project_root))

@@ -180,8 +180,16 @@ this repository's rendered block go out of step.
   duplicated or unpaired markers and, for a project profile found under the project
   root, rule ids that differ from it (a bundled or user-level profile is noted as
   uncheckable); only `--check` is the full staleness test.
-- For `supabase-nextjs` the build phase can replace `eslint.config`, which drops the
-  lint fragments of its rules. This is an open follow-up.
+- For `supabase-nextjs` the build phase can replace `eslint.config` (create-next-app writes its
+  own), which drops the lint fragments of its rules. The build-phase verifier check
+  `eslint_architecture_rules_present` reports that: a missing, unpaired or out-of-array block is an
+  error, a block that differs from the profile (a hand-folded option) or a config entry after the
+  blocks is a warning. `uv run shared/scripts/tools/check_eslint_architecture_rules.py --project-root . --apply`
+  puts missing blocks back as the last elements of the exported array and refuses, writing nothing,
+  any config it cannot edit without guessing (see the module docstring of
+  `shared/scripts/eslint_architecture_rules.py`). It proves the blocks are present, equal to the
+  profile and inside the exported array; it does not prove that ESLint loads that file or that a
+  rule is not switched off by other means.
 
 ## Relation to Anthropic's skill guidance
 
