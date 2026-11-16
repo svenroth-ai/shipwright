@@ -1,0 +1,9 @@
+{"section": "eslint-rules-survive-build", "review": [
+{"severity":"high","category":"architecture","file":"shared/scripts/eslint_architecture_rules.py","line":1,"finding":"Two new files over the 300-line limit without a baseline entry (fixed: splice module split out, tests split in two files plus a fixtures module)."},
+{"severity":"medium","category":"correctness","file":"shared/scripts/eslint_architecture_rules.py","line":108,"finding":"Position check did not prove the block is live code in the exported array (commented out, earlier const). Fixed: live_in_array requires bracket depth 1 and non-blank code; outside no longer depends on content equality."},
+{"severity":"medium","category":"correctness","file":"shared/scripts/eslint_architecture_rules.py","line":307,"finding":"apply refused (exit 3) when only stale or shadowed findings exist. Fixed: those are left alone as unchanged; the replace-stale hint only appears with a stale finding."},
+{"severity":"low","category":"correctness","file":"shared/tests/test_eslint_architecture_rules.py","line":186,"finding":"Weak assertions. Fixed: exact outside status, blocks after the last original element and before the closing bracket."},
+{"severity":"low","category":"architecture","file":"plugins/shipwright-project/skills/project/references/step-7-scaffolding.md","line":152,"finding":"Command lacked uv run and project root. Fixed in step 7 and stack-profiles.md."},
+{"severity":"low","category":"readability","file":"shared/scripts/eslint_architecture_rules.py","line":325,"finding":"Provenance lines on stderr in the verifier. Fixed: quiet=True."},
+{"severity":"low","category":"readability","file":"shared/scripts/eslint_architecture_rules.py","line":159,"finding":"name_first wrapper and repeated scans. Fixed."}
+], "notes": "Repair command in the verifier message is the absolute path of the shipped tool; runnable from a user project."}
