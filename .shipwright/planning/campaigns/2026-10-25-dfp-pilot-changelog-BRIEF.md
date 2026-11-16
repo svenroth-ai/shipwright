@@ -66,6 +66,30 @@ The pilot reproduces each of these exactly as it behaves today and records it in
 
 Further findings come from P0 (inventory against FR-01.09 and guide chapter 4), from the operator's answers at stop 1, and from the real-model runs at stops 2 and 3 (`model-improvised`: e.g. a model that pushes before opening the PR).
 
+## 3a. Operator decisions on the ten stop-1 questions (proposed 2026-11-15, open until the operator confirms)
+
+Source: P0 report §5. Each answer is a behaviour change, so none of them is built inside the conversion (P1 to P7 keep today's behaviour and pin it); they are built in unit **P8**, after P7 and before the canary release. Decisions 1 to 4 change what FR-01.09 promises, so P8 amends the requirement first.
+
+| Q | Decision | Reason | Finding |
+|---|---|---|---|
+| 1 | The version tag and the release page are created **after** the release PR is merged, on the merge commit. | A tag counts as immutable; release tools (release-please, semantic-release) tag only after the merge. Today a public release exists for changes that can still be rejected, and after a squash merge the tag points at a commit that never reaches `main`. FR-01.09 already says nothing is released until the merge. | D2, D7 |
+| 2 | An automatic run **arms auto-merge** on the release PR (no immediate merge, no admin merge). A guided run leaves the PR open for a person. One rule, stated once in the skill. | Same way code PRs are delivered. Safe because of Q1: the tag only exists after the merge. | D8 |
+| 3 | A release started by hand while an automatic run is going is **refused**, naming the running run, with an explicit option to override and a stated reason. It never waits for an answer. | The skill says only one writer sets tags; a question in hands-off mode can hang forever. | D19 |
+| 4 | The preview shows the result **without writing anything**; files are written after the confirmation. Cancel leaves no trace. | Plan, preview, apply is the usual pattern; a preview with side effects uses up the pending notes. `--dry-run` already exists and becomes the preview. | D12 |
+| 5 | Hand-written entries in "Unreleased" **move into the release** and the preview marks them "hand-written". | Keep a Changelog moves "Unreleased" into the new version; otherwise the reader never sees them. Q4 makes it visible before anything is written. | AC09 |
+| 6 | Written down as promises with one pin each: the upgrade-notes check, the tidy-up of the event files, the entry in the project history. | Unwritten behaviour is the usual cause of silent regressions (programme P18, P19). | D20 |
+| 7 | **Remove** the "start from version X" promise from the help text and the guide; build nothing. Before removal P8 checks that `rerunning-a-release.md` covers the case. | An option that does not exist is worse than none; build it when a real need appears. | D9 |
+| 8 | A leading "v" is cut off; anything that is not a valid SemVer number is refused (hands-off: clear error, never guess). The version must be higher than the last tag. | Validate input at the boundary (constitution). | D16 |
+| 9 | A pending note can be marked **breaking explicitly**; that raises the version. Nothing is guessed from the text. The 0.x rule stays; only the source of the marker is added. | SemVer needs a higher major step for a breaking change; Conventional Commits uses an explicit `!` or `BREAKING CHANGE`; a note needs the same explicit sign. | D5 |
+| 10 | The PR description is passed **from a file** (`--body-file`). Title `chore(release): vX.Y.Z`; body = the changelog section plus the compare link. | The literal `\n` comes from passing the text inline. A bug. | D15 |
+
+### Sequencing: why the fixes are not folded into the conversion
+
+1. Conversion first, behaviour-preserving, pinned by the P0 pins and the replay traces: a red test then points at the conversion, never at a changed behaviour.
+2. The P24 measurement compares before and after; behaviour changes during the conversion would make it meaningless.
+3. P8 then applies the ten decisions as small, separately reviewed changes, each with a test for the new behaviour. The golden traces change on purpose; every change is an entry in `approved_deltas.json`, approved at stop 3.
+4. The pilot stays one campaign: no second campaign, no second operator round for the same answers.
+
 ## 4. Units
 
 | id | Unit | Real touch set | depends_on | Cx |
@@ -81,7 +105,8 @@ Further findings come from P0 (inventory against FR-01.09 and guide chapter 4), 
 | **P5** | Thin `SKILL.md`; pins moved | `SKILL.md`, references; the pins from P0 | P4 | medium |
 | **P6** | Ratchet; guide, glossary, architecture; bloat entry lowered last | new `shared/config/converted_skills.json`, `shared/scripts/tools/check_prompt_mechanics.py` + tests; `.github/workflows/ci.yml` (`python-checks`, a `(gate)` step); `scripts/verify_local.py`; `shared/tests/test_verify_local_ci_drift.py` if needed; docs; `shipwright_bloat_baseline.json` | P5 | medium |
 | **P7** | Conversion checker and report; the orphan removals approved per test (programme P18); the saving report (P24); inventory and coverage checks retired for changelog | new `shared/scripts/tools/check_plugin_conversion.py` + tests; the approved orphan tests (removed) | P6 | medium |
-| **P7-op** | Operator procedure (§5) | report | P7 | - |
+| **P8** | The ten operator decisions of §3a as behaviour changes: amend FR-01.09 first (Q1 to Q4, Q6), then one small change per decision with a test for the new behaviour; golden traces regenerated, each difference recorded in `approved_deltas.json` | `plugins/shipwright-changelog/` skill, scripts and references; the FR-01.09 spec file; `tests/golden/` traces and promise tests; `shared/scripts/tools/create_github_release.py`; docs (guide ch. 4, Appendix B) | P7 | large |
+| **P7-op** | Operator procedure (§5) | report | P8 | - |
 
 ## 5. Unit specs
 
@@ -162,6 +187,9 @@ The promise tests call the driver interface only, never a module path or a `SKIL
 
 ### P5 - thin `SKILL.md`
 Per programme §5. The description stays word for word. Mode resolution stays visible (`--phase-task-id` when handed one; the integration pin stays on `SKILL.md`). Outward commands stay literal, one line each. Questions per the truth table, in plain language. Every pin from P0.3 is moved or replaced in this diff, mapped one by one in the PR; none is deleted without its replacement.
+
+### P8
+Applies §3a. Order: (1) amend FR-01.09 and its ACs for Q1 to Q4 and Q6, minted by the producers; (2) one commit per decision, each with a test that fails on the old behaviour and passes on the new; (3) regenerate the golden traces and list every difference in `approved_deltas.json` with the question number it comes from; (4) update the guide and the pinned prose copy. Q7: check `rerunning-a-release.md` first, then remove the promise from the help text and the guide. The AC record of P8 is expected to be `changed`, not `unchanged`; the operator's confirmation of §3a at stop 1 is the authorisation, so for P8 only (not P1 to P7) the STRICT-STOP on a non-`unchanged` record in start condition 5 does not apply to the ACs named in §3a. A decision the operator changes at stop 1 changes this unit, nothing else. P8 red twice is released with its dependents; the conversion stays shipped.
 
 ### P6, P7, P7-op
 Per programme P12 and §5 (Tr, Tz). P7 checks every seeded regression is caught by L1/L2, the Codex bundle resolves `release.py`, and `verify_local.py` is green; then it retires the changelog inventory and coverage checks (deliverable: delete `check_skill_inventory.py` with its tests and the `inventory.json`, `truth_table.json` and `subprocess_map.json` under `.shipwright/planning/campaigns/2026-10-25-dfp-pilot-changelog-inventory/`; owner: the pilot campaign) and closes the findings report. P7 also removes the orphans the operator approved per test and writes the saving report (programme P24), and closes the LEARNINGS report (§8). P7-op: L3 on the plugin loaded from the P7 commit (hash recorded; the checker refuses the T1 hash); if P2-op made a fork sample, a second fork of the same run at the same boundary with `--repo` at the P7 commit, compared with the first (differences are findings or approved deltas, never silently accepted); a canary release in a throwaway repo with a private remote, the cache sync, then the first real release; the findings report is handed over as the input of the follow-up campaign, and the LEARNINGS report (§8) with it. **STOP 3.**
