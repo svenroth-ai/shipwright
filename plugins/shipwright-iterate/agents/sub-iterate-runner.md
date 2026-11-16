@@ -59,7 +59,7 @@ uv run "{shared_root}/scripts/checks/check_unit_lease.py" touch \
 
 ```bash
 uv run "{plugin_root}/scripts/lib/classify_complexity.py" \
-  --project-root "{project_root}" --message "$(cat {sub_iterate_spec})"
+  --project-root "{project_root}" --message "$(cat {sub_iterate_spec})" --spec "{sub_iterate_spec}"
 ```
 
 **If complexity == "large":** STOP immediately. Return the escalation
@@ -81,7 +81,7 @@ fire. Re-decide here. **Why, in full:** `references/campaign-mode.md`.
 
 ```bash
 uv run "{plugin_root}/scripts/lib/diff_risk_recheck.py" \
-  --project-root "{project_root}" --base-ref "{base_branch}" --run-id "{run_id}" \
+  --project-root "{project_root}" --base-ref "{base_branch}" --run-id "{run_id}" --spec "{sub_iterate_spec}" \
   --stage1-complexity "{step_2_complexity}" --stage1-flags "$(jq -r '.risk_flags|join(",")' <<<"$step2_json")"
 ```
 
@@ -94,7 +94,7 @@ range is EMPTY here and the check would silently pass. **Capture stdout AND exit
    escalation result-JSON with `reason_code: "ci_supplychain_requires_operator"` + the
    reported `ci_paths`; commit nothing further. Once an operator records the ack for this
    run id the command exits 0 (flag + paths still reported), so the handback terminates.
-2. **Exit 0 — adopt `effective_complexity`** for every remaining step; it only rises.
+2. **Exit 0 — adopt `effective_complexity`** for every remaining step; it only rises (never below the spec's `Complexity:` line).
    **F5c MUST record this value**, not Step 2's — this step persists the computed block to
    `risk_recheck.json`; F11's `check_risk_recheck_recorded` FAILS when F5c records less.
 3. **Any other non-zero — the re-check did not run.** Return `status:"failed"` with

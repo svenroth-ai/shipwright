@@ -9,7 +9,8 @@ for a campaign unit. This is its Stage-2 equivalent (contract Step 3.4).
 Rationale: `references/campaign-mode.md`.
 
 **One-way ratchet.** Complexity rises to the detectors' floor, never falls, and
-Stage-1's flags are UNIONED in, never replaced — see :func:`recheck`.
+Stage-1's flags are UNIONED in, never replaced — see :func:`recheck`. The unit's
+declared complexity (``--spec``) is a second floor: ``max(stage1, diff, declared)``.
 
 **Process contract.** `0` continue · `3` valid CI escalation · any other non-zero
 is an operational failure the caller must treat as a failed unit, never continuing
@@ -47,6 +48,7 @@ if _LIB_DIR not in sys.path:
     sys.path.insert(0, _LIB_DIR)
 
 from complexity_vocabulary import COMPLEXITY_ORDER  # noqa: E402
+from declared_complexity import read_declared_complexity  # noqa: E402
 from diff_change_set import (  # noqa: E402, F401 — re-exported surface
     _git, collect_change_set, parse_numstat_z, parse_untracked_z, resolve_base,
 )
@@ -57,6 +59,7 @@ from risk_detectors import (  # noqa: E402
     is_io_boundary_change,
     touches_build_files,
 )
+from risk_flag_args import _split_flags  # noqa: E402
 from risk_recheck_record import write_recheck_record  # noqa: E402, F401 — re-exported surface
 
 #: Reason code carried by an escalated result. Bound to the operator decision of
@@ -139,6 +142,7 @@ def recheck(
     diff_loc: int = 0,
     stage1_flags=None,
     ack_recorded: bool = False,
+    declared_complexity: str | None = None,
 ) -> dict:
     """Re-decide risk + complexity from the actual change set.
 
@@ -146,13 +150,12 @@ def recheck(
     seven canonical flags — ``touches_auth``, ``touches_rls``, ``touches_middleware``,
     ``touches_migrations``, ``touches_billing``, ``touches_shared_infra``,
     ``touches_public_api`` — have no diff-driven detector, so discarding them would
-    make Step 3.5 skip cases the pre-Step-3.4 rule ran.
-    """
+    make Step 3.5 skip cases the pre-Step-3.4 rule ran. ``declared_complexity``
+    (the unit spec's operator-declared tier) is a floor, like the diff detectors."""
     if stage1_complexity not in COMPLEXITY_ORDER:
-        raise ValueError(
-            f"unknown stage-1 complexity {stage1_complexity!r} — "
-            f"expected one of {COMPLEXITY_ORDER}"
-        )
+        raise ValueError(f"unknown stage-1 complexity {stage1_complexity!r} — expected one of {COMPLEXITY_ORDER}")
+    if declared_complexity is not None and declared_complexity not in COMPLEXITY_ORDER:
+        raise ValueError(f"unknown declared complexity {declared_complexity!r}")
     # Validated here rather than in main() so direct callers are covered too. A
     # negative value is not merely odd: the result schema requires `minimum: 0`,
     # so it would emit a result that cannot be represented in the contract, and it
@@ -165,7 +168,11 @@ def recheck(
     # floors when it produced stage1_complexity.
     floors = [floor for name, _, floor in _DETECTORS if name in diff_flags]
     complexity_floor = max(floors, key=_rank) if floors else "trivial"
-    effective = max([stage1_complexity, complexity_floor], key=_rank)
+    # The operator's floor, independent of Stage 1: a stale/low stage-1 cannot undercut it.
+    effective = max(
+        [stage1_complexity, complexity_floor, declared_complexity or "trivial"],
+        key=_rank,
+    )
     flags = sorted(set(diff_flags) | set(stage1_flags or []))
     hits = ci_paths(files)
     return {
@@ -175,6 +182,7 @@ def recheck(
         "diff_risk_flags": diff_flags,
         "complexity_floor": complexity_floor,
         "stage1_complexity": stage1_complexity,
+        "declared_complexity": declared_complexity,
         "effective_complexity": effective,
         "upgraded": effective != stage1_complexity,
         # AC5: Step 3.5's trigger, now identical to Step 3.7's.
@@ -192,23 +200,6 @@ def recheck(
             "paths": hits,
         },
     }
-
-
-def _split_flags(raw: str | None) -> list[str]:
-    """Accept comma/newline lists AND a JSON array.
-
-    `classify_complexity` emits `risk_flags` as a JSON array, so the obvious
-    interpolation of Step 2's output is `["touches_auth", "touches_rls"]`. A
-    naive split would yield `['["touches_auth"', '"touches_rls"]']` — tokens that
-    still make `plan_review_required` fire (so AC5 looks fine) while Step 3.8's
-    named-flag lookup for `touches_io_boundary` silently misses. Strip the JSON
-    punctuation rather than trusting the caller to reformat.
-    """
-    if not raw:
-        return []
-    cleaned = raw.strip().lstrip("[").rstrip("]")
-    parts = cleaned.replace(",", "\n").splitlines()
-    return [p.strip().strip('"').strip("'") for p in parts if p.strip(" \"'\t")]
 
 
 def main() -> int:
@@ -238,6 +229,11 @@ def main() -> int:
         "--stage1-flags",
         help="Step 2's message-derived flags (comma/newline separated), UNIONED "
              "with the diff-driven flags — never replaced.",
+    )
+    parser.add_argument(
+        "--spec",
+        help="The unit's sub-iterate spec; its 'Complexity:' line is a floor "
+             "this re-check may raise above, never lower.",
     )
     args = parser.parse_args()
 
@@ -270,9 +266,11 @@ def main() -> int:
             args.run_id
             and ack_path(Path(args.project_root), args.run_id).is_file()
         )
+        declared = read_declared_complexity(args.spec)
         result = recheck(
             files, args.stage1_complexity, loc,
             _split_flags(args.stage1_flags), acked,
+            declared_complexity=declared,
         )
     except (RuntimeError, ValueError, OSError) as exc:
         # Still valid JSON on stdout: the caller parses unconditionally.

@@ -863,7 +863,14 @@ integrity check, not independent re-verification** — a runner could still edit
 `risk_recheck.json` itself before F6; closing that residual would need an
 independently reproducible fingerprint or a re-run of the detectors at F11,
 consistent with every other runner-contract step being contract-enforced
-rather than independently gated.
+rather than independently gated. **The operator's declared unit tier is a floor
+(iterate-2026-11-16-campaign-declared-complexity-floor, FR-01.11 AC52).**
+`campaign_init.py` writes a unit's `complexity` into its spec as a `Complexity:`
+header line; the runner's Stage 1 (`classify_complexity.py --spec`) and Step 3.4
+(`diff_risk_recheck.py --spec`) both take `max(derived, declared)` and the block
+carries `declared_complexity`, which the same F11 gate holds `effective_complexity`
+to. A unit declaring nothing is sized as before; a runner that omits `--spec`
+(for example from a stale plugin cache) is a stated residual, not detected.
 
 **A row THIS run touches is held to `fr-authoring.md` for real
 (iterate-2026-09-06-fr-hygiene-touched-rows).** Group I's substantive checks —

@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-16-campaign-declared-complexity-floor",
+  "date": "2026-11-16",
+  "section": "Iterate — bug: campaign unit declared complexity is a floor",
+  "title": "A campaign unit declared complexity is a floor",
+  "context": "Units declared medium in the brief were sized small from their diff, so plan, architecture and doubt reviews closed not-applicable and ran only on orchestrator request.",
+  "decision": "The planner writes a Complexity header line into the unit spec; Stage 1 and the Step 3.4 re-check take the higher of declared and derived; risk_recheck.json records declared_complexity and F11 holds effective to it.",
+  "consequences": "A declared medium unit always runs the full review cascade; an omitted --spec (stale plugin cache) is a stated, undetected residual.",
+  "rationale": "The declaration must travel with the unit and persist; a runner-side override would be invisible to Step 3.4 and F11.",
+  "rejected": "A --complexity runner override; changing the size rules for every iterate; re-deriving the tier from the spec at F11.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-11-16-campaign-declared-complexity-floor-declared-floor.md"
+}

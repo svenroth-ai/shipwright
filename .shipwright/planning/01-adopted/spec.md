@@ -1130,6 +1130,11 @@ _Where the work detail lives_ at the end of this document.
   naming it and never stops the change; and when finishing stops on an untagged test whose body changed, the message names
   both ways out: name the requirement the test proves, or add or extend a requirement in the same change.
   (iterate-2026-11-11-u1-tag-binding)
+- (E) [AC52] Given the operator declares a size for a unit of a hands-off multi-change run, when that unit is sized
+  at the start and again after its code exists, then the declared size is a floor: the code may raise it but never
+  lower it, so a declared medium unit with a small change still gets the full plan, architecture and doubt reviews;
+  the size recorded for the unit never sits below the declared one, and a unit that declares none is sized as before.
+  (iterate-2026-11-16-campaign-declared-complexity-floor)
 
 <a id="fr-0112"></a>
 ### FR-01.12 — Local project preview
