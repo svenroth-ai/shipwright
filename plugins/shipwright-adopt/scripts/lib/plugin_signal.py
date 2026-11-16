@@ -26,5 +26,7 @@ def add_plugin_signal(stack: dict[str, Any], project_root: Path, excludes: set[s
     dirs = [project_root / ".claude-plugin", *sorted(project_root.glob("plugins/*/.claude-plugin"))]
     if any(d.is_dir() and not excluded(d) for d in dirs):
         stack.setdefault("runtime", {})[RUNTIME_KEY] = ".claude-plugin/"
-        stack.setdefault("signals", []).append(SIGNAL)
+        signals = stack.setdefault("signals", [])
+        if SIGNAL not in signals:
+            signals.append(SIGNAL)
     return stack

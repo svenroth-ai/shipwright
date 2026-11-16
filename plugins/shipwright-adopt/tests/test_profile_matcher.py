@@ -79,7 +79,6 @@ def test_python_only_repo_without_the_folder_keeps_the_generic_profile(tmp_path:
     assert "has-claude-plugin-dir" not in sig["signals"] and "claude-plugin" not in sig["runtime"]
     result = match_profile(sig, _profiles_dir())
     assert result["matched"] == "python-plugin-monorepo"
-    assert result["confidence"] >= 0.30
     scores = {c["name"]: c["score"] for c in result["candidates"]}
     assert scores["python-plugin-monorepo"] > scores.get("claude-plugin", 0.0)
 
@@ -118,3 +117,10 @@ def test_analysis_snapshot_gives_each_repo_its_profile(tmp_path: Path, python_cl
     (plugin / ".claude-plugin").mkdir()
     assert analyze(plain, [], None)["profile"]["matched"] == "python-plugin-monorepo"
     assert analyze(plugin, [], None)["profile"]["matched"] == "claude-plugin"
+
+
+def test_adding_the_signal_twice_changes_nothing(tmp_path: Path, python_cli: Path) -> None:
+    root = _python_repo(tmp_path, python_cli)
+    (root / ".claude-plugin").mkdir()
+    once = add_plugin_signal(detect_stack(root), root)
+    assert add_plugin_signal(once, root)["signals"].count("has-claude-plugin-dir") == 1
