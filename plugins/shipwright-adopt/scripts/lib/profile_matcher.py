@@ -15,9 +15,10 @@ except ImportError:  # test / package context: scripts/ on sys.path, lib is a pa
     from lib.adopt_profile import load_resolver
 
 
-# Signature keys that are matching SIGNALS, not dependencies (plugin_signal.py). A profile that does not declare
-# one is scored against the signature WITHOUT it, so adding a signal never changes the score of an existing,
-# custom or bundled, profile; only a profile that declares the key can gain from it.
+# Signature keys that are matching SIGNALS, not dependencies (plugin_signal.py). They never enter a score: every
+# profile is scored on the dependency names alone, exactly as before the signal existed. A profile that declares
+# one is a candidate only when the signature carries it, and then wins a tie within the same source over a
+# profile that declares none; so a signal can never move a match, it only settles a tie.
 SIGNAL_KEYS = frozenset({"claude-plugin"})
 
 
@@ -97,13 +98,20 @@ def match_profile(signature: dict[str, Any], profile_dirs: Any) -> dict[str, Any
     candidates: list[dict[str, Any]] = []
     found, warnings = _discover(_as_dirs(profile_dirs))
 
+    scored_deps = sig_deps - SIGNAL_KEYS
+    signalled: set[str] = set()  # names of candidates whose declared signal key is present in the signature
     for item in found:
         profile_deps = _flatten_profile_deps(item["profile"])
+        declared = profile_deps & SIGNAL_KEYS
+        if declared and not declared <= sig_deps:
+            continue  # a signal profile for a signal this repository does not carry
+        profile_deps -= SIGNAL_KEYS
         if not profile_deps:
             continue
-        scored = sig_deps if profile_deps & SIGNAL_KEYS else sig_deps - SIGNAL_KEYS
-        intersection = scored & profile_deps
-        union = scored | profile_deps
+        if declared:
+            signalled.add(item["name"])
+        intersection = scored_deps & profile_deps
+        union = scored_deps | profile_deps
         score = len(intersection) / len(union) if union else 0.0
         candidates.append({
             "name": item["name"],
@@ -113,8 +121,8 @@ def match_profile(signature: dict[str, Any], profile_dirs: Any) -> dict[str, Any
         })
 
     rank = {"project": 0, "user": 1, "explicit": 2, "bundled": 3}  # D1: a tie goes to the higher source
-    # a tie within one source prefers the profile whose matched names include a signal (never the profile NAME order)
-    candidates.sort(key=lambda c: (-c["score"], rank.get(c["source"], 9), -bool(SIGNAL_KEYS & set(c["matched_deps"])), c["name"]))
+    # within one source a tie goes to the signal profile, never to name order
+    candidates.sort(key=lambda c: (-c["score"], rank.get(c["source"], 9), c["name"] not in signalled, c["name"]))
     if candidates and candidates[0]["score"] >= 0.30:
         return {
             "matched": candidates[0]["name"],

@@ -2,14 +2,15 @@
 
 A ``.claude-plugin/`` FOLDER at the repository root (a plugin or a marketplace) or exactly one level
 down under ``plugins/*/`` (a plugin monorepo) adds the runtime key ``claude-plugin`` and the signal
-``has-claude-plugin-dir``. The profile matcher scores profiles by the dependency names they declare
-under ``stack``; the ``claude-plugin`` profile declares this key, so it ties or beats the generic Python
-profile for a plugin repository. A profile that does NOT declare the key (bundled or a project's own) is
-scored against the signature without it (``profile_matcher.SIGNAL_KEYS``), so its score and its win over a
-bundled profile on a tie do not change; a Python-only repository without the folder keeps the generic one.
+``has-claude-plugin-dir``. The signal never enters a score (``profile_matcher.SIGNAL_KEYS``): every profile is scored
+on dependency names alone, exactly as before. The ``claude-plugin`` profile declares the key, is a candidate only
+when the signature carries it, and wins a tie within the same source over a profile that declares none; a project
+or user profile still wins a tie by source. So the signal never moves an existing match, it only picks the plugin
+profile where the generic Python profile would have matched with the same score.
+Only for a Python repository (the repository ROOT is Python: ``primary_language`` is ``python``, i.e. a pyproject and
+no JavaScript dependencies in the root package.json): the promoted profile carries Python commands, CI and CodeQL,
+so a markdown-only, TypeScript or mixed plugin keeps the match it had (typically ``generic``).
 The key also appears in the snapshot's ``stack.runtime`` (additive; hidden from rendered runtime lists).
-Only for a Python repository (``primary_language`` is ``python``: a pyproject and no JavaScript dependencies): the promoted profile carries Python commands, CI and
-CodeQL, so a markdown-only or TypeScript plugin keeps the match it had (typically ``generic``).
 A file of that name, a deeper folder or a folder outside ``plugins/`` is not a signal.
 """
 

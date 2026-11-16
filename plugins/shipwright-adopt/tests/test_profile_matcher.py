@@ -61,7 +61,7 @@ def test_plugin_repo_matches_claude_plugin(tmp_path: Path, python_cli: Path) -> 
     result = match_profile(sig, _profiles_dir())
     assert result["matched"] == "claude-plugin"
     scores = {c["name"]: c["score"] for c in result["candidates"]}
-    assert scores["claude-plugin"] > scores["python-plugin-monorepo"]
+    assert scores["claude-plugin"] == scores["python-plugin-monorepo"]  # scores never include the signal; it settles the tie
 
 
 @pytest.mark.covers("FR-01.01/AC31")
@@ -154,7 +154,7 @@ PYPROJECT_BARE = chr(10).join(["[project]", 'name = "x"', ""])
 
 
 @pytest.mark.covers("FR-01.01/AC31")
-def test_mixed_js_and_python_repo_keeps_its_match_and_a_pyproject_without_python_version_gets_the_signal(
+def test_mixed_js_and_python_repo_keeps_its_match_and_a_pyproject_without_python_version_is_not_moved(
     tmp_path: Path, nextjs_repo: Path
 ) -> None:
     import shutil
@@ -170,4 +170,5 @@ def test_mixed_js_and_python_repo_keeps_its_match_and_a_pyproject_without_python
     bare = tmp_path / "bare"
     (bare / ".claude-plugin").mkdir(parents=True)
     (bare / "pyproject.toml").write_text(PYPROJECT_BARE, encoding="utf-8")  # no requires-python
-    assert match_profile(add_plugin_signal(detect_stack(bare), bare), _profiles_dir())["matched"] == "claude-plugin"
+    # nothing scored before the signal either (no requires-python, no hinted dependencies): still generic, not moved
+    assert match_profile(add_plugin_signal(detect_stack(bare), bare), _profiles_dir())["matched"] == "generic"

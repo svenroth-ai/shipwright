@@ -88,3 +88,19 @@ def test_a_plain_plugin_repo_wins_the_tie_by_its_signal_not_by_name_order(tmp_pa
     sig = {"runtime": {"python": ">=3.11", "claude-plugin": ".claude-plugin/"}}
     assert match_profile(sig, pdir)["matched"] == "zzz-plugin"
     assert match_profile({"runtime": {"python": ">=3.11"}}, pdir)["matched"] == "aaa-generic"
+
+
+def test_a_partly_matching_project_profile_keeps_winning_over_the_bundled_plugin_profile(tmp_path):
+    """requires-python + fastapi; project profile declares two undetectable extras: it scored 0.5 and tied the bundled one."""
+    plain = _repo(tmp_path / "plain", ("fastapi",), plugin=False)
+    plugin = _repo(tmp_path / "plugin", ("fastapi",), plugin=True)
+    for r in (plain, plugin):
+        _profile(r, "my-api", ["python"], ["fastapi", "uvicorn", "pydantic"])
+    a, b = analyze(plain, [], None)["profile"], analyze(plugin, [], None)["profile"]
+    assert (a["matched"], a["source"], a["confidence"]) == (b["matched"], b["source"], b["confidence"]) == ("my-api", "project", 0.5)
+
+
+def test_a_python_repo_without_the_folder_is_not_offered_the_plugin_profile(tmp_path):
+    """The plugin profile is a candidate only where the signature carries its key (candidates feed the adopt interview)."""
+    plain = _repo(tmp_path / "plain", ("fastapi",), plugin=False)
+    assert "claude-plugin" not in {c["name"] for c in analyze(plain, [], None)["profile"]["candidates"]}
