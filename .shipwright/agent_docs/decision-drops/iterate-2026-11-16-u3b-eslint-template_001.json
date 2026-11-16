@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-16-u3b-eslint-template",
+  "date": "2026-11-16",
+  "section": "Iterate - feature: ESLint template for supabase-nextjs scaffolds",
+  "title": "ESLint config template for supabase-nextjs scaffolds",
+  "context": "The two validator rules of the supabase-nextjs profile lived only in profile JSON; no scaffolded project had a lint config carrying them.",
+  "decision": "A flat-config template with the typescript-eslint parser block then the two profile fragments last between marker comments; a project-skill step writes or merges it; the emulation is replaced by a real ESLint test.",
+  "consequences": "New supabase-nextjs projects lint the two rules; always-on drift test pins template to profile; adopted repos stay instruction only; real-ESLint test needs Node (fails under CI without it).",
+  "rationale": "Rule order and parser are what makes allowTypeImports and flat-config replacement behave; a pasted copy is two fragments, kept honest by equality test.",
+  "rejected": "Generating the config from the profile in the render tool (deferred, trigger: third validator rule or second profile with lint fragments); doing nothing.",
+  "commit": "",
+  "architecture_impact": "convention",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-11-16-u3b-eslint-template-eslint-template.md"
+}

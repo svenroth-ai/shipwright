@@ -1,0 +1,53 @@
+eslint v10.15.0, node v24.15.0
+installed: eslint@10 typescript-eslint@8 typescript@5; config: shared/templates/eslint/eslint.config.mjs.template, unchanged
+exit status 1 (1 = findings, as seeded)
+
+fixture  eslint.config.mjs: no finding
+fixture  src/app/api/profile/route.ts: no finding
+fixture  src/app/api/projects/route.ts: no finding
+clean    src/app/api/x/case108/route.ts: no finding
+clean    src/app/case103/opengraph-image.tsx: no finding
+flagged  src/app/case15/page.tsx: no-restricted-properties
+flagged  src/app/case2/page.tsx: no-restricted-imports
+flagged  src/app/case3/page.tsx: no-restricted-imports
+flagged  src/components/case0/a.tsx: no-restricted-imports
+flagged  src/components/case1/a.tsx: no-restricted-imports
+flagged  src/components/case10/a.tsx: no-restricted-properties
+clean    src/components/case102/user-menu.tsx: no finding
+clean    src/components/case106/a.tsx: no finding
+clean    src/components/case109/a.test.tsx: no finding
+flagged  src/components/case11/a.tsx: no-restricted-globals
+clean    src/components/case110/a.tsx: no finding
+clean    src/components/case111/a.tsx: no finding
+clean    src/components/case112/user-menu.tsx: no finding
+clean    src/components/case113/user-menu.tsx: no finding
+clean    src/components/case114/a.tsx: no finding
+flagged  src/components/case12/a.tsx: no-restricted-properties
+flagged  src/components/case13/a.tsx: no-restricted-properties
+flagged  src/components/case14/a.tsx: no-restricted-properties
+flagged  src/components/case4/a.tsx: no-restricted-imports
+flagged  src/components/case5/a.tsx: no-restricted-imports
+flagged  src/components/case6/a.tsx: no-restricted-imports
+flagged  src/components/case7/a.tsx: no-restricted-imports
+flagged  src/components/case8/a.tsx: no-restricted-imports
+flagged  src/components/case9/a.tsx: no-restricted-globals
+fixture  src/components/item-list.tsx: no finding
+fixture  src/components/project-list.tsx: no finding
+fixture  src/components/search-bar.tsx: no finding
+fixture  src/components/sign-out-example.tsx: no finding
+fixture  src/components/theme-toggle.tsx: no finding
+clean    src/components/ui/case115/button.tsx: no finding
+fixture  src/components/user-profile.tsx: no finding
+clean    src/lib/api/case107/projects.ts: no finding
+clean    src/lib/case104/users.test.ts: no finding
+fixture  src/lib/config.ts: no finding
+fixture  src/lib/stores/ui-store.ts: no finding
+clean    src/lib/supabase/case100/server.ts: no finding
+clean    src/lib/supabase/case101/projects.ts: no finding
+fixture  src/lib/supabase/profiles.ts: no finding
+fixture  src/lib/supabase/projects.ts: no finding
+fixture  src/lib/users.test.ts: no finding
+fixture  tests/integration/courses.integration.test.ts: no finding
+fixture  tests/integration/entity.integration.test.ts: no finding
+fixture  tests/integration/helpers/supabase-clients.ts: no finding
+clean    tests/unit/case105/users.test.ts: no finding

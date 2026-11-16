@@ -132,6 +132,8 @@ _Where the work detail lives_ at the end of this document.
 - (E) [AC18] Given the Supabase web app stack profile, when its architecture rules are checked, then each of the six rules states what it requires and why, says how it is kept, and the profile is still reported valid.
 - (E) [AC19] Given a new Supabase web app project built from the shipped examples, when the lint rule for direct database client use and for direct fetch calls in components is applied to those examples, then no example is flagged, and a seeded violation of each rule is flagged.
 - (E) [AC20] Given a new Supabase web app project, when the shipped route and component examples are read, then none of them uses the database client or fetch directly in a way the architecture rules forbid, and the architecture rules are written down once instead of repeated in several example files.
+- (E) [AC21] Given a new Supabase web app project is scaffolded, when the project's lint configuration is written, then it carries the profile's two lint rules unchanged, after the parser setup and as the last entries, so nothing placed before them can weaken them.
+- (E) [AC22] Given the shipped lint configuration for a Supabase web app, when the real linter runs over the shipped examples plus one seeded violation per rule, then every seeded violation is reported by its rule, no example or exempt file is reported, and the configuration loads without error.
 
 <a id="fr-0102"></a>
 ### FR-01.02 — Project decomposition into scoped units

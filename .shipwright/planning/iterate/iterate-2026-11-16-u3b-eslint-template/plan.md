@@ -1,0 +1,7 @@
+Goal: ESLint config template carrying the supabase-nextjs lint fragments, written into new projects by the project skill; real ESLint run replaces the Python emulation
+Reason: The two validator rules of U3a were checked by nothing in a scaffolded project
+Reference: .shipwright/planning/campaigns/2026-11-15-profile-architecture-rules-BRIEF.md section 3 U3b
+Affected ACs: FR-01.01.AC21, FR-01.01.AC22
+AC item: {"confirmed": false, "decided_by": "code", "files": ["shared/templates/eslint/eslint.config.mjs.template"], "kind": "add", "new_text": "Given a new Supabase web app project is scaffolded, when the project's lint configuration is written, then it carries the profile's two lint rules unchanged, after the parser setup and as the last entries, so nothing placed before them can weaken them.", "owner_fr": "FR-01.01"}
+AC item: {"confirmed": false, "decided_by": "code", "files": ["shared/templates/eslint/eslint.config.mjs.template"], "kind": "add", "new_text": "Given the shipped lint configuration for a Supabase web app, when the real linter runs over the shipped examples plus one seeded violation per rule, then every seeded violation is reported by its rule, no example or exempt file is reported, and the configuration loads without error.", "owner_fr": "FR-01.01"}
+AC decisions: [{"ac": "FR-01.01.new", "mode": "auto", "answer": "auto", "kind": "add", "answered_via": "none", "decided_by": "code", "confirmed": false}, {"ac": "FR-01.01.new", "mode": "auto", "answer": "auto", "kind": "add", "answered_via": "none", "decided_by": "code", "confirmed": false}]

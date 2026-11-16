@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: bug\n- Severity: medium\n- File: plugins/shipwright-project/skills/project/references/step-7-scaffolding.md:146\n- Finding: Step 3 explicitly handles `eslint.config.cjs` but instructs adding an `import tseslint` line. Static ESM imports are invalid in CommonJS files, so following this instruction breaks ESLint for an existing CJS configuration.\n- Suggestion: Preserve the configuration\u2019s module format: use `require(\"typescript-eslint\")` for CJS and insert blocks into its existing exported array.\n\n- Category: regression\n- Severity: medium\n- File: plugins/shipwright-project/skills/project/references/step-7-scaffolding.md:145\n- Finding: A project containing only `.eslintrc*` satisfies step 2\u2019s \u201cno `eslint.config.*`\u201d condition, so scaffolding writes a new flat config. ESLint then uses that config instead of the existing legacy rules. The legacy-config warning in step 3 is bypassed because that branch requires an existing flat config.\n- Suggestion: Check for legacy configurations before creating a new flat config. Follow the stated warning path or explicitly migrate the existing rules.\n\nOverall assessment: ship-with-fixes. The template and drift tests address the core scope, but the scaffold instructions can break or replace existing lint configurations.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "**Findings**\n\n- Category: spec / Severity: medium\n  File: `shipwright_test_results.json` (~line 30, \"evidence\" for the seeded-run behavior)\n  Finding: The AC requires the seeded-violation ESLint run \"executed once in the iterate, output recorded as evidence.\" The results file cites `.shipwright/planning/iterate/iterate-2026-11-16-u3b-eslint-template/eslint-seeded-run.txt` (and `surface_verification.log`) as evidence, but neither file is added in this diff. If `.shipwright/` is not committed, the evidence exists only as an unverifiable path claim \u2014 the AC is only partially satisfied.\n  Suggestion: Commit the eslint-seeded-run.txt (or a copy under a tracked evidence location) with this diff, or point `evidence` at a path that is actually present in the repo.\n\n- Category: test / Severity: medium\n  File: `shipwright_test_results.json` (\"skipped\": 60)\n  Finding: The recorded unit run has 60 skipped tests while `test_real_eslint_run_over_template_fixture_and_seeded_cases` is designed to skip when Node is absent (and only fails under CI). If the recording environment lacked Node (or `is_ci()` didn't detect CI), the seeded run never executed, yet the behaviors list claims it PASSED with an ESLint version string. The 60 skips are unexplained and make the evidence claim unverifiable from the diff alone.\n  Suggestion: Re-run with Node present (or confirm `is_ci()` is true in the recording environment) and record a run where the ESLint test's skip count is accounted for; note in the results file why 60 tests skipped.\n\n- Category: spec / Severity: low\n  File: `shared/profiles/supabase-nextjs.json:127` and `step-7-scaffolding.md` step 4\n  Finding: Step 4 instructs adding `eslint`, `typescript-eslint`, and `typescript` with \"versions as the profile's `linting` and `stack.runtime` give them,\" but the diff only adds `typescript-eslint` to `linting`. If `stack.runtime` doesn't carry a TypeScript version (not shown in the diff), the scaffold step has no source for the `typescript` version and the template comment's `typescript@5` is the only hint.\n  Suggestion: Verify `stack.runtime` contains a `typescript` entry; if not, add it so the instruction is self-contained.\n\n- Category: edge-case / Severity: low\n  File: `shared/tests/test_supabase_nextjs_eslint_template.py` (`test_real_eslint_run...`, `fixture <= set(report)`)\n  Finding: The assertion requires every fixture file to appear in ESLint's JSON report. ESLint only reports files matched by at least one config block with a `files` key; if the fixture tree ever gains a non-TS/JS file (e.g., a `.json`, `.sql`, or `.md` example), ESLint silently omits it and the test fails with an opaque set difference (or worse, a future contributor \"fixes\" it by relaxing the assertion). Also `report[rel]` in the loop raises a bare KeyError if a case file is silently ignored, which obscures the real cause.\n  Suggestion: Document/assert that the fixture tree is TS/JS-only, and replace `report[rel]` with `report.get(rel, [])` plus an explicit \"not linted\" failure message.\n\n- Category: bug / Severity: low\n  File: `shipwright_test_results.json:90` (end of file)\n  Finding: The rewritten file lost its trailing newline (`\\ No newline at end of file`), a needless diff-noise/POSIX-text regression in a tracked JSON file.\n  Suggestion: Restore the trailing newline.\n\n**What is solid:** the drift tests are genuine (fragment-vs-template equality with JSON parse, parser-first/frag-last ordering, no-two-fragments-same-rule, parser glob coverage), the real ESLint run is one test with a single install (xdist-safe), distinguishes exit 1 from exit 2, checks for fatal/parse errors, and the seeded/compliant case matrix is substantive \u2014 including obfuscated forms (`window['fetch']`, `globalThis?.['fetch']`) that would catch a wrong rule config. The scaffold-step prose covers merge/replacement semantics of flat configs and idempotency. No security issues.\n\nOverall: the code and tests are well built, but the evidence artifact the AC requires is not actually in the change and the recorded run's skip count undermines the \"executed once\" claim \u2014 ship-with-fixes.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-11-16-u3b-eslint-template",
+    "at": "2026-11-16T02:55:10.185655+00:00"
+  },
+  "verdicts": {
+    "openai": "revise",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

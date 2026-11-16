@@ -1,0 +1,67 @@
+{
+  "run_id": "iterate-2026-11-16-u3b-eslint-template",
+  "date": "2026-11-16T03:00:31.994857Z",
+  "event_at": "2026-11-16T02:54:04.455462+00:00",
+  "type": "feature",
+  "complexity": "medium",
+  "prior_source": "history",
+  "branch": "iterate/campaign-profile-architecture-rules--U3b",
+  "spec": ".shipwright/planning/iterate/campaigns/profile-architecture-rules/sub-iterates/U3b-eslint-template.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-11-16-u3b-eslint-template",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "each lint fragment of the profile equals its marked block in the ESLint template",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_supabase_nextjs_eslint_template.py::test_each_lint_fragment_of_the_profile_is_in_the_template_unchanged PASSED"
+      },
+      {
+        "behavior": "parser block first, fragments last, nothing after them, parser globs cover every fragment glob, no two fragments set the same rule",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_supabase_nextjs_eslint_template.py::test_template_puts_parser_first_and_fragments_last, ::test_no_two_fragments_set_the_same_rule PASSED"
+      },
+      {
+        "behavior": "real ESLint loads the shipped template, flags every seeded violation with its rule, flags no fixture, compliant or exempt file",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_supabase_nextjs_eslint_template.py::test_real_eslint_run_over_template_fixture_and_seeded_cases PASSED; .shipwright/planning/iterate/iterate-2026-11-16-u3b-eslint-template/eslint-seeded-run.txt (ESLint 10.15.0)"
+      },
+      {
+        "behavior": "the scaffold step names the template, runs no command and puts no placeholder in double quotes",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_supabase_nextjs_eslint_template.py::test_scaffold_step_writes_the_template_without_a_shell_command PASSED"
+      },
+      {
+        "behavior": "the fixture tree still equals the template examples and every example is mapped (emulation removed)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_supabase_nextjs_rules_drift.py PASSED (29)"
+      }
+    ],
+    "counts": {
+      "testable": 5,
+      "tested": 5,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 2,
+      "covered_acs": 2
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run pytest shared/tests/test_supabase_nextjs_eslint_template.py shared/tests/test_supabase_nextjs_rules_drift.py -q -p no:cacheprovider",
+    "exit_code": 0,
+    "tests_run": 34,
+    "evidence_path": ".shipwright/runs/iterate-2026-11-16-u3b-eslint-template/surface_verification.log",
+    "timestamp": "2026-11-16T02:40:11.666Z",
+    "attempts": 1
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}
