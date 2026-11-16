@@ -1,0 +1,6 @@
+{
+  "stage": "spec-compliance",
+  "verdict": "PASS",
+  "spec_citations": [],
+  "summary": "All 4 iterate ACs and FR-01.11/AC52 are met by the diff. Stage 1 applies the declared floor from --spec or --declared-complexity by maximum; recheck takes the highest of stage1, the diff floor and the declared level; risk_recheck.json carries declared_complexity and the F11 gate fails a record below it; the planner validates every unit before writing and emits the Complexity line only when given. Note: campaign-mode.md was edited in place (3 lines for 3), recorded and justified in the spec's Internal Plan Review. Code-reviewer may proceed."
+}

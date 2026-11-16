@@ -1,0 +1,299 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-16-campaign-declared-complexity-floor",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-16T09:15:18.542695+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Define parse failure explicitly: an unrecognized level in the spec should be a hard error at the classifier/recheck side (fail loudly, don't silently treat as undeclared — otherwise a typo silently drops the floor, recreating the original bug). Consider a checksum-free sanity: log a warning when a declared value is present but unparseable.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Add an integration assertion (step 7 already exists) that an end-to-end run actually produces `declared_complexity: medium` in `risk_recheck.json`, not just that the components accept it individually — this is the guard that catches silent-inert regressions. Make it explicit in the plan that step 7 gates steps 2–4, not just accompanies them.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Normalize case at the planner boundary and reject only genuinely unknown tokens; confirm the runner contract schema change is backward-compatible (old sub-iterate payloads without `complexity` still accepted).",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Fine to keep given the stated caps, but keep `declared_complexity.py` minimal — parse, validate, `apply_floor(declared, effective)` — and resist adding a general complexity-hierarchy abstraction. If `apply_floor` stays one expression, consider folding it into the classifier and recheck via a two-line import of the parser only.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Add a one-line test: declared `medium` + large-risk diff ⇒ `effective: large`.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The plan adds `declared_complexity` to the record and runner schema without defining compatibility for existing records. Requiring the field unconditionally could make F11 reject previously valid, undeclared runs, contrary to the requirement to preserve existing behavior.",
+          "suggestion": "Define the representation explicitly: accept an absent field on legacy records as “no declared floor,” emit a consistent value for new undeclared records, and reject unknown non-null levels. Test legacy records through both schema validation and the registered gate.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "“Rejects an unknown level before writing anything” requires campaign-wide preflight validation. Validating `complexity` only when rendering each unit can leave a partially written campaign when a later unit contains an invalid value. The work breakdown does not specify this ordering.",
+          "suggestion": "Validate every sub-iterate’s supplied complexity before any campaign output is created or modified. Test an invalid second unit and assert that no outputs were created or changed.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Stage 1 gains both a parsed spec declaration and `--declared-complexity`, but their interaction is unspecified. An override that replaces the spec value could accidentally lower the operator’s floor.",
+          "suggestion": "Define precedence explicitly. If both inputs represent floors, use their maximum alongside the inferred tier; test a `medium` spec with a `small` CLI argument.  The persisted declaration and shared floor logic are sound, and the proposed integration coverage targets the important boundaries. Clarify backward compatibility, campaign-wide validation ordering, and competing declaration inputs before implementation.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-16T09:10:33.603773+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: edge-case** — **Severity: medium** — The `Complexity:` line is human-editable markdown, and `parse_declared_complexity` must tolerate more than the probed cases (trailing whitespace, `Complexity (size):`, the line appearing in a code fence or quoted brief excerpt inside the spec). The plan probes prose/wrong-case/bold/quote but doesn't specify the fallback behavior on ambiguity.\n  **Suggestion:** Define parse failure explicitly: an unrecognized level in the spec should be a hard error at the *classifier/recheck* side (fail loudly, don't silently treat as undeclared — otherwise a typo silently drops the floor, recreating the original bug). Consider a checksum-free sanity: log a warning when a declared value is present but unparseable.\n\n- **Category: edge-case** — **Severity: medium** — Work breakdown order: recheck (step 3) reads the spec line before the planner emits it (step 4). Within one merged change that's fine, but if the steps land in separate commits, the recheck will parse specs that never contain the line and the floor is silently inert — same failure mode as today, invisible.\n  **Suggestion:** Add an integration assertion (step 7 already exists) that an end-to-end run actually produces `declared_complexity: medium` in `risk_recheck.json`, not just that the components accept it individually — this is the guard that catches silent-inert regressions. Make it explicit in the plan that step 7 gates steps 2–4, not just accompanies them.\n\n- **Category: risk** — **Severity: low** — `campaign_init.py` \"rejects an unknown level before writing anything\" — verify the rejection happens before any partial spec render, and that the sub-iterate `complexity` key values that historically existed (any old runs with unexpected casing?) don't now hard-fail the planner on replay/re-run of a prior campaign.\n  **Suggestion:** Normalize case at the planner boundary and reject only genuinely unknown tokens; confirm the runner contract schema […truncated]\n\n[openai] 1. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** The plan adds `declared_complexity` to the record and runner schema without defining compatibility for existing records. Requiring the field unconditionally could make F11 reject previously valid, undeclared runs, contrary to the requirement to preserve existing behavior.  \n   **Suggestion:** Define the representation explicitly: accept an absent field on legacy records as “no declared floor,” emit a consistent value for new undeclared records, and reject unknown non-null levels. Test legacy records through both schema validation and the registered gate.\n\n2. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** “Rejects an unknown level before writing anything” requires campaign-wide preflight validation. Validating `complexity` only when rendering each unit can leave a partially written campaign when a later unit contains an invalid value. The work breakdown does not specify this ordering.  \n   **Suggestion:** Validate every sub-iterate’s supplied complexity before any campaign output is created or modified. Test an invalid second unit and assert that no outputs were created or changed.\n\n3. **Category:** approach  \n   **Severity:** low  \n   **Finding:** Stage 1 gains both a parsed spec declaration and `--declared-complexity`, but their interaction is unspecified. An override that replaces the spec value could accidentally lower the operator’s floor.  \n   **Suggestion:** Define precedence explicitly. If both inputs represent floors, use their maximum alongside the inferred tier; test a `medium` spec with a `small` CLI argument.\n\nThe persisted declaration and shared floor logic are sound, and the proposed integration coverage targets the important boundaries. Clarify backward compatibility, campaign-wide validation ordering, and competing declaration inputs before implementation.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "approve"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-iterate/scripts/lib/classify_complexity.py",
+          "line": 205,
+          "finding": "The --declared-complexity CLI option has no production caller (the runner passes only --spec); declared = declared_complexity is a no-op alias.",
+          "suggestion": "Remove the option and the merge list; use the parameter directly.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/scripts/lib/classify_complexity.py",
+          "line": 152,
+          "finding": "classify() does not validate declared_complexity when called directly; apply_floor fails with an opaque ValueError while recheck() names the problem.",
+          "suggestion": "Validate in apply_floor so both entry points raise the same named error.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/scripts/lib/declared_complexity.py",
+          "line": 33,
+          "finding": "Parser accepted only spaces and ignored trailing punctuation; a scope line such as Complexity: TBD or Complexity: large in free text could fail or floor a unit.",
+          "suggestion": "Allow tabs, treat trailing punctuation as malformed, scan only the header before the first level-2 heading, add tests.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-iterate/scripts/lib/diff_risk_recheck.py",
+          "line": 62,
+          "finding": "The noqa F401 on the _split_flags import is misleading because main() calls it directly.",
+          "suggestion": "Drop F401.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-16T09:20:57.887768+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: a unit declared medium in the brief can no longer be recorded small — The floor exists only if the orchestrator copies the brief tier into a complexity key when it calls campaign_init; wording said may carry and nothing checks the copy. A missing key reads as undeclared and passes F11.",
+          "suggestion": "Make the wording mandatory, or record each unit declared tier in campaign.md so the setup review shows the omission.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "reversibility / hidden coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the runner always passes --spec — A runner launched from the stale plugin cache uses the old contract without --spec; declared_complexity is null and F11 cannot tell undeclared from omitted.",
+          "suggestion": "Record that a spec was consulted, or state that the post-merge cache sync is mandatory before any campaign dispatch.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: a spec with no declaration behaves exactly as before — The parser searched the whole spec, so free scope or acceptance-criteria text such as Complexity: large or Complexity: TBD could raise the tier or hard-fail a unit; a malformed header line was skipped when a valid line appeared later.",
+          "suggestion": "Parse only the header region and let the first declaring line decide.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling & blast radius",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the floor is local to campaign units — F5c entries recorded at the declared floor feed the history-prior median used by standalone iterates.",
+          "suggestion": "Accept in writing or exclude declared-sourced entries.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-16T09:20:58.196673+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "line — `plugins/shipwright-iterate/scripts/lib/declared_complexity.py:55` (`_DECLARED_LINE.search` + \"first declaring line wins\" docstring)",
+          "line": null,
+          "finding": "The docstring claims \"a later quotation of the format inside the spec cannot override the header,\" but `search()` returns the first full-line match anywhere in the file. A hand-edited or pre-existing unit spec (which the module explicitly supports — \"every hand-written or pre-existing unit\") that quotes or fences an example `Complexity:` line above the real header silently replaces the operator's floor with the quoted value (e.g. a fenced `Complexity: small` above `Complexity: medium` drops the floor back to `small` — exactly the silent-drop failure this change exists to close). Conversely, a fenced example in a unit that declares none silently fabricates a floor. glm's external review explicitly called out code fences; the strict full-line regex addresses typos but not position/fencing.",
+          "suggestion": "Ignore content inside fenced code blocks when scanning, or prefer the highest-ranked / last declaring line, or only accept a declaration from the header region of the spec. Add a parse test for \"quotation before header\" and \"fenced example in an undeclared unit.\"",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "line — `plugins/shipwright-iterate/scripts/lib/declared_complexity.py:34` (`_MALFORMED_LINE`)",
+          "line": null,
+          "finding": "Any line in the spec consisting solely of `complexity: <single-word>` is treated as a malformed declaration and raises `ValueError`, which now exits 2 in both CLIs. But hand-written scope text can legitimately contain such a line as ordinary prose — e.g. a bullet `- complexity: quadratic` or `- complexity: high` in a performance note — with no intent to declare a tier. That hard-stops the whole unit run on non-declaration prose. (Multi-word values like `n/a` or `small changes are fine` fall through to `None`, so the strictness is also inconsistent across prose shapes.)",
+          "suggestion": "Scope the malformed-level error to lines outside code fences, or only raise when a well-formed declaring line also exists elsewhere / the line appears in the header region; otherwise treat single-word non-level lines as prose.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "line — `shared/scripts/tools/verifiers/risk_recheck_recording.py:228` (unknown-tier branch)",
+          "line": null,
+          "finding": "For a record with an unknown declared tier (`huge`), the failure message tells the operator to \"Re-run the Step 3.4 re-check with --spec\" — but re-running with `--spec` cannot fix a corrupted record; the correct remedy is fixing the record/spec's malformed line. Cosmetic in a message that gates a hard failure.",
+          "suggestion": "Differentiate the message for `decl_rank is None` (\"invalid declared tier in the record — fix the spec's Complexity line\") from the genuine below-floor case.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-iterate/scripts/lib/declared_complexity.py",
+          "line": 63,
+          "finding": "The parser searches for any valid declaration before checking malformed declarations. A spec containing `Complexity: mediun` in its header and a later example containing `Complexity: small` silently returns `small`. This bypasses the promised typo error and can skip required reviews. It also contradicts the documented “first declaring line wins” behavior.",
+          "suggestion": "Scan declaration candidates in document order and validate the first candidate immediately. Add a test with a malformed header followed by a valid example and assert that parsing raises `ValueError`.  Overall assessment: ship-with-fixes. The main floor propagation and F11 checks implement the acceptance criteria, but declaration parsing needs this correction before shipping. Execution was blocked by the environment policy, so this assessment is based on the supplied diff.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-16T09:20:58.517714+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category:** edge-case\n  **Severity:** medium\n  **File:line** — `plugins/shipwright-iterate/scripts/lib/declared_complexity.py:55` (`_DECLARED_LINE.search` + \"first declaring line wins\" docstring)\n  **Finding:** The docstring claims \"a later quotation of the format inside the spec cannot override the header,\" but `search()` returns the *first* full-line match anywhere in the file. A hand-edited or pre-existing unit spec (which the module explicitly supports — \"every hand-written or pre-existing unit\") that quotes or fences an example `Complexity:` line *above* the real header silently replaces the operator's floor with the quoted value (e.g. a fenced `Complexity: small` above `Complexity: medium` drops the floor back to `small` — exactly the silent-drop failure this change exists to close). Conversely, a fenced example in a unit that declares none silently *fabricates* a floor. glm's external review explicitly called out code fences; the strict full-line regex addresses typos but not position/fencing.\n  **Suggestion:** Ignore content inside fenced code blocks when scanning, or prefer the highest-ranked / last declaring line, or only accept a declaration from the header region of the spec. Add a parse test for \"quotation before header\" and \"fenced example in an undeclared unit.\"\n\n- **Category:** edge-case\n  **Severity:** low\n  **File:line** — `plugins/shipwright-iterate/scripts/lib/declared_complexity.py:34` (`_MALFORMED_LINE`)\n  **Finding:** Any line in the spec consisting solely of `complexity: <single-word>` is treated as a malformed *declaration* and raises `ValueError`, which now exits 2 in both CLIs. But hand-written scope text can legitimately contain such a line as ordinary prose — e.g. a bullet `- complexity: quadratic` or `- complexity: high` in a performance note — with no intent to declare a tier. That hard-stops the whole unit run on non-declaration prose. (Multi-word values like `n/a` or `small changes are fine` fall through […truncated]\n\n[openai] - Category: bug\n- Severity: medium\n- File: `plugins/shipwright-iterate/scripts/lib/declared_complexity.py:63`\n- Finding: The parser searches for any valid declaration before checking malformed declarations. A spec containing `Complexity: mediun` in its header and a later example containing `Complexity: small` silently returns `small`. This bypasses the promised typo error and can skip required reviews. It also contradicts the documented “first declaring line wins” behavior.\n- Suggestion: Scan declaration candidates in document order and validate the first candidate immediately. Add a test with a malformed header followed by a valid example and assert that parsing raises `ValueError`.\n\nOverall assessment: ship-with-fixes. The main floor propagation and F11 checks implement the acceptance criteria, but declaration parsing needs this correction before shipping. Execution was blocked by the environment policy, so this assessment is based on the supplied diff.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-16T09:16:07.694755+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-16T09:10:33.152604+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-16T09:10:33.370572+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

@@ -24,6 +24,12 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+_LIB_DIR = str(Path(__file__).resolve().parents[1] / "lib")
+if _LIB_DIR not in sys.path:
+    sys.path.insert(0, _LIB_DIR)
+
+from campaign_unit_spec import render_unit_spec, unit_complexity  # noqa: E402
+
 # Canonical triage-item id shape — `trg-` + 8 lowercase hex chars, mirroring
 # shared/scripts/triage.py:_generate_id (`f"trg-{uuid4().hex[:8]}"`). Used to
 # validate the --expands-triage / --from-triage anchor before it is stamped
@@ -194,6 +200,8 @@ def init_campaign(
     # Defensive validation — `init_campaign` is imported directly (tests,
     # campaign mode), not only reached through `main`'s CLI guard.
     expands_triage = _validate_triage_id(expands_triage, "expands_triage")
+    for si in sub_iterates:
+        unit_complexity(si)  # reject an unknown declared tier before writing anything
     depends_on_warnings = _validate_depends_on_for_write(sub_iterates, branch_strategy, campaign_slug)
     for w in depends_on_warnings:
         print(f"WARNING: {w}", file=sys.stderr)
@@ -237,18 +245,8 @@ created: {datetime.now(timezone.utc).isoformat()}
     (campaign_dir / "campaign.md").write_text(campaign_md, encoding="utf-8")
 
     for si in sub_iterates:
-        spec = f"""# Sub-Iterate: {si['id']} — {si.get('title', si['slug'])}
-
-## Scope
-
-{si.get('scope', 'TBD')}
-
-## Acceptance Criteria
-
-{si.get('acceptance_criteria', '- [ ] TBD')}
-"""
         filename = f"{si['id']}-{si['slug']}.md"
-        (sub_dir / filename).write_text(spec, encoding="utf-8")
+        (sub_dir / filename).write_text(render_unit_spec(si), encoding="utf-8")
 
     status = {
         "campaign": campaign_slug,

@@ -86,3 +86,13 @@ once it is), so the operator's path stays reachable after the fact too. A
 squash-merge or rebase that rewrites the committed SHA after the ack is
 recorded invalidates `provenance_ref` along with it — re-record post-rewrite,
 the same way a content-fingerprint change already requires.
+
+**A declared complexity is a floor.** The operator decides in the brief that a unit
+is `medium`; the planner records it as one `Complexity: <level>` line in the unit's
+sub-iterate spec (`campaign_init.py --sub-iterates`, key `complexity`). Stage 1
+(`classify_complexity.py --spec`) and this re-check (`--spec`) both read that file
+(an unreadable path or a mistyped level stops the run) and take `max(estimate, declared)`: the diff may raise the tier,
+never lower it, so a small diff in a `medium` unit still runs the plan, architecture
+and doubt reviews. `risk_recheck.json` carries `declared_complexity`; the F11 gate
+`check_risk_recheck_recorded` fails a record whose effective tier sits below it. A spec
+with no such line behaves exactly as before.
