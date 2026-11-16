@@ -1,0 +1,396 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-16-u3b-eslint-template",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-16T02:32:32.375046+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Step 2's \"if absent, else merge the two blocks last\" logic for existing `eslint.config.mjs` files is the riskiest part of the plan and is underspecified. \"Merge the two blocks last\" is not a mechanical operation — existing configs may have other rules after the insertion point, may already contain a (possibly divergent) BEGIN/END block, or may be `.ts`/flat-config variants with incompatible shapes. Nothing says what \"merge\" means here (string splice? parse the array?).",
+          "suggestion": "Constrain the merge to: if markers exist, replace the marked block; if no markers, append the block at the end of the `plugins`/`rules` array; if the file can't be parsed as flat config, skip with a warning and log the manual step. Specify this in the step doc so the drift test can target it.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The seeded-violation ESLint run in the plan requires `npm install eslint + typescript-eslint` into a tmp dir. That's a network-dependent, slow test that will be flaky in CI sandboxes and offline environments. The AC itself says a pytest that skips without Node \"is allowed but is not the evidence\" — the evidence is one recorded run — so the risk is investing in a fragile automated install path when the acceptance only demands a recorded artifact.",
+          "suggestion": "Either cache/resolve the install (existing `node_modules` from U3a run, a lockfile-pinned `npm ci`) or make the automated test use a pre-resolved fixture. Confirm whether the drift test (cheap, deterministic) plus recorded evidence is actually the contract, and treat the live-run pytest as best-effort.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "\"Typescript-eslint parser block\" ordering is asserted in the drift test (parser, then fragments last), but ESLint flat-config semantics matter here: fragment rules placed last only \"win\" if they're in the same config object the drift test asserts order of. If the template spreads fragments across separate array entries, last-entry-wins applies at the entry level, not rule level — a partially-overriding earlier rule entry could silently shadow individual rules.",
+          "suggestion": "Confirm the fragments live in one config object at the end of the array (or one entry per fragment, both after all other entries) and assert entry-level ordering, not just substring position, in the drift test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "Step 2 mentions \"devDependencies named\" but doesn't state where they're verified. The drift test asserts typescript-eslint is named in the template context, but if the scaffold step installs into the scaffolded app, the step doc needs the exact package names/versions or the scaffold will produce a config referencing an uninstalled parser (silent no-op or error at lint time).",
+          "suggestion": "Add an explicit assertion that the step names both `eslint` and `typescript-eslint` (with any pinned version policy) in the devDependency block, and state the failure mode if they're missing.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "\"No shell command, no quoted placeholders\" is a good guard, but the doc-level test (\"no placeholder inside double quotes\") only covers double quotes. Placeholder leakage into backticks or single quotes in a `.mjs` template would produce syntactically-valid-but-wrong config that passes the doc test.",
+          "suggestion": "Broaden the doc-level test to any quote context, or better, assert the rendered template is valid JS (parseable by `node --check` or an AST parse) in the fixture test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The \"replace the emulation with a real ESLint run\" step removes existing coverage. If the emulation test currently checks rule behavior (e.g., a specific violation fires) and the real-run pytest skips in environments without Node, some environments lose all behavioral verification.",
+          "suggestion": "Keep the cheap emulation/syntax-level test alongside the live-run test rather than replacing it — they test different things (template correctness vs. rule behavior).",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk |",
+          "file": null,
+          "line": null,
+          "finding": "“Merge the two blocks last” does not define how existing ESLint configurations are preserved. Flat-config precedence depends on file matching and rule keys; an existing parser setup, duplicate architecture blocks, or a later matching override could change enforcement.",
+          "suggestion": "Define an idempotent merge: preserve existing Next.js configuration, replace existing marked architecture blocks, and append missing blocks once. Ensure the TypeScript parser applies to the same files as the rules. Validate both a fresh scaffold and an existing configuration.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency |",
+          "file": null,
+          "line": null,
+          "finding": "Naming devDependencies leaves their compatible versions unspecified. Installing unversioned `eslint` and `typescript-eslint` in the test could validate a different toolchain from the generated application and introduce network-dependent failures into routine tests.",
+          "suggestion": "Use the scaffold’s supported versions consistently in dependency instructions and execution tests. Keep the always-running fragment drift test independent of Node and npm installation; run the real integration check with explicitly provisioned dependencies.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "“Seeded violations” and recorded output do not establish that both architecture rules actually execute. ESLint can fail because of configuration errors or report unrelated diagnostics, producing misleading evidence.",
+          "suggestion": "Run the rendered template against a clean fixture and a violation fixture for each rule. Assert the expected rule IDs and diagnostics, clean-fixture success, and absence of configuration errors. Record the command, tool versions, exit status, and diagnostics as the required execution evidence.  The approach is sound and appropriately scoped, but merge behavior and execution validation need to be explicit before implementation. Repository inspection was blocked by the environment policy, so these findings are based on the supplied specification and mini-plan.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-16T02:32:31.959975+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n**Category: edge-case — Severity: medium**\n**Finding:** Step 2's \"if absent, else merge the two blocks last\" logic for existing `eslint.config.mjs` files is the riskiest part of the plan and is underspecified. \"Merge the two blocks last\" is not a mechanical operation — existing configs may have other rules after the insertion point, may already contain a (possibly divergent) BEGIN/END block, or may be `.ts`/flat-config variants with incompatible shapes. Nothing says what \"merge\" means here (string splice? parse the array?).\n**Suggestion:** Constrain the merge to: if markers exist, replace the marked block; if no markers, append the block at the end of the `plugins`/`rules` array; if the file can't be parsed as flat config, skip with a warning and log the manual step. Specify this in the step doc so the drift test can target it.\n\n**Category: approach — Severity: medium**\n**Finding:** The seeded-violation ESLint run in the plan requires `npm install eslint + typescript-eslint` into a tmp dir. That's a network-dependent, slow test that will be flaky in CI sandboxes and offline environments. The AC itself says a pytest that skips without Node \"is allowed but is not the evidence\" — the evidence is one recorded run — so the risk is investing in a fragile automated install path when the acceptance only demands a recorded artifact.\n**Suggestion:** Either cache/resolve the install (existing `node_modules` from U3a run, a lockfile-pinned `npm ci`) or make the automated test use a pre-resolved fixture. Confirm whether the drift test (cheap, deterministic) plus recorded evidence is actually the contract, and treat the live-run pytest as best-effort.\n\n**Category: edge-case — Severity: low**\n**Finding:** \"Typescript-eslint parser block\" ordering is asserted in the drift test (parser, then fragments last), but ESLint flat-config semantics matter here: fragment rules placed last only \"win\" if they're in the same config object the drift test asserts order o […truncated]\n\n[openai] 1. **Category: risk | Severity: medium**  \n   **Finding:** “Merge the two blocks last” does not define how existing ESLint configurations are preserved. Flat-config precedence depends on file matching and rule keys; an existing parser setup, duplicate architecture blocks, or a later matching override could change enforcement.  \n   **Suggestion:** Define an idempotent merge: preserve existing Next.js configuration, replace existing marked architecture blocks, and append missing blocks once. Ensure the TypeScript parser applies to the same files as the rules. Validate both a fresh scaffold and an existing configuration.\n\n2. **Category: dependency | Severity: medium**  \n   **Finding:** Naming devDependencies leaves their compatible versions unspecified. Installing unversioned `eslint` and `typescript-eslint` in the test could validate a different toolchain from the generated application and introduce network-dependent failures into routine tests.  \n   **Suggestion:** Use the scaffold’s supported versions consistently in dependency instructions and execution tests. Keep the always-running fragment drift test independent of Node and npm installation; run the real integration check with explicitly provisioned dependencies.\n\n3. **Category: edge-case | Severity: medium**  \n   **Finding:** “Seeded violations” and recorded output do not establish that both architecture rules actually execute. ESLint can fail because of configuration errors or report unrelated diagnostics, producing misleading evidence.  \n   **Suggestion:** Run the rendered template against a clean fixture and a violation fixture for each rule. Assert the expected rule IDs and diagnostics, clean-fixture success, and absence of configuration errors. Record the command, tool versions, exit status, and diagnostics as the required execution evidence.\n\nThe approach is sound and appropriately scoped, but merge behavior and execution validation need to be explicit before implementation. Repository inspec […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      },
+      "model_tier": "opus"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "import tseslint line missing in merge path",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "devDependency version overwrite",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "performance",
+          "file": null,
+          "line": null,
+          "finding": "npm install per xdist worker",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "caret under cmd.exe",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "unlocked versions",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": null,
+          "line": null,
+          "finding": "template header versions",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "typescript-eslint floor ^8.0.0 predates eslint 10 peer support",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": null,
+          "line": null,
+          "finding": "checkpoint wording, folded options re-applied, step 3 too long, defineConfig, evidence labels, no-brace glob, _write_evidence, --version timeouts",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-16T03:07:23.054811+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "998858a7ffa7e2cf217fa8a3b988f4cc558b777d"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "high",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: typescript-eslint missing from profile dependency data so a greenfield project fails to load the config — typescript-eslint missing from profile dependency data so a greenfield project fails to load the config",
+          "suggestion": "accepted-and-fixed: linting.typescript-eslint ^8 in the profile; step names the profile block",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: Next app created after step 7 may replace the config — Next app created after step 7 may replace the config",
+          "suggestion": "accepted-and-fixed: step says to repeat the merge after the app is created",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: existing ESLint 9 / version floor — existing ESLint 9 / version floor",
+          "suggestion": "accepted-and-fixed: ESLint 9.39 probed with the template (type import clean, runtime import flagged); step states 9.39 and 10 checked",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: xdist_group does nothing under --dist load — xdist_group does nothing under --dist load",
+          "suggestion": "accepted-and-fixed: the four assertions are one test, one npm install; install failure skips outside CI, fails in CI",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: appended block replaces user's restriction options — appended block replaces user's restriction options",
+          "suggestion": "accepted-and-fixed: step says to fold options or tell the user",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: real-ESLint test runs npm install with install scripts in the default tier — CI tests-shared, Windows and every F0 would run an unlocked network install with scripts",
+          "suggestion": "accepted-and-fixed: --ignore-scripts, pytest.mark.slow, shorter timeouts",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-16T03:07:23.195923+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "998858a7ffa7e2cf217fa8a3b988f4cc558b777d"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec /",
+          "file": "shipwright_test_results.json` (~line 30, \"evidence\" for the seeded-run behavior)",
+          "line": null,
+          "finding": "The AC requires the seeded-violation ESLint run \"executed once in the iterate, output recorded as evidence.\" The results file cites `.shipwright/planning/iterate/iterate-2026-11-16-u3b-eslint-template/eslint-seeded-run.txt` (and `surface_verification.log`) as evidence, but neither file is added in this diff. If `.shipwright/` is not committed, the evidence exists only as an unverifiable path claim — the AC is only partially satisfied.",
+          "suggestion": "Commit the eslint-seeded-run.txt (or a copy under a tracked evidence location) with this diff, or point `evidence` at a path that is actually present in the repo.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test /",
+          "file": "shipwright_test_results.json` (\"skipped\": 60)",
+          "line": null,
+          "finding": "The recorded unit run has 60 skipped tests while `test_real_eslint_run_over_template_fixture_and_seeded_cases` is designed to skip when Node is absent (and only fails under CI). If the recording environment lacked Node (or `is_ci()` didn't detect CI), the seeded run never executed, yet the behaviors list claims it PASSED with an ESLint version string. The 60 skips are unexplained and make the evidence claim unverifiable from the diff alone.",
+          "suggestion": "Re-run with Node present (or confirm `is_ci()` is true in the recording environment) and record a run where the ESLint test's skip count is accounted for; note in the results file why 60 tests skipped.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "spec /",
+          "file": "shared/profiles/supabase-nextjs.json:127` and `step-7-scaffolding.md` step 4",
+          "line": null,
+          "finding": "Step 4 instructs adding `eslint`, `typescript-eslint`, and `typescript` with \"versions as the profile's `linting` and `stack.runtime` give them,\" but the diff only adds `typescript-eslint` to `linting`. If `stack.runtime` doesn't carry a TypeScript version (not shown in the diff), the scaffold step has no source for the `typescript` version and the template comment's `typescript@5` is the only hint.",
+          "suggestion": "Verify `stack.runtime` contains a `typescript` entry; if not, add it so the instruction is self-contained.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case /",
+          "file": "shared/tests/test_supabase_nextjs_eslint_template.py` (`test_real_eslint_run...`, `fixture <= set(report)`)",
+          "line": null,
+          "finding": "The assertion requires every fixture file to appear in ESLint's JSON report. ESLint only reports files matched by at least one config block with a `files` key; if the fixture tree ever gains a non-TS/JS file (e.g., a `.json`, `.sql`, or `.md` example), ESLint silently omits it and the test fails with an opaque set difference (or worse, a future contributor \"fixes\" it by relaxing the assertion). Also `report[rel]` in the loop raises a bare KeyError if a case file is silently ignored, which obscures the real cause.",
+          "suggestion": "Document/assert that the fixture tree is TS/JS-only, and replace `report[rel]` with `report.get(rel, [])` plus an explicit \"not linted\" failure message.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug /",
+          "file": "shipwright_test_results.json:90` (end of file)",
+          "line": null,
+          "finding": "The rewritten file lost its trailing newline (`\\ No newline at end of file`), a needless diff-noise/POSIX-text regression in a tracked JSON file.",
+          "suggestion": "Restore the trailing newline.  What is solid: the drift tests are genuine (fragment-vs-template equality with JSON parse, parser-first/frag-last ordering, no-two-fragments-same-rule, parser glob coverage), the real ESLint run is one test with a single install (xdist-safe), distinguishes exit 1 from exit 2, checks for fatal/parse errors, and the seeded/compliant case matrix is substantive — including obfuscated forms (`window['fetch']`, `globalThis?.['fetch']`) that would catch a wrong rule config. The scaffold-step prose covers merge/replacement semantics of flat configs and idempotency. No security issues.  Overall: the code and tests are well built, but the evidence artifact the AC requires is not actually in the change and the recorded run's skip count undermines the \"executed once\" claim — ship-with-fixes.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-project/skills/project/references/step-7-scaffolding.md",
+          "line": 146,
+          "finding": "Step 3 explicitly handles `eslint.config.cjs` but instructs adding an `import tseslint` line. Static ESM imports are invalid in CommonJS files, so following this instruction breaks ESLint for an existing CJS configuration.",
+          "suggestion": "Preserve the configuration’s module format: use `require(\"typescript-eslint\")` for CJS and insert blocks into its existing exported array.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "regression",
+          "file": "plugins/shipwright-project/skills/project/references/step-7-scaffolding.md",
+          "line": 145,
+          "finding": "A project containing only `.eslintrc` satisfies step 2’s “no `eslint.config.`” condition, so scaffolding writes a new flat config. ESLint then uses that config instead of the existing legacy rules. The legacy-config warning in step 3 is bypassed because that branch requires an existing flat config.",
+          "suggestion": "Check for legacy configurations before creating a new flat config. Follow the stated warning path or explicitly migrate the existing rules.  Overall assessment: ship-with-fixes. The template and drift tests address the core scope, but the scaffold instructions can break or replace existing lint configurations.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-16T02:56:27.942491+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] **Findings**\n\n- Category: spec / Severity: medium\n  File: `shipwright_test_results.json` (~line 30, \"evidence\" for the seeded-run behavior)\n  Finding: The AC requires the seeded-violation ESLint run \"executed once in the iterate, output recorded as evidence.\" The results file cites `.shipwright/planning/iterate/iterate-2026-11-16-u3b-eslint-template/eslint-seeded-run.txt` (and `surface_verification.log`) as evidence, but neither file is added in this diff. If `.shipwright/` is not committed, the evidence exists only as an unverifiable path claim — the AC is only partially satisfied.\n  Suggestion: Commit the eslint-seeded-run.txt (or a copy under a tracked evidence location) with this diff, or point `evidence` at a path that is actually present in the repo.\n\n- Category: test / Severity: medium\n  File: `shipwright_test_results.json` (\"skipped\": 60)\n  Finding: The recorded unit run has 60 skipped tests while `test_real_eslint_run_over_template_fixture_and_seeded_cases` is designed to skip when Node is absent (and only fails under CI). If the recording environment lacked Node (or `is_ci()` didn't detect CI), the seeded run never executed, yet the behaviors list claims it PASSED with an ESLint version string. The 60 skips are unexplained and make the evidence claim unverifiable from the diff alone.\n  Suggestion: Re-run with Node present (or confirm `is_ci()` is true in the recording environment) and record a run where the ESLint test's skip count is accounted for; note in the results file why 60 tests skipped.\n\n- Category: spec / Severity: low\n  File: `shared/profiles/supabase-nextjs.json:127` and `step-7-scaffolding.md` step 4\n  Finding: Step 4 instructs adding `eslint`, `typescript-eslint`, and `typescript` with \"versions as the profile's `linting` and `stack.runtime` give them,\" but the diff only adds `typescript-eslint` to `linting`. If `stack.runtime` doesn't carry a TypeScript version (not shown in the diff), the scaffold step has no source for the `ty […truncated]\n\n[openai] - Category: bug\n- Severity: medium\n- File: plugins/shipwright-project/skills/project/references/step-7-scaffolding.md:146\n- Finding: Step 3 explicitly handles `eslint.config.cjs` but instructs adding an `import tseslint` line. Static ESM imports are invalid in CommonJS files, so following this instruction breaks ESLint for an existing CJS configuration.\n- Suggestion: Preserve the configuration’s module format: use `require(\"typescript-eslint\")` for CJS and insert blocks into its existing exported array.\n\n- Category: regression\n- Severity: medium\n- File: plugins/shipwright-project/skills/project/references/step-7-scaffolding.md:145\n- Finding: A project containing only `.eslintrc*` satisfies step 2’s “no `eslint.config.*`” condition, so scaffolding writes a new flat config. ESLint then uses that config instead of the existing legacy rules. The legacy-config warning in step 3 is bypassed because that branch requires an existing flat config.\n- Suggestion: Check for legacy configurations before creating a new flat config. Follow the stated warning path or explicitly migrate the existing rules.\n\nOverall assessment: ship-with-fixes. The template and drift tests address the core scope, but the scaffold instructions can break or replace existing lint configurations.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-16T02:35:59.868962+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "3e41277676ab00ec0aa651cfde59874957efc3b5"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-16T02:32:32.087764+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-16T02:32:32.229855+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

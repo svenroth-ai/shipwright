@@ -1,0 +1,9 @@
+{"items": [
+{"name":"Spec Compliance","verdict":"pass","note":"AC1 always-on drift test pins each profile fragment to the template block; AC2 real ESLint 10 run recorded in eslint-seeded-run.txt; AC3 the real-ESLint pytest skips without Node but is not the evidence."},
+{"name":"Error Handling","verdict":"pass","note":"Config load errors and parse errors fail the real-ESLint test (fatal messages, exit 2); under CI a missing Node fails instead of skipping; the skill step never skips silently when a legacy config exists."},
+{"name":"Security Basics","verdict":"pass","note":"Skill step uses file tools only, no shell command and no placeholder in double quotes (doc test); template is static."},
+{"name":"Test Quality","verdict":"pass","note":"Parser/fragments-last ordering, unchanged fragment equality, no two fragments setting the same rule, real ESLint flags every seeded case with its rule and flags no compliant or exempt file; the emulation was replaced."},
+{"name":"Performance Basics","verdict":"pass","note":"Real-ESLint test installs into a temp dir once per module (about 5 s)."},
+{"name":"Naming & Structure","verdict":"pass","note":"Tests split into two files under 300 lines; marker comments name the rule id."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Producer profile JSON fragments to JS template to consumer ESLint: real round trip run; case files placed in numbered folders because a renamed opengraph-image file had escaped its ignore glob (found and fixed in the harness)."},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"No sleeps; temp dir per module; no shared state."}]}

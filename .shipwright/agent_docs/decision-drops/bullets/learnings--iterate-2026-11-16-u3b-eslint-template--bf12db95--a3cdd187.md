@@ -1,0 +1,1 @@
+- (2026-11-16) iterate - A harness that renames a seeded file to make it unique can step out of the glob it tests (opengraph-image_103 escaped its ignore): vary the folder, never the file name; and a test-only npm install belongs in one xdist group. [→ iterate-2026-11-16-u3b-eslint-template]
