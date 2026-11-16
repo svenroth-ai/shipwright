@@ -66,14 +66,24 @@ def test_every_mechanism_path_exists_under_shared_or_plugins():
     assert par.check_paths(rs.rules, ROOT) == []
 
 
+def _hook_commands(node) -> list[str]:
+    if isinstance(node, dict):
+        return [v for k, v in node.items() if k == "command" and isinstance(v, str)] + [c for v in node.values() for c in _hook_commands(v)]
+    if isinstance(node, list):
+        return [c for v in node for c in _hook_commands(v)]
+    return []
+
+
 def test_a_named_hook_mechanism_is_actually_registered():
-    """A mechanism counts as enforcement only when something invokes it: the hook is in a hooks.json."""
+    """A mechanism counts as enforcement only when something invokes it: a hooks.json command runs the script."""
     rs = par.load_rules(_bundled(NAME)["architecture_rules"])
-    for rule in (r for r in rs.rules if r.enforcement == "hook"):
+    hooks = [r for r in rs.rules if r.enforcement == "hook"]
+    assert hooks
+    for rule in hooks:
         for path in rule.mechanism:
-            plugin = Path(path).parts[1]
-            hooks = (ROOT / "plugins" / plugin / "hooks" / "hooks.json").read_text(encoding="utf-8")
-            assert Path(path).name in hooks, f"{path} is not registered in plugins/{plugin}/hooks/hooks.json"
+            plugin, rel = Path(path).parts[1], "/".join(Path(path).parts[2:])
+            data = json.loads((ROOT / "plugins" / plugin / "hooks" / "hooks.json").read_text(encoding="utf-8"))
+            assert any(c.rstrip('"').endswith("${CLAUDE_PLUGIN_ROOT}/" + rel) for c in _hook_commands(data)), path
 
 
 def test_ci_and_codeql_defaults_follow_the_generic_python_profile():

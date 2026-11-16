@@ -5,6 +5,8 @@ down under ``plugins/*/`` (a plugin monorepo) adds the runtime key ``claude-plug
 ``has-claude-plugin-dir``. The profile matcher scores profiles by the dependency names they declare
 under ``stack``; the ``claude-plugin`` profile declares this key, so it outscores the generic Python
 profile for a plugin repository, while a Python-only repository without the folder keeps the generic one.
+Only for a Python repository (``runtime`` has ``python``): the promoted profile carries Python commands, CI and
+CodeQL, so a markdown-only or TypeScript plugin keeps the match it had (typically ``generic``).
 A file of that name, a deeper folder or a folder outside ``plugins/`` is not a signal.
 """
 
@@ -23,6 +25,8 @@ def add_plugin_signal(stack: dict[str, Any], project_root: Path, excludes: set[s
         rel = d.relative_to(project_root).as_posix()
         return any(rel == e or rel.startswith(e + "/") for e in (excludes or ()))
 
+    if "python" not in stack.get("runtime", {}):  # the profile it promotes is a Python toolchain: no Python, no signal
+        return stack
     dirs = [project_root / ".claude-plugin", *sorted(project_root.glob("plugins/*/.claude-plugin"))]
     if any(d.is_dir() and not excluded(d) for d in dirs):
         stack.setdefault("runtime", {})[RUNTIME_KEY] = ".claude-plugin/"

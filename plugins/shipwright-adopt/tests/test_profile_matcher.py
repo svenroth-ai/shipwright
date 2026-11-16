@@ -124,3 +124,25 @@ def test_adding_the_signal_twice_changes_nothing(tmp_path: Path, python_cli: Pat
     (root / ".claude-plugin").mkdir()
     once = add_plugin_signal(detect_stack(root), root)
     assert add_plugin_signal(once, root)["signals"].count("has-claude-plugin-dir") == 1
+
+
+@pytest.mark.covers("FR-01.01/AC31")
+def test_non_python_repos_keep_their_match_with_a_plugin_folder(tmp_path: Path, nextjs_repo: Path) -> None:
+    import shutil
+
+    web = tmp_path / "web"
+    shutil.copytree(nextjs_repo, web)
+    before = match_profile(detect_stack(web), _profiles_dir())["matched"]
+    (web / ".claude-plugin").mkdir()
+    sig = add_plugin_signal(detect_stack(web), web)
+    assert "claude-plugin" not in sig["runtime"]
+    assert match_profile(sig, _profiles_dir())["matched"] == before == "supabase-nextjs"
+
+    md_only = tmp_path / "md"
+    (md_only / ".claude-plugin").mkdir(parents=True)  # a markdown-only plugin: no Python, no manifest
+    ts = tmp_path / "ts"
+    (ts / ".claude-plugin").mkdir(parents=True)
+    (ts / "package.json").write_text('{"devDependencies": {"typescript": "^5"}}', encoding="utf-8")
+    for root in (md_only, ts):
+        sig = add_plugin_signal(detect_stack(root), root)
+        assert match_profile(sig, _profiles_dir())["matched"] == "generic", root.name
