@@ -1,0 +1,1 @@
+- (2026-11-16) iterate — A catch-all no-restricted-imports importNames pattern flags every namespace import (import * as React); restrict factories by importNames per package, and run real ESLint once before trusting a lint-fragment emulation. [→ iterate-2026-11-16-u3a-supabase-rules]

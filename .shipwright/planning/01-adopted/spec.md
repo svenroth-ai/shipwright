@@ -129,6 +129,9 @@ _Where the work detail lives_ at the end of this document.
 - (E) [AC15] Given one architecture rule names both a linter fragment and a list of checking files, when the profile is checked on request, then that rule is reported as an error, the remaining rules stay usable, and the profile itself stays valid.
 - (E) [AC16] Given a project's stack profile declares architecture rules, when the project is scaffolded or adopted, then its conventions file carries them in one marked block, and rules that are only instructions say so; a profile with no rules gets an explicit line saying none are declared.
 - (E) [AC17] Given the rules block is already in the conventions file, when the tool runs again on an unchanged profile, then nothing changes, and text outside the block is never touched.
+- (E) [AC18] Given the Supabase web app stack profile, when its architecture rules are checked, then each of the six rules states what it requires and why, says how it is kept, and the profile is still reported valid.
+- (E) [AC19] Given a new Supabase web app project built from the shipped examples, when the lint rule for direct database client use and for direct fetch calls in components is applied to those examples, then no example is flagged, and a seeded violation of each rule is flagged.
+- (E) [AC20] Given a new Supabase web app project, when the shipped route and component examples are read, then none of them uses the database client or fetch directly in a way the architecture rules forbid, and the architecture rules are written down once instead of repeated in several example files.
 
 <a id="fr-0102"></a>
 ### FR-01.02 — Project decomposition into scoped units

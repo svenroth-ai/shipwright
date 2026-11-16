@@ -1,0 +1,33 @@
+
+src\components\bad1.tsx
+  1:1  error  '@supabase/supabase-js' import is restricted from being used. Use the helpers in src/lib/supabase/ instead of creating a client here  no-restricted-imports
+
+src\components\bad2.tsx
+  1:45  error  Unexpected use of 'fetch'. Call the API through src/lib/api/ instead of fetch() in a component                     no-restricted-globals
+  1:74  error  'window.fetch' is restricted from being used. Call the API through src/lib/api/ instead of fetch() in a component  no-restricted-properties
+
+src\components\bad4.tsx
+  1:1  error  '@supabase/ssr' import is restricted from being used. Use the helpers in src/lib/supabase/ instead of creating a client here  no-restricted-imports
+
+src\components\bad5.tsx
+  1:1  error  '@supabase/supabase-js' import is restricted from being used. Use the helpers in src/lib/supabase/ instead of creating a client here  no-restricted-imports
+
+src\components\def.tsx
+  1:1  error  '@supabase/supabase-js' import is restricted from being used. Use the helpers in src/lib/supabase/ instead of creating a client here  no-restricted-imports
+
+src\components\mixed.tsx
+  1:1  error  '@supabase/supabase-js' import is restricted from being used. Use the helpers in src/lib/supabase/ instead of creating a client here  no-restricted-imports
+
+src\components\reexp.tsx
+  1:1  error  '@supabase/supabase-js' import is restricted from being used. Use the helpers in src/lib/supabase/ instead of creating a client here  no-restricted-imports
+
+src\components\rt.tsx
+  1:1  error  '@supabase/supabase-js' import is restricted from being used. Use the helpers in src/lib/supabase/ instead of creating a client here  no-restricted-imports
+
+src\components\side.tsx
+  1:1  error  '@supabase/supabase-js' import is restricted from being used. Use the helpers in src/lib/supabase/ instead of creating a client here  no-restricted-imports
+
+✖ 10 problems (10 errors, 0 warnings)
+
+
+(real ESLint 10 + typescript-eslint parser, config assembled from the profile's two lint fragments; client rule = both Supabase packages restricted with allowTypeImports. Committed fixture tree (src/, tests/): no finding. Flagged: bad1 (createClient), bad4 (createBrowserClient), bad5 (namespace import), rt.tsx (runtime AuthError), mixed.tsx (type User + runtime AuthError), def.tsx (default import), side.tsx (side-effect import), reexp.tsx (export { createClient } from), bad2 (fetch, window.fetch). Not flagged: okt.tsx (import type), inl.tsx (inline type-only specifiers), ui/button.tsx (namespace import of react), okhelper.tsx (helper named createClient), src/lib/api/ok.ts (fetch in API layer), tests/ (supabase-js imports), src/app/opengraph-image.tsx (fetch).)

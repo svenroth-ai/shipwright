@@ -9,7 +9,7 @@ globs: "**/components/**,**/*.tsx,**/*.jsx"
 - Use semantic HTML: `<button>` not `<div onClick>`, `<nav>` not `<div class="nav">`
 - Images must have `alt` text (empty `alt=""` for decorative images)
 - Form inputs must have associated `<label>` elements
-- Server Components by default — add `'use client'` only when state or effects are needed
+- Server Component or Client Component, `fetch()` and Supabase client use: see Architecture Rules in `conventions.md` when the profile declares any
 - Keep components focused: one responsibility per component, extract when complexity grows
 
 ## Example: Server Component (default) — data fetching at the component level

@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "## Findings\n\n- **Category: edge-case \u2014 Severity: medium** \u2014 `no-restricted-imports` restricts module paths, not import specifiers. The rule \"client creation only through `src/lib/supabase/`\" cannot be fully expressed by blocking `@supabase/supabase-js` + `@supabase/ssr` + `createClient` imports: a rule like `import/no-restricted-paths` (or `eslint-plugin-import` zone config) is needed to block *anything imported from outside the lib directory*. Blocking `createClient` as a module path also won't match `import { createBrowserClient } from '@supabase/ssr'` \u2014 the helper name differs. Suggestion: enumerate the actual export names (`createBrowserClient`, `createServerClient`, `createClient`) in `no-restricted-imports` `importNames`, and document that path-based confinement needs `import/no-restricted-paths` if full mechanical coverage is claimed.\n\n- **Category: edge-case \u2014 Severity: medium** \u2014 API route files are `route.ts`, not `.tsx/.jsx`. The no-`fetch()` rule scoped to `src/app/**/*.{tsx,jsx}` excludes the very files the API-route template targets. That's arguably intentional (fetch is legal in route handlers), but then the *template fix* (\"route examples delegate the DB write to a helper\") is enforced only by the drift test, not by any lint fragment. State explicitly which rule (if any) mechanizes \"no queries in routes,\" or acknowledge it's instruction-only in the enforcement metadata.\n\n- **Category: risk \u2014 Severity: low** \u2014 The no-`fetch()` rule in `src/app/**` components will flag legitimate client-side fetches in `\"use client\"` components (e.g., SWR/React Query prefetch, webhooks in route handlers are excluded only by extension). Consider scoping with an allowlist comment (`// eslint-disable-next-line`) convention or restricting to `\"use client\"` detection, or document the expected false-positive workflow.\n\n- **Category: edge-case \u2014 Severity: low** \u2014 ESLint 10 flat-config scoping: the profile's eslint fragments must be embeddable as config objects with `files` globs. Confirm the \"scope minus test files\" exclusion is expressible (e.g., `ignores`) and that the fragment emulation in the drift test (step 3) and the real ESLint run (step 4) actually produce identical scopes \u2014 if the emulation diverges from real ESLint glob semantics, the drift test gives false confidence. The real-ESLint evidence run should pin the same fixture tree as the drift test.\n\n- **Category: approach \u2014 Severity: low** \u2014 Fixture==template pinning (\"every TS block mapped\") is good, but the acceptance criterion \"no template example breaks a rule\" needs the template examples to include both compliant and (seeded) violating code paths with clear separation; make sure seeded violations live outside the pinned fixture-vs-template mapping or the drift test and violation test will fight each other.\n\n- **Category: dependency \u2014 Severity: low** \u2014 Removing duplicated prose from templates requires the `{ARCHITECTURE_RULES}` render path to exist and include `why` text; confirm the profile renderer (from U1/U2) renders rule objects including the `enforcement` metadata appropriately for scaffold output, otherwise the docs lose information that the deleted prose carried.\n\nNo security concerns beyond the above import-path gap, which is partly a security boundary (client code confined to the lib).\n\n## Overall assessment\n\nSound, well-scoped plan with a sensible test strategy. The main gap is the expressiveness of `no-restricted-imports` for the client-confinement rule and the `.tsx`-only scoping missing `route.ts` \u2014 both fixable with metadata clarification or a slightly different fragment choice.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Category: risk \u00b7 Severity: medium**  \n   **Finding:** The committed drift test uses a \u201csmall emulation\u201d of ESLint, while actual ESLint runs only as scratch evidence. The emulator can disagree with ESLint on file matching, configuration merging, or rule behavior, allowing CI to pass examples that the generated configuration rejects. An ADR records a past result but cannot detect later drift.  \n   **Suggestion:** Run the actual ESLint fragments in the committed drift test, using the supported ESLint version and configuration assembly path. Keep the fixture mapping, seeded violations, and exemption checks.\n\n2. **Category: approach \u00b7 Severity: medium**  \n   **Finding:** \u201cAny `createClient`\u201d is broader than the stated import-based Supabase restriction. A wildcard named-import restriction could reject unrelated libraries exporting `createClient`, while package restrictions already cover aliased Supabase imports.  \n   **Suggestion:** Restrict the two Supabase packages outside the allowed directory. If additional client factories must be restricted, identify their specific module paths rather than banning the export name across all dependencies. Include an unrelated `createClient` import as a passing test.\n\n3. **Category: edge-case \u00b7 Severity: medium**  \n   **Finding:** `no-restricted-imports` does not cover dynamic `import()` or CommonJS `require()`. Those forms can load the restricted Supabase packages outside `src/lib/supabase/`, despite passing the proposed mechanical rule.  \n   **Suggestion:** Add coverage for those forms if the application permits them, or demonstrate that existing lint rules already prohibit them. Include seeded examples so the supported boundary is explicit.\n\nThe scope and template changes are reasonable, and the fixture mapping is a useful safeguard. Revise the enforcement details and make real ESLint execution part of the repeatable checks before approval.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-11-16-u3a-supabase-rules",
+    "at": "2026-11-15T23:28:53.206036+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

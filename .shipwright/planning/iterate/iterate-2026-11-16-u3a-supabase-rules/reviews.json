@@ -1,0 +1,305 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-16-u3a-supabase-rules",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-15T23:43:56.662615+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "risk ·",
+          "file": null,
+          "line": null,
+          "finding": "The committed drift test uses a “small emulation” of ESLint, while actual ESLint runs only as scratch evidence. The emulator can disagree with ESLint on file matching, configuration merging, or rule behavior, allowing CI to pass examples that the generated configuration rejects. An ADR records a past result but cannot detect later drift.",
+          "suggestion": "Run the actual ESLint fragments in the committed drift test, using the supported ESLint version and configuration assembly path. Keep the fixture mapping, seeded violations, and exemption checks.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach ·",
+          "file": null,
+          "line": null,
+          "finding": "“Any `createClient`” is broader than the stated import-based Supabase restriction. A wildcard named-import restriction could reject unrelated libraries exporting `createClient`, while package restrictions already cover aliased Supabase imports.",
+          "suggestion": "Restrict the two Supabase packages outside the allowed directory. If additional client factories must be restricted, identify their specific module paths rather than banning the export name across all dependencies. Include an unrelated `createClient` import as a passing test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "no-restricted-imports` does not cover dynamic `import()` or CommonJS `require()`. Those forms can load the restricted Supabase packages outside `src/lib/supabase/`, despite passing the proposed mechanical rule.",
+          "suggestion": "Add coverage for those forms if the application permits them, or demonstrate that existing lint rules already prohibit them. Include seeded examples so the supported boundary is explicit.  The scope and template changes are reasonable, and the fixture mapping is a useful safeguard. Revise the enforcement details and make real ESLint execution part of the repeatable checks before approval.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-15T23:33:28.047682+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: edge-case — Severity: medium** — `no-restricted-imports` restricts module paths, not import specifiers. The rule \"client creation only through `src/lib/supabase/`\" cannot be fully expressed by blocking `@supabase/supabase-js` + `@supabase/ssr` + `createClient` imports: a rule like `import/no-restricted-paths` (or `eslint-plugin-import` zone config) is needed to block *anything imported from outside the lib directory*. Blocking `createClient` as a module path also won't match `import { createBrowserClient } from '@supabase/ssr'` — the helper name differs. Suggestion: enumerate the actual export names (`createBrowserClient`, `createServerClient`, `createClient`) in `no-restricted-imports` `importNames`, and document that path-based confinement needs `import/no-restricted-paths` if full mechanical coverage is claimed.\n\n- **Category: edge-case — Severity: medium** — API route files are `route.ts`, not `.tsx/.jsx`. The no-`fetch()` rule scoped to `src/app/**/*.{tsx,jsx}` excludes the very files the API-route template targets. That's arguably intentional (fetch is legal in route handlers), but then the *template fix* (\"route examples delegate the DB write to a helper\") is enforced only by the drift test, not by any lint fragment. State explicitly which rule (if any) mechanizes \"no queries in routes,\" or acknowledge it's instruction-only in the enforcement metadata.\n\n- **Category: risk — Severity: low** — The no-`fetch()` rule in `src/app/**` components will flag legitimate client-side fetches in `\"use client\"` components (e.g., SWR/React Query prefetch, webhooks in route handlers are excluded only by extension). Consider scoping with an allowlist comment (`// eslint-disable-next-line`) convention or restricting to `\"use client\"` detection, or document the expected false-positive workflow.\n\n- **Category: edge-case — Severity: low** — ESLint 10 flat-config scoping: the profile's eslint fragments must be embeddable as config objects wi […truncated]\n\n[openai] 1. **Category: risk · Severity: medium**  \n   **Finding:** The committed drift test uses a “small emulation” of ESLint, while actual ESLint runs only as scratch evidence. The emulator can disagree with ESLint on file matching, configuration merging, or rule behavior, allowing CI to pass examples that the generated configuration rejects. An ADR records a past result but cannot detect later drift.  \n   **Suggestion:** Run the actual ESLint fragments in the committed drift test, using the supported ESLint version and configuration assembly path. Keep the fixture mapping, seeded violations, and exemption checks.\n\n2. **Category: approach · Severity: medium**  \n   **Finding:** “Any `createClient`” is broader than the stated import-based Supabase restriction. A wildcard named-import restriction could reject unrelated libraries exporting `createClient`, while package restrictions already cover aliased Supabase imports.  \n   **Suggestion:** Restrict the two Supabase packages outside the allowed directory. If additional client factories must be restricted, identify their specific module paths rather than banning the export name across all dependencies. Include an unrelated `createClient` import as a passing test.\n\n3. **Category: edge-case · Severity: medium**  \n   **Finding:** `no-restricted-imports` does not cover dynamic `import()` or CommonJS `require()`. Those forms can load the restricted Supabase packages outside `src/lib/supabase/`, despite passing the proposed mechanical rule.  \n   **Suggestion:** Add coverage for those forms if the application permits them, or demonstrate that existing lint rules already prohibit them. Include seeded examples so the supported boundary is explicit.\n\nThe scope and template changes are reasonable, and the fixture mapping is a useful safeguard. Revise the enforcement details and make real ESLint execution part of the repeatable checks before approval.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "shared/profiles/supabase-nextjs.json",
+          "line": 253,
+          "finding": "Round 1: the catch-all createClient importNames pattern flags every namespace import (reproduced with ESLint 10). Fixed: removed, then client factories restricted by importNames per package.",
+          "suggestion": "fixed",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_supabase_nextjs_rules_drift.py",
+          "line": 431,
+          "finding": "Round 2: unreachable patterns branch in the emulation. Fixed.",
+          "suggestion": "fixed",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_supabase_nextjs_rules_drift.py",
+          "line": 360,
+          "finding": "Round 2: fence regex ignored fences with an info string. Fixed.",
+          "suggestion": "fixed",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/tests/test_supabase_nextjs_rules_drift.py",
+          "line": 1,
+          "finding": "Orchestrator review: comment stripper ignores strings and misses window['fetch'] / window?.fetch. Fixed: string-aware tokenizer, bracket and optional-chain access, seeded cases.",
+          "suggestion": "fixed",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_supabase_nextjs_rules_drift.py",
+          "line": 1,
+          "finding": "Orchestrator review lows: fence regex, dead importNames handling, extra seeded import cases, SCANNED from profile rules, rule wording, res.warnings assertion. All fixed.",
+          "suggestion": "fixed",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-16T00:04:48.100205+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "e13dc3a3b9950d1772423d6379ea7193e5c7505e"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "hidden coupling",
+          "file": "shared/profiles/supabase-nextjs.json",
+          "line": null,
+          "finding": "Claim under doubt: supabase-client-through-helpers only blocks building a client — type-only imports of supabase-js were flagged across src/",
+          "suggestion": "restrict by importNames (fixed)",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "shared/profiles/supabase-nextjs.json",
+          "line": null,
+          "finding": "Claim under doubt: the lint rules are class validator — nothing writes the fragment into a project until the ESLint template unit",
+          "suggestion": "rebutted: BRIEF 2.1/2.2 and U3b is next",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-project/skills/project/references/project-scaffolding.md",
+          "line": null,
+          "finding": "Claim under doubt: ARCHITECTURE_RULES is rendered correctly — project-scaffolding.md still says bullet list",
+          "suggestion": "rebutted: U2 owns that file and the render tool",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "boundary & contract",
+          "file": ".shipwright/planning/01-adopted/spec.md",
+          "line": null,
+          "finding": "Claim under doubt: criteria ids FR-01.01 AC16-AC18 are free — U2 merges first and keeps AC16/AC17",
+          "suggestion": "renumbered to AC18-AC20 (fixed)",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "shared/profiles/supabase-nextjs.json",
+          "line": null,
+          "finding": "Claim under doubt: validator class is true for adopted repos — only U3b scaffolds carry the fragment; U2's render claims the linter checks it",
+          "suggestion": "rule notes say so; ADR records follow-up for U2/U3b/U6 (fixed in notes)",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "scope",
+          "file": ".shipwright/planning/campaigns/2026-11-15-profile-architecture-rules-BRIEF.md",
+          "line": null,
+          "finding": "Claim under doubt: brief amendment is faithful — original sentences not visible, ssr added beyond the operator text",
+          "suggestion": "originals kept with amendment text (fixed)",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-16T00:04:48.235843+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "e13dc3a3b9950d1772423d6379ea7193e5c7505e"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "shared/tests/test_supabase_nextjs_rules_drift.py (FIXTURE constant / BLOCKS map)",
+          "line": null,
+          "finding": "The drift test depends on a committed fixture tree at `shared/tests/fixtures/supabase_nextjs_scaffold/` containing every mapped example file (16 mapped blocks + 1 whole file), but the diff contains no fixture files. The acceptance criterion \"Committed fixture tree built from the templates' own examples passes every mechanical rule\" cannot be met by this diff alone — the suite will fail with `FileNotFoundError` on a fresh checkout unless the fixtures were committed in a separate change not shown here.",
+          "suggestion": "Commit the fixture tree in this change (or point to the commit that adds it); verify the test suite passes end-to-end from a clean clone.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_supabase_nextjs_rules_drift.py — `_lint` / `no-restricted-globals` branch",
+          "line": null,
+          "finding": "The emulation strips comments but not string literals, so `const s = \"no fetch here\"` in a component would be flagged as a `fetch` violation. This only produces false positives inside the test (not shipped ESLint), but it means the drift test could report a spurious failure for a template example that mentions `fetch` in prose-in-strings, and the \"compliant\" tests never cover that case.",
+          "suggestion": "Either strip string literals before the global-name search, or accept and document the divergence; add a negative test for a string containing \"fetch\".",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_supabase_nextjs_rules_drift.py — `_imports",
+          "line": null,
+          "finding": "The test comment claims \"`import type` counts (the core rule flags it too)\", but this is asserted rather than verified. In real ESLint, `no-restricted-imports` pattern matching with `importNames` historically did not flag `import type` declarations the same way (type-only imports were excluded from import-name checks in several ESLint versions). If the emulator is stricter than real ESLint, a future real-ESLint run (the stated replacement) could silently disagree with the drift test in the permissive direction — which is the dangerous direction.",
+          "suggestion": "Verify against a real ESLint run once (the planned unit) that `import type { createClient } from '@supabase/supabase-js'` is actually flagged; if not, the rule text \"must not import createClient\" needs a lint pattern that covers type imports, or the note should scope the guarantee.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "shared/profiles/supabase-nextjs.json — `supabase-client-through-helpers` `ignores",
+          "line": null,
+          "finding": "The ignore list omits `/.stories.` and dev-only patterns, but more importantly the `files` glob `src//.{ts,tsx,js,jsx,mjs}` combined with ignoring only `src/lib/supabase/` means `src/middleware.ts` (the standard place a Next.js Supabase SSR project refreshes sessions via `@supabase/ssr`) is in scope and must use an eslint-disable. This is defensible but the note doesn't mention middleware, which is the most common legitimate hit.",
+          "suggestion": "Either add `src/middleware.` to ignores or document it in the note as a per-line-disable case.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/profiles/supabase-nextjs.json — `no-fetch-in-components` `files",
+          "line": null,
+          "finding": "src/app//.{tsx,jsx}` excludes `.ts` files under `src/app/`, so a `src/app/some-layout-helper.ts` or a custom `src/app/.ts` module that calls `fetch()` escapes the rule. The note explains route.ts exclusion but not the broader `.ts` gap under `src/app/`.",
+          "suggestion": "Consider `src/app//.{ts,tsx,js,jsx}` with an explicit ignore for `/route.ts` if the intent is \"route handlers excluded, everything else under app/ covered\" — or document the current scope precisely.  Test quality is otherwise good: seeded-violation and compliant/exempt parameterized tests exercise real behavior, unknown-rule emulation fails loudly, and the fixture-equality tests pin template drift.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "shared/tests/test_supabase_nextjs_rules_drift.py",
+          "line": 35,
+          "finding": "The test references a committed `fixtures/supabase_nextjs_scaffold/` tree, but the diff adds none of its 16 required files. The fixture equality tests therefore fail with `FileNotFoundError`, and the mechanical-rule test finds zero files. The committed-fixture acceptance criterion is unmet.",
+          "suggestion": "Commit all fixture files mapped by `BLOCKS` and `WHOLE_FILES`, copied from their corresponding template examples, and run the drift suite against that tree.  Overall assessment: ship-with-fixes. The missing fixture tree prevents the added tests from passing and leaves a required acceptance criterion incomplete. Execution was unavailable because the environment rejected shell access; this finding follows from the supplied diff.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-15T23:34:30.279322+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- Category: spec\n  Severity: high\n  File: shared/tests/test_supabase_nextjs_rules_drift.py (FIXTURE constant / BLOCKS map)\n  Finding: The drift test depends on a committed fixture tree at `shared/tests/fixtures/supabase_nextjs_scaffold/` containing every mapped example file (16 mapped blocks + 1 whole file), but the diff contains no fixture files. The acceptance criterion \"Committed fixture tree built from the templates' own examples passes every mechanical rule\" cannot be met by this diff alone — the suite will fail with `FileNotFoundError` on a fresh checkout unless the fixtures were committed in a separate change not shown here.\n  Suggestion: Commit the fixture tree in this change (or point to the commit that adds it); verify the test suite passes end-to-end from a clean clone.\n\n- Category: test\n  Severity: medium\n  File: shared/tests/test_supabase_nextjs_rules_drift.py — `_lint` / `no-restricted-globals` branch\n  Finding: The emulation strips comments but not string literals, so `const s = \"no fetch here\"` in a component would be flagged as a `fetch` violation. This only produces false positives inside the test (not shipped ESLint), but it means the drift test could report a spurious failure for a template example that mentions `fetch` in prose-in-strings, and the \"compliant\" tests never cover that case.\n  Suggestion: Either strip string literals before the global-name search, or accept and document the divergence; add a negative test for a string containing \"fetch\".\n\n- Category: test\n  Severity: medium\n  File: shared/tests/test_supabase_nextjs_rules_drift.py — `_imports`\n  Finding: The test comment claims \"`import type` counts (the core rule flags it too)\", but this is asserted rather than verified. In real ESLint, `no-restricted-imports` pattern matching with `importNames` historically did not flag `import type` declarations the same way (type-only imports were excluded from import-name checks in several ESLint versions). If the emula […truncated]\n\n[openai] - Category: spec\n- Severity: high\n- File: shared/tests/test_supabase_nextjs_rules_drift.py:35\n- Finding: The test references a committed `fixtures/supabase_nextjs_scaffold/` tree, but the diff adds none of its 16 required files. The fixture equality tests therefore fail with `FileNotFoundError`, and the mechanical-rule test finds zero files. The committed-fixture acceptance criterion is unmet.\n- Suggestion: Commit all fixture files mapped by `BLOCKS` and `WHOLE_FILES`, copied from their corresponding template examples, and run the drift suite against that tree.\n\nOverall assessment: ship-with-fixes. The missing fixture tree prevents the added tests from passing and leaves a required acceptance criterion incomplete. Execution was unavailable because the environment rejected shell access; this finding follows from the supplied diff.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-15T23:33:27.867243+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "04bc3b7b8fd289a1ddd23cdcf1f32f317191ea5e"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-15T23:33:28.274968+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-15T23:33:28.609480+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}

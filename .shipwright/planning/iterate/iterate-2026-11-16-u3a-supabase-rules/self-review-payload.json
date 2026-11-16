@@ -1,0 +1,9 @@
+{"items": [
+{"name":"Spec Compliance","verdict":"pass","note":"All three ACs met: six rule objects with why, two ESLint fragments, instruction-only rules per decisions 4.3 and 4.4, both API route examples delegate to helpers, duplicated prose removed, fixture tree plus drift test."},
+{"name":"Error Handling","verdict":"pass","note":"Unknown ESLint rule in a fragment fails the drift test loudly instead of being skipped; the profile validates with no rule errors or warnings."},
+{"name":"Security Basics","verdict":"pass","note":"Data and docs only; the rule keeps client factories out of component code; no secrets in fixtures."},
+{"name":"Test Quality","verdict":"pass","note":"43 drift tests: fixture equals template, every TS example mapped, tree passes both fragments, seeded violations flagged, exempt and compliant files not flagged; the U1 tests were updated for the converted profile."},
+{"name":"Performance Basics","verdict":"pass","note":"Nothing at runtime; tests read 16 small files."},
+{"name":"Naming & Structure","verdict":"pass","note":"Rule ids are kebab-case and match the contract; the test file is under 300 lines; fixtures sit beside the tests."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Producer: profile lint fragments; consumer: ESLint (real run with ESLint 10 recorded). The probe found two defects (namespace-import over-flagging, type-only imports), both fixed and re-run clean."},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"No sleeps, no shared state, read-only access to committed files."}]}

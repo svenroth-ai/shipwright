@@ -209,12 +209,123 @@
   },
 
   "architecture_rules": [
-    "Feature modules must not import from other feature modules",
-    "All Supabase calls go through lib/supabase/ — no direct client usage in components",
-    "All API calls go through lib/api/ — no fetch() in components",
-    "Server Components by default — 'use client' only when needed",
-    "No business logic in API routes — use Edge Functions",
-    "All database changes via migrations in supabase/migrations/"
+    {
+      "id": "no-cross-feature-imports",
+      "text": "Feature modules must not import from other feature modules.",
+      "why": "Cross-feature imports tie features together, so one feature cannot be changed or removed without breaking another.",
+      "enforcement": "prompt-only (mechanisable)",
+      "note": "Instruction only until a project has a features folder (campaign decision 4.4): the scaffold creates none, so there is no path for a linter zone to name. A no-restricted-paths zone per feature would make it a validator."
+    },
+    {
+      "id": "supabase-client-through-helpers",
+      "text": "Code under src/ outside src/lib/supabase/ and outside test files must not import @supabase/supabase-js or @supabase/ssr at runtime (type imports are allowed); it uses the helpers in src/lib/supabase/.",
+      "why": "One place builds the Supabase client, so session handling, keys and typing are configured once and a component cannot reach the database around the helpers.",
+      "enforcement": "validator",
+      "lint": {
+        "tool": "eslint",
+        "target": "eslint.config.mjs",
+        "block": {
+          "files": [
+            "src/**/*.{ts,tsx,js,jsx,mjs}"
+          ],
+          "ignores": [
+            "src/lib/supabase/**",
+            "**/*.test.{ts,tsx,js,jsx}",
+            "**/*.spec.{ts,tsx,js,jsx}",
+            "**/__tests__/**"
+          ],
+          "rules": {
+            "no-restricted-imports": [
+              "error",
+              {
+                "paths": [
+                  {
+                    "name": "@supabase/supabase-js",
+                    "allowTypeImports": true,
+                    "message": "Use the helpers in src/lib/supabase/ instead of creating a client here."
+                  },
+                  {
+                    "name": "@supabase/ssr",
+                    "allowTypeImports": true,
+                    "message": "Use the helpers in src/lib/supabase/ instead of creating a client here."
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "note": "The validator class holds only for projects whose eslint config carries this fragment, i.e. projects scaffolded with the ESLint template (U3b); an adopted repo gets no lint config from Shipwright, so for it this rule is instruction only until its owner adds the fragment. Runtime imports of the two packages are flagged, type-only imports (`import type`, inline `type X`) pass; allowTypeImports needs the typescript-eslint parser for the files covered. Narrower than 'createClient from anywhere' on purpose: a name pattern across all modules flags every namespace import such as `import * as React`, and project helpers may be called createClient. Static imports only: dynamic import() and require() are not caught. Session-refresh code for Next.js middleware also belongs in src/lib/supabase/ (a helper that src/middleware.ts calls). A per-line disable with a reason is the grandfathering mechanism."
+    },
+    {
+      "id": "no-fetch-in-components",
+      "text": "Components must not call fetch(); external API calls go through src/lib/api/.",
+      "why": "A single API layer owns URLs, headers, error handling and typing, so components stay free of transport details and a call can be mocked in one place.",
+      "enforcement": "validator",
+      "lint": {
+        "tool": "eslint",
+        "target": "eslint.config.mjs",
+        "block": {
+          "files": [
+            "src/components/**/*.{ts,tsx,js,jsx}",
+            "src/app/**/*.{tsx,jsx}"
+          ],
+          "ignores": [
+            "**/*.test.{ts,tsx,js,jsx}",
+            "**/*.spec.{ts,tsx,js,jsx}",
+            "**/__tests__/**",
+            "**/opengraph-image.*",
+            "**/twitter-image.*",
+            "**/icon.*",
+            "**/apple-icon.*"
+          ],
+          "rules": {
+            "no-restricted-globals": [
+              "error",
+              {
+                "name": "fetch",
+                "message": "Call the API through src/lib/api/ instead of fetch() in a component."
+              }
+            ],
+            "no-restricted-properties": [
+              "error",
+              {
+                "object": "window",
+                "property": "fetch",
+                "message": "Call the API through src/lib/api/ instead of fetch() in a component."
+              },
+              {
+                "object": "globalThis",
+                "property": "fetch",
+                "message": "Call the API through src/lib/api/ instead of fetch() in a component."
+              }
+            ]
+          }
+        }
+      },
+      "note": "The validator class holds only for projects whose eslint config carries this fragment, i.e. projects scaffolded with the ESLint template (U3b); for an adopted repo it is instruction only until its owner adds the fragment. Scope is src/components/** and the .tsx/.jsx files under src/app/**; route handlers (route.ts) are not components and stay out of scope. Metadata image files (opengraph-image, twitter-image, icon) are ignored because they fetch fonts and assets; hooks outside src/components are out of scope. A legitimate exception takes a per-line disable with a reason."
+    },
+    {
+      "id": "server-components-by-default",
+      "text": "Components are Server Components by default; add 'use client' only when state, effects or browser APIs are needed.",
+      "why": "Server Components send less JavaScript to the browser and load data next to where it is rendered, through the helpers.",
+      "enforcement": "prompt-only (judgement)",
+      "note": "Whether a component needs the browser is a design call, not a pattern a linter can decide."
+    },
+    {
+      "id": "no-business-logic-in-api-routes",
+      "text": "API routes validate input, check authentication and delegate: data access goes to helpers in src/lib/supabase/ and business logic to Edge Functions.",
+      "why": "Logic in route handlers is hard to reuse and test, and ends up duplicated between routes.",
+      "enforcement": "prompt-only (judgement)",
+      "note": "What counts as business logic cannot be told apart from plumbing by a pattern match."
+    },
+    {
+      "id": "db-changes-via-migrations",
+      "text": "Every database change is a migration in supabase/migrations/.",
+      "why": "Migrations make the schema reproducible on every environment and give each change a rollback path; a change made by hand exists only on one database.",
+      "enforcement": "prompt-only (mechanisable)",
+      "note": "Instruction only: no hook or CI step is invoked that flags schema changes made outside supabase/migrations/. The destructive-pattern guard of the migration flow is a separate rule."
+    }
   ],
 
   "rules": ["tests", "integration-tests", "api", "migrations", "components", "config"],

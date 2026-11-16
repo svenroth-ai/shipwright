@@ -31,14 +31,15 @@ def _validate_json(capsys, project, name):
 
 
 @pytest.mark.covers("FR-01.01/AC14")
-def test_bundled_legacy_profile_warns_only_in_validate(project, capsys):
-    code, data, err = _validate_json(capsys, project, "supabase-nextjs")
+def test_legacy_profile_warns_only_in_validate(project, capsys):
+    write_profile(proj_dir(project), "legacy-one", architecture_rules=["Keep it simple", "Keep it small"])
+    code, data, err = _validate_json(capsys, project, "legacy-one")
     assert code == 0 and data["valid"] is True and data["rule_errors"] == []
     assert len(data["rule_warnings"]) == 1 and "old plain-sentence" in err
     # ordinary resolution of the same profile prints no rule diagnostics at all
-    code, out, err = _run(capsys, "resolve", "--project-root", str(project), "--name", "supabase-nextjs")
+    code, out, err = _run(capsys, "resolve", "--project-root", str(project), "--name", "legacy-one")
     assert code == 0 and "plain-sentence" not in out + err and "architecture_rules" not in out + err
-    res = pr.resolve_profile("supabase-nextjs", project)
+    res = pr.resolve_profile("legacy-one", project)
     assert res.warnings == []
 
 

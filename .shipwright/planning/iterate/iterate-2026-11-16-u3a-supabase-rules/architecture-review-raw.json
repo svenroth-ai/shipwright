@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "1. **The question, answered in one sentence.** Yes \u2014 the rule objects belong in the existing `supabase-nextjs.json` via U1's already-built shape; that adds data, not mechanism, and is the campaign's whole point. The one piece I'd question is the fixture tree + emulated-lint drift test, which is a real standing obligation created before the thing it's emulating exists.\n\n2. **The smallest thing that would do.** Six rule objects (two with lint fragments, four instruction-only) plus the template fixes \u2014 exactly as proposed \u2014 but either drop the drift test until U3b's real ESLint config exists and can be run against the fixture tree directly, or have the test invoke ESLint itself rather than emulate the three rules.\n\n3. **What it costs to keep.** The rule objects cost almost nothing: they're data validated by an existing loader. The fixture tree costs real maintenance \u2014 every future template edit must keep the fixture tree in sync, and the emulation of `no-restricted-imports`/`no-restricted-globals`/`no-restricted-properties` must track ESLint's actual semantics, which nobody will notice when it drifts.\n\n4. **What it forecloses.** The emulated checker risks ossifying a simplified version of three ESLint rules; when U3b lands, either two checkers exist (bad) or the emulation is deleted (fine, but then it was scaffolding, and building it as scaffolding under a permanent-sounding \"drift test\" name obscures that).\n\n5. **Findings**\n\n- Category: proportionality\n- Severity: medium\n- Finding: A hand-rolled emulation of three ESLint rules, checked into the test suite permanently, is a second implementation of semantics ESLint already defines, created one unit before the unit that will carry the real config. It duplicates a checker whose existence is already scheduled.\n- Suggestion: Either defer the drift test to U3b (acceptance criteria: template examples pass the real ESLint config), or keep the fixture tree now but have the test execute the actual ESLint rules rather than emulate them \u2014 no emulation code to maintain.\n\n- Category: ownership\n- Severity: low\n- Finding: The fixture tree is derived from template examples \"by hand\" \u2014 nothing mechanical keeps it in sync with the templates, so it will silently rot and the drift test will pass against stale fixtures.\n- Suggestion: Generate the fixture tree from the templates in the test setup, or add a one-line check that the committed tree matches the templates; if that's overkill for six rules, that's further evidence the drift test itself is premature.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Should it exist?** The rule objects and corrected templates should exist, but a permanent emulation of ESLint is disproportionate when U3b will introduce ESLint itself.\n\n2. **Smallest thing that would do:** Convert the six rules using U1\u2019s existing schema, fix the examples, and remove duplicated prose now. Keep the example fixture, but run its drift check with actual ESLint as part of U3b; complete the mechanical acceptance check there.\n\n3. **What it costs to keep:** Rule text, lint fragments, and template examples must stay aligned. A custom emulator adds a second interpretation of ESLint configuration that maintainers must also keep correct.\n\n4. **What it forecloses:** The emulator makes adopting additional ESLint rules or configuration features harder: each expansion requires extending the emulator or replacing it.\n\n5. **Findings**\n\nCategory: simpler-alternative\nSeverity: medium\nFinding: The proposed drift test introduces a permanent home-grown interpretation of three ESLint rules immediately before a scheduled unit supplies the real enforcement engine. Passing that interpretation adds maintenance without establishing that ESLint accepts the examples.\nSuggestion: Choose D for the executable drift check only: retain the rule objects and template corrections in U3a, then validate the committed examples using actual ESLint in U3b. If U3a must independently satisfy every acceptance criterion, bring that minimal ESLint invocation forward instead of building the emulator.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "architecture",
+  "capture": {
+    "run_id": "iterate-2026-11-16-u3a-supabase-rules",
+    "at": "2026-11-15T23:28:53.206036+00:00"
+  },
+  "verdicts": {
+    "glm": "revise",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

@@ -1438,8 +1438,8 @@ public/                     Static assets
 The profile enforces these conventions across all pipeline phases:
 
 - Feature modules must not import from other feature modules.
-- All Supabase calls go through `lib/supabase/` -- no direct client usage in components.
-- All API calls go through `lib/api/` -- no `fetch()` in components.
+- Supabase clients are created only in `src/lib/supabase/` -- other code imports those helpers (lint rule).
+- External API calls go through `lib/api/` -- no `fetch()` in components (lint rule).
 - Server Components by default -- `'use client'` only when needed.
 - No business logic in API routes -- use Edge Functions.
 - All database changes via migrations in `supabase/migrations/`.

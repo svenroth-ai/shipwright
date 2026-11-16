@@ -15,9 +15,11 @@ globs: "**/api/**,**/routes/**,**/functions/**"
 ## Example: Next.js API route with validation and auth
 
 ```typescript
+// src/app/api/profile/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createServerClient } from '@/lib/supabase/server'
+import { updateProfile } from '@/lib/supabase/profiles'
 
 const UpdateProfileSchema = z.object({
   name: z.string().min(1).max(100),
@@ -40,13 +42,26 @@ export async function PATCH(req: NextRequest) {
     )
   }
 
-  const { error } = await supabase.from('profiles').update(parsed.data).eq('id', user.id)
-  if (error) {
-    console.error('[PATCH /api/profile]', { userId: user.id, error: error.message })
+  const result = await updateProfile(supabase, user.id, parsed.data)
+  if (!result.ok) {
+    console.error('[PATCH /api/profile]', { userId: user.id, error: result.message })
     return NextResponse.json({ error: 'Update failed', code: 'DB_ERROR' }, { status: 500 })
   }
 
   return NextResponse.json({ success: true })
+}
+```
+
+The route validates, authenticates and delegates. The query lives in a helper under `src/lib/supabase/`;
+route code stays free of query code:
+
+```typescript
+// src/lib/supabase/profiles.ts
+import type { SupabaseClient } from '@supabase/supabase-js'
+
+export async function updateProfile(supabase: SupabaseClient, userId: string, input: { name: string; bio?: string }) {
+  const { error } = await supabase.from('profiles').update(input).eq('id', userId)
+  return error ? { ok: false as const, message: error.message } : { ok: true as const }
 }
 ```
 
