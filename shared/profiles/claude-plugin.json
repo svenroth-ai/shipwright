@@ -1,0 +1,82 @@
+{
+  "name": "claude-plugin",
+  "description": "Profile for Claude Code plugin repositories whose code is Python. Same Python toolchain as python-plugin-monorepo (Python 3.11+, uv, pytest, ruff, no deployable web server, no frontend) plus the architecture rules of plugin projects: what goes into scripts and what goes to the AI, Anthropic's skill limits, scripts run through uv run, hooks resolve paths through ${CLAUDE_PLUGIN_ROOT}, generated files live next to their source. Adopt picks it when the repository has a .claude-plugin folder.",
+  "version": "0.1.0",
+  "stack": {
+    "runtime": {
+      "python": "3.11+",
+      "claude-plugin": ".claude-plugin/"
+    },
+    "_comment_runtime": "The claude-plugin key is the adopt matching signal (a .claude-plugin folder was found); adopt scores a profile by the dependency names it declares here.",
+    "frontend": {},
+    "backend": {}
+  },
+  "dev_server": null,
+  "services": [],
+  "testing": {
+    "unit": "pytest",
+    "command": "uv run pytest"
+  },
+  "linting": {
+    "tool": "ruff",
+    "command": "uv run ruff check"
+  },
+  "deploy": null,
+  "folder_structure": {
+    "plugins/": "One Claude Code plugin per folder (each with .claude-plugin/, hooks/, skills/, agents/, scripts/, tests/, pyproject.toml)",
+    "shared/": "Cross-plugin scripts, profiles, templates, prompts",
+    "docs/": "User-facing documentation (guide.md is canonical)",
+    "integration-tests/": "Cross-plugin integration tests",
+    "scripts/": "Top-level developer scripts (install.sh, update-marketplace.sh)"
+  },
+  "required_env_vars": {
+    "build": [],
+    "deploy": [],
+    "plugin": []
+  },
+  "architecture_rules": [
+    {
+      "id": "logic-in-scripts-judgement-to-ai",
+      "text": "Checks, counts, comparisons and format rules go into scripts, tests or hooks; reading intent, judging wording and writing prose go to the AI. A SKILL.md names the decision and the script that makes it and does not restate the script's logic.",
+      "why": "Code checks the same way every time and prose that copies code drifts from it, while a script that guesses meaning is wrong reliably and looks trustworthy.",
+      "enforcement": "prompt-only (judgement)"
+    },
+    {
+      "id": "skill-authoring-limits",
+      "text": "Every skill keeps to the limits for name, description, SKILL.md body size and reference depth in shared/config/conventions.json (skill_authoring).",
+      "why": "A skill over Anthropic's limits is loaded badly or not at all, and the failure is silent.",
+      "enforcement": "prompt-only (mechanisable)",
+      "note": "shared/scripts/tools/check_skill_authoring.py checks these limits but is a report today: no phase and no CI job runs it, so nothing stops a skill that breaks a limit. Wiring it in is outside this profile's first release."
+    },
+    {
+      "id": "scripts-run-via-uv-run",
+      "text": "Python scripts are started with uv run, never with a bare python or pip.",
+      "why": "uv run gives the script the project's pinned interpreter and dependencies, so it behaves the same on every machine.",
+      "enforcement": "prompt-only (mechanisable)",
+      "note": "No checker scans skills, hooks or scripts for a bare python call. The only mechanism is the narrower hook of the rule no-bare-python-stdin."
+    },
+    {
+      "id": "no-bare-python-stdin",
+      "text": "Never run python - (an interpreter that reads its program from standard input) without a heredoc or pipe feeding it.",
+      "why": "Such a call waits on an input nobody answers and keeps a core busy for hours.",
+      "enforcement": "hook",
+      "mechanism": [
+        "plugins/shipwright-iterate/scripts/hooks/bare_python_stdin_guard.py"
+      ],
+      "note": "The hook is registered by the shipwright-iterate plugin and denies the command in Claude Code sessions where that plugin is active; it does not look at files in the repository."
+    },
+    {
+      "id": "hooks-resolve-plugin-root",
+      "text": "Hook commands and scripts reach plugin files through ${CLAUDE_PLUGIN_ROOT} (in double quotes), never through an absolute or working-directory-relative path.",
+      "why": "The plugin is installed into a cache folder that differs per machine and per version, and the quotes keep a path with spaces in one piece.",
+      "enforcement": "prompt-only (mechanisable)",
+      "note": "No checker is wired into this profile. A test that checks the quoting of the placeholder exists only inside the Shipwright repository."
+    },
+    {
+      "id": "generated-files-next-to-source",
+      "text": "A generated file lives next to the source it is generated from, not among hand-written files.",
+      "why": "Source and render are then read and reviewed together, and a stale render is easy to spot.",
+      "enforcement": "prompt-only (judgement)"
+    }
+  ]
+}

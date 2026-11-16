@@ -43,6 +43,8 @@ TEMPLATE_BY_PROFILE: dict[str, str] = {
     "supabase-nextjs": "shared/templates/github-actions/ci-supabase-nextjs.yml.template",
     "vite-hono": "shared/templates/github-actions/ci-vite-hono.yml.template",
     "python-plugin-monorepo": "shared/templates/github-actions/ci-python-plugin-monorepo.yml.template",
+    # claude-plugin shares the Python template: same toolchain, so a repo that moves to it keeps its CI.
+    "claude-plugin": "shared/templates/github-actions/ci-python-plugin-monorepo.yml.template",
 }
 
 # ---------------------------------------------------------------------------

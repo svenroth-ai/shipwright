@@ -77,6 +77,7 @@ LANGUAGES_PLACEHOLDER = "${SHIPWRIGHT_CODEQL_LANGUAGES}"
 # CodeQL language ids: `python`, `javascript-typescript`.
 CODEQL_LANGUAGES_BY_PROFILE: dict[str, list[str]] = {
     "python-plugin-monorepo": ["python"],
+    "claude-plugin": ["python"],
     "supabase-nextjs": ["javascript-typescript"],
     "vite-hono": ["javascript-typescript"],
 }

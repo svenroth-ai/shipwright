@@ -2,8 +2,8 @@
 
 A **stack profile** is a small JSON file that tells Shipwright how your technology stack
 works: which commands run the tests, which services make up the dev server, which
-environment variables are needed, which budgets apply. Shipwright ships five
-(`supabase-nextjs`, `vite-hono`, `python-plugin-monorepo`, `chat-first-json`, `skill-companion-app`). If none of them fits your
+environment variables are needed, which budgets apply. Shipwright ships six
+(`supabase-nextjs`, `vite-hono`, `python-plugin-monorepo`, `claude-plugin`, `chat-first-json`, `skill-companion-app`). If none of them fits your
 stack, you can write your own and every phase uses it.
 
 Two names are special and are not files: `generic` means "no stack file, use the
@@ -131,6 +131,14 @@ What each phase does with a plugin-shaped app today (recorded by unit E2 of camp
 
 A Brief package for this class names `profile: skill-companion-app` and sets `ux_shape: classic` and `ui_host: served-board`
 (the brief vocabulary `classic`, `chat-first` is unchanged here; `skill-companion` is the profile's own value). Design composes this class's screens from the Untitled UI kit and the package's tokens and never builds a chat layout; the chat-first layout is retired for this class (an older chat-first package of another profile keeps working; this profile is always composed as a board, and a package of this profile that says `chat-first` is a defect to re-approve as `classic`).
+
+## Plugin projects (`claude-plugin`) and the generic Python profile
+
+`claude-plugin` is the bundled profile for repositories that are Claude Code plugins (or plugin monorepos) whose code is Python. It carries the same Python data as `python-plugin-monorepo` (Python 3.11+, `uv run pytest`, `uv run ruff check`, no dev server, no deploy, the same CI and CodeQL templates) and adds six architecture rules: what goes into scripts and what goes to the AI, Anthropic's skill limits, scripts run through `uv run`, no bare `python -` reading stdin, hook paths through `${CLAUDE_PLUGIN_ROOT}`, generated files next to their source. Only one rule has a mechanism that something invokes (the bare-`python -` hook of the shipwright-iterate plugin, active in Claude Code sessions where that plugin is installed). The skill-limits checker (`check_skill_authoring.py`) is a report today and nothing runs it, so that rule is `prompt-only (mechanisable)` with a note saying so.
+
+`python-plugin-monorepo` is now described as the generic Python-project profile; its name is historical and is not changed here (about thirty files name it).
+
+**How adopt chooses between them.** `/shipwright-adopt` scores each profile by the dependency names it declares under `stack`. When the repository has a `.claude-plugin/` folder at its root, or one level down under `plugins/*/`, the analysis adds a `claude-plugin` entry to the runtime part of the stack signature, and the plugin profile (which declares that entry) scores higher than the generic one. A Python-only repository without such a folder keeps `python-plugin-monorepo`. `/shipwright-project` picks the profile by name like any other bundled one (`--profile claude-plugin`).
 
 ## What a Shipwright update can change
 
