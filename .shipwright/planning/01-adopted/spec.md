@@ -127,9 +127,9 @@ _Where the work detail lives_ at the end of this document.
 - (E) [AC13] Given a stack profile declares its architecture rules as structured entries, when the profile is checked, then every bundled profile is still reported valid, and an old-style list of plain sentences is accepted too.
 - (E) [AC14] Given a profile still uses the old plain-sentence list of architecture rules, when the profile is checked on request, then a warning is shown, and no other phase prints that warning.
 - (E) [AC15] Given one architecture rule names both a linter fragment and a list of checking files, when the profile is checked on request, then that rule is reported as an error, the remaining rules stay usable, and the profile itself stays valid.
-- (E) [AC16] Given the Supabase web app stack profile, when its architecture rules are checked, then each of the six rules states what it requires and why, says how it is kept, and the profile is still reported valid.
-- (E) [AC17] Given a new Supabase web app project built from the shipped examples, when the lint rule for direct database client use and for direct fetch calls in components is applied to those examples, then no example is flagged, and a seeded violation of each rule is flagged.
-- (E) [AC18] Given a new Supabase web app project, when the shipped route and component examples are read, then none of them uses the database client or fetch directly in a way the architecture rules forbid, and the architecture rules are written down once instead of repeated in several example files.
+- (E) [AC18] Given the Supabase web app stack profile, when its architecture rules are checked, then each of the six rules states what it requires and why, says how it is kept, and the profile is still reported valid.
+- (E) [AC19] Given a new Supabase web app project built from the shipped examples, when the lint rule for direct database client use and for direct fetch calls in components is applied to those examples, then no example is flagged, and a seeded violation of each rule is flagged.
+- (E) [AC20] Given a new Supabase web app project, when the shipped route and component examples are read, then none of them uses the database client or fetch directly in a way the architecture rules forbid, and the architecture rules are written down once instead of repeated in several example files.
 
 <a id="fr-0102"></a>
 ### FR-01.02 — Project decomposition into scoped units

@@ -61,7 +61,7 @@
     "code": {
       "review_type": "code",
       "status": "completed",
-      "findings_count": 3,
+      "findings_count": 5,
       "findings": [
         {
           "severity": "high",
@@ -89,10 +89,28 @@
           "finding": "Round 2: fence regex ignored fences with an info string. Fixed.",
           "suggestion": "fixed",
           "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/tests/test_supabase_nextjs_rules_drift.py",
+          "line": 1,
+          "finding": "Orchestrator review: comment stripper ignores strings and misses window['fetch'] / window?.fetch. Fixed: string-aware tokenizer, bracket and optional-chain access, seeded cases.",
+          "suggestion": "fixed",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_supabase_nextjs_rules_drift.py",
+          "line": 1,
+          "finding": "Orchestrator review lows: fence regex, dead importNames handling, extra seeded import cases, SCANNED from profile rules, rule wording, res.warnings assertion. All fixed.",
+          "suggestion": "fixed",
+          "source": "code-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-11-15T23:43:46.006993+00:00",
+      "completed_at": "2026-11-16T00:04:48.100205+00:00",
       "disposition": null,
       "recorded_by": "code-reviewer",
       "parse_status": null,
@@ -104,7 +122,7 @@
     "doubt": {
       "review_type": "doubt",
       "status": "completed",
-      "findings_count": 3,
+      "findings_count": 6,
       "findings": [
         {
           "severity": "medium",
@@ -132,10 +150,37 @@
           "finding": "Claim under doubt: ARCHITECTURE_RULES is rendered correctly — project-scaffolding.md still says bullet list",
           "suggestion": "rebutted: U2 owns that file and the render tool",
           "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "boundary & contract",
+          "file": ".shipwright/planning/01-adopted/spec.md",
+          "line": null,
+          "finding": "Claim under doubt: criteria ids FR-01.01 AC16-AC18 are free — U2 merges first and keeps AC16/AC17",
+          "suggestion": "renumbered to AC18-AC20 (fixed)",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "shared/profiles/supabase-nextjs.json",
+          "line": null,
+          "finding": "Claim under doubt: validator class is true for adopted repos — only U3b scaffolds carry the fragment; U2's render claims the linter checks it",
+          "suggestion": "rule notes say so; ADR records follow-up for U2/U3b/U6 (fixed in notes)",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "scope",
+          "file": ".shipwright/planning/campaigns/2026-11-15-profile-architecture-rules-BRIEF.md",
+          "line": null,
+          "finding": "Claim under doubt: brief amendment is faithful — original sentences not visible, ssr added beyond the operator text",
+          "suggestion": "originals kept with amendment text (fixed)",
+          "source": "doubt-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-11-15T23:43:46.156136+00:00",
+      "completed_at": "2026-11-16T00:04:48.235843+00:00",
       "disposition": null,
       "recorded_by": "doubt-reviewer",
       "parse_status": null,

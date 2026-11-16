@@ -40,7 +40,7 @@ def test_legacy_profile_warns_only_in_validate(project, capsys):
     code, out, err = _run(capsys, "resolve", "--project-root", str(project), "--name", "legacy-one")
     assert code == 0 and "plain-sentence" not in out + err and "architecture_rules" not in out + err
     res = pr.resolve_profile("legacy-one", project)
-    assert [w for w in res.warnings if "plain-sentence" in w] == []
+    assert res.warnings == []
 
 
 @pytest.mark.covers("FR-01.01/AC15")

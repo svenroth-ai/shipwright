@@ -55,6 +55,21 @@ Brief stated the campaign context (U1 merged, U2 concurrent, U3b/U4/U5/U6 consum
 
 BRIEF 3/U3a and decision 4.3 say `src/**` outside `src/lib/supabase/` must not import `createClient` or `@supabase/supabase-js`. First implementation restricted only the factory names (type imports and other runtime imports like `AuthError` passed). Now the two packages are restricted for every RUNTIME import (named, default, namespace, side-effect, re-export) with `allowTypeImports`, verified with real ESLint 10 (`eslint-seeded-run.txt`). One part of the brief is NOT met on purpose: a `createClient` imported from a project module is not caught. A catch-all `importNames: ['createClient']` pattern across all modules flags every namespace import (`import * as React`, shadcn/ui), reproduced with ESLint 10, and project helpers are conventionally named `createClient`. BRIEF 3/U3a and decision 4.3 were amended to this meaning; the orchestrator flags it in the campaign report.
 
+## Orchestrator review round 3 (dispositions)
+
+| Finding | Disposition |
+|---|---|
+| high: AC ids collide with U2 (AC16/AC17) | accepted-and-fixed: this unit's criteria are FR-01.01 AC18-AC20 everywhere (spec, test tags, event drop, ADR) |
+| high/medium (doubt): class `validator` printed by U2's render for adopted repos that never get the fragment | accepted-and-fixed in the rule notes (the class holds only where the eslint config carries the fragment, i.e. U3b scaffolds). **Open follow-up for U2/U3b/U6:** the render should say "checked by the linter" only when the project's eslint config carries the fragment, or print "when scaffolded with the ESLint template"; U6's reviewer instruction should not rely on lint having run in adopted repos. U2's file was not touched |
+| medium: comment stripper ignores strings; `window['fetch']`, `window?.fetch` missed | accepted-and-fixed: tokenizer blanks string contents before comment handling, bracket and optional-chain access handled, seeded cases added |
+| low: fence regex, dead importNames handling, seeded cases (default, side-effect, re-export, mixed, inline type), SCANNED from the profile's `rules` list | accepted-and-fixed; unsupported ESLint options now fail the test loudly |
+| low: wording of no-business-logic rule, server-components `why`, conventions pointer for vite-hono, `res.warnings == []` | accepted-and-fixed |
+| medium: brief amendment hid the original sentences | accepted-and-fixed: BRIEF 3/U3a and 4.3 keep the original text, say `@supabase/ssr` was added beyond the operator's text |
+
+## Handover to U3b
+
+`eslint.config.mjs` must use the typescript-eslint parser for the files the lint blocks cover, because `allowTypeImports` needs it to see `import type`; U3b's drift test should assert it. Put the two fragments last (a later object setting the same rule replaces its options) and replace the emulation in `test_supabase_nextjs_rules_drift.py` with a real ESLint run.
+
 ## Consequences
 
-U3b carries these two fragments into `eslint.config.mjs.template` and replaces the emulation with a real ESLint run. New scaffolds get the rules via U2's render; existing projects are untouched. Requirements: no new FR; criteria are FR-01.01 AC16-AC18. Concurrent U2 may also append FR-01.01 criteria at the same spot of `spec.md`; renumber on merge.
+U3b carries these two fragments into `eslint.config.mjs.template` and replaces the emulation with a real ESLint run. New scaffolds get the rules via U2's render; existing projects are untouched. Requirements: no new FR; criteria are FR-01.01 AC18-AC20. Concurrent U2 may also append FR-01.01 criteria at the same spot of `spec.md`; renumber on merge.

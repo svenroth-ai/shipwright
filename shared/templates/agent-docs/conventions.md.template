@@ -35,8 +35,8 @@
 
 - Route handlers validate input and check authentication, then delegate to a helper
   (database access lives in `src/lib/supabase/`, see `.claude/rules/api.md`)
-- The binding rules for the Supabase client, `fetch()` and Server Components are in
-  Architecture Rules above
+- When the profile declares architecture rules (see Architecture Rules above), they bind the
+  Supabase client, `fetch()` and Server Components
 
 ## Testing
 

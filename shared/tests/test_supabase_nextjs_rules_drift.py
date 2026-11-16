@@ -28,7 +28,7 @@ import pytest
 sys.path.append(str(Path(__file__).resolve().parents[1] / "scripts"))
 import profile_architecture_rules as par  # noqa: E402
 
-pytestmark = pytest.mark.covers("FR-01.01/AC16", "FR-01.01/AC17", "FR-01.01/AC18")
+pytestmark = pytest.mark.covers("FR-01.01/AC18", "FR-01.01/AC19", "FR-01.01/AC20")
 
 ROOT = Path(__file__).resolve().parents[2]
 TEMPLATES = ROOT / "shared" / "templates"
@@ -54,9 +54,15 @@ BLOCKS = {
     ("rules/integration-tests.md.template", 0): "tests/integration/entity.integration.test.ts",
 }
 WHOLE_FILES = {"integration-helpers-supabase.ts.template": "tests/integration/helpers/supabase-clients.ts"}
-SCANNED = sorted({t for t, _ in BLOCKS} | {"rules/migrations.md.template"})
+def _scanned() -> list:
+    """The templates of the profile's own `rules` list plus the conventions template."""
+    names = json.loads(PROFILE.read_text(encoding="utf-8"))["rules"]
+    return sorted({"agent-docs/conventions.md.template"} | {f"rules/{n}.md.template" for n in names})
+
+
+SCANNED = _scanned()
 CODE_LANGS = {"ts", "tsx", "typescript", "js", "jsx", "javascript"}
-_FENCE = re.compile(r"^```(\w*)\n(.*?)^```", re.S | re.M)
+_FENCE = re.compile(r"^```([^\n]*)\n(.*?)^```", re.S | re.M)
 
 
 def _read(path: Path) -> str:
@@ -99,49 +105,73 @@ _IMPORT = re.compile(r"""^\s*(?:import|export)\s+(?P<clause>[^'"]*?)\s*(?:from\s
 
 
 def _imports(source: str) -> list:
-    """[(module, runtime_names, runtime)]: ``runtime`` is False only for a type-only import
-    (``import type ...`` or braces holding nothing but ``type X`` specifiers)."""
+    """[(module, runtime)]: ``runtime`` is False only for a type-only import (``import type ...``,
+    ``export type ... from`` or braces holding nothing but ``type X`` specifiers)."""
     found = []
     for m in _IMPORT.finditer(source):
-        clause, names = m.group("clause").strip(), set()
-        decl_type = bool(re.match(r"(?:import|export)\s+type\b", m.group(0).strip()))
-        runtime = not decl_type
-        if "*" in clause:
-            names.add("*")  # a namespace import / export-star can carry any restricted name
+        clause = m.group("clause").strip()
+        runtime = not re.match(r"(?:import|export)\s+type\b", m.group(0).strip())
         braces = re.search(r"\{(.*?)\}", clause, re.S)
         specs = [p.strip() for p in braces.group(1).split(",") if p.strip()] if braces else []
-        if specs and all(re.match(r"type\s", p) for p in specs) and not re.sub(r"\{.*?\}", "", clause, flags=re.S).strip().strip(","):
+        outside = re.sub(r"\{.*?\}", "", clause, flags=re.S).strip().strip(",")
+        if specs and not outside and all(re.match(r"type\s", p) for p in specs):
             runtime = False  # braces hold only inline types
-        for part in specs:
-            names.add(re.sub(r"^\s*type\s+", "", part).split(" as ")[0].strip())
-        found.append((m.group("src"), names, runtime))
+        found.append((m.group("src"), runtime))
     return found
 
 
-def _strip_comments(source: str) -> str:
-    return re.sub(r"//[^\n]*|/\*.*?\*/", "", source, flags=re.S)
+def _scan(source: str) -> tuple:
+    """(code with string contents blanked, code with strings kept); comments are removed from both.
+
+    A ``//`` inside a string is not a comment, so a URL string cannot hide a later ``fetch``."""
+    blank, keep, i, n = [], [], 0, len(source)
+    while i < n:
+        c = source[i]
+        if source.startswith("//", i):
+            j = source.find("\n", i)
+            i = n if j < 0 else j
+        elif source.startswith("/*", i):
+            j = source.find("*/", i + 2)
+            i = n if j < 0 else j + 2
+        elif c in "'\"`":
+            j = i + 1
+            while j < n and source[j] != c:
+                j += 2 if source[j] == "\\" else 1
+            body = source[i + 1:j]
+            blank.append(c + " " * len(body) + c)
+            keep.append(c + body + c)
+            i = j + 1
+        else:
+            blank.append(c)
+            keep.append(c)
+            i += 1
+    return "".join(blank), "".join(keep)
 
 
 def _lint(block: dict, source: str) -> list:
     problems = []
+    blank, keep = _scan(source)
     for name, conf in block["rules"].items():
         opts = conf[1:] if isinstance(conf, list) else []
         if name == "no-restricted-imports":
-            for module, names, runtime in _imports(source):
-                for opt in opts:
+            for opt in opts:
+                if set(opt) - {"paths"} or any(set(p) - {"name", "message", "allowTypeImports"} for p in opt.get("paths", [])):
+                    raise AssertionError("the drift test emulates only no-restricted-imports paths with allowTypeImports")
+                for module, runtime in _imports(source):
                     for path in opt.get("paths", []):
-                        if module != path["name"] or (path.get("allowTypeImports") and not runtime):
-                            continue
-                        if not path.get("importNames") or names & ({"*"} | set(path["importNames"])):
+                        if module == path["name"] and not (path.get("allowTypeImports") and not runtime):
                             problems.append(f"import of {module}")
         elif name == "no-restricted-globals":
             for opt in opts:
-                if re.search(rf"(?<![\w$.]){re.escape(opt['name'])}\b", _strip_comments(source)):
+                if re.search(rf"(?<![\w$.]){re.escape(opt['name'])}\b", blank):
                     problems.append(f"global {opt['name']}")
         elif name == "no-restricted-properties":
             for opt in opts:
-                if re.search(rf"\b{opt['object']}\.{opt['property']}\b", _strip_comments(source)):
-                    problems.append(f"{opt['object']}.{opt['property']}")
+                obj, prop = opt["object"], opt["property"]
+                dot = rf"\b{obj}\s*\??\.\s*{prop}\b"
+                brk = rf"\b{obj}\s*(?:\?\.)?\s*\[\s*['\"`]{prop}['\"`]\s*\]"
+                if re.search(dot, blank) or re.search(brk, keep):
+                    problems.append(f"{obj}.{prop}")
         else:
             raise AssertionError(f"the drift test cannot emulate ESLint rule {name!r}: add it here before using it in a fragment")
     return problems
@@ -205,8 +235,17 @@ def test_fixture_tree_passes_every_mechanical_rule():
     ("src/components/a.tsx", "import { createBrowserClient } from '@supabase/ssr'\n", "supabase-client-through-helpers"),
     ("src/app/page.tsx", "import { createServerClient } from '@supabase/ssr'\n", "supabase-client-through-helpers"),
     ("src/app/page.tsx", "import * as supabase from '@supabase/supabase-js'\n", "supabase-client-through-helpers"),
+    ("src/components/a.tsx", "import { AuthError } from '@supabase/supabase-js'\n", "supabase-client-through-helpers"),
+    ("src/components/a.tsx", "import { type User, AuthError } from '@supabase/supabase-js'\n", "supabase-client-through-helpers"),
+    ("src/components/a.tsx", "import sb from '@supabase/supabase-js'\n", "supabase-client-through-helpers"),
+    ("src/components/a.tsx", "import '@supabase/supabase-js'\n", "supabase-client-through-helpers"),
+    ("src/components/a.tsx", "export { createClient } from '@supabase/supabase-js'\n", "supabase-client-through-helpers"),
     ("src/components/a.tsx", "const r = await fetch('/api/x')\n", "no-fetch-in-components"),
     ("src/components/a.tsx", "const r = await window.fetch('/api/x')\n", "no-fetch-in-components"),
+    ("src/components/a.tsx", "const u = 'https://x.test'; const r = await fetch(u)\n", "no-fetch-in-components"),
+    ("src/components/a.tsx", "const r = await window['fetch']('/api/x')\n", "no-fetch-in-components"),
+    ("src/components/a.tsx", "const r = await window?.fetch('/api/x')\n", "no-fetch-in-components"),
+    ("src/components/a.tsx", "const r = await globalThis?.['fetch']('/api/x')\n", "no-fetch-in-components"),
     ("src/app/page.tsx", "const r = await globalThis.fetch('/api/x')\n", "no-fetch-in-components"),
 ])
 def test_a_seeded_violation_is_flagged(rel, source, rule_id):
@@ -225,6 +264,11 @@ def test_a_seeded_violation_is_flagged(rel, source, rule_id):
     ("src/app/api/x/route.ts", "const r = await fetch('https://example.com')\n"),             # a route handler, not a component
     ("src/components/a.test.tsx", "const r = await fetch('/api/x')\n"),
     ("src/components/a.tsx", "// fetch() is not allowed here\n"),
+    ("src/components/a.tsx", "const s = 'call fetch() later'\n"),
+    ("src/components/user-menu.tsx", "import { type User, type Session } from '@supabase/supabase-js'\n"),
+    ("src/components/user-menu.tsx", "export type { User } from '@supabase/supabase-js'\n"),
+    ("src/components/a.tsx", "import { createClient } from '@/lib/supabase/client'\n"),        # a helper may be called createClient
+    ("src/components/ui/button.tsx", "import * as React from 'react'\n"),                       # shadcn-style namespace import
 ])
 def test_a_compliant_or_exempt_file_is_not_flagged(rel, source):
     assert _violations(rel, source) == []
@@ -241,3 +285,7 @@ def test_duplicated_prose_is_gone_from_the_templates():
     assert "- All Supabase calls through" not in conventions and "No `fetch()` directly" not in conventions
     assert "Server Components by default" not in _read(TEMPLATES / "rules/components.md.template")
     assert "{ARCHITECTURE_RULES}" in conventions  # the rules are rendered once, from the profile
+
+
+def test_every_mapped_template_is_scanned():
+    assert {t for t, _ in BLOCKS} <= set(SCANNED)

@@ -255,7 +255,7 @@
           }
         }
       },
-      "note": "Runtime imports of the two packages are flagged, type-only imports (`import type`, inline `type X`) pass. Narrower than 'createClient from anywhere' on purpose: a name pattern across all modules flags every namespace import such as `import * as React`, and project helpers may be called createClient, so a helper-named createClient is not caught. Static imports only: dynamic import() and require() are not caught. Session-refresh code for Next.js middleware also belongs in src/lib/supabase/ (a helper that src/middleware.ts calls). A per-line disable with a reason is the grandfathering mechanism."
+      "note": "The validator class holds only for projects whose eslint config carries this fragment, i.e. projects scaffolded with the ESLint template (U3b); an adopted repo gets no lint config from Shipwright, so for it this rule is instruction only until its owner adds the fragment. Runtime imports of the two packages are flagged, type-only imports (`import type`, inline `type X`) pass; allowTypeImports needs the typescript-eslint parser for the files covered. Narrower than 'createClient from anywhere' on purpose: a name pattern across all modules flags every namespace import such as `import * as React`, and project helpers may be called createClient. Static imports only: dynamic import() and require() are not caught. Session-refresh code for Next.js middleware also belongs in src/lib/supabase/ (a helper that src/middleware.ts calls). A per-line disable with a reason is the grandfathering mechanism."
     },
     {
       "id": "no-fetch-in-components",
@@ -303,18 +303,18 @@
           }
         }
       },
-      "note": "Scope is src/components/** and the .tsx/.jsx files under src/app/**; route handlers (route.ts) are not components and stay out of scope. Metadata image files (opengraph-image, twitter-image, icon) are ignored because they fetch fonts and assets; hooks outside src/components are out of scope. A legitimate exception takes a per-line disable with a reason."
+      "note": "The validator class holds only for projects whose eslint config carries this fragment, i.e. projects scaffolded with the ESLint template (U3b); for an adopted repo it is instruction only until its owner adds the fragment. Scope is src/components/** and the .tsx/.jsx files under src/app/**; route handlers (route.ts) are not components and stay out of scope. Metadata image files (opengraph-image, twitter-image, icon) are ignored because they fetch fonts and assets; hooks outside src/components are out of scope. A legitimate exception takes a per-line disable with a reason."
     },
     {
       "id": "server-components-by-default",
       "text": "Components are Server Components by default; add 'use client' only when state, effects or browser APIs are needed.",
-      "why": "Server Components send less JavaScript to the browser and fetch data next to where it is rendered.",
+      "why": "Server Components send less JavaScript to the browser and load data next to where it is rendered, through the helpers.",
       "enforcement": "prompt-only (judgement)",
       "note": "Whether a component needs the browser is a design call, not a pattern a linter can decide."
     },
     {
       "id": "no-business-logic-in-api-routes",
-      "text": "API routes validate input, check authentication and delegate; business logic lives in Edge Functions.",
+      "text": "API routes validate input, check authentication and delegate: data access goes to helpers in src/lib/supabase/ and business logic to Edge Functions.",
       "why": "Logic in route handlers is hard to reuse and test, and ends up duplicated between routes.",
       "enforcement": "prompt-only (judgement)",
       "note": "What counts as business logic cannot be told apart from plumbing by a pattern match."
