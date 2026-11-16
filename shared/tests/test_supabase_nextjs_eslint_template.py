@@ -2,6 +2,8 @@
 
 Always on (no Node): the template carries each lint fragment of the profile unchanged, parser block first,
 fragments last, and the project skill's scaffold step names it without a shell command.
+AC21 is bound to the always-on drift tests; AC22 to the test that checks the committed evidence file of the one
+real run (the slow real-run test itself is not tagged: CI never selects it).
 The real ESLint test is marked ``slow`` (npm install, network), so the default tier never runs it; run it with
 ``pytest -m slow``. It needs Node and npm (skips without them, except under CI) and installs ESLint into a temp
 folder without install scripts: the shipped template as it is, the fixture tree of the templates' examples and
@@ -24,8 +26,6 @@ from test_hygiene import is_ci
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / "scripts"))
 import profile_architecture_rules as par  # noqa: E402
-
-pytestmark = [pytest.mark.covers("FR-01.01/AC19", "FR-01.01/AC21", "FR-01.01/AC22")]
 
 ROOT = Path(__file__).resolve().parents[2]
 TEMPLATES = ROOT / "shared" / "templates"
@@ -146,6 +146,7 @@ def _eslint_run(tmp_path):
     return report, cases
 
 
+@pytest.mark.covers("FR-01.01")  # FR-level only: the slow run backs no AC binding (the keystone gate needs bound tests to run in CI)
 @pytest.mark.slow  # npm install + subprocess: excluded from the default tier (pyproject addopts)
 def test_real_eslint_run_over_template_fixture_and_seeded_cases(tmp_path):
     """One test, one npm install: the four assertions share a single run (xdist would otherwise build the
@@ -174,6 +175,7 @@ def _marked_blocks(text: str) -> dict:
     return {m.group("id"): json.loads(m.group("body")) for m in re.finditer(pattern, text, re.S | re.M)}
 
 
+@pytest.mark.covers("FR-01.01/AC21")
 def test_each_lint_fragment_of_the_profile_is_in_the_template_unchanged():
     blocks = _marked_blocks(_read(TEMPLATE))
     mechanical = _mechanical()
@@ -183,6 +185,7 @@ def test_each_lint_fragment_of_the_profile_is_in_the_template_unchanged():
         assert blocks[rule.id] == rule.lint["block"], f"{rule.id}: template block differs from the profile fragment"
 
 
+@pytest.mark.covers("FR-01.01/AC21")
 def test_no_two_fragments_set_the_same_rule():
     keys = [k for r in _mechanical() for k in r.lint["block"]["rules"]]
     assert len(keys) == len(set(keys)), "flat config: a later block setting the same rule replaces the earlier one"
@@ -194,6 +197,7 @@ def _extensions(glob: str) -> set:
     return set(braces.group(1).split(","))
 
 
+@pytest.mark.covers("FR-01.01/AC21")
 def test_template_puts_parser_first_and_fragments_last():
     text = _read(TEMPLATE)
     assert 'import tseslint from "typescript-eslint"' in text
@@ -208,6 +212,7 @@ def test_template_puts_parser_first_and_fragments_last():
             assert _extensions(pattern) <= covered, (rule.id, pattern)
 
 
+@pytest.mark.covers("FR-01.01/AC21")
 def test_scaffold_step_writes_the_template_without_a_shell_command():
     text = _read(STEP7)
     section = text[text.index("## ESLint config (supabase-nextjs profile only)"):text.index("## GitHub Repo Hygiene")]
@@ -216,3 +221,40 @@ def test_scaffold_step_writes_the_template_without_a_shell_command():
     assert "```" not in section  # no command block
     assert not re.search(r'"[^"\n]*\{[a-z_]+\}[^"\n]*"', section), "a placeholder sits inside double quotes"
     assert "eslint.config" in text[text.index("**Checkpoint:**"):]
+
+
+EVIDENCE = ROOT / ".shipwright" / "planning" / "iterate" / "iterate-2026-11-16-u3b-eslint-template" / "eslint-seeded-run.txt"
+
+
+@pytest.mark.covers("FR-01.01/AC19", "FR-01.01/AC22")
+def test_committed_eslint_evidence_flags_every_seeded_case_and_nothing_else():
+    """Node-free: the recorded real run names the ESLint version and exit status, lists each seeded case with
+    the rule that flagged it and each compliant or exempt file with no finding. The run itself is the slow test."""
+    lines = _read(EVIDENCE).splitlines()
+    assert re.match(r"eslint v\d+\.\d+\.\d+, node v\d+", lines[0]), lines[0]
+    assert "exit status 1" in lines[2], lines[2]  # findings, as seeded; 2 would be a config error
+    rows = {}
+    for line in lines[4:]:
+        kind, _, rest = line.partition(" ")
+        rel, _, found = rest.strip().rpartition(": ")
+        rows[rel] = (kind, found)
+    expected = {"supabase-client-through-helpers": {"no-restricted-imports"},
+                "no-fetch-in-components": {"no-restricted-globals", "no-restricted-properties"}}
+    for i, (rel, _src, rule_id) in enumerate(SEEDED_VIOLATIONS):
+        kind, found = rows[_case_path(rel, i)]
+        assert kind == "flagged" and set(found.split(", ")) <= expected[rule_id], (rel, kind, found)
+    for i, (rel, _src) in enumerate(COMPLIANT_OR_EXEMPT, start=100):
+        assert rows[_case_path(rel, i)] == ("clean", "no finding"), rel
+    assert rows["eslint.config.mjs"] == ("config", "no finding")
+    fixture = [r for r, (kind, _) in rows.items() if kind == "fixture"]
+    assert len(fixture) == len([p for p in FIXTURE.rglob("*") if p.is_file()])
+    assert all(rows[r][1] == "no finding" for r in fixture)
+
+
+@pytest.mark.covers("FR-01.01/AC21")
+def test_scaffold_step_pins_the_merge_rules():
+    text = _read(STEP7)
+    section = text[text.index("## ESLint config (supabase-nextjs profile only)"):text.index("## GitHub Repo Hygiene")]
+    for phrase in ("replace each marked block", "as the LAST elements", "must not add a block twice", "do not skip silently"):
+        assert phrase in section, phrase
+
