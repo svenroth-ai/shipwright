@@ -1,13 +1,13 @@
 {
   "name": "claude-plugin",
-  "description": "Profile for Claude Code plugin repositories whose code is Python. Same Python toolchain as python-plugin-monorepo (Python 3.11+, uv, pytest, ruff, no deployable web server, no frontend) plus the architecture rules of plugin projects: what goes into scripts and what goes to the AI, Anthropic's skill limits, scripts run through uv run, hooks resolve paths through ${CLAUDE_PLUGIN_ROOT}, generated files live next to their source. Adopt picks it when the repository has a .claude-plugin folder.",
+  "description": "Profile for Claude Code plugin repositories whose code is Python. Same Python toolchain as python-plugin-monorepo (Python 3.11+, uv, pytest, ruff, no deployable web server, no frontend) plus the architecture rules of plugin projects: what goes into scripts and what goes to the AI, Anthropic's skill limits, scripts run through uv run, hooks resolve paths through ${CLAUDE_PLUGIN_ROOT}, generated files live next to their source. Adopt picks it for a Python repository that has a .claude-plugin folder, where the generic Python profile would have matched.",
   "version": "0.1.0",
   "stack": {
     "runtime": {
       "python": "3.11+",
       "claude-plugin": ".claude-plugin/"
     },
-    "_comment_runtime": "The claude-plugin key is the adopt matching signal (a .claude-plugin folder was found); adopt scores a profile by the dependency names it declares here.",
+    "_comment_runtime": "Adopt scores a profile by the other dependency names declared here; the claude-plugin key never counts toward a score, it only makes this profile a candidate (when the repository has a .claude-plugin folder) and settles a same-source tie against the generic Python profile.",
     "frontend": {},
     "backend": {}
   },
@@ -63,7 +63,7 @@
       "mechanism": [
         "plugins/shipwright-iterate/scripts/hooks/bare_python_stdin_guard.py"
       ],
-      "note": "The hook is registered by the shipwright-iterate plugin and denies the command only in Claude Code sessions where that plugin is active, and only for the Bash tool (the PowerShell tool is not guarded); it also refuses an empty heredoc feeding python -. It does not look at files in the repository. The mechanism path is relative to the Shipwright repository: a copy of this profile in a project's .shipwright/profiles/ must change this rule to prompt-only or drop the mechanism, or validate reports the path as missing."
+      "note": "The hook is registered by the shipwright-iterate plugin and denies the command only in Claude Code sessions where that plugin is active, and only for the Bash tool (the PowerShell tool is not guarded); it also refuses an empty or unterminated heredoc feeding python -. It does not look at files in the repository. The mechanism path is relative to the Shipwright repository: a copy of this profile in a project's .shipwright/profiles/ must change this rule to prompt-only or drop the mechanism, or validate reports the path as missing."
     },
     {
       "id": "hooks-resolve-plugin-root",
