@@ -1,6 +1,6 @@
 {
   "run_id": "iterate-2026-11-16-u3b-eslint-template",
-  "date": "2026-11-16T03:00:31.994857Z",
+  "date": "2026-11-16T03:07:30.797287Z",
   "event_at": "2026-11-16T02:54:04.455462+00:00",
   "type": "feature",
   "complexity": "medium",
@@ -25,7 +25,7 @@
       {
         "behavior": "real ESLint loads the shipped template, flags every seeded violation with its rule, flags no fixture, compliant or exempt file",
         "disposition": "tested",
-        "evidence": "shared/tests/test_supabase_nextjs_eslint_template.py::test_real_eslint_run_over_template_fixture_and_seeded_cases PASSED; .shipwright/planning/iterate/iterate-2026-11-16-u3b-eslint-template/eslint-seeded-run.txt (ESLint 10.15.0)"
+        "evidence": "shared/tests/test_supabase_nextjs_eslint_template.py::test_real_eslint_run_over_template_fixture_and_seeded_cases PASSED (pytest -m slow); .shipwright/planning/iterate/iterate-2026-11-16-u3b-eslint-template/eslint-seeded-run.txt (ESLint 10.15.0)"
       },
       {
         "behavior": "the scaffold step names the template, runs no command and puts no placeholder in double quotes",
@@ -53,7 +53,7 @@
     "surface": "cli",
     "runner": "uv run pytest shared/tests/test_supabase_nextjs_eslint_template.py shared/tests/test_supabase_nextjs_rules_drift.py -q -p no:cacheprovider",
     "exit_code": 0,
-    "tests_run": 34,
+    "tests_run": 33,
     "evidence_path": ".shipwright/runs/iterate-2026-11-16-u3b-eslint-template/surface_verification.log",
     "timestamp": "2026-11-16T02:40:11.666Z",
     "attempts": 1

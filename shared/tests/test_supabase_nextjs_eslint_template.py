@@ -2,10 +2,11 @@
 
 Always on (no Node): the template carries each lint fragment of the profile unchanged, parser block first,
 fragments last, and the project skill's scaffold step names it without a shell command.
-Needs Node and npm (``eslint_run`` installs ESLint into a temp folder; skips without them, except under CI,
-where a missing Node fails): the shipped template as it is, the fixture tree of the templates' examples and one
-seeded violation per rule through real ESLint. The versions are floating majors, so a red run without a code change can be an upstream release.
-The whole run is ONE test, so parallel workers never each install ESLint. ``SHIPWRIGHT_ESLINT_EVIDENCE=<file>`` writes a report of that run.
+The real ESLint test is marked ``slow`` (npm install, network), so the default tier never runs it; run it with
+``pytest -m slow``. It needs Node and npm (skips without them, except under CI) and installs ESLint into a temp
+folder without install scripts: the shipped template as it is, the fixture tree of the templates' examples and
+one seeded violation per rule through real ESLint. Versions are floating majors, so a red run without a code
+change can be an upstream release. The whole run is ONE test. ``SHIPWRIGHT_ESLINT_EVIDENCE=<file>`` writes a report.
 """
 
 from __future__ import annotations
@@ -91,6 +92,19 @@ def _case_path(rel: str, i: int) -> str:
     return f"{head}/case{i}/{name}"
 
 
+def _write_evidence(target: Path, node: str, cli: str, exit_code: int, report: dict, cases: dict) -> None:
+    version = subprocess.run([node, cli, "--version"], capture_output=True, text=True, timeout=60).stdout.strip()
+    node_version = subprocess.run([node, "-v"], capture_output=True, text=True, timeout=60).stdout.strip()
+    lines = [f"eslint {version}, node {node_version}",
+             f"installed: {' '.join(ESLINT_REQUIREMENTS)} (--ignore-scripts); config: shared/templates/eslint/eslint.config.mjs.template, unchanged",
+             f"exit status {exit_code} (1 = findings, as seeded)", ""]
+    for rel in sorted(report):
+        kind = cases[rel][0] if rel in cases else "config" if rel == "eslint.config.mjs" else "fixture" if (FIXTURE / rel).is_file() else "other"
+        found = ", ".join(sorted({str(m.get("ruleId")) for m in report[rel]})) or "no finding"
+        lines.append(f"{kind:8} {rel}: {found}")
+    target.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
 def _eslint_run(tmp_path):
     """One REAL ESLint run over the template, the fixture tree and every seeded case.
 
@@ -106,8 +120,8 @@ def _eslint_run(tmp_path):
     (work / "package.json").write_text('{"name": "scaffold", "private": true, "type": "module"}', encoding="utf-8")
     shutil.copytree(FIXTURE, work, dirs_exist_ok=True)
     shutil.copy(TEMPLATE, work / "eslint.config.mjs")
-    install = subprocess.run([npm, "install", "--no-audit", "--no-fund", "--save-dev", *ESLINT_REQUIREMENTS],
-                             cwd=work, capture_output=True, text=True, timeout=600)
+    install = subprocess.run([npm, "install", "--no-audit", "--no-fund", "--ignore-scripts", "--save-dev", *ESLINT_REQUIREMENTS],
+                             cwd=work, capture_output=True, text=True, timeout=180)
     if install.returncode != 0:
         msg = f"npm install of ESLint failed: {install.stderr[-500:]}"
         if is_ci():
@@ -123,24 +137,16 @@ def _eslint_run(tmp_path):
         (work / _case_path(rel, i)).parent.mkdir(parents=True, exist_ok=True)
         (work / _case_path(rel, i)).write_text(source, encoding="utf-8")
     cli = str(work / "node_modules" / "eslint" / "bin" / "eslint.js")
-    run = subprocess.run([node, cli, "--format", "json", "."], cwd=work, capture_output=True, text=True, timeout=600)
+    run = subprocess.run([node, cli, "--format", "json", "."], cwd=work, capture_output=True, text=True, timeout=120)
     assert run.returncode in (0, 1), run.stderr  # 2 = the config or the run itself failed
     report = {Path(r["filePath"]).relative_to(work).as_posix(): r["messages"] for r in json.loads(run.stdout)}
     evidence = os.environ.get("SHIPWRIGHT_ESLINT_EVIDENCE")
     if evidence:
-        version = subprocess.run([node, cli, "--version"], capture_output=True, text=True).stdout.strip()
-        node_version = subprocess.run([node, "-v"], capture_output=True, text=True).stdout.strip()
-        lines = [f"eslint {version}, node {node_version}",
-                 f"installed: {' '.join(ESLINT_REQUIREMENTS)}; config: shared/templates/eslint/eslint.config.mjs.template, unchanged",
-                 f"exit status {run.returncode} (1 = findings, as seeded)", ""]
-        for rel in sorted(report):
-            kind = cases.get(rel, ("fixture", None))[0]
-            found = ", ".join(sorted({str(m.get("ruleId")) for m in report[rel]})) or "no finding"
-            lines.append(f"{kind:8} {rel}: {found}")
-        Path(evidence).write_text("\n".join(lines) + "\n", encoding="utf-8")
+        _write_evidence(Path(evidence), node, cli, run.returncode, report, cases)
     return report, cases
 
 
+@pytest.mark.slow  # npm install + subprocess: excluded from the default tier (pyproject addopts)
 def test_real_eslint_run_over_template_fixture_and_seeded_cases(tmp_path):
     """One test, one npm install: the four assertions share a single run (xdist would otherwise build the
     run once per worker)."""
@@ -182,6 +188,12 @@ def test_no_two_fragments_set_the_same_rule():
     assert len(keys) == len(set(keys)), "flat config: a later block setting the same rule replaces the earlier one"
 
 
+def _extensions(glob: str) -> set:
+    braces = re.search(r"\{(.*)\}", glob)
+    assert braces, f"glob {glob!r} has no {{a,b}} extension list; extend this test before using such a glob"
+    return set(braces.group(1).split(","))
+
+
 def test_template_puts_parser_first_and_fragments_last():
     text = _read(TEMPLATE)
     assert 'import tseslint from "typescript-eslint"' in text
@@ -190,10 +202,10 @@ def test_template_puts_parser_first_and_fragments_last():
     assert parser.start() < text.index("// BEGIN architecture-rule:")
     last_end = text.rindex("// END architecture-rule:")
     assert text[last_end:].split("\n", 1)[1].strip() == "];"  # nothing after the last fragment can override it
-    covered = set(re.search(r"\{(.*)\}", parser.group("glob")).group(1).split(","))
+    covered = _extensions(parser.group("glob"))
     for rule in _mechanical():
         for pattern in rule.lint["block"]["files"]:
-            assert set(re.search(r"\{(.*)\}", pattern).group(1).split(",")) <= covered, (rule.id, pattern)
+            assert _extensions(pattern) <= covered, (rule.id, pattern)
 
 
 def test_scaffold_step_writes_the_template_without_a_shell_command():

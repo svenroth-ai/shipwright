@@ -142,7 +142,13 @@ When the detected profile is `supabase-nextjs`, wire the profile's two lint rule
 
 1. Read `{plugin_root}/../../shared/templates/eslint/eslint.config.mjs.template`.
 2. No `eslint.config.js`, `.mjs`, `.cjs` or `.ts` and no `.eslintrc*` in the project root: write the template there as `eslint.config.mjs`.
-3. One exists (create-next-app writes its own): if it already holds `// BEGIN architecture-rule:` marker lines, replace each marked block with the template's; otherwise append the template's marked blocks as the LAST elements of the exported array (a later block that sets the same rule replaces its options) and add the template's parser block (with its `import tseslint` line when the file lacks it; in a `.cjs` file use `require` instead of `import`) when no block gives `.ts`/`.tsx` files the typescript-eslint parser. Leave the rest as it is; running the step again must not add a block twice. If the existing config already sets `no-restricted-imports`, `no-restricted-globals` or `no-restricted-properties` for the same files, fold its options into the appended block (the later block replaces them otherwise) or tell the user. If only a legacy `.eslintrc*` exists (writing a flat config next to it would replace its rules) or the file cannot be edited safely, do not skip silently: tell the user the two lint rules are not wired and name the template.
+3. One exists (create-next-app writes its own): merge, keeping everything else as it is. The exported array may be the argument of `defineConfig([...])`; insert inside it.
+   - 3a. Marker lines `// BEGIN architecture-rule:` already present: replace each marked block with the template's. Options folded in by 3c are applied again afterwards; when an existing marked block differs from the template's, ask the user before replacing it.
+   - 3b. No markers: append the template's marked blocks as the LAST elements of the array (a later block that sets the same rule replaces its options).
+   - 3c. The config already sets `no-restricted-imports`, `no-restricted-globals` or `no-restricted-properties` for the same files: fold its options into the appended block, or tell the user.
+   - 3d. Add the template's parser block when no block gives `.ts`/`.tsx` files the typescript-eslint parser, with its `import tseslint` line when the file lacks it (in a `.cjs` file use `require` instead of `import`).
+   - 3e. Running the step again must not add a block twice.
+   - Only a legacy `.eslintrc*` exists (writing a flat config next to it would replace its rules), or the file cannot be edited safely: do not skip silently, tell the user the two lint rules are not wired and name the template. That outcome is acceptable for the checkpoint below.
 4. Add `eslint`, `typescript-eslint` and `typescript` as devDependencies in `package.json` when it exists, each only when missing (versions as the profile's `linting` and `stack.runtime` give them); never change a version that is already there. ESLint 9.39 and 10 are checked with the template; an older one that rejects the config is a config error, so tell the user. No `package.json` yet (usual here: the Next.js app is created later by the build phase): the profile's `linting` block names the packages, and when the app is created and a config file replaces this one, repeat steps 2 and 3 so the blocks are back.
 
 ## GitHub Repo Hygiene (if git remote exists)
@@ -161,4 +167,4 @@ gh api repos/{owner}/{repo} -X PATCH -f delete_branch_on_merge=true
 ```
 This prevents stale feature branches from accumulating after Shipwright's `gh pr merge --merge --delete-branch` (in changelog phase) or manual UI merges.
 
-**Checkpoint:** CLAUDE.md existence + AGENTS.md existence + `supabase/config.toml` existence (if supabase-nextjs profile) + `eslint.config.*` carrying the architecture-rule blocks (if supabase-nextjs profile).
+**Checkpoint:** CLAUDE.md existence + AGENTS.md existence + `supabase/config.toml` existence (if supabase-nextjs profile) + `eslint.config.*` carrying the architecture-rule blocks, or the user told that they are not wired (legacy `.eslintrc*` or a config that cannot be edited safely) (if supabase-nextjs profile).

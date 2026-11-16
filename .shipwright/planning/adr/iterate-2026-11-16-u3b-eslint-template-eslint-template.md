@@ -50,6 +50,18 @@ Not done: a real-ESLint case over an eslint-config-next base config (needs a lar
 | glm low: report[rel] KeyError, fixture tree must be TS/JS only | accepted-and-fixed: explicit "not linted" assertion |
 | glm low: results file trailing newline | accepted-and-fixed (derived file, not committed) |
 
+## Orchestrator review of U3b (follow-up commit)
+
+| Finding | Disposition |
+|---|---|
+| high (doubt): real-ESLint test runs `npm install` with install scripts in the default tier | accepted-and-fixed: `--ignore-scripts`, test marked `slow` (excluded by pyproject addopts, follows `test_path_helpers_template_vitest.py`), timeouts 180/120/60 s; the evidence file is regenerated with `pytest -m slow`; the always-on drift tests stay Node-free |
+| medium (code): typescript-eslint floor | accepted-and-fixed: `^8.56.0`, the first 8.x release whose peerDependencies accept eslint ^10; `docs/guide.md` Linting row lists it |
+| lows (code): checkpoint wording, folded options re-applied, step 3 split into 3a-3e, defineConfig sentence, evidence labels, no-brace glob message, `_write_evidence`, `--version` timeouts | accepted-and-fixed |
+
+## OPEN FOLLOW-UP (for U6 and the build phase): the rules can be silently lost
+
+Project step 7 runs before the Next.js app exists. If the build phase later creates the app and replaces `eslint.config.*`, the marked architecture-rule blocks are gone and nothing checks for them. The step tells the agent to repeat the merge, but the build skill is not edited here and no gate verifies that the blocks are present afterwards. This is not tracked elsewhere; the campaign report carries it.
+
 ## Consequences
 
 New supabase-nextjs projects get the rules wired into lint; adopted repos stay instruction only. FR-01.01 AC21-AC22 added, no new FR.

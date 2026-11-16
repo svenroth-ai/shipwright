@@ -116,7 +116,7 @@
     "code": {
       "review_type": "code",
       "status": "completed",
-      "findings_count": 6,
+      "findings_count": 8,
       "findings": [
         {
           "severity": "medium",
@@ -171,22 +171,40 @@
           "finding": "template header versions",
           "suggestion": null,
           "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "typescript-eslint floor ^8.0.0 predates eslint 10 peer support",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": null,
+          "line": null,
+          "finding": "checkpoint wording, folded options re-applied, step 3 too long, defineConfig, evidence labels, no-brace glob, _write_evidence, --version timeouts",
+          "suggestion": null,
+          "source": "code-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-11-16T02:39:14.047243+00:00",
+      "completed_at": "2026-11-16T03:07:23.054811+00:00",
       "disposition": null,
       "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus",
       "verdict": "pass",
-      "reviewed_commit": "3e41277676ab00ec0aa651cfde59874957efc3b5"
+      "reviewed_commit": "998858a7ffa7e2cf217fa8a3b988f4cc558b777d"
     },
     "doubt": {
       "review_type": "doubt",
       "status": "completed",
-      "findings_count": 5,
+      "findings_count": 6,
       "findings": [
         {
           "severity": "high",
@@ -232,17 +250,26 @@
           "finding": "Claim under doubt: appended block replaces user's restriction options — appended block replaces user's restriction options",
           "suggestion": "accepted-and-fixed: step says to fold options or tell the user",
           "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: real-ESLint test runs npm install with install scripts in the default tier — CI tests-shared, Windows and every F0 would run an unlocked network install with scripts",
+          "suggestion": "accepted-and-fixed: --ignore-scripts, pytest.mark.slow, shorter timeouts",
+          "source": "doubt-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-11-16T02:44:41.636323+00:00",
+      "completed_at": "2026-11-16T03:07:23.195923+00:00",
       "disposition": null,
       "recorded_by": "doubt-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus",
       "verdict": "pass",
-      "reviewed_commit": "3e41277676ab00ec0aa651cfde59874957efc3b5"
+      "reviewed_commit": "998858a7ffa7e2cf217fa8a3b988f4cc558b777d"
     },
     "external_code": {
       "review_type": "external_code",

@@ -1,8 +1,8 @@
 eslint v10.15.0, node v24.15.0
-installed: eslint@10 typescript-eslint@8 typescript@5; config: shared/templates/eslint/eslint.config.mjs.template, unchanged
+installed: eslint@10 typescript-eslint@8 typescript@5 (--ignore-scripts); config: shared/templates/eslint/eslint.config.mjs.template, unchanged
 exit status 1 (1 = findings, as seeded)
 
-fixture  eslint.config.mjs: no finding
+config   eslint.config.mjs: no finding
 fixture  src/app/api/profile/route.ts: no finding
 fixture  src/app/api/projects/route.ts: no finding
 clean    src/app/api/x/case108/route.ts: no finding

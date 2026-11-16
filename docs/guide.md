@@ -1413,7 +1413,7 @@ The default profile ships a modern full-stack setup:
 | Unit Testing | Vitest | ^4.1.0 |
 | E2E Testing | Playwright | ^1.58.2 |
 | Security Scanning | OSS (Semgrep, Trivy, Gitleaks); Aikido optional/legacy | Local CLI; Aikido via Cloud API |
-| Linting | ESLint (flat config), Prettier | ^10.0.3, ^3.8.1 |
+| Linting | ESLint (flat config), typescript-eslint, Prettier | ^10.0.3, ^8.56.0, ^3.8.1 |
 | Error Tracking | Sentry | ^10.45.0 (free tier) |
 | CI | GitHub Actions | On push + PR |
 | Deploy | Jelastic (Infomaniak), standalone output | -- |
