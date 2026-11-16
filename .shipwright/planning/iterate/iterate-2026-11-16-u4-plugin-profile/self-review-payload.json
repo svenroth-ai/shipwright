@@ -1,0 +1,9 @@
+{"items": [
+{"name":"Spec Compliance","verdict":"pass","note":"Profile validates with the generic Python data, adopt matches both ways in fixtures, selection by name proven, mechanism paths exist and the hook is registered, docs updated."},
+{"name":"Error Handling","verdict":"pass","note":"The detector signal never raises: a missing folder or a file named .claude-plugin is simply not a signal; the rules load with no errors or warnings."},
+{"name":"Security Basics","verdict":"pass","note":"Data, docs and one directory probe; no shell strings in skill prose were added, no secrets."},
+{"name":"Test Quality","verdict":"pass","note":"Tests pin behaviour: both matches, negative signal depths, constraint list unchanged, registered hook, equal Python data."},
+{"name":"Performance Basics","verdict":"pass","note":"One extra glob over plugins/*/ during adopt analysis."},
+{"name":"Naming & Structure","verdict":"pass","note":"Kebab-case rule ids; new test file small; no rename of the generic profile."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Producer: stack detector signature; consumer: profile matcher; real round-trip through detect_stack and match_profile on a copied fixture, including the Python-only control."},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"Tests copy fixtures into tmp_path and share no state."}]}

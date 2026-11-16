@@ -1,0 +1,7 @@
+{"section": "U4-plugin-profile", "review": [
+{"severity": "high", "category": "correctness", "file": "plugins/shipwright-adopt/scripts/lib/plugin_signal.py", "line": 26, "finding": "Round 1: signal promoted markdown-only and TypeScript plugins from generic to the Python profile. Fixed and closed in round 2 (Python-only gate)."},
+{"severity": "medium", "category": "correctness", "file": "plugins/shipwright-adopt/scripts/lib/plugin_signal.py", "line": 28, "finding": "Round 2: a mixed JS plus Python repo could still move; gate changed to primary_language python and a Next.js plus pyproject fixture added. Fixed."},
+{"severity": "low", "category": "correctness", "file": "plugins/shipwright-adopt/tests/test_profile_matcher.py", "line": 54, "finding": "No non-Python fixtures; added. Hook registration test now parses hooks.json. Signal key hidden in rendered runtime lines. Fixed."},
+{"severity": "low", "category": "architecture", "file": "plugins/shipwright-adopt/scripts/lib/plugin_signal.py", "line": 22, "finding": "Exclusion predicate duplicates stack_detector._is_excluded; the key literal appears in three places. Accepted: render_helpers is a leaf module and stack_detector sits at its size ceiling."},
+{"severity": "low", "category": "readability", "file": "shared/profiles/claude-plugin.json", "line": 25, "finding": "folder_structure is the generic profile's monorepo layout; follow-up to describe a customer plugin layout. Accepted (spec asks for the same layout)."}
+]}

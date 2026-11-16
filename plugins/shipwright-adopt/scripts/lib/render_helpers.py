@@ -64,7 +64,8 @@ def _utc_today() -> str:
 def _fmt_stack_line(stack_group: dict[str, str]) -> str:
     if not stack_group:
         return "—"
-    return ", ".join(sorted(stack_group.keys()))
+    keys = sorted(k for k in stack_group if k != "claude-plugin")  # claude-plugin: a matching signal, not a runtime
+    return ", ".join(keys) or "—"
 
 
 def infer_required_layers(feature: dict[str, Any]) -> tuple[str, ...]:

@@ -216,3 +216,4 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [Architecture rules reach agents through one render tool (campaign profile-architecture-rules, U2)](iterate-2026-11-16-u2-rules-reach-agents-rules-reach-agents.md)
 - [supabase-nextjs architecture rules as rule objects, template examples obey them (campaign profile-architecture-rules, U3a)](iterate-2026-11-16-u3a-supabase-rules-supabase-rules.md)
 - [ESLint config template for supabase-nextjs scaffolds (campaign profile-architecture-rules, U3b)](iterate-2026-11-16-u3b-eslint-template-eslint-template.md)
+- [Bundled claude-plugin profile for Claude Code plugin repositories](iterate-2026-11-16-u4-plugin-profile-plugin-profile.md)
