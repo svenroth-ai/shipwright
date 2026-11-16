@@ -76,8 +76,9 @@ outside any "## Imported from" section). Check the diff against each rule in it:
   `review`, never in `review`. Note it when there is no block or none are declared, when the
   file cannot be read (the check could not run, never "none declared"), and when the block
   reports rule problems (some rules were not checked).
-- Two blocks or unpaired markers: finding "rules block stale or duplicated, re-render"
-  (`render_architecture_rules.py --check` exits 3). Do not trust a duplicated block.
+- Two blocks, unpaired markers, or a rule id twice in the block: finding "rules block
+  stale or duplicated, re-render" (`render_architecture_rules.py --check` exits 3 for
+  damaged markers, 1 for stale). Do not trust a duplicated block.
 - Compare rule ids with the profile named on the begin line only when
   `.shipwright/profiles/<name>.json` exists under the project root, all its rules are
   objects, and the block reports no rule problems; a difference is the same finding

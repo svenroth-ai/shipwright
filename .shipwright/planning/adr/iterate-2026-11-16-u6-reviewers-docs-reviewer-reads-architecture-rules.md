@@ -21,5 +21,7 @@ External plan and architecture reviews: all approve. Taken: unreadable file, con
 
 The deletion of three old iterate records in the commit is the F5c retention step.
 
+Notes are dropped by the review adapter, so "could not run" and "uncheckable" leave no trace downstream; optional follow-up for whatever records the review.
+
 ## Not done here
 Plugin cache sync after merge is the orchestrator's job (`plugins/` is touched).

@@ -53,6 +53,7 @@ def test_agent_puts_notes_outside_review_and_skips_uncheckable_comparisons():
         "legacy sentences",
         "profile not found, so bundled or user-level",
         "uncheckable",
+        "rule id twice",
         "except \"(mechanisable)\"",
         "only when that project profile was found",
     ):
@@ -65,8 +66,11 @@ def test_adapter_ignores_the_top_level_notes_key():
         from lib import review_findings
     finally:
         sys.path.remove(str(ROOT / "shared" / "scripts"))
-    payload = {"section": "x", "review": [], "notes": "no rules block in conventions.md"}
-    assert review_findings.from_code_reviewer(payload) == []
+    item = {"severity": "low", "category": "architecture", "file": "a.py", "line": 1,
+            "finding": "rule one-place-for-retry-policy violated", "suggestion": "move it"}
+    payload = {"section": "x", "review": [item], "notes": "profile not found, ids uncheckable"}
+    found = review_findings.from_code_reviewer(payload)
+    assert len(found) == 1 and "one-place-for-retry-policy" in found[0]["finding"]
 
 
 def test_agent_can_read_conventions_md():
