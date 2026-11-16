@@ -9,7 +9,7 @@ import pytest
 
 from tools.generate_adoption_artifacts import generate
 
-pytestmark = pytest.mark.covers("FR-01.01/AC17")
+pytestmark = [pytest.mark.covers("FR-01.01/AC16"), pytest.mark.covers("FR-01.01/AC17")]
 
 BEGIN = "<!-- shipwright:architecture-rules:begin"
 RULE = {"id": "thin-routes", "text": "Keep routes thin.", "why": "Logic belongs in lib.",
@@ -97,3 +97,13 @@ def test_missing_shared_tool_is_a_note(tmp_path, monkeypatch):
     monkeypatch.setattr(ap, "_SHARED_SCRIPTS", str(tmp_path / "nowhere"))
     monkeypatch.setattr(ap, "load_resolver", lambda: None)
     assert any("missing" in n for n in ap.write_rules_block(tmp_path / "c.md", object()))
+
+
+def test_any_failure_inside_the_tool_is_a_note(tmp_path):
+    from lib.adopt_profile import write_rules_block
+
+    class _Res:
+        name = "rules-stack"
+        data = None  # load step raises AttributeError
+
+    assert any("NOT written" in n for n in write_rules_block(tmp_path / "c.md", _Res()))

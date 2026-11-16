@@ -47,6 +47,27 @@ Brief carried the campaign context (U1 merged, U3a concurrent, U3b/U4/U5/U6 cons
 | Fenced-code placeholder or heading (doubt low) | rejected-with-reason: edge only; a block there is still replaced in place on every run |
 | "instruction only (prompt-only (mechanisable))" wording (code low) | accepted-and-fixed: "instruction only (mechanisable)" |
 
+## Orchestrator review round (follow-up commit)
+
+Reading of BRIEF design 2.5: "nothing is committed as a render in the Shipwright repo" means no pre-rendered output is shipped for OTHER projects (the render always comes from the resolved profile); this repo's own conventions.md carries the block because BRIEF U2 ("run once for this repo") and U5's done-when ("this repo's conventions.md carries the rendered block") ask for it.
+
+| Finding | Disposition |
+|---|---|
+| AC16/AC17 also added by U3a (high) | accepted: U2 merges first and keeps AC16/AC17; U3a renumbers; test files tag both |
+| block at EOF after `## Convention Updates` would strand appended bullets (medium) | accepted-and-fixed: a new section is placed before the first `## ...Updates` / `## Learnings`; this repo's file re-rendered; test added |
+| template anchor (medium) | accepted-and-fixed: test asserts the template heading directly precedes the placeholder and the block follows the heading |
+| union merge can duplicate block bodies (medium) | accepted: documented in docs/stack-profiles.md; the tool refuses two blocks (exit 3); no new verifier |
+| marker scan and placeholder match too wide (medium) | accepted-and-fixed: scan only before `## Imported from`; placeholder only alone on its line; case-insensitive heading; tests |
+| adopt: other exceptions during load (medium) | accepted-and-fixed: any exception becomes a "block NOT written" note; adopt SKILL banner prints `architecture_rules_notes` |
+| stale module docstring; F2 bullet edited directly | accepted-and-fixed (docstring names render_into / load_rules / DamagedMarkers; bullet is a write_doc_bullet drop) |
+| test pinned supabase-nextjs's legacy format (U3a doubt) | accepted-and-fixed: dropped; the synthetic project-local legacy profile test remains |
+
+Complexity: BRIEF rates U2 medium and it touches protected paths, while the diff-driven re-check classified it small. The internal plan and architecture arms were first closed not_applicable; they were then run (model=opus) and recorded completed.
+
+## Internal arms (model=opus, run in the follow-up round)
+
+architecture-internal-reviewer: approve (option A is the smallest that reaches adopted repos; B cannot guarantee idempotency, C spreads across agent prompts, D leaves adopted repos blind). opus-plan-reviewer: approve; findings dispositions: union-merge interaction accepted-and-documented (tool refuses two blocks, exit 3); who-writes-what row in docs/hooks-and-pipeline.md accepted-and-fixed; interpolated fields through `_one_line` and CLI catch-all exit codes accepted-and-fixed; heading with old prose above documented; staleness check (`--check` from a cheap place), validate_adoption warning for a missing block and the `---` divider layout in adopt output are deferred follow-ups for U5/U6 (rejected for U2: no new verifiers, per the orchestrator decision).
+
 ## Consequences
 
 Rules reach agents in new and adopted projects. The block is a snapshot: a changed profile reaches `conventions.md` only on a rerun. No new requirement is minted; criteria are FR-01.01 AC16 and AC17.

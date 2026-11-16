@@ -11,8 +11,12 @@ The profile is ``--profile`` or the ``profile`` of ``shipwright_run_config.json`
 project > user > bundled, like every phase). The rules go into ONE marked block; running the
 tool again replaces that block and nothing else, so a second run on unchanged input changes no
 byte. Where the block goes the first time: the unfilled ``{ARCHITECTURE_RULES}`` placeholder of
-the conventions template, else directly under an existing ``## Architecture Rules`` heading,
-else appended at the end under that heading.
+the conventions template (alone on its line), else directly under an existing ``## Architecture
+Rules`` heading (any case), else a new ``## Architecture Rules`` section placed before the first
+``## ...Updates`` / ``## Learnings`` section (those sections receive appended bullets, so the block
+must not trail them), else at the end. Only the part of the file before adopt's verbatim
+``## Imported from`` section is ever searched or edited: the markers, the placeholder and the heading
+inside that section are the imported author's text.
 
 A profile that declares no rules (key absent, ``[]``, or a sentinel profile) gets an explicit
 "none declared" line. Instruction-only rules are marked as such. A rule with a shape error is
@@ -20,7 +24,8 @@ left out and named on stderr; it never fails the run (rule problems are phase-lo
 
 Exit codes: 0 written / unchanged (``--check``: block is current), 1 ``--check`` and the file is
 stale, 2 profile cannot be resolved, 3 ``conventions.md`` unusable (missing, or damaged markers).
-Library use (adopt): ``render_block(profile_name, rule_set)`` and ``apply_block(text, block)``.
+Library use (adopt, which loads this file by path): ``load_rules``, ``render_into(path, profile_name,
+rules)`` and ``DamagedMarkers`` (raised for a file whose markers are not exactly one ordered pair).
 """
 
 from __future__ import annotations
@@ -47,6 +52,9 @@ DEFAULT_CONVENTIONS = ".shipwright/agent_docs/conventions.md"
 # Markers count only at the start of a line, so prose that quotes them mid-line is never mistaken for the block.
 _BEGIN_RE = re.compile("^" + re.escape(BEGIN), re.MULTILINE)
 _END_RE = re.compile("^" + re.escape(END) + r"[ \t\r]*$", re.MULTILINE)
+_PLACEHOLDER_RE = re.compile(r"^[ \t]*"+ re.escape(PLACEHOLDER) + r"[ \t]*(?=\r?$)", re.MULTILINE)
+_HEADING_RE = re.compile(r"^" + re.escape(HEADING) + r"[ \t]*(?=\r?$)", re.MULTILINE | re.IGNORECASE)
+_APPEND_BEFORE_RE = re.compile(r"^## [^\n]*(?:Updates|Learnings)[ \t\r]*$", re.MULTILINE)
 _IMPORTED_RE = re.compile(r"^## Imported from ", re.MULTILINE)  # adopt's verbatim section: never place the block in it
 
 
@@ -64,10 +72,10 @@ def _how(rule) -> str:
     if rule.legacy or rule.enforcement is None:
         return "instruction only (enforcement class not declared)"
     if rule.lint:
-        return f"checked by the linter `{rule.lint['tool']}` (`{_one_line(rule.lint['target'])}`)"
+        return f"checked by the linter `{_one_line(rule.lint['tool'])}` (`{_one_line(rule.lint['target'])}`)"
     if rule.mechanism:
         paths = ", ".join(f"`{_one_line(p)}`" for p in rule.mechanism)
-        return f"{rule.enforcement}: {paths}"
+        return f"{_one_line(rule.enforcement)}: {paths}"
     return "instruction only (" + _one_line(rule.enforcement).removeprefix("prompt-only (").removesuffix(")") + ")"
 
 
@@ -97,22 +105,27 @@ def apply_block(text: str, block: str) -> str:
     """``text`` with the block replaced (or placed the first time). Raises DamagedMarkers."""
     nl = "\r\n" if "\r\n" in text else "\n"
     block = block.rstrip("\n").replace("\n", nl)
-    begins, ends = list(_BEGIN_RE.finditer(text)), list(_END_RE.finditer(text))
+    imported = _IMPORTED_RE.search(text)
+    cut = imported.start() if imported else len(text)
+    head, rest = text[:cut], text[cut:]
+    begins, ends = list(_BEGIN_RE.finditer(head)), list(_END_RE.finditer(head))
     if len(begins) != len(ends) or len(begins) > 1 or (begins and begins[0].start() > ends[0].start()):
         raise DamagedMarkers(
             f"expected zero or one begin/end marker pair, found {len(begins)} begin and {len(ends)} end")
     if begins:
-        stop = ends[0].start() + len(END)
-        return text[:begins[0].start()] + block + text[stop:]
-    imported = _IMPORTED_RE.search(text)
-    head = text[:imported.start()] if imported else text
-    if PLACEHOLDER in head:
-        return text.replace(PLACEHOLDER, block, 1)
-    heading = re.search(r"^" + re.escape(HEADING) + r"[ \t]*(?=\r?$)", head, re.MULTILINE)
+        return head[:begins[0].start()] + block + head[ends[0].start() + len(END):] + rest
+    placeholder = _PLACEHOLDER_RE.search(head)
+    if placeholder:
+        return head[:placeholder.start()] + block + head[placeholder.end():] + rest
+    heading = _HEADING_RE.search(head)
     if heading:
-        tail = text[heading.end():]
-        return text[:heading.end()] + nl + nl + block + (tail or nl)
-    return text.rstrip("\r\n") + nl + nl + HEADING + nl + nl + block + nl
+        tail = head[heading.end():] + rest
+        return head[:heading.end()] + nl + nl + block + (tail or nl)
+    section = f"{HEADING}{nl}{nl}{block}{nl}{nl}"
+    appended = _APPEND_BEFORE_RE.search(head)
+    if appended:  # before the sections that receive appended bullets
+        return head[:appended.start()] + section + head[appended.start():] + rest
+    return head.rstrip("\r\n") + nl + nl + section.rstrip("\r\n") + nl + (nl + rest if rest else "")
 
 
 def render_into(path: str, profile_name: str, rules: RuleSet, *, write: bool = True) -> bool:
@@ -144,6 +157,9 @@ def _main(argv: list[str] | None = None) -> int:
     except ValueError as exc:
         sys.stderr.write(f"error: {exc}\n")
         return 2
+    except Exception as exc:  # noqa: BLE001
+        sys.stderr.write(f"error: profile cannot be loaded: {type(exc).__name__}: {exc}\n")
+        return 2
     rules = load_rules(res.data.get("architecture_rules"))
     for msg in rules.errors:
         sys.stderr.write(f"warning: architecture_rules: {msg} (left out of the block)\n")
@@ -153,6 +169,9 @@ def _main(argv: list[str] | None = None) -> int:
         changed = render_into(path, res.name, rules, write=not args.check)
     except (OSError, UnicodeError, DamagedMarkers) as exc:
         sys.stderr.write(f"error: {path}: {exc}\n")
+        return 3
+    except Exception as exc:  # noqa: BLE001 - exit 1 under --check must only ever mean stale
+        sys.stderr.write(f"error: {path}: {type(exc).__name__}: {exc}\n")
         return 3
     sys.stdout.write(f"{'stale' if args.check and changed else 'updated' if changed else 'unchanged'}: {path}\n")
     return 1 if (args.check and changed) else 0

@@ -123,17 +123,21 @@ def write_rules_block(conventions_md: Path, resolved) -> list[str]:
     """Put the effective profile's architecture rules into ``conventions_md`` (one marked block).
 
     The shared render tool is loaded by file path (``shared/scripts/tools`` is a ``tools``
-    package that would shadow adopt's own). Returns the stderr-style notes (rule errors) for
-    the caller's result; a missing shared tree raises ImportError like ``load_resolver``.
+    package that would shadow adopt's own). Returns notes (rule errors and warnings, or
+    why the block was NOT written) for the caller's result; it never raises.
     """
     import importlib.util
 
     previous = None
     tool = Path(_SHARED_SCRIPTS) / "tools" / "render_architecture_rules.py"
-    load_resolver()  # the same "shared tree missing" ImportError
+    try:
+        load_resolver()
+    except ImportError as exc:  # incomplete shared tree: a note, adoption is already written
+        return _report([f"architecture_rules block NOT written: {exc}"])
     if not tool.is_file():
         return _report([f"architecture_rules block NOT written: {tool} is missing (incomplete shared tree)"])
     added = _SHARED_SCRIPTS not in sys.path
+    notes: list[str] = []
     if added:
         sys.path.append(_SHARED_SCRIPTS)
     try:
@@ -144,10 +148,9 @@ def write_rules_block(conventions_md: Path, resolved) -> list[str]:
         spec.loader.exec_module(mod)
         rules = mod.load_rules(resolved.data.get("architecture_rules"))
         notes = [f"architecture_rules: {m}" for m in (*rules.errors, *rules.warnings)]
-        try:
-            mod.render_into(str(conventions_md), resolved.name, rules)
-        except (OSError, UnicodeError, mod.DamagedMarkers) as exc:  # the rest of adoption is already written
-            notes.append(f"architecture_rules block NOT written to {conventions_md}: {exc}")
+        mod.render_into(str(conventions_md), resolved.name, rules)
+    except Exception as exc:  # noqa: BLE001 - adoption is already written; a failed block is a note, never a crash
+        notes.append(f"architecture_rules block NOT written to {conventions_md}: {type(exc).__name__}: {exc}")
     finally:
         if previous is None:
             sys.modules.pop("render_architecture_rules", None)

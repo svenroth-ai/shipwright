@@ -43,6 +43,34 @@
    "claim_under_doubt": "sys.modules cleanup",
    "disproof_attempt": "sys.modules cleanup -- fixed",
    "disposition": "fixed"
+  },
+  {
+   "severity": "medium",
+   "lens": "hidden coupling",
+   "claim_under_doubt": "orchestrator doubt: block after Convention Updates strands appended bullets",
+   "disproof_attempt": "orchestrator doubt: block after Convention Updates strands appended bullets -- fixed: section placed before first Updates/Learnings; repo file re-rendered; test",
+   "disposition": "fixed: section placed before first Updates/Learnings; repo file re-rendered; test"
+  },
+  {
+   "severity": "medium",
+   "lens": "hidden coupling",
+   "claim_under_doubt": "orchestrator doubt: marker scan / placeholder too wide, heading case",
+   "disproof_attempt": "orchestrator doubt: marker scan / placeholder too wide, heading case -- fixed: head-only scan, placeholder alone on its line, case-insensitive heading; tests",
+   "disposition": "fixed: head-only scan, placeholder alone on its line, case-insensitive heading; tests"
+  },
+  {
+   "severity": "medium",
+   "lens": "hidden coupling",
+   "claim_under_doubt": "orchestrator doubt: union merge can duplicate block bodies",
+   "disproof_attempt": "orchestrator doubt: union merge can duplicate block bodies -- documented in docs/stack-profiles.md and ADR; tool refuses two blocks (exit 3)",
+   "disposition": "documented in docs/stack-profiles.md and ADR; tool refuses two blocks (exit 3)"
+  },
+  {
+   "severity": "medium",
+   "lens": "hidden coupling",
+   "claim_under_doubt": "orchestrator doubt: template anchor and adopt exceptions",
+   "disproof_attempt": "orchestrator doubt: template anchor and adopt exceptions -- fixed: anchor test; any exception in adopt becomes a NOT written note",
+   "disposition": "fixed: anchor test; any exception in adopt becomes a NOT written note"
   }
  ]
 }

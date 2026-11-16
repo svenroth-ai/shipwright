@@ -21,6 +21,12 @@ Python 3.11+ with uv as package manager. All scripts are invoked via uv run. Hoo
 - Keep files under 300 lines; split larger modules.
 - Tests live alongside implementation with `.test.*` / `_test.*` suffix OR in a `tests/` directory — whichever is consistent with the rest of the codebase.
 
+## Architecture Rules
+
+<!-- shipwright:architecture-rules:begin (generated from stack profile `python-plugin-monorepo` by render_architecture_rules.py; edit the profile, not this block) -->
+_No architecture rules declared by stack profile `python-plugin-monorepo`._
+<!-- shipwright:architecture-rules:end -->
+
 ## Learnings
 
 > **One line per learning, no bold paragraphs** — always-loaded Layer-1 context. Format: `- (YYYY-MM-DD) <phase> — <one-line rule/gotcha>. → <run_id|ADR-NNN>`. **Budget ≤ 600 chars; if a learning won't fit one line it is a *decision* — write an ADR and leave a one-line pointer here.** Enforced repo-agnostically by the F11 verifier + `shared/scripts/tools/check_agent_doc_budget.py`; see `references/reflection.md`. Full rationale for compacted entries is in [`../planning/adr/_archive-agent-doc-updates.md`](../planning/adr/_archive-agent-doc-updates.md).
@@ -873,9 +879,3 @@ Contribution rules, dev setup, the graduated trust model, and high-sensitivity a
 - **iterate-2026-11-08-atomic-frs-u1** (2026-11-08): Convention — FR scope = 'can it still be split', not a count (fr-authoring 3c): audit I10 + tools/fr_cluster_report.py cluster an FR's ACs by bound tests/files/wording (groups of >=3, >=50% evidenced, else no evidence); /shipwright-project step-6-fr-scope.md blocks on capability test + fr_scope_check exit 0 (run_id iterate-2026-11-08-atomic-frs-u1). → decision_log (ADR via Run-ID: iterate-2026-11-08-atomic-frs-u1)
 - **iterate-2026-11-11-review-require-all-legs** (2026-11-11): Convention — External review strictness is opt-in (#1035): `external_review.require_all_legs` / `--require-all-legs` / `--min-reviews N` make a pass with fewer answering reviewers than `reviews_expected` exit 1 (`strict_failure`); the default stays one-opinion-is-enough (#670). Logic: lib/external_review_strict.py. → decision_log (ADR via Run-ID: iterate-2026-11-11-review-require-all-legs)
 - **iterate-2026-11-12-u3-g2-scope-audit** (2026-11-12): Convention — audit G2 is never skipped automatically (operator decision: disabling a check is an explicit declaration); a comma-joined commit scope is split and judged per part in audit/g2_scopes.py; a project g2_stoplist / g2_alias_map replaces the default list. → decision_log (ADR via Run-ID: iterate-2026-11-12-u3-g2-scope-audit)
-
-## Architecture Rules
-
-<!-- shipwright:architecture-rules:begin (generated from stack profile `python-plugin-monorepo` by render_architecture_rules.py; edit the profile, not this block) -->
-_No architecture rules declared by stack profile `python-plugin-monorepo`._
-<!-- shipwright:architecture-rules:end -->

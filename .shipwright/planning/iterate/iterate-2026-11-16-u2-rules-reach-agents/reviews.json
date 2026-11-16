@@ -125,7 +125,7 @@
     "code": {
       "review_type": "code",
       "status": "completed",
-      "findings_count": 5,
+      "findings_count": 7,
       "findings": [
         {
           "severity": "medium",
@@ -171,22 +171,40 @@
           "finding": "extra spaces before --project-root",
           "suggestion": null,
           "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "completeness",
+          "file": "docs/hooks-and-pipeline.md",
+          "line": null,
+          "finding": "who-writes-what row for conventions.md lacked the render tool and adopt",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": "shared/scripts/tools/render_architecture_rules.py",
+          "line": null,
+          "finding": "lint tool / enforcement not passed through _one_line; CLI traceback exit 1 ambiguous with --check stale",
+          "suggestion": null,
+          "source": "code-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-11-15T23:52:12.297932+00:00",
+      "completed_at": "2026-11-16T00:07:41.138941+00:00",
       "disposition": null,
       "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus",
       "verdict": "pass",
-      "reviewed_commit": "9bcf84291a6c114c9336e3ea386456e65668e770"
+      "reviewed_commit": "dfd3c0ed446c4818df55df3b0350d852a2ed8d2e"
     },
     "doubt": {
       "review_type": "doubt",
       "status": "completed",
-      "findings_count": 6,
+      "findings_count": 10,
       "findings": [
         {
           "severity": "medium",
@@ -241,17 +259,53 @@
           "finding": "Claim under doubt: sys.modules cleanup — sys.modules cleanup -- fixed",
           "suggestion": null,
           "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: orchestrator doubt: block after Convention Updates strands appended bullets — orchestrator doubt: block after Convention Updates strands appended bullets -- fixed: section placed before first Updates/Learnings; repo file re-rendered; test",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: orchestrator doubt: marker scan / placeholder too wide, heading case — orchestrator doubt: marker scan / placeholder too wide, heading case -- fixed: head-only scan, placeholder alone on its line, case-insensitive heading; tests",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: orchestrator doubt: union merge can duplicate block bodies — orchestrator doubt: union merge can duplicate block bodies -- documented in docs/stack-profiles.md and ADR; tool refuses two blocks (exit 3)",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: orchestrator doubt: template anchor and adopt exceptions — orchestrator doubt: template anchor and adopt exceptions -- fixed: anchor test; any exception in adopt becomes a NOT written note",
+          "suggestion": null,
+          "source": "doubt-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-11-15T23:52:28.971699+00:00",
+      "completed_at": "2026-11-16T00:07:41.303493+00:00",
       "disposition": null,
       "recorded_by": "doubt-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus",
       "verdict": "pass",
-      "reviewed_commit": "9bcf84291a6c114c9336e3ea386456e65668e770"
+      "reviewed_commit": "dfd3c0ed446c4818df55df3b0350d852a2ed8d2e"
     },
     "external_code": {
       "review_type": "external_code",
@@ -321,40 +375,40 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-11-15T23:47:04.959743+00:00",
+      "completed_at": "2026-11-16T00:07:40.990042+00:00",
       "disposition": null,
       "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus",
       "verdict": "pass",
-      "reviewed_commit": "89b46139d446dd8b82f375e37ae3d4c8265ccaaa"
+      "reviewed_commit": "dfd3c0ed446c4818df55df3b0350d852a2ed8d2e"
     },
     "plan_internal": {
       "review_type": "plan_internal",
-      "status": "not_applicable",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-11-15T23:29:23.114277+00:00",
-      "disposition": "closed by reason_code complexity-below-threshold",
-      "recorded_by": "none",
+      "completed_at": "2026-11-16T00:07:32.115092+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "complexity-below-threshold"
+      "model_tier": "opus"
     },
     "architecture_internal": {
       "review_type": "architecture_internal",
-      "status": "not_applicable",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-11-15T23:29:23.243229+00:00",
-      "disposition": "closed by reason_code complexity-below-threshold",
-      "recorded_by": "none",
+      "completed_at": "2026-11-16T00:07:32.278797+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "complexity-below-threshold"
+      "model_tier": "opus"
     }
   }
 }

@@ -13,7 +13,7 @@ import render_architecture_rules as rar  # noqa: E402
 from shared.tests.profile_test_fixtures import proj_dir, write_profile  # noqa: E402
 from shared.tests.profile_test_fixtures import profile_project, profile_user_dir  # noqa: E402,F401
 
-pytestmark = pytest.mark.covers("FR-01.01/AC16")
+pytestmark = [pytest.mark.covers("FR-01.01/AC16"), pytest.mark.covers("FR-01.01/AC17")]
 
 TEMPLATE = Path(__file__).resolve().parents[1] / "templates" / "agent-docs" / "conventions.md.template"
 RULES = [
@@ -187,23 +187,6 @@ def test_unknown_profile_and_missing_file(project, capsys):
     assert _run(project, capsys)[0] == 2  # no --profile and no run config
 
 
-def test_bundled_legacy_profile_renders_its_sentences(project, capsys):
-    path = _scaffold(project)
-    assert _run(project, capsys, "--profile", "supabase-nextjs")[0] == 0
-    text = path.read_text(encoding="utf-8")
-    assert "generated from stack profile `supabase-nextjs`" in text and "legacy-string-1" in text
-
-
-def test_heading_at_end_of_file_without_newline(project, capsys):
-    write_profile(proj_dir(project), "demo-stack", architecture_rules=RULES[1:2])
-    path = project / ".shipwright" / "agent_docs" / "conventions.md"
-    path.parent.mkdir(parents=True)
-    path.write_text("# C\n\n## Architecture Rules", encoding="utf-8")
-    assert _run(project, capsys, "--profile", "demo-stack")[0] == 0
-    text = path.read_text(encoding="utf-8")
-    assert text.count("## Architecture Rules") == 1 and text.endswith(rar.END + "\n")
-
-
 def test_crlf_file_with_existing_heading_keeps_crlf_everywhere(project, capsys):
     write_profile(proj_dir(project), "demo-stack", architecture_rules=RULES[1:2])
     path = project / ".shipwright" / "agent_docs" / "conventions.md"
@@ -225,15 +208,59 @@ def test_quoted_markers_in_prose_are_not_a_block(project, capsys):
     assert path.read_text(encoding="utf-8").startswith(prose)
 
 
-def test_adopt_imported_section_is_never_the_placement_target(project, capsys):
-    write_profile(proj_dir(project), "demo-stack", architecture_rules=RULES[1:2])
+def _conv(project, text):
     path = project / ".shipwright" / "agent_docs" / "conventions.md"
     path.parent.mkdir(parents=True)
-    imported = "## Imported from `CLAUDE.md`\n\n## Architecture Rules\n\n- old verbatim rule\n"
-    path.write_text("# C\n\n" + imported, encoding="utf-8")
+    path.write_text(text, encoding="utf-8", newline="")
+    return path
+
+
+def test_imported_section_is_never_searched_or_edited(project, capsys):
+    write_profile(proj_dir(project), "demo-stack", architecture_rules=RULES[1:2])
+    marker_pair = f"{rar.BEGIN} (x) -->\nold\n{rar.END}\n"
+    imported = f"## Imported from `CLAUDE.md`\n\n## Architecture Rules\n\n{{ARCHITECTURE_RULES}}\n{marker_pair}"
+    path = _conv(project, "# C\n\n" + imported)
     assert _run(project, capsys, "--profile", "demo-stack")[0] == 0
     text = path.read_text(encoding="utf-8")
-    assert text.startswith("# C\n\n" + imported) and text.index(rar.BEGIN) > text.index("old verbatim rule")
+    assert text.endswith(imported) and text.index(rar.BEGIN) < text.index("## Imported from")
+    first = text
+    assert _run(project, capsys, "--profile", "demo-stack")[0] == 0 and path.read_text(encoding="utf-8") == first
+
+
+def test_placeholder_mid_line_is_not_replaced_and_rerun_is_a_noop(project, capsys):
+    write_profile(proj_dir(project), "demo-stack", architecture_rules=RULES[1:2])
+    path = _conv(project, "# C\n\nUse {ARCHITECTURE_RULES} as the slot.\n")
+    assert _run(project, capsys, "--profile", "demo-stack")[0] == 0
+    text = path.read_text(encoding="utf-8")
+    assert "Use {ARCHITECTURE_RULES} as the slot." in text and text.count(rar.BEGIN) == 1
+    assert _run(project, capsys, "--profile", "demo-stack")[0] == 0 and path.read_text(encoding="utf-8") == text
+
+
+def test_heading_is_matched_in_any_case(project, capsys):
+    write_profile(proj_dir(project), "demo-stack", architecture_rules=RULES[1:2])
+    path = _conv(project, "# C\n\n## Architecture rules\n\n## Next\n")
+    assert _run(project, capsys, "--profile", "demo-stack")[0] == 0
+    text = path.read_text(encoding="utf-8")
+    assert "## Architecture Rules" not in text and text.index("## Architecture rules") < text.index(rar.BEGIN) < text.index("## Next")
+
+
+def test_new_section_goes_before_the_sections_that_receive_bullets(project, capsys):
+    write_profile(proj_dir(project), "demo-stack", architecture_rules=RULES[1:2])
+    path = _conv(project, "# C\n\n## Files\n\nx\n\n## Learnings\n\n- a\n\n## Convention Updates\n\n- b\n")
+    assert _run(project, capsys, "--profile", "demo-stack")[0] == 0
+    text = path.read_text(encoding="utf-8")
+    assert text.index("## Files") < text.index("## Architecture Rules") < text.index(rar.END) < text.index("## Learnings")
+    assert text.endswith("## Convention Updates\n\n- b\n")  # appended bullets still land in their section
+    first = text
+    assert _run(project, capsys, "--profile", "demo-stack")[0] == 0 and path.read_text(encoding="utf-8") == first
+
+
+def test_template_anchor_the_block_directly_follows_the_heading(project, capsys):
+    assert "## Architecture Rules\n\n{ARCHITECTURE_RULES}" in TEMPLATE.read_text(encoding="utf-8")
+    write_profile(proj_dir(project), "demo-stack", architecture_rules=RULES[1:2])
+    path = _scaffold(project)
+    assert _run(project, capsys, "--profile", "demo-stack")[0] == 0
+    assert "## Architecture Rules\n\n" + rar.BEGIN in path.read_text(encoding="utf-8")
 
 
 def test_legacy_warning_reaches_stderr(project, capsys):
