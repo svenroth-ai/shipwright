@@ -23,7 +23,8 @@ A profile that declares no rules (key absent, ``[]``, or a sentinel profile) get
 left out and named on stderr; it never fails the run (rule problems are phase-local).
 
 Exit codes: 0 written / unchanged (``--check``: block is current), 1 ``--check`` and the file is
-stale, 2 profile cannot be resolved, 3 ``conventions.md`` unusable (missing, or damaged markers).
+stale, 2 profile cannot be resolved, 3 ``conventions.md`` unusable (missing, or damaged markers),
+4 the profile name does not match ``^[a-z0-9][a-z0-9-]*$`` (nothing is resolved or written).
 Library use (adopt, which loads this file by path): ``load_rules``, ``render_into(path, profile_name,
 rules)`` and ``DamagedMarkers`` (raised for a file whose markers are not exactly one ordered pair).
 """
@@ -40,6 +41,7 @@ _ADDED = _SCRIPTS not in sys.path
 if _ADDED:
     sys.path.append(_SCRIPTS)  # APPEND, never insert(0): plugins own a `lib` / `tools`
 import profile_consumer  # noqa: E402
+from profile_model import NAME_RE  # noqa: E402  (the resolver's own profile-name pattern)
 from profile_architecture_rules import RuleSet, load_rules  # noqa: E402
 if _ADDED:
     sys.path.remove(_SCRIPTS)
@@ -52,7 +54,7 @@ DEFAULT_CONVENTIONS = ".shipwright/agent_docs/conventions.md"
 # Markers count only at the start of a line, so prose that quotes them mid-line is never mistaken for the block.
 _BEGIN_RE = re.compile("^" + re.escape(BEGIN), re.MULTILINE)
 _END_RE = re.compile("^" + re.escape(END) + r"[ \t\r]*$", re.MULTILINE)
-_PLACEHOLDER_RE = re.compile(r"^[ \t]*"+ re.escape(PLACEHOLDER) + r"[ \t]*(?=\r?$)", re.MULTILINE)
+_PLACEHOLDER_RE = re.compile(r"^[ \t]*" + re.escape(PLACEHOLDER) + r"[ \t]*(?=\r?$)", re.MULTILINE)
 _HEADING_RE = re.compile(r"^" + re.escape(HEADING) + r"[ \t]*(?=\r?$)", re.MULTILINE | re.IGNORECASE)
 _APPEND_BEFORE_RE = re.compile(r"^## [^\n]*(?:Updates|Learnings)[ \t\r]*$", re.MULTILINE)
 _IMPORTED_RE = re.compile(r"^## Imported from ", re.MULTILINE)  # adopt's verbatim section: never place the block in it
@@ -150,9 +152,13 @@ def _main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
     path = args.conventions or os.path.join(args.project_root, DEFAULT_CONVENTIONS)
     try:
-        name = args.profile or profile_consumer.config_profile(args.project_root)
-        if not name:
+        name = args.profile if args.profile is not None else profile_consumer.config_profile(args.project_root)
+        if name is None or (name == "" and args.profile is None):
             raise ValueError("no profile: pass --profile or set `profile` in shipwright_run_config.json")
+        if not isinstance(name, str) or not NAME_RE.fullmatch(name):  # the name may reach an agent's shell command
+            sys.stderr.write(f"error: invalid profile name {str(name)[:60]!r}: it must match {NAME_RE.pattern} "
+                             "(lowercase letters, digits, '-'); nothing was resolved or written\n")
+            return 4
         res = profile_consumer.resolve_named(name, args.project_root, origin="--profile" if args.profile else None)
     except ValueError as exc:
         sys.stderr.write(f"error: {exc}\n")

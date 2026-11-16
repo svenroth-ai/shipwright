@@ -267,3 +267,26 @@ def test_legacy_warning_reaches_stderr(project, capsys):
     write_profile(proj_dir(project), "demo-stack", architecture_rules=["Keep it simple."])
     _scaffold(project)
     assert "old plain-sentence format" in _run(project, capsys, "--profile", "demo-stack")[2]
+
+
+@pytest.mark.parametrize("name", ['a"b', "a$(touch x)", "a`id`", "../x", "a/b", "a\\b", "", "Upper", "-lead", "a b", "a;b", "a"+chr(10)+"b"],
+                         ids=["quote", "subshell", "backtick", "dotdot", "slash", "backslash", "empty", "upper", "dash-lead", "space", "semicolon", "newline"])
+def test_unsafe_profile_names_are_refused_before_anything_happens(project, capsys, name):
+    path = _scaffold(project)
+    before = path.read_bytes()
+    code, out, err = _run(project, capsys, "--profile=" + name)
+    assert code == 4 and "must match" in err and out == "" and "[profile]" not in err
+    assert path.read_bytes() == before
+
+
+def test_unsafe_name_from_the_run_config_is_refused_too(project, capsys):
+    (project / "shipwright_run_config.json").write_text(json.dumps({"profile": "a$(id)"}), encoding="utf-8")
+    path = _scaffold(project)
+    before = path.read_bytes()
+    assert _run(project, capsys)[0] == 4 and path.read_bytes() == before
+
+
+def test_sentinel_and_hyphenated_names_stay_valid(project, capsys):
+    path = _scaffold(project)
+    assert _run(project, capsys, "--profile", "generic")[0] == 0
+    assert "no architecture rules declared" in path.read_text(encoding="utf-8").lower()

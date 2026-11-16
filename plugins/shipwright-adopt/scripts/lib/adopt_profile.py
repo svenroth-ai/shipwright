@@ -113,12 +113,6 @@ def resolve_effective(project_root: Path, override: str | None, snapshot: dict):
     return res
 
 
-def _report(notes: list[str]) -> list[str]:
-    for note in notes:  # also on stderr: the notes in the result JSON are easy to miss
-        sys.stderr.write(f"warning: {note}\n")
-    return notes
-
-
 def write_rules_block(conventions_md: Path, resolved) -> list[str]:
     """Put the effective profile's architecture rules into ``conventions_md`` (one marked block).
 
@@ -133,9 +127,9 @@ def write_rules_block(conventions_md: Path, resolved) -> list[str]:
     try:
         load_resolver()
     except ImportError as exc:  # incomplete shared tree: a note, adoption is already written
-        return _report([f"architecture_rules block NOT written: {exc}"])
+        return [f"architecture_rules block NOT written: {exc}"]
     if not tool.is_file():
-        return _report([f"architecture_rules block NOT written: {tool} is missing (incomplete shared tree)"])
+        return [f"architecture_rules block NOT written: {tool} is missing (incomplete shared tree)"]
     added = _SHARED_SCRIPTS not in sys.path
     notes: list[str] = []
     if added:
@@ -158,4 +152,4 @@ def write_rules_block(conventions_md: Path, resolved) -> list[str]:
             sys.modules["render_architecture_rules"] = previous
         if added and _SHARED_SCRIPTS in sys.path:
             sys.path.remove(_SHARED_SCRIPTS)
-    return _report(notes)
+    return notes

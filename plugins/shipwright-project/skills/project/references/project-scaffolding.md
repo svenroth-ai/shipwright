@@ -101,7 +101,7 @@ Fill with:
 uv run --no-project "{shared_root}/scripts/tools/render_architecture_rules.py" --project-root "{project_root}" --profile "{profile_name}"
 ```
 
-Exit 0 = written or unchanged. Exit 2 (profile does not resolve) or 3 (file unusable): stop and show the message. A rule with a shape error is reported on stderr and left out; that is not a failure.
+The profile name must match `^[a-z0-9][a-z0-9-]*$` (the resolver's own rule); never paste an unvalidated name into the command. The tool refuses any other value with exit 4 before it resolves or writes anything. Exit 0 = written or unchanged. Exit 2 (profile does not resolve), 3 (file unusable) or 4 (invalid profile name): stop and show the message. A rule with a shape error is reported on stderr and left out; that is not a failure.
 
 ## Config Output
 

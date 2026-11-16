@@ -457,6 +457,8 @@ def generate(
     ):
         results["written"].append(str(p))
     results["architecture_rules_notes"] = write_rules_block(project_root / ".shipwright/agent_docs/conventions.md", resolved)
+    for _note in results["architecture_rules_notes"]:
+        print(f"warning: {_note}", file=sys.stderr)
     # Two paths: the spec + the derived/unconfirmed summary of its own FR table.
     for p in write_spec(
         project_root, project_name=project_name, split_name=split_name,
