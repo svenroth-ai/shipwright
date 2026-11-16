@@ -15,6 +15,13 @@ except ImportError:  # test / package context: scripts/ on sys.path, lib is a pa
     from lib.adopt_profile import load_resolver
 
 
+# Signature keys that are matching SIGNALS, not dependencies (plugin_signal.py). They never enter a score: every
+# profile is scored on the dependency names alone, exactly as before the signal existed. A profile that declares
+# one is a candidate only when the signature carries it. A tie at the same source and the same score goes to the
+# signal profile (never to name order); a signal therefore changes no score and no match, it only settles that tie.
+SIGNAL_KEYS = frozenset({"claude-plugin"})
+
+
 def _flatten_profile_deps(profile: dict[str, Any]) -> set[str]:
     """Extract dependency-like identifiers from a profile's stack block."""
     names: set[str] = set()
@@ -91,12 +98,20 @@ def match_profile(signature: dict[str, Any], profile_dirs: Any) -> dict[str, Any
     candidates: list[dict[str, Any]] = []
     found, warnings = _discover(_as_dirs(profile_dirs))
 
+    scored_deps = sig_deps - SIGNAL_KEYS
+    signalled: set[str] = set()  # names of candidates whose declared signal key is present in the signature
     for item in found:
         profile_deps = _flatten_profile_deps(item["profile"])
+        declared = profile_deps & SIGNAL_KEYS
+        if declared and not declared <= sig_deps:
+            continue  # a signal profile for a signal this repository does not carry
+        profile_deps -= SIGNAL_KEYS
         if not profile_deps:
             continue
-        intersection = sig_deps & profile_deps
-        union = sig_deps | profile_deps
+        if declared:
+            signalled.add(item["name"])
+        intersection = scored_deps & profile_deps
+        union = scored_deps | profile_deps
         score = len(intersection) / len(union) if union else 0.0
         candidates.append({
             "name": item["name"],
@@ -106,7 +121,8 @@ def match_profile(signature: dict[str, Any], profile_dirs: Any) -> dict[str, Any
         })
 
     rank = {"project": 0, "user": 1, "explicit": 2, "bundled": 3}  # D1: a tie goes to the higher source
-    candidates.sort(key=lambda c: (-c["score"], rank.get(c["source"], 9), c["name"]))
+    # within one source a tie goes to the signal profile, never to name order
+    candidates.sort(key=lambda c: (-c["score"], rank.get(c["source"], 9), c["name"] not in signalled, c["name"]))
     if candidates and candidates[0]["score"] >= 0.30:
         return {
             "matched": candidates[0]["name"],

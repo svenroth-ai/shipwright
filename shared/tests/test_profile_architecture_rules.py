@@ -163,7 +163,7 @@ def test_every_bundled_profile_validates_and_its_rules_load(name):
 def test_bundled_declared_rules_are_pinned():
     """A unit that gives a bundled profile a mechanism or lint fragment must also extend this expectation."""
     objs = {n: par.load_rules(_bundled(n).get("architecture_rules")) for n in pr.bundled_names()}
-    assert [n for n, rs in objs.items() if any(r.mechanism or r.lint for r in rs.rules)] == ["supabase-nextjs"]
+    assert sorted(n for n, rs in objs.items() if any(r.mechanism or r.lint for r in rs.rules)) == ["claude-plugin", "supabase-nextjs"]
     assert objs["vite-hono"].declared and objs["vite-hono"].rules == []
     assert objs["skill-companion-app"].declared and objs["skill-companion-app"].rules == []
     assert len(objs["supabase-nextjs"].rules) == 6 and not any(r.legacy for r in objs["supabase-nextjs"].rules)

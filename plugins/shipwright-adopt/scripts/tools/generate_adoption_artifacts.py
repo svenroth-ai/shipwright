@@ -129,6 +129,8 @@ def _extract_constraints(snapshot: dict[str, Any]) -> list[str]:
     constraints: list[str] = []
     runtime = snapshot.get("stack", {}).get("runtime", {})
     for k, v in runtime.items():
+        if k == "claude-plugin":  # a matching signal, not a version
+            continue
         constraints.append(f"{k.capitalize()} version: {v}")
     return constraints
 

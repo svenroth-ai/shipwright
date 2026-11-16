@@ -176,7 +176,8 @@ Profiles define the entire stack: versions, folder structure, deploy target, tes
 |---------|-------|--------|
 | `supabase-nextjs` | Next.js 16 · Supabase · Tailwind 4 · shadcn/ui · Zustand · Vitest · Playwright | Jelastic (Infomaniak) |
 | `vite-hono` | Vite + React (frontend) · Hono (backend) · multi-service dev server · Vitest · Playwright | — |
-| `python-plugin-monorepo` | Python `uv` workspace · pytest · ruff · no web server | — |
+| `python-plugin-monorepo` | Generic Python `uv` project · pytest · ruff · no web server | — |
+| `claude-plugin` | Claude Code plugin repository (Python) · pytest · ruff · plugin-project architecture rules | — |
 | `chat-first-json` | Chat + served pane · FastAPI · local JSON data · pytest · Playwright | — (no deploy) |
 | `skill-companion-app` | Claude skill/plugin + served HTML board · Python backend · local JSON data folder · pytest · Playwright | — (no deploy) |
 

@@ -1,6 +1,6 @@
 {
   "name": "python-plugin-monorepo",
-  "description": "Python plugin monorepo (uv workspace). Library/framework with no deployable web server. Each subdirectory under plugins/ is its own pyproject.toml-managed package; shared/ holds cross-plugin scripts and profiles. No root dev server, no frontend.",
+  "description": "Generic Python-project profile (uv workspace): Python 3.11+, uv, pytest, ruff, no deployable web server, no frontend. Library or tooling repositories; each subdirectory under plugins/ may be its own pyproject.toml-managed package and shared/ holds cross-package scripts and profiles. Adopt gives it to any Python-only repository. Python repositories that are Claude Code plugins (a .claude-plugin folder) match claude-plugin instead. The name is historical.",
   "version": "0.1.0",
   "stack": {
     "runtime": {

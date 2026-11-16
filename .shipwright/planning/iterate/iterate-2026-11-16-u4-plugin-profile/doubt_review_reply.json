@@ -1,0 +1,7 @@
+{"stage": "doubt", "gating": "advisory-must-address", "trigger": "cross-plugin (adopt matcher + shared profile registry)", "doubts": [
+{"severity": "medium", "claim_under_doubt": "AC31 says exactly what the code does", "disposition": "fixed: AC31 now says the plugin profile is matched wherever the generic Python profile would have matched with the same score; project or user profiles win by source; a repo that matched nothing stays generic"},
+{"severity": "low", "claim_under_doubt": "profile descriptions", "disposition": "fixed: both descriptions say Python repositories and where the generic profile would match; _comment_runtime says the key never counts toward a score"},
+{"severity": "low", "claim_under_doubt": "any profile declaring the key is scored as before", "disposition": "fixed in docs: any profile declaring the claude-plugin key is a candidate only in a Python repo with the folder; a copy for a non-Python stack must drop the key"},
+{"severity": "low", "claim_under_doubt": "candidates list unchanged", "disposition": "documented: in a plugin repo claude-plugin joins the alternative candidates"},
+{"severity": "low", "claim_under_doubt": "hook note", "disposition": "fixed: note and docs say empty or unterminated heredoc"}
+], "summary": "Claims 1 and 2 not disproved for the bundled profile set; doc overclaims fixed."}

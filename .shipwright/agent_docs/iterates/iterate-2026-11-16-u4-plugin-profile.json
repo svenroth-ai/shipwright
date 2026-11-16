@@ -1,0 +1,89 @@
+{
+  "run_id": "iterate-2026-11-16-u4-plugin-profile",
+  "date": "2026-11-16T03:00:20.405938Z",
+  "event_at": "2026-11-16T03:00:03.822370+00:00",
+  "type": "feature",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/campaign-profile-architecture-rules--U4",
+  "spec": ".shipwright/planning/iterate/campaigns/profile-architecture-rules/sub-iterates/U4-plugin-profile.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-11-16-u4-plugin-profile",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "the new profile resolves as a valid bundled profile and carries the generic profile's Python version, test and lint commands, dev server, deploy, env vars and layout",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_claude_plugin_profile.py::test_profile_resolves_as_a_valid_bundled_profile, ::test_python_stack_testing_and_linting_data_equals_the_generic_profile PASSED"
+      },
+      {
+        "behavior": "the six rules are objects with a why, load without errors, and the skill-limits rule is not claimed as enforced",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_claude_plugin_profile.py::test_rules_are_objects_with_a_why_and_load_without_errors PASSED"
+      },
+      {
+        "behavior": "every mechanism path exists under shared/ or plugins/ and a named hook is registered in a hooks.json command",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_claude_plugin_profile.py::test_every_mechanism_path_exists_under_shared_or_plugins, ::test_a_named_hook_mechanism_is_actually_registered PASSED"
+      },
+      {
+        "behavior": "CI and CodeQL defaults of the new profile equal the generic Python profile's",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_claude_plugin_profile.py::test_ci_and_codeql_defaults_follow_the_generic_python_profile PASSED; shared/tests/test_automerge_readiness.py PASSED"
+      },
+      {
+        "behavior": "descriptions say which profile is which",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_claude_plugin_profile.py::test_descriptions_say_which_profile_is_which PASSED"
+      },
+      {
+        "behavior": "adopt gives a Python plugin repo claude-plugin (root and plugins/* layouts) and a plain Python repo keeps python-plugin-monorepo",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-adopt/tests/test_profile_matcher.py::test_plugin_repo_matches_claude_plugin, ::test_plugin_monorepo_layout_matches_claude_plugin, ::test_python_only_repo_without_the_folder_keeps_the_generic_profile PASSED"
+      },
+      {
+        "behavior": "non-Python, TypeScript, mixed JS+Python and markdown-only repos keep their match; wrong-depth or file-named folders are no signal",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-adopt/tests/test_profile_matcher.py::test_non_python_repos_keep_their_match_with_a_plugin_folder, ::test_mixed_js_and_python_repo_keeps_its_match..., ::test_signal_needs_a_folder_at_the_two_supported_depths PASSED"
+      },
+      {
+        "behavior": "the whole analysis snapshot gives each repo its profile; the signal key is not a spec constraint and adding it twice changes nothing",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-adopt/tests/test_profile_matcher.py::test_analysis_snapshot_gives_each_repo_its_profile, ::test_signal_key_is_not_a_spec_constraint..., ::test_adding_the_signal_twice_changes_nothing PASSED"
+      },
+      {
+        "behavior": "/shipwright-project accepts the profile name and refuses a misspelt one",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-project/tests/test_claude_plugin_profile_select.py PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 9,
+      "tested": 9,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 3,
+      "covered_acs": 3
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run pytest shared/tests/test_claude_plugin_profile.py shared/tests/test_profile_architecture_rules.py -q -p no:cacheprovider",
+    "exit_code": 0,
+    "tests_run": 54,
+    "evidence_path": ".shipwright/runs/iterate-2026-11-16-u4-plugin-profile/surface_verification.log",
+    "timestamp": "2026-11-16T02:58:45.275Z",
+    "attempts": 1
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": [
+    "touches_shared_infra"
+  ]
+}
