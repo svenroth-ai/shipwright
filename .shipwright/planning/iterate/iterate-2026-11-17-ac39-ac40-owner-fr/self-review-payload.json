@@ -1,0 +1,8 @@
+{"items":[
+{"name":"correctness","verdict":"pass","note":"AC39/AC40 removed from FR-01.01, re-added as FR-01.11 AC53/AC54 (next free after AC52); AC53 wording unchanged; all covers tags moved"},
+{"name":"tests","verdict":"pass","note":"hook-bypass scan over the iterate plugin and campaign loop with positive/negative pattern cases and a stale-allowlist check; code-reviewer notes key agreement test"},
+{"name":"security","verdict":"n/a","note":"test and spec only; no runtime code"},
+{"name":"scope","verdict":"pass","note":"no runtime file, no protected path touched; historic run records left unchanged"},
+{"name":"docs","verdict":"pass","note":"spec is the doc; no guide change needed"},
+{"name":"style","verdict":"pass","note":"ruff 0.15.15 clean"},
+{"name":"affected-boundaries","verdict":"n/a","note":"no serialized format changed"}]}

@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-17-ac39-ac40-owner-fr",
+  "date": "2026-11-17",
+  "section": "Iterate — change: move reviewer-notes and never-bypass-hooks criteria to FR-01.11",
+  "title": "Reviewer-notes and hook-bypass criteria belong to FR-01.11, now AC53 and AC54",
+  "context": "PR 1072 added FR-01.01 AC39 (code reviewer notes kept on the review record) and AC40 (campaign runner never bypasses git hooks), but both describe the change workflow, not project setup. AC40 was only checked as wording.",
+  "decision": "Removed FR-01.01 AC39/AC40 and re-added them as FR-01.11 AC53 (same wording) and AC54 (plus: no iterate-plugin or campaign-loop instruction tells anyone to bypass hooks), moved every test tag, raised the AC registry to FR-01.01=40 and FR-01.11=54, and made AC54 a sentence-level scan with a reasoned allowlist.",
+  "consequences": "Historic records of iterate-2026-11-16-arch-rules-followups still name FR-01.01.AC39/AC40 and stay unchanged; their ids are retired. CI keystone reports removed_with_bindings for them as an expected non-blocking warning. The registry only guards ids minted by mint_ac_ids, not hand-typed ones.",
+  "rationale": "A move across FRs cannot keep the number (the move map only renames FR with the same number), so remove plus add with the next free numbers is the faithful record; rewriting finished run records would falsify history.",
+  "rejected": "Rewriting the historic run records and event drop to the new ids; a generic never-word filter in the scan, which would let any bypass in a forbidding paragraph through.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

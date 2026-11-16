@@ -1,0 +1,1 @@
+The never-bypass-hooks requirement is now checked by behaviour: a test fails when any instruction or script of the iterate plugin or the campaign loop tells anyone to skip, redirect or disable git hooks.
