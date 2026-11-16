@@ -1,0 +1,166 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-16-arch-rules-followups",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-16T09:03:59.221289+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-16T09:11:43.485295+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "architecture",
+          "file": "shared/scripts/lib/review_payloads.py",
+          "line": 285,
+          "finding": "Rule bloat-baseline-discipline: adding notes_fields takes review_payloads.py past the 300-line limit with no baseline entry.",
+          "suggestion": "Move notes_fields into a sibling module like ac_verdicts. FIXED: now lib/review_notes.py; review_payloads.py is 292 lines.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/review_payloads.py",
+          "line": 306,
+          "finding": "entry_extras docstring did not mention reviewer notes.",
+          "suggestion": "Mention it. FIXED.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-16T09:06:36.462899+00:00",
+      "disposition": "both findings fixed in the diff before commit: notes_fields moved to review_notes.py, docstring updated",
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "reviewer_notes": "Checked the diff against all 13 architecture rules of the block in conventions.md (profile shipwright-monorepo): block intact, ids match the profile, diff does not edit them. Intents (a), (b), (c) met. No external LLM review was run."
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "shared/schemas/codex_code_review_schema.json",
+          "line": null,
+          "finding": "Claim under doubt: AC37: notes are kept on the review record — The Codex transport's strict code-review schema has additionalProperties false and no notes key, so a Codex-answered review cannot carry notes. ADDRESSED: notes added (nullable, required per strict mode) to the schema, fixtures updated, test added.",
+          "suggestion": "Add notes to the Codex schema and test it.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling & blast radius",
+          "file": "shared/scripts/tools/render_architecture_rules.py",
+          "line": null,
+          "finding": "Claim under doubt: wording change is local — Consumer projects with an already rendered block show --check stale until re-rendered. REBUTTED: the lint-rule profiles shipped days ago; re-render is the documented step.",
+          "suggestion": "changelog note or rebuttal",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "shared/scripts/lib/review_record_schema.py",
+          "line": null,
+          "finding": "Claim under doubt: additive row key is harmless to every reader — Webui reader tolerance not verifiable here; verdict/reviewed_commit/partial_legs are precedent. ACCEPTED.",
+          "suggestion": "precedent",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "shared/scripts/lib/review_notes.py",
+          "line": null,
+          "finding": "Claim under doubt: notes stored safely — Free text unredacted like raw_excerpt; truncation duplicated. ADDRESSED: now uses coerce_text.",
+          "suggestion": "use coerce_text",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-16T09:11:42.925970+00:00",
+      "disposition": "medium doubt addressed (codex schema carries notes); lows addressed or rebutted",
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-16T09:11:44.197111+00:00",
+      "disposition": "small iterate: external LLM review is skipped below medium per the phase matrix",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-16T09:05:31.554310+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-16T09:11:43.729058+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-16T09:11:43.976773+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}

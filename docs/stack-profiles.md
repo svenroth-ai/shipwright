@@ -181,7 +181,7 @@ A profile can say which architecture rules a project of that stack must keep, an
 ```
 
 - `enforcement` is one of `hook`, `validator`, `test`, `prompt-only (mechanisable)`, `prompt-only (judgement)`, `unimplemented` (the same list as the constitution register).
-- A rule carries `lint` **or** `mechanism` (a list of repo-relative paths), never both. `validator` needs one of them; `hook` and `test` need `mechanism`; the other classes carry neither, and `prompt-only (mechanisable)` and `unimplemented` need a `note`. A lint rule is class `validator`.
+- A rule carries `lint` **or** `mechanism` (a list of repo-relative paths), never both. `validator` needs one of them; `hook` and `test` need `mechanism`; the other classes carry neither, and `prompt-only (mechanisable)` and `unimplemented` need a `note`. A lint rule is class `validator`; its rendered line says the fragment comes with the scaffold template and is enforced only where the project's linter config carries it (an adopted or older project may not).
 - `lint` is `{tool, target, block}`: `tool` is `eslint` or `ruff`, `target` the config file in the project, `block` the config fragment (for `eslint` an object with a non-empty `rules` object). `mechanism` paths are relative to the Shipwright repo for a bundled profile and to the project root for your own profile; they must not be absolute or contain `..`.
 - A mechanism only counts as enforcement if something invokes it in the user's project; a checker that exists but is not run is `prompt-only (mechanisable)`.
 - The old format, a list of plain sentences, is still accepted until the last bundled profile is converted. Such a sentence is treated as an instruction whose class is not declared; `validate` warns about it, no other command does.

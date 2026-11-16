@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-16-arch-rules-followups",
+  "date": "2026-11-16",
+  "section": "Iterate - change: architecture rules wording, reviewer notes, runner hook rule",
+  "title": "Rendered rules say what is true; reviewer notes are recorded; runners never bypass hooks",
+  "context": "The rendered rule line claimed a linter check that adopted or older projects lack; the code reviewer's notes were dropped; a runner once tried a hooks-path override.",
+  "decision": "Render the fragment as scaffold-provided and conditional; store notes as reviewer_notes on the code row; state the no-bypass rule in the runner contract.",
+  "consequences": "Rendered lines for linter rules change on next render; review records may carry an optional reviewer_notes string; no behaviour change for findings.",
+  "rationale": "Claims in generated docs must match what runs; notes are evidence, not findings; hook bypass is never legitimate.",
+  "rejected": "Counting notes as findings; a new schema version; putting the sentence in campaign-mode text owned by another run.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-11-16-arch-rules-followups-honest-rules-notes-hooks.md"
+}

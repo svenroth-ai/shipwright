@@ -148,7 +148,7 @@ def test_render_lists_all_six_rules_with_their_class_and_the_validator_caveat(tm
     assert list(bullets) == [r.id for r in _rules().rules]
     for rule in _rules().rules:
         if rule.lint:
-            assert "checked by the linter `eslint`" in bullets[rule.id]
+            assert "linter fragment for `eslint`" in bullets[rule.id] and "checked by the linter" not in bullets[rule.id]
             assert "only for projects whose eslint config carries this fragment" in bullets[rule.id]  # the caveat survives the render
         else:
             assert f"instruction only ({rule.enforcement.split('(')[1]}" in bullets[rule.id]

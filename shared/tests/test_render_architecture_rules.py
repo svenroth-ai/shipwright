@@ -43,6 +43,7 @@ def _run(project, capsys, *extra):
     return code, out, err
 
 
+@pytest.mark.covers("FR-01.01/AC36")
 def test_scaffolded_conventions_carry_the_block(project, capsys):
     write_profile(proj_dir(project), "demo-stack", architecture_rules=RULES)
     path = _scaffold(project)
@@ -52,7 +53,8 @@ def test_scaffolded_conventions_carry_the_block(project, capsys):
     assert "{ARCHITECTURE_RULES}" not in text and text.count(rar.BEGIN) == 1 and text.count(rar.END) == 1
     assert "## Architecture Rules\n\n" + rar.BEGIN in text  # the template's own heading stays
     assert "**lint-rule** - No raw client outside lib. Why: One place to change it." in text
-    assert "checked by the linter `eslint` (`eslint.config.mjs`)" in text
+    assert "linter fragment for `eslint` (`eslint.config.mjs`) comes with the scaffold template and is enforced only where the project's linter config carries it" in text
+    assert "checked by the linter" not in text  # never claim a check the project may not have
     assert "**judge**" in text and "instruction only (judgement)" in text
     assert "instruction only (mechanisable)" in text and "Note: No linter rule yet." in text
     assert "## File Organization" in text  # the rest of the file is untouched

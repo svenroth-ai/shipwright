@@ -75,7 +75,8 @@ def _how(rule) -> str:
     if rule.legacy or rule.enforcement is None:
         return "instruction only (enforcement class not declared)"
     if rule.lint:
-        return f"checked by the linter `{_one_line(rule.lint['tool'])}` (`{_one_line(rule.lint['target'])}`)"
+        return (f"linter fragment for `{_one_line(rule.lint['tool'])}` (`{_one_line(rule.lint['target'])}`) comes with the scaffold "
+                "template and is enforced only where the project's linter config carries it")
     if rule.mechanism:
         paths = ", ".join(f"`{_one_line(p)}`" for p in rule.mechanism)
         return f"{_one_line(rule.enforcement)}: {paths}"

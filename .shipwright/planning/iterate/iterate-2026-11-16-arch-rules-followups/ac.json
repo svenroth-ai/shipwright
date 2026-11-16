@@ -1,0 +1,37 @@
+{
+ "items": [
+  {
+   "kind": "add",
+   "ac": "FR-01.01.AC36",
+   "owner_fr": "FR-01.01",
+   "new_text": "Given a stack profile rule carries a linter fragment, when the rules block is rendered into a project's conventions file, then the line says the fragment comes with the scaffold template and is enforced only where the project's linter config carries it, and never claims the rule is checked by the linter.",
+   "files": [
+    "shared/scripts/tools/render_architecture_rules.py",
+    "shared/scripts/lib/review_payloads.py",
+    "plugins/shipwright-iterate/agents/sub-iterate-runner.md"
+   ]
+  },
+  {
+   "kind": "add",
+   "ac": "FR-01.01.AC37",
+   "owner_fr": "FR-01.01",
+   "new_text": "Given the code reviewer returns notes next to its findings (for example that the architecture check could not run), when its pass is recorded, then the notes are kept on the review record beside the findings, are never counted or treated as findings, and a reply without usable notes records exactly as before.",
+   "files": [
+    "shared/scripts/tools/render_architecture_rules.py",
+    "shared/scripts/lib/review_payloads.py",
+    "plugins/shipwright-iterate/agents/sub-iterate-runner.md"
+   ]
+  },
+  {
+   "kind": "add",
+   "ac": "FR-01.01.AC38",
+   "owner_fr": "FR-01.01",
+   "new_text": "Given a campaign runner is briefed, when it reads its contract, then the contract states that git hooks are never bypassed: no skipping flag, no hooks-path override and no environment variable that disables them.",
+   "files": [
+    "shared/scripts/tools/render_architecture_rules.py",
+    "shared/scripts/lib/review_payloads.py",
+    "plugins/shipwright-iterate/agents/sub-iterate-runner.md"
+   ]
+  }
+ ]
+}
