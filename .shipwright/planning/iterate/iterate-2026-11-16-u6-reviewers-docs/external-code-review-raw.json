@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "Findings:\n\n- Category: edge-case | Severity: low\n- File: plugins/shipwright-build/agents/code-reviewer.md (new \"Architecture Rules Check\" section, \"A rule whose mechanism file is missing is an `architecture` finding on that rule\")\n- Finding: The agent treats a missing mechanism file as a finding without distinguishing bundled-profile paths (relative to the Shipwright repo) from project-profile paths (relative to the project root). A project that copied a bundled profile without downgrading its rules \u2014 exactly the situation the new docs section warns about \u2014 will get false-positive findings on rules that were never meant to point at the project.\n- Suggestion: Add one clause: \"if the profile's mechanism paths are the bundled Shipwright ones (paths that exist only in the Shipwright repository), note the rule is uncheckable here rather than raising a finding.\"\n\n- Category: test | Severity: low\n- File: shared/tests/test_code_reviewer_architecture_rules.py \u2014 `test_agent_can_read_conventions_md`\n- Finding: The test only asserts the string \"Read\" appears in the `tools:` frontmatter line; it doesn't verify the agent is actually granted Read (e.g. the frontmatter parses, the value isn't in a comment, no deny rule elsewhere). A broken frontmatter (e.g. `tools:` under a wrong key) could still pass.\n- Suggestion: Parse the frontmatter with the repo's frontmatter loader if one exists, or at least assert the tools list contains exactly `Read` and the line is inside the frontmatter block.\n\n- Category: test | Severity: low\n- File: shared/tests/test_code_reviewer_architecture_rules.py \u2014 `test_pilot_p1_plan_links_the_section`\n- Finding: The test silently skips if the brief is deleted, so the AC \"the changelog pilot P1 plan links the section\" can silently stop being enforced once the pilot completes and the brief is removed. That's acknowledged in a comment, but it means the AC has no durable pin.\n- Suggestion: Either assert the link while the pilot is active and accept the skip consciously, or pin the link target in a doc that persists (e.g. the docs themselves cross-reference).\n\n- Category: edge-case | Severity: low\n- File: plugins/shipwright-build/agents/code-reviewer.md \u2014 \"(a root named in your spawn prompt wins, else your working directory)\"\n- Finding: The agent relies on parsing a \"root\" out of the spawn prompt prose, with no specified format; the campaign-mode change only says \"Name `$unit_wt` as its project root in the prompt\", so a prompt that omits it falls back to the working directory, which may be the repo root rather than the unit directory \u2014 reading the wrong conventions.md.\n- Suggestion: Specify the exact prompt phrasing in both files (e.g. \"Project root: <path>\") so the fallback path and the win path are deterministic.\n\nOtherwise: the diff satisfies the three ACs \u2014 the test pins the agent instructions (test_agent_checks_the_rules_block_of_conventions_md), the docs section exists with two example rules validated against the real loader in test_docs_example_rules_validate_with_the_real_loader, and the P1 plan links the section. The renderer-marker consistency test (test_markers_named_in_the_agent_are_the_ones_the_renderer_writes) is a genuinely useful drift pin. No security or regression issues.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "- Category: spec\n- Severity: medium\n- File: plugins/shipwright-build/agents/code-reviewer.md:77\n- Finding: The instructions detect duplicated or unpaired markers, but never verify that a single, well-formed block matches the current profile. Such a block can be stale while passing every stated check, so the reviewer would trust outdated rules. This leaves AC34 partially implemented; the new substring tests also pass with this omission.\n- Suggestion: Require the reviewer to run `render_architecture_rules.py --check` against the resolved project root, or perform an equivalent freshness comparison, and report stale output as a finding. Pin that requirement in the agent test.\n\nShip-with-fixes: the documentation, examples, and pilot link address the requested scope, but stale-block detection needs an explicit verification step.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-11-16-u6-reviewers-docs",
+    "at": "2026-11-16T06:29:33.414636+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

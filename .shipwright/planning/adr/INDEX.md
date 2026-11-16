@@ -218,3 +218,4 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [ESLint config template for supabase-nextjs scaffolds (campaign profile-architecture-rules, U3b)](iterate-2026-11-16-u3b-eslint-template-eslint-template.md)
 - [Bundled claude-plugin profile for Claude Code plugin repositories](iterate-2026-11-16-u4-plugin-profile-plugin-profile.md)
 - [Shipwright's own project profile](iterate-2026-11-16-u5-shipwright-profile-shipwright-profile.md)
+- [The code reviewer reads the architecture rules block](iterate-2026-11-16-u6-reviewers-docs-reviewer-reads-architecture-rules.md)

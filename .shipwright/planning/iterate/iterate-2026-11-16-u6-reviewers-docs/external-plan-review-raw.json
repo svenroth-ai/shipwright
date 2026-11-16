@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "**Findings**\n\n- **Category: risk \u2014 Severity: medium** \u2014 Instruction-only rules reported as `architecture` findings rely on the LLM reviewer's judgment, with only \"cited rule id and offending line\" as guardrails. Deterministic rules will be double-enforced if build tooling (e.g. lint) also checks them, producing noisy duplicate findings; purely judgment-based rules will fire inconsistently run to run.\n  **Suggestion:** Have the reviewer instruction distinguish mechanism rules (already machine-enforced \u2014 reviewer should not re-report) from judgment-only rules, or state explicitly how to dedupe against existing findings.\n\n- **Category: edge-case \u2014 Severity: medium** \u2014 Staleness detection (\"plainly stale block\") is vague and unverifiable. Without the ability to run `--check`, the reviewer will either under-flag (missing real drift) or make ad-hoc calls that aren't testable. Also unhandled: what if conventions.md exists but the markers were renamed/changed by the renderer since the agent file was written \u2014 the test pins marker equality against renderer constants (good), but there's no runtime fallback instruction when the markers don't match what the reviewer was told to look for.\n  **Suggestion:** Add an explicit reviewer instruction branch: \"if the marker pattern described here is absent from the file, report a note and skip the check\" rather than silently passing.\n\n- **Category: edge-case \u2014 Severity: low** \u2014 \"Two blocks is a finding, never trusted\" \u2014 but which block does the reviewer cite? Also, large conventions.md files: the reviewer reads the whole file to find the block; if conventions.md grows, this inflates review context. Probably fine at current scale; worth a note in known limits.\n\n- **Category: dependency \u2014 Severity: low** \u2014 AC \"docs example rules load with the real loader\" couples the docs page to the loader's validation forever. Docs examples that must stay machine-valid tend to rot when the loader schema evolves.\n  **Suggestion:** Pin the example to a specific profile or mark it clearly as \"validated by test X\" so a future loader change fails the test with an obvious cause rather than a mysterious docs drift.\n\n- **Category: risk \u2014 Severity: low** \u2014 Test asserting \"key words of the instruction\" is brittle to harmless rewording of the agent prompt. Since you already assert marker equality and tool availability, consider asserting the structural anchors (section heading, marker names) rather than prose keywords.\n\n- **Category: approach \u2014 Severity: low** \u2014 Linking the P1 plan to the docs section \"by relative anchor\" means two files that must move together. A drift test for this link (or reusing an existing link-check) would make the AC self-enforcing rather than one-time.\n\n**Overall assessment:** Sound, well-scoped approach with no security concerns and no over-production; the main gaps are underspecified staleness/marker-mismatch handling and the brittleness of the keyword-based test. These are refinements, not structural problems.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "- **Category:** edge-case  \n  **Severity:** medium  \n  **Finding:** The plan handles absent and malformed blocks, but does not define what happens when `conventions.md` cannot be read. A read failure must not become \u201cnone declared,\u201d which would imply the architecture check completed successfully.  \n  **Suggestion:** Explicitly distinguish \u201cno rules declared\u201d from \u201ccheck unavailable.\u201d For an unreadable file, report the failed check and its reason without claiming compliance or inventing a rule violation.\n\n- **Category:** approach  \n  **Severity:** low  \n  **Finding:** \u201cPlainly stale\u201d lacks an actionable definition. Without running the renderer\u2019s check, reviewers could report staleness based on assumptions, producing inconsistent findings.  \n  **Suggestion:** Require concrete evidence for staleness, such as a referenced mechanism path that no longer exists. State that freshness is otherwise unverified, and pin that distinction in the instruction test.\n\nOverall, this is a proportionate, sound approach that reuses existing reviewer capabilities and the real rule loader. The findings are instruction refinements; supporting repository files could not be inspected because command execution was blocked by policy.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-11-16-u6-reviewers-docs",
+    "at": "2026-11-16T06:26:47.150286+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "approve"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}

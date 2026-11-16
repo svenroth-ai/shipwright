@@ -156,7 +156,7 @@ never as quiet. A missing complexity in the F5c entry is in scope, not a skip.
 
 ### Invocation
 The code-reviewer subagent from `shipwright-build` is reused. Provide:
-- The diff (`git diff HEAD~1`)
+- The diff (`git diff HEAD~1`) and the line `Project root: {project_root}`
 - The iterate spec or affected FR section
 - The self-review results
 

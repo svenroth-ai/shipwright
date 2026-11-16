@@ -598,6 +598,7 @@ Python 3.11+ with uv as package manager. All scripts are invoked via uv run. Hoo
 - (2026-11-12) iterate/triage — `triage_integrity.is_triage_record` is consulted only by boundary resync, so a status-less append is fixed on the read side (`triage_status_normalize.initial_record`, used by `read_all_items` AND the GC resolver), not by a looser predicate; "closes trg-X" checks must skip partial closes ("Part of trg-X"). → iterate-2026-11-12-u2-triage-consistency
 - (2026-11-12) iterate/audit — a comment that promises behaviour (adopted projects skip G2) outlived the code that never had it; when an audit rule looks wrong for a project class, the fix is text pointing to the explicit opt-out (disabled_checks), never a hidden auto-skip. → iterate-2026-11-12-u3-g2-scope-audit
 - (2026-11-16) adopt — a new adopt matching signal must not move any existing match: gate it to the repos it is for and keep it out of every score (profile_matcher.SIGNAL_KEYS: gate plus tie-break only); pin Python-only, mixed, TS, markdown-only and custom project profiles with fixtures. [→ iterate-2026-11-16-u4-plugin-profile]
+- (2026-11-16) iterate/review — a reviewer subagent with only Read/Grep/Glob cannot run a check tool: tell it what it can verify by reading (profile rule ids vs the block's ids) and say where the full check runs; name the project root in every spawn prompt when the unit lives in another worktree. [→ iterate-2026-11-16-u6-reviewers-docs]
 
 ## Contributing
 

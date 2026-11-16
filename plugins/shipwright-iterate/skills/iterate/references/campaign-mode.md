@@ -896,7 +896,7 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
        the `spec-reviewer` prompt (a) adds: "Also read the AC claims file at `<path>`." Never commit `ac-claims.json`.
 
        a) `spec-reviewer`  — Stage 1, HARD-GATE. A REJECT blocks the rest.
-       b) `code-reviewer`  — Stage 2, only once Stage 1 PASSES.
+       b) `code-reviewer`  — Stage 2, only once Stage 1 PASSES. Put the line `Project root: $unit_wt` in its prompt.
        c) `doubt-reviewer` — Stage 3, conditional, advisory-must-address.
 
        Pass `model=<review tier resolved at loop step 2>` to each of the three

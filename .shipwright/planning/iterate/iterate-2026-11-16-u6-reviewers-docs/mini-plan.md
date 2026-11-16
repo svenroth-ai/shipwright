@@ -1,0 +1,9 @@
+# Mini-plan U6: code-reviewer reads the architecture rules
+
+1. `plugins/shipwright-build/agents/code-reviewer.md` (314 lines, under the 400-line runtime-prompt cap): one new section "Architecture Rules Check". The reviewer reads the project's `.shipwright/agent_docs/conventions.md` itself with its Read tool (it already has Read, Grep, Glob; no spawn site needs a new input), takes the marked block, reports violations per rule id as `architecture` findings; instruction-only rules need a cited rule id and the offending line; "none declared" or no block is a plain note; two blocks, unpaired markers or a plainly stale block is a finding, never trusted.
+2. Test `shared/tests/test_code_reviewer_architecture_rules.py` (AC34, AC35 under FR-01.01): key words of the instruction, the markers equal the renderer's constants, the agent's `tools` include Read, the docs example rules load with the real loader (and their mechanism path exists), the docs section names the closed vocabulary and the limits, the pilot P1 plan links the section.
+3. `docs/hooks-and-pipeline.md`: one new row in the Artifact Read Matrix (the rules block is read by the `code-reviewer` subagent under build and iterate).
+4. `docs/building-skills-plugins-agents.md`: new section "How to add an architecture rule" (fields, closed enforcement list, honesty rule, profile locations and the mechanism-path caveat, re-render, drift tests, known limits); links `docs/stack-profiles.md`, does not copy it.
+5. Pilot BRIEF P1: one sentence linking the section by relative anchor.
+6. `spec.md` FR-01.01: AC34 (reviewer) and AC35 (docs); no new FR.
+Risks: the reviewer cannot run `--check` (no shell), so staleness is judged from the file: it flags only what it can see (duplicate or unpaired markers, a block visibly out of date). The build phase replacing the supabase `eslint.config` stays an open follow-up (documented as a known limit).

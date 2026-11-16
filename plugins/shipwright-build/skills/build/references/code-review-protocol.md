@@ -23,7 +23,7 @@ git diff HEAD > "$(uv run "{shared_root}/scripts/tools/review_scratch.py" resolv
 ```
 
 2. Spawn `code-reviewer` subagent with:
-   - Section spec file path
+   - Section spec file path, and the line `Project root: <project root>`
    - Diff file path — re-resolve independently:
      `"$(uv run "{shared_root}/scripts/tools/review_scratch.py" resolve --run-id "$SHIPWRIGHT_SESSION_ID" --name shipwright-review-diff.txt)"`
    - `model=<review tier resolved at SKILL.md §G>` (omit when `inherit`) —
