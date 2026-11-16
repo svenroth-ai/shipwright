@@ -1,0 +1,6 @@
+{"stage": "spec-compliance", "verdict": "PASS", "spec_citations": [], "per_criterion": [
+{"ac": "AC1 scaffolded conventions.md carries the block", "result": "met"},
+{"ac": "AC2 adopt fixture on a profile with rules gets the block", "result": "met"},
+{"ac": "AC3 running the tool twice changes nothing", "result": "met"},
+{"ac": "AC4 profile with no rules writes an explicit none-declared line", "result": "met"}],
+"summary": "PASS. All four acceptance criteria and every brief requirement for U2 are met (reviewed at 89b46139d; a later amend only hardened adopt's file-error handling and a heading-at-EOF edge)."}

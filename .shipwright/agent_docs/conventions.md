@@ -21,6 +21,12 @@ Python 3.11+ with uv as package manager. All scripts are invoked via uv run. Hoo
 - Keep files under 300 lines; split larger modules.
 - Tests live alongside implementation with `.test.*` / `_test.*` suffix OR in a `tests/` directory — whichever is consistent with the rest of the codebase.
 
+## Architecture Rules
+
+<!-- shipwright:architecture-rules:begin (generated from stack profile `python-plugin-monorepo` by render_architecture_rules.py; edit the profile, not this block) -->
+_No architecture rules declared by stack profile `python-plugin-monorepo`._
+<!-- shipwright:architecture-rules:end -->
+
 ## Learnings
 
 > **One line per learning, no bold paragraphs** — always-loaded Layer-1 context. Format: `- (YYYY-MM-DD) <phase> — <one-line rule/gotcha>. → <run_id|ADR-NNN>`. **Budget ≤ 600 chars; if a learning won't fit one line it is a *decision* — write an ADR and leave a one-line pointer here.** Enforced repo-agnostically by the F11 verifier + `shared/scripts/tools/check_agent_doc_budget.py`; see `references/reflection.md`. Full rationale for compacted entries is in [`../planning/adr/_archive-agent-doc-updates.md`](../planning/adr/_archive-agent-doc-updates.md).

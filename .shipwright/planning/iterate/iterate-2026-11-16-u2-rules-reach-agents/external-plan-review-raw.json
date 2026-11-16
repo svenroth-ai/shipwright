@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "## Findings\n\n**Category: risk / Severity: medium**\n**Finding:** Project step 7 \"leaves the placeholder\" and runs the tool in the same step \u2014 but the acceptance criterion \"running twice changes nothing\" depends on the placeholder being *removed* after first fill, not left in place. If the placeholder text remains in the file alongside the filled block, a second run (or later marker damage) could double-write or confuse placement resolution. The three-way placement logic (placeholder \u2192 `## Architecture Rules` \u2192 append) means a scaffolded file that already had the heading added by another step could take a different path than intended.\n**Suggestion:** Specify explicitly: first fill *consumes* the placeholder (replaces it with markers+block) and add a test that placeholder is gone after run one.\n\n**Category: edge-case / Severity: medium**\n**Finding:** Rule content \"sanitised so it cannot close the markers\" is underspecified \u2014 what does sanitisation do to legitimate rule text? Silently mutating rule text (e.g., stripping `-->` or whatever the closing marker is) can hide real content, and the spec doesn't say whether sanitisation is reported to the user.\n**Suggestion:** Define sanitisation concretely (e.g., replace marker-closing sequences with a safe stand-in) and log/emit a warning when it fires, so rule authors know their text was altered.\n\n**Category: edge-case / Severity: low**\n**Finding:** \"Damaged markers = exit 3 no write\" \u2014 but what counts as damaged? A lone opening marker, mismatched counts, nested markers, and a marker pair inside a code fence (rules frequently contain fenced examples!) are distinct cases. A fenced code block containing marker-like text would cause false \"damaged\" exits and block all future updates.\n**Suggestion:** Handle fenced-code awareness or at minimum document that marker-like text inside rules must be sanitised at render time (see above). Clarify exit-3 detection: count of open vs close markers.\n\n**Category: approach / Severity: low**\n**Finding:** Adopt loads the tool \"by file path\" from `write_rules_block` \u2014 this bypasses whatever module/packaging path the project-side step uses. Two invocation styles for one tool invites drift.\n**Suggestion:** If a shared import mechanism exists in `shared/scripts`, use it for both; otherwise fine, but note it and keep the CLI the single tested surface.\n\n**Category: dependency / Severity: low**\n**Finding:** \"Run once for this repo\" is a manual step with no gate. If forgotten, the acceptance criterion for this repo's own conventions.md fails silently.\n**Suggestion:** Make the one-time run part of the task checklist or verify via a repo-level test/assertion.\n\n**Category: edge-case / Severity: low**\n**Finding:** CRLF preservation: the spec says line endings are preserved, but the rendered block's internal newlines and the marker lines themselves must match the file's existing ending style, not just \"preserve\" the file's. Mixed-ending files are unaddressed.\n**Suggestion:** Normalize the inserted block to the file's dominant/first line ending; add a CRLF fixture test (presumably already among the 16).\n\n**Category: security / Severity: low**\n**Finding:** Rule text originates from profile definitions; if profiles are ever user-supplied, injecting marker text is the injection vector. The sanitisation covers it, but there's no auth/trust statement about where rules come from.\n**Suggestion:** A one-line note in docs/stack-profiles.md that rules are maintainer-authored; sanitisation is defence-in-depth.\n\n**Category: over-production / Severity: low**\n**Finding:** 16 unit tests + 4 adopt tests is reasonable, not bloated \u2014 no reduction needed. The four-function module surface (render_block/apply_block/render_into/CLI) is appropriate for the reuse across project step and adopt.\n\n## Overall Assessment\n\nThe approach is sound and well-scoped; the placement/state machine around markers is the main soft spot \u2014 placeholder consumption, sanitisation semantics, and marker-damage detection need precise definitions before implementation to avoid subtle re-run bugs. All findings are refinements rather than structural problems.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** Reporting rule errors on stderr and omitting those rules can produce a successful-looking conventions block that lacks declared architecture constraints. If every rule fails, this could also misrepresent the profile as having no rules.  \n   **Suggestion:** Distinguish an empty rule declaration from invalid rules. Validate before writing, return a nonzero status for invalid declarations, and preserve the existing block on failure. Ensure scaffolding and adoption propagate that failure.\n\n2. **Category:** edge-case  \n   **Severity:** low  \n   **Finding:** \u201cDamaged markers\u201d needs an explicit definition. Duplicate complete blocks or reversed markers could otherwise cause replacement of the wrong range or leave conflicting rules in the document.  \n   **Suggestion:** Accept either no markers or exactly one correctly ordered pair; reject other combinations without writing. Include these cases in the planned tests, alongside LF/CRLF preservation and byte-for-byte second-run idempotency.\n\nThe approach is focused and generally sound, including its reuse across scaffolding and adoption. Explicit failure handling for invalid rules should be resolved before implementation is accepted; repository inspection was blocked by the environment, so this assessment is based on the supplied plan.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-11-16-u2-rules-reach-agents",
+    "at": "2026-11-15T23:28:10.848327+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "No concrete defects found in the supplied diff. The implementation covers all four acceptance criteria, and the tests check rendered content, adoption integration, idempotence, and the explicit none-declared case, plus several error paths.\n\nShip-as-is based on static review. Environment policy blocked shell access, so I could not inspect surrounding files or independently run the tests.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "### Findings\n\n- **Category: bug**\n  **Severity: medium**\n  File: `plugins/shipwright-adopt/scripts/lib/adopt_profile.py` (~new `write_rules_block`, lines added after 111) and `generate_adoption_artifacts.py:459`\n  Finding: `write_rules_block` propagates `OSError` and `DamagedMarkers` (both raised by `render_into`) uncaught. The CLI path handles these with exit code 3, but the adopt path crashes the entire `generate()` run \u2014 e.g. if `.shipwright/agent_docs/conventions.md` was not written (missing path, docs step skipped/failed earlier) or has damaged markers, adopt aborts after all other artifacts are already written, leaving a half-generated adoption. The docstring even claims the shared tool \"never fails the run\" for rule problems, but file-level problems were not given the same treatment.\n  Suggestion: Catch `OSError` and the `DamagedMarkers` exception in `write_rules_block` (or in `generate`) and record them into `results[\"architecture_rules_notes\"]` / an error field instead of letting them escape.\n\n- **Category: test**\n  **Severity: medium**\n  File: `plugins/shipwright-adopt/tests/test_adopt_architecture_rules.py`\n  Finding: Adopt tests cover only the happy paths. There is no test for the missing-`conventions.md` or damaged-marker case \u2014 precisely the case that currently crashes `generate()` (previous finding). A broken implementation (uncaught exception) would pass this suite.\n  Suggestion: Add a test where `conventions.md` is absent or has a stray `BEGIN` marker, asserting `generate()` completes and reports the problem instead of raising.\n\n- **Category: spec**\n  **Severity: low**\n  File: `plugins/shipwright-project/skills/project/references/project-scaffolding.md`\n  Finding: AC1 (\"scaffolded fixture conventions.md carries the block\") is implemented only via prose instructions to an agent plus the shared tool test; no test verifies the project scaffold path end-to-end (that step 7 actually leaves the placeholder and runs the tool in the documented order). The AC is validated at tool level, not at the scaffold level. Also the documented command line in the markdown has stray double spaces before `--project-root`, which some shells won't care about but a strict copy-runner might.\n  Suggestion: Acceptable if agent-follows-docs is the established pattern here; otherwise add a project-plugin test or note the reliance. Fix the whitespace in the fenced command.\n\n- **Category: edge-case**\n  **Severity: low**\n  File: `shared/scripts/tools/render_architecture_rules.py` \u2014 `apply_block` heading insertion\n  Finding: When inserting under an existing `## Architecture Rules` heading, the block is placed immediately after the heading with no blank separation preserved between block end and the content that followed the heading (`text[heading.end():]` starts with `\\n\\n...` \u2014 actually that's fine), but if the heading is the *last* line with no trailing newline the output ends `block + text[...]` where the tail is empty \u2014 the regex requires `\\r?$`, so a heading at EOF without newline won't match and the append-at-end branch duplicates the heading. Minor and self-consistent, but worth confirming intended.\n  Suggestion: Verify behavior for a file ending exactly in `## Architecture Rules` with no trailing newline; currently the heading is duplicated.\n\n- **Category: bug**\n  **Severity: low**\n  File: `plugins/shipwright-adopt/scripts/lib/adopt_profile.py` \u2014 `write_rules_block`\n  Finding: `rules.errors` is referenced in the return statement *after* the `finally` block, but `rules` is assigned inside `try`. If `exec_module` or `load_rules` raises, the `finally` runs and then the exception propagates \u2014 fine \u2014 but if `mod.render_into` raises *after* `rules` was computed (the DamagedMarkers case), the rule-error notes are lost entirely. Combined with the first finding, the caller gets neither the notes nor a clean failure.\n  Suggestion: Once exceptions are caught (finding 1), return/record what is available.\n\n### Positive notes\n\nThe shared tool itself is solid: marker-neutralization of rule text (`<!--`/`-->`) prevents marker injection from profile data, damaged-marker detection is write-safe, CRLF handling is idempotent, and the \"errors present \u21d2 not 'none declared'\" distinction is correctly tested (`test_only_invalid_rules_is_not_reported_as_none_declared`). Tests are behavioral (byte-identity on reruns, content assertions), not just smoke calls.\n\nOverall: ship-with-fixes \u2014 the shared tool is well built, but the adopt integration's unhandled file-level exceptions can abort an adoption mid-write and no test would catch it.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-11-16-u2-rules-reach-agents",
+    "at": "2026-11-15T23:41:59.551887+00:00"
+  },
+  "verdicts": {
+    "openai": "approve",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=approve"
+  }
+}
