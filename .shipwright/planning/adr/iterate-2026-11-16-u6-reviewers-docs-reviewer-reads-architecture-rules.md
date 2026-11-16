@@ -19,5 +19,7 @@ Passing the block at every spawn site (three contracts that can drift) and a new
 ## Reviews and dispositions
 External plan and architecture reviews: all approve. Taken: unreadable file, concrete staleness evidence, marker-absent behaviour. Internal architecture review approve; taken: untrusted rule text, self-modifying diff, missing-block case, staleness limited to what the reviewer can see. Internal plan review medium: the working directory is the wrong tree in campaign review (fixed with the `Project root:` line and the 3f-bis line), and a missing mechanism file is not what `--check` detects (split into its own case); low items taken: rule problems note, markers at line start outside imported sections, skip the pilot link test when the brief is gone. External code review: GPT asked the reviewer to run `--check` (rejected: no shell tool; the limit is documented); GLM notes taken (bundled-path caveat, explicit root line).
 
+The deletion of three old iterate records in the commit is the F5c retention step.
+
 ## Not done here
 Plugin cache sync after merge is the orchestrator's job (`plugins/` is touched).

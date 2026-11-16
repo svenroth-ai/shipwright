@@ -177,7 +177,7 @@ this repository's rendered block go out of step.
 - `conventions.md` is merged with the union strategy, so a parallel merge can leave
   a stale or duplicated block. `render_architecture_rules.py --check` catches a stale
   one (exit 1) and a duplicated one (exit 3). The reviewer has no shell: it reports
-  duplicated or unpaired markers and rule ids that differ from the profile's, and only
+  duplicated or unpaired markers and, for a project profile found under the project root, rule ids that differ from it (a bundled or user-level profile is noted as uncheckable), and only
   `--check` is the full staleness test.
 - For `supabase-nextjs` the build phase can replace `eslint.config`, which drops the
   lint fragments of its rules. This is an open follow-up.

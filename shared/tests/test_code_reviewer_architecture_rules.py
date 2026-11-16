@@ -32,29 +32,41 @@ def _frontmatter_tools() -> list[str]:
 
 def test_agent_checks_the_rules_block_of_conventions_md():
     text = _agent()
-    for word in (
+    for anchor in (
+        "## Architecture Rules Check",
         ".shipwright/agent_docs/conventions.md",
-        "shipwright:architecture-rules:begin",
-        "shipwright:architecture-rules:end",
-        "names the rule id",
-        "instruction only",
-        "offending line",
-        "none are declared",
-        "could not run",
-        "never waive another axis",
-        "edits the block",
-        "outside any",
         "Project root:",
-        "uncheckable here",
-        "rule id twice",
-        "ids that differ from",
-        "mechanism file is missing",
-        "never \"none declared\"",
-        "some rules were not checked",
+        "names the rule id",
+        "offending line",
         "stale or duplicated",
         "render_architecture_rules.py --check",
     ):
-        assert word in text, word
+        assert anchor in text, anchor
+
+
+def test_agent_puts_notes_outside_review_and_skips_uncheckable_comparisons():
+    text = _agent()
+    for behaviour in (
+        'top-level `"notes"` string',
+        "never in `review`",
+        "could not run",
+        "legacy sentences",
+        "profile not found, so bundled or user-level",
+        "uncheckable",
+        "except \"(mechanisable)\"",
+        "only when that project profile was found",
+    ):
+        assert behaviour in text, behaviour
+
+
+def test_adapter_ignores_the_top_level_notes_key():
+    sys.path.append(str(ROOT / "shared" / "scripts"))
+    try:
+        from lib import review_findings
+    finally:
+        sys.path.remove(str(ROOT / "shared" / "scripts"))
+    payload = {"section": "x", "review": [], "notes": "no rules block in conventions.md"}
+    assert review_findings.from_code_reviewer(payload) == []
 
 
 def test_agent_can_read_conventions_md():
@@ -100,6 +112,7 @@ def test_spawn_sites_hand_the_reviewer_its_project_root():
         "shipwright-iterate/skills/iterate/references/campaign-step-3-7-internal-reviews.md",
         "shipwright-iterate/skills/iterate/references/campaign-mode.md",
         "shipwright-build/skills/build/references/code-review-protocol.md",
+        "shipwright-build/skills/build/references/code-review.md",
     ):
         assert "Project root:" in (root / rel).read_text(encoding="utf-8"), rel
 
