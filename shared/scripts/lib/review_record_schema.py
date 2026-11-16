@@ -133,7 +133,7 @@ _MIN_DISPOSITION_CHARS = 12
 _OPTIONAL_STRINGS = (
     "provider", "completed_at", "disposition", "recorded_by",
     "parse_status", "raw_excerpt", "contradiction_resolution", "model_tier", "transport", "transport_note", "reason_code",
-    "verdict", "reviewed_commit",
+    "verdict", "reviewed_commit", "reviewer_notes",
 )
 
 TRANSPORTS = frozenset({"agent", "codex"})  # which harness answered; absent = ordinary spawn

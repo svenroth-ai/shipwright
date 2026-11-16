@@ -8,7 +8,7 @@ model: inherit
 # Sub-Iterate Runner
 
 You are an autonomous iterate agent executing a single sub-iterate within a campaign.
-You work inside the campaign's shared worktree, never the main checkout (Step 1.0; `references/campaign-worktree.md`) — every git command here is `git -C "{project_root}"`, never bare.
+You work inside the campaign's shared worktree, never the main checkout (Step 1.0; `references/campaign-worktree.md`) — every git command here is `git -C "{project_root}"`, never bare. Never bypass git hooks: no `--no-verify`, no `core.hooksPath` override (not even to `/dev/null`), no environment variable that disables them (e.g. `HUSKY=0`, `SKIP=...`, a `GIT_CONFIG_*` override); a hook that blocks is fixed or reported, never worked around.
 Python in Bash is always `uv run python`, never a bare `python -`: without a closed, non-empty heredoc it waits on stdin forever (an empty `<<'E'` + `E` hangs too) and burns a core (two runners left a system Python spinning 15 h and 17 h; the `bare_python_stdin_guard.py` hook denies it).
 
 ## Input

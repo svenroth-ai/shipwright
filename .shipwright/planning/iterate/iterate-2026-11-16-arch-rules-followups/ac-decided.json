@@ -1,0 +1,103 @@
+{
+  "unattended": true,
+  "resolved_items": [
+    {
+      "kind": "add",
+      "ac": "FR-01.01.AC38",
+      "owner_fr": "FR-01.01",
+      "new_text": "Given a stack profile rule carries a linter fragment, when the rules block is rendered into a project's conventions file, then the line says the fragment comes with the scaffold template and is enforced only where the project's linter config carries it, and never claims the rule is checked by the linter.",
+      "files": [
+        "shared/scripts/tools/render_architecture_rules.py",
+        "shared/scripts/lib/review_payloads.py",
+        "plugins/shipwright-iterate/agents/sub-iterate-runner.md"
+      ],
+      "decided_by": "code",
+      "confirmed": false
+    },
+    {
+      "kind": "add",
+      "ac": "FR-01.01.AC39",
+      "owner_fr": "FR-01.01",
+      "new_text": "Given the code reviewer returns notes next to its findings (for example that the architecture check could not run), when its pass is recorded, then the notes are kept on the review record beside the findings, are never counted or treated as findings, and a reply without usable notes records exactly as before.",
+      "files": [
+        "shared/scripts/tools/render_architecture_rules.py",
+        "shared/scripts/lib/review_payloads.py",
+        "plugins/shipwright-iterate/agents/sub-iterate-runner.md"
+      ],
+      "decided_by": "code",
+      "confirmed": false
+    },
+    {
+      "kind": "add",
+      "ac": "FR-01.01.AC40",
+      "owner_fr": "FR-01.01",
+      "new_text": "Given a campaign runner is briefed, when it reads its contract, then the contract states that git hooks are never bypassed: no skipping flag, no hooks-path override and no environment variable that disables them.",
+      "files": [
+        "shared/scripts/tools/render_architecture_rules.py",
+        "shared/scripts/lib/review_payloads.py",
+        "plugins/shipwright-iterate/agents/sub-iterate-runner.md"
+      ],
+      "decided_by": "code",
+      "confirmed": false
+    }
+  ],
+  "ac_decisions": [
+    {
+      "ac": "FR-01.01.AC38",
+      "mode": "auto",
+      "answer": "auto",
+      "kind": "add",
+      "answered_via": "none",
+      "decided_by": "code",
+      "confirmed": false
+    },
+    {
+      "ac": "FR-01.01.AC39",
+      "mode": "auto",
+      "answer": "auto",
+      "kind": "add",
+      "answered_via": "none",
+      "decided_by": "code",
+      "confirmed": false
+    },
+    {
+      "ac": "FR-01.01.AC40",
+      "mode": "auto",
+      "answer": "auto",
+      "kind": "add",
+      "answered_via": "none",
+      "decided_by": "code",
+      "confirmed": false
+    }
+  ],
+  "counts": {
+    "total": 3,
+    "auto": 3,
+    "asked": 0,
+    "exempt": 0,
+    "restore": 0,
+    "unchanged": 0,
+    "answered_inline": 0,
+    "unconfirmed": 0,
+    "exempt_share": 0.0,
+    "restore_share": 0.0
+  },
+  "status": "ok",
+  "ac_mode": {
+    "mode": "auto",
+    "source": "default (unattended)"
+  },
+  "run_id": "iterate-2026-11-16-arch-rules-followups",
+  "bind_id": "iterate-2026-11-16-arch-rules-followups",
+  "exemption_check": "tested against the current diff (12 file(s), 8 not observable)",
+  "surface": {
+    "observable": true,
+    "files": [
+      "plugins/shipwright-iterate/agents/sub-iterate-runner.md",
+      "shared/scripts/lib/review_payloads.py",
+      "shared/scripts/lib/review_record_schema.py",
+      "shared/scripts/tools/render_architecture_rules.py"
+    ],
+    "ignored": 8
+  }
+}

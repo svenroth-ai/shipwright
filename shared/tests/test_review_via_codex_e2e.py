@@ -44,7 +44,7 @@ if args and args[0] == "exec":
             "reviewer": "opus-plan-reviewer", "severity": "low", "findings": [], "summary": "ok",
         }
     else:
-        payload = {"section": "e2e-fixture", "review": []}
+        payload = {"section": "e2e-fixture", "review": [], "notes": None}
     out_path.write_text(json.dumps(payload), encoding="utf-8")
     sys.exit(0)
 sys.exit(1)
@@ -102,7 +102,7 @@ def test_real_subprocess_launch_under_scrubbed_env(
     assert payload["status"] == "completed"
     canonical = out_dir / "code_review_reply.json"
     assert canonical.exists()
-    assert json.loads(canonical.read_text(encoding="utf-8")) == {"section": "e2e-fixture", "review": []}
+    assert json.loads(canonical.read_text(encoding="utf-8")) == {"section": "e2e-fixture", "review": [], "notes": None}
 
 
 @pytest.mark.covers("FR-01.11/AC33")

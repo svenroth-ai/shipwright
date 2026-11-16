@@ -2,12 +2,13 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://shipwright.local/schemas/codex_code_review_schema.json",
   "title": "Codex code-reviewer output",
-  "description": "Pinned to plugins/shipwright-build/agents/code-reviewer.md's output contract. Passed to `codex exec --output-schema` for the Codex-driver internal-review transport (review_via_codex.py) and re-validated client-side after the process returns. Every genuinely optional field (line/suggestion/source) is still listed in `required` with a nullable type, per OpenAI strict-schema mode.",
+  "description": "Pinned to plugins/shipwright-build/agents/code-reviewer.md's output contract. Passed to `codex exec --output-schema` for the Codex-driver internal-review transport (review_via_codex.py) and re-validated client-side after the process returns. Every genuinely optional field (notes/line/suggestion/source) is still listed in `required` with a nullable type, per OpenAI strict-schema mode.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["section", "review"],
+  "required": ["section", "review", "notes"],
   "properties": {
     "section": { "type": "string" },
+    "notes": { "type": ["string", "null"] },
     "review": {
       "type": "array",
       "items": {

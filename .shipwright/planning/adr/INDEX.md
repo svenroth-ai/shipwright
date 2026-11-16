@@ -213,6 +213,7 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [Post-build per-AC check, phase 1 (warning only)](iterate-2026-11-07-ac-q2-post-build-check-per-ac-post-build-check.md)
 - [Skill inventory data and checker for the deterministic-first pilot](iterate-2026-11-14-p0-changelog-inventory-skill-inventory-checker.md)
 - [Architecture rules in stack profiles: rule format, loader, validation (campaign profile-architecture-rules, U1)](iterate-2026-11-15-u1-rule-format-rule-format.md)
+- [Honest rule wording, reviewer notes kept, hooks never bypassed](iterate-2026-11-16-arch-rules-followups-honest-rules-notes-hooks.md)
 - [A campaign unit's declared complexity is a floor](iterate-2026-11-16-campaign-declared-complexity-floor-declared-floor.md)
 - [Architecture-rule lint blocks survive the build phase](iterate-2026-11-16-eslint-rules-survive-build-eslint-rules-survive-build.md)
 - [Architecture rules reach agents through one render tool (campaign profile-architecture-rules, U2)](iterate-2026-11-16-u2-rules-reach-agents-rules-reach-agents.md)

@@ -21,7 +21,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 from lib import codex_review_transport as transport  # noqa: E402
 from lib.review_payloads import CANONICAL_PAYLOAD_BASENAMES  # noqa: E402
 
-VALID_CODE_REVIEW = {"section": "s1", "review": []}
+VALID_CODE_REVIEW = {"section": "s1", "review": [], "notes": None}
 
 
 def test_role_schemas_and_canonical_basenames_have_the_same_keys() -> None:

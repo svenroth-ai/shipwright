@@ -142,6 +142,9 @@ _Where the work detail lives_ at the end of this document.
 - (E) [AC35] Given a developer wants to add an architecture rule, when they read the building guide, then it explains the rule fields, the closed list of enforcement classes with the rule that a checking mechanism counts only if something runs it, where profiles live, how to re-render and the known limits, and its example rules pass the real rule loader.
 - (E) [AC36] Given a Supabase web app project whose lint configuration no longer carries the profile's architecture lint rules, when the build phase is checked, then every missing rule is reported as a failure that names the rule and the repair, a changed rule is only a warning, and the check passes once the rules are back.
 - (E) [AC37] Given the same project, when the repair is applied, then the missing rules are appended to the existing lint configuration without touching anything else, a second run changes nothing, and a configuration the tool cannot edit safely is reported and left untouched.
+- (E) [AC38] Given a stack profile rule carries a linter fragment, when the rules block is rendered into a project's conventions file, then the line says the fragment comes with the scaffold template and is enforced only where the project's linter config carries it, and never claims the rule is checked by the linter.
+- (E) [AC39] Given the code reviewer returns notes next to its findings (for example that the architecture check could not run), when its pass is recorded, then the notes are kept on the review record beside the findings, are never counted or treated as findings, and a reply without usable notes records exactly as before.
+- (E) [AC40] Given a campaign runner is briefed, when it reads its contract, then the contract states that git hooks are never bypassed: no skipping flag, no hooks-path override and no environment variable that disables them.
 
 <a id="fr-0102"></a>
 ### FR-01.02 — Project decomposition into scoped units

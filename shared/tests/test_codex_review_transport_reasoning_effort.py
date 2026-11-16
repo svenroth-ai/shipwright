@@ -21,7 +21,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 
 from lib import codex_review_transport as transport  # noqa: E402
 
-VALID_CODE_REVIEW = {"section": "s1", "review": []}
+VALID_CODE_REVIEW = {"section": "s1", "review": [], "notes": None}
 #: One schema-valid payload per role -- a single shared `VALID_CODE_REVIEW`
 #: shape written regardless of role would make `spec`/`doubt`/`plan_review`
 #: calls fail schema validation and return `status: "error"` silently, since

@@ -28,6 +28,7 @@ from .review_findings import (
     from_self_review,
     from_spec_reviewer,
 )
+from .review_notes import notes_fields
 from .review_verdict import CURRENT_REVIEWER_ROSTERS, HISTORICAL_REVIEWER_PAIRS, summarize_reviews
 
 __all__ = [
@@ -283,9 +284,9 @@ def unread_reply_warning(
 
 
 def entry_extras(args: Any) -> dict[str, Any]:
-    """The optional row fields a ``record`` call adds after ``make_entry``: the 3f-bis attestation and a spec pass's per-AC verdicts."""
+    """The optional row fields a ``record`` call adds after ``make_entry``: the 3f-bis attestation, a spec pass's per-AC verdicts and a code pass's reviewer notes."""
     extras = {k: v for k, v in (("verdict", args.verdict), ("reviewed_commit", args.reviewed_commit)) if v}
     legs = partial_legs_from_payload(args.review_from, args.payload_file) if args.status == "completed" else None
     if legs is not None:  # a one-reviewer pass keeps its missing legs on the authoritative row (repair-markers reads them)
         extras["partial_legs"] = legs
-    return {**extras, **verdict_fields(args.review_type, args.status, args.payload_file)}
+    return {**extras, **notes_fields(args), **verdict_fields(args.review_type, args.status, args.payload_file)}

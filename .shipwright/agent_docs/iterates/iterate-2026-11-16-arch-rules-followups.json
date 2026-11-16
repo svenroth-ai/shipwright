@@ -1,0 +1,67 @@
+{
+  "run_id": "iterate-2026-11-16-arch-rules-followups",
+  "date": "2026-11-16T09:47:35.310342Z",
+  "event_at": "2026-11-16T06:47:30.575878+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "keyword",
+  "branch": "iterate/arch-rules-followups",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-11-16-arch-rules-followups",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "rendered lint-fragment rule line is honest (scaffold-provided, conditional) and never claims a linter check",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_render_architecture_rules.py::test_scaffolded_conventions_carry_the_block PASSED; test_supabase_nextjs_rules_drift PASSED"
+      },
+      {
+        "behavior": "code-reviewer notes stored as reviewer_notes on the completed code row, not a finding, bounded",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_ac_verdicts_record.py notes tests PASSED"
+      },
+      {
+        "behavior": "reply without usable notes, other review types, not-run rows record no reviewer_notes",
+        "disposition": "tested",
+        "evidence": "test_ac_verdicts_record.py::test_a_code_reply_without_notes_or_with_unusable_notes_records_no_notes_key PASSED"
+      },
+      {
+        "behavior": "Codex code-review schema can carry notes",
+        "disposition": "tested",
+        "evidence": "test_ac_verdicts_record.py::test_a_codex_shaped_code_reply_carries_its_notes_and_a_null_note_records_none PASSED; codex transport tests PASSED"
+      },
+      {
+        "behavior": "runner contract forbids every git hook bypass",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-iterate/tests/test_runner_never_bypasses_hooks.py PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 5,
+      "tested": 5,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 3,
+      "covered_acs": 3
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run pytest shared/tests/test_ac_verdicts_record.py shared/tests/test_render_architecture_rules.py shared/tests/test_supabase_nextjs_rules_drift.py -q",
+    "exit_code": 0,
+    "tests_run": 85,
+    "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\arch-rules-followups\\.shipwright\\runs\\iterate-2026-11-16-arch-rules-followups\\surface_verification.log",
+    "timestamp": "2026-11-16T09:47:09.520Z",
+    "attempts": 1
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}
