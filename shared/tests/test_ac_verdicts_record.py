@@ -83,7 +83,7 @@ def test_an_unreadable_payload_yields_no_fields_instead_of_failing_the_record(tm
     assert av.verdict_fields("spec", "not_run", str(bad)) == {} and av.verdict_fields("spec", "completed", None) == {}
 
 
-@pytest.mark.covers("FR-01.01/AC37")
+@pytest.mark.covers("FR-01.01/AC39")
 def test_code_reviewer_notes_are_kept_beside_the_findings_and_are_not_findings(project, tmp_path):
     code, out = _record_spec(project, tmp_path, {"section": "x", "review": [], "notes": "architecture rules: conventions file unreadable, check did not run"}, review_type="code")
     assert code == 0, out
@@ -93,7 +93,7 @@ def test_code_reviewer_notes_are_kept_beside_the_findings_and_are_not_findings(p
     assert validate_record(read_record(project, RUN_ID)) == (True, None)
 
 
-@pytest.mark.covers("FR-01.01/AC37")
+@pytest.mark.covers("FR-01.01/AC39")
 def test_a_code_reply_without_notes_or_with_unusable_notes_records_no_notes_key(project, tmp_path):
     for i, reply in enumerate(({"review": []}, {"review": [], "notes": "   "}, {"review": [], "notes": ["x"]})):
         sub = tmp_path / str(i)
@@ -104,7 +104,7 @@ def test_a_code_reply_without_notes_or_with_unusable_notes_records_no_notes_key(
         assert "reviewer_notes" not in read_record(p, RUN_ID)["reviews"]["code"]
 
 
-@pytest.mark.covers("FR-01.01/AC37")
+@pytest.mark.covers("FR-01.01/AC39")
 def test_long_notes_are_bounded_and_other_review_types_never_carry_notes(project, tmp_path):
     code, out = _record_spec(project, tmp_path, {"review": [], "notes": "n" * 5000}, review_type="code")
     assert code == 0, out
@@ -117,7 +117,7 @@ def test_long_notes_are_bounded_and_other_review_types_never_carry_notes(project
     assert "reviewer_notes" not in read_record(p2, RUN_ID)["reviews"]["spec"]
 
 
-@pytest.mark.covers("FR-01.01/AC37")
+@pytest.mark.covers("FR-01.01/AC39")
 def test_a_codex_shaped_code_reply_carries_its_notes_and_a_null_note_records_none(project, tmp_path):
     schema = json.loads((_SHARED / "schemas" / "codex_code_review_schema.json").read_text(encoding="utf-8"))
     assert "notes" in schema["properties"] and "notes" in schema["required"]  # the Codex transport can emit it
@@ -132,7 +132,7 @@ def test_a_codex_shaped_code_reply_carries_its_notes_and_a_null_note_records_non
     assert "reviewer_notes" not in read_record(p2, RUN_ID)["reviews"]["code"]
 
 
-@pytest.mark.covers("FR-01.01/AC37")
+@pytest.mark.covers("FR-01.01/AC39")
 def test_notes_fields_in_process(tmp_path):
     from types import SimpleNamespace
 

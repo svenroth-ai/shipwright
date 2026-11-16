@@ -140,9 +140,11 @@ _Where the work detail lives_ at the end of this document.
 - (E) [AC33] Given the Shipwright repository uses its own project stack profile, when the profile named in each of its run, project and build configurations is resolved, then every one resolves to that project profile, which equals the bundled plugin profile on everything except its name, description and architecture rules, contains every bundled rule, adds only rules whose checking mechanisms exist and are run by something, and the repository's conventions file carries the current rendered rules block.
 - (E) [AC34] Given a project's conventions file carries a rules block, when the code reviewer checks a change, then it reports each violated rule by the rule's name, raises a finding for a judgement-only rule only with the rule and the offending line, skips with a plain note when the block says no rules are declared, and reports a stale or duplicated block as a finding instead of trusting it.
 - (E) [AC35] Given a developer wants to add an architecture rule, when they read the building guide, then it explains the rule fields, the closed list of enforcement classes with the rule that a checking mechanism counts only if something runs it, where profiles live, how to re-render and the known limits, and its example rules pass the real rule loader.
-- (E) [AC36] Given a stack profile rule carries a linter fragment, when the rules block is rendered into a project's conventions file, then the line says the fragment comes with the scaffold template and is enforced only where the project's linter config carries it, and never claims the rule is checked by the linter.
-- (E) [AC37] Given the code reviewer returns notes next to its findings (for example that the architecture check could not run), when its pass is recorded, then the notes are kept on the review record beside the findings, are never counted or treated as findings, and a reply without usable notes records exactly as before.
-- (E) [AC38] Given a campaign runner is briefed, when it reads its contract, then the contract states that git hooks are never bypassed: no skipping flag, no hooks-path override and no environment variable that disables them.
+- (E) [AC36] Given a Supabase web app project whose lint configuration no longer carries the profile's architecture lint rules, when the build phase is checked, then every missing rule is reported as a failure that names the rule and the repair, a changed rule is only a warning, and the check passes once the rules are back.
+- (E) [AC37] Given the same project, when the repair is applied, then the missing rules are appended to the existing lint configuration without touching anything else, a second run changes nothing, and a configuration the tool cannot edit safely is reported and left untouched.
+- (E) [AC38] Given a stack profile rule carries a linter fragment, when the rules block is rendered into a project's conventions file, then the line says the fragment comes with the scaffold template and is enforced only where the project's linter config carries it, and never claims the rule is checked by the linter.
+- (E) [AC39] Given the code reviewer returns notes next to its findings (for example that the architecture check could not run), when its pass is recorded, then the notes are kept on the review record beside the findings, are never counted or treated as findings, and a reply without usable notes records exactly as before.
+- (E) [AC40] Given a campaign runner is briefed, when it reads its contract, then the contract states that git hooks are never bypassed: no skipping flag, no hooks-path override and no environment variable that disables them.
 
 <a id="fr-0102"></a>
 ### FR-01.02 — Project decomposition into scoped units
@@ -1131,6 +1133,11 @@ _Where the work detail lives_ at the end of this document.
   naming it and never stops the change; and when finishing stops on an untagged test whose body changed, the message names
   both ways out: name the requirement the test proves, or add or extend a requirement in the same change.
   (iterate-2026-11-11-u1-tag-binding)
+- (E) [AC52] Given the operator declares a size for a unit of a hands-off multi-change run, when that unit is sized
+  at the start and again after its code exists, then the declared size is a floor: the code may raise it but never
+  lower it, so a declared medium unit with a small change still gets the full plan, architecture and doubt reviews;
+  the size recorded for the unit never sits below the declared one, and a unit that declares none is sized as before.
+  (iterate-2026-11-16-campaign-declared-complexity-floor)
 
 <a id="fr-0112"></a>
 ### FR-01.12 — Local project preview

@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "1. **Category:** approach \u00b7 **Severity:** high  \n   **Finding:** Marked fragments alone do not prove the architecture rules are active. A fragment can remain outside the exported configuration, or a later config entry can disable its rules. Reporting this as clean would preserve the silent-pass bug.  \n   **Suggestion:** Require each fragment to belong to the exported array and verify that later entries do not override its protected rules. Report configurations whose effective behavior cannot be established as findings.\n\n2. **Category:** risk \u00b7 **Severity:** high  \n   **Finding:** A comment/string-aware lexer is not necessarily sufficient to insert JavaScript safely. Regex literals and template interpolation can contain brackets or comment-like text; trailing comments and missing trailing commas also affect insertion. Re-inspection using the same lexer cannot independently establish that the generated configuration remains valid.  \n   **Suggestion:** Define a deliberately narrow supported syntax and refuse unsupported constructs. Cover regex literals, template interpolation, trailing comments, and arrays with and without trailing commas in fixtures; verify repaired fixtures independently with JavaScript parsing or ESLint.\n\n3. **Category:** edge-case \u00b7 **Severity:** medium  \n   **Finding:** Discovery and failure policies are underspecified. Multiple `eslint.config.*` files could cause the tool to repair a file ESLint does not use. Likewise, the proposed adopted-project warning could conflict with AC36 if it downgrades missing rules for a project that has the Supabase profile.  \n   **Suggestion:** Refuse ambiguous config discovery unless ESLint\u2019s selected file can be established. Specify verifier outcomes for missing, stale, unpaired, absent, legacy, and unresolved-profile states; ensure adopted status does not downgrade missing rules when the profile applies.\n\nThe shared inspection/repair library and existing build-verifier integration are appropriate and reasonably scoped. The approach needs explicit guarantees about active rules, safe JavaScript insertion, and failure classification before implementation.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "## Findings\n\n**Category: approach / risk \u2014 Severity: high**\n**Finding:** Parsing/editing `eslint.config.*` with a \"comment/string-aware lexer\" and refusing \"anything that is not plainly an array or defineConfig([...]) literal\" will bail on a meaningful share of real create-next-app output and user-edited configs: spreads (`...compat.extends(...)`), `await` at top level, `FlatCompat` usage, ternaries inside the array, or configs built with `.map()/.filter()`. That pushes projects into exit 3 (\"cannot edit safely\") \u2014 which is safe \u2014 but if the *checker* uses the same lexer, it may mis-classify an ok config as \"no-config/unparseable\" and produce false failures in the build verifier.\n**Suggestion:** Split the two concerns: the *check* should be tolerant (a robust text/AST search for the marker comments, no structural assumptions), and only *apply* needs the strict array-literal requirement. Consider a real parser (e.g. invoke node to parse once, or a vendored minimal AST via `esprima`-style dep only if justified) rather than a hand-rolled lexer.\n\n**Category: edge-case \u2014 Severity: medium**\n**Finding:** Appending the architecture fragments as the *last* array elements means they take precedence over all earlier config objects. If the project (or a later create-next-app template) deliberately configures `no-restricted-*` or `import/no-restricted-paths` differently, the repair silently overrides them \u2014 the exact class of \"silent config drift\" this change is meant to prevent, inverted.\n**Suggestion:** Document that last-wins is intended (profile rules must win), and have the checker report when it detects an existing *unmarked* rule that the appended fragment overrides, so the operator knows.\n\n**Category: edge-case \u2014 Severity: medium**\n**Finding:** `apply()` \"write only if re-inspection is clean\" is good, but there's no stated atomicity/backout for the write itself \u2014 partial writes on crash, or formatting destruction (the tool's rendering vs. prettier-formatted user file). A reformatted whole file by a Python tool is a diff bomb on the user's repo.\n**Suggestion:** Write via temp-file + atomic rename, and append-only edit strategy (insert before the closing `]`) rather than re-rendering the file, to minimize the diff.\n\n**Category: risk \u2014 Severity: medium**\n**Finding:** Turning on an ERROR in `run_build_checks` for missing fragments could break builds of *existing* projects whose configs were already overwritten before this fix shipped. The plan mentions \"WARNING for adopted projects\" \u2014 good \u2014 but \"adopted\" detection is the fragile part and isn't specified.\n**Suggestion:** Define \"adopted\" concretely (e.g. marker fragment present in scaffold-time snapshot / project metadata), and make sure the detection can't misclassify a genuinely regressed project as adopted.\n\n**Category: edge-case \u2014 Severity: low**\n**Finding:** `--replace-stale` as a separate flag means a default build failure for stale fragments gives no self-serve path in the verifier message; also `defineConfig` may be imported from `eslint/config` vs. plain arrays vs. `globalIgnores(...)` interleaved \u2014 ensure the insert point skips non-literal trailing elements (e.g. `globalIgnores([...])` call as last element is fine to append after).\n**Suggestion:** Have the ERROR message include the exact `--apply [--replace-stale]` command (step 4 says one sentence \u2014 make it include flags for the actual state).\n\n**Category: dependency \u2014 Severity: low**\n**Finding:** The repair depends on the profile's rendered fragments matching what the scaffold step wrote. \"Template drift against rendering\" is tested \u2014 good \u2014 but there's no stated mechanism keeping the lib's renderer and the template in sync over time beyond that test.\n**Suggestion:** Have the template and the tool share the same rendering code (or the test compares tool output to template output byte-for-byte, which it sounds like it does \u2014 state that explicitly).\n\n## Overall assessment\n\nThe direction is right \u2014 a deterministic check in the existing phase verifier plus a conservative, idempotent repair is the correct shape, and prose-only alternatives were correctly rejected. The main revision needed is decoupling the checker from the strict parser (to avoid false build failures) and tightening the append/write mechanics around precedence and formatting.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-11-16-eslint-rules-survive-build",
+    "at": "2026-11-16T09:06:38.185755+00:00"
+  },
+  "verdicts": {
+    "openai": "revise",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

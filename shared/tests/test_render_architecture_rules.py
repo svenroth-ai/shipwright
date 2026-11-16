@@ -43,7 +43,7 @@ def _run(project, capsys, *extra):
     return code, out, err
 
 
-@pytest.mark.covers("FR-01.01/AC36")
+@pytest.mark.covers("FR-01.01/AC38")
 def test_scaffolded_conventions_carry_the_block(project, capsys):
     write_profile(proj_dir(project), "demo-stack", architecture_rules=RULES)
     path = _scaffold(project)

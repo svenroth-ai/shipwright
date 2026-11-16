@@ -214,6 +214,8 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [Skill inventory data and checker for the deterministic-first pilot](iterate-2026-11-14-p0-changelog-inventory-skill-inventory-checker.md)
 - [Architecture rules in stack profiles: rule format, loader, validation (campaign profile-architecture-rules, U1)](iterate-2026-11-15-u1-rule-format-rule-format.md)
 - [Honest rule wording, reviewer notes kept, hooks never bypassed](iterate-2026-11-16-arch-rules-followups-honest-rules-notes-hooks.md)
+- [A campaign unit's declared complexity is a floor](iterate-2026-11-16-campaign-declared-complexity-floor-declared-floor.md)
+- [Architecture-rule lint blocks survive the build phase](iterate-2026-11-16-eslint-rules-survive-build-eslint-rules-survive-build.md)
 - [Architecture rules reach agents through one render tool (campaign profile-architecture-rules, U2)](iterate-2026-11-16-u2-rules-reach-agents-rules-reach-agents.md)
 - [supabase-nextjs architecture rules as rule objects, template examples obey them (campaign profile-architecture-rules, U3a)](iterate-2026-11-16-u3a-supabase-rules-supabase-rules.md)
 - [ESLint config template for supabase-nextjs scaffolds (campaign profile-architecture-rules, U3b)](iterate-2026-11-16-u3b-eslint-template-eslint-template.md)

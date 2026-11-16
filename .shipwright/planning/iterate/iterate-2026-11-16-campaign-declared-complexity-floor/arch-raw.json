@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "1. **Yes** \u2014 but barely: this is one spec line and one JSON field flowing into machinery that already exists; it adds no new standing mechanism worth the name.\n\n2. **Smallest thing that would do:** exactly Option A \u2014 a `Complexity:` line in the unit spec, read as a floor by the two existing classification steps, and one `declared_complexity` field in the existing `risk_recheck.json` that the existing F11 check compares. Nothing else: no new gate, no new workflow, no new storage.\n\n3. **What it costs to keep:** the classification code must forever honor a declared floor when present and behave identically when absent; the planner must validate the level before writing; F11 must reason about three tiers (declared floor, F5c, effective). That is the whole obligation, and it is already pinned by the existing gates.\n\n4. **What it forecloses:** none identified. If size rules later change (Option C territory), the floor composes with them rather than blocking them. The refusal to re-derive at F11 keeps the recheck record a transcription check, which avoids coupling F11 to campaign parsing \u2014 a good line to hold.\n\n5. Options B (CLI override) is ephemeral and invisible in the artifact, which is what caused this bug; D leaves the guarantee dependent on a human remembering. C is a policy change with project-wide blast radius for a campaign-local need. A is the right call.\n\nNo findings.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. Yes\u2014option A should exist as a small extension to existing classification machinery so an operator\u2019s declared minimum survives automatic reassessment.\n\n2. The smallest thing that would do is the proposed optional `Complexity:` line, applied as a floor in both existing classification steps, with `declared_complexity` carried into the existing recheck record and checked at finalization. This keeps the declaration with the unit; a command-line override would make its preservation depend on each invocation.\n\n3. The ongoing obligation is maintaining consistent complexity levels and floor semantics across the planner, classifier, recheck and finalization check. Existing framework maintenance owns this; no separate service or human monitoring is introduced.\n\n4. It forecloses automatically downgrading an explicitly declared unit without editing its declaration. That is the intended constraint; none else identified.\n\n5. No findings.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "architecture",
+  "capture": {
+    "run_id": "iterate-2026-11-16-campaign-declared-complexity-floor",
+    "at": "2026-11-16T09:09:49.127518+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "approve"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}

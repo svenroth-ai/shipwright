@@ -70,7 +70,7 @@
           "category": "boundary & contract",
           "file": "shared/schemas/codex_code_review_schema.json",
           "line": null,
-          "finding": "Claim under doubt: AC37: notes are kept on the review record — The Codex transport's strict code-review schema has additionalProperties false and no notes key, so a Codex-answered review cannot carry notes. ADDRESSED: notes added (nullable, required per strict mode) to the schema, fixtures updated, test added.",
+          "finding": "Claim under doubt: AC39: notes are kept on the review record — The Codex transport's strict code-review schema has additionalProperties false and no notes key, so a Codex-answered review cannot carry notes. ADDRESSED: notes added (nullable, required per strict mode) to the schema, fixtures updated, test added.",
           "suggestion": "Add notes to the Codex schema and test it.",
           "source": "doubt-reviewer"
         },

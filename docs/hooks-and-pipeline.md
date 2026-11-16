@@ -863,7 +863,14 @@ integrity check, not independent re-verification** — a runner could still edit
 `risk_recheck.json` itself before F6; closing that residual would need an
 independently reproducible fingerprint or a re-run of the detectors at F11,
 consistent with every other runner-contract step being contract-enforced
-rather than independently gated.
+rather than independently gated. **The operator's declared unit tier is a floor
+(iterate-2026-11-16-campaign-declared-complexity-floor, FR-01.11 AC52).**
+`campaign_init.py` writes a unit's `complexity` into its spec as a `Complexity:`
+header line; the runner's Stage 1 (`classify_complexity.py --spec`) and Step 3.4
+(`diff_risk_recheck.py --spec`) both take `max(derived, declared)` and the block
+carries `declared_complexity`, which the same F11 gate holds `effective_complexity`
+to. A unit declaring nothing is sized as before; a runner that omits `--spec`
+(for example from a stale plugin cache) is a stated residual, not detected.
 
 **A row THIS run touches is held to `fr-authoring.md` for real
 (iterate-2026-09-06-fr-hygiene-touched-rows).** Group I's substantive checks —
@@ -6036,6 +6043,8 @@ shared/scripts/tools/
     plan_gate_checks.py            # The four Step-9 gates: dependency order, FR coverage,
                                    #   section->requirement trace, section quality — appended to run_plan_checks
     build_checks.py                # Build phase-own + canon hybrid + check-plan B3/B6 imports      — 12.3
+    eslint_rules_check.py          # Build: the profile's architecture-rule ESLint blocks survived the
+                                   #   app creation (`eslint_architecture_rules_present`; no hook change)
     test_checks.py                 # Test phase-own + canon (skip C4+C5)         — 12.4
     changelog_checks.py            # Changelog canon + git-tag/version Sonder-Checks — 12.4
     deploy_checks.py               # Deploy phase-own + canon (skip C4+C5)       — 12.4
@@ -6065,7 +6074,7 @@ Legend: ✅ present · ⏭ skip by policy · n/a not applicable
 | **project** | ✅ | ✅ | ✅ (canon-marker) | ✅ (Step 7) | ✅ | ✅ | `project_checks.py` | `_validate_project` |
 | **design** | ✅ | ✅ | ✅ (canon-marker) | ⏭ transformation | ✅ | ✅ | `design_checks.py` + FR coverage (check-plan C1 import) | `_validate_design` |
 | **plan** | ✅ | ✅ | ✅ (canon-marker) | ✅ (Step 2/5) | ⏭ internal | ✅ | `plan_checks.py` + section-manifest/FR-orphan/section-id (check-plan C2/C3/C4 imports) + `plan_gate_checks.py` (dependency order, FR coverage, section trace, section quality) | `_validate_plan` |
-| **build** | ✅ per section | ✅ per section | ✅ phase-level | ✅ per section | ✅ phase-level (one bullet per section) | ✅ with `sections[]` sub-array | `build_checks.py` + B3 test-files + B6 commit-sha (check-plan imports) | `_validate_build` |
+| **build** | ✅ per section | ✅ per section | ✅ phase-level | ✅ per section | ✅ phase-level (one bullet per section) | ✅ with `sections[]` sub-array | `build_checks.py` + B3 test-files + B6 commit-sha (check-plan imports) + `eslint_architecture_rules_present` (skipped unless the profile has an ESLint rule; error: a missing, unpaired or out-of-array block once `package.json` exists; warning: stale block, legacy `.eslintrc*` only, config code after the blocks; repair: `check_eslint_architecture_rules.py --apply`, also named in build Step 12) | `_validate_build` |
 | **test** | ✅ (`phase_completed` alongside `test_run`) | ✅ | ✅ (canon-marker) | ⏭ events, not decisions | ⏭ results in `shipwright_test_results.json` | ✅ | `test_checks.py` + `check_test_results_file_fresh` | `_validate_test` |
 | **changelog** | ✅ | ✅ | ✅ (canon-marker) | ⏭ process management | n/a (plugin owns prepend) | ✅ | `changelog_checks.py` + `check_git_tag_exists` + `check_changelog_version_matches_tag` Sonder-Checks | `_validate_changelog` |
 | **deploy** | ✅ | ✅ | ✅ (canon-marker) | ⏭ execution | ⏭ operational history | ✅ | `deploy_checks.py` + `check_test_gate_passed` phase-own | `_validate_deploy` |

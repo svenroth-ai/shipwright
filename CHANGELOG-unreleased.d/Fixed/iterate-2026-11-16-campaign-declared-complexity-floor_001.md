@@ -1,0 +1,1 @@
+fix(iterate): a campaign unit's declared complexity is now a floor - the planner writes it into the unit spec, Stage 1 and the diff-driven risk re-check may raise it but never lower it, and the finalization gate holds the recorded tier to it, so a medium unit with a small diff still gets the plan, architecture and doubt reviews

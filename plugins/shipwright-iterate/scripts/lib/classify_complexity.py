@@ -19,6 +19,7 @@ if _LIB_DIR not in sys.path:
     sys.path.insert(0, _LIB_DIR)
 
 from complexity_history import load_history_prior  # noqa: E402
+from declared_complexity import apply_floor, read_declared_complexity  # noqa: E402
 from complexity_vocabulary import (  # noqa: E402, F401 — re-exported surface
     COMPLEXITY_ORDER, SCOPE_LARGE_KEYWORDS, SCOPE_MEDIUM_KEYWORDS,
     SCOPE_SMALL_KEYWORDS, estimate_scope, match_scope_keyword,
@@ -37,6 +38,7 @@ from risk_detectors import (  # noqa: E402, F401 — re-exported surface
 # references and tests. Lives in its own module (it only ever grows);
 # re-exported here so existing importers keep resolving it.
 from risk_taxonomy import RISK_TAXONOMY  # noqa: E402, F401 — re-exported surface
+from cross_split_detect import detect_cross_split  # noqa: E402, F401 — re-exported surface
 
 
 def _complexity_index(level: str) -> int:
@@ -62,49 +64,16 @@ def detect_risk_flags(message: str) -> list[dict]:
     return flags
 
 
-def detect_cross_split(
-    message: str, sync_config_path: str | None
-) -> dict | None:
-    """Check if change spans multiple planning splits."""
-    if not sync_config_path:
-        return None
-    try:
-        # WP8/F24: utf-8-sig (BOM-tolerant) — non-ASCII FR titles otherwise crash on cp1252.
-        config = json.loads(Path(sync_config_path).read_text(encoding="utf-8-sig"))
-    except (FileNotFoundError, json.JSONDecodeError, UnicodeDecodeError):
-        return None
-
-    msg_lower = message.lower()
-    splits_hit = set()
-    for mapping in config.get("mappings", []):
-        pattern = mapping.get("pattern", "")
-        parts = re.findall(r"\w+", pattern)
-        for part in parts:
-            if part.lower() in msg_lower and len(part) > 3:
-                for fr in mapping.get("frs", []):
-                    # FR format: FR-NN.XX — extract split number
-                    m = re.match(r"FR-(\d+)\.", fr)
-                    if m:
-                        splits_hit.add(m.group(1))
-                break
-
-    if len(splits_hit) >= 2:
-        flag_def = RISK_TAXONOMY["cross_split"]
-        return {
-            "flag": "cross_split",
-            "min_complexity": flag_def["min_complexity"],
-            "enforces": flag_def["enforces"],
-            "splits": sorted(splits_hit),
-        }
-    return None
-
-
 def classify(
     message: str,
     sync_config_path: str | None = None,
     project_root=None,
+    declared_complexity: str | None = None,
 ) -> dict:
     """Stage 1: Quick complexity estimate from prompt + risk flags.
+
+    A campaign unit's declared complexity (``declared_complexity``; the CLI reads
+    it from ``--spec``) is a FLOOR: it can raise the estimate, never lower it.
 
     Canonical, history-aware path (estimate_scope = legacy vocabulary-only).
     Scope precedence: keyword match > history prior > trivial default;
@@ -143,6 +112,9 @@ def classify(
     else:
         estimate = scope_estimate
 
+    declared = declared_complexity  # validated (ValueError) by apply_floor
+    estimate = apply_floor(estimate, declared)
+
     # Confidence scoring
     confidence = 0.5
     if risk_flags:
@@ -170,6 +142,7 @@ def classify(
             "history_prior": history["prior"] if history else None,
             "history_n": history["n"] if history else 0,
             "risk_floor": effective_min,
+            "declared_complexity": declared,
             "cross_split": cross_split is not None,
             "has_sync_config": (
                 sync_config_path is not None
@@ -193,9 +166,20 @@ def main():
         help="Enables the history prior from .shipwright/agent_docs/iterates/",
     )
     parser.add_argument("--run-id", help="Persist the session plan under .shipwright/ (requires --project-root; no-ops otherwise)")
+    parser.add_argument(
+        "--spec", help="The unit's sub-iterate spec; its 'Complexity:' line is a floor",
+    )
     args = parser.parse_args()
+    try:
+        declared = read_declared_complexity(args.spec)
+    except (OSError, ValueError) as exc:
+        print(f"classify_complexity: {exc}", file=sys.stderr)
+        sys.exit(2)
 
-    result = classify(args.message, args.sync_config, args.project_root)
+    result = classify(
+        args.message, args.sync_config, args.project_root,
+        declared_complexity=declared,
+    )
     print(json.dumps(result, indent=2))
     # Additive, opt-in: persist the WebUI session plan (never perturbs stdout;
     # fail-soft so a persist error can't abort the iterate session).

@@ -1,0 +1,9 @@
+{"items": [
+{"name":"Spec Compliance","verdict":"pass","note":"AC36 (verifier: error for missing/unpaired/outside, warning for stale) and AC37 (append, idempotent, refuse unsafe) are covered by 30 tests; no new FR."},
+{"name":"Error Handling","verdict":"pass","note":"Unreadable or unsupported config, damaged markers, unresolved profile: reported, nothing written; verifier skips on unresolved profile."},
+{"name":"Security Basics","verdict":"pass","note":"Only the validated lint.block is spliced, as json.dumps data; atomic write; no commands, no network."},
+{"name":"Test Quality","verdict":"pass","note":"Verbatim Next 15 and Next 16 configs, CRLF, regex/template brackets, refusal cases, CLI exit codes, byte-equality idempotency."},
+{"name":"Performance Basics","verdict":"pass","note":"One small file read and one lex pass."},
+{"name":"Naming & Structure","verdict":"pass","note":"Lib + CLI + own verifier module; build_checks.py only gains an import and one call (bloat headroom)."},
+{"name":"Affected Boundaries","verdict":"pass","note":"eslint.config.* written by create-next-app, step 7 and the repair tool; read by the check and ESLint. Round-trip: apply output re-checked ok in tests."},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"tmp_path only, no shared state, default tier."}]}

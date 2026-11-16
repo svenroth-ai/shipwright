@@ -2,7 +2,7 @@
 {"name":"correctness","verdict":"pass","note":"render wording, notes carry-through, runner sentence; tests pass"},
 {"name":"tests","verdict":"pass","note":"render/drift tests updated, 3 new record tests, runner contract test"},
 {"name":"security","verdict":"n/a","note":"no input handling beyond bounded string"},
-{"name":"scope","verdict":"pass","note":"no FR minted; AC36-38 under FR-01.01"},
+{"name":"scope","verdict":"pass","note":"no FR minted; AC38-40 under FR-01.01"},
 {"name":"docs","verdict":"pass","note":"stack-profiles.md updated; building doc statement already compatible"},
 {"name":"style","verdict":"pass","note":"ruff clean"},
 {"name":"affected-boundaries","verdict":"pass","note":"review record schema additive optional string; adapter unchanged"}]}

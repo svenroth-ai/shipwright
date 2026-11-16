@@ -1,0 +1,10 @@
+{"items": [
+{"name": "Spec Compliance", "verdict": "pass", "note": "All four spec ACs covered by tests; AC52 added to the owning FR."},
+{"name": "Error Handling", "verdict": "pass", "note": "Unreadable --spec and unknown level exit non-zero with a message; absent declaration unchanged."},
+{"name": "Security Basics", "verdict": "pass", "note": "Spec read only from an explicit path; strict full-line regex; no shell interpolation added."},
+{"name": "Test Quality", "verdict": "pass", "note": "Real planner output, real CLIs, real git repo and the registered gate; floor-not-pin and legacy-record cases included."},
+{"name": "Performance Basics", "verdict": "n/a", "note": "One small file read per classification."},
+{"name": "Naming & Structure", "verdict": "pass", "note": "New helpers split out of files at their bloat caps; campaign_init, diff_risk_recheck, sub-iterate-runner.md, campaign-mode.md do not grow."},
+{"name": "Affected Boundaries", "verdict": "pass", "note": "Planner to parser round trip and recheck record to F11 gate both exercised end to end."},
+{"name": "Test Hygiene Probe", "verdict": "pass", "note": "scan_test_hygiene --diff: no findings."}
+]}
