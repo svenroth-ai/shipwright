@@ -1,6 +1,6 @@
 {
   "name": "shipwright-monorepo",
-  "description": "Project profile of the Shipwright repository itself: a copy of the bundled claude-plugin profile (same Python toolchain, same plugin-project architecture rules) plus the rules that name mechanisms which exist only in this repository: the root conftest.py test-root guard, the pre-commit bloat anti-ratchet hook and the size baseline shipwright_bloat_baseline.json. It lives in .shipwright/profiles/ and replaces nothing bundled; other plugin repositories use claude-plugin. The notes copied from claude-plugin are written for other repositories; where one differs from a rule added for this repository (the no-bare-python-stdin path exists here, and hooks.json quoting is tested here), the added rule takes precedence.",
+  "description": "Project profile of the Shipwright repository itself: a copy of the bundled claude-plugin profile (same Python toolchain, same plugin-project architecture rules) plus rules for mechanisms that exist only in this repository (test-root guard, bloat checks, hooks.json quoting test). It lives in .shipwright/profiles/ and replaces nothing bundled; other plugin repositories use claude-plugin. The notes copied from claude-plugin are written for other repositories; where one differs from a rule added for this repository, the added rule takes precedence.",
   "version": "0.1.0",
   "stack": {
     "runtime": {
@@ -86,7 +86,7 @@
       "mechanism": [
         "conftest.py"
       ],
-      "note": "The repository-root conftest.py refuses a session that selects more than one test root (exit 4). It runs only when the repository root is pytest's rootdir: a session started inside a plugin folder never loads it, and CI runs one root per process from the repository root."
+      "note": "The repository-root conftest.py refuses a session that selects more than one test root (exit 4). It loads only when the repository root is pytest's rootdir: CI runs the shared and integration roots from the repository root, but runs each plugin root from its own folder, where the guard does not load. One root per process holds in CI because the workflow loops over the roots, not because the guard fires there."
     },
     {
       "id": "bloat-anti-ratchet-pre-commit",
@@ -111,13 +111,14 @@
     },
     {
       "id": "bloat-stop-gate-new-crossings",
-      "text": "A Claude Code session that leaves a file over its size limit without a baseline entry, or a baseline entry grown past its recorded value, does not stop until that is fixed.",
+      "text": "A Claude Code session that edited a file with the Write or Edit tool (recorded in the last hour) and left it over its size limit without a baseline entry, or grown past its recorded entry, does not stop until that is fixed.",
       "why": "A new oversized file is cheapest to split while the agent that wrote it still has the context.",
       "enforcement": "hook",
       "mechanism": [
+        "shared/scripts/hooks/check_file_size.py",
         "shared/scripts/hooks/bloat_gate_on_stop.py"
       ],
-      "note": "A Stop hook registered by every Shipwright plugin: it blocks the session's stop on a new crossing outside the baseline or a grown entry. It runs only in Claude Code sessions where a Shipwright plugin is active, it fails open on its own errors, and it does not run at merge."
+      "note": "The detector check_file_size.py (PostToolUse on Write and Edit) records the file, and the Stop hook bloat_gate_on_stop.py blocks the session's stop on it; both are registered by the 12 plugins that carry a hooks.json. Not covered: changes made through Bash or PowerShell (sed, generators, git merge or checkout) and edits made by subagents. The session marker expires after an hour, the baseline ceiling is read from the worktree's own baseline file, the hook is session-only and fails open on its own errors, and it does not run at merge."
     },
     {
       "id": "bloat-baseline-discipline",
@@ -135,6 +136,12 @@
         "shared/tests/test_hooks_json_quoting.py"
       ],
       "note": "A shared test, run by CI, checks every hooks.json of the repository; it exists only here, which is why the bundled rule hooks-resolve-plugin-root stays instruction only."
+    },
+    {
+      "id": "profile-copy-notes-for-this-repo",
+      "text": "In this repository the mechanism path of the rule no-bare-python-stdin exists and this profile keeps it, and the rule hooks-resolve-plugin-root is checked here by the rule hooks-json-quote-plugin-root; the notes of those two rules that speak to other repositories do not apply here.",
+      "why": "This profile is a pinned copy of claude-plugin, so the bundled notes are kept word for word and would otherwise mislead an agent working in this repository.",
+      "enforcement": "prompt-only (judgement)"
     }
   ]
 }

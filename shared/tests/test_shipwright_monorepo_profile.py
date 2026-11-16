@@ -17,7 +17,15 @@ pytestmark = pytest.mark.covers("FR-01.01/AC33")
 ROOT = Path(__file__).resolve().parents[2]
 NAME, BUNDLED, GENERIC = "shipwright-monorepo", "claude-plugin", "python-plugin-monorepo"
 OWN = ("name", "description", "architecture_rules")
-REPO_ONLY = {"one-pytest-root-per-process", "bloat-anti-ratchet-pre-commit", "bloat-no-growth-past-baseline-in-ci", "bloat-baseline-discipline", "bloat-stop-gate-new-crossings", "hooks-json-quote-plugin-root"}
+REPO_ONLY = {
+    "one-pytest-root-per-process",
+    "bloat-anti-ratchet-pre-commit",
+    "bloat-stop-gate-new-crossings",
+    "bloat-no-growth-past-baseline-in-ci",
+    "bloat-baseline-discipline",
+    "hooks-json-quote-plugin-root",
+    "profile-copy-notes-for-this-repo",
+}
 CONFIGS = ("shipwright_run_config.json", "shipwright_project_config.json", "shipwright_build_config.json")
 
 
@@ -68,7 +76,10 @@ def test_copy_contains_every_bundled_rule_unchanged_and_adds_repo_only_ones():
 def test_repo_only_mechanism_paths_exist_and_validate_against_the_repo_root():
     rs = par.load_rules(_own()["architecture_rules"])
     by_id = {r.id: r for r in rs.rules}
-    for rid in REPO_ONLY - {"bloat-baseline-discipline"}:
+    for rid in sorted(REPO_ONLY):
+        if by_id[rid].enforcement.startswith("prompt-only"):
+            assert not by_id[rid].mechanism, rid
+            continue
         assert by_id[rid].mechanism, rid
         for path in by_id[rid].mechanism:
             assert (ROOT / path).is_file(), path
@@ -83,7 +94,8 @@ def test_each_repo_only_mechanism_is_invoked_by_something():
     assert "anti_ratchet_check.py" in wf and "shipwright_bloat_baseline.json" in wf and "exit 1" in wf
     ci = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
     assert "shared/tests" in ci and "pytest" in ci
-    assert "bloat_gate_on_stop.py" in (ROOT / "plugins" / "shipwright-iterate" / "hooks" / "hooks.json").read_text(encoding="utf-8")
+    hooks = (ROOT / "plugins" / "shipwright-iterate" / "hooks" / "hooks.json").read_text(encoding="utf-8")
+    assert "bloat_gate_on_stop.py" in hooks and "check_file_size.py" in hooks
     conftest = (ROOT / "conftest.py").read_text(encoding="utf-8")
     assert "def pytest_sessionstart" in conftest and "raise pytest.UsageError" in conftest and "len(roots) > 1" in conftest
     install = (ROOT / "scripts" / "install-hooks.sh").read_text(encoding="utf-8")
