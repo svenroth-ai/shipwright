@@ -133,151 +133,149 @@
     "code": {
       "review_type": "code",
       "status": "completed",
-      "findings_count": 7,
+      "findings_count": 9,
       "findings": [
         {
-          "severity": "high",
-          "category": "correctness",
+          "severity": "medium",
+          "category": null,
           "file": "shared/testkit/release_scratch.py",
-          "line": null,
-          "finding": "_path_without_real_gh removed every PATH folder holding a gh, which drops /usr/bin on Linux CI and breaks git and sh lookups.",
-          "suggestion": "Never remove folders; put the shim folder first and keep git reachable (test it). FIXED in f457cd7.",
+          "line": 1,
+          "finding": "stray real gh may use keyring token; set dummy GH_TOKEN (queued for P2b1)",
+          "suggestion": null,
           "source": "code-reviewer"
         },
         {
           "severity": "medium",
-          "category": "correctness",
-          "file": "shared/testkit/golden_trace.py",
-          "line": null,
-          "finding": "The recorder ran git under the test process environment: inherited GIT_DIR and user git config could change the trace.",
-          "suggestion": "Hermetic git environment (no GIT_*, empty global config, no system config, quotePath off); hostile-config test. FIXED in f457cd7.",
+          "category": null,
+          "file": "shared/testkit/release_scratch.py",
+          "line": 1,
+          "finding": "uv cache lost on Linux with replaced HOME (queued for P2b1)",
+          "suggestion": null,
           "source": "code-reviewer"
         },
         {
           "severity": "medium",
-          "category": "correctness",
-          "file": "shared/testkit/golden_trace.py",
-          "line": null,
-          "finding": "Inline release notes given with the short flag -n were not masked.",
-          "suggestion": "Treat -n like --notes and test it. FIXED in f457cd7.",
+          "category": null,
+          "file": "shared/tests/test_golden_trace.py",
+          "line": 1,
+          "finding": "AC14 tag on all harness tests inflates coverage (queued)",
+          "suggestion": null,
           "source": "code-reviewer"
         },
         {
           "severity": "low",
-          "category": "correctness",
-          "file": "shared/testkit/golden_trace.py",
-          "line": null,
-          "finding": "Short SHAs were replaced before path labels, so a hex run inside a path could survive.",
-          "suggestion": "Normalize paths first, then short SHAs. FIXED in f457cd7.",
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": "correctness",
-          "file": "shared/testkit/golden_trace.py",
-          "line": null,
-          "finding": "diff-tree output was quoted for non-ASCII paths, dropping their blobs.",
-          "suggestion": "core.quotePath=false plus a non-ASCII path test. FIXED in f457cd7.",
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": "correctness",
+          "category": null,
           "file": "shared/testkit/gh_stub.py",
-          "line": null,
-          "finding": "Fidelity limits (release create without --verify-tag, missing notes file exit code) were undocumented.",
-          "suggestion": "Document in the docstring. FIXED in f457cd7.",
+          "line": 1,
+          "finding": "per-command short flags",
+          "suggestion": null,
           "source": "code-reviewer"
         },
         {
           "severity": "low",
-          "category": "readability",
-          "file": "shared/tests/test_gh_stub.py",
-          "line": null,
-          "finding": "Function-level imports, extra blank line and a vacuous assertion in the bare-gh test.",
-          "suggestion": "Module imports; assert the shim folder. FIXED in f457cd7.",
+          "category": null,
+          "file": "shared/testkit/release_scratch.py",
+          "line": 1,
+          "finding": "GIT_CONFIG_NOSYSTEM no effect",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": "shared/testkit/gh_stub.py",
+          "line": 1,
+          "finding": "merge subprocess encoding",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": "shared/testkit/golden_trace.py",
+          "line": 1,
+          "finding": "leaked temp file",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": "shared/testkit/golden_trace.py",
+          "line": 1,
+          "finding": "PR body unmasked",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": "shared/tests/test_golden_trace.py",
+          "line": 1,
+          "finding": "weak A-or-B assertion",
+          "suggestion": null,
           "source": "code-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-11-17T13:11:53.614329+00:00",
+      "completed_at": "2026-11-17T13:59:46.739884+00:00",
       "disposition": null,
       "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "4ce6ecc75570526e95406a99eff242e3832dcab2"
+      "reviewed_commit": "e891f917f9425a8da77284fd0855a5fef894a925"
     },
     "doubt": {
       "review_type": "doubt",
       "status": "completed",
-      "findings_count": 6,
+      "findings_count": 4,
       "findings": [
         {
-          "severity": "high",
-          "category": "boundary & contract",
-          "file": "shared/testkit/release_scratch.py",
+          "severity": null,
+          "category": null,
+          "file": null,
           "line": null,
-          "finding": "Claim under doubt: a scenario process can never reach a real gh or the network — On Windows CreateProcess finds gh.exe through the parent PATH and ignores the shim; several unseamed scripts call bare gh; uv and urllib children are not fenced.",
-          "suggestion": "PARTLY RESOLVED in 472a9ea: GH_HOST=gh.invalid, empty GH_CONFIG_DIR and empty user home, the GitHub CLI's own PATH folder dropped, claim narrowed to git in the docstring. RESIDUAL (disclosed): on Windows a bare unseamed gh.exe is still found through the parent PATH; the P2b replay driver must route every gh through the seam and assert no gh call outside the argv log.",
+          "finding": "Claim under doubt: stub merge leaves local main behind so push-tags diverges from real gh — see doubt review",
+          "suggestion": null,
           "source": "doubt-reviewer"
         },
         {
-          "severity": "high",
-          "category": "hidden coupling",
-          "file": "shared/testkit/golden_trace.py",
+          "severity": null,
+          "category": null,
+          "file": null,
           "line": null,
-          "finding": "Claim under doubt: a wrong tag target or an extra commit always changes the trace — Refs were subject@depth only and only the first-parent line of HEAD was walked: an amend after tagging, or an extra commit on a merged and deleted branch, left the trace unchanged.",
-          "suggestion": "RESOLVED in 472a9ea: every ref target carries a digest of the commit's changed paths, and all_commits lists every commit reachable from any ref of the repo and of origin; two tests added.",
+          "finding": "Claim under doubt: freeze checker files themselves can be gutted by same diff — see doubt review",
+          "suggestion": null,
           "source": "doubt-reviewer"
         },
         {
-          "severity": "high",
-          "category": "reversibility / contract",
-          "file": "plugins/shipwright-changelog/tests/golden/test_trace_freeze.py",
+          "severity": null,
+          "category": null,
+          "file": null,
           "line": null,
-          "finding": "Claim under doubt: the freeze cannot be bypassed by a normal diff — A diff may re-pin a trace and its lock hash, write an approved delta with any approver, or weaken the checker file; a trace under a subfolder escaped the check.",
-          "suggestion": "PARTLY RESOLVED in 472a9ea: the checker file is a required lock member and traces are found recursively. RESIDUAL (accepted, written in the test docstring, handed to the operator procedure): re-pinning and self-approval need a sensitive-path rule or CODEOWNERS on the lock and deltas paths; no test can stop them.",
+          "finding": "Claim under doubt: PR body unmasked in trace — see doubt review",
+          "suggestion": null,
           "source": "doubt-reviewer"
         },
         {
-          "severity": "medium",
-          "category": "hidden coupling",
-          "file": "shared/testkit/release_scratch.py",
+          "severity": null,
+          "category": null,
+          "file": null,
           "line": null,
-          "finding": "Claim under doubt: the environment is hermetic and runs are reproducible across machines — The real HOME leaked profile resolution and an operator key file path.",
-          "suggestion": "RESOLVED in 472a9ea: HOME, USERPROFILE and XDG_CONFIG_HOME point at an empty directory inside the scratch; a test checks Path.home() of a child.",
-          "source": "doubt-reviewer"
-        },
-        {
-          "severity": "medium",
-          "category": "concurrency & ordering",
-          "file": "shared/testkit/golden_trace.py",
-          "line": null,
-          "finding": "Claim under doubt: byte-identical traces on Windows and Linux — The Git Bash form of a path (/c/Users/...) was not normalized; Path.glob is case-insensitive on Windows only.",
-          "suggestion": "PARTLY RESOLVED in 472a9ea: the Git Bash path form is normalized and tested. RESIDUAL (low): file globs for the files option follow the platform's case rule.",
-          "source": "doubt-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": "boundary & contract",
-          "file": "shared/testkit/gh_stub.py",
-          "line": null,
-          "finding": "Claim under doubt: the stub refuses rather than guesses — Unknown long valued flags leaked their value into the positionals.",
-          "suggestion": "RESOLVED in 472a9ea: a long flag outside the per-command list is refused (exit 2); the timeout-kill gap is documented.",
+          "finding": "Claim under doubt: stub ignores --repo — see doubt review",
+          "suggestion": null,
           "source": "doubt-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-11-17T13:19:53.175772+00:00",
+      "completed_at": "2026-11-17T13:59:39.066696+00:00",
       "disposition": null,
       "recorded_by": "doubt-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "f457cd7457c698c5f77685769e37dc49d1e92672"
+      "reviewed_commit": "e891f917f9425a8da77284fd0855a5fef894a925"
     },
     "external_code": {
       "review_type": "external_code",
@@ -374,30 +372,13 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-11-17T13:02:53.453319+00:00",
+      "completed_at": "2026-11-17T13:59:38.796598+00:00",
       "disposition": null,
       "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "ce59c83cf45bf138dea975f25360c7b9eaca0985",
-      "ac_verdicts": [
-        {
-          "ac": "FR-01.09.AC14",
-          "verdict": "matches",
-          "diff_location": "shared/tests/test_gh_stub.py:1004",
-          "reason": "The diff only adds test support, tests and one doc paragraph, and changes no release-page behaviour; the covers-tagged test runs the unchanged create_github_release.py through the stub.",
-          "weakens": false
-        },
-        {
-          "ac": "FR-01.09.AC15",
-          "verdict": "matches",
-          "diff_location": "shared/testkit/gh_stub.py:387",
-          "reason": "No production code is touched; the stub only provides the failure path later scenarios will use.",
-          "weakens": false
-        }
-      ]
+      "reviewed_commit": "e891f917f9425a8da77284fd0855a5fef894a925"
     },
     "plan_internal": {
       "review_type": "plan_internal",
