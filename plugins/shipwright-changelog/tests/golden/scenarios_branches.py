@@ -47,10 +47,10 @@ def _check_s14a(run: Run) -> None:
     assert _on_origin(s, "refs/heads/release/fresh")
     # ... and `git push --tags origin main` pushes a local main that never got the release (stale), the tag goes with it
     assert _on_origin(s, "refs/tags/v1.3.0") and run.step("push-tags").exit_code == 0
-    assert s.run(["git", "--git-dir", s.origin.as_posix(), "merge-base", "--is-ancestor", "v1.3.0", "main"]).returncode != 0
+    assert s.run(["git", "--git-dir", s.origin.as_posix(), "merge-base", "--is-ancestor", "v1.3.0", "main"]).returncode == 1
     oracle.check_tag_on_release_commit(s.git("log", "-1", "--format=%s", "v1.3.0"), "1.3.0")
     oracle.check_ac01(ss.notes_of(s), _tag_made(s), request_open=False, outcome="no_request")  # AC01: no request was opened
-    oracle.check_ac11_not_published(s.gh_state(), tag_on_remote=_on_origin(s, "refs/tags/v1.3.0"), pr_open=False)  # AC11: no request, so no breach
+    oracle.check_ac11_not_published(s.gh_state(), tag_on_remote=_on_origin(s, "refs/tags/v1.3.0"), pr_open=any(p["state"] == "open" for p in s.gh_state()["prs"]))  # AC11: no request, so no breach
 
 
 def _s14b(make_project, layout: str) -> Run:
@@ -64,7 +64,7 @@ def _check_s14b(run: Run) -> None:
     assert s.git("rev-parse", "main") == s.git("--git-dir", s.origin.as_posix(), "rev-parse", "main")  # tag, release and event pushed
     oracle.check_tag_on_release_commit(s.git("log", "-1", "--format=%s", "v1.3.0"), "1.3.0")
     oracle.check_ac01(ss.notes_of(s), _tag_made(s), request_open=False, outcome="no_request")  # AC01: on main there is no request
-    oracle.check_ac11_not_published(s.gh_state(), tag_on_remote=_on_origin(s, "refs/tags/v1.3.0"), pr_open=False)
+    oracle.check_ac11_not_published(s.gh_state(), tag_on_remote=_on_origin(s, "refs/tags/v1.3.0"), pr_open=any(p["state"] == "open" for p in s.gh_state()["prs"]))
 
 
 def _s14c(make_project, layout: str) -> Run:
@@ -80,7 +80,7 @@ def _check_s14c(run: Run) -> None:
     assert push.exit_code != 0 and "main" in run.commands("push-tags")[0]["stderr"], run.commands("push-tags")[0]
     assert not _on_origin(s, "refs/tags/v1.3.0") and run.step("release-page").output["status"] == "failed"
     oracle.check_ac01(ss.notes_of(s), _tag_made(s), request_open=False, outcome="no_request")  # AC01: tag only on this machine
-    oracle.check_ac11_not_published(s.gh_state(), tag_on_remote=_on_origin(s, "refs/tags/v1.3.0"), pr_open=False)
+    oracle.check_ac11_not_published(s.gh_state(), tag_on_remote=_on_origin(s, "refs/tags/v1.3.0"), pr_open=any(p["state"] == "open" for p in s.gh_state()["prs"]))
 
 
 def _s15(make_project, layout: str) -> Run:

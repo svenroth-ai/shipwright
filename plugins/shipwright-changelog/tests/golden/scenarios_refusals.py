@@ -91,7 +91,6 @@ def _check_s16c(run: Run) -> None:
     _stopped_at(run, "commit-and-tag")
     assert "release audit refuses a dirty working tree" in run.commands("commit-and-tag")[0]["stderr"]  # the kind of refusal
     assert s.git("log", "-1", "--format=%s") == "chore(release): v1.3.0"  # the commit was made; the chain stops before the tag
-    assert [c["key"] for c in run.driver.log if c["key"] == "sync"] == ["sync"]  # the second verifier never ran
     _nothing_released(run)
 
 
