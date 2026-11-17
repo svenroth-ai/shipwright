@@ -39,7 +39,11 @@ REQUIRED = (HARNESS, "shared/testkit/gh_stub.py", "shared/testkit/release_scratc
             "plugins/shipwright-changelog/tests/golden/scenarios_rerun.py",
             "plugins/shipwright-changelog/tests/golden/scenarios_version.py",
             "plugins/shipwright-changelog/tests/golden/replay_commands.py",
-            "plugins/shipwright-changelog/tests/golden/test_trace_freeze.py")
+            "plugins/shipwright-changelog/tests/golden/test_trace_freeze.py",
+            # the tests that decide whether a trace is ever compared (deleting one would orphan its traces)
+            "plugins/shipwright-changelog/tests/golden/test_scenarios_release.py",
+            "plugins/shipwright-changelog/tests/golden/test_scenarios_aggregate.py",
+            "plugins/shipwright-changelog/tests/golden/test_replay_driver.py")
 
 
 def tree_problems(repo_root: Path, golden_dir: Path) -> list[str]:
