@@ -27,7 +27,8 @@ Where it looks (no environment guessing, no network):
 * ``release create``: refuses unless the tag is on the remote, or the release exists already;
   otherwise persists it. ``release view`` then reports it (``--json url`` prints ``{"url": ...}``),
   or exits 1 with ``release not found``.
-* ``--version`` and ``auth status`` succeed. Anything else: exit 2.
+* ``--version`` and ``auth status`` succeed. Anything else: exit 2. A BARE gh (the shim sets SHIPWRIGHT_GH_STUB_UNSEAMED=1) is
+  logged out: ``auth status`` exits 1, anything but ``--version`` exits 4, and it is logged to ``unseamed.jsonl``, not ``argv.jsonl``.
 * ``--repo`` / ``-R`` is accepted and ignored (only the URL of the PR and release comes from it): the
   repository is always the one in the current directory, so the cwd MUST be the scratch repository.
 * ``pr create`` also refuses a base that is not on the remote and a second open PR for the same
@@ -250,6 +251,8 @@ def dispatch(stub: Stub, argv: list[str], *, unseamed: bool = False) -> str:
         if unseamed:  # a bare gh is "not logged in": on Windows no bare gh reaches the stub at all, so Linux must agree
             raise Refusal("You are not logged into any GitHub hosts.", 1)
         return "github.com\n  Logged in to github.com (shipwright test stub)\n"
+    if unseamed:  # a bare gh is logged out: it may probe (--version, auth status above) but never act
+        raise Refusal("To get started with GitHub CLI, please run:  gh auth login", 4)
     table = {("pr", "create"): stub.pr_create, ("pr", "merge"): stub.pr_merge,
              ("release", "create"): stub.release_create, ("release", "view"): stub.release_view}
     handler = table.get(tuple(argv[:2]))
