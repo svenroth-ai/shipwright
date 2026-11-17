@@ -63,6 +63,19 @@ def test_seams_are_read_in_one_place():
     assert offenders == []
 
 
+@pytest.mark.covers("FR-01.09/AC14")
+def test_no_gh_argv_is_built_outside_the_seam_helper():
+    """A literal ``["gh"`` argv on the release path would skip the seam silently."""
+    paths = [
+        _REPO_ROOT / "plugins" / "shipwright-changelog" / "scripts" / "checks" / "setup-changelog.py",
+        _REPO_ROOT / "shared" / "scripts" / "tools" / "create_github_release.py",
+        _REPO_ROOT / "shared" / "scripts" / "tools" / "condense_release_notes.py",
+    ]
+    literal = re.compile(r"""[\[(]\s*["']gh["']\s*[,\]]""")
+    offenders = [str(p.relative_to(_REPO_ROOT)) for p in paths if literal.search(p.read_text(encoding="utf-8"))]
+    assert offenders == []
+
+
 # --- gh argv prefix ------------------------------------------------------------------------
 
 @pytest.mark.covers("FR-01.09/AC14")
