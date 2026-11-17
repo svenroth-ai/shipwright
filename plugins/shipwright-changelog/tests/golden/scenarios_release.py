@@ -135,7 +135,8 @@ def _check_s2(autonomy: str):
         if run.ctx["layout"] == "drops":
             return check_d23_refusal(run)
         assert all(r.exit_code == 0 for r in run.results)
-        # truth table, standalone x autonomy x {version, preview, pr-merge}: the replay's steps are the cells
+        # truth table, standalone x autonomy x {preview, pr-merge}: the replay's steps are the cells. The guided "version"
+        # cell (SKILL.md:145-150, asks) is an operator decision the replay does not model (NOT_REPLAYED), so it is not asserted here
         names = [r.step for r in run.results]
         assert names.count("preview") == (1 if autonomy == "guided" else 0)
         merged = [p["state"] for p in s.gh_state()["prs"]]

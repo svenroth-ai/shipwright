@@ -96,7 +96,7 @@ def _s7a(make_project, layout: str) -> Run:
 
 
 def _check_s7a(run: Run) -> None:
-    _refusal(run, VERSION)  # AC08: stops and names the version whose recorded section it cannot reconcile
+    _refusal(run, VERSION, "not what the pending entries say")  # AC08: stops, names the version AND the kind of conflict
     assert (run.scratch.repo / "CHANGELOG-unreleased.d" / "Added" / "iterate-2026-11-02-b_001.md").is_file()  # the pending drop survives
 
 
