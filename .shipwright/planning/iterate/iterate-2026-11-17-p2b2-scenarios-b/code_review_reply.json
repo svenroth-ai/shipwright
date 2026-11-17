@@ -1,0 +1,6 @@
+{"section":"P2b2-scenarios-b","review":[
+{"severity":"medium","category":"correctness","file":"plugins/shipwright-changelog/tests/golden/scenarios_branches.py","line":53,"finding":"AC11 checks in S14a/b/c took a literal pr_open=False and could never fail","suggestion":"derive from stub state (fixed)"},
+{"severity":"medium","category":"correctness","file":"plugins/shipwright-changelog/tests/golden/scenarios_refusals.py","line":94,"finding":"S16c sync-key assertion did not test the claim in its comment","suggestion":"delete (fixed)"},
+{"severity":"medium","category":"correctness","file":"plugins/shipwright-changelog/tests/golden/scenarios_rerun.py","line":96,"finding":"S7a AC07 call restates the AC08 refusal","suggestion":"left: P2b1 tag unchanged; S7c judges AC07"},
+{"severity":"medium","category":"correctness","file":"plugins/shipwright-changelog/tests/golden/coverage.py","line":170,"finding":"P8a accepts any non-empty not_exercised reason; operator approval is pending at stop 2","suggestion":"recorded in FINDINGS"}
+],"notes":"no high findings; three seeded regressions read as sound"}
