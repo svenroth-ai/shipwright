@@ -240,10 +240,15 @@ class Stub:
         return json.dumps({"url": release["url"]}) + "\n" if "--json" in v else release["url"] + "\n"
 
 
-def dispatch(stub: Stub, argv: list[str]) -> str:
+UNSEAMED_ENV = "SHIPWRIGHT_GH_STUB_UNSEAMED"  # set by the shim: a bare ``gh`` that no seam routed here
+
+
+def dispatch(stub: Stub, argv: list[str], *, unseamed: bool = False) -> str:
     if argv[:1] == ["--version"]:
         return VERSION_TEXT
     if argv[:2] == ["auth", "status"]:
+        if unseamed:  # a bare gh is "not logged in": on Windows no bare gh reaches the stub at all, so Linux must agree
+            raise Refusal("You are not logged into any GitHub hosts.", 1)
         return "github.com\n  Logged in to github.com (shipwright test stub)\n"
     table = {("pr", "create"): stub.pr_create, ("pr", "merge"): stub.pr_merge,
              ("release", "create"): stub.release_create, ("release", "view"): stub.release_view}
@@ -262,9 +267,10 @@ def main(argv: list[str] | None = None) -> int:
     state_dir = Path(raw)
     state_dir.mkdir(parents=True, exist_ok=True)
     code, out = 0, ""
+    unseamed = os.environ.get(UNSEAMED_ENV) == "1"
     try:
         stub = Stub(state_dir, Path.cwd())
-        out = dispatch(stub, argv)
+        out = dispatch(stub, argv, unseamed=unseamed)
         stub.save()
     except Refusal as exc:
         sys.stderr.write(f"{exc}\n")
@@ -272,7 +278,8 @@ def main(argv: list[str] | None = None) -> int:
     except Exception as exc:  # noqa: BLE001 - a crash is still a call: it must reach the log
         sys.stderr.write(f"gh-stub: internal error: {type(exc).__name__}: {exc}\n")
         code = 4
-    with (state_dir / "argv.jsonl").open("a", encoding="utf-8") as log:
+    # a bare gh is logged apart: the trace holds the calls a seam routed, the same on every OS
+    with (state_dir / ("unseamed.jsonl" if unseamed else "argv.jsonl")).open("a", encoding="utf-8") as log:
         log.write(json.dumps({"argv": argv, "exit": code}) + "\n")
     sys.stdout.write(out)
     return code

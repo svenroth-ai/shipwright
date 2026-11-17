@@ -212,7 +212,18 @@ def test_a_bare_gh_in_the_scratch_environment_is_the_stub_and_a_real_gh_is_logge
     assert Path(scratch.env["GH_CONFIG_DIR"]).parent == scratch.stub_state and scratch.env["GH_PROMPT_DISABLED"] == "1"
     shim = scratch.run([str(scratch.stub_state / "bin" / ("gh.cmd" if os.name == "nt" else "gh")), "--version"])
     assert shim.returncode == 0 and "gh version" in shim.stdout
-    assert scratch.gh_argv_log()[-1] == {"argv": ["--version"], "exit": 0}
+    assert not (scratch.gh_argv_log() and scratch.gh_argv_log()[-1]["argv"] == ["--version"])  # a bare gh stays out of the trace log
+    unseamed = (scratch.stub_state / "unseamed.jsonl").read_text(encoding="utf-8").splitlines()
+    assert json.loads(unseamed[-1]) == {"argv": ["--version"], "exit": 0}
+
+
+def test_a_bare_gh_is_not_logged_in_and_a_seamed_one_is(scratch):
+    """Windows never lets a bare ``gh`` reach the stub; on Linux it would, and ``auth status`` answering yes made the
+    audit probe the code host there only (a different trace per OS). A bare gh is logged out; the seam's is not."""
+    shim = str(scratch.stub_state / "bin" / ("gh.cmd" if os.name == "nt" else "gh"))
+    assert scratch.run([shim, "auth", "status"]).returncode == 1
+    assert gh(scratch, "auth", "status").returncode == 0
+    assert scratch.gh_argv_log()[-1] == {"argv": ["auth", "status"], "exit": 0}
 
 
 def test_pr_create_refuses_what_real_gh_refuses(scratch):

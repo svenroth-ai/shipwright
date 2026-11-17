@@ -94,8 +94,9 @@ def _write_gh_shims(shim_dir: Path) -> None:
     """A bare ``gh`` (typed by a person or a model) lands on the stub. ``gh.cmd`` serves a shell on Windows."""
     shim_dir.mkdir(parents=True, exist_ok=True)
     py, stub = sys.executable, GH_STUB
-    sh = '#!/bin/sh\nexec "{}" "{}" "$@"\n'.format(Path(py).as_posix(), stub.as_posix())
-    cmd = '@echo off\r\n"{}" "{}" %*\r\n'.format(py, stub)
+    sh = '#!/bin/sh\nSHIPWRIGHT_GH_STUB_UNSEAMED=1\nexport SHIPWRIGHT_GH_STUB_UNSEAMED\nexec "{}" "{}" "$@"\n'.format(
+        Path(py).as_posix(), stub.as_posix())
+    cmd = '@echo off\r\nset SHIPWRIGHT_GH_STUB_UNSEAMED=1\r\n"{}" "{}" %*\r\n'.format(py, stub)
     (shim_dir / "gh").write_bytes(sh.encode("utf-8"))
     (shim_dir / "gh").chmod(0o755)
     (shim_dir / "gh.cmd").write_bytes(cmd.encode("utf-8"))
