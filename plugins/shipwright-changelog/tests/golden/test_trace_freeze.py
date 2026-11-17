@@ -28,7 +28,7 @@ from .conftest import DELTAS_PATH, GOLDEN_DIR, LOCK_PATH, REPO_ROOT, STEPS
 TRACE_SUFFIX = ".trace.json"
 HARNESS = "shared/testkit/golden_trace.py"
 # What shapes every trace besides the trace files: a lock that leaves one out is refused. P2b added the replay
-# driver and its command table; P2-op adds the pinned prose copy and the promise lock to this list.
+# driver and its command table, P2b2 the second half of the scenarios, the coverage checks and the seeded regressions; P2-op adds the pinned prose copy and the promise lock to this list.
 REQUIRED = (HARNESS, "shared/testkit/gh_stub.py", "shared/testkit/release_scratch.py",
             "plugins/shipwright-changelog/tests/golden/conftest.py",
             "plugins/shipwright-changelog/tests/golden/driver_replay.py",
@@ -38,11 +38,22 @@ REQUIRED = (HARNESS, "shared/testkit/gh_stub.py", "shared/testkit/release_scratc
             "plugins/shipwright-changelog/tests/golden/scenarios_release.py",
             "plugins/shipwright-changelog/tests/golden/scenarios_rerun.py",
             "plugins/shipwright-changelog/tests/golden/scenarios_version.py",
+            "plugins/shipwright-changelog/tests/golden/scenarios_assets.py",
+            "plugins/shipwright-changelog/tests/golden/scenarios_branches.py",
+            "plugins/shipwright-changelog/tests/golden/scenarios_refusals.py",
+            "plugins/shipwright-changelog/tests/golden/scenarios_modes.py",
+            "plugins/shipwright-changelog/tests/golden/coverage.py",
             "plugins/shipwright-changelog/tests/golden/replay_commands.py",
             "plugins/shipwright-changelog/tests/golden/test_trace_freeze.py",
             # the tests that decide whether a trace is ever compared (deleting one would orphan its traces)
             "plugins/shipwright-changelog/tests/golden/test_scenarios_release.py",
             "plugins/shipwright-changelog/tests/golden/test_scenarios_aggregate.py",
+            "plugins/shipwright-changelog/tests/golden/test_scenarios_assets.py",
+            "plugins/shipwright-changelog/tests/golden/test_scenarios_branches.py",
+            "plugins/shipwright-changelog/tests/golden/test_scenarios_refusals.py",
+            "plugins/shipwright-changelog/tests/golden/test_scenarios_modes.py",
+            "plugins/shipwright-changelog/tests/golden/test_coverage_checks.py",
+            "plugins/shipwright-changelog/tests/golden/test_seeded_regressions.py",
             "plugins/shipwright-changelog/tests/golden/test_replay_driver.py")
 
 

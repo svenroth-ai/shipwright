@@ -1,0 +1,8 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"S10-S19 plus S1d, close-phase, coverage P8a-c, three seeded regressions, full-chain comparison delivered; D7 recorded as today's behaviour"},
+{"name":"Error Handling","verdict":"pass","note":"only FileNotFoundError becomes exit 127; refusals asserted by reason; fill() raises on unfilled markers"},
+{"name":"Security Basics","verdict":"pass","note":"dummy tokens, offline uv, gh via seam, no real remote"},
+{"name":"Test Quality","verdict":"pass","note":"Scenario.acs forces the oracle to judge every tagged AC; coverage checks have red twins; seeded regressions assert the oracle message"},
+{"name":"Performance Basics","verdict":"pass","note":"scenarios isolated in tmp, about 5 s each"},
+{"name":"Naming & Structure","verdict":"pass","note":"all files <= 300 lines, ruff clean, no dead code"},
+{"name":"Affected Boundaries","verdict":"pass","note":"trace JSON round-trips (written, re-read, compared on a second run); traces OS-independent: paths, CRLF, triage.jsonl masked"}]}

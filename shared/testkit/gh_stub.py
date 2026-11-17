@@ -205,7 +205,10 @@ class Stub:
             if "--delete-branch" in bare:
                 _git("push", "--quiet", "origin", "--delete", pr["head"], cwd=work)
         if "--delete-branch" in bare and self.current_branch() == pr["head"]:
-            self._leave_merged_head(pr)
+            try:
+                self._leave_merged_head(pr)
+            except Refusal as exc:  # the remote is merged already: the real gh warns about its local cleanup, it does not fail
+                sys.stderr.write(f"gh-stub: warning: the merge succeeded but the local checkout was not moved: {exc}\n")
         return f"Merged pull request #{pr['number']}\n"
 
     def _leave_merged_head(self, pr: dict) -> None:

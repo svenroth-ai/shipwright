@@ -39,6 +39,9 @@ from typing import Any, Mapping, Protocol, Sequence
 
 SCHEMA_VERSION = 1
 MASK = "<masked:judgement>"
+# `git status` lines left out of a trace: the audit files an advisory finding (an untracked triage.jsonl) on some systems
+# and not on others. A collect option, so a scenario of another plugin can mask its own.
+ADVISORY_STATUS = ("?? .shipwright/triage.jsonl",)
 OUTPUT_WHITELIST = ("status", "reason", "section_action", "changelog_updated", "version", "pathspec")
 
 _SHA = re.compile(r"\b[0-9a-f]{40}\b")
@@ -187,7 +190,7 @@ def _fields(output: Mapping[str, Any], whitelist: Sequence[str]) -> dict[str, An
 
 def collect(scratch: Any, steps: Sequence["StepResult"] = (), *, files: Sequence[str] = (),
             judgement_globs: Sequence[str] = (), literals: Mapping[str, str] | None = None,
-            whitelist: Sequence[str] = OUTPUT_WHITELIST) -> dict[str, Any]:
+            whitelist: Sequence[str] = OUTPUT_WHITELIST, masked_status: Sequence[str] = ADVISORY_STATUS) -> dict[str, Any]:
     """The trace of one scenario. ``scratch`` needs ``repo``, ``origin``, ``root`` and ``gh_argv_log()``/``gh_state()``."""
     repo, origin = Path(scratch.repo), Path(scratch.origin)
     paths = {"repo": repo, "origin": origin, "root": Path(scratch.root)}
@@ -215,7 +218,7 @@ def collect(scratch: Any, steps: Sequence["StepResult"] = (), *, files: Sequence
         "origin": _refs(origin),
         "all_commits": {"repo": _all_commits(repo), "origin": _all_commits(origin)},
         # the audit files an advisory finding (untracked triage.jsonl) on some systems and not on others: not part of the trace
-        "status": [s for s in norm(_git(repo, "status", "--porcelain")).splitlines() if s != "?? .shipwright/triage.jsonl"],
+        "status": [s for s in norm(_git(repo, "status", "--porcelain")).splitlines() if s not in masked_status],
         "files": tree,
         "stub": {"argv": [{"argv": [norm(a) for a in _mask_inline_notes(e["argv"])], "exit": e["exit"]} for e in scratch.gh_argv_log()],
                  "prs": prs, "releases": releases},

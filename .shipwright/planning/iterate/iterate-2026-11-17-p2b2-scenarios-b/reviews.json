@@ -1,0 +1,330 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-17-p2b2-scenarios-b",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-17T20:51:20.079188+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "approach |",
+          "file": null,
+          "line": null,
+          "finding": "Judging refusals only by kind can accept a scenario that stops at the wrong command or before exercising its intended ACs. This is particularly risky when several existing findings become accepted refusal outcomes.",
+          "suggestion": "Assert the refusal’s command, position, reason, preceding trace and resulting state. Explicitly identify which ACs the refusal establishes; do not count unexecuted assertions as covered.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "dependency |",
+          "file": null,
+          "line": null,
+          "finding": "The plan omits required campaign deliverables and enforcement: the per-unit `unchanged` AC record, rejection of ACs outside FR-01.09/FR-01.01, FINDINGS updates, and the section-8 LEARNINGS append. Automatically accepting “new D24-D26” also needs reconciliation with the operator-answer STRICT-STOP rule.",
+          "suggestion": "Add these checks and report updates explicitly. Record reproduced behavior as evidence, and stop wherever classifying a new finding requires an operator decision.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "Converting an OS error into exit 127 conflates a missing executable with permission errors and other execution failures. That can make an infrastructure failure look like an expected refusal.",
+          "suggestion": "Map only missing-executable errors to 127 where that matches the execution contract. Preserve other failures distinctly and fail the test unless the scenario explicitly expects them.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach |",
+          "file": null,
+          "line": null,
+          "finding": "Swapping a regression into the replay can demonstrate sensitivity to the test driver without proving that the frozen-command/prose comparison detects the corresponding change. A mutant may also fail for an unrelated setup or coverage error.",
+          "suggestion": "For each seed, establish a passing baseline, mutate the command or behavior at the boundary used by the replay, and require failure of the specific relevant oracle assertion. Restore the mutation between cases.  The test-only approach is reasonable and limits product risk. Tighten refusal verification, campaign compliance and mutation evidence before proceeding.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-17T20:51:11.846491+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] **Findings**\n\n- **Category: risk / Severity: medium** — Step 1 moves the P2b1 scenarios' literal asserts into the oracle *inside* this unit. That's a modification of already-merged test infrastructure, not pure test-support addition. If an oracle refactor is buggy, previously-green P2b1 scenarios could flip red, and the brief says red = STRICT-STOP. Suggestion: land the oracle extraction and the S1/S3–S9 migration as a separate commit before the new scenarios, so a failure cleanly attributes to the migration, not the new scenarios.\n\n- **Category: risk / Severity: medium** — Replacing the \"compare `uv run` lines only\" check with full-chain comparison of Step 6/Step 7/phase-complete blocks is a large oracle-strictness increase. Golden text produced by the real skill may embed nondeterministic content (paths, dates, branch names, session ids). If it does, the check is flaky and every flake is a mandatory stop. Suggestion: confirm before writing that the frozen blocks are byte-stable across runs (or define a normalization mask in the trace recorder first) — do this as an explicit early task, not an implicit assumption.\n\n- **Category: edge-case / Severity: medium** — The seeded regression \"tag on `HEAD~1`\" hardcodes the commit topology of the test repo. If the fixture repo is rebuilt, rebased, or run from a shallow clone (`--depth 1`, common in CI), `HEAD~1` doesn't exist and the fixture setup fails. Suggestion: create the parent commit explicitly in fixture setup (e.g., commit, tag, then add a second commit) rather than relying on the ambient history.\n\n- **Category: edge-case / Severity: low** — \"An OS error as an exit-127 result\" covers only one failure mode. If the replay driver runs on a system where the command exists but fails differently (Windows `FileNotFoundError` vs shell 127, permissions), the assertion may not reproduce. Suggestion: make the driver assert on the *class* of failure the stub contract reports, with exit-127 as the canonical case, an […truncated]\n\n[openai] Repository access was blocked by policy, so this review is based on the supplied specification and mini-plan; the referenced briefs remain unverified.\n\n1. **Category: approach | Severity: high**  \n   **Finding:** Judging refusals only by kind can accept a scenario that stops at the wrong command or before exercising its intended ACs. This is particularly risky when several existing findings become accepted refusal outcomes.  \n   **Suggestion:** Assert the refusal’s command, position, reason, preceding trace and resulting state. Explicitly identify which ACs the refusal establishes; do not count unexecuted assertions as covered.\n\n2. **Category: dependency | Severity: high**  \n   **Finding:** The plan omits required campaign deliverables and enforcement: the per-unit `unchanged` AC record, rejection of ACs outside FR-01.09/FR-01.01, FINDINGS updates, and the section-8 LEARNINGS append. Automatically accepting “new D24-D26” also needs reconciliation with the operator-answer STRICT-STOP rule.  \n   **Suggestion:** Add these checks and report updates explicitly. Record reproduced behavior as evidence, and stop wherever classifying a new finding requires an operator decision.\n\n3. **Category: edge-case | Severity: medium**  \n   **Finding:** Converting an OS error into exit 127 conflates a missing executable with permission errors and other execution failures. That can make an infrastructure failure look like an expected refusal.  \n   **Suggestion:** Map only missing-executable errors to 127 where that matches the execution contract. Preserve other failures distinctly and fail the test unless the scenario explicitly expects them.\n\n4. **Category: approach | Severity: medium**  \n   **Finding:** Swapping a regression into the replay can demonstrate sensitivity to the test driver without proving that the frozen-command/prose comparison detects the corresponding change. A mutant may also fail for an unrelated setup or coverage error.  \n   **Suggestion:** For each see […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "approve"
+      },
+      "model_tier": "opus"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/tests/golden/replay_commands.py",
+          "line": 88,
+          "finding": "CLOSE_PHASE runs five uv commands as separate lines with no set -e, so the step exit code is only the last command's. S13 asserts all exit codes 0, which hides a failure of earlier commands.",
+          "suggestion": "In _check_s13 also assert the artifacts of each command, or run each line as its own logged command. Deferred to stop 2 (recorded).",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/tests/golden/scenarios_branches.py",
+          "line": 80,
+          "finding": "S14a/b/c call check_ac11_not_published with pr_open=False, which cannot fail, yet book AC11 as judged in ASSERTED and P8c.",
+          "suggestion": "Drop AC11 from their acs or make the oracle not count a vacuous pass. Deferred to stop 2 (recorded).",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/tests/golden/scenarios_refusals.py",
+          "line": 137,
+          "finding": "Some oracle calls get literals (S16e reported=failed, S13 tag_made/pr_open, S5a said) instead of observed state.",
+          "suggestion": "Pass observed values. Already disclosed; deferred to stop 2.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/tests/golden/coverage.py",
+          "line": 79,
+          "finding": "fenced_blocks and _prose_block only recognise fences at column 0.",
+          "suggestion": "Use lstrip().startswith. Latent: SKILL.md has no indented fences today.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/tests/golden/driver_replay.py",
+          "line": 65,
+          "finding": "The FileNotFoundError catch in _run is wider than the missing-gh case in S16f.",
+          "suggestion": "Limit the catch to the gh path.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-17T21:46:15.390667+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "reviewed_commit": "d4f55745ba3e862e13a99a3b8cab7bb4dbd0bd4e"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: The coverage checks go red on any skill change — Edited flags inside the 11 non-frozen blocks (e.g. --fail-if-empty at SKILL.md:189) keep CITES and P8b green; only 4 blocks are compared in full.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: P8a goes red when the skill changes — check_p8a reads inventory.json, not SKILL.md; check_skill_inventory is never run against the live skill; an empty what-prefix absorbs new parts.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: P8b maps every conditional — The conditional regex only matches lines starting with If/Only if/etc.; SKILL.md:222-223, 378 and others are missed.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: AC01 is judged where the tag says — check_ac01 with no_request passes and books AC01 as judged in S14a-c and S16f, exactly where today's skill violates it; no expect_violated_today counterpart exists.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: Seeded regression 3 is caught for the stated reason — The oracle globs the working tree, not the committed tree, so a tracked deletion left uncommitted would pass.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: Seeded regression 1 proves the tag marks the release commit — The check compares commit subjects only.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: Traces are identical on Linux — Found no concrete divergence; decision_log.md CRLF vs LF is the residual risk; traces were only recorded on Windows.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-17T21:46:15.531580+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "reviewed_commit": "d4f55745ba3e862e13a99a3b8cab7bb4dbd0bd4e"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "plugins/shipwright-changelog/tests/golden/coverage.py:100-104 (`check_p8a`)",
+          "line": null,
+          "finding": "Entry matching uses `what.startswith(w)` with several `EXERCISED` rows carrying `what == \"\"` (e.g. `\"A. Print Intro Banner\"`, `\"Step 6: Commit and Tag\"`). An empty prefix matches any inventory entry in the same (file, section). If a section ever gains a second mechanic/ask/judgement entry, the check fails with \"expected exactly 1\" — loud, but the error will point at the wrong row (the empty-prefix one), and conversely a genuinely uncovered new entry can be silently \"covered\" by an empty-prefix row if the other sibling rows were `not_exercised` and happened to be removed. The ambiguity is resolved by failure today only because of the exactly-1 rule.",
+          "suggestion": "Require non-empty, distinctive prefixes (or exact `what` equality) for rows whose section can hold multiple parts.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "plugins/shipwright-changelog/tests/golden/coverage.py:117 (`check_p8b`)",
+          "line": null,
+          "finding": "Fenced-block coverage accepts any intersecting `NOT_REPLAYED` range (`a <= end and start <= b`). A fenced block that only partially overlaps a `NOT_REPLAYED` range recorded for a different purpose is counted as covered; a future prose reflow that moves a block to straddle an unrelated range would keep P8b green while the block is in fact un-replayed.",
+          "suggestion": "Require the block to be fully contained in a `NOT_REPLAYED` range (`a <= start and end <= b`), or at minimum log which range covered which block.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "plugins/shipwright-changelog/tests/golden/test_seeded_regressions.py:33-40",
+          "line": null,
+          "finding": "The second seeded regression removes the pathspec via a regex over `COMMIT_AND_TAG`'s literal text. This is correctly guarded by `test_the_seed_helpers_change_the_chain_they_claim_to_change`, but the guard only proves the regex matched something; if `COMMIT_AND_TAG` later grows a second ` -- \\` segment (e.g. in the verify step), the regex's non-greedy match could strip the wrong segment and the seed would silently become a no-op-different seed while still raising some AssertionError (any `AssertionError` in `check_release_commit_paths` order). The `match=\"swept in unrelated paths\"` mitigates this.",
+          "suggestion": "Anchor the regex to the `git add`/`git commit` command it targets, or split the chain into named segments.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "plugins/shipwright-changelog/tests/golden/oracle.py:24-37 (`asserts` / `ASSERTED`)",
+          "line": null,
+          "finding": "ASSERTED` is module-global state cleared only in `trace_text`. Any code path that runs a scenario's `check` outside `trace_text` (e.g. a future debugging helper or pytest fixture re-entry after a soft failure) inherits stale assertions, and nested `trace_text` calls from within a `check` would wipe the outer scenario's recorded ACs. Not reachable with today's callers, but fragile.",
+          "suggestion": "Pass the asserted-set through `Run`/`Scenario` (or a context object) instead of module-global mutable state.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "plugins/shipwright-changelog/tests/golden/driver_replay.py:65-68",
+          "line": null,
+          "finding": "The `FileNotFoundError` shim fabricates `stdout=\"\"`/`stderr` as `str`, while `scratch.run` results elsewhere flow through `_json(done.stdout)`. If any future missing-program key feeds `_json`, `_json(\"\")` behavior (likely `{}`) is relied upon implicitly rather than asserted; today only the `gh` keys hit this path and `step_open_pr`/`release-page` handle it, so this is a robustness note only.  Checked and found sound: the `gh_stub.py` merge-cleanup warning path (with its own regression test), the `masked_status` collect option (default preserved, tested), `conftest.STEPS` already containing `close-phase` (confirmed by the old test's assertion `set(STEPS) - driver.steps == {\"close-phase\"}`), the frozen-chain full-comparison rewrite, and the S1d/S13/S14c/S16e/S19 oracle assertions — each names the refusal kind rather than a bare exit code, matching the stated LEARNINGS discipline. No security issues; the tests are offline and the stub paths are test-only.  SHIPWRIGHT_VERDICT: approve",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "plugins/shipwright-changelog/tests/golden/test_coverage_checks.py",
+          "line": 52,
+          "finding": "The supplied diff adds scenarios S10–S19 and S1d but contains none of their committed `.trace.json` files. The trace inventory assertion will fail, and each new scenario’s `verify` call lacks its expected baseline. This does not meet the requirement for green coverage checks.",
+          "suggestion": "Generate, review, and commit the traces for every new scenario and layout, then run the scenario suite and P8a–c checks.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "plugins/shipwright-changelog/tests/golden/scenarios_modes.py",
+          "line": 125,
+          "finding": "S19 captures its `\"before\"` digest after `driver.run_step(\"prepare\", ...)` has executed, because Python evaluates the arguments left to right. Its unchanged-disk assertion therefore compares two post-command snapshots and would pass even if the refused setup command modified files.",
+          "suggestion": "Capture the digest before invoking `prepare`, then pass that saved value into `Run`.  Ship-with-fixes: the replay and seeded regression tests substantially cover the requested scope, but the missing baselines and ineffective S19 mutation check need correction. Execution was unavailable because the environment rejected the shell command.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-17T20:55:27.499213+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] I reviewed the diff against the P2b2 spec (S10–S19, coverage checks P8a-c, three seeded regressions, D7 recorded, LEARNINGS appended). The unit is substantially complete: all named scenarios exist with oracle-asserted ACs, P8a/b/c are implemented with red-twin tests, the three seeded regressions assert the oracle's own message, and the FINDINGS/LEARNINGS files are updated as required. Findings below are refinements, not blockers.\n\n- Category: bug\n  - Severity: low\n  - File: plugins/shipwright-changelog/tests/golden/coverage.py:100-104 (`check_p8a`)\n  - Finding: Entry matching uses `what.startswith(w)` with several `EXERCISED` rows carrying `what == \"\"` (e.g. `\"A. Print Intro Banner\"`, `\"Step 6: Commit and Tag\"`). An empty prefix matches *any* inventory entry in the same (file, section). If a section ever gains a second mechanic/ask/judgement entry, the check fails with \"expected exactly 1\" — loud, but the error will point at the wrong row (the empty-prefix one), and conversely a genuinely uncovered new entry can be silently \"covered\" by an empty-prefix row if the other sibling rows were `not_exercised` and happened to be removed. The ambiguity is resolved by failure today only because of the exactly-1 rule.\n  - Suggestion: Require non-empty, distinctive prefixes (or exact `what` equality) for rows whose section can hold multiple parts.\n\n- Category: bug\n  - Severity: low\n  - File: plugins/shipwright-changelog/tests/golden/coverage.py:117 (`check_p8b`)\n  - Finding: Fenced-block coverage accepts any *intersecting* `NOT_REPLAYED` range (`a <= end and start <= b`). A fenced block that only partially overlaps a `NOT_REPLAYED` range recorded for a different purpose is counted as covered; a future prose reflow that moves a block to straddle an unrelated range would keep P8b green while the block is in fact un-replayed.\n  - Suggestion: Require the block to be fully contained in a `NOT_REPLAYED` range (`a <= start and end <= b`), or at minimum log which range cov […truncated]\n\n[openai] - Category: spec\n- Severity: high\n- File: plugins/shipwright-changelog/tests/golden/test_coverage_checks.py:52\n- Finding: The supplied diff adds scenarios S10–S19 and S1d but contains none of their committed `.trace.json` files. The trace inventory assertion will fail, and each new scenario’s `verify` call lacks its expected baseline. This does not meet the requirement for green coverage checks.\n- Suggestion: Generate, review, and commit the traces for every new scenario and layout, then run the scenario suite and P8a–c checks.\n\n- Category: test\n- Severity: medium\n- File: plugins/shipwright-changelog/tests/golden/scenarios_modes.py:125\n- Finding: S19 captures its `\"before\"` digest after `driver.run_step(\"prepare\", ...)` has executed, because Python evaluates the arguments left to right. Its unchanged-disk assertion therefore compares two post-command snapshots and would pass even if the refused setup command modified files.\n- Suggestion: Capture the digest before invoking `prepare`, then pass that saved value into `Run`.\n\nShip-with-fixes: the replay and seeded regression tests substantially cover the requested scope, but the missing baselines and ineffective S19 mutation check need correction. Execution was unavailable because the environment rejected the shell command.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-17T21:46:15.261298+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "reviewed_commit": "d4f55745ba3e862e13a99a3b8cab7bb4dbd0bd4e"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-17T20:55:41.901746+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-17T20:51:11.964330+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

@@ -50,21 +50,31 @@ def check_d23_refusal(run: Run) -> None:
     assert f"v{run.step('prepare').output['version']}" not in s.git("tag").split() and s.gh_state()["prs"] == []
     assert run.gh_calls("pr") == [] and run.gh_calls("release", "create") == []  # only setup's advisory `release view` ran
     assert any(line.startswith("?? .shipwright/events/") for line in s.git("status", "--porcelain").splitlines())
+    note = oracle.sections((s.repo / "CHANGELOG.md").read_text(encoding="utf-8"))[0][1]
+    oracle.check_ac01(note, tag_made=False, request_open=False, outcome="stopped")  # AC01: no marking, no request
+    # D23, the writer: Step 5.5's compliance run records a `grade_snapshot` event (not a phase event) and leaves it untracked
+    status = s.git("status", "--porcelain", "-uall")
+    fresh = [p for p in (s.repo / ".shipwright" / "events" / "drops").glob("*.jsonl") if f"?? .shipwright/events/drops/{p.name}" in status]
+    assert fresh and all('"type":"grade_snapshot"' in p.read_text(encoding="utf-8") for p in fresh), fresh
 
 
 def _check_s1(run: Run) -> None:
     s, out = run.scratch, run.step("prepare").output
     assert (out["last_tag"], out["version"], out["version_reason"]) == (None, "0.1.0", "first release")  # AC04: no release yet
+    oracle.check_ac04_version(out["version"], None, [])  # AC04, judged by the rule written out again in the oracle
     changelog = (s.repo / "CHANGELOG.md").read_text(encoding="utf-8")
     section = oracle.sections(changelog)[0][1]
     oracle.check_ac02_grouped(section, {"Added": ["First feature of the product"], "Fixed": ["A first fix"]})
+    oracle.check_drops_consumed([p.name for p in (s.repo / "CHANGELOG-unreleased.d").rglob("*.md")])  # Step 4: folded entries are gone
     if run.ctx["layout"] == "drops":
         return check_d23_refusal(run)
     assert all(r.exit_code == 0 for r in run.results), [(r.step, r.exit_code) for r in run.results]
     # AC01: a readable release note, a version marking and an open request - all three
-    assert s.git("cat-file", "-t", "v0.1.0") == "tag" and s.git("log", "-1", "--format=%s", "v0.1.0") == "chore(release): v0.1.0"
+    assert s.git("cat-file", "-t", "v0.1.0") == "tag"  # an annotated tag ...
+    oracle.check_tag_on_release_commit(s.git("log", "-1", "--format=%s", "v0.1.0"), "0.1.0")  # ... on the release commit itself
     prs = s.gh_state()["prs"]
     assert [(p["head"], p["base"], p["title"], p["state"]) for p in prs] == [("release/first", "main", "Release v0.1.0", "open")]
+    oracle.check_ac01(section, tag_made=True, request_open=prs[0]["state"] == "open", outcome="prepared")
     # D15: the body is the section behind a literal backslash-n pair, not a line break
     assert prs[0]["body"].startswith("## Changelog\\n\\n## [0.1.0]")
     # D3 (regression guard): the events file is committed, the tree ends clean
@@ -105,6 +115,29 @@ def _check_s1t(run: Run) -> None:
     dirty = s.run(["git", "status", "--porcelain"]).stdout.splitlines()
     assert dirty == [" D CHANGELOG-unreleased.d/Added/iterate-2026-11-01-a_001.md"], dirty  # the deletion is not in the commit
     assert [r.step for r in run.results][-1] == "commit-and-tag" and run.gh_calls("pr") == []  # the person stops here
+    oracle.check_ac01(oracle.sections((s.repo / "CHANGELOG.md").read_text(encoding="utf-8"))[0][1], tag_made=False,
+                      request_open=False, outcome="stopped")  # AC01: the note exists, nothing marks or requests it
+
+
+def _s1d(make_project, layout: str) -> Run:
+    s = make_project(events_layout=layout, tagged=False)
+    ss.remove_events_file(s)
+    ss.feature_branch(s, "release/first")
+    s.git("rm", "-q", "--", *ss.KEEP)  # a project with no tracked file in the decision-drops or ADR spec folders (finding D21)
+    s.git("commit", "-q", "-m", "chore: no tracked decision directories")
+    ss.commit(s, "app.txt", "one\n", "feat: first feature")
+    ss.write_drop(s, "Added", "First feature of the product")
+    driver = ReplayDriver()
+    return Run(s, driver, release_flow(driver, s), {})
+
+
+def _check_s1d(run: Run) -> None:
+    s = run.scratch
+    done = run.step("commit-and-tag")
+    assert [r.step for r in run.results][-1] == "commit-and-tag" and done.exit_code != 0
+    assert "did not match any files" in run.commands("commit-and-tag")[0]["stderr"]  # the whole commit aborts (SKILL.md:300 warns of it)
+    assert s.git("tag") == "" and s.git("log", "-1", "--format=%s") == "feat: first feature" and run.gh_calls("pr") == []
+    oracle.check_ac01(oracle.sections((s.repo / "CHANGELOG.md").read_text(encoding="utf-8"))[0][1], False, False, outcome="stopped")
 
 
 def _s2(autonomy: str):
@@ -154,9 +187,13 @@ def _check_s2(autonomy: str):
 
 
 SCENARIOS = {
-    "S1": Scenario("S1", ("legacy", "drops"), _s1, _check_s1),
-    "S1t": Scenario("S1t", ("legacy",), _s1t, _check_s1t),
-    "S2g": Scenario("S2g", ("legacy", "drops"), _s2("guided"), _check_s2("guided")),
-    "S2a": Scenario("S2a", ("legacy", "drops"), _s2("autonomous"), _check_s2("autonomous")),
-    "S2u": Scenario("S2u", ("legacy", "drops"), _s2("unattended"), _check_s2("unattended")),
+    "S1": Scenario("S1", ("legacy", "drops"), _s1, _check_s1, acs=("FR-01.09/AC01", "FR-01.09/AC04")),
+    "S1d": Scenario("S1d", ("legacy",), _s1d, _check_s1d, acs=("FR-01.09/AC01",)),
+    "S1t": Scenario("S1t", ("legacy",), _s1t, _check_s1t, acs=("FR-01.09/AC01",)),
+    "S2g": Scenario("S2g", ("legacy", "drops"), _s2("guided"), _check_s2("guided"),
+                     acs=("FR-01.09/AC02", "FR-01.09/AC04", "FR-01.09/AC06")),
+    "S2a": Scenario("S2a", ("legacy", "drops"), _s2("autonomous"), _check_s2("autonomous"),
+                     acs=("FR-01.09/AC02", "FR-01.09/AC04", "FR-01.09/AC06")),
+    "S2u": Scenario("S2u", ("legacy", "drops"), _s2("unattended"), _check_s2("unattended"),
+                     acs=("FR-01.09/AC02", "FR-01.09/AC04", "FR-01.09/AC06")),
 }

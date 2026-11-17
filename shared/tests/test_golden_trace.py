@@ -217,3 +217,11 @@ def test_the_git_bash_form_of_a_path_is_normalized_too(tmp_path):
     posix = root.as_posix()
     msys = "/" + posix[0].lower() + posix[2:] if sys.platform == "win32" else posix
     assert gt.normalize_text(f"cd {msys}/sub", paths={"repo": root}) == "cd <repo>/sub"
+
+
+def test_the_advisory_status_line_is_a_collect_option_and_defaults_to_the_audits_triage_file(scratch):
+    (scratch.repo / ".shipwright").mkdir(exist_ok=True)
+    (scratch.repo / ".shipwright" / "triage.jsonl").write_text("{}\n", encoding="utf-8")
+    (scratch.repo / "other.txt").write_text("x", encoding="utf-8")
+    assert gt.collect(scratch)["status"] == ["?? other.txt"]  # the default masks the audit's advisory file only
+    assert gt.collect(scratch, masked_status=("?? other.txt",))["status"] == ["?? .shipwright/triage.jsonl"]

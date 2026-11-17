@@ -21,11 +21,12 @@ SKILL = PLUGIN / "skills" / "changelog" / "SKILL.md"
 
 CITES: dict[str, list[tuple[int, str]]] = {
     "context": [(46, "get_phase_context.py")],
-    "setup": [(75, "setup-changelog.py")],
+    "setup": [(26, "--from v0.1.0"), (75, "setup-changelog.py")],
     "parse-commits": [(114, "git_utils.py")],
     "aggregate-dry": [(171, "aggregate_changelog.py")],
     "aggregate": [(185, "aggregate_changelog.py")],
     "decisions": [(211, "aggregate_decisions.py")],
+    "fallback-append": [(224, "append_changelog_entry.py")],
     "fold-events": [(260, "fold_events_for_release.py")],
     "sync": [(273, "sync_release_manifests.py")],
     "evidence": [(288, "refresh_compliance_docs.py")],
@@ -39,14 +40,16 @@ CITES: dict[str, list[tuple[int, str]]] = {
     "record-event-main": [(358, "record_event.py"), (359, "stage_event_drops.py"), (360, "git add shipwright_events.jsonl")],
     "push-tags": [(365, "git push --tags origin main")],
     "release-page": [(373, "publish_release_notes.py")],
+    "close-phase": [(386, "SHIPWRIGHT_RUN_ID"), (392, "update_build_dashboard.py"), (396, "generate_session_handoff.py"),
+                    (403, "append_phase_history.py"), (408, "orchestrator.py"), (412, "refresh_compliance_docs.py")],
 }
 
 NOT_REPLAYED: dict[str, str] = {
     "SKILL.md:18-31 banner": "printed text, no command",
     "SKILL.md:156 upgrade-notes check": "judgement: a model reads migration pages and may write a drop (references/release-workflow.md)",
-    "SKILL.md:243-251 preview question": "an operator decision; the plan carries it as the 'preview' step",
-    "SKILL.md:148-150 custom version entry": "an operator decision; the plan passes it as the 'version' parameter (the ask itself is recorded as version_question)",
-    "SKILL.md:386-414 phase-complete block": "close-phase: replayed by the next unit (P2b2, S13)",
+    "SKILL.md:242-251 preview question": "an operator decision; the plan carries it as the 'preview' step",
+    "SKILL.md:147-150 custom version entry": "an operator decision; the plan passes it as the 'version' parameter (the ask itself is recorded as version_question)",
+    "SKILL.md:416-430 summary": "printed text, no command",
 }
 
 # Step 6, SKILL.md:303-317. @shared@ is the shared dir (posix form), @version@ the version without 'v',
@@ -79,6 +82,16 @@ EVENT_PR = r'''uv run "@shared@/scripts/tools/record_event.py" --project-root "$
 EVENT_MAIN = r'''uv run "@shared@/scripts/tools/record_event.py" --project-root "$(pwd)" --type phase_completed --phase changelog --run-id "release-v@version@" --detail "v@version@ — tagged on main" \
 && uv run "@shared@/scripts/tools/stage_event_drops.py" --project-root "$(pwd)" --run-id "release-v@version@" \
 && { [ ! -f shipwright_events.jsonl ] || git add shipwright_events.jsonl; paths=$(git diff --cached --name-only -- shipwright_events.jsonl .shipwright/events/drops); [ -z "$paths" ] || git commit -m "chore(release): record changelog event for v@version@" -- $paths; }
+'''
+
+# The phase-complete block, SKILL.md:386-413. @plugin@ is the plugin dir (posix form), @session@ the session id.
+CLOSE_PHASE = r''': "${SHIPWRIGHT_RUN_ID:=changelog-v@version@-$(date +%Y%m%d-%H%M%S)}"
+export SHIPWRIGHT_RUN_ID
+uv run "@shared@/scripts/tools/update_build_dashboard.py"   --project-root "$(pwd)" --phase changelog --session-id "@session@"
+uv run "@shared@/scripts/tools/generate_session_handoff.py"   --project-root "$(pwd)" --canon-marker --phase changelog   --reason "release v@version@"
+uv run "@shared@/scripts/tools/append_phase_history.py"   --project-root "$(pwd)" --phase changelog --run-id "$SHIPWRIGHT_RUN_ID"   --entry-json '{"version":"v@version@","outcome":"tagged"}'
+uv run "@plugin@/../../plugins/shipwright-run/scripts/lib/orchestrator.py"   update-step --project-root "$(pwd)" --step changelog --status complete
+uv run "@shared@/scripts/tools/refresh_compliance_docs.py"   --project-root "$(pwd)" --restore
 '''
 
 

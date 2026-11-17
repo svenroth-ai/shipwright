@@ -1,0 +1,578 @@
+{
+  "all_commits": {
+    "origin": [
+      "chore(release): record changelog event for v1.3.0@9#f15f34e3",
+      "chore(release): v1.3.0@8#8d58d286",
+      "chore: initial project@1#53eb193e",
+      "chore: no events file yet@4#015168f9",
+      "chore: project scaffolding@2#ed53eaf0",
+      "chore: the phases before the changelog@3#78baf028",
+      "docs: changelog history@5#2f90492d",
+      "feat: new capability@6#62c58e31",
+      "fix: a defect@7#7570f42d"
+    ],
+    "repo": [
+      "chore(release): record changelog event for v1.3.0@9#f15f34e3",
+      "chore(release): v1.3.0@8#8d58d286",
+      "chore: initial project@1#53eb193e",
+      "chore: no events file yet@4#015168f9",
+      "chore: project scaffolding@2#ed53eaf0",
+      "chore: the phases before the changelog@3#78baf028",
+      "docs: changelog history@5#2f90492d",
+      "feat: new capability@6#62c58e31",
+      "fix: a defect@7#7570f42d"
+    ]
+  },
+  "commits": [
+    {
+      "blobs": {
+        ".shipwright/agent_docs/architecture.md": "# Architecture\n\nMinimal.\n",
+        ".shipwright/agent_docs/build_dashboard.md": "<masked:judgement>",
+        ".shipwright/agent_docs/conventions.md": "# Conventions\n\nMinimal.\n",
+        ".shipwright/agent_docs/decision_log.md": "# Decision Log\n\n### ADR-001: project decisions\n\n**Status:** Accepted\n\n### ADR-002: design decisions\n\n**Status:** Accepted\n\n### ADR-003: plan decisions for 01-core\n\n**Status:** Accepted\n\n### ADR-004: build decisions for 01-core\n\n**Section:** 01-login\n\n**Status:** Accepted\n\n### ADR-005: test decisions for 01-core\n\n**Status:** Accepted\n",
+        ".shipwright/designs/design-manifest.md": "# Design Manifest\n\n## Screens\n\n| # | File | Linked FRs |\n|---|---|---|\n| 1 | screens/01-login.html | FR-01.01, FR-02.01 |\n",
+        ".shipwright/designs/screens/01-login.html": "<!-- Requirements: FR-01.01, FR-02.01 -->\n<html><body><h1>Login</h1></body></html>\n",
+        ".shipwright/planning/01-core/plan.md": "<masked:judgement>",
+        ".shipwright/planning/01-core/sections/01-login.md": "<masked:judgement>",
+        ".shipwright/planning/01-core/spec.md": "<masked:judgement>",
+        ".shipwright/planning/02-ui/spec.md": "<masked:judgement>",
+        ".shipwright/planning/grill-traces/login.json": "<masked:judgement>",
+        ".shipwright/planning/shipwright_project_interview.md": "<masked:judgement>",
+        "AGENTS.md": "<masked:judgement>",
+        "CLAUDE.md": "# Demo app\n\nA minimal project used by the Shipwright phase-gate tests.\n",
+        "shipwright_build_config.json": "{\n  \"current_split\": \"01-core\",\n  \"sections\": [\n    {\n      \"name\": \"01-login\",\n      \"status\": \"complete\",\n      \"tests_total\": 1,\n      \"tests_passed\": 1\n    }\n  ]\n}",
+        "shipwright_design_config.json": "{\n  \"splits\": [\n    \"01-core\",\n    \"02-ui\"\n  ]\n}",
+        "shipwright_events.jsonl": "<masked:judgement>",
+        "shipwright_plan_config.json": "{\n  \"status\": \"complete\"\n}",
+        "shipwright_project_config.json": "{\n  \"status\": \"complete\",\n  \"scope\": \"full_app\",\n  \"splits\": [\n    {\n      \"name\": \"01-core\"\n    },\n    {\n      \"name\": \"02-ui\"\n    }\n  ]\n}",
+        "shipwright_run_config.json": "<masked:judgement>",
+        "shipwright_test_results.json": "{\n  \"mode\": \"pipeline\",\n  \"unit\": {\n    \"total\": 1,\n    \"passed\": 1,\n    \"failed\": 0\n  },\n  \"smoke\": {\n    \"status\": \"pass\"\n  },\n  \"e2e\": {\n    \"skipped\": true,\n    \"reason\": \"the fixture app has no browser surface\"\n  }\n}"
+      },
+      "changes": [
+        {
+          "path": ".shipwright/agent_docs/architecture.md",
+          "status": "A"
+        },
+        {
+          "path": ".shipwright/agent_docs/build_dashboard.md",
+          "status": "A"
+        },
+        {
+          "path": ".shipwright/agent_docs/conventions.md",
+          "status": "A"
+        },
+        {
+          "path": ".shipwright/agent_docs/decision_log.md",
+          "status": "A"
+        },
+        {
+          "path": ".shipwright/designs/design-manifest.md",
+          "status": "A"
+        },
+        {
+          "path": ".shipwright/designs/screens/01-login.html",
+          "status": "A"
+        },
+        {
+          "path": ".shipwright/planning/01-core/plan.md",
+          "status": "A"
+        },
+        {
+          "path": ".shipwright/planning/01-core/sections/01-login.md",
+          "status": "A"
+        },
+        {
+          "path": ".shipwright/planning/01-core/spec.md",
+          "status": "A"
+        },
+        {
+          "path": ".shipwright/planning/02-ui/spec.md",
+          "status": "A"
+        },
+        {
+          "path": ".shipwright/planning/grill-traces/login.json",
+          "status": "A"
+        },
+        {
+          "path": ".shipwright/planning/shipwright_project_interview.md",
+          "status": "A"
+        },
+        {
+          "path": "AGENTS.md",
+          "status": "A"
+        },
+        {
+          "path": "CLAUDE.md",
+          "status": "A"
+        },
+        {
+          "path": "shipwright_build_config.json",
+          "status": "A"
+        },
+        {
+          "path": "shipwright_design_config.json",
+          "status": "A"
+        },
+        {
+          "path": "shipwright_events.jsonl",
+          "status": "A"
+        },
+        {
+          "path": "shipwright_plan_config.json",
+          "status": "A"
+        },
+        {
+          "path": "shipwright_project_config.json",
+          "status": "A"
+        },
+        {
+          "path": "shipwright_run_config.json",
+          "status": "A"
+        },
+        {
+          "path": "shipwright_test_results.json",
+          "status": "A"
+        }
+      ],
+      "parents": 0,
+      "subject": "chore: initial project"
+    },
+    {
+      "blobs": {
+        ".gitignore": "<masked:judgement>",
+        ".shipwright/agent_docs/decision-drops/.gitkeep": "",
+        ".shipwright/planning/adr/.gitkeep": "<masked:judgement>"
+      },
+      "changes": [
+        {
+          "path": ".gitignore",
+          "status": "A"
+        },
+        {
+          "path": ".shipwright/agent_docs/decision-drops/.gitkeep",
+          "status": "A"
+        },
+        {
+          "path": ".shipwright/planning/adr/.gitkeep",
+          "status": "A"
+        }
+      ],
+      "parents": 1,
+      "subject": "chore: project scaffolding"
+    },
+    {
+      "blobs": {
+        ".shipwright/agent_docs/build_dashboard.md": "<masked:judgement>",
+        ".shipwright/agent_docs/decision_log.md": "# Decision Log\n\n### ADR-001: project decisions\n\n**Status:** Accepted\n\n### ADR-002: design decisions\n\n**Status:** Accepted\n\n### ADR-003: plan decisions for 01-core\n\n**Status:** Accepted\n\n### ADR-004: build decisions for 01-core\n\n**Section:** 01-login\n\n**Status:** Accepted\n\n### ADR-005: test decisions for 01-core\n\n**Status:** Accepted\n\n### ADR-006: project decisions\n\n**Status:** Accepted\n\n### ADR-007: design decisions\n\n**Status:** Accepted\n\n### ADR-008: plan decisions for 01-core\n\n**Status:** Accepted\n\n### ADR-009: build decisions for 01-core\n\n**Section:** 01-login\n\n**Status:** Accepted\n\n### ADR-010: plan decisions for 02-ui\n\n**Status:** Accepted\n\n### ADR-011: build decisions for 02-ui\n\n**Section:** 01-login\n\n**Status:** Accepted\n\n### ADR-012: test decisions\n\n**Status:** Accepted\n",
+        ".shipwright/planning/02-ui/plan.md": "<masked:judgement>",
+        ".shipwright/planning/02-ui/sections/01-login.md": "<masked:judgement>",
+        "shipwright_build_config.json": "{\n  \"current_split\": \"02-ui\",\n  \"sections\": [\n    {\n      \"name\": \"01-login\",\n      \"status\": \"complete\",\n      \"tests_total\": 1,\n      \"tests_passed\": 1\n    }\n  ],\n  \"split_01_sections\": [\n    {\n      \"name\": \"01-login\",\n      \"status\": \"complete\",\n      \"tests_total\": 1,\n      \"tests_passed\": 1\n    }\n  ]\n}",
+        "shipwright_events.jsonl": "<masked:judgement>",
+        "shipwright_run_config.json": "<masked:judgement>"
+      },
+      "changes": [
+        {
+          "path": ".shipwright/planning/02-ui/plan.md",
+          "status": "A"
+        },
+        {
+          "path": ".shipwright/planning/02-ui/sections/01-login.md",
+          "status": "A"
+        },
+        {
+          "path": ".shipwright/agent_docs/build_dashboard.md",
+          "status": "M"
+        },
+        {
+          "path": ".shipwright/agent_docs/decision_log.md",
+          "status": "M"
+        },
+        {
+          "path": "shipwright_build_config.json",
+          "status": "M"
+        },
+        {
+          "path": "shipwright_events.jsonl",
+          "status": "M"
+        },
+        {
+          "path": "shipwright_run_config.json",
+          "status": "M"
+        }
+      ],
+      "parents": 1,
+      "subject": "chore: the phases before the changelog"
+    },
+    {
+      "blobs": {},
+      "changes": [
+        {
+          "path": "shipwright_events.jsonl",
+          "status": "D"
+        }
+      ],
+      "parents": 1,
+      "subject": "chore: no events file yet"
+    },
+    {
+      "blobs": {
+        "CHANGELOG.md": "# Changelog\n\n## [1.2.0] - <date>\n\n### Added\n\n- Earlier feature\n"
+      },
+      "changes": [
+        {
+          "path": "CHANGELOG.md",
+          "status": "A"
+        }
+      ],
+      "parents": 1,
+      "subject": "docs: changelog history"
+    },
+    {
+      "blobs": {
+        "feat.txt": "f\n"
+      },
+      "changes": [
+        {
+          "path": "feat.txt",
+          "status": "A"
+        }
+      ],
+      "parents": 1,
+      "subject": "feat: new capability"
+    },
+    {
+      "blobs": {
+        "fix.txt": "x\n"
+      },
+      "changes": [
+        {
+          "path": "fix.txt",
+          "status": "A"
+        }
+      ],
+      "parents": 1,
+      "subject": "fix: a defect"
+    },
+    {
+      "blobs": {
+        ".shipwright/agent_docs/decision_log_index.md": "<masked:judgement>",
+        ".shipwright/compliance/change-history.md": "<masked:judgement>",
+        ".shipwright/compliance/dashboard.md": "<masked:judgement>",
+        ".shipwright/compliance/sbom.md": "<masked:judgement>",
+        ".shipwright/compliance/test-evidence.md": "<masked:judgement>",
+        ".shipwright/compliance/test-traceability.json": "<masked:judgement>",
+        ".shipwright/compliance/traceability-matrix.md": "<masked:judgement>",
+        ".shipwright/planning/adr/INDEX.md": "<masked:judgement>",
+        "CHANGELOG.md": "# Changelog\n\n## [1.3.0] - <date>\n\n### Added\n\n- A new capability readers can use\n\n### Fixed\n\n- A defect no longer happens\n\n## [1.2.0] - <date>\n\n### Added\n\n- Earlier feature\n"
+      },
+      "changes": [
+        {
+          "path": ".shipwright/agent_docs/decision_log_index.md",
+          "status": "A"
+        },
+        {
+          "path": ".shipwright/compliance/change-history.md",
+          "status": "A"
+        },
+        {
+          "path": ".shipwright/compliance/dashboard.md",
+          "status": "A"
+        },
+        {
+          "path": ".shipwright/compliance/sbom.md",
+          "status": "A"
+        },
+        {
+          "path": ".shipwright/compliance/test-evidence.md",
+          "status": "A"
+        },
+        {
+          "path": ".shipwright/compliance/test-traceability.json",
+          "status": "A"
+        },
+        {
+          "path": ".shipwright/compliance/traceability-matrix.md",
+          "status": "A"
+        },
+        {
+          "path": ".shipwright/planning/adr/INDEX.md",
+          "status": "A"
+        },
+        {
+          "path": "CHANGELOG.md",
+          "status": "M"
+        }
+      ],
+      "parents": 1,
+      "subject": "chore(release): v1.3.0"
+    },
+    {
+      "blobs": {
+        "shipwright_events.jsonl": "<masked:judgement>"
+      },
+      "changes": [
+        {
+          "path": "shipwright_events.jsonl",
+          "status": "A"
+        }
+      ],
+      "parents": 1,
+      "subject": "chore(release): record changelog event for v1.3.0"
+    }
+  ],
+  "files": {
+    "CHANGELOG.md": "# Changelog\n\n## [1.3.0] - <date>\n\n### Added\n\n- A new capability readers can use\n\n### Fixed\n\n- A defect no longer happens\n\n## [1.2.0] - <date>\n\n### Added\n\n- Earlier feature\n"
+  },
+  "origin": {
+    "branches": {
+      "main": "docs: changelog history@5#2f90492d",
+      "release/next": "chore(release): record changelog event for v1.3.0@9#f15f34e3"
+    },
+    "tags": {
+      "v1.2.0": {
+        "message": "Release v1.2.0",
+        "target": "docs: changelog history@5#2f90492d",
+        "type": "tag"
+      },
+      "v1.3.0": {
+        "message": "Release v1.3.0",
+        "target": "chore(release): v1.3.0@8#8d58d286",
+        "type": "tag"
+      }
+    }
+  },
+  "refs": {
+    "branches": {
+      "main": "docs: changelog history@5#2f90492d",
+      "release/next": "chore(release): record changelog event for v1.3.0@9#f15f34e3"
+    },
+    "tags": {
+      "v1.2.0": {
+        "message": "Release v1.2.0",
+        "target": "docs: changelog history@5#2f90492d",
+        "type": "tag"
+      },
+      "v1.3.0": {
+        "message": "Release v1.3.0",
+        "target": "chore(release): v1.3.0@8#8d58d286",
+        "type": "tag"
+      }
+    }
+  },
+  "schema": 1,
+  "status": [
+    " M .shipwright/agent_docs/build_dashboard.md",
+    " M shipwright_events.jsonl",
+    " M shipwright_run_config.json",
+    "?? .shipwright/agent_docs/session_handoff.md"
+  ],
+  "steps": [
+    {
+      "exit_code": 0,
+      "fields": {
+        "branch": "release/next",
+        "commits_since_tag": 2,
+        "last_tag": "v1.2.0",
+        "mode": "pipeline",
+        "previous_tag_has_release": false,
+        "status": "ok",
+        "suggested": "1.3.0",
+        "version": "1.3.0",
+        "version_question": "auto-accepted",
+        "version_reason": "new feature(s)"
+      },
+      "step": "prepare"
+    },
+    {
+      "exit_code": 0,
+      "fields": {
+        "changelog_updated": false,
+        "legacy_bullets": 0,
+        "section_action": "inserted",
+        "status": "ok",
+        "version": "1.3.0"
+      },
+      "step": "aggregate"
+    },
+    {
+      "exit_code": 0,
+      "fields": {
+        "changelog_updated": true,
+        "legacy_bullets": 0,
+        "section_action": "inserted",
+        "status": "ok",
+        "version": "1.3.0"
+      },
+      "step": "aggregate"
+    },
+    {
+      "exit_code": 0,
+      "fields": {
+        "status": "not_applicable"
+      },
+      "step": "fold-events"
+    },
+    {
+      "exit_code": 0,
+      "fields": {
+        "pathspec": [],
+        "status": "ok",
+        "version": "1.3.0"
+      },
+      "step": "sync"
+    },
+    {
+      "exit_code": 0,
+      "fields": {
+        "pathspec": [
+          ".shipwright/compliance/change-history.md",
+          ".shipwright/compliance/dashboard.md",
+          ".shipwright/compliance/sbom.md",
+          ".shipwright/compliance/test-evidence.md",
+          ".shipwright/compliance/test-traceability.json",
+          ".shipwright/compliance/traceability-matrix.md"
+        ],
+        "status": "ok"
+      },
+      "step": "evidence"
+    },
+    {
+      "exit_code": 0,
+      "fields": {
+        "status": "ok",
+        "version": "1.3.0"
+      },
+      "step": "commit-and-tag"
+    },
+    {
+      "exit_code": 0,
+      "fields": {
+        "status": "ok"
+      },
+      "step": "open-pr"
+    },
+    {
+      "exit_code": 0,
+      "fields": {
+        "status": "ok"
+      },
+      "step": "record-event"
+    },
+    {
+      "exit_code": 0,
+      "fields": {
+        "status": "ok"
+      },
+      "step": "push-tags"
+    },
+    {
+      "exit_code": 0,
+      "fields": {
+        "reason": "",
+        "status": "ok"
+      },
+      "step": "release-page"
+    },
+    {
+      "exit_code": 0,
+      "fields": {
+        "status": "ok",
+        "version": "1.3.0"
+      },
+      "step": "close-phase"
+    }
+  ],
+  "stub": {
+    "argv": [
+      {
+        "argv": [
+          "--version"
+        ],
+        "exit": 0
+      },
+      {
+        "argv": [
+          "release",
+          "view",
+          "v1.2.0",
+          "--repo",
+          "acme-fixture/widgets",
+          "--json",
+          "url"
+        ],
+        "exit": 1
+      },
+      {
+        "argv": [
+          "pr",
+          "create",
+          "--title",
+          "Release v1.3.0",
+          "--body",
+          "<masked:judgement>",
+          "--base",
+          "main"
+        ],
+        "exit": 0
+      },
+      {
+        "argv": [
+          "--version"
+        ],
+        "exit": 0
+      },
+      {
+        "argv": [
+          "auth",
+          "status",
+          "--hostname",
+          "github.com"
+        ],
+        "exit": 0
+      },
+      {
+        "argv": [
+          "release",
+          "view",
+          "v1.3.0",
+          "--repo",
+          "acme-fixture/widgets",
+          "--json",
+          "url"
+        ],
+        "exit": 1
+      },
+      {
+        "argv": [
+          "release",
+          "create",
+          "v1.3.0",
+          "--notes-file",
+          "<repo>/.shipwright/runtime/release_notes_v1.3.0.md",
+          "--title",
+          "v1.3.0",
+          "--verify-tag",
+          "--repo",
+          "acme-fixture/widgets"
+        ],
+        "exit": 0
+      }
+    ],
+    "prs": [
+      {
+        "base": "main",
+        "body": "<masked:judgement>",
+        "head": "release/next",
+        "number": "1",
+        "state": "open",
+        "title": "<masked:judgement>"
+      }
+    ],
+    "releases": {
+      "v1.3.0": {
+        "notes": "<masked:judgement>",
+        "title": "v1.3.0"
+      }
+    }
+  }
+}

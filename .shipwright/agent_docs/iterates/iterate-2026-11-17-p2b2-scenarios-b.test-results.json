@@ -1,0 +1,108 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-17-p2b2-scenarios-b",
+    "date": "2026-11-17",
+    "unit": {
+      "status": "passed",
+      "passed": 158,
+      "skipped": 0,
+      "total": 158
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run pytest plugins/shipwright-changelog/tests/golden -q -p no:cacheprovider",
+      "exit_code": 0,
+      "tests_run": 77,
+      "evidence_path": ".shipwright/runs/iterate-2026-11-17-p2b2-scenarios-b/surface_verification.json",
+      "timestamp": "2026-11-17T21:06:09.033Z",
+      "attempts": 1
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "scenarios S10, S11a/b, S12a/b/c record assets, manifests and the release page as today's behaviour and judge AC05, AC09, AC12-AC15 through the oracle",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-changelog/tests/golden/test_scenarios_assets.py (6 tests) PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "scenarios S13, S14a/b/c, S15 record the dispatched run, branch cases and the pathspec; D2, D7, D24 stay recorded as today's behaviour",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-changelog/tests/golden/test_scenarios_modes.py, plugins/shipwright-changelog/tests/golden/test_scenarios_branches.py PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "refusal scenarios S16a-f, S17a/b, S18a/b, S19 and S1d assert each refusal by its kind and leave the disk as the refusal promises",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-changelog/tests/golden/test_scenarios_refusals.py (6 tests), test_scenarios_modes.py (S17-S19), test_scenarios_release.py::test_s1d PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "close-phase replay step runs the frozen phase-complete block; every frozen chain equals the whole fenced prose block",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-changelog/tests/golden/test_replay_driver.py::test_the_frozen_chains_match_the_prose_they_copy_in_full PASSED"
+        },
+        {
+          "behavior": "coverage checks P8a-c are green on the unchanged skill and each goes red on a broken input",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-changelog/tests/golden/test_coverage_checks.py (7 tests) PASSED"
+        },
+        {
+          "behavior": "three seeded regressions (tag on HEAD~1, commit without pathspec, drops kept) are caught with the oracle's own message",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-changelog/tests/golden/test_seeded_regressions.py (4 tests) PASSED"
+        },
+        {
+          "behavior": "committed traces equal two fresh runs; freeze list names every new file; layout=drops run is green too",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-changelog/tests/golden/test_trace_freeze.py::test_the_real_tree_respects_the_freeze PASSED; SHIPWRIGHT_EVENTS_LAYOUT=drops run 77 passed"
+        },
+        {
+          "behavior": "stub warns instead of failing when the local checkout cannot follow a merge; collect masks the advisory status line only",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_gh_stub.py::test_a_local_checkout_that_cannot_follow_a_merge_that_already_happened_warns_and_succeeds; shared/tests/test_golden_trace.py::test_the_advisory_status_line_is_a_collect_option_and_defaults_to_the_audits_triage_file PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 8,
+        "tested": 8,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 8,
+        "covered_acs": 8
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-24-r5b-merge-lane",
+    "commit": "032d1ebbf0ef9c99eb98f240c8f1110e981a32a5",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
