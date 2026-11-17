@@ -19,22 +19,27 @@ Where it looks (no environment guessing, no network):
   is ``--base``, else the bare repository's default branch.
 * ``pr merge``: really merges the head into the remote's base branch (a merge commit, ``--merge``
   only; ``--squash`` and ``--rebase`` are refused as unsupported) and, with ``--delete-branch``,
-  deletes the head branch on the remote. Refuses without a merge flag (as ``gh`` does when it
-  cannot prompt), when no open PR matches, and on a merge conflict.
+  deletes the head branch on the remote. When the LOCAL checkout is on the PR's head, ``--delete-branch``
+  also does what the real ``gh`` does: check out the base, fast-forward it from the push URL
+  (``git fetch <bare> <base>`` and ``merge --ff-only FETCH_HEAD``) and delete the local head, so a later
+  ``git push --tags origin main`` pushes the merged ``main``. Refuses without a merge flag (as ``gh`` does
+  when it cannot prompt), when no open PR matches, and on a merge conflict.
 * ``release create``: refuses unless the tag is on the remote, or the release exists already;
   otherwise persists it. ``release view`` then reports it (``--json url`` prints ``{"url": ...}``),
   or exits 1 with ``release not found``.
 * ``--version`` and ``auth status`` succeed. Anything else: exit 2.
+* ``--repo`` / ``-R`` is accepted and ignored (only the URL of the PR and release comes from it): the
+  repository is always the one in the current directory, so the cwd MUST be the scratch repository.
 * ``pr create`` also refuses a base that is not on the remote and a second open PR for the same
-  head and base, as ``gh`` does. The common short flags (``-t -b -B -H -F -m -d -R -n -s -r``) map to
-  their long form; any other short flag, and a valued flag without a value, is refused (exit 2).
+  head and base, as ``gh`` does. Short flags map per command (``_SHORT``: ``release create`` has
+  ``-t -n -F -d -p``, ``pr create`` ``-t -b -B -H -F -R``, ``pr merge`` ``-m -d -s -r -R``); any other
+  short flag, a bundled one (``-md``) and a valued flag without a value is refused (exit 2).
 * A long flag the contract does not list is refused (exit 2): a valued flag would otherwise leak its value
   into the positionals. A crash inside the stub exits 4 and is logged like any call; a call killed by
   a timeout is the one case that writes no log line.
 
-**Fidelity limits, on purpose:** the local checkout and local branches are never touched (the
-real ``pr merge --delete-branch`` also switches the local checkout and pulls); no fetch, no
-auth, no squash or rebase merge, one repository. ``release create`` refuses an unpushed tag even
+**Fidelity limits, on purpose:** the local checkout is touched only as described under ``pr merge``
+(the real ``gh`` also updates remote-tracking refs, which the scratch never reads); no auth, no squash or rebase merge, one repository. ``release create`` refuses an unpushed tag even
 without ``--verify-tag`` (the real ``gh`` would create the tag; the release script always passes the
 flag), and a missing notes file is an internal error (exit 4) where the real ``gh`` exits 1. A scenario that depends on those has no oracle.
 
@@ -57,8 +62,14 @@ _GIT = ["git", "-c", "user.name=gh-stub", "-c", "user.email=gh-stub@example.inva
         "-c", "commit.gpgsign=false", "-c", "core.autocrlf=false"]
 
 
-_SHORT = {"-t": "--title", "-b": "--body", "-B": "--base", "-H": "--head", "-F": "--body-file", "-m": "--merge",
-          "-d": "--delete-branch", "-R": "--repo", "-n": "--notes", "-s": "--squash", "-r": "--rebase"}
+_SHORT: dict[tuple[str, str], dict[str, str]] = {
+    ("pr", "create"): {"-t": "--title", "-b": "--body", "-B": "--base", "-H": "--head", "-F": "--body-file",
+                       "-R": "--repo"},
+    ("pr", "merge"): {"-m": "--merge", "-d": "--delete-branch", "-s": "--squash", "-r": "--rebase", "-R": "--repo"},
+    ("release", "create"): {"-t": "--title", "-n": "--notes", "-F": "--notes-file", "-d": "--draft",
+                            "-p": "--prerelease", "-R": "--repo"},
+    ("release", "view"): {"-R": "--repo"},
+}
 
 
 _GIT_ENV_DROP = ("GIT_AUTHOR_NAME", "GIT_AUTHOR_EMAIL", "GIT_COMMITTER_NAME", "GIT_COMMITTER_EMAIL")
@@ -83,17 +94,18 @@ def _git(*args: str, cwd: Path | str, check: bool = True) -> str:
     return done.stdout.strip()
 
 
-def _flags(argv: list[str], valued: tuple[str, ...], bare_ok: tuple[str, ...] = ()) -> tuple[list[str], dict[str, str], set[str]]:
-    """Split ``argv`` into positionals, ``--name value`` pairs and bare flags."""
+def _flags(argv: list[str], valued: tuple[str, ...], bare_ok: tuple[str, ...] = (),
+           short: dict[str, str] | None = None) -> tuple[list[str], dict[str, str], set[str]]:
+    """Split ``argv`` into positionals, ``--name value`` pairs and bare flags. ``short`` is the command's own map."""
     positional: list[str] = []
     values: dict[str, str] = {}
     bare: set[str] = set()
     it = iter(argv)
     for arg in it:
-        if arg.startswith("-") and not arg.startswith("--") and len(arg) == 2:
-            if arg not in _SHORT:
+        if arg.startswith("-") and not arg.startswith("--") and len(arg) > 1:
+            if arg not in (short or {}):
                 raise Refusal(f"gh-stub: unsupported flag {arg}", 2)  # a difference to recognise, not to guess at
-            arg = _SHORT[arg]
+            arg = short[arg]
         name, eq, inline = arg.partition("=")
         if name in valued:
             value = inline if eq else next(it, "")
@@ -148,7 +160,8 @@ class Stub:
 
     # ---- commands -------------------------------------------------------------------------
     def pr_create(self, argv: list[str]) -> str:
-        _, v, _ = _flags(argv, ("--title", "--body", "--base", "--head", "--repo", "--body-file"))
+        _, v, _ = _flags(argv, ("--title", "--body", "--base", "--head", "--repo", "--body-file"),
+                         short=_SHORT[("pr", "create")])
         head = v.get("--head") or self.current_branch()
         if not self.remote_has(f"refs/heads/{head}"):
             raise Refusal(f"gh-stub: aborted: head branch '{head}' is not on the remote; push it first")
@@ -166,7 +179,8 @@ class Stub:
         return f"https://github.com/{self.repo_slug(v.get('--repo'))}/pull/{number}\n"
 
     def pr_merge(self, argv: list[str]) -> str:
-        pos, v, bare = _flags(argv, ("--repo",), ("--merge", "--squash", "--rebase", "--delete-branch"))
+        pos, v, bare = _flags(argv, ("--repo",), ("--merge", "--squash", "--rebase", "--delete-branch"),
+                              short=_SHORT[("pr", "merge")])
         if "--squash" in bare or "--rebase" in bare:
             raise Refusal("gh-stub: only --merge is supported", 2)
         if "--merge" not in bare:
@@ -180,7 +194,8 @@ class Stub:
             _git("clone", "--quiet", self.remote(), work, cwd=self.state_dir)
             _git("checkout", "--quiet", pr["base"], cwd=work)
             merged = subprocess.run([*_GIT, "merge", "--no-ff", "-m", f"Merge pull request #{pr['number']} from {pr['head']}",
-                                     f"origin/{pr['head']}"], cwd=work, env=_env(), capture_output=True, text=True, timeout=120)
+                                     f"origin/{pr['head']}"], cwd=work, env=_env(), capture_output=True, text=True,
+                                    encoding="utf-8", errors="replace", timeout=120)
             if merged.returncode != 0:
                 raise Refusal(f"gh-stub: pull request #{pr['number']} is not mergeable: {merged.stdout.strip()[-200:]}")
             _git("push", "--quiet", "origin", pr["base"], cwd=work)
@@ -188,11 +203,23 @@ class Stub:
             self.save()  # the remote is merged now, whatever the branch delete does
             if "--delete-branch" in bare:
                 _git("push", "--quiet", "origin", "--delete", pr["head"], cwd=work)
+        if "--delete-branch" in bare and self.current_branch() == pr["head"]:
+            self._leave_merged_head(pr)
         return f"Merged pull request #{pr['number']}\n"
+
+    def _leave_merged_head(self, pr: dict) -> None:
+        """What the real ``gh pr merge --delete-branch`` does to a checkout that is on the merged head."""
+        base = pr["base"]
+        if os.environ.get("GIT_ALLOW_PROTOCOL") != "file":  # only ever inside a scratch: never a real checkout
+            raise Refusal("gh-stub: refusing to move a checkout outside a scratch (GIT_ALLOW_PROTOCOL is not 'file')", 3)
+        _git("checkout", "--quiet", base, cwd=self.cwd)
+        _git("fetch", "--quiet", self.remote(), base, cwd=self.cwd)
+        _git("merge", "--quiet", "--ff-only", "FETCH_HEAD", cwd=self.cwd)
+        _git("branch", "-D", pr["head"], cwd=self.cwd)
 
     def release_create(self, argv: list[str]) -> str:
         pos, v, _ = _flags(argv, ("--notes-file", "--title", "--repo", "--notes", "--target"),
-                             ("--verify-tag", "--draft", "--prerelease"))
+                             ("--verify-tag", "--draft", "--prerelease"), short=_SHORT[("release", "create")])
         tag = pos[0] if pos else ""
         if not tag:
             raise Refusal("gh-stub: a tag name is required", 2)
@@ -206,7 +233,7 @@ class Stub:
         return url + "\n"
 
     def release_view(self, argv: list[str]) -> str:
-        pos, v, _ = _flags(argv, ("--repo", "--json"))
+        pos, v, _ = _flags(argv, ("--repo", "--json"), short=_SHORT[("release", "view")])
         release = self.state["releases"].get(pos[0] if pos else "")
         if release is None:
             raise Refusal("release not found")

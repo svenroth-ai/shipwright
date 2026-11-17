@@ -1,0 +1,1 @@
+{"stage": "spec-compliance", "verdict": "PASS", "spec_citations": [], "summary": "All 4 P2b1 acceptance criteria and the six harness hardening items are met; non-blocking: EVENT_PR/EVENT_MAIN used an ASCII hyphen where SKILL.md uses an em dash (since fixed)."}

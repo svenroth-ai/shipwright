@@ -1,0 +1,1 @@
+Changelog golden-trace replay driver, oracle and scenarios S1-S9 with committed traces; harness hardening (gh stub leaves the checkout on the merged base, dummy GH token, per-command short flags, masked PR bodies)

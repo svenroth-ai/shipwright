@@ -1,0 +1,1 @@
+- (2026-11-17) iterate — A golden trace must mask text copied from shared templates (.gitignore, AGENTS.md): the artifact-path canon lint scans traces and a template edit would move every trace. [→ iterate-2026-11-17-p2b1-scenarios-a]

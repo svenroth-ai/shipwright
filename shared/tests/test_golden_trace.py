@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 
 
-pytestmark = pytest.mark.covers("FR-01.09/AC14")  # test support for the changelog pilot (programme P2a)
+pytestmark = pytest.mark.covers("FR-01.09/AC14")  # test support for the changelog pilot (programme P2a); the gate refuses removing it (tag-removed), see the P2b1 FINDINGS note
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(_REPO_ROOT / "shared" / "testkit"))
 
@@ -108,6 +108,25 @@ def test_steps_and_the_argv_log_are_part_of_the_trace(scratch):
     assert trace["stub"]["argv"] == [{"argv": ["release", "view", "v9.9.9", "--repo", rs.FAKE_SLUG], "exit": 1}]
 
 
+def test_pr_title_and_body_and_body_flags_in_the_argv_log_are_masked_like_notes(scratch):
+    prefix = json.loads(scratch.env["SHIPWRIGHT_TEST_GH_ARGV_PREFIX"])
+    scratch.git("checkout", "-q", "-b", "feat/x")
+    scratch.git("push", "-q", "origin", "feat/x")
+    body_file = scratch.repo / "body.md"
+    body_file.write_text("model body from a file", encoding="utf-8")
+    scratch.run([*prefix, "pr", "create", "--title", "Release v1", "--body", "model body one", "--base", "main"], check=True)
+    scratch.run([*prefix, "pr", "create", "-b", "model body two", "--base", "main"])
+    scratch.run([*prefix, "pr", "create", "--body=model body three", "--base", "main"])
+    scratch.run([*prefix, "pr", "create", "--body-file", str(body_file), "--base", "main"])
+    trace = gt.collect(scratch)
+    text = gt.dumps(trace)
+    assert "model body" not in text and "Release v1" not in json.dumps(trace["stub"]["prs"])
+    assert trace["stub"]["prs"][0] == {"number": "1", "head": "feat/x", "base": "main", "title": gt.MASK,
+                                       "body": gt.MASK, "state": "open"}
+    assert ["--body=" + gt.MASK, "--base", "main"] == trace["stub"]["argv"][2]["argv"][2:]
+    assert trace["stub"]["argv"][3]["argv"][:2] == ["pr", "create"] and gt.MASK in trace["stub"]["argv"][3]["argv"]
+
+
 def test_dumps_is_one_stable_form():
     text = gt.dumps({"b": 1, "a": ["é"]})
     assert text == '{\n  "a": [\n    "é"\n  ],\n  "b": 1\n}\n'
@@ -188,7 +207,8 @@ def test_an_extra_commit_on_a_branch_merged_and_deleted_still_changes_the_trace(
         return gt.collect(s)
 
     plain, stray = run(False), run(True)
-    assert plain["origin"]["branches"] != stray["origin"]["branches"] or plain["all_commits"]["origin"] != stray["all_commits"]["origin"]
+    assert plain["origin"]["branches"]["main"] != stray["origin"]["branches"]["main"]  # same subject and depth, other digest
+    assert plain["origin"]["branches"].keys() == stray["origin"]["branches"].keys() == {"main"}
     assert len(stray["all_commits"]["origin"]) == len(plain["all_commits"]["origin"]) + 1
 
 

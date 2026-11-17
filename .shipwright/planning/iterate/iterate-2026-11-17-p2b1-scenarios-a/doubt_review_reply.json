@@ -1,0 +1,6 @@
+{"stage":"doubt","gating":"advisory-must-address","doubts":[
+{"severity":"high","lens":"hidden coupling","claim_under_doubt":"traces change only with changelog behaviour","what_would_resolve_it":"list shared templates and minimal_valid_project as trace inputs (documented as follow-up for P2b2/stop 2)"},
+{"severity":"medium","lens":"reversibility","claim_under_doubt":"gh_stub checkout cannot destroy real work","what_would_resolve_it":"guard added: refuses unless GIT_ALLOW_PROTOCOL=file"},
+{"severity":"medium","lens":"cross-OS","claim_under_doubt":"traces equal on Windows and Linux","what_would_resolve_it":"stderr reason removed; Linux CI run is the first cross-OS check"},
+{"severity":"medium","lens":"oracle independence","claim_under_doubt":"D15/D21-D23 come from the prose","what_would_resolve_it":"em dash fixed; full-chain compare tracked for P2b2"}
+],"summary":"1 high (coupling, documented), 3 medium (2 fixed, 1 tracked)."}

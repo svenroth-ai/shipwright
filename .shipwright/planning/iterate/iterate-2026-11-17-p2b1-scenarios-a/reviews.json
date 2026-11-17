@@ -1,0 +1,379 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-17-p2b1-scenarios-a",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-17T15:48:56.569825+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The \"frozen copies of the three shell chains\" plus a citation table means the replay and SKILL.md can silently drift apart if the skill is edited outside P5 (e.g., a hotfix). Traces stay green while the citation lines go stale — the test would pass while citing wrong lines.",
+          "suggestion": "Add a lightweight consistency check: on every run, verify each cited line actually contains its needle (grep the current SKILL.md at the cited line number). That keeps frozen copies for determinism but catches drift cheaply.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "\"Traces stable across two runs\" is an AC, but the plan doesn't name the sources of nondeterminism it must neutralize: timestamps in git commits, temp-dir paths in the scratch, PR numbers/IDs from the gh stub, and ordering of any set/dict iteration. Without an explicit normalization list, the first stability failure will be a debugging session rather than a fix.",
+          "suggestion": "Enumerate normalization rules in the plan (path scrubbing, commit-hash relabeling to `HASH[n]`, clock freezing via a fixed `GIT_AUTHOR_DATE`/`GIT_COMMITTER_DATE` and stubbed gh dates). Freeze time in the harness, don't post-filter it out of traces.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The harness hardening items (gh stub checkout-after-merge, short-flag map, body masking) are P2a changes bundled into a P2b1 unit whose spec says \"test-support only: no skill, script or product code changes.\" Modifying the P2a harness is arguably in-scope (test infra), but the merge-order dependency is unstated: if P2a's harness tests and P2b1's changes land in the same PR, a red harness test is ambiguous about which unit broke.",
+          "suggestion": "Either split the harness hardening into its own commit with its own tests (clear bisectability), or confirm with the operator that bundling is acceptable and record it. Anything needing an operator answer is a STRICT-STOP per your own rules.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "D21–D23 refusals (pathspec, tracked drop deletion, staged event) leave a dirty tree — the plan says scenarios \"record the refusal,\" but the plan doesn't say what happens to the next command after a refusal. If the frozen chain assumes success mid-chain, subsequent replay commands may fail for the wrong reason.",
+          "suggestion": "Make each refusal scenario a standalone scratch; state explicitly that a refusal terminates that chain's replay and the expected trace ends there.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "Masking PR title/body in traces is planned (good), but the dummy GH_TOKEN must not accidentally leak into golden `.trace.json` if the trace captures environment or command invocation. Committed traces are reviewed artifacts; a real-looking token even if fake invites copy-paste.",
+          "suggestion": "Assert in the harness test that no trace file contains the token value; use an obviously-fake sentinel like `ghp_DUMMY_NOT_A_TOKEN`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "No mention of Python version / dependency policy for `driver_replay.py` and `oracle.py`. The repo rules referenced may already cover this, but the plan doesn't confirm stdlib-only vs. the repo's pinned env (uv is mentioned only as a cache pass-through).",
+          "suggestion": "State the runtime environment for the replay driver explicitly (stdlib-only is the safe default for a golden-test harness).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "SHIPWRIGHT_GOLDEN_REGEN=1` rewrite mode is a one-way door: running it accidentally (e.g., in CI with a stray env var) rewrites goldens and masks regressions as a diff.",
+          "suggestion": "Have regen mode also emit a loud summary of changed files, and require it be disabled in CI (fail if the env var is set when running in a CI context).",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach |",
+          "file": null,
+          "line": null,
+          "finding": "Step 4 specifies FR-01.09 checks only, while the scope also permits FR-01.01 and requires every scenario to assert its assigned ACs. Trace equality alone can preserve incorrect behavior without proving those ACs.",
+          "suggestion": "Map each scenario to its required ACs from the brief and inventory, with explicit oracle assertions. Keep those assertions mandatory during trace regeneration so regeneration cannot bless a failed AC.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "Step 5 treats D21–D23 refusals as expected behavior without distinguishing faithful reproduction of known findings from a new failure. That could turn a required red/STRICT-STOP into a passing snapshot.",
+          "suggestion": "Tie each expected refusal to its existing finding and assert the precise failure point, result, and repository state. Any additional refusal or unmet required AC must remain red and trigger STRICT-STOP.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk |",
+          "file": null,
+          "line": null,
+          "finding": "Masking PR titles, bodies, and body flags can hide behavior that scenarios need to verify—for example, an omitted body or incorrect content could produce the same normalized trace.",
+          "suggestion": "Assert the original arguments and resulting PR content before masking. Preserve argument presence and structure in traces, using deterministic placeholders only for variable values.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency |",
+          "file": null,
+          "line": null,
+          "finding": "Frozen command copies are reasonable for surviving P5, but line numbers plus needles do not establish that the entire replay matches the unchanged baseline. The plan also does not explicitly include the required `unchanged` AC record, LEARNINGS append, or architecture-rule review.",
+          "suggestion": "Anchor the frozen commands and citations to the baseline revision and verify complete command text against it. Add the required records and conventions review as completion checks, enforcing the allowed AC identifiers and `unchanged` record kind.  The replay approach is sound, and the proposed harness work fits the task. Before implementation, tighten the distinction between semantic assertions, expected failures, and regenerable snapshots, and make the required campaign records explicit.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-17T15:48:40.161474+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Review Findings\n\n**Category:** approach — **Severity:** low\n**Finding:** The \"frozen copies of the three shell chains\" plus a citation table means the replay and SKILL.md can silently drift apart if the skill is edited outside P5 (e.g., a hotfix). Traces stay green while the citation lines go stale — the test would pass while citing wrong lines.\n**Suggestion:** Add a lightweight consistency check: on every run, verify each cited line actually contains its needle (grep the current SKILL.md at the cited line number). That keeps frozen copies for determinism but catches drift cheaply.\n\n**Category:** edge-case — **Severity:** medium\n**Finding:** \"Traces stable across two runs\" is an AC, but the plan doesn't name the sources of nondeterminism it must neutralize: timestamps in git commits, temp-dir paths in the scratch, PR numbers/IDs from the gh stub, and ordering of any set/dict iteration. Without an explicit normalization list, the first stability failure will be a debugging session rather than a fix.\n**Suggestion:** Enumerate normalization rules in the plan (path scrubbing, commit-hash relabeling to `HASH[n]`, clock freezing via a fixed `GIT_AUTHOR_DATE`/`GIT_COMMITTER_DATE` and stubbed gh dates). Freeze time in the harness, don't post-filter it out of traces.\n\n**Category:** risk — **Severity:** medium\n**Finding:** The harness hardening items (gh stub checkout-after-merge, short-flag map, body masking) are P2a changes bundled into a P2b1 unit whose spec says \"test-support only: no skill, script or product code changes.\" Modifying the P2a harness is arguably in-scope (test infra), but the merge-order dependency is unstated: if P2a's harness tests and P2b1's changes land in the same PR, a red harness test is ambiguous about which unit broke.\n**Suggestion:** Either split the harness hardening into its own commit with its own tests (clear bisectability), or confirm with the operator that bundling is acceptable and record it. Anything needing an operator an […truncated]\n\n[openai] Review based on the supplied specification and mini-plan; local policy blocked access to the referenced repository documents.\n\n1. **Category: approach | Severity: high**  \n   **Finding:** Step 4 specifies FR-01.09 checks only, while the scope also permits FR-01.01 and requires every scenario to assert its assigned ACs. Trace equality alone can preserve incorrect behavior without proving those ACs.  \n   **Suggestion:** Map each scenario to its required ACs from the brief and inventory, with explicit oracle assertions. Keep those assertions mandatory during trace regeneration so regeneration cannot bless a failed AC.\n\n2. **Category: edge-case | Severity: high**  \n   **Finding:** Step 5 treats D21–D23 refusals as expected behavior without distinguishing faithful reproduction of known findings from a new failure. That could turn a required red/STRICT-STOP into a passing snapshot.  \n   **Suggestion:** Tie each expected refusal to its existing finding and assert the precise failure point, result, and repository state. Any additional refusal or unmet required AC must remain red and trigger STRICT-STOP.\n\n3. **Category: risk | Severity: medium**  \n   **Finding:** Masking PR titles, bodies, and body flags can hide behavior that scenarios need to verify—for example, an omitted body or incorrect content could produce the same normalized trace.  \n   **Suggestion:** Assert the original arguments and resulting PR content before masking. Preserve argument presence and structure in traces, using deterministic placeholders only for variable values.\n\n4. **Category: dependency | Severity: medium**  \n   **Finding:** Frozen command copies are reasonable for surviving P5, but line numbers plus needles do not establish that the entire replay matches the unchanged baseline. The plan also does not explicitly include the required `unchanged` AC record, LEARNINGS append, or architecture-rule review.  \n   **Suggestion:** Anchor the frozen commands and citations to the baseline revi […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      },
+      "model_tier": "opus"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/tests/golden/driver_replay.py",
+          "line": 88,
+          "finding": "trace reason taken from last stderr line",
+          "suggestion": "fixed code exit_N (fixed)",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": "shared/testkit/release_scratch.py",
+          "line": 124,
+          "finding": "GIT_CONFIG_NOSYSTEM removed without rationale",
+          "suggestion": "rationale comment added; removal was a brief hardening item",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/tests/golden/test_replay_driver.py",
+          "line": 1299,
+          "finding": "frozen-chain test checks only script prefixes",
+          "suggestion": "em dash fixed; full-chain compare is a P2b2 follow-up",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-changelog/tests/golden/test_replay_driver.py",
+          "line": 1276,
+          "finding": "tautological line",
+          "suggestion": "removed",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-changelog/tests/golden/conftest.py",
+          "line": 105,
+          "finding": "pytest.fail in fixture",
+          "suggestion": "raise AssertionError (fixed)",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-17T15:48:39.908335+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "74cff48518980ee2a03aa8e7c6d26a69ce7f6205",
+      "reviewer_notes": "No high findings."
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "hidden coupling",
+          "file": null,
+          "line": null,
+          "finding": "traces change only with changelog behaviour",
+          "suggestion": "list shared templates and minimal_valid_project as trace inputs (documented as follow-up for P2b2/stop 2)",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "reversibility",
+          "file": null,
+          "line": null,
+          "finding": "gh_stub checkout cannot destroy real work",
+          "suggestion": "guard added: refuses unless GIT_ALLOW_PROTOCOL=file",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "cross-OS",
+          "file": null,
+          "line": null,
+          "finding": "traces equal on Windows and Linux",
+          "suggestion": "stderr reason removed; Linux CI run is the first cross-OS check",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "oracle independence",
+          "file": null,
+          "line": null,
+          "finding": "D15/D21-D23 come from the prose",
+          "suggestion": "em dash fixed; full-chain compare tracked for P2b2",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-17T15:48:40.034826+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "74cff48518980ee2a03aa8e7c6d26a69ce7f6205"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "spec |",
+          "file": "plugins/shipwright-changelog/tests/golden/ (whole new test suite)",
+          "line": null,
+          "finding": "The spec requires delivering the generated `.trace.json` files (\"each command … generated .trace.json\", \"Traces generated and stable across two runs\", and `verify()` asserts `path.is_file()` for `S1.legacy.trace.json`, `S3.trace.json`, etc.). None of the trace files appear in the diff. Every scenario test and the two stability tests in `test_replay_driver.py` will fail with \"<id> is missing: run once with SHIPWRIGHT_GOLDEN_REGEN=1\", and the freeze test (`test_trace_freeze.py`) will also fail because the lock cannot list trace files that do not exist. The \"green against the unchanged skill\" acceptance criterion cannot be met without them.",
+          "suggestion": "Commit the generated `<id>[.<layout>].trace.json` files (and the regenerated `golden.lock.json`) produced by a `SHIPWRIGHT_GOLDEN_REGEN=1` run, or the diff is not shippable.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug |",
+          "file": "plugins/shipwright-changelog/tests/golden/oracle.py:22 (`expected_version`)",
+          "line": null,
+          "finding": "int(n) for n in last_tag.lstrip(\"v\").split(\".\")` crashes with `ValueError` on any tag that is not exactly three numeric parts (`v1.2`, `v1.2.3-beta`, `v1.2.3.4`). S6/S7 history uses plain tags, but `ss.tag` lets any scenario name a tag, and the oracle claims to be the independent re-statement of AC04; an `AssertionError`-typed crash on a malformed tag instead reads as an oracle bug, not an AC failure.",
+          "suggestion": "Guard for a non-`\\d+.\\d+.\\d+` tag and raise a clear error (or return the tool's proposal path explicitly) instead of letting `ValueError` escape.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug |",
+          "file": "shared/testkit/release_scratch.py (`_uv_dirs`)",
+          "line": null,
+          "finding": "The function only passes uv dirs through when the parent has `HOME` set (non-Windows). On Linux CI runners that export `XDG_CACHE_HOME`/`XDG_DATA_HOME` outside HOME, `_uv_dirs` ignores `XDG_DATA_HOME`-based uv python locations for `UV_CACHE_DIR` (it does read `XDG_CACHE_HOME` for cache but computes `data` only from `XDG_DATA_HOME` or `HOME/.local/share`) — if `HOME` is unset but `XDG_DATA_HOME` is set, the early `if ... not source.get(\"HOME\"): return {}` skips a valid, existing uv install. Result: scenarios skip (`warm_uv` fixture skips outside CI) or fail in CI even though a warm cache exists.",
+          "suggestion": "Don't bail when `HOME` is missing; fall back to the `XDG_` variables alone.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test |",
+          "file": "plugins/shipwright-changelog/tests/golden/test_replay_driver.py (`test_the_commands_the_driver_runs...`)",
+          "line": null,
+          "finding": "The key-extraction regex is fragile against refactor: `used |= {\"record-event-pr\", \"record-event-main\"} if \"record-event-pr\" in _DRIVER_SOURCE else set()` re-adds exactly the keys the second regex already extracts, so if the driver later gains another dynamically-keyed command (e.g. `\"record-event-\" + variant`), the test passes while `CITES` is stale only if the literal still appears. The check is partly tautological for those keys.",
+          "suggestion": "Derive the dynamic keys from the `fill(... , key)` call shape in a single pattern, or assert on `CITES` keys against the log keys produced by an actual dry run.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": "plugins/shipwright-changelog/tests/golden/driver_replay.py (`step_open_pr`)",
+          "line": null,
+          "finding": "self.state[\"pr_url\"]` is set only on success; if `open-pr` fails (head not pushed — the D7 fresh-branch case, explicitly deferred to S14a), `step_record_event` on a feature branch silently substitutes an empty `@pr_url@` into the event detail. That is today's-prose behaviour so recording it is arguably correct, but the empty string is indistinguishable from \"never set\", so the P2b2 fresh-branch scenario may mask whether the PR URL was actually captured.",
+          "suggestion": "Note it as a deliberate literal in the trace (e.g. record `pr_url_missing`) or assert the substitution in the S14a check.  Otherwise the change is unusually careful: the oracle genuinely re-states ACs without importing the tools under test, refusal scenarios assert both exit codes and on-disk digests (a broken implementation would fail `ss.digest` comparisons), the masking of PR titles/bodies closes a real leak of model-generated text into traces, and the dummy-token scheme is value-pinned so a real credential still trips `assert_no_secrets`.  Overall: the work is sound in design but cannot be green as delivered — the trace files (and lock update) are missing, which fails the spec's own acceptance criteria. Ship-with-fixes.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "plugins/shipwright-changelog/tests/golden/scenario_core.py",
+          "line": 116,
+          "finding": "The diff adds mandatory comparisons against committed scenario traces but adds no `.trace.json` files. On a clean checkout, every scenario reaches the missing-file assertion instead of passing. The required generated traces and two-run stability evidence are absent.",
+          "suggestion": "Generate and commit every scenario/layout trace, then run the complete scenario suite twice without regeneration.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": "shared/testkit/release_scratch.py",
+          "line": 124,
+          "finding": "Removing `GIT_CONFIG_NOSYSTEM=1` lets scratch subprocesses inherit system Git configuration. An installed `core.hooksPath`, signing requirement, or other system setting can execute external hooks or break releases, defeating the harness’s isolation and deterministic results. The new test explicitly enforces this regression.",
+          "suggestion": "Restore `GIT_CONFIG_NOSYSTEM=1` and update the environment test to require it. Address any `uv` compatibility problem without enabling system Git configuration.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": ".shipwright/planning/campaigns/2026-10-25-dfp-pilot-changelog-FINDINGS.md",
+          "line": 49,
+          "finding": "The change identifies new findings D21–D23 and explicitly says they need an operator decision about today’s oracle, but proceeds to encode those outcomes as passing scenarios. The specification requires a STRICT-STOP whenever an operator answer is needed; permission to reproduce existing findings does not resolve these newly identified decisions.",
+          "suggestion": "Obtain and record the operator decision before accepting these outcomes into the replay baseline, then adjust the scenarios accordingly.  Overall assessment: ship-with-fixes. Commit and verify the required traces, restore Git isolation, and resolve the explicitly outstanding oracle decisions before merging.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-17T15:49:47.500456+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] Findings:\n\n- Category: spec | Severity: high\n  File: plugins/shipwright-changelog/tests/golden/ (whole new test suite)\n  Finding: The spec requires delivering the generated `*.trace.json` files (\"each command … generated *.trace.json\", \"Traces generated and stable across two runs\", and `verify()` asserts `path.is_file()` for `S1.legacy.trace.json`, `S3.trace.json`, etc.). None of the trace files appear in the diff. Every scenario test and the two stability tests in `test_replay_driver.py` will fail with \"<id> is missing: run once with SHIPWRIGHT_GOLDEN_REGEN=1\", and the freeze test (`test_trace_freeze.py`) will also fail because the lock cannot list trace files that do not exist. The \"green against the unchanged skill\" acceptance criterion cannot be met without them.\n  Suggestion: Commit the generated `<id>[.<layout>].trace.json` files (and the regenerated `golden.lock.json`) produced by a `SHIPWRIGHT_GOLDEN_REGEN=1` run, or the diff is not shippable.\n\n- Category: bug | Severity: medium\n  File: plugins/shipwright-changelog/tests/golden/oracle.py:22 (`expected_version`)\n  Finding: `int(n) for n in last_tag.lstrip(\"v\").split(\".\")` crashes with `ValueError` on any tag that is not exactly three numeric parts (`v1.2`, `v1.2.3-beta`, `v1.2.3.4`). S6/S7 history uses plain tags, but `ss.tag` lets any scenario name a tag, and the oracle claims to be the independent re-statement of AC04; an `AssertionError`-typed crash on a malformed tag instead reads as an oracle bug, not an AC failure.\n  Suggestion: Guard for a non-`\\d+.\\d+.\\d+` tag and raise a clear error (or return the tool's proposal path explicitly) instead of letting `ValueError` escape.\n\n- Category: bug | Severity: low\n  File: shared/testkit/release_scratch.py (`_uv_dirs`)\n  Finding: The function only passes uv dirs through when the parent has `HOME` set (non-Windows). On Linux CI runners that export `XDG_CACHE_HOME`/`XDG_DATA_HOME` outside HOME, `_uv_dirs` ignores `XDG_DATA_HOME`-based uv python location […truncated]\n\n[openai] I reviewed the supplied diff. Workspace access was blocked by policy, so I could not inspect the referenced briefs or run tests.\n\n- Category: spec\n- Severity: high\n- File: plugins/shipwright-changelog/tests/golden/scenario_core.py:116\n- Finding: The diff adds mandatory comparisons against committed scenario traces but adds no `*.trace.json` files. On a clean checkout, every scenario reaches the missing-file assertion instead of passing. The required generated traces and two-run stability evidence are absent.\n- Suggestion: Generate and commit every scenario/layout trace, then run the complete scenario suite twice without regeneration.\n\n- Category: security\n- Severity: medium\n- File: shared/testkit/release_scratch.py:124\n- Finding: Removing `GIT_CONFIG_NOSYSTEM=1` lets scratch subprocesses inherit system Git configuration. An installed `core.hooksPath`, signing requirement, or other system setting can execute external hooks or break releases, defeating the harness’s isolation and deterministic results. The new test explicitly enforces this regression.\n- Suggestion: Restore `GIT_CONFIG_NOSYSTEM=1` and update the environment test to require it. Address any `uv` compatibility problem without enabling system Git configuration.\n\n- Category: spec\n- Severity: high\n- File: .shipwright/planning/campaigns/2026-10-25-dfp-pilot-changelog-FINDINGS.md:49\n- Finding: The change identifies new findings D21–D23 and explicitly says they need an operator decision about today’s oracle, but proceeds to encode those outcomes as passing scenarios. The specification requires a STRICT-STOP whenever an operator answer is needed; permission to reproduce existing findings does not resolve these newly identified decisions.\n- Suggestion: Obtain and record the operator decision before accepting these outcomes into the replay baseline, then adjust the scenarios accordingly.\n\nOverall assessment: **ship-with-fixes**. Commit and verify the required traces, restore Git isolation, and resolve […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-17T15:48:39.796816+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "74cff48518980ee2a03aa8e7c6d26a69ce7f6205"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-17T15:48:56.290226+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-17T15:48:56.409766+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

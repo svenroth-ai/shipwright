@@ -11,8 +11,7 @@ from pathlib import Path
 
 import pytest
 
-
-pytestmark = pytest.mark.covers("FR-01.09/AC14")  # test support for the changelog pilot (programme P2a)
+pytestmark = pytest.mark.covers("FR-01.09/AC14")  # test support for the changelog pilot (programme P2a); the gate refuses removing it (tag-removed), see the P2b1 FINDINGS note
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(_REPO_ROOT / "shared" / "testkit"))
 
@@ -86,8 +85,37 @@ def test_pr_merge_really_merges_into_the_remote_base_and_deletes_the_head(scratc
     check = scratch.run(["git", "--git-dir", scratch.origin.as_posix(), "log", "-1", "--format=%s%n%P", "main"])
     subject, parents = check.stdout.splitlines()
     assert subject == "Merge pull request #1 from feat/x" and head_sha in parents.split()
-    assert scratch.git("rev-parse", "--abbrev-ref", "HEAD") == "feat/x"  # the local checkout is never touched
     assert scratch.gh_state()["prs"][0]["state"] == "merged"
+
+
+def test_pr_merge_delete_branch_leaves_a_checkout_on_the_head_on_the_merged_base(scratch):
+    push_feature(scratch)
+    gh(scratch, "pr", "create", "--title", "t", "--body", "b", "--base", "main")
+    assert gh(scratch, "pr", "merge", "--merge", "--delete-branch").returncode == 0
+    assert scratch.git("rev-parse", "--abbrev-ref", "HEAD") == "main"
+    assert scratch.git("branch", "--list", "feat/x") == ""  # the local head is deleted
+    assert scratch.git("rev-parse", "main") == remote_refs(scratch)["refs/heads/main"]  # fast-forwarded to the merge
+    assert scratch.git("log", "-1", "--format=%s") == "Merge pull request #1 from feat/x"
+
+
+def test_a_release_tag_and_main_push_after_the_merge_succeeds(scratch):
+    """SKILL.md Step 7, autonomous path: tag on the head, merge with --delete-branch, then push the tags and main."""
+    push_feature(scratch)
+    scratch.git("tag", "-a", "v0.2.0", "-m", "Release v0.2.0")
+    gh(scratch, "pr", "create", "--title", "t", "--body", "b", "--base", "main")
+    assert gh(scratch, "pr", "merge", "--merge", "--delete-branch").returncode == 0
+    pushed = scratch.run(["git", "push", "--tags", "origin", "main"])
+    assert pushed.returncode == 0, pushed.stderr
+    assert "refs/tags/v0.2.0" in remote_refs(scratch)
+
+
+def test_pr_merge_delete_branch_from_another_branch_leaves_the_checkout_alone(scratch):
+    push_feature(scratch)
+    scratch.git("checkout", "-q", "main")
+    gh(scratch, "pr", "create", "--head", "feat/x", "--title", "t", "--body", "b", "--base", "main")
+    assert gh(scratch, "pr", "merge", "feat/x", "--merge", "--delete-branch").returncode == 0
+    assert scratch.git("rev-parse", "--abbrev-ref", "HEAD") == "main"
+    assert scratch.git("branch", "--list", "feat/x") != ""  # only a checkout that sat on the head is switched
 
 
 def test_pr_merge_without_delete_branch_keeps_the_head(scratch):
@@ -164,7 +192,6 @@ def _create_release(s: rs.Scratch, version: str, notes: Path) -> dict:
     return json.loads(done.stdout)
 
 
-@pytest.mark.covers("FR-01.09/AC14")
 def test_the_real_release_script_publishes_through_the_stub_and_is_refused_for_an_unpushed_tag(scratch):
     notes = scratch.repo / "notes.md"
     notes.write_text("## Highlights\n\nShip it.\n", encoding="utf-8")
@@ -194,6 +221,21 @@ def test_pr_create_refuses_what_real_gh_refuses(scratch):
     assert gh(scratch, "pr", "create", "-t", "t", "-b", "b", "-B", "main").returncode == 0  # short flags work
     again = gh(scratch, "pr", "create", "-t", "t", "-b", "b", "-B", "main")
     assert again.returncode == 1 and "already exists" in again.stderr
+
+
+def test_short_flags_are_per_command(scratch):
+    notes = scratch.repo / "n.md"
+    notes.write_text("## Highlights\n", encoding="utf-8")
+    made = gh(scratch, "release", "create", "v0.1.0", "-t", "Title", "-F", str(notes), "-p", "-d")
+    assert made.returncode == 0, made.stderr
+    release = scratch.gh_state()["releases"]["v0.1.0"]
+    assert release["title"] == "Title" and release["notes"].startswith("## Highlights")
+    assert gh(scratch, "release", "create", "v0.1.1", "-b", "x").returncode == 2  # -b is a pr create flag
+    assert gh(scratch, "release", "create", "v0.1.1", "-md").returncode == 2  # bundled short flags are refused
+    push_feature(scratch)
+    assert gh(scratch, "pr", "create", "-t", "t", "-F", str(notes), "-B", "main").returncode == 0
+    assert scratch.gh_state()["prs"][0]["body"].startswith("## Highlights")  # -F is the body file on a PR
+    assert gh(scratch, "pr", "create", "-n", "x").returncode == 2  # -n is a release flag
 
 
 def test_an_unsupported_short_flag_or_a_flag_without_a_value_is_refused_not_guessed(scratch):

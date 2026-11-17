@@ -10,7 +10,8 @@ Standard library only (ADR-044). Three parts:
 2. **The normalizer contract** (:func:`normalize_text`): timestamps, dates, SHAs, UUIDs and
    absolute paths become placeholders; ids the scenario names (run ids, session ids) become
    ``<name>``. **Judgement output is masked** (:data:`MASK`): the files matching
-   ``judgement_globs`` and the ``notes`` of every stubbed release keep their path and existence
+   ``judgement_globs``, the ``notes`` of every stubbed release, the title and body of every stubbed PR
+   and the ``--notes``/``--body``/``--body-file`` values of the argv log keep their path and existence
    but not their text, because a model wrote them. A ref target is ``"<subject>@<depth>"``
    (first-parent depth), never a SHA.
 3. **The driver interface** (programme P7): a scenario calls :class:`Driver` per step. The replay
@@ -32,7 +33,6 @@ import json
 import os
 import re
 import subprocess
-import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Mapping, Protocol, Sequence
@@ -67,17 +67,10 @@ def normalize_text(text: str, *, paths: Mapping[str, Path | str] | None = None,
     return _UUID.sub("<uuid>", _SHA.sub("<sha>", text))
 
 
-_EMPTY_CONFIG: list[str] = []
-
-
 def _git_env() -> dict[str, str]:
     """The recorder reads git under a hermetic environment: no inherited GIT_DIR, no user or system config."""
-    if not _EMPTY_CONFIG:
-        handle = tempfile.NamedTemporaryFile(prefix="golden-empty-gitconfig-", delete=False)
-        handle.close()
-        _EMPTY_CONFIG.append(handle.name)
     env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
-    env.update(GIT_CONFIG_NOSYSTEM="1", GIT_CONFIG_GLOBAL=_EMPTY_CONFIG[0], GIT_TERMINAL_PROMPT="0")
+    env.update(GIT_CONFIG_NOSYSTEM="1", GIT_CONFIG_GLOBAL=os.devnull, GIT_TERMINAL_PROMPT="0")
     return env
 
 
@@ -164,13 +157,17 @@ def _norm_value(norm, value: Any) -> Any:
     return value
 
 
+_MASKED_FLAGS = ("--notes", "-n", "--body", "-b", "--body-file")  # a model wrote the value (notes, PR body)
+
+
 def _mask_inline_notes(argv: Sequence[str]) -> list[str]:
-    """``--notes <text>`` and ``--notes=<text>`` carry model prose: keep the flag, mask the text."""
+    """Release notes and PR body flags carry model prose: keep the flag, mask the text (``--flag value`` and ``--flag=value``)."""
     out: list[str] = []
     for i, arg in enumerate(argv):
-        if arg.startswith("--notes="):
-            out.append("--notes=" + MASK)
-        elif i and argv[i - 1] in ("--notes", "-n"):
+        flag = arg.partition("=")[0]
+        if flag.startswith("--") and "=" in arg and flag in _MASKED_FLAGS:
+            out.append(flag + "=" + MASK)
+        elif i and argv[i - 1] in _MASKED_FLAGS:
             out.append(MASK)
         else:
             out.append(arg)
@@ -208,7 +205,8 @@ def collect(scratch: Any, steps: Sequence["StepResult"] = (), *, files: Sequence
             for p in _expand(repo, files)}
     state = scratch.gh_state()
     releases = {t: {"title": r.get("title"), "notes": MASK} for t, r in sorted(state.get("releases", {}).items())}
-    prs = [{k: norm(str(p.get(k))) for k in ("number", "head", "base", "title", "body", "state")} for p in state.get("prs", [])]
+    prs = [{k: (MASK if k in ("title", "body") else norm(str(p.get(k)))) for k in ("number", "head", "base", "title", "body", "state")}
+           for p in state.get("prs", [])]
     return {
         "schema": SCHEMA_VERSION,
         "steps": [{"step": s.step, "exit_code": s.exit_code, "fields": _norm_value(norm, _fields(s.output, whitelist))} for s in steps],
