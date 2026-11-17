@@ -102,12 +102,18 @@ def test_ac12_every_declared_manifest_carries_the_version_in_the_release_commit_
         (s.repo / "pkg/package.json").write_text(files["pkg/package.json"], encoding="utf-8", newline="\n")
 
     hooks = {"commit-and-tag": put_the_old_version_back} if left_stale else None
-    _, results = _flow(s, before=hooks)
+    driver, results = _flow(s, before=hooks)
     assert (results[-1].step == "commit-and-tag" and results[-1].exit_code != 0) == left_stale
     rev = "HEAD" if left_stale else f"v{VERSION}"
-    oracle.check_ac12_manifests(_versions_at(s, rev), VERSION, _tag_made(s))
+    committed = _versions_at(s, rev)
+    assert None not in committed.values()  # the commit exists and holds both manifests: not a release that silently did not happen
+    oracle.check_ac12_manifests(committed, VERSION, _tag_made(s))
     if left_stale:
+        refusal = [c for c in driver.log if c["key"] == "commit-and-tag"][0]
+        assert "verify_mismatch" in refusal["stdout"] + refusal["stderr"]  # refused for the stale manifest, not for some other reason
         assert s.gh_state()["prs"] == []  # the person stops here: nothing was requested either
+    else:
+        assert all(r.exit_code == 0 for r in results) and _tag_made(s) and set(committed.values()) == {VERSION}
 
 
 @pytest.mark.covers("FR-01.09/AC13")
@@ -145,9 +151,12 @@ def test_ac14_a_summary_that_fails_the_shape_check_is_never_published(make_proje
 
 @pytest.mark.covers("FR-01.09/AC15")
 def test_ac15_a_release_page_that_cannot_be_created_does_not_undo_the_release_and_is_reported(make_project):
-    s, _, results = _page_flow(make_project, skip=("push-tags",))  # the tag is not on the remote: the host refuses the page
+    s, driver, results = _page_flow(make_project, skip=("push-tags",))  # the tag is not on the remote: the host refuses the page
     page = results[-1]
     assert page.step == "release-page" and page.exit_code == 0  # best effort: never a stop
+    assert page.output["status"] == "failed"  # it tried and the host refused (not "skipped": that is the shape check)
+    attempt = [c for c in driver.log if c["key"] == "release-page"][0]
+    assert "not found on the remote" in attempt["stdout"] + attempt["stderr"]
     oracle.check_ac15_page_failed(s.gh_state()["releases"], VERSION, _tag_made(s), page.output["status"])
     assert s.git("log", "-1", "--format=%s", f"v{VERSION}") == f"chore(release): v{VERSION}"
 

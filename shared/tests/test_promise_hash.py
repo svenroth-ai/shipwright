@@ -48,7 +48,7 @@ def test_formatting_comments_docstrings_imports_and_markers_do_not_change_it():
     reformatted = BASE.replace("import json\nimport pytest", "import pytest\nimport json\nimport os")
     reformatted = reformatted.replace('"""A promise."""', '"""Another sentence."""').replace("# fine", "# changed")
     reformatted = reformatted.replace('assert thing.name == "x"', "assert (\n        thing.name\n        ==\n        'x'\n    )")
-    reformatted = reformatted.replace('@pytest.mark.covers("FR-01.09/AC04")', '@pytest.mark.slow\n@pytest.mark.covers("FR-01.09/AC05")')
+    reformatted = reformatted.replace('@pytest.mark.covers("FR-01.09/AC04")', '@pytest.mark.covers("FR-01.09/AC05")')
     assert fp(reformatted) == fp(BASE)
 
 
@@ -130,10 +130,11 @@ def test_it_reads_the_same_move_map_as_the_repository_parser():
     assert ph.resolve_ac("FR-01.11/AC21", ph.parse_move_map(SPEC)) == ac_move_map.resolve_ac("FR-01.11/AC21", ac_move_map.parse_move_map(SPEC))
 
 
-def test_a_mark_that_weakens_the_test_changes_it_but_a_descriptive_one_does_not():
+def test_any_mark_but_covers_changes_it():
     for weaker in ('@pytest.mark.skip(reason="later")', '@pytest.mark.xfail', '@pytest.mark.skipif(True, reason="x")'):
         assert fp(BASE.replace('@pytest.mark.covers("FR-01.09/AC04")', weaker)) != fp(BASE.replace('@pytest.mark.covers("FR-01.09/AC04")', ""))
-    assert fp(BASE.replace('@pytest.mark.covers("FR-01.09/AC04")', "@pytest.mark.slow")) == fp(BASE)
+    assert fp(BASE.replace('@pytest.mark.covers("FR-01.09/AC04")', "@pytest.mark.slow")) != fp(BASE.replace('@pytest.mark.covers("FR-01.09/AC04")', ""))  # CI deselects slow
+    assert fp(BASE.replace('@pytest.mark.covers("FR-01.09/AC04")', '@pytest.mark.covers("FR-01.09/AC09")')) == fp(BASE)
 
 
 def test_an_autouse_fixture_is_part_of_every_test_and_a_malformed_or_missing_ac_id_is_refused():

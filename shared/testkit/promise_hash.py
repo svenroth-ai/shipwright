@@ -3,10 +3,10 @@
 A promise test is locked by hash: a change to what it asserts must be a decision, a change to how it is written must not.
 ``fingerprint`` hashes a *normalized* form of the test function that
 
-* ignores formatting, comments (the parser drops them), docstrings, the import block (order, additions) and descriptive
-  ``pytest.mark.*`` decorators such as ``covers`` (the tag names the AC: a re-anchor shows as an id change, never as a
-  body change). Marks that change what runs or counts - parametrize, skip, skipif, xfail, usefixtures, filterwarnings -
-  are part of the hash, because adding one is the commonest way to weaken a test;
+* ignores formatting, comments (the parser drops them), docstrings, the import block (order, additions, aliases) and the
+  ``covers`` mark (it names the AC: a re-anchor shows as an id change, never as a body change). EVERY other mark is
+  hashed - skip, xfail, parametrize, usefixtures, and also slow or cross_plugin, which CI deselects - because adding one is
+  the cheapest way to weaken a locked test;
 * includes, transitively, every module-level function, class and constant the test names, and every fixture it
   requests (a parameter that is a ``@pytest.fixture`` function of the module or of a ``conftest.py`` handed in), so an
   assertion that lives in a helper or a fixture changes the fingerprint of every test that uses it.
@@ -18,7 +18,7 @@ empty list is left out, and ``type_comment`` / ``kind`` are never read.
 Known limits (a test cannot tell these apart from a real change, and the lock's reviewer must know): a helper imported
 from another module is NOT followed (the golden helper modules are frozen files in their own right); a method of a test
 class is not found (the golden tests are plain functions); names bound at run time (``getattr``, ``request.getfixturevalue``)
-are invisible; a helper's parameter that shadows a module-level name still pulls that name in (over-inclusion: a harmless extra hash
+are invisible; so are bindings inside a module-level if/try/with and in-place mutations such as ``CASES.append(...)``; a helper's parameter that shadows a module-level name still pulls that name in (over-inclusion: a harmless extra hash
 change, never a missed one).
 
 AC ids: ``covers_of`` reads the ids a test declares, ``resolve_acs`` follows them through the spec's ``## AC-Move-Map``
@@ -50,14 +50,15 @@ def _dotted(node: ast.AST) -> str:
     return node.id if isinstance(node, ast.Name) else ""
 
 
-# marks that change what runs or whether it counts: weakening a test with one of them must move the hash
-_BEHAVIOUR_MARKS = ("parametrize", "skip", "skipif", "xfail", "usefixtures", "filterwarnings", "flaky", "timeout")
+# a mark can change what runs or whether it counts: weakening a test with any mark but covers must move the hash
+# (CI deselects ``slow`` and ``cross_plugin``, so even those move the hash). Only a name listed here is ignored.
+_DESCRIPTIVE_MARKS = ("covers",)
 
 
 def _is_marker(decorator: ast.AST) -> bool:
-    """A descriptive ``pytest.mark.*`` decorator (``covers``, ``slow``, ...); the behaviour marks above are kept."""
+    """The one descriptive ``pytest.mark.*`` decorator, ``covers`` (it names the AC and is stored beside the hash); every other mark is hashed."""
     name = _dotted(decorator)
-    return name.startswith(("pytest.mark.", "mark.")) and name.rsplit(".", 1)[-1] not in _BEHAVIOUR_MARKS
+    return name.startswith(("pytest.mark.", "mark.")) and name.rsplit(".", 1)[-1] in _DESCRIPTIVE_MARKS
 
 
 def _is_fixture(node: ast.AST) -> bool:
