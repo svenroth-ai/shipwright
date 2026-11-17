@@ -125,9 +125,10 @@ def _check_s18(edit: bool):
 
 
 def _s19(make_project, layout: str) -> Run:
-    s = ss.ready_release(make_project)
     driver = ReplayDriver()
-    return Run(s, driver, [driver.run_step("prepare", s, from_version="v0.1.0")], {"before": ss.digest(s)})
+    s = ss.ready_release(make_project)
+    before = ss.digest(s)  # taken BEFORE the refused command runs, or an unchanged-disk check proves nothing
+    return Run(s, driver, [driver.run_step("prepare", s, from_version="v0.1.0")], {"before": before})
 
 
 def _check_s19(run: Run) -> None:

@@ -130,7 +130,7 @@ def check_p8b(lines: list[str], steps: Iterable[str]) -> list[str]:
     cited = {line for cites in CITES.values() for line, _ in cites}
     skipped = not_replayed_ranges()
     for start, end in fenced_blocks(lines):
-        if not any(start <= c <= end for c in cited) and not any(a <= end and start <= b for a, b in skipped):
+        if not any(start <= c <= end for c in cited) and not any(a <= start and end <= b for a, b in skipped):
             problems.append(f"SKILL.md:{start}-{end}: a fenced block no replay command cites and NOT_REPLAYED does not list")
     live = conditionals(lines)
     for number, text in live.items():

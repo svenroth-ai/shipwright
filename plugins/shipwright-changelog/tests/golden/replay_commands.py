@@ -47,9 +47,9 @@ CITES: dict[str, list[tuple[int, str]]] = {
 NOT_REPLAYED: dict[str, str] = {
     "SKILL.md:18-31 banner": "printed text, no command",
     "SKILL.md:156 upgrade-notes check": "judgement: a model reads migration pages and may write a drop (references/release-workflow.md)",
-    "SKILL.md:243-251 preview question": "an operator decision; the plan carries it as the 'preview' step",
-    "SKILL.md:148-150 custom version entry": "an operator decision; the plan passes it as the 'version' parameter (the ask itself is recorded as version_question)",
-    "SKILL.md:416-429 summary": "printed text, no command",
+    "SKILL.md:242-251 preview question": "an operator decision; the plan carries it as the 'preview' step",
+    "SKILL.md:147-150 custom version entry": "an operator decision; the plan passes it as the 'version' parameter (the ask itself is recorded as version_question)",
+    "SKILL.md:416-430 summary": "printed text, no command",
 }
 
 # Step 6, SKILL.md:303-317. @shared@ is the shared dir (posix form), @version@ the version without 'v',
