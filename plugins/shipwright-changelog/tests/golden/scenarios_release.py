@@ -128,6 +128,9 @@ def _check_s2(autonomy: str):
         out = run.step("prepare").output
         oracle.check_ac04_version(out["version"], out["last_tag"], run.ctx["messages"])  # AC04: a new capability, 1.x
         assert out["version"] == "1.3.0"
+        # truth table, standalone x autonomy x {version, preview, pr-merge}: the replay's steps and outputs are the cells
+        assert out["version_question"] == ("asked" if autonomy == "guided" else "auto-accepted")  # SKILL.md:142-150
+        assert out["version"] == out["suggested"]  # every autonomy keeps the suggestion
         after = (s.repo / "CHANGELOG.md").read_text(encoding="utf-8")
         oracle.check_ac06_placement(run.ctx["before"], after, "1.3.0")  # AC06 (a section above the 1.2.0 one, title intact)
         oracle.check_ac02_grouped(oracle.sections(after)[0][1], {"Added": ["A new capability readers can use"],
@@ -135,8 +138,6 @@ def _check_s2(autonomy: str):
         if run.ctx["layout"] == "drops":
             return check_d23_refusal(run)
         assert all(r.exit_code == 0 for r in run.results)
-        # truth table, standalone x autonomy x {preview, pr-merge}: the replay's steps are the cells. The guided "version"
-        # cell (SKILL.md:145-150, asks) is an operator decision the replay does not model (NOT_REPLAYED), so it is not asserted here
         names = [r.step for r in run.results]
         assert names.count("preview") == (1 if autonomy == "guided" else 0)
         merged = [p["state"] for p in s.gh_state()["prs"]]

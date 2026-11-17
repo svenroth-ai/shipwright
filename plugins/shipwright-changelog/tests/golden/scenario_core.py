@@ -18,7 +18,7 @@ from .driver_replay import MAIN_BRANCHES, ReplayDriver
 
 # What a step may say besides golden_trace.OUTPUT_WHITELIST: the facts the first half of the scenarios assert.
 WHITELIST = (*gt.OUTPUT_WHITELIST, "mode", "last_tag", "branch", "commits_since_tag", "previous_tag_has_release",
-             "suggested", "version_reason", "legacy_bullets")
+             "suggested", "version_reason", "legacy_bullets", "version_question")
 # Generated or model-written content: its path and existence are recorded, its text is not (a model or a clock wrote it).
 JUDGEMENT = (".shipwright/compliance/*", ".shipwright/events/*", ".shipwright/events/*/*", ".shipwright/runtime/*",
              ".shipwright/agent_docs/decision_log_index.md", "shipwright_events.jsonl",

@@ -395,6 +395,7 @@
         "status": "ok",
         "suggested": "1.3.0",
         "version": "1.3.0",
+        "version_question": "asked",
         "version_reason": "new feature(s)"
       },
       "step": "prepare"

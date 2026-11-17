@@ -244,6 +244,7 @@
         "status": "ok",
         "suggested": "0.2.0",
         "version": "0.2.0",
+        "version_question": "asked",
         "version_reason": "new feature(s)"
       },
       "step": "prepare"

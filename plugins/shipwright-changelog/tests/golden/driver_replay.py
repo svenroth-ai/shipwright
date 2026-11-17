@@ -109,6 +109,11 @@ class ReplayDriver:
         self._run("parse-commits", scratch, _uv(PLUGIN / "scripts/lib/git_utils.py", "parse-commits",
                                                 "--since", info.get("last_tag") or "", "--format", "json"))
         chosen = version or info.get("suggested_version")
+        # SKILL.md:142-150: autonomous and unattended accept the suggestion with no prompt, guided asks; the replay
+        # records which of the two the plan reaches (the question itself is an operator decision, no command runs)
+        autonomy = (_json((scratch.repo / "shipwright_run_config.json").read_text(encoding="utf-8"))
+                    if (scratch.repo / "shipwright_run_config.json").is_file() else {}).get("autonomy")
+        fields["version_question"] = "auto-accepted" if autonomy in ("autonomous", "unattended") else "asked"
         self.state["version"] = chosen
         return gt.StepResult("prepare", 0, {"status": "ok", "version": chosen, "suggested": info.get("suggested_version"),
                                             "version_reason": info.get("version_reason"), **fields})
