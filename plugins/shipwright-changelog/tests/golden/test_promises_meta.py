@@ -61,6 +61,19 @@ def _spec_texts():
     return {m.group(1): " ".join(m.group(2).split()) for m in re.finditer(r"\(E\) \[(AC\d+)\] (.*?)(?=\n- \(|\Z)", block, re.S)}
 
 
+def _section_text(text, heading):
+    """The section whose heading starts with ``heading``: from its line to the next heading of the same or a higher level."""
+    lines = text.replace("\r\n", "\n").split("\n")
+    start = level = None
+    for n, line in enumerate(lines):
+        found = re.match(r"^(#+)\s+(.*)$", line)
+        if found and start is None and found.group(2).strip().startswith(heading):
+            start, level = n, len(found.group(1))
+        elif found and start is not None and len(found.group(1)) <= level:
+            return "\n".join(lines[start:n]).strip()
+    return "\n".join(lines[start:]).strip() if start is not None else None
+
+
 def _located(check):
     """``(file, name)`` of a ``test`` check ``path::name``; the file must be inside the repository."""
     path, _, name = check["id"].partition("::")
@@ -114,8 +127,9 @@ def test_the_source_anchor_hashes_the_acceptance_criterion_it_names_and_other_an
             assert ac in texts, f"{e['id']}: the spec has no {ac} any more"
             assert e["source"]["content_hash"] == hashlib.sha256(texts[ac].encode()).hexdigest(), f"{e['id']}: the spec text of {ac} changed, review the sentence and re-hash"
         else:
-            assert e["source"]["content_hash"] is None
-            assert e["source"]["heading_path"][-1].split(":")[0] in file.read_text(encoding="utf-8"), e["id"]
+            body = _section_text(file.read_text(encoding="utf-8"), e["source"]["heading_path"][-1])
+            assert body, f"{e['id']}: the heading {e['source']['heading_path'][-1]!r} is gone from {e['source']['file']}"
+            assert e["source"]["content_hash"] == hashlib.sha256(body.encode("utf-8")).hexdigest(), f"{e['id']}: the section changed, review the sentence and re-hash"
 
 
 @pytest.mark.covers("FR-01.09/AC01")
@@ -197,7 +211,7 @@ def test_the_fingerprint_is_stable_for_every_promise_test_follows_the_conftest_f
     assert len(set(prints.values())) == len(prints) >= 20
     source = (GOLDEN_DIR / "test_promise_aggregate.py").read_text(encoding="utf-8")
     parts = ph.closure("test_ac06_the_new_section_goes_above_the_latest_release_and_older_text_stays", source, [conftest])
-    assert {"make_project", "make_scratch", "warm_uv", "_project", "HISTORY", "VERSION", "NEW", "_aggregate"} <= set(parts)
+    assert {"make_project@1", "make_scratch@1", "warm_uv@1", "_project", "HISTORY", "VERSION", "NEW", "_aggregate"} <= set(parts)
 
 
 @pytest.mark.covers("FR-01.09/AC01")

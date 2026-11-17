@@ -18,7 +18,8 @@ empty list is left out, and ``type_comment`` / ``kind`` are never read.
 Known limits (a test cannot tell these apart from a real change, and the lock's reviewer must know): a helper imported
 from another module is NOT followed (the golden helper modules are frozen files in their own right); a method of a test
 class is not found (the golden tests are plain functions); names bound at run time (``getattr``, ``request.getfixturevalue``)
-are invisible.
+are invisible; a helper's parameter that shadows a module-level name still pulls that name in (over-inclusion: a harmless extra hash
+change, never a missed one).
 
 AC ids: ``covers_of`` reads the ids a test declares, ``resolve_acs`` follows them through the spec's ``## AC-Move-Map``
 (``| `FR-01.11/AC21` | `FR-01.22/AC21` |`` rows; the same format ``shared/scripts/lib/ac_move_map.py`` parses - a test pins the two
@@ -107,8 +108,12 @@ class Module:
     def __init__(self, source: str) -> None:
         self.defs: dict[str, ast.AST] = {}
         self.consts: dict[str, ast.AST] = {}
+        self.marks: list[ast.AST] = []  # module-level ``pytestmark`` marks that change what runs (skip, xfail, parametrize ...)
         for node in ast.parse(source).body:
-            if isinstance(node, _DEFS):
+            if isinstance(node, ast.Assign) and any(isinstance(x, ast.Name) and x.id == "pytestmark" for x in node.targets):
+                value = node.value
+                self.marks += [m for m in (value.elts if isinstance(value, (ast.List, ast.Tuple)) else [value]) if not _is_marker(m)]
+            elif isinstance(node, _DEFS):
                 self.defs[node.name] = node
             elif isinstance(node, ast.Assign):
                 for target in node.targets:
@@ -123,37 +128,49 @@ class Module:
 
 def _names(node: ast.AST) -> set[str]:
     found = {n.id for n in ast.walk(node) if isinstance(n, ast.Name)}
+    for call in (n for n in ast.walk(node) if isinstance(n, ast.Call) and _dotted(n.func).endswith("usefixtures")):
+        found |= {a.value for a in call.args if isinstance(a, ast.Constant) and isinstance(a.value, str)}  # named by string
     if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
         found |= {a.arg for a in (*node.args.posonlyargs, *node.args.args, *node.args.kwonlyargs)}
     return found
 
 
 def closure(test: str, source: str, conftests: Sequence[str] = ()) -> dict[str, ast.AST]:
-    """The test and everything it needs, by name: helpers, constants, classes and fixtures, transitively."""
+    """The test and everything it needs: helpers, constants, classes, fixtures and the module's behaviour marks, transitively.
+
+    Keys are the names found; a name found in a ``conftest.py`` is keyed ``name@<n>`` (n = its position in ``conftests``,
+    from 1), so the same name in two modules never collapses into one entry."""
     modules = [Module(source), *(Module(text) for text in conftests)]
     start = modules[0].defs.get(test)
     if not isinstance(start, (ast.FunctionDef, ast.AsyncFunctionDef)):
         raise ValueError(f"{test}: no module-level test function of that name")
+
+    def key(name: str, index: int) -> str:
+        return name if index == 0 else f"{name}@{index}"
+
     seen: dict[str, ast.AST] = {test: start}
-    origin = {test: 0}  # which module each entry was found in: its own names are looked up there first
+    origin = {test: 0}  # which module each entry lives in: its own names are looked up there first
     todo = [test]
-    for index, module in enumerate(modules):  # an autouse fixture applies to every test of its scope without being named
+
+    def add(name: str, node: ast.AST, index: int) -> None:
+        seen[key(name, index)], origin[key(name, index)] = node, index
+        todo.append(key(name, index))
+
+    for index, module in enumerate(modules):
+        if module.marks and key("<pytestmark>", index) not in seen:  # a module-level skip or xfail applies to every test in it
+            add("<pytestmark>", ast.List(elts=module.marks, ctx=ast.Load()), index)
         for name, node in module.defs.items():
-            if _is_autouse(node) and name not in seen:
-                seen[name], origin[name] = node, index
-                todo.append(name)
+            if _is_autouse(node) and key(name, index) not in seen:  # applies to every test of its scope without being named
+                add(name, node, index)
     while todo:
         current = todo.pop()
-        node = seen[current]
-        for name in sorted(_names(node)):
-            if name in seen:
-                continue
+        for name in sorted(_names(seen[current])):
             # the module the node lives in first (any definition), then the others (a conftest only by its fixtures)
             for index in [origin[current], *(i for i in range(len(modules)) if i != origin[current])]:
                 found = modules[index].lookup(name)
                 if found is not None and (index == origin[current] or index == 0 or _is_fixture(found)):
-                    seen[name], origin[name] = found, index
-                    todo.append(name)
+                    if key(name, index) not in seen:
+                        add(name, found, index)
                     break
     return seen
 

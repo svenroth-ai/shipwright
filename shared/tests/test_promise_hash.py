@@ -151,3 +151,30 @@ def test_a_plain_helper_inside_a_conftest_is_followed_once_a_fixture_reaches_it(
     conftest = "import pytest\n\nLIMIT = 1\n\n\ndef build():\n    assert LIMIT == 1\n    return 1\n\n\n@pytest.fixture\ndef shared():\n    return build()\n"
     assert fp(source, [conftest]) != fp(source, [conftest.replace("LIMIT == 1", "LIMIT >= 1")])
     assert fp(source, [conftest]) != fp(source, [conftest.replace("LIMIT = 1", "LIMIT = 2")])
+
+
+def test_a_module_level_skip_or_xfail_changes_every_test_but_covers_does_not():
+    plain = "import pytest\n\n\ndef test_it():\n    assert 1\n"
+    assert fp("import pytest\n\npytestmark = pytest.mark.skip(reason='later')\n\n\ndef test_it():\n    assert 1\n") != fp(plain)
+    assert fp("import pytest\n\npytestmark = [pytest.mark.xfail]\n\n\ndef test_it():\n    assert 1\n") != fp(plain)
+    assert fp("import pytest\n\npytestmark = pytest.mark.covers('FR-01.09/AC01')\n\n\ndef test_it():\n    assert 1\n") == fp(plain)
+
+
+def test_a_fixture_named_by_usefixtures_is_followed_by_its_string_name():
+    source = "import pytest\n\n\n@pytest.mark.usefixtures('guard')\ndef test_it():\n    pass\n"
+    conftest = "import pytest\n\n\n@pytest.fixture\ndef guard():\n    assert True\n"
+    assert fp(source, [conftest]) != fp(source, [conftest.replace("True", "False")])
+
+
+def test_the_same_name_in_the_test_module_and_a_conftest_is_hashed_in_both_places():
+    source = "LIMIT = 1\n\n\ndef test_it(shared):\n    assert LIMIT == shared\n"
+    conftest = "import pytest\n\nLIMIT = 5\n\n\n@pytest.fixture\ndef shared():\n    return LIMIT\n"
+    assert fp(source, [conftest]) != fp(source, [conftest.replace("LIMIT = 5", "LIMIT = 6")])
+    assert fp(source, [conftest]) != fp(source.replace("LIMIT = 1", "LIMIT = 2"), [conftest])
+
+
+def test_none_is_told_apart_from_its_neighbours():
+    prints = {fp(f"def test_it(x):\n    {body}\n") for body in ("assert x is None", "assert x is not None", "assert x == 0", "assert x == False", "assert x")}
+    assert len(prints) == 5
+    assert fp("def test_it():\n    f(None)\n") != fp("def test_it():\n    f(0)\n")
+    assert fp("def test_it():\n    def f(a=None):\n        pass\n") != fp("def test_it():\n    def f(a):\n        pass\n")
