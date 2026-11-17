@@ -70,125 +70,111 @@
     "code": {
       "review_type": "code",
       "status": "completed",
-      "findings_count": 5,
+      "findings_count": 6,
       "findings": [
+        {
+          "severity": "high",
+          "category": "architecture",
+          "file": "shared/tests/test_release_seams.py",
+          "line": 340,
+          "finding": "bloat-baseline-discipline: the new test file was 340 lines, over the 300-line limit, with no baseline entry. DISPOSITION: FIXED in acb255d — publish-guard tests moved to shared/tests/test_release_publish_guard.py; re-review confirmed all 8 tests intact and both files under 300.",
+          "suggestion": "Split rather than baseline.",
+          "source": "code-reviewer"
+        },
         {
           "severity": "medium",
           "category": "correctness",
           "file": "shared/tests/test_release_seams.py",
-          "line": null,
-          "finding": "The publish guard's second trigger (fixture variable set, notes without marker) has no test through create_release.",
-          "suggestion": "Parametrised test: CONDENSE_FIXTURE_ENV ok and yes, plain notes, gh seam unset -> refusal, _run not called.",
+          "line": 21,
+          "finding": "Many tests carry FR-01.09 AC14/AC15 covers marks without exercising a release page. DISPOSITION: DECLINED — the F11 check_test_tag_binding gate STOPs on an untagged added test at every complexity and these tests prove the FR-01.09 seam contract; no tag is wrong, only loose.",
+          "suggestion": "Keep marks only where a release page is driven.",
           "source": "code-reviewer"
         },
         {
           "severity": "low",
           "category": "correctness",
-          "file": "docs/hooks-and-pipeline.md",
-          "line": null,
-          "finding": "Publish guard paragraph names only the marker trigger; the code also refuses while the fixture variable is set.",
-          "suggestion": "Add the second trigger to the doc.",
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": "security",
-          "file": "shared/scripts/release_seams.py",
-          "line": null,
-          "finding": "The never-the-real-gh check looks only at the stem of argv[0]; a wrapper prefix (env gh, cmd /c gh) still counts as an active seam.",
-          "suggestion": "Say in the docstring it is a typo-level check; do not widen into a full validator.",
+          "file": "shared/tests/test_release_seams.py",
+          "line": 104,
+          "finding": "The Windows gh.exe parametrize case was invalid JSON and never reached the real-gh check. DISPOSITION: FIXED (C:/tools/gh.exe).",
+          "suggestion": "Use a valid path.",
           "source": "code-reviewer"
         },
         {
           "severity": "low",
           "category": "readability",
-          "file": "shared/tests/test_release_offline_proof.py",
-          "line": null,
-          "finding": "The lock-file unlink has no comment stating why.",
-          "suggestion": "Add a one-line reason.",
+          "file": "shared/scripts/release_seams.py",
+          "line": 30,
+          "finding": "Module docstring described only the marker trigger of the publish guard. DISPOSITION: FIXED.",
+          "suggestion": "Add the fixture-variable trigger.",
           "source": "code-reviewer"
         },
         {
           "severity": "low",
-          "category": "performance",
-          "file": "shared/tests/test_release_offline_proof.py",
-          "line": null,
-          "finding": "On a cold uv cache the fixture goes online once (up to about 9 minutes worst case) before skip or fail.",
-          "suggestion": "Acceptable as is.",
+          "category": "security",
+          "file": "shared/scripts/tools/create_github_release.py",
+          "line": 115,
+          "finding": "result seam=gh is not consumed downstream, so a stray gh prefix still reports ok. DISPOSITION: ACCEPTED as follow-up for P3/P4 (variable must be set deliberately and cannot name the real gh).",
+          "suggestion": "Treat seam=gh outside a test as non-ok.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": ".shipwright/agent_docs/iterates/iterate-2026-11-17-p1-seams-offline-proof.json",
+          "line": 33,
+          "finding": "After the split the run evidence cited the guard tests in their old file and the runner omitted the new file. DISPOSITION: FIXED in 20701bd (evidence strings, runner, tests_run, evidence re-staged; verifier 32 ok 0 errors).",
+          "suggestion": "Regenerate the evidence strings.",
           "source": "code-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-11-17T10:02:42.233472+00:00",
+      "completed_at": "2026-11-17T10:42:22.834032+00:00",
       "disposition": null,
       "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "e160425bad04b38adce9aeab386c4569d6ae0a65",
-      "reviewer_notes": "No architecture rule violated; all new files under 300 lines; no dead code, no scope creep. Verdict: no high findings."
+      "model_tier": "opus"
     },
     "doubt": {
       "review_type": "doubt",
       "status": "completed",
-      "findings_count": 5,
+      "findings_count": 3,
       "findings": [
         {
-          "severity": "low",
+          "severity": "medium",
           "category": "boundary & contract",
-          "file": "shared/scripts/tools/create_github_release.py",
+          "file": "shared/tests/test_release_offline_proof.py",
           "line": null,
-          "finding": "Claim under doubt: a stray seam can only make the release fail closed — A stub gh prefix set alone makes publish return ok with a stub url, indistinguishable from a real success.",
-          "suggestion": "Mark seamed results (seam: gh). RESOLVED: create_release adds seam: gh while the gh seam is active.",
+          "finding": "Claim under doubt: The offline proof shows a scratch project passes --verify-commit --release-audit offline — The audit subprocess inherited pytest's cwd (the repo root, with a synced venv), so it proved the repo environment, not the scratch project's. DISPOSITION: FIXED in 20701bd — _refresh runs with cwd=scratch; the test still passes.",
+          "suggestion": null,
           "source": "doubt-reviewer"
         },
         {
           "severity": "low",
           "category": "hidden coupling & blast radius",
-          "file": "shared/scripts/tools/create_github_release.py; plugins/shipwright-changelog/scripts/checks/setup-changelog.py",
+          "file": "plugins/shipwright-changelog/scripts/checks/setup-changelog.py",
           "line": null,
-          "finding": "Claim under doubt: default path unchanged when no seam is set — An unreadable notes file returned a new reason before the gh preflight. RESOLVED: an unreadable notes file is left to the existing checks as before. The module-level import of release_seams widens the cache-skew failure mode the same way repo_identity already has; cache sync after merge carries the new file.",
-          "suggestion": "Fixed or rebutted as stated.",
+          "finding": "Claim under doubt: The new top-level import release_seams in setup-changelog.py is safe if the plugin cache lags — A plugin tree refreshed before the shared tree would fail at import. DISPOSITION: REBUTTED — ensure-shared-cache vendors shared/ together with the plugin at SessionStart, the same exposure repo_identity already carries; cache re-sync after merge is required and noted in the run record.",
+          "suggestion": null,
           "source": "doubt-reviewer"
         },
         {
           "severity": "low",
-          "category": "boundary & contract (Windows quoting)",
+          "category": "boundary & contract",
           "file": "shared/scripts/release_seams.py",
           "line": null,
-          "finding": "Claim under doubt: a malformed prefix is always refused loudly — An unescaped Windows path is valid JSON with tab and newline characters and then fails as gh not found.",
-          "suggestion": "RESOLVED: a prefix item with a control character is refused (test added).",
-          "source": "doubt-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": "concurrency & ordering (test isolation, ADR-044)",
-          "file": "plugins/shipwright-changelog/tests/test_setup_changelog_gh_seam.py",
-          "line": null,
-          "finding": "Claim under doubt: the new plugin test adds no sys.path hazard — Collection order moved the shared/scripts sys.path insertion earlier. REBUTTED: the plugin test root was run in default order and is green (114 passed); no victim found.",
-          "suggestion": "Green plugin root in default order.",
-          "source": "doubt-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": "boundary & contract (test robustness)",
-          "file": "shared/tests/test_release_offline_proof.py",
-          "line": null,
-          "finding": "Claim under doubt: the offline proof skips cleanly when uv is missing locally — A missing uv raised FileNotFoundError instead of reaching the skip/fail branch.",
-          "suggestion": "RESOLVED: a missing uv goes to the same skip-locally / fail-in-CI branch.",
+          "finding": "Claim under doubt: The gh seam covers every gh call the release path makes — SKILL.md runs real gh pr create and gh pr merge outside the seam. DISPOSITION: FIXED in 20701bd — docstring narrowed to the two scripts; P2a must cover the skill-level calls.",
+          "suggestion": null,
           "source": "doubt-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-11-17T10:08:43.216579+00:00",
+      "completed_at": "2026-11-17T10:42:22.958693+00:00",
       "disposition": null,
       "recorded_by": "doubt-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "59b3b3f5db5d3c3ae693e708e66c6572fd1ebf7d"
+      "model_tier": "opus"
     },
     "external_code": {
       "review_type": "external_code",
@@ -285,14 +271,28 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-11-17T10:00:20.662787+00:00",
+      "completed_at": "2026-11-17T10:42:03.470323+00:00",
       "disposition": null,
       "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "e160425bad04b38adce9aeab386c4569d6ae0a65"
+      "ac_verdicts": [
+        {
+          "ac": "FR-01.09.AC14",
+          "verdict": "matches",
+          "diff_location": "shared/scripts/tools/create_github_release.py:110",
+          "reason": "With no SHIPWRIGHT_TEST_* variable set, every gh call is the same plain gh command as before; L1 tests pin the exact default commands.",
+          "weakens": false
+        },
+        {
+          "ac": "FR-01.09.AC15",
+          "verdict": "matches",
+          "diff_location": "shared/scripts/tools/create_github_release.py:120",
+          "reason": "A failed release page still comes back as a reported failed/skipped result and is never undone; new failure reasons only appear when a test variable is set.",
+          "weakens": false
+        }
+      ]
     },
     "plan_internal": {
       "review_type": "plan_internal",
