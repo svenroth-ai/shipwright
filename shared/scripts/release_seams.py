@@ -24,9 +24,10 @@ path is byte-for-byte what it was before the seam existed.
 =========================================  =====================================
 
 **Publish guard.** Fixture text carries :data:`FIXTURE_MARKER`.
-``create_github_release`` refuses a notes file that contains the marker unless
-the ``gh`` seam is also set, so a stray condensation variable can never put
-fixture notes on a real release page (:func:`fixture_notes_refusal`).
+``create_github_release`` refuses a notes file that contains the marker, or any
+notes at all while the condensation fixture variable is set, unless the ``gh``
+seam is also set, so a stray condensation variable can never put fixture notes
+on a real release page (:func:`fixture_notes_refusal`).
 
 A set-but-malformed value raises :class:`SeamError` rather than being ignored:
 a test that believes it is driving a stub must not silently reach the real
