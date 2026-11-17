@@ -117,4 +117,8 @@ def verify(scenario: Scenario, layout: str, make_project: Callable[..., Any]) ->
         path.write_bytes(text.encode("utf-8"))
         return
     assert path.is_file(), f"{path.name} is missing: run once with {REGEN_ENV}=1"
-    assert path.read_bytes().decode("utf-8").replace("\r\n", "\n") == text, f"{path.name} differs from this run's trace"
+    committed = path.read_bytes().decode("utf-8").replace("\r\n", "\n")
+    if committed != text:  # name the first differing lines, so a red run on another OS says what moved
+        import difflib
+        lines = difflib.unified_diff(committed.splitlines(), text.splitlines(), "committed", "this run", n=1, lineterm="")
+        raise AssertionError(f"{path.name} differs from this run's trace:\n" + "\n".join(list(lines)[:40]))
