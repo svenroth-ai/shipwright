@@ -214,7 +214,8 @@ def collect(scratch: Any, steps: Sequence["StepResult"] = (), *, files: Sequence
         "refs": _refs(repo),
         "origin": _refs(origin),
         "all_commits": {"repo": _all_commits(repo), "origin": _all_commits(origin)},
-        "status": norm(_git(repo, "status", "--porcelain")).splitlines(),
+        # the audit files an advisory finding (untracked triage.jsonl) on some systems and not on others: not part of the trace
+        "status": [s for s in norm(_git(repo, "status", "--porcelain")).splitlines() if s != "?? .shipwright/triage.jsonl"],
         "files": tree,
         "stub": {"argv": [{"argv": [norm(a) for a in _mask_inline_notes(e["argv"])], "exit": e["exit"]} for e in scratch.gh_argv_log()],
                  "prs": prs, "releases": releases},

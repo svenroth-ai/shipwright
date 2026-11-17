@@ -324,9 +324,7 @@
     }
   },
   "schema": 1,
-  "status": [
-    "?? .shipwright/triage.jsonl"
-  ],
+  "status": [],
   "steps": [
     {
       "exit_code": 0,
