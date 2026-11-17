@@ -1,0 +1,8 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"20 promise tests via the driver, promise_list.json with six statuses, scenarios.json (8), hashing helper with tests, trace-only parts own entries, AC11 recorded as gap"},
+{"name":"Error Handling","verdict":"pass","note":"hasher raises ValueError for a missing test or a missing/malformed covers id; meta tests name the offending entry"},
+{"name":"Security Basics","verdict":"pass","note":"test support only; no network, no secrets, no product change"},
+{"name":"Test Quality","verdict":"pass","note":"oracle judges every promise; hash tests prove what is ignored and what must move; meta tests have red cases by construction"},
+{"name":"Performance Basics","verdict":"pass","note":"golden root about 7 min on Windows, promise tests about 90 s"},
+{"name":"Naming & Structure","verdict":"pass","note":"all files <= 300 lines, ruff clean, meta file named so the promise glob misses it"},
+{"name":"Affected Boundaries","verdict":"pass","note":"promise_list.json and scenarios.json are read back by a test; the fingerprint is computed from source text only so it is OS independent; AC11 half and trace parts probed"}]}

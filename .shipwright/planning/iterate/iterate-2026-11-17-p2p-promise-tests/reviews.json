@@ -1,0 +1,374 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-17-p2p-promise-tests",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-17T22:32:04.052998+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "The hash dependency closure is underspecified. “Conftest fixtures handed in” does not establish that it includes fixture dependencies, autouse fixtures, or fixtures selected through `parametrize(..., indirect=True)`. Their behavior could change without changing the promise hash.",
+          "suggestion": "Define recursive dependency resolution for same-module helpers/constants and participating fixtures, including indirect and autouse fixtures. Add tests showing that changes to each dependency change the hash, and fail explicitly when a dependency cannot be resolved.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach ·",
+          "file": null,
+          "line": null,
+          "finding": "The plan adds 20 promise tests but does not explain how existing `covers` tests are rebound. The specification explicitly requires rebinding an existing test; retaining it alongside a new test does not demonstrate compliance and may duplicate coverage.",
+          "suggestion": "Map each promise to existing tests first. Identify which tests will be rebound through the driver and add new tests only for promises without a suitable existing test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency ·",
+          "file": null,
+          "line": null,
+          "finding": "AC-Move-Map resolution is named but its failure behavior is missing. An unresolved, ambiguous, or cyclic mapping could associate a valid fingerprint with the wrong AC.",
+          "suggestion": "Specify deterministic resolution and explicit failure for invalid mappings. Test moved IDs, chained moves, missing targets, and cycles; verify that the resolved IDs are stored with the fingerprint.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach ·",
+          "file": null,
+          "line": null,
+          "finding": "The plan omits the required reproduction and recording of known findings and the final LEARNINGS update. These are explicit deliverables, particularly relevant to the AC11 gap and the three judgement questions.",
+          "suggestion": "Add concrete steps to reproduce the known findings without changing behavior, record them in FINDINGS, and append this unit’s results to LEARNINGS. Keep the judgement scenarios written and schema-validated only.  The approach is broadly sound and appropriately limited to test support. Address the dependency closure and explicit campaign obligations before implementation; repository verification was unavailable because command execution was blocked.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-17T22:22:06.750441+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] ## Findings\n\n**Category: edge-case — Severity: medium**\nThe AST-normalization hash must define behaviour for tests that import fixtures/helpers *cross-module* (a helper in a sibling test module or shared `conftest.py` at package level). The plan says \"same-module\" and \"conftest fixtures handed in\" but doesn't state whether cross-module helper imports make the hash fail closed (red = STRICT-STOP) or silently produce a hash that doesn't cover the helper. If a helper moves modules between runs, two different tests could hash identically while behaving differently — or the same test could hash differently with no promise change. Suggestion: specify that any non-conftest, non-stdlib, non-testkit import from outside the test's own module is a hard error in the hasher, and add a test for it.\n\n**Category: edge-case — Severity: medium**\n\"Own serializer (no `ast.dump`)\" is the right call, but the plan doesn't pin the serializer's determinism requirements against `parametrize` args: `pytest.mark.parametrize` is deliberately *included*, but parametrize ids, lambdas in arg lists, and generated arg tuples are common sources of unstable traversal. Also unhandled: decorators that are *not* `pytest.mark.*` (e.g. `@pytest.fixture` on helper functions — the fixture body must be included in the hash, and the plan implies that via \"fixtures it uses\", but the decorator-stripping rule \"ignores `pytest.mark.*` except `parametrize`\" could be read as stripping `@pytest.fixture` too, dropping fixture bodies from the hash). Suggestion: state explicitly that `fixture` decorators are preserved/hoisted so fixture bodies are hashed, and add a hash test.\n\n**Category: edge-case — Severity: low**\nAC ids \"resolved through `## AC-Move-Map`\" — what happens to a `covers` tag whose id has no Move-Map entry (stale tag, renamed AC)? That should be a defined failure (red) not a silent skip, since the promise lock is the whole point of this campaign. Add a hash-test case for an unmapped id.\n\n**Ca […truncated]\n\n[openai] 1. **Category: edge-case · Severity: high**  \n   **Finding:** The hash dependency closure is underspecified. “Conftest fixtures handed in” does not establish that it includes fixture dependencies, autouse fixtures, or fixtures selected through `parametrize(..., indirect=True)`. Their behavior could change without changing the promise hash.  \n   **Suggestion:** Define recursive dependency resolution for same-module helpers/constants and participating fixtures, including indirect and autouse fixtures. Add tests showing that changes to each dependency change the hash, and fail explicitly when a dependency cannot be resolved.\n\n2. **Category: approach · Severity: medium**  \n   **Finding:** The plan adds 20 promise tests but does not explain how existing `covers` tests are rebound. The specification explicitly requires rebinding an existing test; retaining it alongside a new test does not demonstrate compliance and may duplicate coverage.  \n   **Suggestion:** Map each promise to existing tests first. Identify which tests will be rebound through the driver and add new tests only for promises without a suitable existing test.\n\n3. **Category: dependency · Severity: medium**  \n   **Finding:** AC-Move-Map resolution is named but its failure behavior is missing. An unresolved, ambiguous, or cyclic mapping could associate a valid fingerprint with the wrong AC.  \n   **Suggestion:** Specify deterministic resolution and explicit failure for invalid mappings. Test moved IDs, chained moves, missing targets, and cycles; verify that the resolved IDs are stored with the fingerprint.\n\n4. **Category: approach · Severity: medium**  \n   **Finding:** The plan omits the required reproduction and recording of known findings and the final LEARNINGS update. These are explicit deliverables, particularly relevant to the AC11 gap and the three judgement questions.  \n   **Suggestion:** Add concrete steps to reproduce the known findings without changing behavior, record them in FINDINGS, […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/testkit/promise_hash.py",
+          "line": 113,
+          "finding": "Import statements are not hashed, aliases included, so a test can be pointed at another module (from . import scenario_support as oracle) without changing its hash; the meta import allow-list ignores asname.",
+          "suggestion": "Hash the import bindings of names in the closure and reject differing aliases. Recorded in FINDINGS for stop 2; the lock is not created in this campaign.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/tests/golden/test_promise_release.py",
+          "line": 109,
+          "finding": "In the left_stale case the committed-versions check cannot tell a refused release commit from no release commit at all.",
+          "suggestion": "Assert the release commit subject or the exact committed map.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/tests/golden/test_promise_aggregate.py",
+          "line": 176,
+          "finding": "The AC11 aggregation-half test never calls the oracle although the docs say each promise test is judged through it.",
+          "suggestion": "Add an oracle function and check per test in the meta test.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/testkit/promise_hash.py",
+          "line": 220,
+          "finding": "covers_of reads pytestmark only from plain Assign, not AnnAssign or AugAssign.",
+          "suggestion": "Share one target-extraction helper.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/tests/golden/test_promises_meta.py",
+          "line": 211,
+          "finding": "Fingerprint uniqueness check keys by bare test name across two files.",
+          "suggestion": "Key by file::name.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-changelog/tests/golden/test_promise_release.py",
+          "line": 62,
+          "finding": "Dead condition tag != v0.1.0.",
+          "suggestion": "Use if tag:.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/tests/test_promise_hash.py",
+          "line": 12,
+          "finding": "Stand-in covers tags (AC14, AC01) inflate coverage counts.",
+          "suggestion": "Record as a stop-2 decision (done in FINDINGS).",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-17T23:23:13.351745+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "reviewed_commit": "a6cdbbb09442ff9b421313c801dbd276aeaaa5cb"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: A changed helper always changes the hash — A module-level rebinding after a def is ignored because the def wins in lookup.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: Every fixture or hook that can affect a locked test is in its closure — Non-literal autouse, module-level pytest_generate_tests, parent conftests and golden/__init__.py are outside every closure and REQUIRED.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: The hash is identical on Python 3.11 and 3.12 — No literal digest is pinned; f-string parsing changed in 3.12.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: A rename is not a change of the promise — The fingerprint drops the test name.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: The promise tests go red when the skill changes — AC04 lacks footer and chore cases, AC10 only dry-runs aggregation, AC11 aggregation half is a tautology.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: The oracle field separates trace from test honestly — AC14 and AC15 page parts read the stub release state but are labelled test.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: passing means the named test runs green — The meta test checks presence only.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-17T23:23:13.493122+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "reviewed_commit": "a6cdbbb09442ff9b421313c801dbd276aeaaa5cb"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "plugins/shipwright-changelog/tests/golden/promise_list.json — entries `FR-01.09/AC14`, `FR-01.09/AC15",
+          "line": null,
+          "finding": "The list's own definition of `oracle: trace` is \"ONLY the replay's recorded stub state or log; such parts are their own entries\". AC14's check (`test_ac14_...`) reads `s.gh_state()[\"releases\"]` and AC15's main check reads `s.gh_state()[\"releases\"]` — facts visible only in the stub — yet both entries are marked `oracle: \"test\"`, while AC01/request and AC15/no-backfill were split out precisely because they read the same stub. The classification is internally inconsistent.",
+          "suggestion": "Either split the stub-visible halves of AC14/AC15 into their own `oracle: trace` entries (as done for AC01 and AC15/no-backfill), or re-word the note so the rule covers these entries; stop 2 should not have to guess which convention holds.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/tests/test_promise_hash.py — `from lib import ac_move_map",
+          "line": null,
+          "finding": "The test only inserts `shared/testkit` into `sys.path`; `ac_move_map` lives in `shared/scripts/lib`, so `from lib import ...` resolves only if some other conftest already puts `shared/scripts` on the path. Nothing in the diff guarantees that, and the mirror-parser test would error with ModuleNotFoundError rather than pin the parsers.",
+          "suggestion": "Insert `shared/scripts` into `sys.path` explicitly (or import via the same mechanism the rest of the suite uses for `lib`), and verify this test runs standalone.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/testkit/promise_hash.py — `_names` / `closure",
+          "line": null,
+          "finding": "_names` adds every function argument name to the lookup set, so a helper parameter that shadows a module-level constant or helper (e.g. `def helper(LIMIT):` while `LIMIT = 3` sits at module level) pulls the constant into the closure even though the helper shadows it. That is over-inclusion (hash churn on edits the test never observes), the opposite failure of the documented under-inclusion limits, and it is not documented as a known limit.",
+          "suggestion": "Exclude argument names from the module-level lookup when the name is bound locally in the same function (check `ast.Assign`/arg bindings per scope), or at minimum document the over-inclusion beside the other known limits.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/testkit/promise_hash.py — `_canon`, `value is None` skip",
+          "line": null,
+          "finding": "Constant(value=None)` serializes as `{\"_\": \"Constant\"}` because the `None` field value is dropped. In the cases I traced (Compare ops, defaults, call args) the surrounding structure still distinguishes them, so there is no collision today — but it is fragile: any future AST position where a bare `Constant` is compared positionally (e.g. two `comparators` entries, one `None` one dropped-elsewhere) could collide. Worth a pinning test.",
+          "suggestion": "Add a test asserting `x is None` vs `x is not None`, `f(None)` vs `f(0)` and `def f(a=None)` vs `def f(a=\"\")` all produce distinct normalized forms.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "plugins/shipwright-changelog/tests/golden/test_promises_meta.py — `test_scenarios_json_...",
+          "line": null,
+          "finding": "The test restates the `compare_runs.py` schema by hand (key presence + decision vocabulary) but the actual tool was never run, and the schema was read from `/tmp` copies. The unit's AC says scenarios.json \"validates against it (a test loads and checks it)\" — this satisfies the letter, but a schema drift in the real tool (e.g. a required field this restatement doesn't know) would not be caught until stop 2.",
+          "suggestion": "As the FINDINGS already ask, have stop 2 run the real `compare_runs.py` over the file; optionally record the tool's content hash in the file and fail if it changes.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "spec",
+          "file": "plugins/shipwright-changelog/tests/golden/promise_list.json — JUDGE/ and PROPOSED/ entries, `content_hash: null",
+          "line": null,
+          "finding": "The alignment rule says entries carry a \"source anchor (file, heading path, content hash)\". All non-spec entries have `content_hash: null`; the meta test even asserts `content_hash is None` for them. If the skill-check tool requires a hash string, every JUDGE and PROPOSED entry fails its validation at stop 2.",
+          "suggestion": "Compute a real content hash for the anchored heading text in `SKILL.md`/`release-workflow.md`, or get an operator answer on whether null is accepted before stop 2 tries to compare.  Overall: the unit is substantially complete against the spec (driver-only tests, six statuses, no 'uncovered', move-map resolution, nothing deleted), and the hashing helper is well-tested; the issues above are consistency and verification gaps rather than broken logic, but the AC14/AC15 oracle classification and the `from lib` import should be settled before stop 2 leans on this.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": "shared/testkit/promise_hash.py",
+          "line": 133,
+          "finding": "Module-level behavioral marks are excluded from the fingerprint. Adding `pytestmark = pytest.mark.skip(reason=\"later\")` leaves the hash unchanged, allowing a locked promise test to stop running without detection.",
+          "suggestion": "Include module-level behavioral marks in each test’s normalized fingerprint. Add regression tests for module-level `skip`, `xfail`, and `parametrize`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/testkit/promise_hash.py",
+          "line": 146,
+          "finding": "Fixtures requested through `@pytest.mark.usefixtures(\"guard\")` are not followed. The decorator is hashed, but `\"guard\"` is a string rather than an AST name, so changing or removing assertions inside that fixture leaves the fingerprint unchanged.",
+          "suggestion": "Resolve fixture names from `usefixtures` arguments and fixture `name=` aliases, then include their dependency closures. Test that changing such a fixture changes the hash.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/testkit/promise_hash.py",
+          "line": 147,
+          "finding": "The closure deduplicates definitions by bare name across modules. If the test module and a supplied `conftest.py` both define `LIMIT`, a test using its own `LIMIT` and a conftest fixture using the other will include only one. Changes to the omitted constant will not change the fingerprint.",
+          "suggestion": "Track definitions by module identity and name, and resolve each dependency in its defining module. Add a test with colliding constants in the test module and conftest.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "plugins/shipwright-changelog/tests/golden/test_promises_meta.py",
+          "line": 114,
+          "finding": "The source-anchor check explicitly requires non-spec content hashes to be `null`. Consequently, all judgement and proposed entries lack the content hash required by the specified anchor shape, and edits to their source text are undetected while the heading remains.",
+          "suggestion": "Populate hashes for those anchored source sections and validate them against normalized section content.  Ship-with-fixes: the promise tests and scenario artifacts largely follow the requested structure, but the hashing omissions undermine the lock’s central guarantee. Repository access was blocked, so this assessment is limited to the supplied diff and does not confirm test execution.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-17T22:31:55.464484+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] Findings:\n\n- Category: spec\n  Severity: medium\n  File: plugins/shipwright-changelog/tests/golden/promise_list.json — entries `FR-01.09/AC14`, `FR-01.09/AC15`\n  Finding: The list's own definition of `oracle: trace` is \"ONLY the replay's recorded stub state or log; such parts are their own entries\". AC14's check (`test_ac14_...`) reads `s.gh_state()[\"releases\"]` and AC15's main check reads `s.gh_state()[\"releases\"]` — facts visible only in the stub — yet both entries are marked `oracle: \"test\"`, while AC01/request and AC15/no-backfill were split out precisely because they read the same stub. The classification is internally inconsistent.\n  Suggestion: Either split the stub-visible halves of AC14/AC15 into their own `oracle: trace` entries (as done for AC01 and AC15/no-backfill), or re-word the note so the rule covers these entries; stop 2 should not have to guess which convention holds.\n\n- Category: bug\n  Severity: medium\n  File: shared/tests/test_promise_hash.py — `from lib import ac_move_map`\n  Finding: The test only inserts `shared/testkit` into `sys.path`; `ac_move_map` lives in `shared/scripts/lib`, so `from lib import ...` resolves only if some other conftest already puts `shared/scripts` on the path. Nothing in the diff guarantees that, and the mirror-parser test would error with ModuleNotFoundError rather than pin the parsers.\n  Suggestion: Insert `shared/scripts` into `sys.path` explicitly (or import via the same mechanism the rest of the suite uses for `lib`), and verify this test runs standalone.\n\n- Category: edge-case\n  Severity: low\n  File: shared/testkit/promise_hash.py — `_names` / `closure`\n  Finding: `_names` adds every function *argument* name to the lookup set, so a helper parameter that shadows a module-level constant or helper (e.g. `def helper(LIMIT):` while `LIMIT = 3` sits at module level) pulls the constant into the closure even though the helper shadows it. That is over-inclusion (hash churn on edits the test never observes), the […truncated]\n\n[openai] - Category: bug\n- Severity: high\n- File: shared/testkit/promise_hash.py:133\n- Finding: Module-level behavioral marks are excluded from the fingerprint. Adding `pytestmark = pytest.mark.skip(reason=\"later\")` leaves the hash unchanged, allowing a locked promise test to stop running without detection.\n- Suggestion: Include module-level behavioral marks in each test’s normalized fingerprint. Add regression tests for module-level `skip`, `xfail`, and `parametrize`.\n\n- Category: bug\n- Severity: medium\n- File: shared/testkit/promise_hash.py:146\n- Finding: Fixtures requested through `@pytest.mark.usefixtures(\"guard\")` are not followed. The decorator is hashed, but `\"guard\"` is a string rather than an AST name, so changing or removing assertions inside that fixture leaves the fingerprint unchanged.\n- Suggestion: Resolve fixture names from `usefixtures` arguments and fixture `name=` aliases, then include their dependency closures. Test that changing such a fixture changes the hash.\n\n- Category: bug\n- Severity: medium\n- File: shared/testkit/promise_hash.py:147\n- Finding: The closure deduplicates definitions by bare name across modules. If the test module and a supplied `conftest.py` both define `LIMIT`, a test using its own `LIMIT` and a conftest fixture using the other will include only one. Changes to the omitted constant will not change the fingerprint.\n- Suggestion: Track definitions by module identity and name, and resolve each dependency in its defining module. Add a test with colliding constants in the test module and conftest.\n\n- Category: spec\n- Severity: medium\n- File: plugins/shipwright-changelog/tests/golden/test_promises_meta.py:114\n- Finding: The source-anchor check explicitly requires non-spec content hashes to be `null`. Consequently, all judgement and proposed entries lack the content hash required by the specified anchor shape, and edits to their source text are undetected while the heading remains.\n- Suggestion: Populate hashes for those anchore […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-17T23:23:13.213242+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "reviewed_commit": "a6cdbbb09442ff9b421313c801dbd276aeaaa5cb"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-17T22:23:25.574451+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-17T22:22:06.891410+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

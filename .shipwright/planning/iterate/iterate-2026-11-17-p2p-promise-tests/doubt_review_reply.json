@@ -1,0 +1,9 @@
+{"doubts":[
+{"claim_under_doubt":"A changed helper always changes the hash","disproof_attempt":"A module-level rebinding after a def is ignored because the def wins in lookup.","outcome":"disproved: behaviour change with identical fingerprint; recorded in FINDINGS for stop 2","severity":"medium"},
+{"claim_under_doubt":"Every fixture or hook that can affect a locked test is in its closure","disproof_attempt":"Non-literal autouse, module-level pytest_generate_tests, parent conftests and golden/__init__.py are outside every closure and REQUIRED.","outcome":"disproved for these paths; recorded in FINDINGS for stop 2","severity":"medium"},
+{"claim_under_doubt":"The hash is identical on Python 3.11 and 3.12","disproof_attempt":"No literal digest is pinned; f-string parsing changed in 3.12.","outcome":"not disproved but unguarded: run the shared root on both interpreters before the lock","severity":"medium"},
+{"claim_under_doubt":"A rename is not a change of the promise","disproof_attempt":"The fingerprint drops the test name.","outcome":"holds via the meta test only; the lock must key by path::name","severity":"low"},
+{"claim_under_doubt":"The promise tests go red when the skill changes","disproof_attempt":"AC04 lacks footer and chore cases, AC10 only dry-runs aggregation, AC11 aggregation half is a tautology.","outcome":"partially disproved; recorded","severity":"low"},
+{"claim_under_doubt":"The oracle field separates trace from test honestly","disproof_attempt":"AC14 and AC15 page parts read the stub release state but are labelled test.","outcome":"inconsistent; stop-2 decision recorded","severity":"low"},
+{"claim_under_doubt":"passing means the named test runs green","disproof_attempt":"The meta test checks presence only.","outcome":"label not checked against junit","severity":"low"}
+]}
