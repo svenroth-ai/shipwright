@@ -183,4 +183,4 @@ def test_ac11_preparing_the_release_text_publishes_nothing_aggregation_half(make
     assert remote_tags == tags_before and f"v{VERSION}" not in remote_tags  # no new marking left the machine
     state = s.gh_state()
     assert state["prs"] == [] and not state["releases"]
-    oracle.check_ac11_not_published(state, tag_on_remote=f"v{VERSION}" in remote_tags, pr_open=False)
+    oracle.check_ac11_not_published(state, tag_on_remote=f"v{VERSION}" in remote_tags, pr_open=bool(state["prs"]))  # trivially true while aggregating; the direct asserts above are the judgement

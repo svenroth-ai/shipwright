@@ -178,3 +178,18 @@ def test_none_is_told_apart_from_its_neighbours():
     assert len(prints) == 5
     assert fp("def test_it():\n    f(None)\n") != fp("def test_it():\n    f(0)\n")
     assert fp("def test_it():\n    def f(a=None):\n        pass\n") != fp("def test_it():\n    def f(a):\n        pass\n")
+
+
+def test_every_binding_of_a_module_constant_counts_not_only_the_last():
+    base = "LIMIT = 3\nLIMIT = LIMIT + 1\n\n\ndef test_it():\n    assert LIMIT\n"
+    assert fp(base) != fp(base.replace("LIMIT = 3", "LIMIT = 4"))  # the first of two bindings
+    aug = "CASES = [1]\nCASES += [2]\n\n\ndef test_it():\n    assert CASES\n"
+    assert fp(aug) != fp(aug.replace("+= [2]", "+= [3]"))
+    tup = "A, B = 1, 2\n\n\ndef test_it():\n    assert B\n"
+    assert fp(tup) != fp(tup.replace("1, 2", "1, 3"))
+
+
+def test_a_fixture_requested_by_its_alias_is_found():
+    source = "def test_it(thing):\n    pass\n"
+    conftest = "import pytest\n\n\n@pytest.fixture(name='thing')\ndef _thing_impl():\n    assert True\n"
+    assert fp(source, [conftest]) != fp(source, [conftest.replace("True", "False")])

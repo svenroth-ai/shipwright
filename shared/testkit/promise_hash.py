@@ -51,7 +51,7 @@ def _dotted(node: ast.AST) -> str:
 
 
 # marks that change what runs or whether it counts: weakening a test with one of them must move the hash
-_BEHAVIOUR_MARKS = ("parametrize", "skip", "skipif", "xfail", "usefixtures", "filterwarnings")
+_BEHAVIOUR_MARKS = ("parametrize", "skip", "skipif", "xfail", "usefixtures", "filterwarnings", "flaky", "timeout")
 
 
 def _is_marker(decorator: ast.AST) -> bool:
@@ -107,23 +107,32 @@ class Module:
 
     def __init__(self, source: str) -> None:
         self.defs: dict[str, ast.AST] = {}
-        self.consts: dict[str, ast.AST] = {}
+        self.consts: dict[str, list[ast.AST]] = {}  # every statement that binds a name, in file order (none is overwritten)
         self.marks: list[ast.AST] = []  # module-level ``pytestmark`` marks that change what runs (skip, xfail, parametrize ...)
         for node in ast.parse(source).body:
-            if isinstance(node, ast.Assign) and any(isinstance(x, ast.Name) and x.id == "pytestmark" for x in node.targets):
+            targets = (node.targets if isinstance(node, ast.Assign) else [node.target] if isinstance(node, (ast.AnnAssign, ast.AugAssign)) else [])
+            if any(isinstance(x, ast.Name) and x.id == "pytestmark" for x in targets):
                 value = node.value
                 self.marks += [m for m in (value.elts if isinstance(value, (ast.List, ast.Tuple)) else [value]) if not _is_marker(m)]
             elif isinstance(node, _DEFS):
                 self.defs[node.name] = node
-            elif isinstance(node, ast.Assign):
-                for target in node.targets:
-                    if isinstance(target, ast.Name):
-                        self.consts[target.id] = node
-            elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name) and node.value is not None:
-                self.consts[node.target.id] = node
+                for d in node.decorator_list:  # ``@pytest.fixture(name="x")`` is requested as ``x``
+                    if isinstance(d, ast.Call) and _dotted(d).endswith("fixture"):
+                        for k in d.keywords:
+                            if k.arg == "name" and isinstance(k.value, ast.Constant) and isinstance(k.value.value, str):
+                                self.defs[k.value.value] = node
+            else:
+                for target in targets:
+                    for name in (n.id for n in ast.walk(target) if isinstance(n, ast.Name)):  # tuple unpacking binds several
+                        self.consts.setdefault(name, []).append(node)
 
     def lookup(self, name: str) -> ast.AST | None:
-        return self.defs.get(name) or self.consts.get(name)
+        if name in self.defs:
+            return self.defs[name]
+        nodes = self.consts.get(name)
+        if not nodes:
+            return None
+        return nodes[0] if len(nodes) == 1 else ast.Module(body=nodes, type_ignores=[])
 
 
 def _names(node: ast.AST) -> set[str]:
