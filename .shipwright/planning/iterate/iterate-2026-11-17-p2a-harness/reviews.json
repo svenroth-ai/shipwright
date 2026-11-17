@@ -1,0 +1,410 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-17-p2a-harness",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-17T13:00:57.077178+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "build_env` uses an allowlist of environment variables, but many real tools need variables you may forget (`HOME`, `PATH`, `TMPDIR`, locale vars). If `HOME` is stripped, git may fail or write to unexpected locations; if `PATH` is stripped or hardcoded, `gh` stub resolution via the argv-prefix seam may break on some machines.",
+          "suggestion": "Make the allowlist explicit in the plan (`PATH`, `HOME`, `SystemRoot`/`SystemDrive` on Windows, `LC_ALL=C` for deterministic git output) and assert in a unit test that the env is sufficient to run `git` at all.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Normalization of paths and SHAs is the crux of a golden trace, but the plan doesn't say how it handles content-dependent noise beyond SHAs/timestamps: commit counts are stable but reflogs, `git status` porcelain output with CRLF on Windows, and file mtimes can leak into traces and cause false freeze failures across platforms.",
+          "suggestion": "Pin git config in the scratch project (`core.autocrlf=false`, `commit.gpgsign=false`, `user.name`/`user.email` fixed, `init.defaultBranch` fixed) inside `release_scratch.py`, and have a unit test that building + collecting twice yields a byte-identical trace on the same machine.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The `gh` stub is \"reached through the P1 argv-prefix seam\" and the plan says P2p needs it \"from a spawned process.\" If the stub is spawned as a subprocess (rather than imported), its state dir path must be passed via env or argv — and that path is also how `pr merge`/`release create` \"really\" mutate git state. Concurrency or stale state dirs across test runs could produce flaky merges.",
+          "suggestion": "Ensure the stub uses a per-run state dir (tmpdir fixture), fails loudly on missing/corrupt state, and document in the stub's docstring whether it's invoked as a script or imported. Add a unit test for the spawn path now, not in P2b, since the contract is being frozen here.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "freeze_problems` with \"sha256 lock plus approved deltas\" is being built in P2a but the lock file itself is deferred to P2-op. Building the approval-delta mechanism before any real lock or scenario exists risks designing the delta grammar against zero real examples.",
+          "suggestion": "Keep `freeze_problems` minimal (no-lock ⇒ unfrozen, and a byte-compare against the lock) and defer the approved-delta vocabulary to when P2b produces actual traces. If the plan already intends this, make it explicit to avoid speculative abstraction.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "\"Judgement output masked\" in `collect` — masking by pattern is fragile; if the skill's judgement output format changes later, traces will diff spuriously. Also unclear whether the argv log is normalized for the tmpdir path embedded in the argv prefix.",
+          "suggestion": "Mask by structural position (e.g., the known step whose output is judgement) rather than pattern matching where possible; normalize the scratch dir prefix in argv-log entries.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "assert_no_secrets` \"fails on any secret-shaped name\" — good — but the fake GitHub URL uses a file push URL with `GIT_ALLOW_PROTOCOL=file`. That's fine for a scratch repo, but if `GIT_ALLOW_PROTOCOL` leaks into a non-scratch git invocation (it's set in the child env, so risk is low) it would weaken a guard elsewhere.",
+          "suggestion": "Confirm the env is only applied to the scratch subprocess invocation, not set process-wide in conftest. One unit test asserting the parent process env is untouched would settle it.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "release_scratch.py` depends on `minimal_valid_project` — the plan doesn't state where that helper lives or that it exists today. If it's a P1 artifact, verify; if it's new, its ownership belongs in this plan's file list.",
+          "suggestion": "Name the module providing `minimal_valid_project` and whether it's imported or copied.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency |",
+          "file": null,
+          "line": null,
+          "finding": "The mini-plan omits the required FINDINGS reproduction records, LEARNINGS append, and per-unit AC record marked `unchanged`. These are explicit deliverables even though product behavior stays unchanged.",
+          "suggestion": "Add these updates to the plan, map P2a to FR-01.09 / FR-01.01, and verify the start conditions and architecture rules before implementation.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security |",
+          "file": null,
+          "line": null,
+          "finding": "assert_no_secrets` checks secret-shaped variable names, but that alone does not establish that the environment leaks no API key. A credential value could survive under an allowed name.",
+          "suggestion": "Test `build_env` against a deliberately contaminated parent environment, asserting the exact allowed output and absence of seeded credential values. Include the explicitly forbidden `SHIPWRIGHT_ROOT`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "An environment allowlist does not isolate Git from user/system configuration or installed hooks. Those can change commit behavior, enable signing, rewrite URLs, or invoke credential helpers, making the scratch harness machine-dependent.",
+          "suggestion": "Explicitly isolate Git configuration and hooks, configure a fixed local identity, and test construction under hostile inherited Git configuration.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach |",
+          "file": null,
+          "line": null,
+          "finding": "“SHAs, timestamps, paths normalized; judgement output masked” leaves the trace’s comparison semantics underspecified. Broad replacement could hide changed commit relationships, refs, or deterministic output—the regressions this harness must detect.",
+          "suggestion": "Define stable, relationship-preserving SHA aliases and narrowly scoped path/time normalization. Restrict masking to the brief’s designated judgment fields, with tests proving meaningful differences remain visible.  The harness structure is reasonable and introduces little direct product risk, but its isolation, trace semantics, and required reporting need explicit treatment before implementation. Repository reads were blocked in this session, so I could not verify the referenced brief contracts or prerequisites independently.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-17T13:00:46.073696+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] # Review: P2a — Golden-trace harness\n\n## Findings\n\n- **Category: edge-case — Severity: medium**\n  **Finding:** `build_env` uses an allowlist of environment variables, but many real tools need variables you may forget (`HOME`, `PATH`, `TMPDIR`, locale vars). If `HOME` is stripped, git may fail or write to unexpected locations; if `PATH` is stripped or hardcoded, `gh` stub resolution via the argv-prefix seam may break on some machines.\n  **Suggestion:** Make the allowlist explicit in the plan (`PATH`, `HOME`, `SystemRoot`/`SystemDrive` on Windows, `LC_ALL=C` for deterministic git output) and assert in a unit test that the env is sufficient to run `git` at all.\n\n- **Category: edge-case — Severity: medium**\n  **Finding:** Normalization of paths and SHAs is the crux of a golden trace, but the plan doesn't say how it handles *content-dependent* noise beyond SHAs/timestamps: commit counts are stable but reflogs, `git status` porcelain output with CRLF on Windows, and file mtimes can leak into traces and cause false freeze failures across platforms.\n  **Suggestion:** Pin git config in the scratch project (`core.autocrlf=false`, `commit.gpgsign=false`, `user.name`/`user.email` fixed, `init.defaultBranch` fixed) inside `release_scratch.py`, and have a unit test that building + collecting twice yields a byte-identical trace on the same machine.\n\n- **Category: risk — Severity: medium**\n  **Finding:** The `gh` stub is \"reached through the P1 argv-prefix seam\" and the plan says P2p needs it \"from a spawned process.\" If the stub is spawned as a subprocess (rather than imported), its state dir path must be passed via env or argv — and that path is also how `pr merge`/`release create` \"really\" mutate git state. Concurrency or stale state dirs across test runs could produce flaky merges.\n  **Suggestion:** Ensure the stub uses a per-run state dir (tmpdir fixture), fails loudly on missing/corrupt state, and document in the stub's docstring whether it's invoked as a script  […truncated]\n\n[openai] 1. **Category: dependency | Severity: medium**  \n   **Finding:** The mini-plan omits the required FINDINGS reproduction records, LEARNINGS append, and per-unit AC record marked `unchanged`. These are explicit deliverables even though product behavior stays unchanged.  \n   **Suggestion:** Add these updates to the plan, map P2a to FR-01.09 / FR-01.01, and verify the start conditions and architecture rules before implementation.\n\n2. **Category: security | Severity: medium**  \n   **Finding:** `assert_no_secrets` checks secret-shaped variable names, but that alone does not establish that the environment leaks no API key. A credential value could survive under an allowed name.  \n   **Suggestion:** Test `build_env` against a deliberately contaminated parent environment, asserting the exact allowed output and absence of seeded credential values. Include the explicitly forbidden `SHIPWRIGHT_ROOT`.\n\n3. **Category: edge-case | Severity: medium**  \n   **Finding:** An environment allowlist does not isolate Git from user/system configuration or installed hooks. Those can change commit behavior, enable signing, rewrite URLs, or invoke credential helpers, making the scratch harness machine-dependent.  \n   **Suggestion:** Explicitly isolate Git configuration and hooks, configure a fixed local identity, and test construction under hostile inherited Git configuration.\n\n4. **Category: approach | Severity: medium**  \n   **Finding:** “SHAs, timestamps, paths normalized; judgement output masked” leaves the trace’s comparison semantics underspecified. Broad replacement could hide changed commit relationships, refs, or deterministic output—the regressions this harness must detect.  \n   **Suggestion:** Define stable, relationship-preserving SHA aliases and narrowly scoped path/time normalization. Restrict masking to the brief’s designated judgment fields, with tests proving meaningful differences remain visible.\n\nThe harness structure is reasonable and introduces little direct p […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": null,
+          "file": "shared/testkit/release_scratch.py",
+          "line": 1,
+          "finding": "stray real gh may use keyring token; set dummy GH_TOKEN (queued for P2b1)",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": "shared/testkit/release_scratch.py",
+          "line": 1,
+          "finding": "uv cache lost on Linux with replaced HOME (queued for P2b1)",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": "shared/tests/test_golden_trace.py",
+          "line": 1,
+          "finding": "AC14 tag on all harness tests inflates coverage (queued)",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": "shared/testkit/gh_stub.py",
+          "line": 1,
+          "finding": "per-command short flags",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": "shared/testkit/release_scratch.py",
+          "line": 1,
+          "finding": "GIT_CONFIG_NOSYSTEM no effect",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": "shared/testkit/gh_stub.py",
+          "line": 1,
+          "finding": "merge subprocess encoding",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": "shared/testkit/golden_trace.py",
+          "line": 1,
+          "finding": "leaked temp file",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": "shared/testkit/golden_trace.py",
+          "line": 1,
+          "finding": "PR body unmasked",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": "shared/tests/test_golden_trace.py",
+          "line": 1,
+          "finding": "weak A-or-B assertion",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-17T13:59:46.739884+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "reviewed_commit": "e891f917f9425a8da77284fd0855a5fef894a925"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: stub merge leaves local main behind so push-tags diverges from real gh — see doubt review",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: freeze checker files themselves can be gutted by same diff — see doubt review",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: PR body unmasked in trace — see doubt review",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: stub ignores --repo — see doubt review",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-17T13:59:39.066696+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "reviewed_commit": "e891f917f9425a8da77284fd0855a5fef894a925"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/testkit/gh_stub.py — `main()` (and `pr_create`/`release_create` body/notes-file reads)",
+          "line": null,
+          "finding": "The contract states \"every call, refusals included, goes to an argv log in call order,\" but only `Refusal` is caught in `main()`. Any other exception — e.g. `--body-file`/`--notes-file` pointing at a missing file (`FileNotFoundError`), a directory, or an unwritable `state.json` — propagates as a traceback and the `argv.jsonl` entry for that call is never written. A crashing call silently vanishes from the trace, which is exactly the class of event a golden trace must record.",
+          "suggestion": "Wrap `dispatch`/`save` in a broader `except Exception` that converts to a refusal-style exit (or at minimum move the argv-log append into a `finally` block so the log entry is written whatever happens).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/testkit/gh_stub.py — `_flags` / `pr_create",
+          "line": null,
+          "finding": "A valued flag given with no value (`--head` at end of argv, `--body-file` with a following flag) yields `\"\"`, which then either falls back to the current branch or makes `Path(\"\").read_text()` raise `IsADirectoryError` (the uncaught-exception case above). Also `--json` is listed as a valued flag in `release_view`, so `gh release view --json url TAG` consumes `url` as its value — it happens to work, but the arg is interpreted in a slot it doesn't occupy in real `gh`.",
+          "suggestion": "Treat a valued flag followed by another `--flag` (or end of argv) as a usage refusal (exit 2) rather than silently producing an empty value; make `--json` a bare flag that swallows the following field list only when needed.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "shared/testkit/golden_trace.py — `_refs",
+          "line": null,
+          "finding": "_git(..., check=False)` on `for-each-ref` means a git failure (e.g. a corrupt repo, or an origin path that isn't a repo) returns empty output and the trace records `\"tags\": {}, \"branches\": {}` — indistinguishable from a legitimately empty repository. A scenario that broke the repo would then produce a \"clean\" trace.",
+          "suggestion": "Let `for-each-ref` raise on failure (drop `check=False`), or assert the command's return code explicitly.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "plugins/shipwright-changelog/tests/golden/test_trace_freeze.py — `test_the_real_tree_respects_the_freeze",
+          "line": null,
+          "finding": "Until stop 2 commits a lock this test is a tautology (`tree_problems` returns `[]` whenever the lock is absent) — acknowledged in the docstring, but nothing in the diff pins the lock's eventual existence; a future stop-2 iterate that forgets the lock still sees green here. The known-limit is documented, not guarded.",
+          "suggestion": "Acceptable as-is given the docstring explicitly assigns the existence check to stop-2 review, but consider a `pytest.ini`/marker note or a companion `xfail(strict=True)` placeholder so the obligation is visible in the test output rather than only in prose.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/testkit/release_scratch.py — `_isolated_user_config",
+          "line": null,
+          "finding": "It mutates the process-global `os.environ` for the duration of `mvp.write_phase` calls. If any test (or pytest plugin, e.g. pytest-xdist or a plugin running setup concurrently) touches the environment in parallel, the swap leaks; it also clobbers an unrelated `GIT_CONFIG_NOSYSTEM` restore ordering if `minimal_valid_project` itself ever sets env vars.",
+          "suggestion": "Low risk for a stdlib testkit used sequentially; if `minimal_valid_project` gains an `env=` parameter later, pass the built environment instead of mutating the process.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/testkit/golden_trace.py:133 — `steps` collection",
+          "line": null,
+          "finding": "Whitelisted step outputs bypass normalization. An absolute scratch path in `pathspec`, for example, remains different between two otherwise identical runs, causing a false golden-trace mismatch. The existing test compares only scratches without step output.",
+          "suggestion": "Recursively normalize string values in retained output fields. Add a two-scratch test with absolute paths in step outputs.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/testkit/golden_trace.py:125 — `masked_paths` construction",
+          "line": null,
+          "finding": "Judgement masking depends on files existing in the final working tree. If a scenario commits a judgement file and subsequently deletes it, `_expand()` excludes that path and `_commits()` records its earlier model-generated contents unmasked. Equivalent runs can therefore produce different traces despite requesting masking for that file.",
+          "suggestion": "Match historical changed paths against the judgement patterns independently of final-tree existence. Test a judgement file that is committed and then deleted.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/testkit/golden_trace.py:140 — stub argv collection",
+          "line": null,
+          "finding": "Release notes are masked in persisted release state, but remain verbatim in the argv log when the supported `release create ... --notes <text>` form is used. Model-generated notes therefore still affect trace equality and remain visible in the serialized trace.",
+          "suggestion": "Mask inline notes values in the recorded argv while preserving the flag and call order. Test both `--notes <text>` and `--notes=<text>`.  Ship-with-fixes: the harness structure is reasonable, but these recording gaps undermine its comparison contract. Review was limited to the supplied diff and specification excerpt because execution policy blocked local file access and test execution.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-17T13:06:20.706921+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- Category: bug\n  Severity: medium\n  File: shared/testkit/gh_stub.py — `main()` (and `pr_create`/`release_create` body/notes-file reads)\n  Finding: The contract states \"every call, refusals included, goes to an argv log in call order,\" but only `Refusal` is caught in `main()`. Any other exception — e.g. `--body-file`/`--notes-file` pointing at a missing file (`FileNotFoundError`), a directory, or an unwritable `state.json` — propagates as a traceback and the `argv.jsonl` entry for that call is never written. A crashing call silently vanishes from the trace, which is exactly the class of event a golden trace must record.\n  Suggestion: Wrap `dispatch`/`save` in a broader `except Exception` that converts to a refusal-style exit (or at minimum move the argv-log append into a `finally` block so the log entry is written whatever happens).\n\n- Category: edge-case\n  Severity: low\n  File: shared/testkit/gh_stub.py — `_flags` / `pr_create`\n  Finding: A valued flag given with no value (`--head` at end of argv, `--body-file` with a following flag) yields `\"\"`, which then either falls back to the current branch or makes `Path(\"\").read_text()` raise `IsADirectoryError` (the uncaught-exception case above). Also `--json` is listed as a *valued* flag in `release_view`, so `gh release view --json url TAG` consumes `url` as its value — it happens to work, but the arg is interpreted in a slot it doesn't occupy in real `gh`.\n  Suggestion: Treat a valued flag followed by another `--flag` (or end of argv) as a usage refusal (exit 2) rather than silently producing an empty value; make `--json` a bare flag that swallows the following field list only when needed.\n\n- Category: bug\n  Severity: low\n  File: shared/testkit/golden_trace.py — `_refs`\n  Finding: `_git(..., check=False)` on `for-each-ref` means a git failure (e.g. a corrupt repo, or an origin path that isn't a repo) returns empty output and the trace records `\"tags\": {}, \"branches\": {}` — indistinguishable fr […truncated]\n\n[openai] - Category: bug\n- Severity: medium\n- File: shared/testkit/golden_trace.py:133 — `steps` collection\n- Finding: Whitelisted step outputs bypass normalization. An absolute scratch path in `pathspec`, for example, remains different between two otherwise identical runs, causing a false golden-trace mismatch. The existing test compares only scratches without step output.\n- Suggestion: Recursively normalize string values in retained output fields. Add a two-scratch test with absolute paths in step outputs.\n\n- Category: bug\n- Severity: medium\n- File: shared/testkit/golden_trace.py:125 — `masked_paths` construction\n- Finding: Judgement masking depends on files existing in the final working tree. If a scenario commits a judgement file and subsequently deletes it, `_expand()` excludes that path and `_commits()` records its earlier model-generated contents unmasked. Equivalent runs can therefore produce different traces despite requesting masking for that file.\n- Suggestion: Match historical changed paths against the judgement patterns independently of final-tree existence. Test a judgement file that is committed and then deleted.\n\n- Category: bug\n- Severity: medium\n- File: shared/testkit/golden_trace.py:140 — stub argv collection\n- Finding: Release notes are masked in persisted release state, but remain verbatim in the argv log when the supported `release create ... --notes <text>` form is used. Model-generated notes therefore still affect trace equality and remain visible in the serialized trace.\n- Suggestion: Mask inline notes values in the recorded argv while preserving the flag and call order. Test both `--notes <text>` and `--notes=<text>`.\n\nShip-with-fixes: the harness structure is reasonable, but these recording gaps undermine its comparison contract. Review was limited to the supplied diff and specification excerpt because execution policy blocked local file access and test execution.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-17T13:59:38.796598+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "reviewed_commit": "e891f917f9425a8da77284fd0855a5fef894a925"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-17T13:06:20.581075+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-17T13:00:42.607300+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

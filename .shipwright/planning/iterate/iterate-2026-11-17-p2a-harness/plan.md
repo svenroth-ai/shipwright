@@ -1,0 +1,6 @@
+Goal: Add the golden-trace harness (scratch project builder, gh stub, trace recorder with driver interface and freeze check) for the changelog pilot (unit P2a).
+Reason: The conversion of the changelog skill into code is only provable if a scenario's effects (commits, tags, remote refs, files, outward gh calls) are recorded and compared; no product behaviour changes.
+Reference: campaign dfp-pilot-changelog-p1-p2p, unit P2a; brief .shipwright/planning/campaigns/2026-10-25-dfp-pilot-changelog-BRIEF.md section 5
+AC item: {"ac": "FR-01.09.AC14", "confirmed": false, "decided_by": "code", "files": ["shared/testkit/gh_stub.py", "shared/testkit/golden_trace.py", "shared/testkit/release_scratch.py"], "kind": "unchanged"}
+AC item: {"ac": "FR-01.09.AC15", "confirmed": false, "decided_by": "code", "files": ["shared/testkit/gh_stub.py", "shared/testkit/golden_trace.py", "shared/testkit/release_scratch.py"], "kind": "unchanged"}
+AC decisions: [{"ac": "FR-01.09.AC14", "mode": "auto", "answer": "auto", "kind": "unchanged", "answered_via": "none", "decided_by": "code", "confirmed": false}, {"ac": "FR-01.09.AC15", "mode": "auto", "answer": "auto", "kind": "unchanged", "answered_via": "none", "decided_by": "code", "confirmed": false}]

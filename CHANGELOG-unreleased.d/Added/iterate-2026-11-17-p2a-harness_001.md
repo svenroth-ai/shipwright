@@ -1,0 +1,1 @@
+Golden-trace test harness for the changelog release flow: scratch project with a bare origin, a local gh stand-in and a normalized trace recorder with a freeze check (test support only, no behaviour change)

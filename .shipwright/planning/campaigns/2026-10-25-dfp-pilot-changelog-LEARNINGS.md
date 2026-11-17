@@ -8,7 +8,8 @@
 |---|---|---|---|---|---|---|
 | Inventory, truth table, subprocess map, checker, findings, ledger reconcile, pin list, promise list, P24 before-measurement | P0 | (filled when the PR opens) | architecture review: 1 reject (overruled by the brief), plan review: revise x2 | started 2026-11-13 23:57 UTC; stop-1 hand-over time in the PR | not measured by the runner | the pin measurement: `shared/tests` alone ran about 30 minutes on a busy machine (MEASURE section 7.3: 1,802 s); the architecture review halted the unit once and needed an orchestrator answer |
 | Seams and offline proof (one `gh` argv-prefix helper, fixture model for condensation, offline `--verify-commit --release-audit` proof) | P1 | (filled when the PR opens) | architecture review: approve x2 (internal and external); plan review: approve and revise (4 items, 3 taken); code cascade: see PR | one unit run 2026-11-17 | not measured by the runner | the reviews, not the code: the code was about 150 lines, three review calls and the cascade took most of the run; a backgrounded review call was killed when the shell call ended and had to be re-run in the foreground |
-| Harness, scenarios, promise tests, extraction, thin `SKILL.md`, ratchet, conversion check, operator procedures | P2a-P7-op | not started | | | | |
+| Harness: scratch project, `gh` stub, trace recorder, driver interface, freeze check | P2a | (filled when the PR opens) | architecture review: approve x2 (external) and proceed (internal); plan review: revise x2 (findings taken: git config isolation, seeded-credential test, corrupt stub state, argv path normalization) | one unit run 2026-11-17 | not measured by the runner | the trace normalizer: three real differences between two identical scratches (compact run ids, Windows path separators, tracked files left dirty by the last phase) each needed a test-first fix |
+| Scenarios, promise tests, extraction, thin `SKILL.md`, ratchet, conversion check, operator procedures | P2b-P7-op | not started | | | | |
 
 ## 2. Code or AI decisions
 
@@ -43,6 +44,10 @@ Changed after review: nothing yet (P0 only).
 - **A seam that can publish needs a second, independent guard (P1).** The first guard keyed only on a marker sentence in the notes; both external plan reviewers and the internal architecture reviewer pointed out that a lost or quoted marker is then the only defence. The guard now also refuses whenever the fixture-model variable is set without the `gh` seam, and the marker is a hard-to-collide token.
 - **"Offline" has to be proven with the network actually blocked (P1).** The scratch-project proof sets `UV_OFFLINE=1`, a dead proxy and no keys; a test that merely runs on a warm machine proves nothing. Its one soft spot is the pyyaml fetch of `uv run --with pyyaml`, so the test warms uv's cache first and skips only when that fails.
 - **A `.cmd` shim cannot be a `gh` stand-in on Windows (P1).** `gh` is spawned as `["gh", ...]`; the seam is an argv prefix read from a JSON array (shell-style splitting mangles backslash paths), and a malformed value is refused instead of falling back to the real `gh`.
+- **Two identical scratch projects still differ (P2a).** Run the same build twice in two directories and diff the traces before trusting a recorder: the first diff showed compact timestamps in run ids (`project-20261117-125101955883`), Windows backslashes after a path label (so a Windows trace would never equal a Linux one) and files the last phase rewrites after its own commit (an unclean start tree). The byte-identical-twice test is the cheapest guard a normalizer can have.
+- **An environment allowlist is not enough on its own (P2a).** Both plan reviewers asked for the same three extras: a seeded credential VALUE must not survive (not only the name), the user's git config and hooks must not reach the scratch (a hostile global config with a failing `pre-commit` and `commit.gpgsign` is a test), and the parent process environment must stay untouched. `minimal_valid_project` runs git under the process environment, so the builder swaps HOME for the duration of its calls.
+- **A freeze test cannot tell an unstarted freeze from a deleted lock (P2a).** No lock file reads as unfrozen, so the stop-2 iterate must be reviewed for the lock's existence; the check itself (changed, missing, unlocked trace, delta that does not name exactly the change) is tested on synthetic trees.
+- **Do not tag a harness test with a requirement it does not exercise (P2a).** Only the test that runs the real release script against the stub carries `covers FR-01.09/AC14`; the other harness tests carry none (the ritual-tag mistake of P0).
 - **Typed heredocs corrupt files with quotes and backticks** (a Python script with an apostrophe in a string ended the heredoc early): write scripts with the Write tool.
 
 ## 5. Tools
@@ -58,7 +63,8 @@ Changed after review: nothing yet (P0 only).
 | `fr_cluster_report.py`, the AC-Move-Map | Shipwright-specific | atomic FR splits |
 | `release_seams.py` (env-var seams read in one place, argv prefix for `gh`, fixture model, publish guard) | generic in method (any CLI wrapper that must run offline), Shipwright-specific in the variable names | the list of external binaries and model calls on the path (the subprocess map) |
 | one-place scan test (no file but the seam module names a seam variable; no literal `["gh"` argv in the wrapped scripts) | generic | the seam names |
-| golden trace, fork tool, L3 harness | not used yet (P2a onward) | |
+| golden trace (`golden_trace.py`: collect, normalize, mask, driver interface, freeze check), scratch builder (`release_scratch.py`), `gh` stub (`gh_stub.py`) | generic in method (any skill that ends in git and one outward CLI), stdlib only; the step list in `tests/golden/conftest.py` and the `SHIPWRIGHT_TEST_*` names are Shipwright-specific | the list of steps, the outward binary and its contract, the normalization labels |
+| fork tool, L3 harness | not used yet (P2-op onward) | |
 
 ## 6. Doable by a stranger?
 

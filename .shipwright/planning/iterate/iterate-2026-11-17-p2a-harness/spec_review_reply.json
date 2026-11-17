@@ -1,0 +1,1 @@
+{"stage": "spec-compliance", "verdict": "PASS", "spec_citations": [], "summary": "P2a matches brief section 5 and all five ACs; all files <=300 lines, stdlib-only, no product change."}
