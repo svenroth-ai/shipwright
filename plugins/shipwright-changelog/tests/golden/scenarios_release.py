@@ -68,7 +68,7 @@ def _check_s1(run: Run) -> None:
     # D15: the body is the section behind a literal backslash-n pair, not a line break
     assert prs[0]["body"].startswith("## Changelog\\n\\n## [0.1.0]")
     # D3 (regression guard): the events file is committed, the tree ends clean
-    assert s.git("status", "--porcelain") == ""
+    assert s.git("status", "--porcelain") == "", s.git("status", "--porcelain")
     event = s.git("log", "-1", "--format=%s", "--name-only", "HEAD")
     assert event.splitlines()[0] == "chore(release): record changelog event for v0.1.0"
     assert any(p.startswith(("shipwright_events.jsonl", ".shipwright/events/drops/")) for p in event.splitlines()[1:])
