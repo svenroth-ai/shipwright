@@ -134,116 +134,167 @@
     "code": {
       "review_type": "code",
       "status": "completed",
-      "findings_count": 5,
+      "findings_count": 8,
       "findings": [
         {
           "severity": "medium",
-          "category": "correctness",
-          "file": "plugins/shipwright-changelog/tests/golden/driver_replay.py",
-          "line": 88,
-          "finding": "trace reason taken from last stderr line",
-          "suggestion": "fixed code exit_N (fixed)",
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "medium",
-          "category": "security",
+          "category": "review",
           "file": "shared/testkit/release_scratch.py",
-          "line": 124,
-          "finding": "GIT_CONFIG_NOSYSTEM removed without rationale",
-          "suggestion": "rationale comment added; removal was a brief hardening item",
+          "line": 1,
+          "finding": "GIT_CONFIG_NOSYSTEM dropped on all platforms; keep on non-Windows (follow-up)",
+          "suggestion": null,
           "source": "code-reviewer"
         },
         {
           "severity": "medium",
-          "category": "correctness",
+          "category": "review",
           "file": "plugins/shipwright-changelog/tests/golden/test_replay_driver.py",
-          "line": 1299,
-          "finding": "frozen-chain test checks only script prefixes",
-          "suggestion": "em dash fixed; full-chain compare is a P2b2 follow-up",
+          "line": 1,
+          "finding": "machine-path leak check regex weak (follow-up)",
+          "suggestion": null,
           "source": "code-reviewer"
         },
         {
           "severity": "low",
-          "category": "readability",
-          "file": "plugins/shipwright-changelog/tests/golden/test_replay_driver.py",
-          "line": 1276,
-          "finding": "tautological line",
-          "suggestion": "removed",
+          "category": "review",
+          "file": "plugins/shipwright-changelog/tests/golden/oracle.py",
+          "line": 1,
+          "finding": "dead check_ac11_not_published",
+          "suggestion": null,
           "source": "code-reviewer"
         },
         {
           "severity": "low",
-          "category": "readability",
-          "file": "plugins/shipwright-changelog/tests/golden/conftest.py",
-          "line": 105,
-          "finding": "pytest.fail in fixture",
-          "suggestion": "raise AssertionError (fixed)",
+          "category": "review",
+          "file": "plugins/shipwright-changelog/tests/golden/scenario_core.py",
+          "line": 1,
+          "finding": "autonomy has two sources",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "review",
+          "file": "shared/testkit/gh_stub.py",
+          "line": 1,
+          "finding": "_leave_merged_head failure after remote merge",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "review",
+          "file": "plugins/shipwright-changelog/tests/golden/test_replay_driver.py",
+          "line": 1,
+          "finding": "frozen chains compared only on uv lines",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "review",
+          "file": "shared/testkit/golden_trace.py",
+          "line": 1,
+          "finding": "masking flag set inconsistent",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "review",
+          "file": "plugins/shipwright-changelog/tests/golden/scenario_support.py",
+          "line": 1,
+          "finding": "sys.executable vs uv run",
+          "suggestion": null,
           "source": "code-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-11-17T15:48:39.908335+00:00",
+      "completed_at": "2026-11-17T16:55:45.255483+00:00",
       "disposition": null,
       "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "74cff48518980ee2a03aa8e7c6d26a69ce7f6205",
-      "reviewer_notes": "No high findings."
+      "reviewed_commit": "a27d2a64fdd68144953a31de5d7f42c73e742b76"
     },
     "doubt": {
       "review_type": "doubt",
       "status": "completed",
-      "findings_count": 4,
+      "findings_count": 7,
       "findings": [
         {
           "severity": "high",
-          "category": "hidden coupling",
+          "category": null,
           "file": null,
           "line": null,
-          "finding": "traces change only with changelog behaviour",
-          "suggestion": "list shared templates and minimal_valid_project as trace inputs (documented as follow-up for P2b2/stop 2)",
+          "finding": "Claim under doubt: scenarios assert the ACs they are tagged with (covers tags on violation-recording tests) — see doubt review",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: freeze REQUIRED covers everything deciding what traces prove — see doubt review",
+          "suggestion": null,
           "source": "doubt-reviewer"
         },
         {
           "severity": "medium",
-          "category": "reversibility",
+          "category": null,
           "file": null,
           "line": null,
-          "finding": "gh_stub checkout cannot destroy real work",
-          "suggestion": "guard added: refuses unless GIT_ALLOW_PROTOCOL=file",
+          "finding": "Claim under doubt: traces identical on Linux CI — see doubt review",
+          "suggestion": null,
           "source": "doubt-reviewer"
         },
         {
           "severity": "medium",
-          "category": "cross-OS",
+          "category": null,
           "file": null,
           "line": null,
-          "finding": "traces equal on Windows and Linux",
-          "suggestion": "stderr reason removed; Linux CI run is the first cross-OS check",
+          "finding": "Claim under doubt: S2 autonomy assertions test the skill — see doubt review",
+          "suggestion": null,
           "source": "doubt-reviewer"
         },
         {
           "severity": "medium",
-          "category": "oracle independence",
+          "category": null,
           "file": null,
           "line": null,
-          "finding": "D15/D21-D23 come from the prose",
-          "suggestion": "em dash fixed; full-chain compare tracked for P2b2",
+          "finding": "Claim under doubt: D21-D23 are real behaviour — see doubt review",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: replay mirrors cited prose — see doubt review",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: stub mutation only touches a scratch — see doubt review",
+          "suggestion": null,
           "source": "doubt-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-11-17T15:48:40.034826+00:00",
+      "completed_at": "2026-11-17T16:55:45.410526+00:00",
       "disposition": null,
       "recorded_by": "doubt-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "74cff48518980ee2a03aa8e7c6d26a69ce7f6205"
+      "reviewed_commit": "a27d2a64fdd68144953a31de5d7f42c73e742b76"
     },
     "external_code": {
       "review_type": "external_code",
@@ -340,14 +391,13 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-11-17T15:48:39.796816+00:00",
+      "completed_at": "2026-11-17T16:55:45.103120+00:00",
       "disposition": null,
       "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "74cff48518980ee2a03aa8e7c6d26a69ce7f6205"
+      "reviewed_commit": "a27d2a64fdd68144953a31de5d7f42c73e742b76"
     },
     "plan_internal": {
       "review_type": "plan_internal",
