@@ -70,60 +70,51 @@
     "code": {
       "review_type": "code",
       "status": "completed",
-      "findings_count": 9,
+      "findings_count": 7,
       "findings": [
         {
           "severity": "medium",
           "category": "correctness",
           "file": "shared/testkit/promise_hash.py",
-          "line": 117,
-          "finding": "Module constants: a later assignment overwrote an earlier one; augmented assignments and tuple unpacking were not recorded.",
-          "suggestion": "Keep every binding. Fixed in 402e0c7e4 with tests.",
+          "line": 113,
+          "finding": "Import statements are not hashed, aliases included, so a test can be pointed at another module (from . import scenario_support as oracle) without changing its hash; the meta import allow-list ignores asname.",
+          "suggestion": "Hash the import bindings of names in the closure and reject differing aliases. Recorded in FINDINGS for stop 2; the lock is not created in this campaign.",
           "source": "code-reviewer"
         },
         {
-          "severity": "medium",
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/tests/golden/test_promise_release.py",
+          "line": 109,
+          "finding": "In the left_stale case the committed-versions check cannot tell a refused release commit from no release commit at all.",
+          "suggestion": "Assert the release commit subject or the exact committed map.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
           "category": "correctness",
           "file": "plugins/shipwright-changelog/tests/golden/test_promise_aggregate.py",
-          "line": 186,
-          "finding": "The oracle call for AC11 got the literal pr_open=False and could not fail.",
-          "suggestion": "Pass the observed value. Fixed in 402e0c7e4; the direct asserts are the judgement.",
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "medium",
-          "category": "correctness",
-          "file": "shared/testkit/promise_hash.py",
-          "line": 63,
-          "finding": "A fixture declared with name= is not found by its alias.",
-          "suggestion": "Index the alias. Fixed in 402e0c7e4 with a test.",
+          "line": 176,
+          "finding": "The AC11 aggregation-half test never calls the oracle although the docs say each promise test is judged through it.",
+          "suggestion": "Add an oracle function and check per test in the meta test.",
           "source": "code-reviewer"
         },
         {
           "severity": "low",
           "category": "correctness",
           "file": "shared/testkit/promise_hash.py",
-          "line": 54,
-          "finding": "flaky and timeout marks not treated as behaviour marks; annotated or augmented pytestmark missed.",
-          "suggestion": "Fixed in 402e0c7e4.",
+          "line": 220,
+          "finding": "covers_of reads pytestmark only from plain Assign, not AnnAssign or AugAssign.",
+          "suggestion": "Share one target-extraction helper.",
           "source": "code-reviewer"
         },
         {
           "severity": "low",
-          "category": "readability",
-          "file": "docs/hooks-and-pipeline.md",
-          "line": 3160,
-          "finding": "The paragraph misdescribed which markers the hash ignores.",
-          "suggestion": "Fixed in 402e0c7e4.",
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": "readability",
-          "file": "shared/tests/test_promise_hash.py",
-          "line": 95,
-          "finding": "The interpreter-field test proves little on 3.11; no known-answer test.",
-          "suggestion": "Left; recorded for stop 2.",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/tests/golden/test_promises_meta.py",
+          "line": 211,
+          "finding": "Fingerprint uniqueness check keys by bare test name across two files.",
+          "suggestion": "Key by file::name.",
           "source": "code-reviewer"
         },
         {
@@ -131,99 +122,106 @@
           "category": "readability",
           "file": "plugins/shipwright-changelog/tests/golden/test_promise_release.py",
           "line": 62,
-          "finding": "Clause tag != v0.1.0 never matters.",
-          "suggestion": "Left.",
+          "finding": "Dead condition tag != v0.1.0.",
+          "suggestion": "Use if tag:.",
           "source": "code-reviewer"
         },
         {
           "severity": "low",
           "category": "architecture",
-          "file": "shared/testkit/promise_hash.py",
-          "line": 216,
-          "finding": "parse_move_map and resolve_ac duplicate ac_move_map.py; justified (stdlib-only testkit), pinned by a test.",
-          "suggestion": "None.",
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": "correctness",
           "file": "shared/tests/test_promise_hash.py",
           "line": 12,
-          "finding": "Borrowed covers tags on support tests (AC14, AC01).",
-          "suggestion": "Recorded in FINDINGS for stop 2.",
+          "finding": "Stand-in covers tags (AC14, AC01) inflate coverage counts.",
+          "suggestion": "Record as a stop-2 decision (done in FINDINGS).",
           "source": "code-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-11-17T22:31:52.052592+00:00",
+      "completed_at": "2026-11-17T23:23:13.351745+00:00",
       "disposition": null,
       "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "975e1cfd132ba523a073bea40d2cf9ef33683a90"
+      "reviewed_commit": "a6cdbbb09442ff9b421313c801dbd276aeaaa5cb"
     },
     "doubt": {
       "review_type": "doubt",
       "status": "completed",
-      "findings_count": 5,
+      "findings_count": 7,
       "findings": [
         {
-          "severity": "high",
-          "category": "vacuous test",
-          "file": "plugins/shipwright-changelog/tests/golden/test_promise_release.py",
+          "severity": "medium",
+          "category": null,
+          "file": null,
           "line": null,
-          "finding": "Claim under doubt: AC12 left_stale=False proves the release commit carries the version — The case passed when the release never happened",
-          "suggestion": "Assert exit codes, the tag, and both manifests at the tag. Fixed in this commit; the stale case now pins the refusal reason.",
-          "source": "doubt-reviewer"
-        },
-        {
-          "severity": "high",
-          "category": "lock blind spot",
-          "file": "shared/testkit/promise_hash.py",
-          "line": null,
-          "finding": "Claim under doubt: The promise hash ignores descriptive marks such as slow — CI deselects slow and cross_plugin, so adding one silently disables a locked test without moving the hash",
-          "suggestion": "Hash every mark except covers. Fixed in this commit with a test.",
+          "finding": "Claim under doubt: A changed helper always changes the hash — A module-level rebinding after a def is ignored because the def wins in lookup.",
+          "suggestion": null,
           "source": "doubt-reviewer"
         },
         {
           "severity": "medium",
-          "category": "oracle labelling",
-          "file": "plugins/shipwright-changelog/tests/golden/promise_list.json",
+          "category": null,
+          "file": null,
           "line": null,
-          "finding": "Claim under doubt: oracle trace labels on AC11/aggregation, AC14, AC15 — Some parts are stub-judged",
-          "suggestion": "Recorded in FINDINGS as a stop-2 decision.",
+          "finding": "Claim under doubt: Every fixture or hook that can affect a locked test is in its closure — Non-literal autouse, module-level pytest_generate_tests, parent conftests and golden/__init__.py are outside every closure and REQUIRED.",
+          "suggestion": null,
           "source": "doubt-reviewer"
         },
         {
           "severity": "medium",
-          "category": "hash blind spots",
-          "file": "shared/testkit/promise_hash.py",
+          "category": null,
+          "file": null,
           "line": null,
-          "finding": "Claim under doubt: The hash follows every binding — Module-level in-place mutations, nested bindings and import aliases are not followed",
-          "suggestion": "Documented as known limits in FINDINGS and the hooks doc.",
+          "finding": "Claim under doubt: The hash is identical on Python 3.11 and 3.12 — No literal digest is pinned; f-string parsing changed in 3.12.",
+          "suggestion": null,
           "source": "doubt-reviewer"
         },
         {
           "severity": "low",
-          "category": "schema",
-          "file": "plugins/shipwright-changelog/tests/golden/scenarios.json",
+          "category": null,
+          "file": null,
           "line": null,
-          "finding": "Claim under doubt: scenarios.json follows compare_runs.py — The schema is restated, not imported",
-          "suggestion": "Accepted residual; operator runs the real tool at stop 2.",
+          "finding": "Claim under doubt: A rename is not a change of the promise — The fingerprint drops the test name.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: The promise tests go red when the skill changes — AC04 lacks footer and chore cases, AC10 only dry-runs aggregation, AC11 aggregation half is a tautology.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: The oracle field separates trace from test honestly — AC14 and AC15 page parts read the stub release state but are labelled test.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: passing means the named test runs green — The meta test checks presence only.",
+          "suggestion": null,
           "source": "doubt-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-11-17T22:37:42.204659+00:00",
+      "completed_at": "2026-11-17T23:23:13.493122+00:00",
       "disposition": null,
       "recorded_by": "doubt-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "223f1f9aac1302d92bb6e0b0d371e34fc9e5c33d"
+      "reviewed_commit": "a6cdbbb09442ff9b421313c801dbd276aeaaa5cb"
     },
     "external_code": {
       "review_type": "external_code",
@@ -338,14 +336,13 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-11-17T22:31:48.245886+00:00",
+      "completed_at": "2026-11-17T23:23:13.213242+00:00",
       "disposition": null,
       "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "2450eb618d9f2ee571804cc9c3fe659ee5ddf4cb"
+      "reviewed_commit": "a6cdbbb09442ff9b421313c801dbd276aeaaa5cb"
     },
     "plan_internal": {
       "review_type": "plan_internal",
