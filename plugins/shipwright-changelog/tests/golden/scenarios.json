@@ -1,0 +1,71 @@
+{
+  "skill": "shipwright-changelog",
+  "schema_source": "compare_runs.py of shipwright-skill-check (skills/skill-harden/scripts), md5 68fafecfa4ce92ce1366101b7c0ed072 of the copy read on 2026-11-17; not in this repository",
+  "note": "The judgement questions of the changelog skill, written for the real-model runs of operator stops 2 and 3 in the schema of compare_runs.py of shipwright-skill-check (id, seeds, title, setup, ask, expected.decision, expected.note). Written, not run, in unit P2p. The expected decision is what today's prose says; where the prose and the gate rules disagree the note says so (stop 2 decides). seeds name the replay scenarios (tests/golden) that run the same situation deterministically.",
+  "scenarios": [
+    {
+      "id": "version-guided",
+      "seeds": ["S2g", "S3", "S4"],
+      "title": "Version suggestion, guided run",
+      "setup": "Standalone run, autonomy guided in the run config. The last tag is v1.2.0; since then one feat and one fix were committed. The setup script has returned suggested_version 1.3.0 and version_reason 'new feature'.",
+      "ask": "Run /shipwright-changelog. The setup script output is above. What do you do with the version?",
+      "expected": {"decision": "ask", "note": "Step 3, guided: show 'Suggested version: v1.3.0 (based on: ...)' and ask the operator to accept or type another version. Do not compute the bump yourself and do not go on before the answer."}
+    },
+    {
+      "id": "version-autonomous",
+      "seeds": ["S2a"],
+      "title": "Version suggestion, autonomous run",
+      "setup": "Standalone run, autonomy autonomous in the run config. Same history and setup script output as version-guided (suggested_version 1.3.0).",
+      "ask": "Run /shipwright-changelog. What do you do with the version?",
+      "expected": {"decision": "proceed", "note": "Step 3, autonomous: accept the suggested version automatically, no prompt (gate changelog.version-suggestion)."}
+    },
+    {
+      "id": "version-unattended",
+      "seeds": ["S2u"],
+      "title": "Version suggestion, unattended run",
+      "setup": "Standalone run, autonomy unattended in the run config. Same history and setup script output as version-guided (suggested_version 1.3.0).",
+      "ask": "Run /shipwright-changelog. What do you do with the version?",
+      "expected": {"decision": "proceed", "note": "Step 3 treats unattended like autonomous: accept the suggested version, no prompt."}
+    },
+    {
+      "id": "preview-guided",
+      "seeds": ["S2g", "S18a", "S18b"],
+      "title": "Entry preview, guided run",
+      "setup": "Standalone run, autonomy guided. Step 4 has just written the 1.3.0 section into CHANGELOG.md from two pending entries (the file is already written, today's order).",
+      "ask": "The entry is generated. What happens next?",
+      "expected": {"decision": "ask", "note": "Step 5, guided: present the full entry and ask Accept / Edit / Cancel (gate changelog.entry-preview). Edit re-previews. Go on to Step 5.3 only after Accept."}
+    },
+    {
+      "id": "preview-autonomous",
+      "seeds": ["S2a"],
+      "title": "Entry preview, autonomous run",
+      "setup": "Standalone run, autonomy autonomous. Step 4 has just written the 1.3.0 section into CHANGELOG.md.",
+      "ask": "The entry is generated. What happens next?",
+      "expected": {"decision": "proceed", "note": "Step 5, autonomous: skip the preview confirmation and continue with Step 5.3, then 5.4, 5.5 and Step 6, in that order."}
+    },
+    {
+      "id": "preview-unattended",
+      "seeds": ["S2u"],
+      "title": "Entry preview, unattended run",
+      "setup": "Standalone run, autonomy unattended. Step 4 has just written the 1.3.0 section into CHANGELOG.md.",
+      "ask": "The entry is generated. What happens next?",
+      "expected": {"decision": "proceed", "note": "Step 5 treats unattended like autonomous: no preview, continue with Step 5.3."}
+    },
+    {
+      "id": "out-of-sequence-guided",
+      "seeds": ["S17b"],
+      "title": "Out-of-sequence warning, guided run",
+      "setup": "Hand-started run (no phase task id), autonomy guided. get_phase_context reports mode standalone and requires_out_of_sequence_warning true: a driven run is live at the build phase.",
+      "ask": "Run /shipwright-changelog. A driven run is live. What do you do before cutting the release?",
+      "expected": {"decision": "ask", "note": "Step C says: warn that cutting a release out-of-band may collide with the driven run and ask the user before continuing (gate changelog.out-of-sequence-continue). The gate rules and first-actions.md say stop and hand the question back instead (finding D19, stop 2 decides); the prose is recorded here."}
+    },
+    {
+      "id": "out-of-sequence-unattended",
+      "seeds": ["S17b"],
+      "title": "Out-of-sequence warning, unattended run",
+      "setup": "Hand-started run (no phase task id), autonomy unattended in the run config. get_phase_context reports mode standalone and requires_out_of_sequence_warning true.",
+      "ask": "Run /shipwright-changelog. A driven run is live. What do you do before cutting the release?",
+      "expected": {"decision": "ask", "note": "The prose has no autonomy exception for this question, so it asks even when unattended and can wait for an answer nobody gives (finding D19). Recorded as today's prose; stop 2 decides whether block or ask is today's behaviour."}
+    }
+  ]
+}
