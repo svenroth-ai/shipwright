@@ -71,68 +71,75 @@
     "code": {
       "review_type": "code",
       "status": "completed",
-      "findings_count": 4,
+      "findings_count": 5,
       "findings": [
         {
           "severity": "medium",
           "category": "correctness",
-          "file": "plugins/shipwright-changelog/tests/golden/scenarios_branches.py",
-          "line": 53,
-          "finding": "AC11 checks in S14a/b/c took a literal pr_open=False and could never fail",
-          "suggestion": "derive from stub state (fixed)",
+          "file": "plugins/shipwright-changelog/tests/golden/replay_commands.py",
+          "line": 88,
+          "finding": "CLOSE_PHASE runs five uv commands as separate lines with no set -e, so the step exit code is only the last command's. S13 asserts all exit codes 0, which hides a failure of earlier commands.",
+          "suggestion": "In _check_s13 also assert the artifacts of each command, or run each line as its own logged command. Deferred to stop 2 (recorded).",
           "source": "code-reviewer"
         },
         {
           "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/tests/golden/scenarios_branches.py",
+          "line": 80,
+          "finding": "S14a/b/c call check_ac11_not_published with pr_open=False, which cannot fail, yet book AC11 as judged in ASSERTED and P8c.",
+          "suggestion": "Drop AC11 from their acs or make the oracle not count a vacuous pass. Deferred to stop 2 (recorded).",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
           "category": "correctness",
           "file": "plugins/shipwright-changelog/tests/golden/scenarios_refusals.py",
-          "line": 94,
-          "finding": "S16c sync-key assertion did not test the claim in its comment",
-          "suggestion": "delete (fixed)",
+          "line": 137,
+          "finding": "Some oracle calls get literals (S16e reported=failed, S13 tag_made/pr_open, S5a said) instead of observed state.",
+          "suggestion": "Pass observed values. Already disclosed; deferred to stop 2.",
           "source": "code-reviewer"
         },
         {
-          "severity": "medium",
-          "category": "correctness",
-          "file": "plugins/shipwright-changelog/tests/golden/scenarios_rerun.py",
-          "line": 96,
-          "finding": "S7a AC07 call restates the AC08 refusal",
-          "suggestion": "left: P2b1 tag unchanged; S7c judges AC07",
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "medium",
+          "severity": "low",
           "category": "correctness",
           "file": "plugins/shipwright-changelog/tests/golden/coverage.py",
-          "line": 170,
-          "finding": "P8a accepts any non-empty not_exercised reason; operator approval is pending at stop 2",
-          "suggestion": "recorded in FINDINGS",
+          "line": 79,
+          "finding": "fenced_blocks and _prose_block only recognise fences at column 0.",
+          "suggestion": "Use lstrip().startswith. Latent: SKILL.md has no indented fences today.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/tests/golden/driver_replay.py",
+          "line": 65,
+          "finding": "The FileNotFoundError catch in _run is wider than the missing-gh case in S16f.",
+          "suggestion": "Limit the catch to the gh path.",
           "source": "code-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-11-17T21:01:08.305933+00:00",
+      "completed_at": "2026-11-17T21:46:15.390667+00:00",
       "disposition": null,
       "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "d49126805ffd57f89506809e1f42f98bb43815db",
-      "reviewer_notes": "no high findings; three seeded regressions read as sound"
+      "reviewed_commit": "d4f55745ba3e862e13a99a3b8cab7bb4dbd0bd4e"
     },
     "doubt": {
       "review_type": "doubt",
       "status": "completed",
-      "findings_count": 3,
+      "findings_count": 7,
       "findings": [
         {
           "severity": "medium",
           "category": null,
           "file": null,
           "line": null,
-          "finding": "AC11 judged in satisfied form",
-          "suggestion": "documented in FINDINGS",
+          "finding": "Claim under doubt: The coverage checks go red on any skill change — Edited flags inside the 11 non-frozen blocks (e.g. --fail-if-empty at SKILL.md:189) keep CITES and P8b green; only 4 blocks are compared in full.",
+          "suggestion": null,
           "source": "doubt-reviewer"
         },
         {
@@ -140,8 +147,17 @@
           "category": null,
           "file": null,
           "line": null,
-          "finding": "S5a AC03 judged through the tool wording",
-          "suggestion": "documented; S5b is the evidence",
+          "finding": "Claim under doubt: P8a goes red when the skill changes — check_p8a reads inventory.json, not SKILL.md; check_skill_inventory is never run against the live skill; an empty what-prefix absorbs new parts.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: P8b maps every conditional — The conditional regex only matches lines starting with If/Only if/etc.; SKILL.md:222-223, 378 and others are missed.",
+          "suggestion": null,
           "source": "doubt-reviewer"
         },
         {
@@ -149,20 +165,46 @@
           "category": null,
           "file": null,
           "line": null,
-          "finding": "traces identical on Linux",
-          "suggestion": "green Linux CI before the stop-2 lock",
+          "finding": "Claim under doubt: AC01 is judged where the tag says — check_ac01 with no_request passes and books AC01 as judged in S14a-c and S16f, exactly where today's skill violates it; no expect_violated_today counterpart exists.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: Seeded regression 3 is caught for the stated reason — The oracle globs the working tree, not the committed tree, so a tracked deletion left uncommitted would pass.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: Seeded regression 1 proves the tag marks the release commit — The check compares commit subjects only.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: Traces are identical on Linux — Found no concrete divergence; decision_log.md CRLF vs LF is the residual risk; traces were only recorded on Windows.",
+          "suggestion": null,
           "source": "doubt-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-11-17T21:04:38.772536+00:00",
+      "completed_at": "2026-11-17T21:46:15.531580+00:00",
       "disposition": null,
       "recorded_by": "doubt-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "b006990e91837fe963c9eacc1d3304e6a3b3a465"
+      "reviewed_commit": "d4f55745ba3e862e13a99a3b8cab7bb4dbd0bd4e"
     },
     "external_code": {
       "review_type": "external_code",
@@ -250,14 +292,13 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-11-17T20:55:36.453394+00:00",
+      "completed_at": "2026-11-17T21:46:15.261298+00:00",
       "disposition": null,
       "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "0a6e6af00d6c03748d69cee4688a1bc20be518b9"
+      "reviewed_commit": "d4f55745ba3e862e13a99a3b8cab7bb4dbd0bd4e"
     },
     "plan_internal": {
       "review_type": "plan_internal",
