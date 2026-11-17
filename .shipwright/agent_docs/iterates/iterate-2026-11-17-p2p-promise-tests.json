@@ -1,0 +1,68 @@
+{
+  "run_id": "iterate-2026-11-17-p2p-promise-tests",
+  "date": "2026-11-17T23:14:45.610946Z",
+  "event_at": "2026-11-17T23:14:26.607626+00:00",
+  "type": "feature",
+  "complexity": "medium",
+  "prior_source": "history",
+  "branch": "iterate/p2p-promise-tests",
+  "spec": ".shipwright/planning/iterate/campaigns/dfp-pilot-changelog-p1-p2p/sub-iterates/P2p-promise-tests.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-11-17-p2p-promise-tests",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "each FR-01.09 promise (AC01-AC15; AC11 aggregation half) is judged by a promise test through the driver interface and the oracle, green on the unchanged skill",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-changelog/tests/golden/test_promise_aggregate.py (12) and test_promise_release.py (13) PASSED",
+        "category": "integration"
+      },
+      {
+        "behavior": "promise_list.json keeps the skill-check AC shape, statuses, anchors and the tag binding; scenarios.json matches the compare_runs schema",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-changelog/tests/golden/test_promises_meta.py (10 tests) PASSED"
+      },
+      {
+        "behavior": "the promise fingerprint ignores formatting, comments, docstrings, import order and covers, and notices bodies, helpers, constants, fixtures, conftest and every other mark",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_promise_hash.py (23 tests) PASSED"
+      },
+      {
+        "behavior": "promise tests go red when a promise is broken (seeded mutations of the aggregation renderer and the version rule)",
+        "disposition": "tested",
+        "evidence": "step 3.8 probes: 10 of 12 aggregate tests red; AC04 2.0.0 case red; both reverted"
+      },
+      {
+        "behavior": "the freeze list names every new test file and the whole golden root stays green",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-changelog/tests: 226 passed incl. test_trace_freeze.py"
+      }
+    ],
+    "counts": {
+      "testable": 5,
+      "tested": 5,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 5,
+      "covered_acs": 5
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run pytest plugins/shipwright-changelog/tests/golden/test_promise_aggregate.py plugins/shipwright-changelog/tests/golden/test_promise_release.py plugins/shipwright-changelog/tests/golden/test_promises_meta.py -q -p no:cacheprovider",
+    "exit_code": 0,
+    "tests_run": 35,
+    "evidence_path": ".shipwright/runs/iterate-2026-11-17-p2p-promise-tests/surface_verification.log",
+    "timestamp": "2026-11-17T23:13:46.852Z",
+    "attempts": 1
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}

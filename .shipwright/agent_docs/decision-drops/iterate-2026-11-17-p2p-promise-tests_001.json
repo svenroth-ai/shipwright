@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-17-p2p-promise-tests",
+  "date": "2026-11-17",
+  "section": "Iterate - test: promise tests and the promise lock's hashing (changelog pilot P2p)",
+  "title": "Lock the promises, not only the traces, and hash tests by normalized AST",
+  "context": "The conversion needs tests of what FR-01.09 promises that survive the move from prose to a CLI; traces alone lock accidents too.",
+  "decision": "Twenty promise tests through the replay driver and the oracle, a promise list in the skill-check AC shape, scenarios.json for the judgement questions, and a stdlib AST fingerprint (helpers, constants, fixtures and every mark but covers included).",
+  "consequences": "Stop 2 can lock the hashes; AC11 stays a recorded gap (D2) until the operator decides which behaviour is today's. No skill or product change.",
+  "rationale": "Dedicated tests keep promises independent of whole-trace comparisons; an own serializer keeps the hash stable across Python versions; every mark is hashed because adding one (skip, xfail, or slow, which CI deselects) is the easiest way to weaken a test.",
+  "rejected": "Rebinding scenario tests as the promises (couples promises to traces); hashing only the existing covers tests (they do not exercise the skill's path); ast.dump (version-specific fields).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

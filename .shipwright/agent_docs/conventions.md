@@ -600,6 +600,8 @@ Python 3.11+ with uv as package manager. All scripts are invoked via uv run. Hoo
 - (2026-11-16) adopt — a new adopt matching signal must not move any existing match: gate it to the repos it is for and keep it out of every score (profile_matcher.SIGNAL_KEYS: gate plus tie-break only); pin Python-only, mixed, TS, markdown-only and custom project profiles with fixtures. [→ iterate-2026-11-16-u4-plugin-profile]
 - (2026-11-16) iterate/review — a reviewer subagent with only Read/Grep/Glob cannot run a check tool: tell it what it can verify by reading (profile rule ids vs the block's ids) and say where the full check runs; name the project root in every spawn prompt when the unit lives in another worktree. [→ iterate-2026-11-16-u6-reviewers-docs]
 - (2026-11-17) changelog/golden — a scenario's tagged ACs are enforced, not trusted: Scenario.acs plus oracle.ASSERTED fail a trace no oracle check judged; capture an unchanged-disk baseline BEFORE the refused command runs (argument order hid it in S19). [→ iterate-2026-11-17-p2b2-scenarios-b]
+- (2026-11-17) iterate/test-lock — A promise-lock hash must treat every pytest mark but `covers` as behaviour (CI deselects `slow`/`cross_plugin`, so ignoring them lets a locked test be switched off silently). [→ iterate-2026-11-17-p2p-promise-tests]
+
 
 ## Contributing
 
