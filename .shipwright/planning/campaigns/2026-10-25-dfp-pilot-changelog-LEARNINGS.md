@@ -7,7 +7,8 @@
 | Step | Unit | PR | Review rounds | Wall-clock | Tokens | What took longer than expected |
 |---|---|---|---|---|---|---|
 | Inventory, truth table, subprocess map, checker, findings, ledger reconcile, pin list, promise list, P24 before-measurement | P0 | (filled when the PR opens) | architecture review: 1 reject (overruled by the brief), plan review: revise x2 | started 2026-11-13 23:57 UTC; stop-1 hand-over time in the PR | not measured by the runner | the pin measurement: `shared/tests` alone ran about 30 minutes on a busy machine (MEASURE section 7.3: 1,802 s); the architecture review halted the unit once and needed an orchestrator answer |
-| Seams, harness, scenarios, promise tests, extraction, thin `SKILL.md`, ratchet, conversion check, operator procedures | P1-P7-op | not started | | | | |
+| Seams and offline proof (one `gh` argv-prefix helper, fixture model for condensation, offline `--verify-commit --release-audit` proof) | P1 | (filled when the PR opens) | architecture review: approve x2 (internal and external); plan review: approve and revise (4 items, 3 taken); code cascade: see PR | one unit run 2026-11-17 | not measured by the runner | the reviews, not the code: the code was about 150 lines, three review calls and the cascade took most of the run; a backgrounded review call was killed when the shell call ended and had to be re-run in the foreground |
+| Harness, scenarios, promise tests, extraction, thin `SKILL.md`, ratchet, conversion check, operator procedures | P2a-P7-op | not started | | | | |
 
 ## 2. Code or AI decisions
 
@@ -39,6 +40,9 @@ Changed after review: nothing yet (P0 only).
 - **A checker test on the real tree is a CI pin.** A first version of the checker's tests also ran it on the real skill; the spec reviewer pointed out that CI runs that test root, so every prose edit would red CI and the ADR's claim "out of CI" would be false. The tests now use throwaway skills only; the pilot's units run the CLI on the real one. The same review caught a `covers` mark on that test (a ritual tag, the D13 mistake).
 - **A review can reject what the operator approved.** The architecture review rejected the inventory checker that the brief and programme P10 mandate; the unit halted until the orchestrator overruled the reject by pointing at the brief. Brief the reviewers with the approved scope, or expect one halt per unit that builds a mandated mechanism.
 - **Data a conversion tool needs does not belong under `plugins/*/skills/`.** The three inventory data files were first filed next to `SKILL.md`; the PR-review sensitive-path rule blocks new content there even though nothing reads it at runtime, which cost one PR-review round and a move. File such data with the campaign reports.
+- **A seam that can publish needs a second, independent guard (P1).** The first guard keyed only on a marker sentence in the notes; both external plan reviewers and the internal architecture reviewer pointed out that a lost or quoted marker is then the only defence. The guard now also refuses whenever the fixture-model variable is set without the `gh` seam, and the marker is a hard-to-collide token.
+- **"Offline" has to be proven with the network actually blocked (P1).** The scratch-project proof sets `UV_OFFLINE=1`, a dead proxy and no keys; a test that merely runs on a warm machine proves nothing. Its one soft spot is the pyyaml fetch of `uv run --with pyyaml`, so the test warms uv's cache first and skips only when that fails.
+- **A `.cmd` shim cannot be a `gh` stand-in on Windows (P1).** `gh` is spawned as `["gh", ...]`; the seam is an argv prefix read from a JSON array (shell-style splitting mangles backslash paths), and a malformed value is refused instead of falling back to the real `gh`.
 - **Typed heredocs corrupt files with quotes and backticks** (a Python script with an apostrophe in a string ended the heredoc early): write scripts with the Write tool.
 
 ## 5. Tools
@@ -52,6 +56,8 @@ Changed after review: nothing yet (P0 only).
 | AC ledger reconcile and `measure_ac_evidence_ledger.py` | Shipwright-specific | FR/AC ids, `covers` marks, the ledger |
 | `ac_decision.py` record (`unchanged`, `--ac-mode auto`) | Shipwright-specific | the FR catalog |
 | `fr_cluster_report.py`, the AC-Move-Map | Shipwright-specific | atomic FR splits |
+| `release_seams.py` (env-var seams read in one place, argv prefix for `gh`, fixture model, publish guard) | generic in method (any CLI wrapper that must run offline), Shipwright-specific in the variable names | the list of external binaries and model calls on the path (the subprocess map) |
+| one-place scan test (no file but the seam module names a seam variable; no literal `["gh"` argv in the wrapped scripts) | generic | the seam names |
 | golden trace, fork tool, L3 harness | not used yet (P2a onward) | |
 
 ## 6. Doable by a stranger?

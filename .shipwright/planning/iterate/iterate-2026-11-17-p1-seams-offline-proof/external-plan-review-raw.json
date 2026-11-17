@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "**Findings**\n\n- **Category: edge-case \u2014 Severity: medium** \u2014 `SHIPWRIGHT_TEST_GH_ARGV_PREFIX` as a JSON argv prefix: if someone naively sets it to a stub that writes fake release responses, tests pass while GitHub never sees the release \u2014 but the guard only protects `create_release` against *fixture-model* notes, not against a stubbed `gh` actually posting. Confirm the stub is only ever used in tests and never in CI paths that touch real repos; consider having the seam also set `GH_HOST` to an unroutable value as a belt-and-braces offline guarantee.\n\n- **Category: edge-case \u2014 Severity: medium** \u2014 The publish guard keys on a marker sentence in the notes. If a user's release notes legitimately contain that sentence (or a model reproduces it verbatim from public docs/tests), a real release is refused, or worse, fixture text slips through if the marker is truncated. Use a hard-to-collide marker (e.g. `SHIPWRIGHT-TEST-FIXTURE-NOTES:<uuid>`) and state the exact refusal behaviour (exit code, message).\n\n- **Category: risk \u2014 Severity: medium** \u2014 \"build every gh argv through `gh_command(...)`\" is a broad refactor of `create_github_release.py` and `setup-changelog.py`. Any `gh` call missed by the refactor breaks the \"one reader of seams\" invariant silently. The planned \"one-place scan\" test helps \u2014 make it a literal source scan for `[\"gh\"` / `'gh'` argv construction in those scripts so a regression fails loudly.\n\n- **Category: edge-case \u2014 Severity: low** \u2014 Offline proof skips \"when uv has no cached pyyaml\" \u2014 this makes the AC (\"scratch project passes --verify-commit --release-audit offline\") conditionally satisfied. Record the skip reason in the test output and assert on it in CI, otherwise a cache purge silently turns the proof into nothing. Also confirm the audit path genuinely makes no network calls (e.g. `gh pr view` is excluded per \"not done\" \u2014 verify `--verify-commit --release-audit` truly doesn't reach it, otherwise the offline test will hang on the dead proxy rather than pass).\n\n- **Category: edge-case \u2014 Severity: low** \u2014 Malformed seam values raise `SeamError` \u2014 specify whether this is at import time or first use. If at first use mid-script, a bad env var turns a *test-only* misconfiguration into a confusing runtime failure in the release path; raising eagerly with the seam name in the message is the safer default. Also: is an *empty* JSON list `[]` inert or malformed? State it.\n\n- **Category: dependency \u2014 Severity: low** \u2014 `shared/scripts/release_seams.py` at top level per ADR-045 is fine, but the changelog plugin's test imports it \u2014 confirm the plugin's test harness already has a path dependency on `shared/scripts` (as `repo_identity.py` presumably does); if the plugin is packaged standalone, this adds a new coupling.\n\n- **Category: approach \u2014 Severity: low** \u2014 The `.cmd` shim rejection on Windows is sound, but the argv-prefix seam inherits Windows argv quoting quirks if the prefix contains spaces/specials. If tests are Windows-clean, fine; if not, note it in the seam docs.\n\n**Overall assessment**: Sound, well-scoped approach with appropriate paranoia about keeping defaults unchanged; the main gaps are making the marker-sentence guard collision-resistant and ensuring the offline proof can't silently degrade to a skip.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "Repository access was blocked by execution policy, so this review covers the supplied specification and mini-plan; I could not verify the referenced briefs or existing code.\n\n1. **Category: dependency | Severity: high**  \n   **Finding:** The offline proof can skip when PyYAML is uncached, leaving the acceptance criterion unproven. The plan provides neither a guaranteed passing run nor the tested seam allowed as an alternative.  \n   **Suggestion:** Provision dependencies before the offline phase and require this test to execute in the acceptance job. A local skip is acceptable only if a required job runs the proof successfully.\n\n2. **Category: approach | Severity: medium**  \n   **Finding:** The plan omits required campaign deliverables: reproducing known findings 1:1 in FINDINGS, appending LEARNINGS, and recording every kept AC as `unchanged`. Deferring operator decisions does not satisfy these requirements.  \n   **Suggestion:** Add these deliverables explicitly, including the strict-stop check for any AC outside FR-01.09/FR-01.01 or any record other than `unchanged`.\n\n3. **Category: risk | Severity: medium**  \n   **Finding:** An unchanged default argv proves the helper\u2019s behavior, but does not establish unchanged behavior at each caller. The listed tests do not explicitly cover condensation with its seam unset, including existing key lookup, model invocation, validation, and error behavior.  \n   **Suggestion:** Specify caller-level L1 assertions for both unset and empty seams. For condensation, mock the existing model boundary and verify that the original path and result remain unchanged.\n\n4. **Category: edge-case | Severity: medium**  \n   **Finding:** Returning fixture text immediately from `condense` risks bypassing the output validation that the `bad-shape` fixture should exercise. That would test a synthetic return path rather than the real handling of malformed model output.  \n   **Suggestion:** Substitute fixture responses at the model-call boundary and pass them through existing parsing and validation. Verify that `ok` succeeds and `bad-shape` follows the normal failure path without contacting a model.\n\nThe shared argv helper and centralized environment reads are a sound, proportionate approach. Revise the acceptance proof, fixture insertion point, and required campaign records before implementation.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-11-17-p1-seams-offline-proof",
+    "at": "2026-11-17T09:53:01.675536+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

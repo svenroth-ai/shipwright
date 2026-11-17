@@ -1,0 +1,10 @@
+{"items": [
+{"name": "Spec Compliance", "verdict": "pass", "note": "All five ACs of the P1 spec are covered: seams named SHIPWRIGHT_TEST_*, read only in release_seams.py, documented, inert; L1 per seam; publish guard; offline proof test; AC record unchanged."},
+{"name": "Error Handling", "verdict": "pass", "note": "Malformed seam values raise SeamError and are reported as seam_invalid (create_release, condense, setup-changelog stderr), never silently ignored."},
+{"name": "Security Basics", "verdict": "pass", "note": "A prefix that leads with the real gh is refused; fixture notes are refused without the gh seam (marker or fixture variable alone); known limit (.env.local honoured) documented."},
+{"name": "Test Quality", "verdict": "pass", "note": "Exact default argv asserted, a real stub process exercised, one-place and no-literal-gh scans, offline proof with network-blocking env and fail-in-CI instead of skip."},
+{"name": "Performance Basics", "verdict": "pass", "note": "gh_command re-parses a tiny env value per call (four per release); negligible."},
+{"name": "Naming & Structure", "verdict": "pass", "note": "release_seams.py sits at shared/scripts top level like repo_identity.py (ADR-045); all new files under 300 lines."},
+{"name": "Affected Boundaries", "verdict": "pass", "note": "Boundary: env var -> argv of a spawned process, and fixture notes file -> publish guard; probed with a real stub process and a real scratch project through refresh_compliance_docs."},
+{"name": "Test Hygiene Probe", "verdict": "pass", "note": "scan_test_hygiene --diff: no findings (skip is CI-gated by is_ci)."}
+]}

@@ -3144,6 +3144,15 @@ finding is not a merge overlap and must not trigger an automated fix.
 | Stop | — | `audit_compliance_on_stop.py` (shared) | **Compliance branch feedback.** Runs local A-I diagnostics only; global backlog convergence is reserved for delivered merge and verified release authority. Ordered after phase_quality; idempotent and non-blocking. |
 | Stop | — | `generate_handoff_on_stop.py` (shared) | Session handoff |
 
+**Test seams of the release path** (`shared/scripts/release_seams.py`: the only file that reads them). Environment variables named `SHIPWRIGHT_TEST_*` that let an offline test drive the real release scripts. Each is inert when unset or empty, so the default path is unchanged; a set but malformed value is refused loudly, never ignored. A prefix that leads with the real `gh` is malformed. Other `SHIPWRIGHT_TEST_*` variables (for example `SHIPWRIGHT_TEST_DISABLE_OSS_SCANNERS`) belong to other plugins and are not listed here.
+
+| Variable | Effect |
+|---|---|
+| `SHIPWRIGHT_TEST_GH_ARGV_PREFIX` | JSON array of strings (interpreter plus stub script). Replaces the leading `gh` of every `gh` call in `checks/setup-changelog.py` and `tools/create_github_release.py`. An argv prefix, because on Windows `gh` is spawned as `["gh", ...]` and a `.cmd` shim cannot be. |
+| `SHIPWRIGHT_TEST_CONDENSE_FIXTURE_MODEL` | `ok` or `bad-shape`. `condense_release_notes.py` returns fixed fixture text (`via: fixture`) instead of calling a model; `ok` passes the notes shape check, `bad-shape` fails it. |
+
+**Publish guard.** Fixture text carries a marker sentence. `create_github_release.py` refuses a notes file that contains it, or any notes while `SHIPWRIGHT_TEST_CONDENSE_FIXTURE_MODEL` is set, unless `SHIPWRIGHT_TEST_GH_ARGV_PREFIX` is also set (`status: failed`, `reason: fixture_notes_refused:...`, before any `gh` call), so a stray condensation variable cannot publish fixture notes to a real release page. Offline proof that a scratch project passes `refresh_compliance_docs.py --verify-commit --release-audit` with no network: `shared/tests/test_release_offline_proof.py` (it needs `uv` to resolve `pyyaml` from its local cache, nothing else).
+
 ### shipwright-deploy
 
 | Event | Matcher | Script | What It Does |

@@ -46,6 +46,7 @@ _SHARED_SCRIPTS = Path(__file__).resolve().parents[4] / "shared" / "scripts"
 if str(_SHARED_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SHARED_SCRIPTS))
 
+import release_seams  # noqa: E402
 from repo_identity import resolve_repo_identity  # noqa: E402
 
 
@@ -53,7 +54,13 @@ def _check_previous_release(project_root: Path, last_tag: str | None) -> bool | 
     if not last_tag:
         return None
     try:
-        version = subprocess.run(["gh", "--version"], capture_output=True, text=True, timeout=10.0)
+        version = subprocess.run(
+            release_seams.gh_command("--version"), capture_output=True, text=True, timeout=10.0,
+        )
+    except release_seams.SeamError as exc:
+        # Advisory check, so indeterminate -- but said aloud: a typo in a test seam must not go quiet.
+        print(f"setup-changelog: seam_invalid: {exc}", file=sys.stderr)
+        return None
     except (OSError, subprocess.TimeoutExpired):
         return None
     if version.returncode != 0:
@@ -65,7 +72,7 @@ def _check_previous_release(project_root: Path, last_tag: str | None) -> bool | 
 
     try:
         view = subprocess.run(
-            ["gh", "release", "view", last_tag, "--repo", repo_identity, "--json", "url"],
+            release_seams.gh_command("release", "view", last_tag, "--repo", repo_identity, "--json", "url"),
             capture_output=True, text=True, timeout=15.0,
         )
     except (OSError, subprocess.TimeoutExpired):
