@@ -123,7 +123,7 @@ def _s1d(make_project, layout: str) -> Run:
     s = make_project(events_layout=layout, tagged=False)
     ss.remove_events_file(s)
     ss.feature_branch(s, "release/first")
-    s.git("rm", "-q", "--", *ss.KEEP)  # a project with no tracked file in decision-drops/ or planning/adr/ (finding D21)
+    s.git("rm", "-q", "--", *ss.KEEP)  # a project with no tracked file in the decision-drops or ADR spec folders (finding D21)
     s.git("commit", "-q", "-m", "chore: no tracked decision directories")
     ss.commit(s, "app.txt", "one\n", "feat: first feature")
     ss.write_drop(s, "Added", "First feature of the product")
