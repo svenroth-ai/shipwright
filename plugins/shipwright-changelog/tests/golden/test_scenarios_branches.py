@@ -23,5 +23,6 @@ def test_s14c_on_a_master_repository_the_request_and_the_tag_push_fail_d24(make_
     verify(SCENARIOS["S14c"], "legacy", make_project)
 
 
+@pytest.mark.covers("FR-01.09/AC01")
 def test_s15_an_unrelated_staged_and_unstaged_file_stay_out_of_the_release_commit(make_project):
     verify(SCENARIOS["S15"], "legacy", make_project)

@@ -21,10 +21,12 @@ from .scenario_core import trace_text
 TAG = 'git tag -a v@version@ -m "Release v@version@"'
 
 
+@pytest.mark.covers("FR-01.09/AC01")
 def test_the_seed_helpers_change_the_chain_they_claim_to_change():
     assert TAG in COMMIT_AND_TAG and re.search(r" -- \\\n.*?@manifests@ \\\n", COMMIT_AND_TAG, re.S)
 
 
+@pytest.mark.covers("FR-01.09/AC01")
 def test_a_tag_on_the_parent_of_the_release_commit_is_caught(monkeypatch, make_project):
     seeded = COMMIT_AND_TAG.replace(TAG, 'git tag -a v@version@ HEAD~1 -m "Release v@version@"')
     assert seeded != COMMIT_AND_TAG
@@ -33,6 +35,7 @@ def test_a_tag_on_the_parent_of_the_release_commit_is_caught(monkeypatch, make_p
         trace_text(scenarios_release.SCENARIOS["S1"], "legacy", make_project)
 
 
+@pytest.mark.covers("FR-01.09/AC01")
 def test_a_release_commit_made_without_the_pathspec_is_caught(monkeypatch, make_project):
     seeded = re.sub(r" -- \\\n.*?@manifests@ \\\n", " \\\n", COMMIT_AND_TAG, flags=re.S)
     assert seeded != COMMIT_AND_TAG and "decision-drops/ .shipwright/planning/adr/ @evidence@" not in seeded
@@ -55,6 +58,7 @@ class DropsKept(ReplayDriver):
         return result
 
 
+@pytest.mark.covers("FR-01.09/AC01")
 def test_pending_entries_that_the_aggregation_does_not_delete_are_caught(monkeypatch, make_project):
     monkeypatch.setattr(scenarios_release, "ReplayDriver", DropsKept)
     with pytest.raises(AssertionError, match="pending entries were not consumed"):

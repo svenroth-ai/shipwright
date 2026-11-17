@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 
+import pytest
+
 from . import coverage, oracle
 from .conftest import STEPS
 from .replay_commands import SKILL
@@ -11,10 +13,12 @@ from .scenario_core import GOLDEN_DIR
 LINES = SKILL.read_text(encoding="utf-8").splitlines()
 
 
+@pytest.mark.covers("FR-01.09/AC01")
 def test_p8a_every_mechanic_ask_and_judgement_entry_names_scenarios_or_a_reason():
     assert coverage.check_p8a(coverage.all_scenarios()) == []
 
 
+@pytest.mark.covers("FR-01.09/AC01")
 def test_p8a_goes_red_for_an_unknown_scenario_a_missing_entry_and_a_reason_less_exemption(monkeypatch):
     table = list(coverage.EXERCISED)
     monkeypatch.setattr(coverage, "EXERCISED", [(*table[0][:3], ("S99",)), (*table[1][:3], "not_exercised: "), *table[3:]])  # entry 2 is gone
@@ -23,10 +27,12 @@ def test_p8a_goes_red_for_an_unknown_scenario_a_missing_entry_and_a_reason_less_
     assert any("needs a reason" in p for p in problems)
 
 
+@pytest.mark.covers("FR-01.09/AC01")
 def test_p8b_every_fenced_block_and_conditional_maps_to_a_replay_step_or_an_approved_entry():
     assert coverage.check_p8b(LINES, STEPS) == []
 
 
+@pytest.mark.covers("FR-01.09/AC01")
 def test_p8b_goes_red_for_a_new_block_a_new_conditional_and_a_moved_one():
     extra = [*LINES, "", "```bash", "git push --force", "```", "If the release is urgent, skip the audit."]
     problems = coverage.check_p8b(extra, STEPS)
@@ -35,18 +41,21 @@ def test_p8b_goes_red_for_a_new_block_a_new_conditional_and_a_moved_one():
     assert any("expects a conditional" in p for p in coverage.check_p8b(moved, STEPS))
 
 
+@pytest.mark.covers("FR-01.09/AC01")
 def test_p8c_every_ac_of_fr_01_09_is_asserted_through_the_oracle():
     declared = {ac for scenario in coverage.all_scenarios().values() for ac in scenario.acs}
     assert coverage.check_p8c(declared, oracle.JUDGES) == []
     assert len(coverage.spec_acs()) == 15
 
 
+@pytest.mark.covers("FR-01.09/AC01")
 def test_p8c_goes_red_for_an_ac_no_scenario_declares_or_no_oracle_judges():
     declared = {ac for scenario in coverage.all_scenarios().values() for ac in scenario.acs} - {"FR-01.09/AC12"}
     problems = coverage.check_p8c(declared, oracle.JUDGES - {"FR-01.09/AC05"})
     assert any("AC12" in p for p in problems) and any("AC05" in p for p in problems)
 
 
+@pytest.mark.covers("FR-01.09/AC01")
 def test_every_scenario_has_its_committed_traces_and_no_trace_is_orphaned():
     expected = {s.trace_name(layout) for s in coverage.all_scenarios().values() for layout in s.layouts}
     assert expected == {p.name for p in GOLDEN_DIR.glob("*.trace.json")}
