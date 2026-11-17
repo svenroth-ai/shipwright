@@ -1,0 +1,33 @@
+{
+ "items": [
+  {
+   "kind": "remove",
+   "ac": "FR-01.01.AC39",
+   "old_text": "Given the code reviewer returns notes next to its findings (for example that the architecture check could not run), when its pass is recorded, then the notes are kept on the review record beside the findings, are never counted or treated as findings, and a reply without usable notes records exactly as before."
+  },
+  {
+   "kind": "remove",
+   "ac": "FR-01.01.AC40",
+   "old_text": "Given a campaign runner is briefed, when it reads its contract, then the contract states that git hooks are never bypassed: no skipping flag, no hooks-path override and no environment variable that disables them."
+  },
+  {
+   "kind": "add",
+   "ac": "FR-01.11.AC53",
+   "owner_fr": "FR-01.11",
+   "new_text": "Given the code reviewer returns notes next to its findings (for example that the architecture check could not run), when its pass is recorded, then the notes are kept on the review record beside the findings, are never counted or treated as findings, and a reply without usable notes records exactly as before.",
+   "files": [
+    "shared/tests/test_ac_verdicts_record.py",
+    "plugins/shipwright-iterate/tests/test_runner_never_bypasses_hooks.py"
+   ]
+  },
+  {
+   "kind": "add",
+   "ac": "FR-01.11.AC54",
+   "owner_fr": "FR-01.11",
+   "new_text": "Given a campaign runner is briefed, when it reads its contract, then the contract states that git hooks are never bypassed: no skipping flag, no hooks-path override and no environment variable that disables them; and no instruction or script of the shipwright-iterate plugin or of the campaign loop tells anyone to use one of them, only sentences that forbid them may name them.",
+   "files": [
+    "plugins/shipwright-iterate/tests/test_runner_never_bypasses_hooks.py"
+   ]
+  }
+ ]
+}

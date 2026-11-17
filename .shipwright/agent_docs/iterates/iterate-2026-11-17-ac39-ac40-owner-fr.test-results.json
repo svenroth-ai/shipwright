@@ -1,0 +1,102 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-17-ac39-ac40-owner-fr",
+    "date": "2026-11-17",
+    "unit": {
+      "status": "passed",
+      "passed": 1455,
+      "skipped": 1,
+      "total": 1456
+    },
+    "integration": {
+      "status": "passed"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [
+      "Per-test counts are from a targeted JUnit re-run of the two touched test roots (plugins/shipwright-iterate/tests: 1443 passed, 1 skipped; shared/tests/test_ac_verdicts_record.py: 12 passed). The full F0 suite (18 units incl. integration-tests) passed green with diff coverage PASS, but run_test_suite.py keeps its JUnit in a temp dir, so its counts were not captured."
+    ],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run --directory plugins/shipwright-iterate pytest tests/test_runner_never_bypasses_hooks.py -q",
+      "exit_code": 0,
+      "tests_run": 37,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\ac39-ac40-owner-fr\\.shipwright\\runs\\iterate-2026-11-17-ac39-ac40-owner-fr\\surface_verification.log",
+      "timestamp": "2026-11-16T23:55:17.690Z",
+      "attempts": 1
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "spec carries the two criteria under FR-01.11 as AC53/AC54 and no longer under FR-01.01; every test tag moved",
+          "disposition": "tested",
+          "evidence": "test_ac_verdicts_record.py AC53-tagged tests PASSED; test_runner_never_bypasses_hooks.py AC54-tagged tests PASSED; CI keystone/orphan gates on the PR"
+        },
+        {
+          "behavior": "code reviewer notes kept beside findings, never counted (unchanged behaviour, retagged)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_ac_verdicts_record.py notes tests PASSED"
+        },
+        {
+          "behavior": "code-reviewer.md names the notes key that review_notes reads",
+          "disposition": "tested",
+          "evidence": "test_ac_verdicts_record.py::test_the_code_reviewer_is_told_to_put_notes_in_the_field_the_adapter_reads PASSED"
+        },
+        {
+          "behavior": "runner contract states every hook bypass is forbidden",
+          "disposition": "tested",
+          "evidence": "test_runner_never_bypasses_hooks.py::test_runner_contract_forbids_every_hook_bypass PASSED"
+        },
+        {
+          "behavior": "no iterate-plugin or campaign-loop instruction tells anyone to bypass a hook; only allowlisted forbidding sentences may name one; stale allowlist entries fail",
+          "disposition": "tested",
+          "evidence": "test_runner_never_bypasses_hooks.py::test_no_iterate_or_campaign_instruction_tells_anyone_to_bypass_a_hook PASSED"
+        },
+        {
+          "behavior": "a bypass appended to an allowed paragraph is still reported",
+          "disposition": "tested",
+          "evidence": "test_runner_never_bypasses_hooks.py::test_a_bypass_appended_to_an_allowed_paragraph_is_still_reported PASSED"
+        },
+        {
+          "behavior": "scan patterns catch shell, list and env forms of each bypass and leave ordinary lines alone",
+          "disposition": "tested",
+          "evidence": "test_the_scan_catches_each_way_of_instructing_a_bypass (21 cases) and test_the_scan_leaves_ordinary_lines_alone (13 cases) PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 7,
+        "tested": 7,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 4,
+        "covered_acs": 4
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-11-17-ac39-ac40-owner-fr",
+    "commit": "83c7209a7e1460856ef0b4fbf0f1eeef2a8d552a",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

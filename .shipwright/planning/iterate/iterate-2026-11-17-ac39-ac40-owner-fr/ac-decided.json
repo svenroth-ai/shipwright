@@ -1,0 +1,114 @@
+{
+  "unattended": true,
+  "resolved_items": [
+    {
+      "kind": "remove",
+      "ac": "FR-01.01.AC39",
+      "old_text": "Given the code reviewer returns notes next to its findings (for example that the architecture check could not run), when its pass is recorded, then the notes are kept on the review record beside the findings, are never counted or treated as findings, and a reply without usable notes records exactly as before.",
+      "decided_by": "auto",
+      "confirmed": false
+    },
+    {
+      "kind": "remove",
+      "ac": "FR-01.01.AC40",
+      "old_text": "Given a campaign runner is briefed, when it reads its contract, then the contract states that git hooks are never bypassed: no skipping flag, no hooks-path override and no environment variable that disables them.",
+      "decided_by": "auto",
+      "confirmed": false
+    },
+    {
+      "kind": "add",
+      "ac": "FR-01.11.AC53",
+      "owner_fr": "FR-01.11",
+      "new_text": "Given the code reviewer returns notes next to its findings (for example that the architecture check could not run), when its pass is recorded, then the notes are kept on the review record beside the findings, are never counted or treated as findings, and a reply without usable notes records exactly as before.",
+      "files": [
+        "shared/tests/test_ac_verdicts_record.py",
+        "plugins/shipwright-iterate/tests/test_runner_never_bypasses_hooks.py"
+      ],
+      "decided_by": "code",
+      "confirmed": false
+    },
+    {
+      "kind": "add",
+      "ac": "FR-01.11.AC54",
+      "owner_fr": "FR-01.11",
+      "new_text": "Given a campaign runner is briefed, when it reads its contract, then the contract states that git hooks are never bypassed: no skipping flag, no hooks-path override and no environment variable that disables them; and no instruction or script of the shipwright-iterate plugin or of the campaign loop tells anyone to use one of them, only sentences that forbid them may name them.",
+      "files": [
+        "plugins/shipwright-iterate/tests/test_runner_never_bypasses_hooks.py"
+      ],
+      "decided_by": "code",
+      "confirmed": false
+    }
+  ],
+  "ac_decisions": [
+    {
+      "ac": "FR-01.01.AC39",
+      "mode": "auto-assigned",
+      "answer": "auto",
+      "kind": "remove",
+      "answered_via": "none",
+      "unconfirmed": true,
+      "note": "removed FR-01.01.AC39: \"Given the code reviewer returns notes next to its findings (for example that the architecture check could not run), when its pass is recorded, then the notes...\"",
+      "decided_by": "auto",
+      "confirmed": false
+    },
+    {
+      "ac": "FR-01.01.AC40",
+      "mode": "auto-assigned",
+      "answer": "auto",
+      "kind": "remove",
+      "answered_via": "none",
+      "unconfirmed": true,
+      "note": "removed FR-01.01.AC40: \"Given a campaign runner is briefed, when it reads its contract, then the contract states that git hooks are never bypassed: no skipping flag, no hooks-path o...\"",
+      "decided_by": "auto",
+      "confirmed": false
+    },
+    {
+      "ac": "FR-01.11.AC53",
+      "mode": "auto",
+      "answer": "auto",
+      "kind": "add",
+      "answered_via": "none",
+      "decided_by": "code",
+      "confirmed": false
+    },
+    {
+      "ac": "FR-01.11.AC54",
+      "mode": "auto",
+      "answer": "auto",
+      "kind": "add",
+      "answered_via": "none",
+      "decided_by": "code",
+      "confirmed": false
+    }
+  ],
+  "counts": {
+    "total": 4,
+    "auto": 4,
+    "asked": 0,
+    "exempt": 0,
+    "restore": 0,
+    "unchanged": 0,
+    "answered_inline": 0,
+    "unconfirmed": 2,
+    "exempt_share": 0.0,
+    "restore_share": 0.0
+  },
+  "unconfirmed_assignments": [
+    "Assignments made without you (auto-assigned, unconfirmed):",
+    "1. EXISTING CRITERION removed FR-01.01.AC39: \"Given the code reviewer returns notes next to its findings (for example that the architecture check could not run), when its pass is recorded, then the notes...\" (decided_by=auto, confirmed=false)",
+    "2. EXISTING CRITERION removed FR-01.01.AC40: \"Given a campaign runner is briefed, when it reads its contract, then the contract states that git hooks are never bypassed: no skipping flag, no hooks-path o...\" (decided_by=auto, confirmed=false)"
+  ],
+  "status": "ok",
+  "ac_mode": {
+    "mode": "auto",
+    "source": "default (unattended)"
+  },
+  "run_id": "iterate-2026-11-17-ac39-ac40-owner-fr",
+  "bind_id": "iterate-2026-11-17-ac39-ac40-owner-fr",
+  "exemption_check": "tested against the current diff (2 file(s), 2 not observable)",
+  "surface": {
+    "observable": false,
+    "files": [],
+    "ignored": 2
+  }
+}

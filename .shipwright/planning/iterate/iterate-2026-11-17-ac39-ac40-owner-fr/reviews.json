@@ -1,0 +1,233 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-17-ac39-ac40-owner-fr",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-16T23:31:14.172098+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-16T23:31:14.300939+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shipwright_ac_registry.json",
+          "line": 2,
+          "finding": "Removing AC39/AC40 from the end of FR-01.01 leaves the highest marker at AC38 while the registry says FR-01.01: 8; mint_ac_ids seeds from max(registry, markers), so the next FR-01.01 criterion would reissue AC39, breaking never-reused ids.",
+          "suggestion": "Raise the registry: FR-01.01 to 40 and FR-01.11 to 54.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/tests/test_runner_never_bypasses_hooks.py",
+          "line": 25,
+          "finding": "Scan misses git commit -n (short form of the skip flag) and git config --unset core.hooksPath.",
+          "suggestion": "Add patterns and parametrized cases for both.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/tests/test_runner_never_bypasses_hooks.py",
+          "line": 29,
+          "finding": "Env-var patterns false-positive on SKIP = \"skip\", if SKIP == x, (\"PASS\", \"SKIP\") tuples and {\"SKIP\": 0} counters.",
+          "suggestion": "Match only the shell form SKIP= followed by a value; add negative cases.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/tests/test_runner_never_bypasses_hooks.py",
+          "line": 27,
+          "finding": "config core.hooksPath <any value> flags the legitimate install line core.hooksPath scripts/hooks.",
+          "suggestion": "Exclude scripts/hooks; add the install line as an ordinary line.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "scripts/hooks/pre-commit",
+          "line": 39,
+          "finding": "The shared pre-commit hook prints 'Temporary bypass: git commit --no-verify' when uv is missing; out of the scan scope.",
+          "suggestion": "Follow-up or widen scope; not blocking for AC as worded.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-16T23:37:27.319424+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "reviewer_notes": "Architecture rules block matches the profile; no rule violated. One pytest root per process holds. CI gates not run by the reviewer."
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "hidden coupling",
+          "file": "shipwright_ac_registry.json",
+          "line": null,
+          "finding": "Claim under doubt: raising the AC registry stops retired ids being reissued — Safe (max of registry and markers, worst case a gap) but only mint_ac_ids reads it; criteria are typed by hand, so AC39 under FR-01.01 could be typed again unnoticed. REBUTTED/ADDRESSED: the registry is the defined never-reuse mechanism (ac_identity), raising it is correct; the decision drop records that it guards minted ids only, and a hand-typed reuse is named as a follow-up.",
+          "suggestion": "check new markers above the base registry, a visible retired marker, or a rebuttal plus decision-drop note",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-iterate/tests/test_runner_never_bypasses_hooks.py",
+          "line": null,
+          "finding": "Claim under doubt: per-line allowlist forces new mentions to be looked at — Allowed lines are whole paragraphs, so an appended bypass on the same line passes. ADDRESSED: the exemption now covers only the sentence that carries the allowed phrase; the rest of the line is still scanned, with a test.",
+          "suggestion": "sentence-level exemption",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-iterate/tests/test_runner_never_bypasses_hooks.py",
+          "line": null,
+          "finding": "Claim under doubt: scan covers idiomatic Python forms — List-form git config core.hooksPath and --unset, dict(os.environ, HUSKY=...) keyword form, later -n flags in list form and hook_env dicts were missed. ADDRESSED: patterns and positive cases added.",
+          "suggestion": "list-form and keyword alternatives with cases",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling",
+          "file": "plugins/shipwright-iterate/tests/test_runner_never_bypasses_hooks.py",
+          "line": null,
+          "finding": "Claim under doubt: AC54 scope matches the scan — scripts/hooks/pre-commit prints a --no-verify bypass hint; a replay verifier commits with --no-verify in a throwaway worktree; some campaign helpers sit outside the globs. ADDRESSED in part: scanned scope stated in the test docstring; pre-commit wording reported as a follow-up.",
+          "suggestion": "follow-up or widened scope",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "reversibility",
+          "file": "shared/scripts/tools/verifiers/_keystone_core.py",
+          "line": null,
+          "finding": "Claim under doubt: CI AC gates stay green — Holds: keystone reports removed_with_bindings for FR-01.01 AC39/AC40 as a non-blocking warning; added AC53/AC54 bound and green; orphan and ratchet clean. ADDRESSED: expected warning named in PR body and decision drop.",
+          "suggestion": "mention the expected warning",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-16T23:42:43.607888+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-16T23:31:14.659944+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-16T23:33:49.919116+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "ac_verdicts": [
+        {
+          "ac": "FR-01.01.AC39",
+          "verdict": "matches",
+          "diff_location": ".shipwright/planning/01-adopted/spec.md:146",
+          "reason": "moved word for word to FR-01.11/AC53; no test tagged FR-01.01/AC39 remains",
+          "weakens": false
+        },
+        {
+          "ac": "FR-01.01.AC40",
+          "verdict": "matches",
+          "diff_location": ".shipwright/planning/01-adopted/spec.md:147",
+          "reason": "moved to FR-01.11/AC54 with its test tag",
+          "weakens": false
+        },
+        {
+          "ac": "FR-01.11.AC53",
+          "verdict": "matches",
+          "diff_location": "shared/tests/test_ac_verdicts_record.py:205",
+          "reason": "existing tests show notes kept beside findings and never counted; new test confirms agent text and adapter agree on the notes key",
+          "weakens": false
+        },
+        {
+          "ac": "FR-01.11.AC54",
+          "verdict": "matches",
+          "diff_location": "plugins/shipwright-iterate/tests/test_runner_never_bypasses_hooks.py:107",
+          "reason": "contract sentence asserted; scan of iterate plugin and campaign loop allows only the three forbidding sentences",
+          "weakens": false
+        }
+      ]
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-16T23:31:14.419367+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-16T23:31:14.541641+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}
