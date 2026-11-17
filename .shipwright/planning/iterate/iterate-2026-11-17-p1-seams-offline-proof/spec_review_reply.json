@@ -1,0 +1,1 @@
+{"stage": "spec-compliance", "verdict": "PASS", "spec_citations": [], "summary": "P1 matches the sub-iterate spec (ACs 1-4) and section 5 of the brief. Code-reviewer can run next. AC5 (the AC record stays unchanged) is produced at finalization by ac_decision.py, so it was not judged here."}

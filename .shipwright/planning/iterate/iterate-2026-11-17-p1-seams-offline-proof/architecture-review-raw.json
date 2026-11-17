@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "1. **The question, answered in one sentence.** Yes \u2014 a single shared seam module with two env-var seams is the smallest thing that makes the offline release-audit proof possible, and it should exist roughly as proposed.\n\n2. **The smallest thing that would do.** One stdlib module reading two `SHIPWRIGHT_TEST_*` variables (argv prefix for `gh`, fixture-model switch), a refusal in `create_github_release` when fixture-marked notes appear without the seam, and one guard test that no other code reads those variables. That is option A, and it is the right one: B (injecting runner objects) means rewriting the calling convention of every script \u2014 a larger permanent surface than the problem; C (mocking `subprocess.run`) cannot cover real spawned processes like the `uv run --with pyyaml` audit, so the offline proof is not achievable with it at all.\n\n3. **What it costs to keep.** The seam variables must stay inert-when-unset, read in exactly one place, and documented; the refusal in `create_github_release` must be kept correct through any future refactor of release-note formatting; the guard test must be updated whenever a new seam is added. That is a real but small standing obligation, and the guard test makes breakage loud rather than silent.\n\n4. **What it forecloses.** Slightly harder: renaming or restructuring release scripts now has one more invariant to respect (fixture-marked text must never reach a real `gh`). That is a cheap constraint to reason about. Otherwise none identified.\n\n5. **Findings.**\n\n- Category: proportionality\n- Severity: low\n- Finding: The standing cost is justified only because the golden-trace harness genuinely needs whole-release offline runs; if that harness were dropped, two seams plus a refusal would be over-built for the tests that exist today.\n- Suggestion: Keep the seam set at exactly two variables and add nothing further (no per-script seams) unless a test concretely requires it; the \"one test scans that nothing else reads the variables\" guard is the right containment and should be the only enforcement machinery.\n\nNo other findings \u2014 A is materially smaller than B and C does not achieve the stated goal.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Should it exist?** Yes\u2014option A is proportionate because the planned harness needs to exercise spawned release processes offline, which in-process mocks cannot do.\n\n2. **Smallest thing that would do:** One stdlib helper reading the two test variables, supplying the `gh` argv prefix and fixture-model selection, plus the refusal to publish fixture notes unless the `gh` seam is set. Preserve existing invocation behavior when unset; no runner-object framework is needed.\n\n3. **What it costs to keep:** Maintain two test configuration contracts, their centralized reader, default-path equivalence tests, and the fixture-publication guard as release scripts evolve. This is a bounded obligation maintained through automated tests.\n\n4. **What it forecloses:** Release entry points must preserve the shared seam contract, adding a small coordination cost to future subprocess and model-call refactors.\n\n5. **Findings:** No findings.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "architecture",
+  "capture": {
+    "run_id": "iterate-2026-11-17-p1-seams-offline-proof",
+    "at": "2026-11-17T09:53:34.691215+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "approve"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}

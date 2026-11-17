@@ -44,6 +44,7 @@ _SCRIPTS_ROOT = Path(__file__).resolve().parents[1]
 if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
+import release_seams  # noqa: E402
 from repo_identity import resolve_repo_identity  # noqa: E402
 
 _VERSION_RE = re.compile(r"^\d+\.\d+\.\d+(-[\w.]+)?$")
@@ -57,9 +58,18 @@ def _run(args: list[str], *, timeout: float = 30.0) -> subprocess.CompletedProce
     )
 
 
+def _fixture_notes_refusal(notes_file: Path) -> str | None:
+    """Fixture-model text is never published unless the ``gh`` seam is set too."""
+    try:
+        text = notes_file.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        text = ""  # missing or unreadable: the existing checks below report it, as before the seam
+    return release_seams.fixture_notes_refusal(text)
+
+
 def _gh_version() -> tuple[int, int, int] | None:
     try:
-        result = _run(["gh", "--version"])
+        result = _run(release_seams.gh_command("--version"))
     except (OSError, subprocess.TimeoutExpired):
         return None
     if result.returncode != 0:
@@ -72,7 +82,7 @@ def _gh_version() -> tuple[int, int, int] | None:
 
 def _gh_authenticated() -> bool:
     try:
-        result = _run(["gh", "auth", "status", "--hostname", "github.com"])
+        result = _run(release_seams.gh_command("auth", "status", "--hostname", "github.com"))
     except (OSError, subprocess.TimeoutExpired):
         return False
     return result.returncode == 0
@@ -82,7 +92,7 @@ def _release_view(tag: str, repo: str) -> dict:
     """Returns ``{"exists": True, "url": ...}`` / ``{"exists": False}`` /
     ``{"exists": None, "reason": ...}`` (indeterminate — a real failure)."""
     try:
-        result = _run(["gh", "release", "view", tag, "--repo", repo, "--json", "url"])
+        result = _run(release_seams.gh_command("release", "view", tag, "--repo", repo, "--json", "url"))
     except (OSError, subprocess.TimeoutExpired) as exc:
         return {"exists": None, "reason": f"gh release view failed to run: {exc}"}
     if result.returncode == 0:
@@ -100,6 +110,23 @@ def _release_view(tag: str, repo: str) -> dict:
 def create_release(
     version: str, notes_file: Path, project_root: Path
 ) -> dict:
+    result = _create_release(version, notes_file, project_root)
+    if release_seams.gh_seam_active():
+        result["seam"] = "gh"  # a seamed "ok" must never be mistaken for a real publish
+    return result
+
+
+def _create_release(
+    version: str, notes_file: Path, project_root: Path
+) -> dict:
+    try:
+        release_seams.gh_argv_prefix()
+    except release_seams.SeamError as exc:  # a malformed test seam never reaches a real gh
+        return {"status": "failed", "reason": f"seam_invalid:{exc}"}
+    refusal = _fixture_notes_refusal(notes_file)
+    if refusal:
+        return {"status": "failed", "reason": refusal}
+
     gh_version = _gh_version()
     if gh_version is None:
         return {"status": "skipped", "reason": "gh_not_found"}
@@ -132,13 +159,13 @@ def create_release(
 
     try:
         result = _run(
-            [
-                "gh", "release", "create", tag,
+            release_seams.gh_command(
+                "release", "create", tag,
                 "--notes-file", str(notes_file),
                 "--title", tag,
                 "--verify-tag",
                 "--repo", repo_identity,
-            ],
+            ),
             timeout=60.0,
         )
     except (OSError, subprocess.TimeoutExpired) as exc:

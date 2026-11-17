@@ -33,7 +33,7 @@ CLI:
         --version 1.2.3 \\
         [--project-root .]
 
-Output JSON: ``{"status": "ok", "text": "...", "via": "openrouter"|"direct"}``
+Output JSON: ``{"status": "ok", "text": "...", "via": "openrouter"|"direct"|"fixture"}``
 or ``{"status": "skipped"|"error", "reason": "..."}``. Never raises for a
 missing key or a provider error — those are reported, not fatal, per the
 iterate spec's "condensation_failed" non-blocking contract.
@@ -52,6 +52,12 @@ if str(_SHARED_LIB) not in sys.path:
     sys.path.insert(0, str(_SHARED_LIB))
 
 from env import load_shipwright_env  # noqa: E402  type: ignore[import-not-found]
+
+_SCRIPTS_ROOT = Path(__file__).resolve().parents[1]
+if str(_SCRIPTS_ROOT) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS_ROOT))
+
+import release_seams  # noqa: E402
 
 load_shipwright_env()
 
@@ -151,6 +157,14 @@ def condense(
     project_root: Path,
 ) -> dict:
     """Return ``{"status": "ok", "text": ..., "via": ...}`` or a skip/error dict."""
+    try:
+        fixture_mode = release_seams.condense_fixture_mode()
+    except release_seams.SeamError as exc:
+        return {"status": "error", "reason": f"seam_invalid:{exc}"}
+    if fixture_mode:  # test seam: no key, no provider, no network
+        return {"status": "ok", "text": release_seams.fixture_notes(version, fixture_mode),
+                "via": "fixture"}
+
     provider = _detect_provider()
     if provider == "none":
         return {"status": "skipped", "reason": "no_api_key"}

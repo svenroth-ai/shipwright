@@ -1,0 +1,73 @@
+{
+  "run_id": "iterate-2026-11-17-p1-seams-offline-proof",
+  "date": "2026-11-17T10:16:14.256972Z",
+  "event_at": "2026-11-17T10:15:56.264589+00:00",
+  "type": "feature",
+  "complexity": "medium",
+  "prior_source": "history",
+  "branch": "iterate/p1-seams-offline-proof",
+  "spec": "C:/01_Development/shipwright/.worktrees/campaign-dfp-pilot-changelog-p1-p2p/.shipwright/planning/iterate/campaigns/dfp-pilot-changelog-p1-p2p/sub-iterates/P1-seams-offline-proof.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-11-17-p1-seams-offline-proof",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "gh argv prefix seam: unset or empty leaves every gh argv unchanged; set replaces the leading gh; malformed (JSON, empty, non-string, real gh, control character) is refused",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_release_seams.py::test_create_release_default_argv_is_unchanged, ::test_gh_prefix_replaces_the_leading_gh, ::test_malformed_gh_prefix_is_refused_not_ignored, ::test_a_prefix_with_a_control_character_is_refused PASSED"
+      },
+      {
+        "behavior": "setup-changelog previous-release check uses the seam prefix, default is plain gh, malformed seam reports seam_invalid",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-changelog/tests/test_setup_changelog_gh_seam.py (3 tests) PASSED"
+      },
+      {
+        "behavior": "condensation fixture model needs no key, wins over a real key, default path (no key -> skipped, key -> provider) unchanged, bad-shape fails the real shape check",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_release_seams.py::test_condense_default_still_needs_a_key, ::test_fixture_model_needs_no_key_and_never_reaches_a_provider, ::test_bad_shape_fixture_fails_the_shape_check PASSED"
+      },
+      {
+        "behavior": "create_github_release refuses fixture text (marker, or the fixture variable alone) unless the gh seam is set, before any gh call; seamed results say so",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_release_seams.py::test_fixture_text_is_refused_unless_the_gh_seam_is_set, ::test_create_release_refuses_when_the_fixture_variable_is_set_without_the_gh_seam, ::test_a_seamed_result_says_so_and_a_default_result_does_not PASSED"
+      },
+      {
+        "behavior": "seams are named SHIPWRIGHT_TEST_*, documented, and read in one place; no literal gh argv outside the helper",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_release_seams.py::test_seams_are_read_in_one_place, ::test_every_seam_is_documented, ::test_no_gh_argv_is_built_outside_the_seam_helper PASSED"
+      },
+      {
+        "behavior": "a scratch project passes --verify-commit --release-audit offline (UV_OFFLINE, dead proxy, no keys) and a real stub process serves the release page flow",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "shared/tests/test_release_offline_proof.py::test_scratch_project_passes_verify_commit_and_release_audit_offline, shared/tests/test_release_seams.py::test_a_real_stub_process_serves_the_whole_release_page_flow PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 6,
+      "tested": 6,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 4,
+      "covered_acs": 4
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run pytest shared/tests/test_release_seams.py shared/tests/test_release_offline_proof.py -q",
+    "exit_code": 0,
+    "tests_run": 31,
+    "evidence_path": ".shipwright/runs/iterate-2026-11-17-p1-seams-offline-proof/surface_verification.json",
+    "timestamp": "2026-11-17T10:01:05.608Z",
+    "attempts": 1
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}

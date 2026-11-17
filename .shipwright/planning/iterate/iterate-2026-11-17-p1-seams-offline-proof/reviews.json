@@ -1,0 +1,324 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-17-p1-seams-offline-proof",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-17T10:01:58.239944+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "dependency |",
+          "file": null,
+          "line": null,
+          "finding": "The offline proof can skip when PyYAML is uncached, leaving the acceptance criterion unproven. The plan provides neither a guaranteed passing run nor the tested seam allowed as an alternative.",
+          "suggestion": "Provision dependencies before the offline phase and require this test to execute in the acceptance job. A local skip is acceptable only if a required job runs the proof successfully.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach |",
+          "file": null,
+          "line": null,
+          "finding": "The plan omits required campaign deliverables: reproducing known findings 1:1 in FINDINGS, appending LEARNINGS, and recording every kept AC as `unchanged`. Deferring operator decisions does not satisfy these requirements.",
+          "suggestion": "Add these deliverables explicitly, including the strict-stop check for any AC outside FR-01.09/FR-01.01 or any record other than `unchanged`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk |",
+          "file": null,
+          "line": null,
+          "finding": "An unchanged default argv proves the helper’s behavior, but does not establish unchanged behavior at each caller. The listed tests do not explicitly cover condensation with its seam unset, including existing key lookup, model invocation, validation, and error behavior.",
+          "suggestion": "Specify caller-level L1 assertions for both unset and empty seams. For condensation, mock the existing model boundary and verify that the original path and result remain unchanged.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "Returning fixture text immediately from `condense` risks bypassing the output validation that the `bad-shape` fixture should exercise. That would test a synthetic return path rather than the real handling of malformed model output.",
+          "suggestion": "Substitute fixture responses at the model-call boundary and pass them through existing parsing and validation. Verify that `ok` succeeds and `bad-shape` follows the normal failure path without contacting a model.  The shared argv helper and centralized environment reads are a sound, proportionate approach. Revise the acceptance proof, fixture insertion point, and required campaign records before implementation.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-17T09:54:25.475117+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] **Findings**\n\n- **Category: edge-case — Severity: medium** — `SHIPWRIGHT_TEST_GH_ARGV_PREFIX` as a JSON argv prefix: if someone naively sets it to a stub that writes fake release responses, tests pass while GitHub never sees the release — but the guard only protects `create_release` against *fixture-model* notes, not against a stubbed `gh` actually posting. Confirm the stub is only ever used in tests and never in CI paths that touch real repos; consider having the seam also set `GH_HOST` to an unroutable value as a belt-and-braces offline guarantee.\n\n- **Category: edge-case — Severity: medium** — The publish guard keys on a marker sentence in the notes. If a user's release notes legitimately contain that sentence (or a model reproduces it verbatim from public docs/tests), a real release is refused, or worse, fixture text slips through if the marker is truncated. Use a hard-to-collide marker (e.g. `SHIPWRIGHT-TEST-FIXTURE-NOTES:<uuid>`) and state the exact refusal behaviour (exit code, message).\n\n- **Category: risk — Severity: medium** — \"build every gh argv through `gh_command(...)`\" is a broad refactor of `create_github_release.py` and `setup-changelog.py`. Any `gh` call missed by the refactor breaks the \"one reader of seams\" invariant silently. The planned \"one-place scan\" test helps — make it a literal source scan for `[\"gh\"` / `'gh'` argv construction in those scripts so a regression fails loudly.\n\n- **Category: edge-case — Severity: low** — Offline proof skips \"when uv has no cached pyyaml\" — this makes the AC (\"scratch project passes --verify-commit --release-audit offline\") conditionally satisfied. Record the skip reason in the test output and assert on it in CI, otherwise a cache purge silently turns the proof into nothing. Also confirm the audit path genuinely makes no network calls (e.g. `gh pr view` is excluded per \"not done\" — verify `--verify-commit --release-audit` truly doesn't reach it, otherwise the offline test will hang on the dead pr […truncated]\n\n[openai] Repository access was blocked by execution policy, so this review covers the supplied specification and mini-plan; I could not verify the referenced briefs or existing code.\n\n1. **Category: dependency | Severity: high**  \n   **Finding:** The offline proof can skip when PyYAML is uncached, leaving the acceptance criterion unproven. The plan provides neither a guaranteed passing run nor the tested seam allowed as an alternative.  \n   **Suggestion:** Provision dependencies before the offline phase and require this test to execute in the acceptance job. A local skip is acceptable only if a required job runs the proof successfully.\n\n2. **Category: approach | Severity: medium**  \n   **Finding:** The plan omits required campaign deliverables: reproducing known findings 1:1 in FINDINGS, appending LEARNINGS, and recording every kept AC as `unchanged`. Deferring operator decisions does not satisfy these requirements.  \n   **Suggestion:** Add these deliverables explicitly, including the strict-stop check for any AC outside FR-01.09/FR-01.01 or any record other than `unchanged`.\n\n3. **Category: risk | Severity: medium**  \n   **Finding:** An unchanged default argv proves the helper’s behavior, but does not establish unchanged behavior at each caller. The listed tests do not explicitly cover condensation with its seam unset, including existing key lookup, model invocation, validation, and error behavior.  \n   **Suggestion:** Specify caller-level L1 assertions for both unset and empty seams. For condensation, mock the existing model boundary and verify that the original path and result remain unchanged.\n\n4. **Category: edge-case | Severity: medium**  \n   **Finding:** Returning fixture text immediately from `condense` risks bypassing the output validation that the `bad-shape` fixture should exercise. That would test a synthetic return path rather than the real handling of malformed model output.  \n   **Suggestion:** Substitute fixture responses at the model-call bounda […truncated]",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/tests/test_release_seams.py",
+          "line": null,
+          "finding": "The publish guard's second trigger (fixture variable set, notes without marker) has no test through create_release.",
+          "suggestion": "Parametrised test: CONDENSE_FIXTURE_ENV ok and yes, plain notes, gh seam unset -> refusal, _run not called.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "docs/hooks-and-pipeline.md",
+          "line": null,
+          "finding": "Publish guard paragraph names only the marker trigger; the code also refuses while the fixture variable is set.",
+          "suggestion": "Add the second trigger to the doc.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": "shared/scripts/release_seams.py",
+          "line": null,
+          "finding": "The never-the-real-gh check looks only at the stem of argv[0]; a wrapper prefix (env gh, cmd /c gh) still counts as an active seam.",
+          "suggestion": "Say in the docstring it is a typo-level check; do not widen into a full validator.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_release_offline_proof.py",
+          "line": null,
+          "finding": "The lock-file unlink has no comment stating why.",
+          "suggestion": "Add a one-line reason.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "performance",
+          "file": "shared/tests/test_release_offline_proof.py",
+          "line": null,
+          "finding": "On a cold uv cache the fixture goes online once (up to about 9 minutes worst case) before skip or fail.",
+          "suggestion": "Acceptable as is.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-17T10:02:42.233472+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "e160425bad04b38adce9aeab386c4569d6ae0a65",
+      "reviewer_notes": "No architecture rule violated; all new files under 300 lines; no dead code, no scope creep. Verdict: no high findings."
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "shared/scripts/tools/create_github_release.py",
+          "line": null,
+          "finding": "Claim under doubt: a stray seam can only make the release fail closed — A stub gh prefix set alone makes publish return ok with a stub url, indistinguishable from a real success.",
+          "suggestion": "Mark seamed results (seam: gh). RESOLVED: create_release adds seam: gh while the gh seam is active.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling & blast radius",
+          "file": "shared/scripts/tools/create_github_release.py; plugins/shipwright-changelog/scripts/checks/setup-changelog.py",
+          "line": null,
+          "finding": "Claim under doubt: default path unchanged when no seam is set — An unreadable notes file returned a new reason before the gh preflight. RESOLVED: an unreadable notes file is left to the existing checks as before. The module-level import of release_seams widens the cache-skew failure mode the same way repo_identity already has; cache sync after merge carries the new file.",
+          "suggestion": "Fixed or rebutted as stated.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract (Windows quoting)",
+          "file": "shared/scripts/release_seams.py",
+          "line": null,
+          "finding": "Claim under doubt: a malformed prefix is always refused loudly — An unescaped Windows path is valid JSON with tab and newline characters and then fails as gh not found.",
+          "suggestion": "RESOLVED: a prefix item with a control character is refused (test added).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "concurrency & ordering (test isolation, ADR-044)",
+          "file": "plugins/shipwright-changelog/tests/test_setup_changelog_gh_seam.py",
+          "line": null,
+          "finding": "Claim under doubt: the new plugin test adds no sys.path hazard — Collection order moved the shared/scripts sys.path insertion earlier. REBUTTED: the plugin test root was run in default order and is green (114 passed); no victim found.",
+          "suggestion": "Green plugin root in default order.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract (test robustness)",
+          "file": "shared/tests/test_release_offline_proof.py",
+          "line": null,
+          "finding": "Claim under doubt: the offline proof skips cleanly when uv is missing locally — A missing uv raised FileNotFoundError instead of reaching the skip/fail branch.",
+          "suggestion": "RESOLVED: a missing uv goes to the same skip-locally / fail-in-CI branch.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-17T10:08:43.216579+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "59b3b3f5db5d3c3ae693e708e66c6572fd1ebf7d"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec |",
+          "file": "whole diff — No AC-record update (`ac_decision.py` with `--ac-mode auto`, record `unchanged` for every kept AC) is visible anywhere in the diff. The unit's contract requires the AC record per unit to be `unchanged`; if this is handled in a ledger file outside the diff, fine, but as presented the diff contains no evidence of it, and the reviewer cannot confirm the STRICT-STOP condition […truncated]",
+          "line": null,
+          "finding": "Confirm the AC records for FR-01.09/FR-01.01 exist with `unchanged`; if they were produced outside this diff, attach or reference them in the PR.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": "shared/scripts/release_seams.py (the `PurePath(parsed[0]...).stem.lower() == \"gh\"` check in `gh_argv_prefix`) — The real-`gh` rejection keys on the file stem only, so a legitimate test stub literally named `gh.py`/`gh.exe` (e.g. `[\"python\", \"/tmp/gh.py\"]`) is refused as \"the real gh\", while a prefix like `[\"gh-wrapper\", ...]` or `[\"/x/bin/gh-alias\"]` passes even though it could be any […truncated]",
+          "line": null,
+          "finding": "Either document the check as a name heuristic only, or refuse any prefix whose first element resolves to a `gh` name.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": "shared/scripts/create_github_release.py (`_fixture_notes_refusal`) — An `OSError` while reading the notes file (e.g. permission denied, not just missing) yields `text = \"\"` and the guard returns `None`, i.e. fail-open. The existing downstream check presumably catches a missing file, but an unreadable-yet-present file silently bypasses the publish guard.",
+          "line": null,
+          "finding": "Distinguish \"file does not exist\" (allow, existing check handles it) from other `OSError`s (refuse with a reason).",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": "shared/scripts/release_seams.py (`fixture_notes_refusal`) — The marker check is a substring match against the notes text. A real release whose notes legitimately quote `release_seams.py` source or the test suite (which contains the full `FIXTURE_MARKER` sentence) would be refused by the guard with no override except setting the gh seam — a confusing production failure mode with an unc […truncated]",
+          "line": null,
+          "finding": "Mention the marker-collision possibility in the `reason` string (e.g. point at `SHIPWRIGHT_TEST_GH_ARGV_PREFIX`) so an operator hitting this on a real release understands what happened.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test |",
+          "file": "shared/tests/test_release_seams.py (`test_seams_are_read_in_one_place`) — The scan skips any path with `tests` in `parts`, which also skips plugin test helpers; more importantly it scans only `shared/scripts` and `plugins/shipwright-changelog/scripts`, so a `SHIPWRIGHT_TEST_` seam variable hard-coded in another plugin's release-path script would not be caught. Adequate for P1's scope, […truncated]",
+          "line": null,
+          "finding": "No code change needed for P1; narrow the docstring claim or scan all `plugins//scripts`.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test |",
+          "file": "shared/tests/test_release_offline_proof.py (fixture `scratch`) — The \"warm the uv cache\" fallback runs `uv run --with pyyaml` with the full caller environment online (only `UV_OFFLINE` removed), which on a developer machine may pull pyyaml built for a different interpreter/uv state than the offline probe uses; the subsequent offline probe re-validates, so the proof itself is sound — b […truncated]",
+          "line": null,
+          "finding": "Acceptable as-is; consider logging the offline probe stderr on the CI fail path too (it currently only appears in the skip message).  Everything else checks out: the default argv paths are provably unchanged (both `test_default_spawns_plain_gh` and `test_create_release_default_argv_is_unchanged` assert exact argv), the malformed-seam refuse-loudly requirement is implemented on both the setup-changelog (advisory → `None` + stderr) and create-release (hard fail) paths, and the two-trigger publish guard matches the reviewed design. No injection or secret-handling issues: the seam is only honored from the process environment, malformed values never fall through to the real `gh`, and the offline proof strips `SHIPWRIGHT_TEST_` and all key variables before running.  SHIPWRIGHT_VERDICT: approve",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": ".shipwright/planning/campaigns/2026-10-25-dfp-pilot-changelog-LEARNINGS.md",
+          "line": 10,
+          "finding": "The diff records P1 as delivered but includes no P1 AC decision records. The specification explicitly requires an `unchanged` record for every kept AC, restricted to FR-01.09 and FR-01.01. Tests showing unchanged defaults do not satisfy that separate recording requirement.",
+          "suggestion": "Add the required P1 `unchanged` AC records for every kept AC, using the campaign’s prescribed recording mechanism.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_release_offline_proof.py:30–34",
+          "line": null,
+          "finding": "_offline_env()` does not actually ensure the proof runs without network access. It inherits `NO_PROXY`/`no_proxy`, which can bypass the dead proxy, and subprocesses using clients that ignore proxy variables retain network access. `UV_OFFLINE` only constrains uv, so a network-dependent regression could still pass this purported offline proof.",
+          "suggestion": "Run the proof under enforced network isolation, with dependency provisioning completed beforehand. At minimum, clear inherited proxy bypass variables and avoid claiming that proxy configuration proves network access is blocked.  Overall assessment: ship-with-fixes. The seams and publish guard appear consistent with the supplied scope, but the required AC records and reliable offline proof need completion.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-17T10:00:20.807660+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] **Findings**\n\n- Category: spec | Severity: medium\n  File: whole diff — No AC-record update (`ac_decision.py` with `--ac-mode auto`, record `unchanged` for every kept AC) is visible anywhere in the diff. The unit's contract requires the AC record per unit to be `unchanged`; if this is handled in a ledger file outside the diff, fine, but as presented the diff contains no evidence of it, and the reviewer cannot confirm the STRICT-STOP condition (\"any other kind is a STRICT-STOP\") was checked.\n  Suggestion: Confirm the AC records for FR-01.09/FR-01.01 exist with `unchanged`; if they were produced outside this diff, attach or reference them in the PR.\n\n- Category: edge-case | Severity: low\n  File: shared/scripts/release_seams.py (the `PurePath(parsed[0]...).stem.lower() == \"gh\"` check in `gh_argv_prefix`) — The real-`gh` rejection keys on the file stem only, so a legitimate test stub literally named `gh.py`/`gh.exe` (e.g. `[\"python\", \"/tmp/gh.py\"]`) is refused as \"the real gh\", while a prefix like `[\"gh-wrapper\", ...]` or `[\"/x/bin/gh-alias\"]` passes even though it could be any real binary the attacker/user controls. The guard's threat model (accidental fixture publish) makes this tolerable, but the error message overstates what it detects.\n  Suggestion: Either document the check as a name heuristic only, or refuse any prefix whose first element resolves to a `gh*` name.\n\n- Category: edge-case | Severity: low\n  File: shared/scripts/create_github_release.py (`_fixture_notes_refusal`) — An `OSError` while reading the notes file (e.g. permission denied, not just missing) yields `text = \"\"` and the guard returns `None`, i.e. fail-open. The existing downstream check presumably catches a missing file, but an unreadable-yet-present file silently bypasses the publish guard.\n  Suggestion: Distinguish \"file does not exist\" (allow, existing check handles it) from other `OSError`s (refuse with a reason).\n\n- Category: edge-case | Severity: low\n  File: shared/scripts/rele […truncated]\n\n[openai] Repository reads were blocked by the execution policy, so this review is limited to the supplied specification and diff; I could not inspect the referenced briefs or run tests.\n\n- Category: spec\n- Severity: medium\n- File: .shipwright/planning/campaigns/2026-10-25-dfp-pilot-changelog-LEARNINGS.md:10\n- Finding: The diff records P1 as delivered but includes no P1 AC decision records. The specification explicitly requires an `unchanged` record for every kept AC, restricted to FR-01.09 and FR-01.01. Tests showing unchanged defaults do not satisfy that separate recording requirement.\n- Suggestion: Add the required P1 `unchanged` AC records for every kept AC, using the campaign’s prescribed recording mechanism.\n\n- Category: test\n- Severity: medium\n- File: shared/tests/test_release_offline_proof.py:30–34\n- Finding: `_offline_env()` does not actually ensure the proof runs without network access. It inherits `NO_PROXY`/`no_proxy`, which can bypass the dead proxy, and subprocesses using clients that ignore proxy variables retain network access. `UV_OFFLINE` only constrains uv, so a network-dependent regression could still pass this purported offline proof.\n- Suggestion: Run the proof under enforced network isolation, with dependency provisioning completed beforehand. At minimum, clear inherited proxy bypass variables and avoid claiming that proxy configuration proves network access is blocked.\n\nOverall assessment: **ship-with-fixes**. The seams and publish guard appear consistent with the supplied scope, but the required AC records and reliable offline proof need completion.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-17T10:00:20.662787+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "e160425bad04b38adce9aeab386c4569d6ae0a65"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-17T09:55:15.619786+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-17T09:54:25.353203+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}
