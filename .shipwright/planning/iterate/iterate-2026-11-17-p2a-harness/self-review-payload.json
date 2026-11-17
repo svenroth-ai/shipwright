@@ -1,0 +1,10 @@
+{"items": [
+{"name": "Spec Compliance", "verdict": "pass", "note": "All five ACs of the P2a spec are covered: scratch project (git, bare origin, fake GitHub fetch URL, file push URL), explicit environment with a leak check, gh stub contract with argv log, driver interface and freeze test. AC record unchanged."},
+{"name": "Error Handling", "verdict": "pass", "note": "The stub refuses loudly (exit 1/2/3) for unknown commands, missing state, corrupt state and unsupported merge flags; run_scenario raises on an unknown step instead of skipping."},
+{"name": "Security Basics", "verdict": "pass", "note": "Environment is an allowlist; secret-shaped names and SHIPWRIGHT_ROOT fail the build; GIT_ALLOW_PROTOCOL=file blocks the fake https URL; user git config and hooks are isolated; parent environment untouched."},
+{"name": "Test Quality", "verdict": "pass", "note": "Real spawned stub process, real git, byte-identical traces across two scratches, seeded-difference test (tag on the wrong commit), hostile git config test, freeze cases incl. delta mismatch variants."},
+{"name": "Performance Basics", "verdict": "pass", "note": "Scratch build is about a second; no network; stub merge uses a temp clone of a local bare repo."},
+{"name": "Naming & Structure", "verdict": "pass", "note": "Three stdlib testkit modules, all new files under 300 lines (largest 218); tests split across four shared/tests files and the plugin golden folder."},
+{"name": "Affected Boundaries", "verdict": "pass", "note": "Boundary: env var seam -> spawned stub process -> bare git remote, and trace -> sha256 lock. Probed with the real create_github_release.py script through the stub and by building the trace on two scratches."},
+{"name": "Test Hygiene Probe", "verdict": "pass", "note": "No skips added; prerequisites (git) fail rather than skip."}
+]}

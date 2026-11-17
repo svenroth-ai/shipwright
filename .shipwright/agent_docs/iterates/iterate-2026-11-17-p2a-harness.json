@@ -1,0 +1,68 @@
+{
+  "run_id": "iterate-2026-11-17-p2a-harness",
+  "date": "2026-11-17T13:32:12.488956Z",
+  "event_at": "2026-11-17T13:31:55.993951+00:00",
+  "type": "feature",
+  "complexity": "medium",
+  "prior_source": "history",
+  "branch": "iterate/p2a-harness",
+  "spec": "C:/01_Development/shipwright/.worktrees/campaign-dfp-pilot-changelog-p1-p2p/.shipwright/planning/iterate/campaigns/dfp-pilot-changelog-p1-p2p/sub-iterates/P2a-harness.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-11-17-p2a-harness",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "scratch project builds with git, a bare origin, a fake GitHub-style fetch URL and a file push URL; an untagged variant and a master default branch work; the fake https fetch is refused",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_release_scratch.py::test_the_scratch_is_a_git_repo_with_a_bare_origin_and_a_fake_github_url, ::test_the_bare_origin_starts_in_step_with_the_project, ::test_an_untagged_scratch_has_no_release_and_a_master_default_is_honoured, ::test_nothing_in_the_fetch_path_can_reach_the_network PASSED"
+      },
+      {
+        "behavior": "the environment builder leaks no API key, secret-shaped name or seeded credential value, leaves the parent environment alone, ignores a hostile user git config, and fails the build when a leak is added on purpose",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_release_scratch.py::test_build_env_drops_every_key_and_secret_of_the_parent, ::test_a_child_process_of_the_scratch_sees_no_key_and_runs_in_the_repo, ::test_a_leaked_name_fails_the_build_even_when_added_on_purpose, ::test_no_seeded_credential_value_survives_and_the_parent_is_left_alone, ::test_a_hostile_user_git_config_does_not_reach_the_scratch PASSED"
+      },
+      {
+        "behavior": "gh stub contract: pr create refuses a head not on the remote, pr merge really merges and deletes the head, release create refuses an unpushed tag and persists so release view returns it, every call (refusals included) is in the argv log, the real release script publishes through it",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "shared/tests/test_gh_stub.py::test_pr_create_refuses_a_head_branch_that_is_not_on_the_remote, ::test_pr_merge_really_merges_into_the_remote_base_and_deletes_the_head, ::test_release_create_persists_and_a_later_view_returns_it, ::test_every_call_lands_in_the_argv_log_in_order_refusals_included, ::test_the_real_release_script_publishes_through_the_stub_and_is_refused_for_an_unpushed_tag PASSED"
+      },
+      {
+        "behavior": "driver interface runs a plan step by step, refuses an unknown step, routes steps through a composite driver; the trace is equal for two identical scratches and changes when a commit is amended after tagging",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_golden_driver_freeze.py::test_run_scenario_runs_the_plan_in_order_with_its_params, ::test_an_unknown_step_is_an_error_not_a_skip, ::test_a_composite_sends_each_step_to_the_driver_that_owns_it; shared/tests/test_golden_trace.py::test_two_scratches_in_different_directories_give_the_same_trace, ::test_a_commit_amended_after_it_was_tagged_changes_the_trace PASSED"
+      },
+      {
+        "behavior": "the freeze test in the changelog test root: unfrozen passes, a changed trace fails, an approved delta that names exactly the change passes, the real tree respects the freeze",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-changelog/tests/golden/test_trace_freeze.py::test_an_unfrozen_tree_passes_whatever_it_holds, ::test_a_changed_trace_after_the_freeze_fails, ::test_the_real_tree_respects_the_freeze; shared/tests/test_golden_driver_freeze.py::test_a_change_covered_by_an_approved_delta_passes PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 5,
+      "tested": 5,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 5,
+      "covered_acs": 5
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run pytest shared/tests/test_gh_stub.py shared/tests/test_release_scratch.py shared/tests/test_golden_trace.py shared/tests/test_golden_driver_freeze.py -q -p no:cacheprovider",
+    "exit_code": 0,
+    "tests_run": 70,
+    "evidence_path": ".shipwright/runs/iterate-2026-11-17-p2a-harness/surface_verification.json",
+    "timestamp": "2026-11-17T13:21:02.834Z",
+    "attempts": 1
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}
