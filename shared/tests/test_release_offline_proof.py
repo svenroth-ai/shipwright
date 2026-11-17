@@ -1,4 +1,4 @@
-"""A scratch project passes ``--verify-commit --release-audit`` with no network.
+"""A scratch project passes ``--verify-commit --release-audit`` with no network (an offline-consistency check).
 
 Proof, not a seam: the release audit's only external dependency is ``uv run --with
 pyyaml``, and uv serves that from its own cache under ``UV_OFFLINE``. The scratch

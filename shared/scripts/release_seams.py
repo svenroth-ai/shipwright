@@ -31,6 +31,9 @@ notes at all while the condensation fixture variable is set, unless the ``gh``
 seam is also set, so a stray condensation variable can never put fixture notes
 on a real release page (:func:`fixture_notes_refusal`).
 
+**Test-only.** Never put a seam variable in a CI workflow's ``env:`` or an operator
+shell profile: it redirects every ``gh`` call of the two scripts above.
+
 A set-but-malformed value raises :class:`SeamError` rather than being ignored:
 a test that believes it is driving a stub must not silently reach the real
 ``gh``. Known limit: the condensation script loads ``.env.local`` into the process

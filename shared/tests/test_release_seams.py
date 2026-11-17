@@ -47,7 +47,8 @@ def test_every_seam_is_named_shipwright_test():
 @pytest.mark.covers("FR-01.09/AC14")
 def test_every_seam_is_documented():
     doc = _DOC.read_text(encoding="utf-8")
-    assert [name for name in seams.SEAM_ENV_VARS if name not in doc] == []
+    # A table row, not a stray mention elsewhere in the doc.
+    assert [name for name in seams.SEAM_ENV_VARS if f"| `{name}` |" not in doc] == []
 
 
 @pytest.mark.covers("FR-01.09/AC14")
