@@ -15,7 +15,7 @@
       {
         "behavior": "gh argv prefix seam: unset or empty leaves every gh argv unchanged; set replaces the leading gh; malformed (JSON, empty, non-string, real gh, control character) is refused",
         "disposition": "tested",
-        "evidence": "shared/tests/test_release_seams.py::test_create_release_default_argv_is_unchanged, ::test_gh_prefix_replaces_the_leading_gh, ::test_malformed_gh_prefix_is_refused_not_ignored, ::test_a_prefix_with_a_control_character_is_refused PASSED"
+        "evidence": "shared/tests/test_release_seams.py::test_create_release_default_argv_is_unchanged, ::test_gh_prefix_replaces_the_leading_gh, ::test_malformed_gh_prefix_is_refused_not_ignored, shared/tests/test_release_publish_guard.py::test_a_prefix_with_a_control_character_is_refused PASSED"
       },
       {
         "behavior": "setup-changelog previous-release check uses the seam prefix, default is plain gh, malformed seam reports seam_invalid",
@@ -30,7 +30,7 @@
       {
         "behavior": "create_github_release refuses fixture text (marker, or the fixture variable alone) unless the gh seam is set, before any gh call; seamed results say so",
         "disposition": "tested",
-        "evidence": "shared/tests/test_release_seams.py::test_fixture_text_is_refused_unless_the_gh_seam_is_set, ::test_create_release_refuses_when_the_fixture_variable_is_set_without_the_gh_seam, ::test_a_seamed_result_says_so_and_a_default_result_does_not PASSED"
+        "evidence": "shared/tests/test_release_publish_guard.py::test_fixture_text_is_refused_unless_the_gh_seam_is_set, shared/tests/test_release_publish_guard.py::test_create_release_refuses_when_the_fixture_variable_is_set_without_the_gh_seam, shared/tests/test_release_publish_guard.py::test_a_seamed_result_says_so_and_a_default_result_does_not PASSED"
       },
       {
         "behavior": "seams are named SHIPWRIGHT_TEST_*, documented, and read in one place; no literal gh argv outside the helper",
@@ -41,7 +41,7 @@
         "behavior": "a scratch project passes --verify-commit --release-audit offline (UV_OFFLINE, dead proxy, no keys) and a real stub process serves the release page flow",
         "disposition": "tested",
         "category": "integration",
-        "evidence": "shared/tests/test_release_offline_proof.py::test_scratch_project_passes_verify_commit_and_release_audit_offline, shared/tests/test_release_seams.py::test_a_real_stub_process_serves_the_whole_release_page_flow PASSED"
+        "evidence": "shared/tests/test_release_offline_proof.py::test_scratch_project_passes_verify_commit_and_release_audit_offline, shared/tests/test_release_publish_guard.py::test_a_real_stub_process_serves_the_whole_release_page_flow PASSED"
       }
     ],
     "counts": {
@@ -57,9 +57,9 @@
   },
   "surface_verification": {
     "surface": "cli",
-    "runner": "uv run pytest shared/tests/test_release_seams.py shared/tests/test_release_offline_proof.py -q",
+    "runner": "uv run pytest shared/tests/test_release_seams.py shared/tests/test_release_publish_guard.py shared/tests/test_release_offline_proof.py -q",
     "exit_code": 0,
-    "tests_run": 31,
+    "tests_run": 36,
     "evidence_path": ".shipwright/runs/iterate-2026-11-17-p1-seams-offline-proof/surface_verification.json",
     "timestamp": "2026-11-17T10:01:05.608Z",
     "attempts": 1

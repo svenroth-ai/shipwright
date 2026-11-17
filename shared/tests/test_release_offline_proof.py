@@ -49,7 +49,8 @@ def _git(root: Path, *args: str) -> str:
 
 def _refresh(root: Path, *args: str) -> subprocess.CompletedProcess:
     return subprocess.run([sys.executable, str(_REFRESH), "--project-root", str(root), *args],
-                          env=_offline_env(), capture_output=True, text=True, timeout=300)
+                          env=_offline_env(), capture_output=True, text=True, timeout=300,
+                          cwd=root)  # the skill's call site: cwd is the target project
 
 
 @pytest.fixture

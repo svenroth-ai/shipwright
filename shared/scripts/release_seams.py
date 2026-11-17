@@ -9,9 +9,11 @@ path is byte-for-byte what it was before the seam existed.
 ``SHIPWRIGHT_TEST_GH_ARGV_PREFIX``         JSON array of strings, e.g.
                                            ``["python", "/x/gh_stub.py"]``. It
                                            replaces the leading ``gh`` of every
-                                           ``gh`` call the release path makes
+                                           ``gh`` call made by those two scripts
                                            (``setup-changelog.py``,
-                                           ``create_github_release.py``). An
+                                           ``create_github_release.py``);
+                                           the SKILL.md ``gh pr create`` and
+                                           ``gh pr merge`` steps are NOT seamed. An
                                            argv prefix, not a ``.cmd`` shim: on
                                            Windows ``gh`` is spawned as
                                            ``["gh", ...]``, which cannot run a
