@@ -134,7 +134,7 @@
     "code": {
       "review_type": "code",
       "status": "completed",
-      "findings_count": 8,
+      "findings_count": 14,
       "findings": [
         {
           "severity": "medium",
@@ -207,16 +207,70 @@
           "finding": "sys.executable vs uv run",
           "suggestion": null,
           "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "delta-review",
+          "file": "shared/testkit/release_scratch.py",
+          "line": 1,
+          "finding": "cmd shim marker could leak into a cmd session - FIXED (setlocal)",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "delta-review",
+          "file": "shared/testkit/gh_stub.py",
+          "line": 1,
+          "finding": "bare gh could still act on the local bare repo unlogged - FIXED (bare gh refuses everything but --version/auth status, logged to unseamed.jsonl)",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "delta-review",
+          "file": "plugins/shipwright-changelog/tests/golden/scenarios_release.py",
+          "line": 1,
+          "finding": "triage.jsonl masked in trace status; comment overstates S2 pinning - ACCEPTED, follow-up for stop 2",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "delta-review",
+          "file": "shared/testkit/golden_trace.py",
+          "line": 1,
+          "finding": "triage path hard-coded in the shared recorder - follow-up",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "delta-review",
+          "file": "shared/testkit/gh_stub.py",
+          "line": 1,
+          "finding": "docstring contract - FIXED",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "delta-review",
+          "file": "shared/tests/test_gh_stub.py",
+          "line": 1,
+          "finding": "weak assertions - FIXED",
+          "suggestion": null,
+          "source": "code-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-11-17T16:55:45.255483+00:00",
+      "completed_at": "2026-11-17T19:40:21.335337+00:00",
       "disposition": null,
       "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus",
-      "reviewed_commit": "a27d2a64fdd68144953a31de5d7f42c73e742b76"
+      "reviewed_commit": "3ce2a0d90fe6b61113e872fb1c04aa6aab0bc25e"
     },
     "doubt": {
       "review_type": "doubt",
@@ -288,13 +342,13 @@
         }
       ],
       "provider": null,
-      "completed_at": "2026-11-17T16:55:45.410526+00:00",
+      "completed_at": "2026-11-17T19:40:21.488423+00:00",
       "disposition": null,
       "recorded_by": "doubt-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus",
-      "reviewed_commit": "a27d2a64fdd68144953a31de5d7f42c73e742b76"
+      "reviewed_commit": "3ce2a0d90fe6b61113e872fb1c04aa6aab0bc25e"
     },
     "external_code": {
       "review_type": "external_code",
@@ -391,13 +445,13 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-11-17T16:55:45.103120+00:00",
+      "completed_at": "2026-11-17T19:40:21.197852+00:00",
       "disposition": null,
       "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus",
-      "reviewed_commit": "a27d2a64fdd68144953a31de5d7f42c73e742b76"
+      "reviewed_commit": "3ce2a0d90fe6b61113e872fb1c04aa6aab0bc25e"
     },
     "plan_internal": {
       "review_type": "plan_internal",
