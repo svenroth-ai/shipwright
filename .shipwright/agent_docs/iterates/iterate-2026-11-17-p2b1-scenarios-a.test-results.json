@@ -1,0 +1,104 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-17-p2b1-scenarios-a",
+    "date": "2026-11-17",
+    "unit": {
+      "status": "passed",
+      "passed": 121,
+      "skipped": 0,
+      "total": 121
+    },
+    "integration": {
+      "status": "not_run",
+      "passed": 0,
+      "skipped": 0,
+      "total": 0
+    },
+    "pgtap": {
+      "status": "not_run",
+      "passed": 0,
+      "skipped": 0,
+      "total": 0
+    },
+    "e2e": {
+      "status": "not_run",
+      "passed": 0,
+      "skipped": 0,
+      "total": 0
+    },
+    "design_fidelity": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "replay driver runs today's prose commands per step, each citing a SKILL.md line that still holds it; command keys equal the citation table",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "plugins/shipwright-changelog/tests/golden/test_replay_driver.py::test_every_replay_command_cites_a_line_of_the_prose_that_holds_it PASSED"
+        },
+        {
+          "behavior": "release scenarios S1, S1t, S2g/S2a/S2u (legacy and drops layouts) assert AC01/02/04/06 and record D2/D3/D4/D15/D22/D23 as today's behaviour",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "plugins/shipwright-changelog/tests/golden/test_scenarios_release.py::test_s1_first_release_with_no_tag_and_an_untracked_events_file[legacy], ::test_s1t_a_tracked_bullet_drop_stops_the_release_before_the_tag, ::test_s2g_feature_and_fix_since_1x_guided[drops] PASSED"
+        },
+        {
+          "behavior": "version and aggregation scenarios S3, S3b, S4, S5a/b, S6, S7a/b/c, S8, S9 assert AC03/04/07/08/09/10 through the independent oracle",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "plugins/shipwright-changelog/tests/golden/test_scenarios_aggregate.py (11 tests, S3-S9) PASSED"
+        },
+        {
+          "behavior": "traces are generated, equal across two runs and equal to the committed files; the freeze test lists driver, oracle and scenario files",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-changelog/tests/golden/test_replay_driver.py::test_a_scenario_gives_the_same_trace_twice_and_it_is_the_committed_one[S5b]; plugins/shipwright-changelog/tests/golden/test_trace_freeze.py::test_the_real_tree_respects_the_freeze PASSED"
+        },
+        {
+          "behavior": "harness hardening: stub merge leaves the checkout on the merged base and refuses outside a scratch, dummy GH token, per-command short flags, masked PR body",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_gh_stub.py; shared/tests/test_release_scratch.py; shared/tests/test_golden_trace.py PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 5,
+        "tested": 5,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 5,
+        "covered_acs": 5
+      }
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run pytest plugins/shipwright-changelog/tests/golden -q -p no:cacheprovider",
+      "exit_code": 0,
+      "tests_run": 43,
+      "evidence_path": ".shipwright/runs/iterate-2026-11-17-p2b1-scenarios-a/surface_verification.json",
+      "timestamp": "2026-11-17T16:13:44.640Z",
+      "attempts": 1
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-11-17-p2b1-scenarios-a",
+    "commit": "74cff48518980ee2a03aa8e7c6d26a69ce7f6205",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

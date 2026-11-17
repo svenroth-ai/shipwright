@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 
-pytestmark = pytest.mark.covers("FR-01.09/AC14")  # test support for the changelog pilot (programme P2a)
+pytestmark = pytest.mark.covers("FR-01.09/AC14")  # test support for the changelog pilot (programme P2a); the gate refuses removing it (tag-removed), see the P2b1 FINDINGS note
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "shared" / "testkit"))
 
 import golden_trace as gt  # noqa: E402

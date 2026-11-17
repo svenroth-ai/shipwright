@@ -7,8 +7,10 @@ frozen ``golden_trace.py`` and every ``*.trace.json``) and, only when needed, an
 names exactly that change. Known limit: deleting the lock reads as "unfrozen"; the stop-2
 iterate also pins its existence in review, because a test cannot tell a deletion from a start.
 Residual risk, accepted here and handed to the operator procedure: a diff may re-pin a trace and its
-hash together, or write an approved delta with any approver string; only review of the lock and deltas
-paths (a sensitive-path rule or CODEOWNERS) stops that, a test in this file cannot.
+hash together, or write an approved delta with any approver string; only review (a sensitive-path rule or
+CODEOWNERS) stops that, a test in this file cannot. That review must cover ALL the REQUIRED files below -
+this checker (``test_trace_freeze.py``) included, not only the lock and the deltas: the checker also
+guards itself only by being in the list, so an edit that weakens it and re-pins its own hash passes it.
 """
 
 from __future__ import annotations
@@ -19,17 +21,29 @@ from pathlib import Path
 import pytest
 
 
-pytestmark = pytest.mark.covers("FR-01.09/AC14")  # test support for the changelog pilot (programme P2a)
+pytestmark = pytest.mark.covers("FR-01.09/AC14")  # test support for the changelog pilot (programme P2a); the gate refuses removing it (tag-removed), see the P2b1 FINDINGS note
 import golden_trace as gt
 from .conftest import DELTAS_PATH, GOLDEN_DIR, LOCK_PATH, REPO_ROOT, STEPS
 
 TRACE_SUFFIX = ".trace.json"
 HARNESS = "shared/testkit/golden_trace.py"
-# What shapes every trace besides the trace files: a lock that leaves one out is refused. Later units
-# (P2b, P2-op) add their own members (replay driver, pinned prose copy, promise lock) to this list.
+# What shapes every trace besides the trace files: a lock that leaves one out is refused. P2b added the replay
+# driver and its command table; P2-op adds the pinned prose copy and the promise lock to this list.
 REQUIRED = (HARNESS, "shared/testkit/gh_stub.py", "shared/testkit/release_scratch.py",
             "plugins/shipwright-changelog/tests/golden/conftest.py",
-            "plugins/shipwright-changelog/tests/golden/test_trace_freeze.py")
+            "plugins/shipwright-changelog/tests/golden/driver_replay.py",
+            "plugins/shipwright-changelog/tests/golden/oracle.py",
+            "plugins/shipwright-changelog/tests/golden/scenario_core.py",
+            "plugins/shipwright-changelog/tests/golden/scenario_support.py",
+            "plugins/shipwright-changelog/tests/golden/scenarios_release.py",
+            "plugins/shipwright-changelog/tests/golden/scenarios_rerun.py",
+            "plugins/shipwright-changelog/tests/golden/scenarios_version.py",
+            "plugins/shipwright-changelog/tests/golden/replay_commands.py",
+            "plugins/shipwright-changelog/tests/golden/test_trace_freeze.py",
+            # the tests that decide whether a trace is ever compared (deleting one would orphan its traces)
+            "plugins/shipwright-changelog/tests/golden/test_scenarios_release.py",
+            "plugins/shipwright-changelog/tests/golden/test_scenarios_aggregate.py",
+            "plugins/shipwright-changelog/tests/golden/test_replay_driver.py")
 
 
 def tree_problems(repo_root: Path, golden_dir: Path) -> list[str]:

@@ -45,7 +45,10 @@ _PASS_THROUGH = (  # no HOME: build_env points it at an empty directory
     "ProgramW6432", "UV_CACHE_DIR", "UV_PYTHON_INSTALL_DIR",
 )
 _SECRET_NAME = re.compile(r"(KEY|TOKEN|SECRET|PASSW|(?:^|_)(?:PAT|PWD)(?:_|$)|CREDENTIAL|(?:^|_)AUTH(?:_|$))", re.IGNORECASE)
-_SECRET_ALLOWED: frozenset[str] = frozenset()  # a named exception is added here, with its reason
+# A named exception, with its reason: a DUMMY token (only this exact value passes) makes a real ``gh`` that slips
+# past the shim answer 401 from the dead host instead of reading the operator's keyring token.
+DUMMY_GH_TOKEN = "gh-stub-dummy-token-not-a-credential"
+_SECRET_ALLOWED: dict[str, str] = {"GH_TOKEN": DUMMY_GH_TOKEN, "GH_ENTERPRISE_TOKEN": DUMMY_GH_TOKEN}
 _LAYOUTS = ("legacy", "drops")
 
 
@@ -55,9 +58,23 @@ class EnvLeak(AssertionError):
 
 def assert_no_secrets(env: Mapping[str, str]) -> None:
     bad = sorted(name for name in env
-                 if (_SECRET_NAME.search(name) and name not in _SECRET_ALLOWED) or name == "SHIPWRIGHT_ROOT")
+                 if (_SECRET_NAME.search(name) and _SECRET_ALLOWED.get(name) != env[name]) or name == "SHIPWRIGHT_ROOT")
     if bad:
         raise EnvLeak(f"scenario environment leaks: {', '.join(bad)}")
+
+
+def _uv_dirs(source: Mapping[str, str], platform: str) -> dict[str, str]:
+    """uv's cache and Python dirs of the PARENT on Linux/macOS (the scratch's empty HOME would hide them): without
+    them ``uv --offline run`` finds a cold cache. Windows passes LOCALAPPDATA through; a dir that does not exist stays unset."""
+    if platform.startswith("win") or not source.get("HOME"):
+        return {}
+    home = Path(source["HOME"])
+    mac = platform == "darwin"
+    cache = Path(source["XDG_CACHE_HOME"]) / "uv" if source.get("XDG_CACHE_HOME") and not mac else (
+        home / "Library" / "Caches" / "uv" if mac else home / ".cache" / "uv")
+    data = Path(source["XDG_DATA_HOME"]) if source.get("XDG_DATA_HOME") else home / ".local" / "share"
+    found = {"UV_CACHE_DIR": cache, "UV_PYTHON_INSTALL_DIR": data / "uv" / "python"}
+    return {name: str(path) for name, path in found.items() if name not in source and path.is_dir()}
 
 
 def _path_with_shims(path: str, shim_dir: Path) -> str:
@@ -77,8 +94,9 @@ def _write_gh_shims(shim_dir: Path) -> None:
     """A bare ``gh`` (typed by a person or a model) lands on the stub. ``gh.cmd`` serves a shell on Windows."""
     shim_dir.mkdir(parents=True, exist_ok=True)
     py, stub = sys.executable, GH_STUB
-    sh = '#!/bin/sh\nexec "{}" "{}" "$@"\n'.format(Path(py).as_posix(), stub.as_posix())
-    cmd = '@echo off\r\n"{}" "{}" %*\r\n'.format(py, stub)
+    sh = '#!/bin/sh\nSHIPWRIGHT_GH_STUB_UNSEAMED=1\nexport SHIPWRIGHT_GH_STUB_UNSEAMED\nexec "{}" "{}" "$@"\n'.format(
+        Path(py).as_posix(), stub.as_posix())
+    cmd = '@echo off\r\nsetlocal\r\nset SHIPWRIGHT_GH_STUB_UNSEAMED=1\r\n"{}" "{}" %*\r\n'.format(py, stub)
     (shim_dir / "gh").write_bytes(sh.encode("utf-8"))
     (shim_dir / "gh").chmod(0o755)
     (shim_dir / "gh.cmd").write_bytes(cmd.encode("utf-8"))
@@ -91,6 +109,7 @@ def build_env(stub_state: Path, *, events_layout: str | None = None,
         raise ValueError(f"events_layout must be one of {_LAYOUTS} or None, not {events_layout!r}")
     source = os.environ if parent is None else parent
     env = {name: source[name] for name in _PASS_THROUGH if name in source}
+    env.update(_uv_dirs(source, sys.platform))
     shim_dir = stub_state / "bin"
     env["PATH"] = _path_with_shims(source.get("PATH", ""), shim_dir)
     _write_gh_shims(shim_dir)
@@ -102,8 +121,9 @@ def build_env(stub_state: Path, *, events_layout: str | None = None,
     env.update(
         HOME=str(home), USERPROFILE=str(home), XDG_CONFIG_HOME=str(home),
         GH_HOST="gh.invalid",  # a real gh that slips through targets a host that does not exist
-        GIT_ALLOW_PROTOCOL="file", GIT_TERMINAL_PROMPT="0", GIT_CONFIG_NOSYSTEM="1",
-        GIT_CONFIG_GLOBAL=str(git_config),
+        GH_TOKEN=DUMMY_GH_TOKEN, GH_ENTERPRISE_TOKEN=DUMMY_GH_TOKEN,  # ... and is refused there, not logged in as the operator
+        GIT_ALLOW_PROTOCOL="file", GIT_TERMINAL_PROMPT="0",
+        GIT_CONFIG_GLOBAL=str(git_config),  # no GIT_CONFIG_NOSYSTEM: Git for Windows reads its own system config (e.g. the ssl/credential helper) from there; the global file is the isolated one
         LANG="C", LC_ALL="C",
         GIT_AUTHOR_NAME="fixture", GIT_AUTHOR_EMAIL="fixture@example.invalid",
         GIT_COMMITTER_NAME="fixture", GIT_COMMITTER_EMAIL="fixture@example.invalid",

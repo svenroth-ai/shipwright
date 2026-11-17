@@ -1,0 +1,8 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"S1-S9 scenarios, driver, citations, traces, six hardening items delivered"},
+{"name":"Error Handling","verdict":"pass","note":"fill() raises on unfilled markers; stub refuses outside a scratch; refusals asserted"},
+{"name":"Security Basics","verdict":"pass","note":"dummy tokens only, offline uv, no real remote, gh stub guard"},
+{"name":"Test Quality","verdict":"pass","note":"each scenario asserts ACs via oracle or direct checks; traces stable across two runs"},
+{"name":"Performance Basics","verdict":"pass","note":"uv warmed once per session; scenarios isolated in tmp"},
+{"name":"Naming & Structure","verdict":"pass","note":"all files <= 300 lines, no dead code"},
+{"name":"Affected Boundaries","verdict":"pass","note":"trace format round-trips: written, re-read and compared byte-equal on a second run; CRLF normalised"}]}

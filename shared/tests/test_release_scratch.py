@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import os
+import shutil
 import sys
 from pathlib import Path
 
 import pytest
 
 
-pytestmark = pytest.mark.covers("FR-01.09/AC14")  # test support for the changelog pilot (programme P2a)
+pytestmark = pytest.mark.covers("FR-01.09/AC14")  # test support for the changelog pilot (programme P2a); the gate refuses removing it (tag-removed), see the P2b1 FINDINGS note
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(_REPO_ROOT / "shared" / "testkit"))
 sys.path.insert(0, str(_REPO_ROOT / "shared" / "scripts"))
@@ -17,7 +18,7 @@ sys.path.insert(0, str(_REPO_ROOT / "shared" / "scripts"))
 import release_scratch as rs  # noqa: E402
 from repo_identity import resolve_repo_identity  # noqa: E402
 
-_LEAKY = {"OPENROUTER_API_KEY": "k1", "OPENAI_API_KEY": "k2", "ANTHROPIC_API_KEY": "k3", "GH_TOKEN": "t1",
+_LEAKY = {"OPENROUTER_API_KEY": "k1", "OPENAI_API_KEY": "k2", "ANTHROPIC_API_KEY": "k3", "GH_TOKEN": "t1", "GH_ENTERPRISE_TOKEN": "t3",
           "GITHUB_TOKEN": "t2", "AWS_SECRET_ACCESS_KEY": "s", "SHIPWRIGHT_ROOT": "/dev/checkout",
           "SHIPWRIGHT_EVENTS_LAYOUT": "drops"}
 
@@ -60,8 +61,8 @@ def test_nothing_in_the_fetch_path_can_reach_the_network(scratch):
 def test_build_env_drops_every_key_and_secret_of_the_parent(tmp_path):
     env = rs.build_env(tmp_path, parent={**_LEAKY, "PATH": "/bin"})
     assert env["PATH"].split(os.pathsep)[1:] == ["/bin"]  # the stub shim directory comes first
-    assert not set(_LEAKY) & set(env)
-    assert env["GIT_ALLOW_PROTOCOL"] == "file"
+    assert not set(_LEAKY) - set(rs._SECRET_ALLOWED) & set(env) and not {"t1", "t3"} & set(env.values())
+    assert env["GIT_ALLOW_PROTOCOL"] == "file" and "GIT_CONFIG_NOSYSTEM" not in env
 
 
 def test_no_seeded_credential_value_survives_and_the_parent_is_left_alone(tmp_path, monkeypatch):
@@ -70,6 +71,7 @@ def test_no_seeded_credential_value_survives_and_the_parent_is_left_alone(tmp_pa
     before = dict(os.environ)
     env = rs.build_env(tmp_path)
     assert not any(v.startswith("seeded-") for v in env.values())
+    assert env["GH_TOKEN"] == env["GH_ENTERPRISE_TOKEN"] == rs.DUMMY_GH_TOKEN  # a stray real gh is refused, not the operator
     assert env["LC_ALL"] == "C" and "SHIPWRIGHT_ROOT" not in env
     assert dict(os.environ) == before  # GIT_ALLOW_PROTOCOL and the seam are for the child only
 
@@ -96,8 +98,34 @@ def test_a_child_process_of_the_scratch_sees_no_key_and_runs_in_the_repo(scratch
     done = scratch.run([sys.executable, "-c", code], check=True)
     import json
     names, cwd = json.loads(done.stdout)
-    assert not set(_LEAKY) & set(names)
+    assert not set(_LEAKY) - set(rs._SECRET_ALLOWED) & set(names)
     assert Path(cwd).resolve() == scratch.repo.resolve()
+
+
+def test_the_dummy_gh_token_is_the_only_value_allowed_for_a_gh_token_name(tmp_path):
+    rs.assert_no_secrets({"GH_TOKEN": rs.DUMMY_GH_TOKEN})
+    with pytest.raises(rs.EnvLeak, match="GH_TOKEN"):
+        rs.build_env(tmp_path, extra={"GH_TOKEN": "a-real-looking-token"})
+
+
+def test_uv_dirs_of_the_parent_pass_through_on_linux_and_macos_only_when_set_and_present(tmp_path):
+    home = tmp_path / "h"
+    (home / ".cache" / "uv").mkdir(parents=True)
+    (home / ".local" / "share" / "uv" / "python").mkdir(parents=True)
+    got = rs._uv_dirs({"HOME": str(home)}, "linux")
+    assert got == {"UV_CACHE_DIR": str(home / ".cache" / "uv"),
+                   "UV_PYTHON_INSTALL_DIR": str(home / ".local" / "share" / "uv" / "python")}
+    assert rs._uv_dirs({"HOME": str(home), "UV_CACHE_DIR": "/x"}, "linux").keys() == {"UV_PYTHON_INSTALL_DIR"}
+    assert rs._uv_dirs({"HOME": str(home)}, "win32") == {} and rs._uv_dirs({}, "linux") == {}
+    (home / "Library" / "Caches" / "uv").mkdir(parents=True)
+    assert rs._uv_dirs({"HOME": str(home)}, "darwin")["UV_CACHE_DIR"] == str(home / "Library" / "Caches" / "uv")
+    assert rs._uv_dirs({"HOME": str(tmp_path / "none")}, "linux") == {}
+
+
+@pytest.mark.skipif(shutil.which("uv") is None, reason="uv is not on PATH")
+def test_uv_still_runs_offline_inside_a_scratch(scratch):
+    done = scratch.run(["uv", "--offline", "run", "--no-project", "python", "-c", "print(40 + 2)"])
+    assert done.returncode == 0 and done.stdout.strip() == "42", done.stderr
 
 
 @pytest.mark.parametrize("name", ["OPENROUTER_API_KEY", "GH_TOKEN", "MY_SERVICE_SECRET", "DB_PASSWORD", "SSH_AUTH_SOCK",
