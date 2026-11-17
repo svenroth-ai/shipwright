@@ -89,12 +89,14 @@ def test_scratch_project_passes_verify_commit_and_release_audit_offline(scratch:
     assert staged.returncode == 0, staged.stdout + staged.stderr
     pathspec = json.loads(staged.stdout)["evidence_pathspec"]
     _git(scratch, "commit", "-q", "-m", "chore(release): v0.1.0", "--", *pathspec)
-    # The events file the staging step appended to is part of the release commit in the skill.
-    _git(scratch, "add", "-A", "--", "shipwright_events.jsonl")
-    if _git(scratch, "status", "--porcelain", "--untracked-files=no"):
-        _git(scratch, "commit", "-q", "-m", "chore(release): record event")
     # The event writer leaves its lock file untracked; the release audit refuses a dirty tree.
     (scratch / "shipwright_events.jsonl.lock").unlink(missing_ok=True)
+    # The staging step recorded an event: in the monolithic layout it appended to
+    # shipwright_events.jsonl, in the drops layout it wrote a new file under
+    # .shipwright/events/drops/. Either is part of the release commit in the skill.
+    _git(scratch, "add", "-A")
+    if _git(scratch, "status", "--porcelain", "--untracked-files=no"):
+        _git(scratch, "commit", "-q", "-m", "chore(release): record event")
     head = _git(scratch, "rev-parse", "HEAD")
 
     verified = _refresh(scratch, "--verify-commit", head, "--release-audit")
