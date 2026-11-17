@@ -21,6 +21,11 @@ def test_s1_first_release_with_no_tag_and_an_untracked_events_file(layout, make_
 
 
 @pytest.mark.covers("FR-01.09/AC01")
+def test_s1d_a_project_with_no_tracked_decision_directories_cannot_commit_the_release_d21(make_project):
+    verify(SCENARIOS["S1d"], "legacy", make_project)
+
+
+@pytest.mark.covers("FR-01.09/AC01")
 def test_s1t_a_tracked_bullet_drop_stops_the_release_before_the_tag(make_project):
     verify(SCENARIOS["S1t"], "legacy", make_project)
 

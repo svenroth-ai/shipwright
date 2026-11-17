@@ -24,10 +24,10 @@ from typing import Any, Sequence
 
 import golden_trace as gt
 
-from .replay_commands import CITES, COMMIT_AND_TAG, EVENT_MAIN, EVENT_PR, PLUGIN, SHARED, fill
+from .replay_commands import CITES, CLOSE_PHASE, COMMIT_AND_TAG, EVENT_MAIN, EVENT_PR, PLUGIN, SHARED, fill
 
 STEPS = frozenset({"prepare", "aggregate", "preview", "fold-events", "sync", "evidence", "commit-and-tag",
-                   "open-pr", "record-event", "merge-pr", "push-tags", "release-page"})
+                   "open-pr", "record-event", "merge-pr", "push-tags", "release-page", "close-phase"})
 MAIN_BRANCHES = ("main", "develop")  # SKILL.md:327 "Only if on a feature branch (not main/develop)"
 
 
@@ -62,7 +62,10 @@ class ReplayDriver:
 
     # ---- plumbing --------------------------------------------------------------------------
     def _run(self, key: str, scratch: Any, argv: Sequence[str]) -> subprocess.CompletedProcess:
-        done = scratch.run(list(argv))
+        try:
+            done = scratch.run(list(argv))
+        except FileNotFoundError as exc:  # a program that is not installed (the 'gh missing' scenario) is a result, not a crash
+            done = subprocess.CompletedProcess(list(argv), 127, "", f"{type(exc).__name__}: {exc}")
         self.log.append({"key": key, "cites": CITES[key], "exit": done.returncode, "stdout": done.stdout, "stderr": done.stderr})
         return done
 
@@ -89,16 +92,22 @@ class ReplayDriver:
         return gt.StepResult(step, done.returncode, out)
 
     # ---- Step C-3 --------------------------------------------------------------------------
-    def step_prepare(self, scratch: Any, phase_task_id: str | None = None, version: str | None = None) -> gt.StepResult:
-        """Mode, setup script, history, commit types, version (``version`` is a guided operator's custom entry)."""
+    def step_prepare(self, scratch: Any, phase_task_id: str | None = None, version: str | None = None,
+                     from_version: str | None = None) -> gt.StepResult:
+        """Mode, setup script, history, commit types, version (``version`` is a guided operator's custom entry;
+        ``from_version`` is the banner's advertised ``--from vX``, which no script implements: finding D9)."""
         ctx_args = ["--phase-task-id", phase_task_id] if phase_task_id else []
         ctx = self._run("context", scratch, _uv(SHARED / "scripts/tools/get_phase_context.py", *ctx_args,
                                                 "--phase", "changelog", "--project-root", str(scratch.repo)))
-        mode = _json(ctx.stdout).get("mode", "")
-        if ctx.returncode != 0:
+        context = _json(ctx.stdout)
+        mode = context.get("mode", "")
+        if ctx.returncode != 0:  # SKILL.md:67-70 `error`: STOP, never continue as standalone
             return gt.StepResult("prepare", ctx.returncode, {"status": "stop", "reason": "mode_error", "mode": mode})
-        setup = self._run("setup", scratch, _uv(PLUGIN / "scripts/checks/setup-changelog.py", "--plugin-root", str(PLUGIN)))
+        setup = self._run("setup", scratch, _uv(PLUGIN / "scripts/checks/setup-changelog.py", "--plugin-root", str(PLUGIN),
+                                                *(["--from", from_version] if from_version else [])))
         info = _json(setup.stdout)
+        if setup.returncode != 0 and not info:  # the script refused its arguments: there is no setup output to read
+            return gt.StepResult("prepare", setup.returncode, {"status": "stop", "reason": "setup_refused", "mode": mode})
         self.state.update(last_tag=info.get("last_tag"), branch=info.get("branch", ""), mode=mode)
         fields = {"mode": mode, "last_tag": info.get("last_tag"), "branch": info.get("branch"),
                   "commits_since_tag": info.get("commits_since_tag"),
@@ -113,15 +122,23 @@ class ReplayDriver:
         # records which of the two the plan reaches (the question itself is an operator decision, no command runs)
         autonomy = (_json((scratch.repo / "shipwright_run_config.json").read_text(encoding="utf-8"))
                     if (scratch.repo / "shipwright_run_config.json").is_file() else {}).get("autonomy")
-        fields["version_question"] = "auto-accepted" if autonomy in ("autonomous", "unattended") else "asked"
+        fields["version_question"] = ("auto-accepted" if autonomy in ("autonomous", "unattended") or mode == "pipeline"
+                                      else "asked")  # first-actions.md:17-22: a driven run auto-accepts at every autonomy
+        if context.get("requires_out_of_sequence_warning"):  # SKILL.md:63-66: warn and ask (a question, no command)
+            fields["out_of_sequence"] = "asked"
         self.state["version"] = chosen
         return gt.StepResult("prepare", 0, {"status": "ok", "version": chosen, "suggested": info.get("suggested_version"),
                                             "version_reason": info.get("version_reason"), **fields})
 
     # ---- Step 4 ----------------------------------------------------------------------------
     def step_aggregate(self, scratch: Any, version: str, dry_run: bool = False, release_date: str | None = None,
-                       fail_if_empty: bool = True) -> gt.StepResult:
-        """The changelog section from the drops, then the decision drops. ``dry_run`` is the preview call only."""
+                       fail_if_empty: bool = True, fallback_bullets: Sequence[tuple[str, str]] = ()) -> gt.StepResult:
+        """The changelog section from the drops, then the decision drops. ``dry_run`` is the preview call only.
+        ``fallback_bullets`` are written first by ``append_changelog_entry.py`` (SKILL.md:222-226: bullets that did
+        not come through iterate F4, e.g. a cherry-pick)."""
+        for category, entry in fallback_bullets:
+            self._run("fallback-append", scratch, _uv(SHARED / "scripts/tools/append_changelog_entry.py", "--project-root",
+                                                      str(scratch.repo), "--category", category, "--entry", entry))
         date = ["--release-date", release_date] if release_date else []
         tool = SHARED / "scripts/tools/aggregate_changelog.py"
         if dry_run:
@@ -209,3 +226,10 @@ class ReplayDriver:
         info = _json(done.stdout)
         return gt.StepResult("release-page", done.returncode, {"status": info.get("status", "failed"),
                                                               "reason": info.get("reason", "")})
+
+    # ---- the phase-complete block ------------------------------------------------------------
+    def step_close_phase(self, scratch: Any, version: str, session_id: str = "replay-session") -> gt.StepResult:
+        """SKILL.md:380-414, one shell as the prose has it (``SHIPWRIGHT_RUN_ID`` is set in line 386, used in line 404)."""
+        script = fill(CLOSE_PHASE, version=version, shared=SHARED.as_posix(), plugin=PLUGIN.as_posix(), session=session_id)
+        done = self._bash("close-phase", scratch, script)
+        return self._result("close-phase", done, version=version)

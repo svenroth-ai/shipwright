@@ -87,7 +87,9 @@ def _check_s5a(run: Run) -> None:
     assert (out["status"], out["reason"], out["commits_since_tag"]) == ("stop", "no_unreleased_changes", 0)  # AC03: says so, stops
     assert [r.step for r in run.results] == ["prepare"] and run.commands("aggregate") == []
     assert s.git("rev-parse", "HEAD") == run.ctx["head"] and s.git("status", "--porcelain") == ""
-    assert ss.digest(s) == run.ctx["after"] and run.gh_calls("pr") == []
+    assert run.gh_calls("pr") == []
+    oracle.check_ac03_stops(out["reason"].replace("_", " "), ["no unreleased changes"], ss.digest(s) == run.ctx["after"],
+                            set(s.git("tag").split()) != {"v0.1.0", "v0.2.0"})  # AC03: says so, writes nothing, marks nothing
 
 
 def _s5b(make_project, layout: str) -> Run:
@@ -105,15 +107,15 @@ def _check_s5b(run: Run) -> None:
     refused = run.step("aggregate", 1)  # the dry run (0) previews an empty section; the real call refuses
     assert refused.exit_code == 1 and refused.output["status"] == "failed"
     stderr = run.commands("aggregate")[0]["stderr"]
-    assert "nothing to release" in stderr and "empty release" in stderr, stderr  # AC03: says so and refuses
     assert [r.step for r in run.results][-1] == "aggregate" and s.git("rev-parse", "HEAD") == run.ctx["head"]
-    assert s.git("tag").split() == ["v0.1.0"] and ss.digest(s) == run.ctx["after"]  # nothing written, nothing tagged
+    oracle.check_ac03_stops(stderr, ["nothing to release", "empty release"], ss.digest(s) == run.ctx["after"],
+                            s.git("tag").split() != ["v0.1.0"])  # AC03: says so and refuses, nothing written, nothing tagged
 
 
 SCENARIOS = {
-    "S3": Scenario("S3", ("drops",), _s3, _check_s3),
-    "S3b": Scenario("S3b", ("drops",), _s3b, _check_s3b),
-    "S4": Scenario("S4", ("drops",), _s4, _check_s4),
-    "S5a": Scenario("S5a", ("drops",), _s5a, _check_s5a),
-    "S5b": Scenario("S5b", ("drops",), _s5b, _check_s5b),
+    "S3": Scenario("S3", ("drops",), _s3, _check_s3, acs=("FR-01.09/AC04",)),
+    "S3b": Scenario("S3b", ("drops",), _s3b, _check_s3b, acs=("FR-01.09/AC04",)),
+    "S4": Scenario("S4", ("drops",), _s4, _check_s4, acs=("FR-01.09/AC04",)),
+    "S5a": Scenario("S5a", ("drops",), _s5a, _check_s5a, acs=("FR-01.09/AC03",)),
+    "S5b": Scenario("S5b", ("drops",), _s5b, _check_s5b, acs=("FR-01.09/AC03",)),
 }

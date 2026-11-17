@@ -49,9 +49,9 @@ def test_the_driver_implements_only_steps_of_the_flow_and_every_declared_step():
     assert driver.steps <= set(STEPS)
     for step in driver.steps:
         assert callable(getattr(driver, "step_" + step.replace("-", "_")))
-    assert set(STEPS) - driver.steps == {"close-phase"}  # replayed by the next unit (S13)
+    assert set(STEPS) == driver.steps  # close-phase too: the replay is complete since P2b2
     with pytest.raises(KeyError):
-        driver.run_step("close-phase", None)
+        driver.run_step("not-a-step", None)
 
 
 def test_a_marker_left_unfilled_in_a_replayed_chain_is_an_error_not_a_blank():
@@ -59,13 +59,30 @@ def test_a_marker_left_unfilled_in_a_replayed_chain_is_an_error_not_a_blank():
         fill("git tag v@version@ @shared@", shared="/x")
 
 
-def test_the_frozen_chains_match_the_prose_they_copy():
-    """The chains are copies, so a drift of the prose does not change the replay; this pins that they WERE equal."""
-    from .replay_commands import COMMIT_AND_TAG, EVENT_MAIN, EVENT_PR
-    prose = re.sub(r"\s+", " ", SKILL.read_text(encoding="utf-8").replace("{shared_root}", "@shared@").replace("{version}", "@version@"))
-    for chain in (COMMIT_AND_TAG, EVENT_PR, EVENT_MAIN):
-        for command in re.findall(r"(?:^|&& )(uv run \"@shared@/scripts/tools/[a-z_]+\.py\")", chain, re.M):
-            assert command in prose, command
+_PLACEHOLDERS = {"{shared_root}": "@shared@", "{version}": "@version@", "{PR_URL}": "@pr_url@", "{plugin_root}": "@plugin@",
+                 "{SHIPWRIGHT_SESSION_ID}": "@session@", "<every path from evidence_pathspec>": "@evidence@",
+                 "<every path from manifest_pathspec>": "@manifests@"}
+
+
+def _prose_block(lines: list[str], anchor: int) -> str:
+    """The fenced block that holds ``lines[anchor - 1]``, as one whitespace-collapsed string, comments dropped."""
+    start = max(i for i in range(anchor) if lines[i].startswith("```"))
+    end = min(i for i in range(anchor, len(lines)) if lines[i].startswith("```"))
+    kept = [re.sub(r"\s+#\s.*$", "", ln) for ln in lines[start + 1:end] if not ln.lstrip().startswith("#")]
+    text = "\n".join(kept).replace("\\\n", " ")
+    for prose, marker in _PLACEHOLDERS.items():
+        text = text.replace(prose, marker)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def test_the_frozen_chains_match_the_prose_they_copy_in_full():
+    """The chains are copies, so a drift of the prose does not change the replay; this pins that they WERE equal
+    - every command and every flag, not only the ``uv run`` lines - and fails when a copy is edited by itself."""
+    from .replay_commands import CLOSE_PHASE, COMMIT_AND_TAG, EVENT_MAIN, EVENT_PR
+    lines = SKILL.read_text(encoding="utf-8").splitlines()
+    for chain, anchor in ((COMMIT_AND_TAG, 303), (EVENT_PR, 343), (EVENT_MAIN, 358), (CLOSE_PHASE, 386)):
+        frozen = re.sub(r"\s+", " ", chain.replace("\\\n", " ")).strip()
+        assert frozen == _prose_block(lines, anchor), f"the copy at SKILL.md:{anchor} differs from the prose"
 
 
 @pytest.mark.parametrize("sid", ["S3", "S5b"])

@@ -273,3 +273,13 @@ def test_a_long_flag_the_contract_does_not_list_is_refused_and_does_not_leak_int
     done = gh(scratch, "pr", "merge", "--subject", "X", "1", "--merge")
     assert done.returncode == 2 and "unsupported flag --subject" in done.stderr
     assert gh(scratch, "release", "create", "--discussion-category", "C", "v0.1.0").returncode == 2
+
+
+def test_a_local_checkout_that_cannot_follow_a_merge_that_already_happened_warns_and_succeeds(scratch):
+    push_feature(scratch)
+    gh(scratch, "pr", "create", "--title", "t", "--body", "b", "--base", "main")
+    (scratch.repo / "a.txt").write_text("a change nobody committed\n", encoding="utf-8")  # checking out main would overwrite it
+    done = gh(scratch, "pr", "merge", "--merge", "--delete-branch")
+    assert done.returncode == 0 and "warning: the merge succeeded but the local checkout was not moved" in done.stderr
+    assert scratch.gh_state()["prs"][0]["state"] == "merged" and "refs/heads/feat/x" not in remote_refs(scratch)
+    assert scratch.git("rev-parse", "--abbrev-ref", "HEAD") == "feat/x"  # the checkout stayed where it was

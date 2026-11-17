@@ -75,14 +75,11 @@ def _check_s6(run: Run) -> None:
     assert snaps["restored"] == snaps["first"] and snaps["noop"] == snaps["first"]  # ... unless the original is passed
 
 
-def _refusal(run: Run, *words: str) -> None:
-    """A refusal exits non-zero, names the disagreement, and changes NOTHING: not CHANGELOG.md, not a drop (AC08)."""
-    s = run.scratch
-    refused = run.step("aggregate", 1)
+def _refused(run: Run, judge, *words: str, occurrence: int = 0) -> None:
+    """A refusal exits non-zero, names what it found, and changes NOTHING: not CHANGELOG.md, not a drop (AC07, AC08)."""
+    refused = run.step("aggregate", occurrence)
     assert refused.exit_code == 1 and refused.output["status"] == "failed"
-    stderr = run.commands("aggregate")[-1]["stderr"].lower()
-    assert all(w in stderr for w in words), stderr
-    assert ss.digest(s) == run.ctx["after"], "a refused run changed something on disk"
+    judge(run.ctx["after"], ss.digest(run.scratch), run.commands("aggregate")[-1]["stderr"], words)
 
 
 def _s7a(make_project, layout: str) -> Run:
@@ -96,7 +93,8 @@ def _s7a(make_project, layout: str) -> Run:
 
 
 def _check_s7a(run: Run) -> None:
-    _refusal(run, VERSION, "not what the pending entries say")  # AC08: stops, names the version AND the kind of conflict
+    _refused(run, oracle.check_ac08_refused, VERSION, "not what the pending entries say", occurrence=1)  # AC08: the version AND the kind of conflict
+    oracle.check_ac07_refused(run.ctx["after"], ss.digest(run.scratch), run.commands("aggregate")[-1]["stderr"], [VERSION])
     assert (run.scratch.repo / "CHANGELOG-unreleased.d" / "Added" / "iterate-2026-11-02-b_001.md").is_file()  # the pending drop survives
 
 
@@ -111,9 +109,7 @@ def _s7b(make_project, layout: str) -> Run:
 
 
 def _check_s7b(run: Run) -> None:
-    refused = run.step("aggregate")
-    assert refused.exit_code == 1 and "yanked" in run.commands("aggregate")[-1]["stderr"].lower()  # AC08: the marking it would erase
-    assert ss.digest(run.scratch) == run.ctx["after"]
+    _refused(run, oracle.check_ac08_refused, "yanked")  # AC08: names the marking it would erase
 
 
 def _s7c(make_project, layout: str) -> Run:
@@ -127,9 +123,8 @@ def _s7c(make_project, layout: str) -> Run:
 
 
 def _check_s7c(run: Run) -> None:
-    refused = run.step("aggregate")
-    assert refused.exit_code == 1 and "2 sections" in run.commands("aggregate")[-1]["stderr"].lower()  # AC07: two claim it
-    assert ss.digest(run.scratch) == run.ctx["after"] and _changelog(run.scratch).count(f"## [{VERSION}]") == 2
+    _refused(run, oracle.check_ac07_refused, "2 sections")  # AC07: two sections claim the version
+    assert _changelog(run.scratch).count(f"## [{VERSION}]") == 2
 
 
 def _s8(make_project, layout: str) -> Run:
@@ -141,13 +136,9 @@ def _s8(make_project, layout: str) -> Run:
 
 
 def _check_s8(run: Run) -> None:
-    s, stderr = run.scratch, run.commands("aggregate")[-1]["stderr"]
     assert run.step("aggregate").output["legacy_bullets"] == 2
-    assert "WARNING" in stderr and "Old bullet one" in stderr and "Old bullet two" in stderr  # AC09: each one named back
-    text = _changelog(s)
-    new = dict(oracle.sections(text))[VERSION]
-    assert "Old bullet" not in new  # not folded in silently ...
-    assert text.count("- Old bullet one") == text.count("- Old bullet two") == 1  # ... and not lost: still under [Unreleased]
+    oracle.check_ac09_named(run.commands("aggregate")[-1]["stderr"], ["Old bullet one", "Old bullet two"],
+                            _changelog(run.scratch), VERSION)  # AC09: each one named back, not folded, not lost
 
 
 def _s9(make_project, layout: str) -> Run:
@@ -161,19 +152,24 @@ def _s9(make_project, layout: str) -> Run:
 
 
 def _check_s9(run: Run) -> None:
-    assert run.ctx["after_dry"] == run.ctx["before"]  # AC10: nothing on disk changed, no file added, none deleted
     dry, real = run.step("aggregate", 0), run.step("aggregate", 1)
     assert dry.output["changelog_updated"] is False and real.output["changelog_updated"] is True
-    shown = run.commands("aggregate-dry")[0]["stdout"]
-    assert '"section_written"' in shown and "A new capability readers can use" in shown  # the full result can be seen first
+    oracle.check_ac10_unchanged(run.ctx["before"], run.ctx["after_dry"], run.commands("aggregate-dry")[0]["stdout"],
+                                ["A new capability readers can use"])  # AC10: the whole result shown first, nothing changed
     assert oracle.groups(oracle.sections(_changelog(run.scratch))[0][1]) == {"Added": ["A new capability readers can use"]}
 
 
 SCENARIOS = {
-    "S6": Scenario("S6", ("drops",), _s6, _check_s6, LITERALS),
-    "S7a": Scenario("S7a", ("drops",), _s7a, _check_s7a, LITERALS),
-    "S7b": Scenario("S7b", ("drops",), _s7b, _check_s7b, LITERALS),
-    "S7c": Scenario("S7c", ("drops",), _s7c, _check_s7c, LITERALS),
-    "S8": Scenario("S8", ("drops",), _s8, _check_s8, LITERALS),
-    "S9": Scenario("S9", ("drops",), _s9, _check_s9, LITERALS),
+    "S6": Scenario("S6", ("drops",), _s6, _check_s6, LITERALS,
+                     acs=("FR-01.09/AC07", "FR-01.09/AC06")),
+    "S7a": Scenario("S7a", ("drops",), _s7a, _check_s7a, LITERALS,
+                     acs=("FR-01.09/AC07", "FR-01.09/AC08")),
+    "S7b": Scenario("S7b", ("drops",), _s7b, _check_s7b, LITERALS,
+                     acs=("FR-01.09/AC08",)),
+    "S7c": Scenario("S7c", ("drops",), _s7c, _check_s7c, LITERALS,
+                     acs=("FR-01.09/AC07",)),
+    "S8": Scenario("S8", ("drops",), _s8, _check_s8, LITERALS,
+                     acs=("FR-01.09/AC09",)),
+    "S9": Scenario("S9", ("drops",), _s9, _check_s9, LITERALS,
+                     acs=("FR-01.09/AC10",)),
 }
