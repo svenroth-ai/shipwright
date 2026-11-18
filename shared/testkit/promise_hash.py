@@ -26,7 +26,7 @@ run time (``getattr``, ``request.getfixturevalue``) are invisible; so are bindin
 in-place mutations such as ``CASES.append(...)``; a helper's parameter that shadows a module-level name still pulls that
 name in (over-inclusion: a harmless extra hash change, never a missed one); a test name bound twice is refused.
 
-The AC ids and the lock's entries (``path::name``) live in ``promise_lock.py``; ``covers_of`` stays here (it reads the marks).
+The AC ids and the lock's entries (``path::name``) live in ``promise_lock.py``; ``covers_of`` stays here (it reads the marks). The reached bindings are also hashed in file order (``<order>``): a helper moved across the rebinding of a constant it captures changes the hash.
 """
 
 from __future__ import annotations
@@ -133,10 +133,13 @@ class Module:
     def __init__(self, source: str) -> None:
         # every statement that binds a name - def, class, constant, import - in file order: none overwrites another
         self.bindings: dict[str, list[ast.AST]] = {}
-        self.marks: list[ast.AST] = []  # module-level ``pytestmark`` marks that change what runs (skip, xfail, parametrize ...)
+        self.pos: dict[int, int] = {}  # file order of the statements (by node id), for the order of what a test reaches
+        self.marks: list[ast.AST] = []  # one entry per module-level ``pytestmark`` statement that changes what runs: its kind and its marks
         for node in ast.parse(source).body:
             if _is_pytestmark(node):
-                self.marks += [m for m in _mark_elements(node) if not _is_marker(m)]
+                kept = [m for m in _mark_elements(node) if not _is_marker(m)]
+                if kept or (isinstance(node, ast.Assign) and self.marks):  # ``=`` resets the marks before it, ``+=`` adds: the kind is hashed
+                    self.marks.append(ast.Tuple(elts=[ast.Constant(type(node).__name__), ast.List(elts=kept, ctx=ast.Load())], ctx=ast.Load()))
             elif isinstance(node, _DEFS):
                 self._bind(node.name, node)
                 for d in node.decorator_list:  # ``@pytest.fixture(name="x")`` is requested as ``x``
@@ -156,6 +159,7 @@ class Module:
 
     def _bind(self, name: str, node: ast.AST) -> None:
         self.bindings.setdefault(name, []).append(node)
+        self.pos.setdefault(id(node), len(self.pos))
 
     def lookup(self, name: str) -> ast.AST | None:
         nodes = self.bindings.get(name)
@@ -188,6 +192,10 @@ def closure(test: str, source: str, conftests: Sequence[str] = ()) -> dict[str, 
 
     Keys are the names found; a name found in a ``conftest.py`` is keyed ``name@<n>`` (n = its position in ``conftests``,
     from 1), so the same name in two modules never collapses into one entry."""
+    return _walk(test, source, conftests)[0]
+
+
+def _walk(test: str, source: str, conftests: Sequence[str]) -> tuple[dict[str, ast.AST], dict[str, int], list[Module]]:
     modules = [Module(source), *(Module(text) for text in conftests)]
     if len(modules[0].bindings.get(test, [])) > 1:
         raise ValueError(f"{test}: bound more than once at module level (pytest would run only the last binding)")
@@ -222,17 +230,26 @@ def closure(test: str, source: str, conftests: Sequence[str] = ()) -> dict[str, 
                     if key(name, index) not in seen:
                         add(name, found, index)
                     break
-    return seen
+    return seen, origin, modules
+
+
+def _order(test: str, seen: dict[str, ast.AST], origin: dict[str, int], modules: list[Module]) -> list[str]:
+    """The reached bindings in file order (imports left out: their order is not behaviour). A helper moved across the
+    rebinding of a constant it captures as a default changes what the test runs, so the order is part of the hash."""
+    items = [(origin[k], modules[origin[k]].pos[id(n)], "<test>" if k == test else k)
+             for k, node in seen.items() for n in _each(node) if id(n) in modules[origin[k]].pos and not isinstance(n, (ast.Import, ast.ImportFrom))]
+    return [k for _, _, k in sorted(items)]
 
 
 def fingerprint(test: str, source: str, conftests: Sequence[str] = ()) -> str:
     """sha256 of the normalized test with its helpers, constants and fixtures (see the module docstring)."""
-    parts = closure(test, source, conftests)
+    parts, origin, modules = _walk(test, source, conftests)
     # the test's own name is left out (a rename is not a change of the promise); helpers are named by what calls them
     body = {name: _canon(node) for name, node in sorted(parts.items()) if name != test}
     own = _canon(parts[test])
     own.pop("name")
     body["<test>"] = own
+    body["<order>"] = _order(test, parts, origin, modules)
     text = json.dumps(body, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
     return hashlib.sha256(text.encode("ascii")).hexdigest()
 

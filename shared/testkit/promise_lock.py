@@ -70,7 +70,11 @@ def lock_problems(lock: Mapping[str, Mapping[str, Any]], sources: Mapping[str, s
         problems.append(f"{key}: the lock names a test that is missing from its file")
     for key in sorted(set(lock) & set(wanted)):
         path, name = wanted[key]
-        now = lock_entry(name, sources[path], spec_text, conftests)
+        try:
+            now = lock_entry(name, sources[path], spec_text, conftests)
+        except ValueError as exc:  # e.g. the covers mark was removed: a problem to report, not a crash
+            problems.append(f"{key}: {exc}")
+            continue
         if dict(lock[key]) != now:
             problems.append(f"{key}: the promise differs from the lock (hash or AC ids)")
     return problems

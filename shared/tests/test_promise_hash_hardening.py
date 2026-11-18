@@ -90,7 +90,7 @@ F_SOURCE = textwrap.dedent('''
         text = (f"{name!r:>8} costs " f"{PRICE:.2f}" f" {{{name}}} " "tail" f"{'nested ' + f'{name}'}")
         assert text == "x"
 ''')
-F_DIGEST = "d486d538515fd3a85eb1725a569015944b5366f4e1306327e8b440321fec14f0"
+F_DIGEST = "27d87d303a3c2333295aec437a97c5f566fcc4037e07e7405f70d9853002eb86"
 
 
 def test_a_pinned_digest_catches_interpreter_drift_in_the_serialization():
@@ -111,3 +111,24 @@ def test_a_lock_entry_is_keyed_by_path_and_name_and_a_missing_name_is_a_failure(
     assert any("test_gone" in p and "missing" in p for p in pl.lock_problems(gone, sources))
     changed = {"pkg/test_a.py": a.replace("assert 1", "assert 2"), "pkg/test_b.py": a}
     assert any("test_a.py::test_one" in p and "differs" in p for p in pl.lock_problems(lock, changed))
+
+
+def test_a_mark_statement_keeps_its_kind_so_an_assignment_that_resets_is_not_an_augmentation():
+    head = "import pytest\n\npytestmark = [pytest.mark.skip]\n"
+    tail = "\n\ndef test_it():\n    pass\n"
+    assert fp(head + "pytestmark += [pytest.mark.xfail]" + tail) != fp(head + "pytestmark = [pytest.mark.xfail]" + tail)
+    assert fp(head + "pytestmark = []" + tail) != fp(head + tail)  # a reset that drops the skip
+    assert fp("import pytest\n\npytestmark = pytest.mark.covers('FR-01.09/AC01')" + tail) == fp("import pytest" + tail)
+
+
+def test_the_order_of_the_bindings_a_test_reaches_is_part_of_the_hash():
+    early = "VALUE = 1\n\n\ndef helper(value=VALUE):\n    assert value\n\n\nVALUE = 2\n\n\ndef test_it():\n    helper()\n"
+    late = "VALUE = 1\nVALUE = 2\n\n\ndef helper(value=VALUE):\n    assert value\n\n\ndef test_it():\n    helper()\n"
+    assert fp(early) != fp(late)  # the captured default is 1 in one and 2 in the other
+    assert fp(early.replace("\n\n\ndef test_it", "\n\n\nUNUSED = 3\n\n\ndef test_it")) == fp(early)  # an unreached statement does not matter
+
+
+def test_a_lock_check_reports_a_test_that_lost_its_covers_mark_instead_of_raising():
+    src = "import pytest\n\n\n@pytest.mark.covers('FR-01.09/AC01')\ndef test_one():\n    assert 1\n"
+    lock = {"p.py::test_one": pl.lock_entry("test_one", src)}
+    assert any("p.py::test_one" in p for p in pl.lock_problems(lock, {"p.py": src.replace("@pytest.mark.covers('FR-01.09/AC01')\n", "")}))
