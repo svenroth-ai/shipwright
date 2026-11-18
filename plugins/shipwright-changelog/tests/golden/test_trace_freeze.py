@@ -62,7 +62,7 @@ REQUIRED = (HARNESS, "shared/testkit/gh_stub.py", "shared/testkit/release_scratc
             "shared/testkit/promise_hash.py", "shared/testkit/promise_lock.py",
             "shared/tests/test_promise_hash.py", "shared/tests/test_promise_hash_hardening.py",
             # what pytest applies to every promise test without the test naming it: the parent conftests (an autouse fixture or a
-            # pytest_* hook there), the root conftest and the package markers. Frozen here instead of hashed into every closure.
+            # pytest_* hook there), the root conftest and the package markers. Frozen here instead of hashed into every closure. Known cost: once the lock exists, any edit of these files (the root conftest too) needs an approved delta.
             "conftest.py", "plugins/shipwright-changelog/tests/conftest.py",
             "plugins/shipwright-changelog/tests/__init__.py", "plugins/shipwright-changelog/tests/golden/__init__.py")
 

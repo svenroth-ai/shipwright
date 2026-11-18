@@ -7,6 +7,7 @@ parsers together), and ``lock_entry`` joins the two: the id is stored beside the
 
 from __future__ import annotations
 
+import posixpath
 import re
 from typing import Any, Iterable, Mapping, Sequence
 
@@ -53,8 +54,11 @@ def lock_entry(test: str, source: str, spec_text: str = "", conftests: Sequence[
 
 
 def lock_key(path: str, test: str) -> str:
-    """The key of a lock entry: ``path::name`` (posix path). A bare test name is not a key: two files may hold the same name."""
-    return f"{path.replace(chr(92), '/')}::{test}"
+    """The key of a lock entry: ``path::name``, the path relative and posix. A bare test name is not a key: two files may hold the same name."""
+    posix = posixpath.normpath(path.replace(chr(92), "/"))
+    if posix.startswith("/") or re.match(r"^[A-Za-z]:", posix):
+        raise ValueError(f"{path}: a lock key needs a path relative to the repository, not an absolute one")
+    return f"{posix}::{test}"
 
 
 def lock_problems(lock: Mapping[str, Mapping[str, Any]], sources: Mapping[str, str], conftests: Sequence[str] = (),

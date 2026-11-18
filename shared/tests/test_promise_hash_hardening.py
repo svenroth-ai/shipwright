@@ -132,3 +132,25 @@ def test_a_lock_check_reports_a_test_that_lost_its_covers_mark_instead_of_raisin
     src = "import pytest\n\n\n@pytest.mark.covers('FR-01.09/AC01')\ndef test_one():\n    assert 1\n"
     lock = {"p.py::test_one": pl.lock_entry("test_one", src)}
     assert any("p.py::test_one" in p for p in pl.lock_problems(lock, {"p.py": src.replace("@pytest.mark.covers('FR-01.09/AC01')\n", "")}))
+
+
+def test_a_covers_mark_with_anything_but_plain_ac_strings_is_hashed_like_any_other_mark():
+    body = "\n\ndef test_it():\n    pass\n"
+    plain = fp("import pytest\n\n@pytest.mark.covers('FR-01.09/AC01')" + body)
+    assert fp("import pytest\n\n@pytest.mark.covers('FR-01.09/AC01')\n@pytest.mark.covers(relax())" + body) != plain
+    assert fp("import pytest\n\n@pytest.mark.covers('FR-01.09/AC01', reason=relax())" + body) != plain
+    assert fp("import pytest\n\npytestmark = pytest.mark.covers(relax())" + body) != plain
+    assert fp("import pytest\n\n@pytest.mark.covers('FR-01.09/AC02')" + body) == plain  # a re-anchor is still only an id change
+
+
+def test_a_pytest_prefixed_binding_of_any_kind_is_part_of_every_closure():
+    source = "def test_it():\n    pass\n"
+    assert fp(source, ["pytest_plugins = ['x']\n"]) != fp(source)
+    assert fp(source, ["def helper():\n    pass\n\npytest_generate_tests = helper\n"]) != fp(source)
+
+
+def test_a_lock_key_is_one_relative_posix_path_and_a_name():
+    assert pl.lock_key(r".\pkg\test_a.py", "test_x") == "pkg/test_a.py::test_x" == pl.lock_key("./pkg/test_a.py", "test_x")
+    for bad in ("/abs/test_a.py", "C:/abs/test_a.py"):
+        with pytest.raises(ValueError):
+            pl.lock_key(bad, "test_x")

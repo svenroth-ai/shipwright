@@ -176,6 +176,11 @@ def test_promise_tests_go_through_the_driver_interface_and_the_oracle_only():
                 assert local or (node.level == 0 and node.module in ALLOWED_MODULES), f"{path.name} imports {node.module}"
             elif isinstance(node, ast.Import):
                 assert {x.name for x in node.names} <= ALLOWED_MODULES, f"{path.name} imports {[x.name for x in node.names]}"
+        for stmt in ast.parse(source).body:  # a statement that binds nothing runs at import and is invisible to the fingerprint: refuse it
+            plain = (isinstance(stmt, ast.Expr) and isinstance(stmt.value, ast.Constant) and isinstance(stmt.value.value, str)) \
+                or isinstance(stmt, (ast.Import, ast.ImportFrom, ast.FunctionDef)) \
+                or (isinstance(stmt, (ast.Assign, ast.AnnAssign, ast.AugAssign)) and all(isinstance(t, ast.Name) for t in ([stmt.target] if not isinstance(stmt, ast.Assign) else stmt.targets)))
+            assert plain, f"{path.name}:{stmt.lineno} is a module-level statement the fingerprint cannot see"
         assert "ReplayDriver" in source, path.name
         assert len(source.splitlines()) <= 300, path.name
         for name in ph.tests_in(source):  # every promise test reaches the oracle through its own closure, not through a neighbour's use of it

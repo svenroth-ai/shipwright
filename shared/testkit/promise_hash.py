@@ -24,7 +24,7 @@ from another module is NOT followed - only its import binding is hashed (the gol
 ``test_trace_freeze.py``); a method of a test class is not found (the golden tests are plain functions); names bound at
 run time (``getattr``, ``request.getfixturevalue``) are invisible; so are bindings inside a module-level if/try/with and
 in-place mutations such as ``CASES.append(...)``; a helper's parameter that shadows a module-level name still pulls that
-name in (over-inclusion: a harmless extra hash change, never a missed one); a test name bound twice is refused.
+name in (over-inclusion: a harmless extra hash change, never a missed one); a test name bound twice is refused; ``pytestmark`` built by an expression other than a call, list or tuple is not split (a covers id in it is not found: fails safe); an interpreter bump that turns the pinned digest red means a lock rewrite (a decision), not a test fix.
 
 The AC ids and the lock's entries (``path::name``) live in ``promise_lock.py``; ``covers_of`` stays here (it reads the marks). The reached bindings are also hashed in file order (``<order>``): a helper moved across the rebinding of a constant it captures changes the hash.
 """
@@ -58,7 +58,10 @@ _DESCRIPTIVE_MARKS = ("covers",)
 def _is_marker(decorator: ast.AST) -> bool:
     """The one descriptive ``pytest.mark.*`` decorator, ``covers`` (it names the AC and is stored beside the hash); every other mark is hashed."""
     name = _dotted(decorator)
-    return name.startswith(("pytest.mark.", "mark.")) and name.rsplit(".", 1)[-1] in _DESCRIPTIVE_MARKS
+    if not (name.startswith(("pytest.mark.", "mark.")) and name.rsplit(".", 1)[-1] in _DESCRIPTIVE_MARKS):
+        return False
+    # only plain AC id strings are descriptive: an argument that is code (``covers(relax())``) runs at import and is hashed
+    return not isinstance(decorator, ast.Call) or (not decorator.keywords and all(isinstance(a, ast.Constant) and isinstance(a.value, str) for a in decorator.args))
 
 
 def _is_fixture(node: ast.AST) -> bool:
@@ -71,11 +74,6 @@ def _is_autouse(node: ast.AST) -> bool:
     def on(k: ast.keyword) -> bool:
         return k.arg is None or (k.arg == "autouse" and not (isinstance(k.value, ast.Constant) and k.value.value is False))
     return _is_fixture(node) and any(isinstance(d, ast.Call) and any(on(k) for k in d.keywords) for d in node.decorator_list)
-
-
-def _is_hook(node: ast.AST) -> bool:
-    """A module-level ``pytest_*`` function (``pytest_generate_tests`` ...): pytest calls it without any name reaching it."""
-    return isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name.startswith("pytest_")
 
 
 def _assign_targets(node: ast.AST) -> list[ast.expr]:
@@ -169,7 +167,7 @@ class Module:
 
     def always(self) -> list[str]:
         """The names that apply to every test of the module without being named: autouse fixtures and ``pytest_*`` hooks."""
-        return [name for name, nodes in self.bindings.items() if any(_is_autouse(n) or _is_hook(n) for n in nodes)]
+        return [name for name, nodes in self.bindings.items() if name.startswith("pytest_") or any(_is_autouse(n) for n in nodes)]
 
 
 def _each(node: ast.AST) -> list[ast.AST]:
