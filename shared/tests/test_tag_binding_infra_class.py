@@ -271,12 +271,14 @@ def test_catalog_absent_empty_unreadable_and_malformed():
 
 
 def test_the_head_catalog_is_valid_and_names_existing_files():
-    """Runs against this checkout; vacuous while the catalog does not exist yet."""
+    """Runs against this checkout; an absent catalog is the valid empty state (never a skip)."""
     root = Path(__file__).resolve().parents[2]
     path = root / CATALOG_PATH
-    if not path.exists():
-        pytest.skip("no catalog in this tree yet")
-    paths, warning = parse_catalog(path.read_text(encoding="utf-8"))
+    text = path.read_text(encoding="utf-8") if path.exists() else ""
+    if not text:
+        assert parse_catalog(text) == (frozenset(), None)
+        return
+    paths, warning = parse_catalog(text)
     assert warning is None and paths
     assert [p for p in paths if not (root / p).is_file()] == []
 
