@@ -1,0 +1,1 @@
+F11 test-tag gate: a Python harness test can declare itself infrastructure with pytest.mark.covers_none (tooling or infra) instead of carrying a stand-in requirement tag; honoured only for files named exactly in shared/config/infra_test_paths.json at the merge-base, never counted as requirement coverage

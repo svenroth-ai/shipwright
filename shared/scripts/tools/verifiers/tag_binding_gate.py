@@ -42,6 +42,7 @@ from ._keystone_base_manifest import ReadError, require_manifest_shape  # noqa: 
 from ._layer_coverage_ac import spec_text_at  # noqa: E402
 from ._layer_coverage_regen import _merge_base, regenerate_base_head  # noqa: E402
 from ._tag_binding_core import TagVerdict, evaluate  # noqa: E402
+from ._tag_binding_infra_pass import CATALOG_PATH, parse_catalog  # noqa: E402
 from .common import CheckResult, Severity, read_events_jsonl  # noqa: E402
 from .git_helpers import _run_git, git_context  # noqa: E402
 
@@ -50,6 +51,10 @@ _HOW = (
     "tag each test with the requirement it proves - pytest `@pytest.mark.covers(\"FR-XX.YY/ACnn\")` "
     "(on the function or its class), TS/JS `{ tag: ['@FR-XX.YY'] }` or `// @covers FR-XX.YY` - "
     "or record a per-test exemption in the F5c entry (references/F5c.md, `exemptions`)"
+)
+_INFRA_HOW = (
+    "; a Python test of the test harness itself, in a file listed in shared/config/infra_test_paths.json, may "
+    "instead carry `@pytest.mark.covers_none(\"tooling\")` (or \"infra\") - it then proves no requirement"
 )
 _MAX_LISTED = 12
 
@@ -120,23 +125,37 @@ def check_test_tag_binding(project_root: Path, run_id: str, commit_hash: str = "
             return texts[(path, side)]
 
         exemptions = list((entry.get("exemptions") or {}).get("items") or [])
-        verdict = evaluate(base, head, changed, read, exemptions, _expected_frs(project_root, run_id))
+        base_catalog = read(CATALOG_PATH, "base")
+        catalog, catalog_warning = parse_catalog(base_catalog)
+        if catalog is None:
+            return _fail(f"cannot enforce: {CATALOG_PATH} could not be read at the merge-base - run "
+                         "`git cat-file -p <merge-base>:" + CATALOG_PATH + "` and fix what it reports")
+        verdict = evaluate(base, head, changed, read, exemptions, _expected_frs(project_root, run_id), catalog)
+        head_catalog = read(CATALOG_PATH, "head")
+        if catalog_warning:
+            verdict.warnings.append(catalog_warning)
+        if None not in (base_catalog, head_catalog) and base_catalog != head_catalog:
+            verdict.warnings.append(f"{CATALOG_PATH} differs between the merge-base and this change: only the "
+                                    "merge-base catalog licenses tests in this run")
     except ReadError as exc:
         return _fail(f"cannot enforce: {exc}")
     except Exception as exc:  # noqa: BLE001 - an enforcing gate that crashes must read RED
         return _fail(f"cannot enforce: {type(exc).__name__}: {exc}")
-    return _result(verdict)
+    return _result(verdict, bool(catalog))
 
 
-def _result(v: TagVerdict) -> CheckResult:
+def _result(v: TagVerdict, has_catalog: bool = False) -> CheckResult:
     total = len(v.touched)
     share = f"{100 * len(v.exempted) / total:.0f}%" if total else "0%"
     summary = (f"{len(v.tagged_new)} newly tagged test(s), {len(v.moved)} moved; "
-               f"exempted {len(v.exempted)} of {total} added/edited tests ({share})")
+               f"exempted {len(v.exempted)} of {total} added/edited tests ({share}); "
+               f"{len(v.infra)} infrastructure-classed")
     if v.findings:
         listed = "; ".join(f"{test} [{kind}: {why}]" for kind, test, why in v.findings[:_MAX_LISTED])
         more = f" (+{len(v.findings) - _MAX_LISTED} more)" if len(v.findings) > _MAX_LISTED else ""
-        return _fail(f"{len(v.findings)} test(s) name no requirement: {listed}{more} -> {_HOW}. {summary}")
+        warned = f"; warnings: {'; '.join(v.warnings[:_MAX_LISTED])}" if v.warnings else ""
+        return _fail(f"{len(v.findings)} test(s) name no requirement: {listed}{more} -> {_HOW}"
+                     f"{_INFRA_HOW if has_catalog else ''}. {summary}{warned}")
     if v.warnings:
         return CheckResult(CHECK_NAME, False, f"{summary}; " + "; ".join(v.warnings[:_MAX_LISTED]),
                            severity=Severity.WARNING.value, strict_exempt=True)

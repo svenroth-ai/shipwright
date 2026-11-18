@@ -1,0 +1,150 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-18-test-infra-tag-class",
+    "date": "2026-11-18",
+    "unit": {
+      "status": "passed",
+      "passed": 26572,
+      "skipped": 113,
+      "total": 26685
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run pytest shared/tests/test_tag_binding_infra_class.py shared/tests/test_tag_binding_infra_gate.py -q -p no:cacheprovider",
+      "exit_code": 0,
+      "tests_run": 60,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\test-infra-tag-class\\.shipwright\\runs\\iterate-2026-11-18-test-infra-tag-class\\surface_verification.log",
+      "timestamp": "2026-11-18T23:26:33.396Z",
+      "attempts": 1,
+      "run_id": "iterate-2026-11-18-test-infra-tag-class"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "A marked test in a base-catalog file is counted as infrastructure and leaves the exemption-share denominator",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_tag_binding_infra_class.py::test_marked_test_in_a_catalog_file_is_infrastructure PASSED"
+        },
+        {
+          "behavior": "Only the literal marker with one valid label is granted (bad label, kw, extra arg, alias, helper alias, no arg)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_tag_binding_infra_class.py::test_only_the_literal_marker_with_one_valid_label_is_granted PASSED (7 cases)"
+        },
+        {
+          "behavior": "A file outside the base catalog (empty, other file, unreadable) is refused and the message names the next step",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_tag_binding_infra_class.py::test_a_file_outside_the_base_catalog_is_refused PASSED; test_the_failure_names_the_next_step_for_a_new_file PASSED"
+        },
+        {
+          "behavior": "Catalog absent at base is the silent empty case; same-diff catalog and widening license nothing",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_tag_binding_infra_gate.py::test_without_a_catalog_at_base_the_absent_file_is_the_silent_empty_case PASSED; test_a_catalog_added_in_the_same_change_licenses_nothing PASSED; test_widening_the_catalog_in_the_change_does_not_cover_the_new_file PASSED"
+        },
+        {
+          "behavior": "Catalog loader: absent, empty, unreadable, malformed, wildcard, dotdot, absolute, backslash, non-test file",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_tag_binding_infra_class.py::test_catalog_absent_empty_unreadable_and_malformed PASSED; shared/tests/test_tag_binding_infra_gate.py::test_an_unreadable_base_catalog_cannot_enforce PASSED"
+        },
+        {
+          "behavior": "Same-name siblings must all carry the same marker; one unmarked stops",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_tag_binding_infra_class.py::test_same_name_siblings_must_all_carry_the_marker PASSED; shared/tests/test_tag_binding_infra_gate.py::test_same_name_siblings_with_one_unmarked_stop PASSED"
+        },
+        {
+          "behavior": "A covers mark in any module, class, function, alias or hidden pytestmark form contradicts the marker",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_tag_binding_infra_class.py::test_a_covers_mark_in_any_module_form_contradicts_the_marker PASSED; test_a_pytestmark_in_a_form_the_gate_cannot_read_refuses_the_grant PASSED; test_a_class_covers_decorator_contradicts_the_marker_through_evaluate PASSED"
+        },
+        {
+          "behavior": "A test the manifest links to a requirement is never infrastructure",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_tag_binding_infra_class.py::test_a_test_the_manifest_links_to_a_requirement_is_never_infrastructure PASSED; shared/tests/test_tag_binding_infra_gate.py::test_marker_and_requirement_tag_together_stop PASSED"
+        },
+        {
+          "behavior": "Stand-in correction accepted only while the requirement and every criterion keep another test; warns naming the tag",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_tag_binding_infra_class.py::test_a_stand_in_correction_is_accepted_when_the_requirement_keeps_a_test PASSED; test_a_correction_that_orphans_the_requirement_is_refused PASSED; test_a_correction_that_orphans_one_criterion_is_refused PASSED; shared/tests/test_tag_binding_infra_gate.py::test_a_correction_warns_naming_the_dropped_tag_through_the_gate PASSED"
+        },
+        {
+          "behavior": "A renamed and edited stand-in cannot slip the correction rule; an untouched infra test is not refused for an unrelated retirement",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_tag_binding_infra_class.py::test_a_renamed_and_edited_stand_in_cannot_slip_the_correction_rule PASSED; test_an_untouched_infra_test_is_not_refused_for_an_unrelated_retirement PASSED"
+        },
+        {
+          "behavior": "Moved tagged test: correction when both paths are listed, refused when the old path is not",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_tag_binding_infra_class.py::test_a_tagged_test_moved_into_a_catalog_file_with_the_marker_is_a_correction PASSED; test_a_moved_tagged_test_whose_old_path_is_outside_the_catalog_is_refused PASSED"
+        },
+        {
+          "behavior": "A plain tag removal stays tag-removed",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_tag_binding_infra_class.py::test_a_plain_tag_removal_still_fails PASSED"
+        },
+        {
+          "behavior": "The digest ignores exactly pytest.mark.covers_none, never an alias; adding the marker is not an edit",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_tag_binding_infra_class.py::test_the_digest_ignores_the_exact_marker_but_not_an_alias PASSED; test_adding_the_marker_to_a_legacy_test_is_not_an_edit PASSED"
+        },
+        {
+          "behavior": "Module-level marker classes the tests already in the file; a test added later needs its own",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_tag_binding_infra_class.py::test_module_level_marker_classes_the_tests_already_in_the_file PASSED; test_a_test_added_beside_a_module_level_marker_needs_its_own_marker PASSED"
+        },
+        {
+          "behavior": "A warning survives a failing gate (catalog differs, malformed catalog)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_tag_binding_infra_gate.py::test_a_catalog_added_in_the_same_change_licenses_nothing PASSED; test_a_malformed_catalog_at_base_grants_nothing PASSED"
+        },
+        {
+          "behavior": "A TS test cannot carry the marker; an unrelated untagged test still stops beside an infra one; exemption plus marker changes nothing",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_tag_binding_infra_class.py::test_a_ts_test_cannot_carry_the_marker PASSED; test_an_unrelated_untagged_test_still_stops_beside_an_infra_one PASSED; test_a_per_test_exemption_beside_the_marker_changes_nothing PASSED"
+        },
+        {
+          "behavior": "Every committed test file declaring covers_none is in the catalog (CI check of the repo)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_tag_binding_infra_class.py::test_every_committed_test_that_declares_covers_none_is_in_the_catalog PASSED"
+        },
+        {
+          "behavior": "Existing tag gate unchanged for tests without the marker",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_tag_binding_core.py, _followup, _review_rules, _gate_integration PASSED (F0 shared/tests unit green)"
+        }
+      ],
+      "counts": {
+        "testable": 18,
+        "tested": 18,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 1,
+        "covered_acs": 1
+      }
+    }
+  },
+  "source_state": {
+    "run_id": "iterate-2026-11-18-test-infra-tag-class",
+    "commit": "76772e8af163fd73972c9ca443b53ccc5f51dc4a",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

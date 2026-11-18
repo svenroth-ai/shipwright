@@ -144,9 +144,31 @@ def _is_covers(dec: ast.expr) -> bool:
     return isinstance(target, ast.Attribute) and target.attr == "covers"
 
 
-def _scope_marks(body: list[ast.stmt]) -> list[ast.expr]:
-    """Non-``covers`` marks of a ``pytestmark = ...`` / ``pytestmark: T = ...`` / ``pytestmark += ...``
-    in a module or class body (one mark or a list of them): they change what every test in it runs."""
+def _attr_chain(node: ast.expr) -> list[str] | None:
+    """``pytest.mark.x`` -> ``["pytest", "mark", "x"]``; ``None`` when the chain is not names and attributes."""
+    parts: list[str] = []
+    while isinstance(node, ast.Attribute):
+        parts.append(node.attr)
+        node = node.value
+    if not isinstance(node, ast.Name):
+        return None
+    return [node.id, *reversed(parts)]
+
+
+def _is_exact_covers_none(dec: ast.expr) -> bool:
+    """Exactly ``pytest.mark.covers_none`` (called or bare): declaring a test as infrastructure is not a
+    body edit. An alias (``mark.covers_none``, ``helpers.covers_none``) is NOT this shape and still counts."""
+    return _attr_chain(dec.func if isinstance(dec, ast.Call) else dec) == ["pytest", "mark", "covers_none"]
+
+
+def _is_tag(dec: ast.expr) -> bool:
+    """A mark that classifies the test (``covers`` or the exact ``covers_none``) rather than changing what it does."""
+    return _is_covers(dec) or _is_exact_covers_none(dec)
+
+
+def _scope_mark_exprs(body: list[ast.stmt]) -> list[ast.expr]:
+    """Every mark of a ``pytestmark = ...`` / ``pytestmark: T = ...`` / ``pytestmark += ...`` in a module
+    or class body (one mark or a list of them); a non-literal value (a name, a sum) is returned as itself."""
     out: list[ast.expr] = []
     for stmt in body:
         if isinstance(stmt, ast.Assign):
@@ -156,19 +178,24 @@ def _scope_marks(body: list[ast.stmt]) -> list[ast.expr]:
         else:
             continue
         if stmt.value is not None and any(isinstance(t, ast.Name) and t.id == "pytestmark" for t in targets):
-            marks = stmt.value.elts if isinstance(stmt.value, (ast.List, ast.Tuple)) else [stmt.value]
-            out += [m for m in marks if not _is_covers(m)]
+            out += stmt.value.elts if isinstance(stmt.value, (ast.List, ast.Tuple)) else [stmt.value]
     return out
+
+
+def _scope_marks(body: list[ast.stmt]) -> list[ast.expr]:
+    """The non-tag marks of a module or class ``pytestmark``: they change what every test in it runs."""
+    return [m for m in _scope_mark_exprs(body) if not _is_tag(m)]
 
 
 def _behavioural_decorators(fn: ast.AST, classes: tuple) -> list[ast.expr]:
     """The decorators and marks that change what the test DOES or whether it runs: every decorator on
     the function and on its classes (``skip``, ``xfail``, ``parametrize``, ``patch``, ``slow`` - a
     project can deselect by marker - ``unittest.skip`` ...) and the class-body ``pytestmark``.
-    Never a ``covers`` tag: tagging a test is not a body edit, but un-skipping one or swapping its rows is."""
-    out = [d for d in getattr(fn, "decorator_list", []) if not _is_covers(d)]
+    Never a ``covers`` / exact ``covers_none`` tag: classifying a test is not a body edit, but
+    un-skipping one or swapping its rows is."""
+    out = [d for d in getattr(fn, "decorator_list", []) if not _is_tag(d)]
     for cls in classes:
-        out += [d for d in cls.decorator_list if not _is_covers(d)]
+        out += [d for d in cls.decorator_list if not _is_tag(d)]
         out += _scope_marks(cls.body)
     return out
 

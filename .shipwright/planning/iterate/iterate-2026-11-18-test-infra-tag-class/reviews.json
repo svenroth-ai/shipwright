@@ -1,0 +1,375 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-18-test-infra-tag-class",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-18T23:34:28.042201+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "Bootstrap ordering of the seed files. The catalog does not exist at the merge-base of the very diff that adds it, so by the spec's own rule (\"only the base catalog counts\"), none of the six seeded testkit files can be classified as infra in this change. If any of those six files is touched in this same iterate (likely, since the gate code and the tests live nearby), the gate will flag its tests as untagged/bad-infra-class and the iterate may be unmergeable as a single change.",
+          "suggestion": "Either confirm none of the six seed files is touched in this diff, or explicitly sequence: merge 1 = catalog + marker registration + gate code; merge 2 = touch/retag the seed files. State this in the mini-plan so the builder isn't surprised.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "Module-level `pytestmark = pytest.mark.covers_none(...)` classifies every test in the file as infra. This is per the spec, but a file in the catalog that later gains a genuinely new requirement test would have that test silently absorbed into infra (no `covers` → no contradiction, path is in base catalog → granted). The gate only reacts on touch, so the new test never gets flagged as needing a `covers` tag.",
+          "suggestion": "Consider having the `bad-infra-class`/grant message (or the CI catalog validator) note when a catalog file uses module-level `pytestmark` form, so reviewers know new tests added there need explicit `covers` to opt out. At minimum document this in `conventions.md`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "Digest-ignoring `covers_none` interacts with the \"moved tagged test\" correction: a test moved to a catalog file and given the marker matches the base digest (digest ignores the marker), which is handled — but the same digest mechanism means a deleted-and-re-added-in-place test with the marker added is judged as a correction, not as a new infra test. That path is covered by the correction rule's constraints, but it's worth an explicit test that a correction whose base path is also outside the base catalog is refused (spec implies it; test list only has \"outside base catalog\" for the plain case).",
+          "suggestion": "Add the test: moved base-tagged test + `covers_none` + base path not in catalog → `bad-infra-class`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk |",
+          "file": null,
+          "line": null,
+          "finding": "None` catalog → \"cannot enforce\". Depending on how the gate's `read()` returns `None` (unreadable vs. absent-at-base), every merge whose base predates the catalog could return `None` rather than `\"\"`, making the gate report \"cannot enforce\" for the entire historical timeline of the repo. The spec distinguishes `\"\"` (absent) from `None` (unreadable), but whether `read(path, \"base\")` can distinguish these for a path that never existed in git history depends on the existing helper's semantics.",
+          "suggestion": "Verify empirically what `read()` returns for a path absent at base; if it returns `None`, map absent-at-base to the `\"\"` (empty, silent) case explicitly, since \"cannot enforce\" should mean a real read failure, not a file that predates the feature.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency |",
+          "file": null,
+          "line": null,
+          "finding": "Marker registration \"wherever `covers` is registered\" is described as a check, not an enumerated list. If a consumer template or vendored plugin `pyproject.toml` is missed, strict-marker runs break in downstream repos, not in this repo's CI — the failure surfaces late.",
+          "suggestion": "Enumerate the registration sites in the mini-plan (grep output for `covers` in `pyproject.toml`/`setup.cfg`/`pytest.ini` across repo + `shared/templates`) so the builder has a concrete checklist rather than a search task.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "The exemption-share denominator change (\"infra ids leave `v.touched`\") could shift an existing run's exemption share across a threshold, flipping previously-green merges that combine exemptions with infra tests in the same diff. This is semantically correct but is a behavior change to an existing gate output that some goldens may pin.",
+          "suggestion": "Check whether any golden/freeze tests pin the F11 summary line or exemption share; update goldens deliberately, not as a surprise diff.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Step 1 contradicts the digest acceptance criterion. It proposes skipping both `pytest.mark.covers_none` and `mark.covers_none`, while the specification permits ignoring only the exact `pytest.mark.covers_none` shape. An alias decorator would consequently stop counting as a body edit.",
+          "suggestion": "Separate marker detection from digest filtering. Detect aliases for validation, but exclude only the exact `pytest.mark.covers_none` decorator from the digest. Add a regression test proving that adding `mark.covers_none` changes the digest.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Step 3 adds valid infrastructure tests to `v.infra` only when they already have an `untagged-added` or `untagged-modified` finding. Valid stand-in corrections and unchanged infrastructure tests in a changed file can therefore pass validation without being counted consistently or removed from `v.touched`.",
+          "suggestion": "Classify every successfully validated infrastructure test in the dedicated pass, including accepted corrections. Separately remove any superseded untagged finding. Test the reported count and exemption denominator for each case.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Contradiction detection describes assignment forms but does not explain resolving referenced marker values. For example, `requirement_marks = [pytest.mark.covers(\"AC55\")]` followed by `pytestmark = requirement_marks` applies a requirement marker without placing a `.covers` attribute directly inside the `pytestmark` assignment. A syntax-only scan of that assignment could incorrectly grant infrastructure status.",
+          "suggestion": "Resolve local marker references used by applicable `pytestmark` assignments, or reject unresolved expressions when granting infrastructure status. Cover module and class references in tests.  The base-catalog approach is sound and the scope is appropriate. Resolve these parser and classification inconsistencies before implementation so the gate enforces the stated contract consistently.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-18T13:05:54.818815+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Review Findings\n\n**Category:** edge-case | **Severity:** medium\n**Finding:** Bootstrap ordering of the seed files. The catalog does not exist at the merge-base of the very diff that adds it, so by the spec's own rule (\"only the base catalog counts\"), none of the six seeded testkit files can be classified as infra in this change. If any of those six files is touched in this same iterate (likely, since the gate code and the tests live nearby), the gate will flag its tests as untagged/bad-infra-class and the iterate may be unmergeable as a single change.\n**Suggestion:** Either confirm none of the six seed files is touched in this diff, or explicitly sequence: merge 1 = catalog + marker registration + gate code; merge 2 = touch/retag the seed files. State this in the mini-plan so the builder isn't surprised.\n\n**Category:** edge-case | **Severity:** low\n**Finding:** Module-level `pytestmark = pytest.mark.covers_none(...)` classifies *every* test in the file as infra. This is per the spec, but a file in the catalog that later gains a genuinely new requirement test would have that test silently absorbed into infra (no `covers` → no contradiction, path is in base catalog → granted). The gate only reacts on touch, so the new test never gets flagged as needing a `covers` tag.\n**Suggestion:** Consider having the `bad-infra-class`/grant message (or the CI catalog validator) note when a catalog file uses module-level `pytestmark` form, so reviewers know new tests added there need explicit `covers` to opt out. At minimum document this in `conventions.md`.\n\n**Category:** edge-case | **Severity:** low\n**Finding:** Digest-ignoring `covers_none` interacts with the \"moved tagged test\" correction: a test moved to a catalog file *and* given the marker matches the base digest (digest ignores the marker), which is handled — but the same digest mechanism means a *deleted-and-re-added-in-place* test with the marker added is judged as a correction, not as a new infra test. Th […truncated]\n\n[openai] 1. **Category:** approach  \n   **Severity:** medium  \n   **Finding:** Step 1 contradicts the digest acceptance criterion. It proposes skipping both `pytest.mark.covers_none` and `mark.covers_none`, while the specification permits ignoring only the exact `pytest.mark.covers_none` shape. An alias decorator would consequently stop counting as a body edit.\n   **Suggestion:** Separate marker detection from digest filtering. Detect aliases for validation, but exclude only the exact `pytest.mark.covers_none` decorator from the digest. Add a regression test proving that adding `mark.covers_none` changes the digest.\n\n2. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** Step 3 adds valid infrastructure tests to `v.infra` only when they already have an `untagged-added` or `untagged-modified` finding. Valid stand-in corrections and unchanged infrastructure tests in a changed file can therefore pass validation without being counted consistently or removed from `v.touched`.\n   **Suggestion:** Classify every successfully validated infrastructure test in the dedicated pass, including accepted corrections. Separately remove any superseded untagged finding. Test the reported count and exemption denominator for each case.\n\n3. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** Contradiction detection describes assignment forms but does not explain resolving referenced marker values. For example, `requirement_marks = [pytest.mark.covers(\"AC55\")]` followed by `pytestmark = requirement_marks` applies a requirement marker without placing a `.covers` attribute directly inside the `pytestmark` assignment. A syntax-only scan of that assignment could incorrectly grant infrastructure status.\n   **Suggestion:** Resolve local marker references used by applicable `pytestmark` assignments, or reject unresolved expressions when granting infrastructure status. Cover module and class references in tests.\n\nThe base-catalog approach is sound and the scope  […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "approve"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/_tag_binding_infra_pass.py",
+          "line": 123,
+          "finding": "A renamed and edited stand-in escapes the correction rule (no origin found), silently dropping a requirement's last test.",
+          "suggestion": "Whole-result lost-coverage check.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": ".shipwright/planning/01-adopted/spec.md",
+          "line": 1148,
+          "finding": "AC55 said new real tests in a module-marker file need an explicit tag, but the code refuses them.",
+          "suggestion": "Reword, add test.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/_tag_binding_infra_pass.py",
+          "line": 139,
+          "finding": "Fixture-tree or production test_*.py ids could count as the other linked test.",
+          "suggestion": "Filter with is_test_id.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/_tag_binding_infra_pass.py",
+          "line": 87,
+          "finding": "Contradiction detection relies on the parser matching the collector.",
+          "suggestion": "Refuse any declared test the manifest links to a requirement.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/_tag_binding_infra_pass.py",
+          "line": 115,
+          "finding": "Digest move match ignores the name and is never used up.",
+          "suggestion": "Prefer same name, consume.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/_tag_binding_infra_pass.py",
+          "line": 123,
+          "finding": "A test whose base tag was an orphan or invalid tag gets no dropped-tag warning when reclassified.",
+          "suggestion": "Optional.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/tools/verifiers/_tag_binding_infra_pass.py",
+          "line": 154,
+          "finding": "Redundant lambda wrapper and untyped parameters.",
+          "suggestion": "Pass digests directly, add hints.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-18T23:05:19.438132+00:00",
+      "disposition": null,
+      "recorded_by": "iterate",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "transport": "agent"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "blast radius",
+          "file": "shared/scripts/tools/verifiers/_tag_binding_infra_pass.py (classify / _refuse_quiet_loss)",
+          "line": null,
+          "finding": "Claim under doubt: the change does not alter the gate's behaviour for changes that do not reclassify anything — _refuse_quiet_loss also fired for infra tests already honoured at base when an unrelated requirement test was retired in the same change, with a misleading 'do not reclassify' message.",
+          "suggestion": "Limit the refusal to newly classified tests. RESOLVED: only tests not declared at base can be refused; test added (untouched infra test beside a retired requirement test).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "shared/scripts/tools/verifiers/_layer_coverage_regen.py::_merge_base",
+          "line": null,
+          "finding": "Claim under doubt: a catalog edited in the same change licenses nothing — _merge_base can fall back to the branch's upstream when origin/HEAD is unset, so a pushed earlier commit that widens the catalog becomes the base. A weakness of the shared merge-base resolver, not of this change.",
+          "suggestion": "DISCLOSED: inherited from the resolver every F11 gate uses; the shipwright flow branches off a freshly fetched origin default branch; CODEOWNERS is the backstop.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "reversibility",
+          "file": "shared/scripts/tools/verifiers/_tag_binding_infra_pass.py::parse_catalog",
+          "line": null,
+          "finding": "Claim under doubt: a bad catalog fails closed harmlessly — A catalog with one invalid entry is empty as a whole; removing an entry while its file still declares covers_none would self-lock that file's next edit.",
+          "suggestion": "RESOLVED: a repo test now requires every committed test file that declares covers_none to be listed in the catalog. Whole-file-empty on a malformed entry is kept deliberately (fail closed).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "shared/scripts/tools/verifiers/_tag_binding_infra_pass.py::_verdict",
+          "line": null,
+          "finding": "Claim under doubt: covers_none cannot be used to dodge a requirement tag — A new untagged test appended to a file with a module-level marker was classed automatically.",
+          "suggestion": "RESOLVED: a test new at head needs its own function/class-level marker; the module-level marker only classes tests already in the file. Tests added; AC55 reworded.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-18T23:10:54.526976+00:00",
+      "disposition": null,
+      "recorded_by": "iterate",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "transport": "agent"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "spec |",
+          "file": "shared/config/infra_test_paths.json` (absent from the diff)",
+          "line": null,
+          "finding": "The Design Notes say the catalog is seeded with the six existing testkit meta-test files, but no catalog file is created in this diff; the head-catalog CI test (`test_the_head_catalog_is_valid_and_names_existing_files`) self-skips while the file is absent, and the CODEOWNERS line guards a path that does not yet exist. The glm bootstrap review notes say this deferral is deliberate (\"no seed file is touched in this run; retag is a follow-up merge\"), so this is a disclosed deviation rather than a hole — the bootstrap test `test_without_a_catalog_at_base...` proves nothing is granted meanwhile.",
+          "suggestion": "Ship as-is, but make sure the follow-up merge that creates the seed catalog is actually tracked; otherwise the \"guarded by CODEOWNERS\" claim is vacuous until then.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug |",
+          "file": "shared/scripts/tools/verifiers/_tag_binding_infra_pass.py` — `_correction` / `classify",
+          "line": null,
+          "finding": "_correction` appends the \"drops stand-in tag\" WARNING the moment a correction is accepted, but `_refuse_quiet_loss` runs afterwards and can demote the same test to `bad-infra-class` (e.g. an unrelated tagged test vanished in the same change). The gate output then simultaneously reports a hard finding for the test and a WARNING that it \"drops stand-in tag (reclassified as infrastructure)\" — contradictory/misleading operator output.",
+          "suggestion": "Move the warning emission to after `_refuse_quiet_loss`, or have `_refuse_quiet_loss` retract the warnings belonging to tests it demotes.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": "shared/scripts/tools/verifiers/_tag_binding_infra_pass.py` — `_verdict",
+          "line": null,
+          "finding": "For a newly added test sitting next to a module-level `covers_none` alongside same-name siblings, the `is_new and not all(i.direct ...)` check fires first and reports \"needs its own @pytest.mark.covers_none\", masking the sibling-disagreement reason; both are `bad-infra-class` so enforcement is unaffected — message-only imprecision.",
+          "suggestion": "Optional: run the sibling check before the module-level check, or aggregate both reasons.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test |",
+          "file": "shared/tests/test_tag_binding_infra_class.py` — `test_class_level_covers_forms_and_unresolved_class_marks_contradict_the_marker",
+          "line": null,
+          "finding": "This case is only asserted against `py_infra_info` directly, not through `evaluate` like the other contradiction forms; a wiring mistake in `_verdict`'s `info.bad` consumption would not be caught by it. The remaining forms are covered end-to-end, so the residual risk is small.",
+          "suggestion": "Route one of the four parametrized cases through `_run`/`evaluate` as well.  Things I specifically checked and found correct: `parse_catalog`'s three-way absent/`\"\"`/`None` handling matches the AC and is exercised through the real gate in the integration tests; the base-vs-head differ WARNING survives a failing gate; superseded-finding filtering only removes the four listed kinds and only for decided tests; a manifest-linked test can never be classed (defense beyond the parser); a renamed+edited stand-in cannot slip the correction rule (quiet-loss check); TS/JS stays untagged; `evaluate`'s new parameter has a default, so existing callers are unaffected.  Overall: ship-as-is — the findings are refinements (one misleading-warning cleanup worth doing soon), and no loophole or correctness break in the enforcement direction was found.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/tools/verifiers/_tag_binding_py.py",
+          "line": 181,
+          "finding": "Scope-marker parsing ignores assignment targets other than a plain name. For example, `pytestmark, unused = ([mark.covers(\"FR-01.11\")], None)` applies a requirement marker in pytest, but this parser overlooks it and can grant a function’s `covers_none` declaration. This misses the required contradiction check across all assignment forms.",
+          "suggestion": "Handle destructuring and subscript assignments involving `pytestmark`, or conservatively refuse infrastructure classification when such assignments cannot be resolved. Add tests using these forms with a direct `covers_none` decorator.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/tools/verifiers/tag_binding_gate.py",
+          "line": 129,
+          "finding": "An unreadable base catalog produces `catalog=None`, but the gate continues. Only tests declaring `covers_none` subsequently fail; a change without those declarations can pass without reporting “cannot enforce.” The specification explicitly distinguishes unreadable catalogs from absent or invalid ones.",
+          "suggestion": "Return a “cannot enforce” failure immediately when the base catalog read returns `None`. Add a gate-level test for an unreadable catalog with no infrastructure declarations.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/scripts/tools/verifiers/_tag_binding_infra_pass.py",
+          "line": 59,
+          "finding": "Catalog validation accepts any relative `.py` path, and the new head-catalog test checks only that the file exists. Consequently, an existing production file such as `shared/scripts/example.py` passes the promised CI validation even though it is not a test file.",
+          "suggestion": "Extend head-catalog validation to verify that each entry identifies a test file under the repository’s collection rules. Add a negative test using an existing non-test Python file.  Ship-with-fixes. The implementation covers the main classification flow, but assignment parsing and catalog enforcement leave concrete acceptance criteria incomplete.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "external-review-json",
+      "completed_at": "2026-11-18T23:13:35.247963+00:00",
+      "disposition": null,
+      "recorded_by": "iterate",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Review\n\nThe change is well-built and closely tracks the spec. The core security properties hold: granting is strict (exact `pytest.mark.covers_none` with one literal valid label), the catalog is read at the merge-base only, exact paths only (no wildcards/absolut/backslash), contradiction detection is loose in the safe direction, infra tests leave the exemption denominator, and the digest ignores only the exact marker shape. Marker registration is applied everywhere `covers` is registered. Test coverage is genuinely behavioral (hand-built manifests plus real-git integration tests, happy and error paths both present).\n\nFindings:\n\n- Category: spec | Severity: low\n  File: `shared/config/infra_test_paths.json` (absent from the diff)\n  Finding: The Design Notes say the catalog is seeded with the six existing testkit meta-test files, but no catalog file is created in this diff; the head-catalog CI test (`test_the_head_catalog_is_valid_and_names_existing_files`) self-skips while the file is absent, and the CODEOWNERS line guards a path that does not yet exist. The glm bootstrap review notes say this deferral is deliberate (\"no seed file is touched in this run; retag is a follow-up merge\"), so this is a disclosed deviation rather than a hole — the bootstrap test `test_without_a_catalog_at_base...` proves nothing is granted meanwhile.\n  Suggestion: Ship as-is, but make sure the follow-up merge that creates the seed catalog is actually tracked; otherwise the \"guarded by CODEOWNERS\" claim is vacuous until then.\n\n- Category: bug | Severity: low\n  File: `shared/scripts/tools/verifiers/_tag_binding_infra_pass.py` — `_correction` / `classify`\n  Finding: `_correction` appends the \"drops stand-in tag\" WARNING the moment a correction is accepted, but `_refuse_quiet_loss` runs afterwards and can demote the same test to `bad-infra-class` (e.g. an unrelated tagged test vanished in the same change). The gate output then simultaneously reports a hard finding for the test *a […truncated]\n\n[openai] - Category: bug\n- Severity: medium\n- File: shared/scripts/tools/verifiers/_tag_binding_py.py:181\n- Finding: Scope-marker parsing ignores assignment targets other than a plain name. For example, `pytestmark, unused = ([mark.covers(\"FR-01.11\")], None)` applies a requirement marker in pytest, but this parser overlooks it and can grant a function’s `covers_none` declaration. This misses the required contradiction check across all assignment forms.\n- Suggestion: Handle destructuring and subscript assignments involving `pytestmark`, or conservatively refuse infrastructure classification when such assignments cannot be resolved. Add tests using these forms with a direct `covers_none` decorator.\n\n- Category: spec\n- Severity: medium\n- File: shared/scripts/tools/verifiers/tag_binding_gate.py:129\n- Finding: An unreadable base catalog produces `catalog=None`, but the gate continues. Only tests declaring `covers_none` subsequently fail; a change without those declarations can pass without reporting “cannot enforce.” The specification explicitly distinguishes unreadable catalogs from absent or invalid ones.\n- Suggestion: Return a “cannot enforce” failure immediately when the base catalog read returns `None`. Add a gate-level test for an unreadable catalog with no infrastructure declarations.\n\n- Category: test\n- Severity: medium\n- File: shared/scripts/tools/verifiers/_tag_binding_infra_pass.py:59\n- Finding: Catalog validation accepts any relative `.py` path, and the new head-catalog test checks only that the file exists. Consequently, an existing production file such as `shared/scripts/example.py` passes the promised CI validation even though it is not a test file.\n- Suggestion: Extend head-catalog validation to verify that each entry identifies a test file under the repository’s collection rules. Add a negative test using an existing non-test Python file.\n\nShip-with-fixes. The implementation covers the main classification flow, but assignment parsing and catalog enfo […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": null,
+          "category": "unfaithful",
+          "file": "shared/scripts/tools/verifiers/tag_binding_gate.py:150-156",
+          "line": null,
+          "finding": "Warnings were added to the verdict but dropped from the failure message whenever the gate failed, so they never appeared in the cases they exist for. FIXED: the failure message now carries the warnings; gate-level tests assert it. Also fixed: untested contradiction forms and the covers_none-is-not-an-id check now have tests; conventions.md dropped from the plan (producer-written file). — spec: iterate spec AC55 bullet 4 (catalog differs WARNING), bullet 3 (malformed catalog WARNING), bullet 5 (correction WARNING)",
+          "suggestion": "iterate spec AC55 bullet 4 (catalog differs WARNING), bullet 3 (malformed catalog WARNING), bullet 5 (correction WARNING)",
+          "source": "spec-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-18T23:00:51.520466+00:00",
+      "disposition": null,
+      "recorded_by": "iterate",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "transport": "agent"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-18T13:03:51.587986+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-18T13:03:51.708613+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

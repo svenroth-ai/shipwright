@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "1. **Should it exist?** Yes: option B is proportionate because harness tests need an honest classification, and a persistent declaration avoids repeated exemptions on every edit.\n\n2. **Smallest thing that would do:** The proposed source marker, an exact-path catalog, and enforcement inside the existing gate. Per-change relaxation is too broad; per-test finishing exemptions require repeated declarations; a harness requirement is justified only if the harness is itself a promised capability.\n\n3. **What it costs to keep:** Gate owners must maintain another classification rule and its catalog, including migration rules that preserve existing requirement evidence. Adding a harness file requires an earlier catalog merge. Reports will also need an explanation for why infrastructure tests pass the gate while appearing as untagged downstream.\n\n4. **What it forecloses:** Introducing and classifying a new harness test file in one merge. It also makes moving tests between product and infrastructure roles more involved; that restriction serves the stated constraint.\n\n5. **Findings**\n\nNo findings.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "1. **The question, answered in one sentence.** A third class is justified \u2014 stand-in tags are real coverage lies that recur \u2014 but the proposal builds a marker-plus-catalog-plus-base-diff apparatus where the project already owns a mechanism for exactly this shape: per-test exemption codes in the finishing entry.\n\n2. **The smallest thing that would do.** Option A: add a third per-test exemption code (\"infra\") to the finishing entry, same shape as the two existing ones, granted by the change's author and reviewed where the entry is reviewed. Zero new standing artifacts: no marker, no catalog file, no catalog-validation CI test, no base-vs-head catalog warning, no codeowners path, no body-digest carve-out for the decorator, no stand-in-correction rules, no marker registration across pyprojects. The exemption already carries the honesty the spec wants \u2014 it is recorded in data, it is visible per test, and it is ratcheted because it must be re-claimed per change.\n\n3. **What it costs to keep (as proposed).** A guarded catalog that must be updated before any harness test file can exist, a merge-base read with base/head drift semantics, a CI job validating the catalog, marker registration in every consumer template, and a subtle rule set (siblings, digest carve-out, correction conditions) that every future gate change must reason about.\n\n4. **What it forecloses.** The strict-literal marker plus exact-path catalog makes \"temporary harness test\" expensive (two merges to add one file), and the body-digest exception bakes `covers_none` syntax into the rename-detection logic permanently.\n\n5. **Findings**\n\n- Category: simpler-alternative\n- Severity: high\n- Finding: The gate already has a reviewed, per-change, recorded mechanism for exempting a specific test from the tag rule (two existing codes). A third code delivers every acceptance-critical property \u2014 no coverage inflation, per-test honesty, visible in data, no loophole for requirement tests \u2014 with no new standing artifact. The marker+catalog design solves the same problem by replacing human review with self-enforcing machinery whose permanent complexity (base-catalog reads, drift warnings, catalog CI, sibling rules, digest carve-outs, correction conditions) is far out of proportion to ~9 stand-in tags per campaign.\n- Suggestion: Implement Option A: a third per-test exemption code (`infra`) in the finishing entry, granted per changed test, reviewed with the entry. Drop the marker, the catalog, and all catalog-maintenance machinery. If, after several campaigns, the per-change grant proves too noisy, the marker design can be built then \u2014 the exemption code does not foreclose it.\n\n- Category: ownership\n- Severity: medium\n- Finding: The catalog requires a human to add a path before any new harness test file can pass the gate, and to keep the CI catalog-validation job green. This is a standing obligation with a failure mode (\"gate rejects valid work, contributor puzzled\") that recurs for every future harness.\n- Suggestion: If the catalog survives, note it explicitly in the failure message (already partially planned); but the cleaner fix is not having the catalog at all.\n\n- Category: proportionality\n- Severity: low\n- Finding: Option C was correctly not chosen (per-change label relaxing all tests is a real loophole), and Option D is rightly rejected. The brief's framing of \"no loophole\" is driving toward maximum self-enforcement when the project already trusts operator review at the finishing entry \u2014 the existing two exemptions prove that trust works.\n- Suggestion: Match the enforcement weight of the existing exemption mechanism rather than exceeding it.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "architecture",
+  "capture": {
+    "run_id": "iterate-2026-11-18-test-infra-tag-class",
+    "at": "2026-11-18T13:05:06.579910+00:00"
+  },
+  "verdicts": {
+    "openai": "approve",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=approve"
+  }
+}
