@@ -183,3 +183,10 @@ def test_a_lock_check_compares_acs_and_hash_only_and_refuses_a_path_outside_the_
     assert pl.lock_problems({"p.py::test_one": entry}, {"p.py": src}) == []
     with pytest.raises(ValueError):
         pl.lock_key("../x.py", "test_one")
+
+
+def test_a_walrus_that_rebinds_a_module_name_while_the_file_runs_changes_the_hash():
+    base = "V = 1\n\n\ndef test_it():\n    assert V\n"
+    assert fp("V = 1\n_X = (V := 0)\n\n\ndef test_it():\n    assert V\n") != fp(base)
+    assert fp("V = 1\n\n\ndef _unused(x=(V := 0)):\n    pass\n\n\ndef test_it():\n    assert V\n") != fp(base)
+    assert fp("V = 1\n\n\n@(lambda f: f)\ndef _unused():\n    (W := 3)\n\n\ndef test_it():\n    assert V\n") == fp(base)  # a walrus in a body is local

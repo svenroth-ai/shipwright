@@ -89,6 +89,17 @@ def _is_pytestmark(node: ast.AST) -> bool:
     return any(isinstance(t, ast.Name) and t.id == "pytestmark" for t in _assign_targets(node))
 
 
+def _import_time_walruses(node: ast.AST) -> list[str]:
+    """Names a module-level statement binds through ``:=`` while it runs: anywhere in a plain statement, but only in the
+    decorators, defaults and bases of a def or class (its body is a scope of its own)."""
+    parts: list[ast.AST] = [node]
+    if isinstance(node, ast.ClassDef):
+        parts = [*node.decorator_list, *node.bases]
+    elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+        parts = [*node.decorator_list, *node.args.defaults, *(d for d in node.args.kw_defaults if d is not None)]
+    return [n.target.id for part in parts for n in ast.walk(part) if isinstance(n, ast.NamedExpr)]
+
+
 def _mark_elements(node: ast.AST) -> list[ast.AST]:
     value = node.value  # type: ignore[attr-defined]
     return list(value.elts) if isinstance(value, (ast.List, ast.Tuple)) else [value]
@@ -134,6 +145,8 @@ class Module:
         self.pos: dict[int, int] = {}  # file order of the statements (by node id), for the order of what a test reaches
         self.marks: list[ast.AST] = []  # one entry per module-level ``pytestmark`` statement that changes what runs: its kind and its marks
         for node in ast.parse(source).body:
+            for walrus in _import_time_walruses(node):  # ``_X = (NEW := "")`` rebinds NEW at module level
+                self._bind(walrus, node)
             if _is_pytestmark(node):
                 kept = [m for m in _mark_elements(node) if not _is_marker(m)]
                 resets = not isinstance(node, ast.AugAssign)  # ``=`` and ``: T =`` reset the marks before them, ``+=`` adds: the kind is hashed

@@ -176,12 +176,8 @@ def test_promise_tests_go_through_the_driver_interface_and_the_oracle_only():
                 assert local or (node.level == 0 and node.module in ALLOWED_MODULES), f"{path.name} imports {node.module}"
             elif isinstance(node, ast.Import):
                 assert {x.name for x in node.names} <= ALLOWED_MODULES, f"{path.name} imports {[x.name for x in node.names]}"
-        for stmt in ast.parse(source).body:  # a statement that binds nothing runs at import and is invisible to the fingerprint: refuse it
-            plain = (isinstance(stmt, ast.Expr) and isinstance(stmt.value, ast.Constant) and isinstance(stmt.value.value, str)) \
-                or isinstance(stmt, (ast.Import, ast.ImportFrom, ast.FunctionDef)) \
-                or (isinstance(stmt, (ast.Assign, ast.AnnAssign, ast.AugAssign)) and all(isinstance(t, ast.Name) for t in ([stmt.target] if not isinstance(stmt, ast.Assign) else stmt.targets))
-                                                                      and not any(isinstance(n, ast.Call) for n in ast.walk(stmt)))  # a call at import can rewire the oracle unseen
-            assert plain, f"{path.name}:{stmt.lineno} is a module-level statement the fingerprint cannot see"
+        for stmt in ast.parse(source).body:  # code that runs at import and that no test reaches is invisible to the fingerprint: refuse it
+            assert _runs_nothing_at_import(stmt), f"{path.name}:{stmt.lineno} is a module-level statement the fingerprint cannot see"
         assert "ReplayDriver" in source, path.name
         assert len(source.splitlines()) <= 300, path.name
         for name in ph.tests_in(source):  # every promise test reaches the oracle through its own closure, not through a neighbour's use of it
@@ -204,6 +200,35 @@ def test_scenarios_json_is_valid_in_the_schema_of_the_comparison_tool_and_covers
     for question in ("version", "preview", "out-of-sequence"):
         assert any(i.startswith(question) for i in seen), question
     assert {c["id"] for e in _entries() for c in _checks(e) if c["kind"] == "scenario"} == seen  # every scenario is bound to a promise
+
+
+def _runs_nothing_at_import(stmt):
+    """True for a module-level statement that cannot rewire anything while the file is imported: a docstring, an import, a
+    plain assignment to names, or a def whose decorators are ``pytest.mark.*`` / ``pytest.fixture`` and whose decorators
+    and defaults hold no call and no ``:=``. A call or a walrus anywhere else runs (or binds) unseen by the fingerprint."""
+    def code(*parts):
+        return any(isinstance(n, (ast.Call, ast.NamedExpr)) for part in parts for n in ast.walk(part))
+    if isinstance(stmt, ast.Expr):
+        return isinstance(stmt.value, ast.Constant) and isinstance(stmt.value.value, str)
+    if isinstance(stmt, (ast.Import, ast.ImportFrom)):
+        return True
+    if isinstance(stmt, ast.FunctionDef):
+        marks = all(ph._dotted(d).startswith(("pytest.mark.", "pytest.fixture")) for d in stmt.decorator_list)
+        args = [a for d in stmt.decorator_list for a in (d.args + [k.value for k in d.keywords] if isinstance(d, ast.Call) else [])]
+        return marks and not code(*args, *stmt.args.defaults, *(d for d in stmt.args.kw_defaults if d is not None))
+    if isinstance(stmt, (ast.Assign, ast.AnnAssign, ast.AugAssign)):
+        targets = stmt.targets if isinstance(stmt, ast.Assign) else [stmt.target]
+        return all(isinstance(t, ast.Name) for t in targets) and not code(stmt)
+    return False
+
+
+@pytest.mark.covers("FR-01.09/AC01")
+def test_the_import_time_rule_refuses_calls_walruses_and_code_in_decorators_and_defaults():
+    refused = ('_ = setattr(oracle, "x", 1)', '_X = (NEW := "")', "def f(x=(N := 1)):\n    pass", "def f(x=setattr(o, 'a', 1)):\n    pass",
+               "@(lambda f: f)\ndef f():\n    pass", "@pytest.mark.parametrize('a', [g()])\ndef f(a):\n    pass", "setattr(o, 'a', 1)", "class C:\n    pass")
+    allowed = ('"""doc"""', "import json", "A = [1, (2, 3)]", "@pytest.mark.parametrize('a', A)\n@pytest.mark.covers('FR-01.09/AC01')\ndef f(a):\n    pass")
+    assert not [s for s in refused if _runs_nothing_at_import(ast.parse(s).body[0])]
+    assert all(_runs_nothing_at_import(ast.parse(s).body[0]) for s in allowed)
 
 
 def _golden_sources():
