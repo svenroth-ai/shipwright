@@ -14,6 +14,7 @@ _REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(_REPO_ROOT / "shared" / "testkit"))
 
 import promise_hash as ph  # noqa: E402
+import promise_lock as pl  # noqa: E402
 
 BASE = textwrap.dedent('''
     import json
@@ -111,23 +112,23 @@ SPEC = "# Spec\n\n## AC-Move-Map\n\n| Old id | New id |\n|---|---|\n| `FR-01.11/
 
 
 def test_ac_ids_resolve_through_the_move_map_to_the_end_of_a_chain():
-    moves = ph.parse_move_map(SPEC)
+    moves = pl.parse_move_map(SPEC)
     assert moves == {"FR-01.11/AC21": "FR-01.22/AC21", "FR-01.22/AC21": "FR-01.23/AC21"}  # the row under another heading is not a move
-    assert ph.resolve_acs(["FR-01.11/AC21", "FR-01.09/AC01"], moves) == ["FR-01.09/AC01", "FR-01.23/AC21"]
-    assert ph.resolve_ac("FR-01.11/AC21", {"FR-01.11/AC21": "FR-01.11/AC21"}) == "FR-01.11/AC21"  # a loop ends
+    assert pl.resolve_acs(["FR-01.11/AC21", "FR-01.09/AC01"], moves) == ["FR-01.09/AC01", "FR-01.23/AC21"]
+    assert pl.resolve_ac("FR-01.11/AC21", {"FR-01.11/AC21": "FR-01.11/AC21"}) == "FR-01.11/AC21"  # a loop ends
 
 
 def test_the_lock_entry_keeps_the_ac_id_outside_the_hash():
     source = BASE.replace("FR-01.09/AC04", "FR-01.11/AC21")
-    moved = ph.lock_entry("test_it", source, SPEC)
+    moved = pl.lock_entry("test_it", source, SPEC)
     assert moved["acs"] == ["FR-01.23/AC21"]
-    assert moved["hash"] == ph.lock_entry("test_it", BASE, "")["hash"]  # a re-anchor is an id change, never a body change
+    assert moved["hash"] == pl.lock_entry("test_it", BASE, "")["hash"]  # a re-anchor is an id change, never a body change
 
 
 def test_it_reads_the_same_move_map_as_the_repository_parser():
     from lib import ac_move_map
-    assert ph.parse_move_map(SPEC) == ac_move_map.parse_move_map(SPEC)
-    assert ph.resolve_ac("FR-01.11/AC21", ph.parse_move_map(SPEC)) == ac_move_map.resolve_ac("FR-01.11/AC21", ac_move_map.parse_move_map(SPEC))
+    assert pl.parse_move_map(SPEC) == ac_move_map.parse_move_map(SPEC)
+    assert pl.resolve_ac("FR-01.11/AC21", pl.parse_move_map(SPEC)) == ac_move_map.resolve_ac("FR-01.11/AC21", ac_move_map.parse_move_map(SPEC))
 
 
 def test_any_mark_but_covers_changes_it():
@@ -142,9 +143,9 @@ def test_an_autouse_fixture_is_part_of_every_test_and_a_malformed_or_missing_ac_
     auto = "import pytest\n\n\n@pytest.fixture(autouse=True)\ndef guard():\n    return 1\n"
     assert fp(source, [auto]) != fp(source) and fp(source, [auto]) != fp(source, [auto.replace("return 1", "return 2")])
     with pytest.raises(ValueError):
-        ph.lock_entry("test_it", source)  # no covers id
+        pl.lock_entry("test_it", source)  # no covers id
     with pytest.raises(ValueError):
-        ph.lock_entry("test_it", "import pytest\n\n\n@pytest.mark.covers('AC4')\ndef test_it():\n    pass\n")
+        pl.lock_entry("test_it", "import pytest\n\n\n@pytest.mark.covers('AC4')\ndef test_it():\n    pass\n")
 
 
 def test_a_plain_helper_inside_a_conftest_is_followed_once_a_fixture_reaches_it():

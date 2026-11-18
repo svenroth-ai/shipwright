@@ -3,27 +3,30 @@
 A promise test is locked by hash: a change to what it asserts must be a decision, a change to how it is written must not.
 ``fingerprint`` hashes a *normalized* form of the test function that
 
-* ignores formatting, comments (the parser drops them), docstrings, the import block (order, additions, aliases) and the
-  ``covers`` mark (it names the AC: a re-anchor shows as an id change, never as a body change). EVERY other mark is
+* ignores formatting, comments (the parser drops them), docstrings, the order of imports, the imports nothing reaches and
+  the ``covers`` mark (it names the AC: a re-anchor shows as an id change, never as a body change). EVERY other mark is
   hashed - skip, xfail, parametrize, usefixtures, and also slow or cross_plugin, which CI deselects - because adding one is
   the cheapest way to weaken a locked test;
-* includes, transitively, every module-level function, class and constant the test names, and every fixture it
-  requests (a parameter that is a ``@pytest.fixture`` function of the module or of a ``conftest.py`` handed in), so an
-  assertion that lives in a helper or a fixture changes the fingerprint of every test that uses it.
+* includes, transitively, every binding of every module-level function, class, constant and IMPORT the test names (in
+  file order: ``def h`` followed by ``h = lambda: None`` is two bindings, both hashed; ``from . import oracle`` and
+  ``from . import scenario_support as oracle`` hash differently), and every fixture it requests (a parameter that is a
+  ``@pytest.fixture`` function of the module or of a ``conftest.py`` handed in);
+* includes in every closure what applies without being named: an ``autouse`` fixture (anything but the literal
+  ``autouse=False``) and a module-level ``pytest_*`` hook such as ``pytest_generate_tests``.
 
 The serialization is written by hand (not ``ast.dump``): ``ast.dump`` prints version-specific fields (``type_params``
 since 3.12), so a lock written on one interpreter would read as a diff on another. Here a field that is ``None`` or an
-empty list is left out, and ``type_comment`` / ``kind`` are never read.
+empty list is left out, and ``type_comment`` / ``kind`` are never read. A test pins a literal digest (3.11 = 3.12 = 3.13).
 
 Known limits (a test cannot tell these apart from a real change, and the lock's reviewer must know): a helper imported
-from another module is NOT followed (the golden helper modules are frozen files in their own right); a method of a test
-class is not found (the golden tests are plain functions); names bound at run time (``getattr``, ``request.getfixturevalue``)
-are invisible; so are bindings inside a module-level if/try/with and in-place mutations such as ``CASES.append(...)``; a helper's parameter that shadows a module-level name still pulls that name in (over-inclusion: a harmless extra hash
-change, never a missed one).
+from another module is NOT followed - only its import binding is hashed (the golden helper modules, the parent
+``conftest.py`` files and ``golden/__init__.py`` are frozen files in their own right, in ``REQUIRED`` of
+``test_trace_freeze.py``); a method of a test class is not found (the golden tests are plain functions); names bound at
+run time (``getattr``, ``request.getfixturevalue``) are invisible; so are bindings inside a module-level if/try/with and
+in-place mutations such as ``CASES.append(...)``; a helper's parameter that shadows a module-level name still pulls that
+name in (over-inclusion: a harmless extra hash change, never a missed one); a test name bound twice is refused.
 
-AC ids: ``covers_of`` reads the ids a test declares, ``resolve_acs`` follows them through the spec's ``## AC-Move-Map``
-(``| `FR-01.11/AC21` | `FR-01.22/AC21` |`` rows; the same format ``shared/scripts/lib/ac_move_map.py`` parses - a test pins the two
-parsers together), and ``lock_entry`` joins the two: the id is stored beside the hash, never inside it.
+The AC ids and the lock's entries (``path::name``) live in ``promise_lock.py``; ``covers_of`` stays here (it reads the marks).
 """
 
 from __future__ import annotations
@@ -31,11 +34,8 @@ from __future__ import annotations
 import ast
 import hashlib
 import json
-import re
-from typing import Any, Iterable, Mapping, Sequence
+from typing import Any, Iterable, Sequence
 
-AC_ID = re.compile(r"^FR-\d{2}\.\d{2}/AC\d{2,}$")
-MOVE_HEADING = "## AC-Move-Map"
 _SKIP_FIELDS = frozenset({"type_comment", "kind", "lineno", "col_offset", "end_lineno", "end_col_offset"})
 _DEFS = (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
 
@@ -67,9 +67,33 @@ def _is_fixture(node: ast.AST) -> bool:
 
 
 def _is_autouse(node: ast.AST) -> bool:
-    return _is_fixture(node) and any(
-        isinstance(d, ast.Call) and any(k.arg == "autouse" and isinstance(k.value, ast.Constant) and k.value.value is True for k in d.keywords)
-        for d in node.decorator_list)
+    """A fixture that applies without being named: ``autouse=`` is anything but the literal ``False`` (a variable, ``**options``)."""
+    def on(k: ast.keyword) -> bool:
+        return k.arg is None or (k.arg == "autouse" and not (isinstance(k.value, ast.Constant) and k.value.value is False))
+    return _is_fixture(node) and any(isinstance(d, ast.Call) and any(on(k) for k in d.keywords) for d in node.decorator_list)
+
+
+def _is_hook(node: ast.AST) -> bool:
+    """A module-level ``pytest_*`` function (``pytest_generate_tests`` ...): pytest calls it without any name reaching it."""
+    return isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name.startswith("pytest_")
+
+
+def _assign_targets(node: ast.AST) -> list[ast.expr]:
+    """The targets a module-level statement binds, for ``=``, ``name: T = v`` and ``name += v`` alike (one helper for ``Module`` and ``covers_of``)."""
+    if isinstance(node, ast.Assign):
+        return list(node.targets)
+    if isinstance(node, ast.AnnAssign) and node.value is not None:
+        return [node.target]
+    return [node.target] if isinstance(node, ast.AugAssign) else []
+
+
+def _is_pytestmark(node: ast.AST) -> bool:
+    return any(isinstance(t, ast.Name) and t.id == "pytestmark" for t in _assign_targets(node))
+
+
+def _mark_elements(node: ast.AST) -> list[ast.AST]:
+    value = node.value  # type: ignore[attr-defined]
+    return list(value.elts) if isinstance(value, (ast.List, ast.Tuple)) else [value]
 
 
 def _docstring_free(body: list[ast.stmt]) -> list[ast.stmt]:
@@ -104,44 +128,58 @@ def _canon(node: Any) -> Any:
 
 
 class Module:
-    """The module-level definitions of one source file, by name."""
+    """The module-level bindings of one source file, by name."""
 
     def __init__(self, source: str) -> None:
-        self.defs: dict[str, ast.AST] = {}
-        self.consts: dict[str, list[ast.AST]] = {}  # every statement that binds a name, in file order (none is overwritten)
+        # every statement that binds a name - def, class, constant, import - in file order: none overwrites another
+        self.bindings: dict[str, list[ast.AST]] = {}
         self.marks: list[ast.AST] = []  # module-level ``pytestmark`` marks that change what runs (skip, xfail, parametrize ...)
         for node in ast.parse(source).body:
-            targets = (node.targets if isinstance(node, ast.Assign) else [node.target] if isinstance(node, (ast.AnnAssign, ast.AugAssign)) else [])
-            if any(isinstance(x, ast.Name) and x.id == "pytestmark" for x in targets):
-                value = node.value
-                self.marks += [m for m in (value.elts if isinstance(value, (ast.List, ast.Tuple)) else [value]) if not _is_marker(m)]
+            if _is_pytestmark(node):
+                self.marks += [m for m in _mark_elements(node) if not _is_marker(m)]
             elif isinstance(node, _DEFS):
-                self.defs[node.name] = node
+                self._bind(node.name, node)
                 for d in node.decorator_list:  # ``@pytest.fixture(name="x")`` is requested as ``x``
                     if isinstance(d, ast.Call) and _dotted(d).endswith("fixture"):
                         for k in d.keywords:
                             if k.arg == "name" and isinstance(k.value, ast.Constant) and isinstance(k.value.value, str):
-                                self.defs[k.value.value] = node
+                                self._bind(k.value.value, node)
+            elif isinstance(node, (ast.Import, ast.ImportFrom)):
+                for alias in node.names:  # one name of a multi-name import is hashed alone: its neighbours are none of its business
+                    single = (ast.Import(names=[alias]) if isinstance(node, ast.Import)
+                              else ast.ImportFrom(module=node.module, names=[alias], level=node.level))
+                    self._bind(alias.asname or alias.name.split(".")[0], single)
             else:
-                for target in targets:
+                for target in _assign_targets(node):
                     for name in (n.id for n in ast.walk(target) if isinstance(n, ast.Name)):  # tuple unpacking binds several
-                        self.consts.setdefault(name, []).append(node)
+                        self._bind(name, node)
+
+    def _bind(self, name: str, node: ast.AST) -> None:
+        self.bindings.setdefault(name, []).append(node)
 
     def lookup(self, name: str) -> ast.AST | None:
-        if name in self.defs:
-            return self.defs[name]
-        nodes = self.consts.get(name)
+        nodes = self.bindings.get(name)
         if not nodes:
             return None
         return nodes[0] if len(nodes) == 1 else ast.Module(body=nodes, type_ignores=[])
+
+    def always(self) -> list[str]:
+        """The names that apply to every test of the module without being named: autouse fixtures and ``pytest_*`` hooks."""
+        return [name for name, nodes in self.bindings.items() if any(_is_autouse(n) or _is_hook(n) for n in nodes)]
+
+
+def _each(node: ast.AST) -> list[ast.AST]:
+    """The statements behind a lookup result: the node itself, or every binding of a rebound name."""
+    return list(node.body) if isinstance(node, ast.Module) else [node]
 
 
 def _names(node: ast.AST) -> set[str]:
     found = {n.id for n in ast.walk(node) if isinstance(n, ast.Name)}
     for call in (n for n in ast.walk(node) if isinstance(n, ast.Call) and _dotted(n.func).endswith("usefixtures")):
         found |= {a.value for a in call.args if isinstance(a, ast.Constant) and isinstance(a.value, str)}  # named by string
-    if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-        found |= {a.arg for a in (*node.args.posonlyargs, *node.args.args, *node.args.kwonlyargs)}
+    for each in _each(node):
+        if isinstance(each, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            found |= {a.arg for a in (*each.args.posonlyargs, *each.args.args, *each.args.kwonlyargs)}
     return found
 
 
@@ -151,7 +189,9 @@ def closure(test: str, source: str, conftests: Sequence[str] = ()) -> dict[str, 
     Keys are the names found; a name found in a ``conftest.py`` is keyed ``name@<n>`` (n = its position in ``conftests``,
     from 1), so the same name in two modules never collapses into one entry."""
     modules = [Module(source), *(Module(text) for text in conftests)]
-    start = modules[0].defs.get(test)
+    if len(modules[0].bindings.get(test, [])) > 1:
+        raise ValueError(f"{test}: bound more than once at module level (pytest would run only the last binding)")
+    start = modules[0].lookup(test)
     if not isinstance(start, (ast.FunctionDef, ast.AsyncFunctionDef)):
         raise ValueError(f"{test}: no module-level test function of that name")
 
@@ -169,16 +209,16 @@ def closure(test: str, source: str, conftests: Sequence[str] = ()) -> dict[str, 
     for index, module in enumerate(modules):
         if module.marks and key("<pytestmark>", index) not in seen:  # a module-level skip or xfail applies to every test in it
             add("<pytestmark>", ast.List(elts=module.marks, ctx=ast.Load()), index)
-        for name, node in module.defs.items():
-            if _is_autouse(node) and key(name, index) not in seen:  # applies to every test of its scope without being named
-                add(name, node, index)
+        for name in module.always():  # an autouse fixture or a pytest_* hook applies to every test without being named
+            if key(name, index) not in seen:
+                add(name, module.lookup(name), index)
     while todo:
         current = todo.pop()
         for name in sorted(_names(seen[current])):
             # the module the node lives in first (any definition), then the others (a conftest only by its fixtures)
             for index in [origin[current], *(i for i in range(len(modules)) if i != origin[current])]:
                 found = modules[index].lookup(name)
-                if found is not None and (index == origin[current] or index == 0 or _is_fixture(found)):
+                if found is not None and (index == origin[current] or index == 0 or any(_is_fixture(n) for n in _each(found))):
                     if key(name, index) not in seen:
                         add(name, found, index)
                     break
@@ -217,43 +257,6 @@ def covers_of(test: str, source: str) -> list[str]:
     for node in tree.body:
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == test:
             ids += _covers_ids(node.decorator_list)
-        elif isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and t.id == "pytestmark" for t in node.targets):
-            value = node.value
-            ids += _covers_ids(value.elts if isinstance(value, (ast.List, ast.Tuple)) else [value])
+        elif _is_pytestmark(node):
+            ids += _covers_ids(_mark_elements(node))
     return list(dict.fromkeys(ids))
-
-
-def parse_move_map(spec_text: str) -> dict[str, str]:
-    """``{old id: new id}`` from the ``## AC-Move-Map`` section of a spec (``{}`` when there is none)."""
-    moves: dict[str, str] = {}
-    inside = False
-    for line in (spec_text or "").splitlines():
-        if line.startswith("#"):
-            inside = line.strip().lower() == MOVE_HEADING.lower()
-        elif inside and line.startswith("|"):
-            cells = [c.strip().strip("`") for c in line.strip().strip("|").split("|")]
-            if len(cells) >= 2 and AC_ID.match(cells[0]) and AC_ID.match(cells[1]):
-                moves[cells[0]] = cells[1]
-    return moves
-
-
-def resolve_ac(ac_id: str, moves: Mapping[str, str]) -> str:
-    """Follow ``ac_id`` through the move map to where it lives now (a cycle stops at the last id reached)."""
-    seen = {ac_id}
-    while ac_id in moves and moves[ac_id] not in seen:
-        ac_id = moves[ac_id]
-        seen.add(ac_id)
-    return ac_id
-
-
-def resolve_acs(ids: Iterable[str], moves: Mapping[str, str]) -> list[str]:
-    return sorted({resolve_ac(i, moves) for i in ids})
-
-
-def lock_entry(test: str, source: str, spec_text: str = "", conftests: Sequence[str] = ()) -> dict[str, Any]:
-    """``{"acs": [...current ids...], "hash": ...}``: the AC ids sit beside the hash, never inside it."""
-    ids = covers_of(test, source)
-    bad = [i for i in ids if not AC_ID.match(i)]
-    if bad or not ids:
-        raise ValueError(f"{test}: a promise test needs well-formed covers ids (got {ids!r})")
-    return {"acs": resolve_acs(ids, parse_move_map(spec_text)), "hash": fingerprint(test, source, conftests)}

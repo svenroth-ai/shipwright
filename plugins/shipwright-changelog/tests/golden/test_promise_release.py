@@ -14,7 +14,7 @@ import json
 import pytest
 
 from . import oracle
-from . import scenario_support as ss
+from . import scenario_support
 from .driver_replay import ReplayDriver
 from .scenario_core import release_flow
 
@@ -38,11 +38,11 @@ def _messages_since(s, tag):
 
 @pytest.mark.covers("FR-01.09/AC01")
 def test_ac01_a_release_run_leaves_a_readable_note_a_version_tag_and_an_open_request(make_project):
-    s = ss.ready_release(make_project)
+    s = scenario_support.ready_release(make_project)
     _, results = _flow(s)
     assert all(r.exit_code == 0 for r in results), [(r.step, r.exit_code) for r in results]
     open_requests = [p for p in s.gh_state()["prs"] if p["state"] == "open"]  # the stub's state: the replay is the oracle here
-    oracle.check_ac01(ss.notes_of(s), _tag_made(s), bool(open_requests), outcome="prepared")
+    oracle.check_ac01(scenario_support.notes_of(s), _tag_made(s), bool(open_requests), outcome="prepared")
     oracle.check_tag_on_release_commit(s.git("log", "-1", "--format=%s", f"v{VERSION}"), VERSION)
 
 
@@ -52,6 +52,10 @@ CASES = [
     ("v1.2.0", [("a.txt", "fix: a defect")], "1.2.1"),
     ("v1.2.0", [("a.txt", "feat(api)!: drop the v1 endpoints")], "2.0.0"),
     ("v0.3.0", [("a.txt", "feat!: rename the public option")], "0.4.0"),
+    ("v1.2.0", [("a.txt", "feat: a new capability\n\nBREAKING CHANGE: the old option is gone")], "2.0.0"),  # a break written as a footer
+    ("v1.2.0", [("a.txt", "fix: a defect\n\nBREAKING-CHANGE: the old option is gone")], "2.0.0"),
+    ("v0.3.0", [("a.txt", "fix: a defect\n\nBREAKING CHANGE: the old option is gone")], "0.4.0"),
+    ("v1.2.0", [("a.txt", "chore: tidy up the build")], "1.2.1"),  # chore-only: the unchanged skill still proposes a patch (anything that is not a break or a feature)
 ]
 
 
@@ -59,11 +63,11 @@ CASES = [
 @pytest.mark.covers("FR-01.09/AC04")
 def test_ac04_the_proposed_version_follows_the_break_feature_fix_rule(make_project, tag, commits, want):
     s = make_project(tagged=tag is not None)
-    if tag and tag != "v0.1.0":
-        ss.tag(s, tag)
-    ss.feature_branch(s, "work/next")
+    if tag:
+        scenario_support.tag(s, tag)
+    scenario_support.feature_branch(s, "work/next")
     for index, (path, message) in enumerate(commits):
-        ss.commit(s, path, f"{index}\n", message)
+        scenario_support.commit(s, path, f"{index}\n", message)
     out = ReplayDriver().run_step("prepare", s).output
     assert out["status"] == "ok" and out["version"] == want
     oracle.check_ac04_version(out["version"], tag, _messages_since(s, tag) if tag else [])
@@ -77,10 +81,10 @@ def _manifests(s, old="1.2.0"):
             {"name": "one", "version": old}, {"name": "two", "version": old}]}, indent=2) + "\n",
     }
     for path, text in files.items():
-        ss.commit(s, path, text, f"chore: manifest {path}")
+        scenario_support.commit(s, path, text, f"chore: manifest {path}")
     declared = {"published_manifests": [{"path": "pkg/package.json", "format": "package_json"},
                                         {"path": ".claude-plugin/marketplace.json", "format": "marketplace_json"}]}
-    ss.commit(s, "shipwright_changelog_config.json", json.dumps(declared, indent=2) + "\n", "chore: declare manifests")
+    scenario_support.commit(s, "shipwright_changelog_config.json", json.dumps(declared, indent=2) + "\n", "chore: declare manifests")
     return files
 
 
@@ -95,7 +99,7 @@ def _versions_at(s, rev):
 @pytest.mark.parametrize("left_stale", [False, True])
 @pytest.mark.covers("FR-01.09/AC12")
 def test_ac12_every_declared_manifest_carries_the_version_in_the_release_commit_before_the_tag(make_project, left_stale):
-    s = ss.ready_release(make_project)
+    s = scenario_support.ready_release(make_project)
     files = _manifests(s)
 
     def put_the_old_version_back():
@@ -106,7 +110,9 @@ def test_ac12_every_declared_manifest_carries_the_version_in_the_release_commit_
     assert (results[-1].step == "commit-and-tag" and results[-1].exit_code != 0) == left_stale
     rev = "HEAD" if left_stale else f"v{VERSION}"
     committed = _versions_at(s, rev)
-    assert None not in committed.values()  # the commit exists and holds both manifests: not a release that silently did not happen
+    stale = "1.2.0"  # what the first manifest still says in the refused run: the earlier version, put back after the sync
+    assert committed == {"pkg/package.json": stale if left_stale else VERSION, ".claude-plugin/marketplace.json": VERSION}  # the exact map, not "no None"
+    assert s.git("log", "-1", "--format=%s", rev) == f"chore(release): v{VERSION}"  # the release commit exists (and, stale, was refused)
     oracle.check_ac12_manifests(committed, VERSION, _tag_made(s))
     if left_stale:
         refusal = [c for c in driver.log if c["key"] == "commit-and-tag"][0]
@@ -118,15 +124,16 @@ def test_ac12_every_declared_manifest_carries_the_version_in_the_release_commit_
 
 @pytest.mark.covers("FR-01.09/AC13")
 def test_ac13_a_version_written_in_several_places_of_one_manifest_is_written_in_all_together(make_project):
-    s = ss.ready_release(make_project)
+    s = scenario_support.ready_release(make_project)
     _manifests(s)
     synced = ReplayDriver().run_step("sync", s, version=VERSION)
     assert synced.exit_code == 0 and synced.output["status"] == "ok"
-    oracle.check_ac13_nested(json.loads((s.repo / ".claude-plugin/marketplace.json").read_text(encoding="utf-8")), VERSION)
+    manifests = {path: json.loads((s.repo / path).read_text(encoding="utf-8")) for path in ("pkg/package.json", ".claude-plugin/marketplace.json")}
+    oracle.check_ac13_manifests(manifests, VERSION)  # every declared manifest: the plain package.json and the catalog with its entries
 
 
 def _page_flow(make_project, mode="ok", skip=()):
-    s = ss.ready_release(make_project)
+    s = scenario_support.ready_release(make_project)
     s.env["SHIPWRIGHT_TEST_CONDENSE_FIXTURE_MODEL"] = mode
     driver, results = _flow(s, skip=skip)
     return s, driver, results

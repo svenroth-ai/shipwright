@@ -200,6 +200,24 @@ def check_ac13_nested(parsed: Mapping, version: str) -> None:
     assert len(names) > 1 and all(n == version for n in names), f"AC13: {names} (want {version} everywhere)"
 
 
+@asserts("AC13")
+def check_ac13_manifests(manifests: Mapping[str, Mapping], version: str) -> None:
+    """AC13 over every declared manifest: each place that names the version holds the new one, and at least one manifest names it in more than one place."""
+    places = {path: [doc.get("version")] + [entry.get("version") for entry in doc.get("plugins", [])] for path, doc in manifests.items()}
+    stale = {path: names for path, names in places.items() if any(n != version for n in names)}
+    assert not stale, f"AC13: places not at {version}: {stale}"
+    assert any(len(names) > 1 for names in places.values()), "AC13: no manifest names the version in more than one place"
+
+
+@asserts("AC11")
+def check_ac11_aggregation_publishes_nothing(tags_before: Sequence[str], tags_after: Sequence[str], version: str, stub_state: Mapping) -> None:
+    """AC11, aggregation half: after the step that writes the release text no marking, release page or request is out.
+    A trivially held invariant (that step has no outward command): it fails only if one is ever added to it, and says nothing
+    about the whole of AC11, which stays a recorded gap."""
+    assert list(tags_after) == list(tags_before) and f"v{version}" not in tags_after, "AC11: a marking left the machine while the text was prepared"
+    assert not stub_state.get("prs") and not stub_state.get("releases"), "AC11: a request or a release page was made while the text was prepared"
+
+
 @asserts("AC14")
 def check_ac14_page(releases: Mapping, version: str, slug: str) -> None:
     """AC14: the page exists for the marking, with a readable summary; its title and the link to the full record at the

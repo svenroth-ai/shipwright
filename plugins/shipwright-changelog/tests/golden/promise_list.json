@@ -111,7 +111,7 @@
       "status": "passing",
       "decision": "Keep as a promise: green on the unchanged skill; the conversion must keep it green through the CLI driver.",
       "oracle": "test",
-      "note": "A break recorded only in a pending note is missed today (finding D5); that is not part of the promise."
+      "note": "Covers the header break (the exclamation mark), the BREAKING CHANGE and BREAKING-CHANGE footers, a feature, a fix and a chore-only history (a patch today). A break recorded only in a pending note is missed today (finding D5); that is not part of the promise."
     },
     {
       "id": "FR-01.09/AC05",
@@ -228,7 +228,7 @@
     },
     {
       "id": "FR-01.09/AC10",
-      "sentence": "The whole release can be previewed without anything changing on disk.",
+      "sentence": "The release text can be previewed with the aggregation's dry run without anything changing on disk.",
       "source": {
         "file": ".shipwright/planning/01-adopted/spec.md",
         "heading_path": [
@@ -240,12 +240,12 @@
       "class": "mechanic",
       "check": {
         "kind": "test",
-        "id": "plugins/shipwright-changelog/tests/golden/test_promise_aggregate.py::test_ac10_a_preview_shows_the_whole_result_and_changes_nothing_on_disk"
+        "id": "plugins/shipwright-changelog/tests/golden/test_promise_aggregate.py::test_ac10_the_aggregation_dry_run_shows_the_release_text_and_changes_nothing_on_disk"
       },
       "status": "passing",
       "decision": "Keep as a promise: green on the unchanged skill; the conversion must keep it green through the CLI driver.",
       "oracle": "test",
-      "note": "Green when no migration page changed; otherwise the upgrade-notes check writes a pending entry before any preview (finding D12)."
+      "note": "Narrowed to the aggregation's dry run. The whole-release preview of Step 5 is a person's choice (accept, edit, cancel) that the driver does not observe, so no test claims it. Green when no migration page changed; otherwise the upgrade-notes check writes a pending entry before any preview (finding D12)."
     },
     {
       "id": "FR-01.09/AC11",
@@ -283,7 +283,8 @@
       },
       "status": "passing",
       "decision": "Keep as a promise: green on the unchanged skill; the conversion must keep it green through the CLI driver. Only the aggregation half of AC11.",
-      "oracle": "test"
+      "oracle": "test",
+      "note": "A trivially held invariant: the step that writes the release text has no outward command, so this can only fail if one is added. It says nothing about the whole of AC11 (the gap above)."
     },
     {
       "id": "FR-01.09/AC12",

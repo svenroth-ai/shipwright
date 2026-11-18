@@ -19,6 +19,7 @@ import re
 import pytest
 
 import promise_hash as ph
+import promise_lock as pl
 
 from . import coverage
 from .conftest import GOLDEN_DIR, REPO_ROOT
@@ -167,14 +168,18 @@ def test_promise_tests_go_through_the_driver_interface_and_the_oracle_only():
         source = path.read_text(encoding="utf-8")
         assert not [w for w in FORBIDDEN_TEXT if w in source.replace("`SKILL.md`", "")], path.name
         for node in ast.walk(ast.parse(source)):
+            if isinstance(node, (ast.Import, ast.ImportFrom)):  # an alias would let one module pose as another: the fingerprint hashes the binding, this refuses it
+                assert all(x.asname in (None, x.name) for x in node.names), f"{path.name} imports {[(x.name, x.asname) for x in node.names]} under another name"
             if isinstance(node, ast.ImportFrom):
                 local = node.level == 1 and (node.module is None and {x.name for x in node.names} <= ALLOWED_LOCAL
                                              or node.module in ALLOWED_LOCAL)
                 assert local or (node.level == 0 and node.module in ALLOWED_MODULES), f"{path.name} imports {node.module}"
             elif isinstance(node, ast.Import):
                 assert {x.name for x in node.names} <= ALLOWED_MODULES, f"{path.name} imports {[x.name for x in node.names]}"
-        assert "ReplayDriver" in source and "oracle." in source, path.name
+        assert "ReplayDriver" in source, path.name
         assert len(source.splitlines()) <= 300, path.name
+        for name in ph.tests_in(source):  # every promise test reaches the oracle through its own closure, not through a neighbour's use of it
+            assert "oracle" in ph.closure(name, source, [_golden_sources()]), f"{path.name}::{name} never reaches the oracle"
 
 
 @pytest.mark.covers("FR-01.09/AC01")
@@ -207,7 +212,9 @@ def test_the_fingerprint_is_stable_for_every_promise_test_follows_the_conftest_f
         for name in ph.tests_in(source):
             first = ph.fingerprint(name, source, [conftest])
             assert first == ph.fingerprint(name, source, [conftest]) and len(first) == 64
-            prints[name] = first
+            key = pl.lock_key(path.relative_to(REPO_ROOT).as_posix(), name)  # a lock entry is keyed path::name: a bare name is not unique
+            assert key not in prints, key
+            prints[key] = first
     assert len(set(prints.values())) == len(prints) >= 20
     source = (GOLDEN_DIR / "test_promise_aggregate.py").read_text(encoding="utf-8")
     parts = ph.closure("test_ac06_the_new_section_goes_above_the_latest_release_and_older_text_stays", source, [conftest])
@@ -218,8 +225,8 @@ def test_the_fingerprint_is_stable_for_every_promise_test_follows_the_conftest_f
 def test_the_lock_entry_of_a_promise_test_names_its_acceptance_criterion_through_the_move_map():
     spec = coverage.SPEC.read_text(encoding="utf-8")
     source = (GOLDEN_DIR / "test_promise_release.py").read_text(encoding="utf-8")
-    entry = ph.lock_entry("test_ac13_a_version_written_in_several_places_of_one_manifest_is_written_in_all_together", source, spec, [_golden_sources()])
+    entry = pl.lock_entry("test_ac13_a_version_written_in_several_places_of_one_manifest_is_written_in_all_together", source, spec, [_golden_sources()])
     assert entry["acs"] == ["FR-01.09/AC13"] and len(entry["hash"]) == 64
-    moved = ph.lock_entry("test_ac13_a_version_written_in_several_places_of_one_manifest_is_written_in_all_together", source,
+    moved = pl.lock_entry("test_ac13_a_version_written_in_several_places_of_one_manifest_is_written_in_all_together", source,
                           spec + "\n## AC-Move-Map\n\n| Old id | New id |\n|---|---|\n| `FR-01.09/AC13` | `FR-01.40/AC13` |\n", [_golden_sources()])
     assert moved["acs"] == ["FR-01.40/AC13"] and moved["hash"] == entry["hash"]
