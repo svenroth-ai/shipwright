@@ -19,6 +19,7 @@ import re
 import pytest
 
 import promise_hash as ph
+import promise_lock as pl
 
 from . import coverage
 from .conftest import GOLDEN_DIR, REPO_ROOT
@@ -167,14 +168,20 @@ def test_promise_tests_go_through_the_driver_interface_and_the_oracle_only():
         source = path.read_text(encoding="utf-8")
         assert not [w for w in FORBIDDEN_TEXT if w in source.replace("`SKILL.md`", "")], path.name
         for node in ast.walk(ast.parse(source)):
+            if isinstance(node, (ast.Import, ast.ImportFrom)):  # an alias would let one module pose as another: the fingerprint hashes the binding, this refuses it
+                assert all(x.asname in (None, x.name) for x in node.names), f"{path.name} imports {[(x.name, x.asname) for x in node.names]} under another name"
             if isinstance(node, ast.ImportFrom):
                 local = node.level == 1 and (node.module is None and {x.name for x in node.names} <= ALLOWED_LOCAL
                                              or node.module in ALLOWED_LOCAL)
                 assert local or (node.level == 0 and node.module in ALLOWED_MODULES), f"{path.name} imports {node.module}"
             elif isinstance(node, ast.Import):
                 assert {x.name for x in node.names} <= ALLOWED_MODULES, f"{path.name} imports {[x.name for x in node.names]}"
-        assert "ReplayDriver" in source and "oracle." in source, path.name
+        for stmt in ast.parse(source).body:  # code that runs at import and that no test reaches is invisible to the fingerprint: refuse it
+            assert _runs_nothing_at_import(stmt), f"{path.name}:{stmt.lineno} is a module-level statement the fingerprint cannot see"
+        assert "ReplayDriver" in source, path.name
         assert len(source.splitlines()) <= 300, path.name
+        for name in ph.tests_in(source):  # every promise test reaches the oracle through its own closure, not through a neighbour's use of it
+            assert "oracle" in ph.closure(name, source, [_golden_sources()]), f"{path.name}::{name} never reaches the oracle"
 
 
 @pytest.mark.covers("FR-01.09/AC01")
@@ -195,6 +202,35 @@ def test_scenarios_json_is_valid_in_the_schema_of_the_comparison_tool_and_covers
     assert {c["id"] for e in _entries() for c in _checks(e) if c["kind"] == "scenario"} == seen  # every scenario is bound to a promise
 
 
+def _runs_nothing_at_import(stmt):
+    """True for a module-level statement that cannot rewire anything while the file is imported: a docstring, an import, a
+    plain assignment to names, or a def whose decorators are ``pytest.mark.*`` / ``pytest.fixture`` and whose decorators
+    and defaults hold no call and no ``:=``. A call or a walrus anywhere else runs (or binds) unseen by the fingerprint."""
+    def code(*parts):
+        return any(isinstance(n, (ast.Call, ast.NamedExpr)) for part in parts for n in ast.walk(part))
+    if isinstance(stmt, ast.Expr):
+        return isinstance(stmt.value, ast.Constant) and isinstance(stmt.value.value, str)
+    if isinstance(stmt, (ast.Import, ast.ImportFrom)):
+        return True
+    if isinstance(stmt, ast.FunctionDef):
+        marks = all(ph._dotted(d).startswith(("pytest.mark.", "pytest.fixture")) for d in stmt.decorator_list)
+        args = [a for d in stmt.decorator_list for a in (d.args + [k.value for k in d.keywords] if isinstance(d, ast.Call) else [])]
+        return marks and not code(*args, *stmt.args.defaults, *(d for d in stmt.args.kw_defaults if d is not None))
+    if isinstance(stmt, (ast.Assign, ast.AnnAssign, ast.AugAssign)):
+        targets = stmt.targets if isinstance(stmt, ast.Assign) else [stmt.target]
+        return all(isinstance(t, ast.Name) for t in targets) and not code(stmt)
+    return False
+
+
+@pytest.mark.covers("FR-01.09/AC01")
+def test_the_import_time_rule_refuses_calls_walruses_and_code_in_decorators_and_defaults():
+    refused = ('_ = setattr(oracle, "x", 1)', '_X = (NEW := "")', "def f(x=(N := 1)):\n    pass", "def f(x=setattr(o, 'a', 1)):\n    pass",
+               "@(lambda f: f)\ndef f():\n    pass", "@pytest.mark.parametrize('a', [g()])\ndef f(a):\n    pass", "setattr(o, 'a', 1)", "class C:\n    pass")
+    allowed = ('"""doc"""', "import json", "A = [1, (2, 3)]", "@pytest.mark.parametrize('a', A)\n@pytest.mark.covers('FR-01.09/AC01')\ndef f(a):\n    pass")
+    assert not [s for s in refused if _runs_nothing_at_import(ast.parse(s).body[0])]
+    assert all(_runs_nothing_at_import(ast.parse(s).body[0]) for s in allowed)
+
+
 def _golden_sources():
     return (GOLDEN_DIR / "conftest.py").read_text(encoding="utf-8")
 
@@ -207,7 +243,9 @@ def test_the_fingerprint_is_stable_for_every_promise_test_follows_the_conftest_f
         for name in ph.tests_in(source):
             first = ph.fingerprint(name, source, [conftest])
             assert first == ph.fingerprint(name, source, [conftest]) and len(first) == 64
-            prints[name] = first
+            key = pl.lock_key(path.relative_to(REPO_ROOT).as_posix(), name)  # a lock entry is keyed path::name: a bare name is not unique
+            assert key not in prints, key
+            prints[key] = first
     assert len(set(prints.values())) == len(prints) >= 20
     source = (GOLDEN_DIR / "test_promise_aggregate.py").read_text(encoding="utf-8")
     parts = ph.closure("test_ac06_the_new_section_goes_above_the_latest_release_and_older_text_stays", source, [conftest])
@@ -218,8 +256,8 @@ def test_the_fingerprint_is_stable_for_every_promise_test_follows_the_conftest_f
 def test_the_lock_entry_of_a_promise_test_names_its_acceptance_criterion_through_the_move_map():
     spec = coverage.SPEC.read_text(encoding="utf-8")
     source = (GOLDEN_DIR / "test_promise_release.py").read_text(encoding="utf-8")
-    entry = ph.lock_entry("test_ac13_a_version_written_in_several_places_of_one_manifest_is_written_in_all_together", source, spec, [_golden_sources()])
+    entry = pl.lock_entry("test_ac13_a_version_written_in_several_places_of_one_manifest_is_written_in_all_together", source, spec, [_golden_sources()])
     assert entry["acs"] == ["FR-01.09/AC13"] and len(entry["hash"]) == 64
-    moved = ph.lock_entry("test_ac13_a_version_written_in_several_places_of_one_manifest_is_written_in_all_together", source,
+    moved = pl.lock_entry("test_ac13_a_version_written_in_several_places_of_one_manifest_is_written_in_all_together", source,
                           spec + "\n## AC-Move-Map\n\n| Old id | New id |\n|---|---|\n| `FR-01.09/AC13` | `FR-01.40/AC13` |\n", [_golden_sources()])
     assert moved["acs"] == ["FR-01.40/AC13"] and moved["hash"] == entry["hash"]

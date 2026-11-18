@@ -1,0 +1,378 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-18-promise-hash-hardening",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-18T08:00:10.012611+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The plan changes `shared/testkit/promise_hash.py` internals (binding lists, hashing semantics, `path::name` lock keys, a pinned digest) while marking all 15 AC items as \"unchanged\" and decided automatically. If the hash algorithm changes even slightly, any previously recorded promise-lock digests / frozen traces become invalid — the plan never says whether existing stored hashes exist and must be migrated or regenerated.",
+          "suggestion": "Before implementing, inventory existing outputs of the hasher (lock files, frozen digests, recorded promises). If any exist, either pin the algorithm for old data or plan a one-time regeneration, and state which in the plan.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Changing lock keys to `path::name` and adding \"refuse a rebound test name\" + \"always() names\" semantics can make previously-passing promise tests start failing hard. A strict-failure mode on rebinding is a behavioral break for any test file that legitimately reassigns (e.g., conditional imports, platform guards like `import x` vs `try/except`). Windows path separators (`\\\\` vs `/`) also affect `path::name` keys — the plan mentions golden root \"Windows works\" but not key normalization.",
+          "suggestion": "Normalize paths in the key (e.g., POSIX form) explicitly, and enumerate real test files that rebind names before making rebinding a hard failure; decide whether it's an error or a warning first.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "\"Every binding of a name in file order\" interacts ambiguously with conditional imports (`if sys.platform: import x`), `pytestmark` set inside functions (rare but legal), and AugAssign forms like `pytestmark += [...]` where the base is undefined. The plan lists the statement forms but not ordering/accumulation semantics across module level vs nested scopes.",
+          "suggestion": "Define one explicit rule (e.g., module-level statements only, AugAssign accumulates onto the previously seen value, missing base is a hard error) and test exactly that rule.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The pinned-digest test hard-codes a hash of an f-string-heavy source. Any hash-algorithm tweak or dependency-version difference (e.g., `hashlib` usage is stable, but if source normalization involves `ast.unparse`/`inspect`/line endings, Python minor versions differ) will churn the pin across environments. Line-ending differences (CRLF checkout on Windows) are the classic failure.",
+          "suggestion": "Ensure the pinned source is hashed as a normalized string (LF, explicit encoding), not a file read, and document that the pin must be updated deliberately with the algorithm version.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Step 4 (\"test_trace_freeze.py REQUIRED: … chosen over hashing them into every closure: simpler\") is a sound simplification, but freezing the root conftest and parent conftests couples every environment's conftest content to this repo's frozen list — shared testkit used by multiple packages may see conftest drift.",
+          "suggestion": "Confirm the freeze list is per-consuming-repo or include a clear failure message when a new conftest appears that isn't frozen.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "Step 2 splits `promise_lock.py` into modules while step 4 freezes \"the lock modules\" — but tests in step 1 are written against the pre-split file layout and must all be red first. The split itself isn't covered by any AC item and adds risk (import paths for downstream consumers of `promise_lock`) with no mention of a compatibility re-export.",
+          "suggestion": "If `promise_lock` is imported elsewhere (likely, given tests rely on it), keep a thin `promise_lock.py` re-exporting `lock_entry`/`lock_key`/`lock_problems`, or grep for consumers and update them in the same change.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Step 5 weakens/rewrites several promise test sentences (AC10 \"narrowed\", AC11 \"trivially held\", dead condition removed). Rewriting promises to match behavior rather than fixing behavior to match promises is the classic direction-of-truth failure. The plan gives no evidence which side is wrong for AC10 (preview \"not observable\").",
+          "suggestion": "For each narrowed/removed sentence, record in FINDINGS/LEARNINGS the concrete evidence (e.g., a reproducing run) that the original claim was unachievable, not just inconvenient.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The meta test \"no import under another name\" (`asname not in (None, name)`) will fail on benign aliases like `import pytest.mark as m` or `from collections import defaultdict as dd` if applied to all imports rather than promise-relevant names.",
+          "suggestion": "Scope the asname check to the names the hasher tracks (promise/test/oracle-related), or accept an explicit allowlist.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach ·",
+          "file": null,
+          "line": null,
+          "finding": "Narrowing AC10’s sentence because the whole-release preview is unobservable could weaken the promise instead of strengthening its test. Marking FR-01.09 unchanged needs justification if that sentence expresses an acceptance requirement.",
+          "suggestion": "Establish whether AC10 requires that behavior. If it does, add an observation seam or retain the coverage gap explicitly; otherwise document why the narrower sentence preserves the requirement.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "Reaching `oracle` through a test’s closure proves a dependency exists, but does not prove the test executes it or asserts its result. A reference in a dead branch or an unused helper could satisfy the proposed meta test while leaving the promise untested.",
+          "suggestion": "Keep the closure check, but validate the strengthened tests against targeted behavior mutations—for example, incorrect aggregation and acceptance of the refused AC12 run. Each corresponding promise test should fail.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency ·",
+          "file": null,
+          "line": null,
+          "finding": "Hashing import bindings detects an alias or import-target change, but does not by itself detect changes to the imported implementation. The explicit freeze list names infrastructure files, yet does not establish coverage for `scenario_support`, the oracle implementation, or other imported test helpers. These directly affect what a locked promise test verifies.",
+          "suggestion": "Ensure those helper implementations are already frozen or included in the fingerprint’s dependency coverage. Add a regression test showing that changing an imported oracle/helper body invalidates verification even when the import statement stays identical.  The hashing changes are directionally sound, and separating lock bookkeeping is reasonable. Before proceeding, resolve the potential acceptance-scope reduction and demonstrate that both helper changes and broken promised behavior are detected; this review is based on the supplied plan because workspace access was unavailable.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-18T08:00:10.160779+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: approach — Severity: medium**\n  **Finding:** The plan changes `shared/testkit/promise_hash.py` internals (binding lists, hashing semantics, `path::name` lock keys, a pinned digest) while marking all 15 AC items as \"unchanged\" and decided automatically. If the hash algorithm changes even slightly, any previously recorded promise-lock digests / frozen traces become invalid — the plan never says whether existing stored hashes exist and must be migrated or regenerated.\n  **Suggestion:** Before implementing, inventory existing outputs of the hasher (lock files, frozen digests, recorded promises). If any exist, either pin the algorithm for old data or plan a one-time regeneration, and state which in the plan.\n\n- **Category: risk — Severity: high**\n  **Finding:** Changing lock keys to `path::name` and adding \"refuse a rebound test name\" + \"always() names\" semantics can make previously-passing promise tests start failing hard. A strict-failure mode on rebinding is a behavioral break for any test file that legitimately reassigns (e.g., conditional imports, platform guards like `import x` vs `try/except`). Windows path separators (`\\\\` vs `/`) also affect `path::name` keys — the plan mentions golden root \"Windows works\" but not key normalization.\n  **Suggestion:** Normalize paths in the key (e.g., POSIX form) explicitly, and enumerate real test files that rebind names before making rebinding a hard failure; decide whether it's an error or a warning first.\n\n- **Category: edge-case — Severity: medium**\n  **Finding:** \"Every binding of a name in file order\" interacts ambiguously with conditional imports (`if sys.platform: import x`), `pytestmark` set inside functions (rare but legal), and AugAssign forms like `pytestmark += [...]` where the base is undefined. The plan lists the statement forms but not ordering/accumulation semantics across module level vs nested scopes.\n  **Suggestion:** Define one explicit rule (e.g., module-level stateme […truncated]\n\n[openai] 1. **Category: approach · Severity: high**  \n   **Finding:** Narrowing AC10’s sentence because the whole-release preview is unobservable could weaken the promise instead of strengthening its test. Marking FR-01.09 unchanged needs justification if that sentence expresses an acceptance requirement.  \n   **Suggestion:** Establish whether AC10 requires that behavior. If it does, add an observation seam or retain the coverage gap explicitly; otherwise document why the narrower sentence preserves the requirement.\n\n2. **Category: edge-case · Severity: medium**  \n   **Finding:** Reaching `oracle` through a test’s closure proves a dependency exists, but does not prove the test executes it or asserts its result. A reference in a dead branch or an unused helper could satisfy the proposed meta test while leaving the promise untested.  \n   **Suggestion:** Keep the closure check, but validate the strengthened tests against targeted behavior mutations—for example, incorrect aggregation and acceptance of the refused AC12 run. Each corresponding promise test should fail.\n\n3. **Category: dependency · Severity: medium**  \n   **Finding:** Hashing import bindings detects an alias or import-target change, but does not by itself detect changes to the imported implementation. The explicit freeze list names infrastructure files, yet does not establish coverage for `scenario_support`, the oracle implementation, or other imported test helpers. These directly affect what a locked promise test verifies.  \n   **Suggestion:** Ensure those helper implementations are already frozen or included in the fingerprint’s dependency coverage. Add a regression test showing that changing an imported oracle/helper body invalidates verification even when the import statement stays identical.\n\nThe hashing changes are directionally sound, and separating lock bookkeeping is reasonable. Before proceeding, resolve the potential acceptance-scope reduction and demonstrate that both helper changes and bro […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/testkit/promise_hash.py",
+          "line": null,
+          "finding": "An import that rebinds a captured name kept the same hash because _order left imports out. Fixed in 75d291ab (imports ordered when a reached name is rebound), test added.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/tests/golden/test_promises_meta.py",
+          "line": null,
+          "finding": "The module-level statement guard let a call at import through (an assignment whose value calls setattr). Fixed in 75d291ab: no call in a module-level statement of a promise file.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/testkit/promise_hash.py",
+          "line": null,
+          "finding": "The order of every reached binding was hashed, so reordering unrelated helpers moved the hash. Fixed in 75d291ab: order is hashed only when a reached name is bound more than once.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/testkit/promise_hash.py",
+          "line": null,
+          "finding": "An annotated reset of pytestmark was not a reset and covers_of kept ids before a reset. Fixed in 75d291ab.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/tests/golden/oracle.py",
+          "line": null,
+          "finding": "The AC11 aggregation check used .get on the stub state. Fixed in 75d291ab: keys indexed directly.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/testkit/promise_lock.py",
+          "line": null,
+          "finding": "lock_problems compared the whole entry and lock_key accepted a path leaving the repository. Fixed in 75d291ab: acs and hash only, '..' refused.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-changelog/tests/golden/test_promises_meta.py",
+          "line": null,
+          "finding": "The statement guard is one long boolean; not changed (rejected-with-reason: the guard is test code and readable enough, a shared helper would couple the meta test to a private function).",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-18T08:04:30.380964+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "b08bbe375554bd1c919923b160284e148087c3d8",
+      "reviewer_notes": "Stage-2 reviewed commit b08bbe375; the findings were fixed in 75d291ab and re-checked by the Stage-3 reviewer."
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "hidden coupling",
+          "file": null,
+          "line": null,
+          "finding": "every binding of a reached name is hashed",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "hidden coupling",
+          "file": null,
+          "line": null,
+          "finding": "the meta test refuses code that runs at import and that no test reaches",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "a locked promise test cannot change behaviour without a fingerprint or a frozen file moving",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "every promise test is judged by the oracle",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-18T08:07:10.300869+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "75d291ab82298c107f1d601553e24e48872ebd60"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "regression",
+          "file": "shared/testkit/promise_hash.py (removal of `parse_move_map`, `resolve_ac`, `resolve_acs`, `lock_entry`)",
+          "line": null,
+          "finding": "The public API moved wholesale to `promise_lock.py`. The diff updates the two known callers (`shared/tests/test_promise_hash.py`, `test_promises_meta.py`), but any caller outside the diff (scripts, operator tooling at stop 2 that may already reference `promise_hash.lock_entry`) breaks with `AttributeError` at runtime.",
+          "suggestion": "Either re-export the four names from `promise_hash` (`from promise_lock import ...`) as a compatibility shim, or grep the repo for remaining `ph.lock_entry`/`ph.resolve_acs` references before merge.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "plugins/shipwright-changelog/tests/golden/oracle.py:207-210 (`check_ac13_manifests`)",
+          "line": null,
+          "finding": "places` starts with `doc.get(\"version\")` for every manifest. If a declared manifest format has no top-level `version` key (e.g. a catalog whose version lives only in entries), `doc.get(\"version\")` is `None`, `any(n != version)` is always true, and the oracle reports every run as stale — the test can then only pass by the fixture happening to carry a top-level version. This couples the oracle's correctness to the fixture's shape rather than the manifest format.",
+          "suggestion": "Confirm the committed `marketplace.json`/`package.json` fixtures both carry a top-level `version`; if a format legitimately lacks one, take `doc.get(\"version\")` only when the key exists (e.g. `doc.get(\"version\", version)` or skip missing keys in the stale check).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "shared/testkit/promise_lock.py:69-71 (`lock_problems`)",
+          "line": null,
+          "finding": "lock_entry` raises `ValueError` when a source's `covers` ids are malformed or missing, and `lock_problems` doesn't catch it. A lock check against a file whose test lost its `covers` mark crashes instead of reporting the problem in the returned list, so a `lock_problems(...) == []` caller sees an exception where the docstring promises a problem string.",
+          "suggestion": "Wrap the `lock_entry` call per entry in `try/except ValueError` and append the message as a problem.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_promise_hash_hardening.py:99-101 (`test_a_pinned_digest_catches_interpreter_drift_in_the_serialization`)",
+          "line": null,
+          "finding": "The 3.11/3.12/3.13 equality claim lives only in the docstring; the test pins one digest, so drift between interpreters in CI on a different minor version is only caught if that CI actually runs this test on all three. The FINDINGS file acknowledges the full root wasn't run on 3.11/3.12 side by side — this is the same gap, correctly recorded as open for stop 2, but worth keeping explicit.",
+          "suggestion": "No code change needed now; ensure stop 2 runs the shared root on 3.11/3.12 before writing the lock, as the findings already require.  Everything else checks out: the multi-binding `Module`, autouse/hook closure inclusion, `pytestmark` AnnAssign/AugAssign handling, `path::name` lock keys, missing-name failures, and the alias-refusal in `test_promises_meta` all match the stated hardening goals, and the tests exercise the red paths (alias swap, rebinding, `autouse=not False`, `OPTIONS`, refused double-bound test name) rather than only calling the functions. The promise-list sentence narrowing (AC10) and AC11 \"trivially held invariant\" note are honest spec-side fixes, and the leftover `tag != \"v0.1.0\"` dead condition is correctly removed.  Overall: ship-with-fixes at most — the oracle's top-level-version assumption is the only thing I'd verify before merge; the rest are shims and robustness notes.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": "shared/testkit/promise_hash.py:139–140",
+          "line": null,
+          "finding": "Module-level marks are flattened without preserving assignment semantics. Changing `pytestmark += [xfail_mark]` to `pytestmark = [xfail_mark]` produces the same fingerprint when preceded by `pytestmark = [skip_mark]`, although the latter removes the skip. A locked test’s execution behavior can therefore change undetected.",
+          "suggestion": "Preserve the assignment operator and statement structure when hashing module marks, while continuing to exclude `covers`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/testkit/promise_hash.py:159–160",
+          "line": null,
+          "finding": "Binding order is preserved only within each name, losing meaningful ordering between names. Moving `def helper(value=VALUE): ...` from between `VALUE = 1` and `VALUE = 2` to after both assignments leaves the fingerprint unchanged, but changes the captured default from `1` to `2`. Assertions in a locked helper can consequently change behavior without changing its hash.",
+          "suggestion": "Preserve the relative module order of all reachable binding statements in the serialized closure. Add a regression test that moves a helper with a captured default across a constant rebinding.  Ship-with-fixes: the promise tests are stronger, but the fingerprint still permits concrete behavioral changes to pass undetected. Resolve these collisions before writing the lock.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-18T08:00:10.628876+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] Findings:\n\n- Category: regression\n  - Severity: low\n  - File: shared/testkit/promise_hash.py (removal of `parse_move_map`, `resolve_ac`, `resolve_acs`, `lock_entry`)\n  - Finding: The public API moved wholesale to `promise_lock.py`. The diff updates the two known callers (`shared/tests/test_promise_hash.py`, `test_promises_meta.py`), but any caller outside the diff (scripts, operator tooling at stop 2 that may already reference `promise_hash.lock_entry`) breaks with `AttributeError` at runtime.\n  - Suggestion: Either re-export the four names from `promise_hash` (`from promise_lock import ...`) as a compatibility shim, or grep the repo for remaining `ph.lock_entry`/`ph.resolve_acs` references before merge.\n\n- Category: edge-case\n  - Severity: medium\n  - File: plugins/shipwright-changelog/tests/golden/oracle.py:207-210 (`check_ac13_manifests`)\n  - Finding: `places` starts with `doc.get(\"version\")` for every manifest. If a declared manifest format has no top-level `version` key (e.g. a catalog whose version lives only in entries), `doc.get(\"version\")` is `None`, `any(n != version)` is always true, and the oracle reports every run as stale — the test can then only pass by the fixture happening to carry a top-level version. This couples the oracle's correctness to the fixture's shape rather than the manifest format.\n  - Suggestion: Confirm the committed `marketplace.json`/`package.json` fixtures both carry a top-level `version`; if a format legitimately lacks one, take `doc.get(\"version\")` only when the key exists (e.g. `doc.get(\"version\", version)` or skip missing keys in the stale check).\n\n- Category: bug\n  - Severity: low\n  - File: shared/testkit/promise_lock.py:69-71 (`lock_problems`)\n  - Finding: `lock_entry` raises `ValueError` when a source's `covers` ids are malformed or missing, and `lock_problems` doesn't catch it. A lock check against a file whose test lost its `covers` mark crashes instead of reporting the problem in the returned list, so a `lock_ […truncated]\n\n[openai] - Category: bug\n- Severity: high\n- File: shared/testkit/promise_hash.py:139–140\n- Finding: Module-level marks are flattened without preserving assignment semantics. Changing `pytestmark += [xfail_mark]` to `pytestmark = [xfail_mark]` produces the same fingerprint when preceded by `pytestmark = [skip_mark]`, although the latter removes the skip. A locked test’s execution behavior can therefore change undetected.\n- Suggestion: Preserve the assignment operator and statement structure when hashing module marks, while continuing to exclude `covers`.\n\n- Category: bug\n- Severity: medium\n- File: shared/testkit/promise_hash.py:159–160\n- Finding: Binding order is preserved only within each name, losing meaningful ordering between names. Moving `def helper(value=VALUE): ...` from between `VALUE = 1` and `VALUE = 2` to after both assignments leaves the fingerprint unchanged, but changes the captured default from `1` to `2`. Assertions in a locked helper can consequently change behavior without changing its hash.\n- Suggestion: Preserve the relative module order of all reachable binding statements in the serialized closure. Add a regression test that moves a helper with a captured default across a constant rebinding.\n\nShip-with-fixes: the promise tests are stronger, but the fingerprint still permits concrete behavioral changes to pass undetected. Resolve these collisions before writing the lock.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-18T08:00:56.531904+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "b08bbe375554bd1c919923b160284e148087c3d8"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-18T08:00:10.316642+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-18T08:00:10.459918+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

@@ -28,7 +28,7 @@ from .conftest import DELTAS_PATH, GOLDEN_DIR, LOCK_PATH, REPO_ROOT, STEPS
 TRACE_SUFFIX = ".trace.json"
 HARNESS = "shared/testkit/golden_trace.py"
 # What shapes every trace besides the trace files: a lock that leaves one out is refused. P2b added the replay
-# driver and its command table, P2b2 the second half of the scenarios, the coverage checks and the seeded regressions; P2p added the promise tests and the hashing helper; P2-op adds the pinned prose copy and the promise lock to this list.
+# driver and its command table, P2b2 the second half of the scenarios, the coverage checks and the seeded regressions; P2p added the promise tests and the hashing helper; the promise-hash hardening adds the lock's two modules, their tests and the conftests above the golden root; P2-op adds the pinned prose copy and the promise lock to this list.
 REQUIRED = (HARNESS, "shared/testkit/gh_stub.py", "shared/testkit/release_scratch.py",
             "plugins/shipwright-changelog/tests/golden/conftest.py",
             "plugins/shipwright-changelog/tests/golden/driver_replay.py",
@@ -59,7 +59,12 @@ REQUIRED = (HARNESS, "shared/testkit/gh_stub.py", "shared/testkit/release_scratc
             "plugins/shipwright-changelog/tests/golden/test_promise_aggregate.py",
             "plugins/shipwright-changelog/tests/golden/test_promise_release.py",
             "plugins/shipwright-changelog/tests/golden/test_promises_meta.py",
-            "shared/testkit/promise_hash.py")
+            "shared/testkit/promise_hash.py", "shared/testkit/promise_lock.py",
+            "shared/tests/test_promise_hash.py", "shared/tests/test_promise_hash_hardening.py",
+            # what pytest applies to every promise test without the test naming it: the parent conftests (an autouse fixture or a
+            # pytest_* hook there), the root conftest and the package markers. Frozen here instead of hashed into every closure. Known cost: once the lock exists, any edit of these files (the root conftest too) needs an approved delta.
+            "conftest.py", "plugins/shipwright-changelog/tests/conftest.py",
+            "plugins/shipwright-changelog/tests/__init__.py", "plugins/shipwright-changelog/tests/golden/__init__.py")
 
 
 def tree_problems(repo_root: Path, golden_dir: Path) -> list[str]:
