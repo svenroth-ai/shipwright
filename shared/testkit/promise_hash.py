@@ -26,7 +26,7 @@ run time (``getattr``, ``request.getfixturevalue``) are invisible; so are bindin
 in-place mutations such as ``CASES.append(...)``; a helper's parameter that shadows a module-level name still pulls that
 name in (over-inclusion: a harmless extra hash change, never a missed one); a test name bound twice is refused; ``pytestmark`` built by an expression other than a call, list or tuple is not split (a covers id in it is not found: fails safe); an interpreter bump that turns the pinned digest red means a lock rewrite (a decision), not a test fix.
 
-The AC ids and the lock's entries (``path::name``) live in ``promise_lock.py``; ``covers_of`` stays here (it reads the marks). The reached bindings are also hashed in file order (``<order>``): a helper moved across the rebinding of a constant it captures changes the hash.
+The AC ids and the lock's entries (``path::name``) live in ``promise_lock.py``; ``covers_of`` stays here (it reads the marks). When a reached name is bound more than once the reached bindings are also hashed in file order (``<order>``): a helper moved across the rebinding of a name it captures changes the hash; without a rebinding reordering helpers keeps it.
 """
 
 from __future__ import annotations
@@ -136,8 +136,9 @@ class Module:
         for node in ast.parse(source).body:
             if _is_pytestmark(node):
                 kept = [m for m in _mark_elements(node) if not _is_marker(m)]
-                if kept or (isinstance(node, ast.Assign) and self.marks):  # ``=`` resets the marks before it, ``+=`` adds: the kind is hashed
-                    self.marks.append(ast.Tuple(elts=[ast.Constant(type(node).__name__), ast.List(elts=kept, ctx=ast.Load())], ctx=ast.Load()))
+                resets = not isinstance(node, ast.AugAssign)  # ``=`` and ``: T =`` reset the marks before them, ``+=`` adds: the kind is hashed
+                if kept or (resets and self.marks):
+                    self.marks.append(ast.Tuple(elts=[ast.Constant("set" if resets else "add"), ast.List(elts=kept, ctx=ast.Load())], ctx=ast.Load()))
             elif isinstance(node, _DEFS):
                 self._bind(node.name, node)
                 for d in node.decorator_list:  # ``@pytest.fixture(name="x")`` is requested as ``x``
@@ -232,10 +233,13 @@ def _walk(test: str, source: str, conftests: Sequence[str]) -> tuple[dict[str, a
 
 
 def _order(test: str, seen: dict[str, ast.AST], origin: dict[str, int], modules: list[Module]) -> list[str]:
-    """The reached bindings in file order (imports left out: their order is not behaviour). A helper moved across the
-    rebinding of a constant it captures as a default changes what the test runs, so the order is part of the hash."""
+    """The reached bindings in file order, but only when some reached name is bound more than once: a helper moved across
+    the rebinding of a name it captures (a default, an import) changes what the test runs. Without a rebinding the order
+    cannot change behaviour, so reordering unrelated helpers keeps the hash."""
+    if not any(isinstance(node, ast.Module) for node in seen.values()):
+        return []
     items = [(origin[k], modules[origin[k]].pos[id(n)], "<test>" if k == test else k)
-             for k, node in seen.items() for n in _each(node) if id(n) in modules[origin[k]].pos and not isinstance(n, (ast.Import, ast.ImportFrom))]
+             for k, node in seen.items() for n in _each(node) if id(n) in modules[origin[k]].pos]
     return [k for _, _, k in sorted(items)]
 
 
@@ -273,5 +277,7 @@ def covers_of(test: str, source: str) -> list[str]:
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == test:
             ids += _covers_ids(node.decorator_list)
         elif _is_pytestmark(node):
+            if not isinstance(node, ast.AugAssign):
+                ids = []  # a plain assignment resets the marks (and their ids) collected before it
             ids += _covers_ids(_mark_elements(node))
     return list(dict.fromkeys(ids))

@@ -90,7 +90,7 @@ F_SOURCE = textwrap.dedent('''
         text = (f"{name!r:>8} costs " f"{PRICE:.2f}" f" {{{name}}} " "tail" f"{'nested ' + f'{name}'}")
         assert text == "x"
 ''')
-F_DIGEST = "27d87d303a3c2333295aec437a97c5f566fcc4037e07e7405f70d9853002eb86"
+F_DIGEST = "9304bd260a3ca1dd10e780c418338215506f6823ae18be1068589cb7afa107e5"
 
 
 def test_a_pinned_digest_catches_interpreter_drift_in_the_serialization():
@@ -154,3 +154,32 @@ def test_a_lock_key_is_one_relative_posix_path_and_a_name():
     for bad in ("/abs/test_a.py", "C:/abs/test_a.py"):
         with pytest.raises(ValueError):
             pl.lock_key(bad, "test_x")
+
+
+def test_an_import_that_rebinds_a_captured_name_changes_the_hash_by_its_position():
+    a = "def f():\n    pass\n\n\ndef helper(g=f):\n    g()\n\n\nfrom x import f\n\n\ndef test_it():\n    helper()\n"
+    b = "def f():\n    pass\n\n\nfrom x import f\n\n\ndef helper(g=f):\n    g()\n\n\ndef test_it():\n    helper()\n"
+    assert fp(a) != fp(b)
+
+
+def test_moving_unrelated_helpers_without_any_rebinding_keeps_the_hash():
+    one = "def a():\n    assert 1\n\n\ndef b():\n    assert 2\n\n\ndef test_it():\n    a()\n    b()\n"
+    two = "def b():\n    assert 2\n\n\ndef a():\n    assert 1\n\n\ndef test_it():\n    a()\n    b()\n"
+    assert fp(one) == fp(two)
+
+
+def test_an_annotated_reset_of_pytestmark_is_a_reset_and_covers_ids_before_it_are_dropped():
+    head = "import pytest\n\npytestmark = [pytest.mark.skip]\n"
+    tail = "\n\ndef test_it():\n    pass\n"
+    assert fp(head + "pytestmark: list = []" + tail) != fp(head + tail)
+    assert fp("import pytest\n\npytestmark: list = [pytest.mark.skip]" + tail) == fp(head + tail)
+    src = "import pytest\n\npytestmark = pytest.mark.covers('FR-01.09/AC01')\npytestmark = []" + tail
+    assert ph.covers_of("test_it", src) == []
+
+
+def test_a_lock_check_compares_acs_and_hash_only_and_refuses_a_path_outside_the_repository():
+    src = "import pytest\n\n\n@pytest.mark.covers('FR-01.09/AC01')\ndef test_one():\n    assert 1\n"
+    entry = {**pl.lock_entry("test_one", src), "approved_by": "operator"}
+    assert pl.lock_problems({"p.py::test_one": entry}, {"p.py": src}) == []
+    with pytest.raises(ValueError):
+        pl.lock_key("../x.py", "test_one")

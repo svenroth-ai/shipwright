@@ -215,7 +215,7 @@ def check_ac11_aggregation_publishes_nothing(tags_before: Sequence[str], tags_af
     A trivially held invariant (that step has no outward command): it fails only if one is ever added to it, and says nothing
     about the whole of AC11, which stays a recorded gap."""
     assert list(tags_after) == list(tags_before) and f"v{version}" not in tags_after, "AC11: a marking left the machine while the text was prepared"
-    assert not stub_state.get("prs") and not stub_state.get("releases"), "AC11: a request or a release page was made while the text was prepared"
+    assert stub_state["prs"] == [] and not stub_state["releases"], "AC11: a request or a release page was made while the text was prepared"
 
 
 @asserts("AC14")

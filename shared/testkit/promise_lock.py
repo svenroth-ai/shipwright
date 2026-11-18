@@ -56,7 +56,7 @@ def lock_entry(test: str, source: str, spec_text: str = "", conftests: Sequence[
 def lock_key(path: str, test: str) -> str:
     """The key of a lock entry: ``path::name``, the path relative and posix. A bare test name is not a key: two files may hold the same name."""
     posix = posixpath.normpath(path.replace(chr(92), "/"))
-    if posix.startswith("/") or re.match(r"^[A-Za-z]:", posix):
+    if posix.startswith(("/", "..")) or re.match(r"^[A-Za-z]:", posix):
         raise ValueError(f"{path}: a lock key needs a path relative to the repository, not an absolute one")
     return f"{posix}::{test}"
 
@@ -79,6 +79,6 @@ def lock_problems(lock: Mapping[str, Mapping[str, Any]], sources: Mapping[str, s
         except ValueError as exc:  # e.g. the covers mark was removed: a problem to report, not a crash
             problems.append(f"{key}: {exc}")
             continue
-        if dict(lock[key]) != now:
+        if {k: lock[key].get(k) for k in ("acs", "hash")} != now:
             problems.append(f"{key}: the promise differs from the lock (hash or AC ids)")
     return problems

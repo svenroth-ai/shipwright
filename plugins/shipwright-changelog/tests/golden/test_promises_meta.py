@@ -179,7 +179,8 @@ def test_promise_tests_go_through_the_driver_interface_and_the_oracle_only():
         for stmt in ast.parse(source).body:  # a statement that binds nothing runs at import and is invisible to the fingerprint: refuse it
             plain = (isinstance(stmt, ast.Expr) and isinstance(stmt.value, ast.Constant) and isinstance(stmt.value.value, str)) \
                 or isinstance(stmt, (ast.Import, ast.ImportFrom, ast.FunctionDef)) \
-                or (isinstance(stmt, (ast.Assign, ast.AnnAssign, ast.AugAssign)) and all(isinstance(t, ast.Name) for t in ([stmt.target] if not isinstance(stmt, ast.Assign) else stmt.targets)))
+                or (isinstance(stmt, (ast.Assign, ast.AnnAssign, ast.AugAssign)) and all(isinstance(t, ast.Name) for t in ([stmt.target] if not isinstance(stmt, ast.Assign) else stmt.targets))
+                                                                      and not any(isinstance(n, ast.Call) for n in ast.walk(stmt)))  # a call at import can rewire the oracle unseen
             assert plain, f"{path.name}:{stmt.lineno} is a module-level statement the fingerprint cannot see"
         assert "ReplayDriver" in source, path.name
         assert len(source.splitlines()) <= 300, path.name
