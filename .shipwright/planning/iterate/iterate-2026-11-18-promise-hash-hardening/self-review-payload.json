@@ -1,0 +1,8 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"items a-f each have a red-first test in test_promise_hash_hardening.py; the weak promise tests (AC04, AC10, AC11, AC13, AC12 exact map) are strengthened or narrowed with an honest note; no SKILL.md or product script change"},
+{"name":"Error Handling","verdict":"pass","note":"a rebound test name and a missing or malformed covers id raise ValueError; lock_problems reports them as problem strings; lock_key refuses absolute paths"},
+{"name":"Security Basics","verdict":"pass","note":"test support only; no network, no secrets; the hash closes bypasses (alias, rebinding, autouse, hooks, covers-with-code, binding-free statements)"},
+{"name":"Test Quality","verdict":"pass","note":"every new rule has a swap that would have hidden it; oracle functions mutated by hand and red; the golden promise tests stay green against the unchanged skill"},
+{"name":"Performance Basics","verdict":"pass","note":"closure walk is linear in the reached bindings; golden promise tests about 100 s on Windows"},
+{"name":"Naming & Structure","verdict":"pass","note":"promise_hash.py 277 lines, promise_lock.py split off to stay under 300, ruff clean, new files in REQUIRED"},
+{"name":"Affected Boundaries","verdict":"pass","note":"promise_list.json is read back by the meta test (check id renamed for AC10); the fingerprint is computed from source text only and the pinned digest is equal on 3.11, 3.12 and 3.13; no CRLF in hashed content"}]}

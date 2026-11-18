@@ -1,0 +1,1 @@
+{"stage":"spec-compliance","verdict":"PASS","spec_citations":[],"summary":"PASS. Every hardening item (a) to (f) and every promise-test bullet in the spec is in the diff and does what the spec says. Non-blocking note: the diff also carries two triage events that come from the branch base commit, not from this iterate."}

@@ -1,0 +1,62 @@
+{
+  "run_id": "iterate-2026-11-18-promise-hash-hardening",
+  "date": "2026-11-18T08:17:34.863497Z",
+  "event_at": "2026-11-18T08:17:17.090780+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "prior_source": "default",
+  "branch": "iterate/promise-hash-hardening",
+  "spec": ".shipwright/planning/iterate/iterate-2026-11-18-promise-hash-hardening/plan.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-11-18-promise-hash-hardening",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "an import binding, a rebinding in file order, autouse unless literal False, pytest_* bindings, pytestmark in Assign/AnnAssign/AugAssign, covers marks carrying code and walruses at module level all move the fingerprint",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_promise_hash_hardening.py (20 tests) PASSED"
+      },
+      {
+        "behavior": "reordering unrelated helpers, import order and a plain covers re-anchor keep the fingerprint; the pinned f-string digest holds on 3.11, 3.12 and 3.13",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_promise_hash_hardening.py::test_moving_unrelated_helpers_without_any_rebinding_keeps_the_hash and ::test_a_pinned_digest_catches_interpreter_drift_in_the_serialization PASSED; shared/tests/test_promise_hash.py PASSED"
+      },
+      {
+        "behavior": "lock entries key path::name and lock_problems reports a missing name, a stale entry, a changed hash and a lost covers mark",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_promise_hash_hardening.py::test_a_lock_entry_is_keyed_by_path_and_name_and_a_missing_name_is_a_failure PASSED"
+      },
+      {
+        "behavior": "the meta test refuses aliased imports, module-level code the fingerprint cannot see and a promise test that never reaches the oracle; the strengthened AC04, AC10, AC11, AC12 and AC13 promise tests are green against the unchanged skill",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-changelog/tests/golden: 117 passed (test_promises_meta.py, test_promise_aggregate.py, test_promise_release.py, test_trace_freeze.py) PASSED",
+        "category": "integration"
+      }
+    ],
+    "counts": {
+      "testable": 4,
+      "tested": 4,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 15,
+      "covered_acs": 15
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run pytest shared/tests/test_promise_hash_hardening.py shared/tests/test_promise_hash.py -q -p no:cacheprovider",
+    "exit_code": 0,
+    "tests_run": 38,
+    "evidence_path": ".shipwright/runs/iterate-2026-11-18-promise-hash-hardening/surface_verification.json",
+    "timestamp": "2026-11-18T08:01:17Z"
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}
