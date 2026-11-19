@@ -15,4 +15,5 @@ markers = [
     "slow: marks tests that spawn subprocesses or perform long I/O (e.g. the behavior_snapshot CLI integration test). Run with `pytest -m slow`; skip with `-m 'not slow'`.",
     "cross_plugin: tests that import another plugin's lib/tools modules (excluded from shared/tests CI sessions, see ADR-044).",
     "covers: binds a test to one or more FRs for requirement->test traceability (@FR tags, Spec D1)",
+    "covers_none: declares a harness test as infrastructure that proves no requirement (\"tooling\" or \"infra\"); honoured only for files in shared/config/infra_test_paths.json (F11 test-tag gate)",
 ]

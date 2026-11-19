@@ -35,4 +35,5 @@ markers = [
     "empirical: real-OSS network calibration suite (opt-in; run with `pytest -m empirical`)",
     "slow: long-running tests that spawn real subprocesses or perform long I/O",
     "covers: binds a test to one or more FRs for requirement->test traceability (@FR tags, Spec D1)",
+    "covers_none: declares a harness test as infrastructure that proves no requirement (\"tooling\" or \"infra\"); honoured only for files in shared/config/infra_test_paths.json (F11 test-tag gate)",
 ]

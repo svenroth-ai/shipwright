@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "1. **Category:** approach  \n   **Severity:** medium  \n   **Finding:** Step 1 contradicts the digest acceptance criterion. It proposes skipping both `pytest.mark.covers_none` and `mark.covers_none`, while the specification permits ignoring only the exact `pytest.mark.covers_none` shape. An alias decorator would consequently stop counting as a body edit.\n   **Suggestion:** Separate marker detection from digest filtering. Detect aliases for validation, but exclude only the exact `pytest.mark.covers_none` decorator from the digest. Add a regression test proving that adding `mark.covers_none` changes the digest.\n\n2. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** Step 3 adds valid infrastructure tests to `v.infra` only when they already have an `untagged-added` or `untagged-modified` finding. Valid stand-in corrections and unchanged infrastructure tests in a changed file can therefore pass validation without being counted consistently or removed from `v.touched`.\n   **Suggestion:** Classify every successfully validated infrastructure test in the dedicated pass, including accepted corrections. Separately remove any superseded untagged finding. Test the reported count and exemption denominator for each case.\n\n3. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** Contradiction detection describes assignment forms but does not explain resolving referenced marker values. For example, `requirement_marks = [pytest.mark.covers(\"AC55\")]` followed by `pytestmark = requirement_marks` applies a requirement marker without placing a `.covers` attribute directly inside the `pytestmark` assignment. A syntax-only scan of that assignment could incorrectly grant infrastructure status.\n   **Suggestion:** Resolve local marker references used by applicable `pytestmark` assignments, or reject unresolved expressions when granting infrastructure status. Cover module and class references in tests.\n\nThe base-catalog approach is sound and the scope is appropriate. Resolve these parser and classification inconsistencies before implementation so the gate enforces the stated contract consistently.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "## Review Findings\n\n**Category:** edge-case | **Severity:** medium\n**Finding:** Bootstrap ordering of the seed files. The catalog does not exist at the merge-base of the very diff that adds it, so by the spec's own rule (\"only the base catalog counts\"), none of the six seeded testkit files can be classified as infra in this change. If any of those six files is touched in this same iterate (likely, since the gate code and the tests live nearby), the gate will flag its tests as untagged/bad-infra-class and the iterate may be unmergeable as a single change.\n**Suggestion:** Either confirm none of the six seed files is touched in this diff, or explicitly sequence: merge 1 = catalog + marker registration + gate code; merge 2 = touch/retag the seed files. State this in the mini-plan so the builder isn't surprised.\n\n**Category:** edge-case | **Severity:** low\n**Finding:** Module-level `pytestmark = pytest.mark.covers_none(...)` classifies *every* test in the file as infra. This is per the spec, but a file in the catalog that later gains a genuinely new requirement test would have that test silently absorbed into infra (no `covers` \u2192 no contradiction, path is in base catalog \u2192 granted). The gate only reacts on touch, so the new test never gets flagged as needing a `covers` tag.\n**Suggestion:** Consider having the `bad-infra-class`/grant message (or the CI catalog validator) note when a catalog file uses module-level `pytestmark` form, so reviewers know new tests added there need explicit `covers` to opt out. At minimum document this in `conventions.md`.\n\n**Category:** edge-case | **Severity:** low\n**Finding:** Digest-ignoring `covers_none` interacts with the \"moved tagged test\" correction: a test moved to a catalog file *and* given the marker matches the base digest (digest ignores the marker), which is handled \u2014 but the same digest mechanism means a *deleted-and-re-added-in-place* test with the marker added is judged as a correction, not as a new infra test. That path is covered by the correction rule's constraints, but it's worth an explicit test that a correction whose base path is *also* outside the base catalog is refused (spec implies it; test list only has \"outside base catalog\" for the plain case).\n**Suggestion:** Add the test: moved base-tagged test + `covers_none` + base path not in catalog \u2192 `bad-infra-class`.\n\n**Category:** risk | **Severity:** low\n**Finding:** `None` catalog \u2192 \"cannot enforce\". Depending on how the gate's `read()` returns `None` (unreadable vs. absent-at-base), every merge whose base predates the catalog could return `None` rather than `\"\"`, making the gate report \"cannot enforce\" for the entire historical timeline of the repo. The spec distinguishes `\"\"` (absent) from `None` (unreadable), but whether `read(path, \"base\")` can distinguish these for a path that never existed in git history depends on the existing helper's semantics.\n**Suggestion:** Verify empirically what `read()` returns for a path absent at base; if it returns `None`, map absent-at-base to the `\"\"` (empty, silent) case explicitly, since \"cannot enforce\" should mean a real read failure, not a file that predates the feature.\n\n**Category:** dependency | **Severity:** low\n**Finding:** Marker registration \"wherever `covers` is registered\" is described as a check, not an enumerated list. If a consumer template or vendored plugin `pyproject.toml` is missed, strict-marker runs break in downstream repos, not in this repo's CI \u2014 the failure surfaces late.\n**Suggestion:** Enumerate the registration sites in the mini-plan (grep output for `covers` in `pyproject.toml`/`setup.cfg`/`pytest.ini` across repo + `shared/templates`) so the builder has a concrete checklist rather than a search task.\n\n**Category:** edge-case | **Severity:** low\n**Finding:** The exemption-share denominator change (\"infra ids leave `v.touched`\") could shift an existing run's exemption share across a threshold, flipping previously-green merges that combine exemptions with infra tests in the same diff. This is semantically correct but is a behavior change to an existing gate output that some goldens may pin.\n**Suggestion:** Check whether any golden/freeze tests pin the F11 summary line or exemption share; update goldens deliberately, not as a surprise diff.\n\n## Overall Assessment\n\nThe approach is sound and unusually well-hardened \u2014 the strict-grant/loose-contradiction asymmetry, base-catalog semantics, and full-pass judgment close the real loopholes, and both internal reviews were substantively integrated. The findings above are refinements: the main one to resolve before build is the bootstrap sequencing of the seed files and the `read()`-absent-vs-`None` semantics, both cheap to pin down.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-11-18-test-infra-tag-class",
+    "at": "2026-11-18T13:03:59.136576+00:00"
+  },
+  "verdicts": {
+    "openai": "revise",
+    "glm": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

@@ -19,7 +19,8 @@ gate's business. A finding is one of:
                          tags: the manifest's ``<file>::<name>`` identity cannot tell them
                          apart, so a tag on one would silently cover the other (siblings that
                          all carry the SAME tags only WARN - the shared id is then honest);
-* ``bad-exemption``      an exemption that is per-diff, or whose code does not fit.
+* ``bad-exemption``      an exemption that is per-diff, or whose code does not fit;
+* ``bad-infra-class``    a ``covers_none`` declaration that cannot be honoured (``_tag_binding_infra_pass``).
 
 Not findings: a legacy untagged test in a changed file that the identity layer cannot
 locate at EITHER side (a shape it does not parse) is treated as untouched; an untagged id
@@ -44,6 +45,7 @@ from dataclasses import dataclass, field
 from typing import Callable
 
 from ._tag_binding_identity import body_digests, mechanically_renamed, sibling_tag_sets, would_collect
+from ._tag_binding_infra_pass import apply_infra
 
 __all__ = ["TagVerdict", "evaluate", "manifest_tagged_ids"]
 
@@ -69,6 +71,7 @@ class TagVerdict:
     tagged_new: list[str] = field(default_factory=list)
     moved: list[tuple[str, str]] = field(default_factory=list)          # (base id, head id)
     touched: set[str] = field(default_factory=set)                       # added or edited
+    infra: set[str] = field(default_factory=set)                         # validated infrastructure-classed
 
 
 def _is_test_id(test_id: str) -> bool:
@@ -214,12 +217,16 @@ def _flag_tags(base: dict, head: dict, v: TagVerdict) -> None:
 def evaluate(
     base: dict, head: dict, changed: set[str], read: Reader,
     exemptions: list[dict], expected_frs: set[str] | None,
+    infra_paths: frozenset[str] | None = frozenset(),
 ) -> TagVerdict:
     v = TagVerdict()
     _flag(base, head, changed, read, v)
     _flag_tags(base, head, v)
     base_ids = {t for t in base.get("untagged_tests") or []} | manifest_tagged_ids(base)
     _touch(base_ids, head, changed, read, v)
+    head_ids = set(head.get("untagged_tests") or []) | manifest_tagged_ids(head)
+    apply_infra(v, base, head, head_ids, changed, read, lambda t, side: _digests(read, t, side), infra_paths,
+                _is_test_id, _split)
     by_scope: dict[str, str] = {}
     for item in exemptions:
         if item.get("kind") != "test_exemption":

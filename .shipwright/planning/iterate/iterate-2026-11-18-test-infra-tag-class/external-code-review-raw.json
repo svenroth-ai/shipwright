@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: bug\n- Severity: medium\n- File: shared/scripts/tools/verifiers/_tag_binding_py.py:181\n- Finding: Scope-marker parsing ignores assignment targets other than a plain name. For example, `pytestmark, unused = ([mark.covers(\"FR-01.11\")], None)` applies a requirement marker in pytest, but this parser overlooks it and can grant a function\u2019s `covers_none` declaration. This misses the required contradiction check across all assignment forms.\n- Suggestion: Handle destructuring and subscript assignments involving `pytestmark`, or conservatively refuse infrastructure classification when such assignments cannot be resolved. Add tests using these forms with a direct `covers_none` decorator.\n\n- Category: spec\n- Severity: medium\n- File: shared/scripts/tools/verifiers/tag_binding_gate.py:129\n- Finding: An unreadable base catalog produces `catalog=None`, but the gate continues. Only tests declaring `covers_none` subsequently fail; a change without those declarations can pass without reporting \u201ccannot enforce.\u201d The specification explicitly distinguishes unreadable catalogs from absent or invalid ones.\n- Suggestion: Return a \u201ccannot enforce\u201d failure immediately when the base catalog read returns `None`. Add a gate-level test for an unreadable catalog with no infrastructure declarations.\n\n- Category: test\n- Severity: medium\n- File: shared/scripts/tools/verifiers/_tag_binding_infra_pass.py:59\n- Finding: Catalog validation accepts any relative `.py` path, and the new head-catalog test checks only that the file exists. Consequently, an existing production file such as `shared/scripts/example.py` passes the promised CI validation even though it is not a test file.\n- Suggestion: Extend head-catalog validation to verify that each entry identifies a test file under the repository\u2019s collection rules. Add a negative test using an existing non-test Python file.\n\nShip-with-fixes. The implementation covers the main classification flow, but assignment parsing and catalog enforcement leave concrete acceptance criteria incomplete.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "## Review\n\nThe change is well-built and closely tracks the spec. The core security properties hold: granting is strict (exact `pytest.mark.covers_none` with one literal valid label), the catalog is read at the merge-base only, exact paths only (no wildcards/absolut/backslash), contradiction detection is loose in the safe direction, infra tests leave the exemption denominator, and the digest ignores only the exact marker shape. Marker registration is applied everywhere `covers` is registered. Test coverage is genuinely behavioral (hand-built manifests plus real-git integration tests, happy and error paths both present).\n\nFindings:\n\n- Category: spec | Severity: low\n  File: `shared/config/infra_test_paths.json` (absent from the diff)\n  Finding: The Design Notes say the catalog is seeded with the six existing testkit meta-test files, but no catalog file is created in this diff; the head-catalog CI test (`test_the_head_catalog_is_valid_and_names_existing_files`) self-skips while the file is absent, and the CODEOWNERS line guards a path that does not yet exist. The glm bootstrap review notes say this deferral is deliberate (\"no seed file is touched in this run; retag is a follow-up merge\"), so this is a disclosed deviation rather than a hole \u2014 the bootstrap test `test_without_a_catalog_at_base...` proves nothing is granted meanwhile.\n  Suggestion: Ship as-is, but make sure the follow-up merge that creates the seed catalog is actually tracked; otherwise the \"guarded by CODEOWNERS\" claim is vacuous until then.\n\n- Category: bug | Severity: low\n  File: `shared/scripts/tools/verifiers/_tag_binding_infra_pass.py` \u2014 `_correction` / `classify`\n  Finding: `_correction` appends the \"drops stand-in tag\" WARNING the moment a correction is accepted, but `_refuse_quiet_loss` runs afterwards and can demote the same test to `bad-infra-class` (e.g. an unrelated tagged test vanished in the same change). The gate output then simultaneously reports a hard finding for the test *and* a WARNING that it \"drops stand-in tag (reclassified as infrastructure)\" \u2014 contradictory/misleading operator output.\n  Suggestion: Move the warning emission to after `_refuse_quiet_loss`, or have `_refuse_quiet_loss` retract the warnings belonging to tests it demotes.\n\n- Category: edge-case | Severity: low\n  File: `shared/scripts/tools/verifiers/_tag_binding_infra_pass.py` \u2014 `_verdict`\n  Finding: For a newly added test sitting next to a module-level `covers_none` alongside same-name siblings, the `is_new and not all(i.direct ...)` check fires first and reports \"needs its own @pytest.mark.covers_none\", masking the sibling-disagreement reason; both are `bad-infra-class` so enforcement is unaffected \u2014 message-only imprecision.\n  Suggestion: Optional: run the sibling check before the module-level check, or aggregate both reasons.\n\n- Category: test | Severity: low\n  File: `shared/tests/test_tag_binding_infra_class.py` \u2014 `test_class_level_covers_forms_and_unresolved_class_marks_contradict_the_marker`\n  Finding: This case is only asserted against `py_infra_info` directly, not through `evaluate` like the other contradiction forms; a wiring mistake in `_verdict`'s `info.bad` consumption would not be caught by it. The remaining forms are covered end-to-end, so the residual risk is small.\n  Suggestion: Route one of the four parametrized cases through `_run`/`evaluate` as well.\n\nThings I specifically checked and found correct: `parse_catalog`'s three-way absent/`\"\"`/`None` handling matches the AC and is exercised through the real gate in the integration tests; the base-vs-head differ WARNING survives a failing gate; superseded-finding filtering only removes the four listed kinds and only for decided tests; a manifest-linked test can never be classed (defense beyond the parser); a renamed+edited stand-in cannot slip the correction rule (quiet-loss check); TS/JS stays untagged; `evaluate`'s new parameter has a default, so existing callers are unaffected.\n\nOverall: ship-as-is \u2014 the findings are refinements (one misleading-warning cleanup worth doing soon), and no loophole or correctness break in the enforcement direction was found.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-11-18-test-infra-tag-class",
+    "at": "2026-11-18T23:11:09.461579+00:00"
+  },
+  "verdicts": {
+    "openai": "revise",
+    "glm": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

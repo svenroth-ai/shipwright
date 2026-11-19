@@ -23,5 +23,8 @@ plugins/shipwright-run/         @svenroth-ai
 # Shared libraries affect every plugin
 shared/                         @svenroth-ai
 
+# The F11 test-tag gate's list of harness-test files that may declare covers_none: widening it is a review decision
+shared/config/infra_test_paths.json @svenroth-ai
+
 # CI/CD — changes could compromise releases or leak secrets
 .github/                        @svenroth-ai
