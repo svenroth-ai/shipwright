@@ -106,16 +106,17 @@
     },
     "spec": {
       "review_type": "spec",
-      "status": "not_applicable",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-11-19T06:54:35.477681+00:00",
-      "disposition": "small run, no risk flag, ~90-line diff of config/docs/message formatting",
-      "recorded_by": "none",
+      "completed_at": "2026-11-19T07:33:39.131673+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "diff-below-threshold"
+      "model_tier": "opus",
+      "reviewed_commit": "1b621d25c44acb766f38d8f5f06b95efaf2085c2"
     },
     "plan_internal": {
       "review_type": "plan_internal",
