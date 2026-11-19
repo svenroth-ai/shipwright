@@ -1,0 +1,9 @@
+{"items":[
+{"name":"scope","verdict":"pass","note":"six module-level pytestmark lines only; changelog skill untouched"},
+{"name":"correctness","verdict":"pass","note":"literal covers_none tooling at module level; no covers mark left in reach; stand-in AC14 keeps other linked tests"},
+{"name":"tests","verdict":"pass","note":"124 tests of the six files green; changelog golden root green"},
+{"name":"error-paths","verdict":"pass","note":"n/a, marker change only"},
+{"name":"security","verdict":"pass","note":"no secrets or runtime code touched"},
+{"name":"docs","verdict":"pass","note":"rule already documented in hooks-and-pipeline.md by #1082"},
+{"name":"boundaries","verdict":"pass","note":"gate reads the catalog at the merge-base, which #1083 provides"},
+{"name":"simplicity","verdict":"pass","note":"six one-line edits"}]}

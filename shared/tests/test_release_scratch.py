@@ -10,7 +10,7 @@ from pathlib import Path
 import pytest
 
 
-pytestmark = pytest.mark.covers("FR-01.09/AC14")  # test support for the changelog pilot (programme P2a); the gate refuses removing it (tag-removed), see the P2b1 FINDINGS note
+pytestmark = pytest.mark.covers_none("tooling")  # a test of the golden-trace / promise-lock harness: proves no product requirement (infrastructure class, shared/config/infra_test_paths.json)
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(_REPO_ROOT / "shared" / "testkit"))
 sys.path.insert(0, str(_REPO_ROOT / "shared" / "scripts"))

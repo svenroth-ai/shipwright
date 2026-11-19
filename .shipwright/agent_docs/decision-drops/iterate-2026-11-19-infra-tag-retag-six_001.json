@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-19-infra-tag-retag-six",
+  "date": "2026-11-19",
+  "section": "Iterate - change: reclassify six harness tests as infrastructure",
+  "title": "Reclassify the six testkit meta-test files with covers_none",
+  "context": "The six files carried a stand-in FR-01.09/AC14 requirement tag that inflated coverage counts. The infrastructure class (#1082) and its catalog (#1083) now exist at the merge-base.",
+  "decision": "Replace the module-level covers stand-in in test_gh_stub, test_golden_driver_freeze, test_golden_trace, test_promise_hash, test_promise_hash_hardening and test_release_scratch with pytest.mark.covers_none('tooling').",
+  "consequences": "The six files no longer count toward FR-01.09/AC14; FR-01.09/AC14 keeps its other linked tests. The gate reports them as infrastructure-classed.",
+  "rationale": "A harness test proves no product requirement; the class says so instead of a borrowed tag.",
+  "rejected": "Retagging in the same PR as the catalog (the gate honours only the merge-base catalog).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}
