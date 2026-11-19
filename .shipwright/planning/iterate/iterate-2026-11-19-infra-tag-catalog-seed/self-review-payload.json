@@ -1,0 +1,9 @@
+{"items":[
+{"name":"scope","verdict":"pass","note":"catalog + failure-detail + docs, nothing else; retag deferred to a follow-up merge as #1082 requires"},
+{"name":"correctness","verdict":"pass","note":"parse_catalog accepts the 6 paths; failure detail keeps real stderr lines, drops uv warnings, tail-first"},
+{"name":"tests","verdict":"pass","note":"4 new tests plus catalog tests green; existing detail tests still green"},
+{"name":"error-paths","verdict":"pass","note":"only-warning stderr falls back to full stderr plus stdout tail"},
+{"name":"security","verdict":"pass","note":"no secrets; catalog is exact paths, CODEOWNERS-guarded"},
+{"name":"docs","verdict":"pass","note":"guide.md WSL2 section added"},
+{"name":"boundaries","verdict":"pass","note":"catalog read at merge-base by the F11 tag gate only"},
+{"name":"simplicity","verdict":"pass","note":"no new abstraction"}]}

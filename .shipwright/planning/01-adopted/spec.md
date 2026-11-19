@@ -1147,6 +1147,8 @@ _Where the work detail lives_ at the end of this document.
   (iterate-2026-11-17-ac39-ac40-owner-fr)
 - (E) [AC55] Given a test of the test harness itself proves no product requirement, when its author declares it as infrastructure ("tooling" or "infra") in its own source and its file is named exactly in the pre-approved list as that list stood before the change, then the finishing gate counts it as infrastructure instead of demanding a requirement tag; it never counts toward requirement coverage, the gate reports how many tests were classed this way, a declaration the gate cannot honour (unlisted file, a requirement tag as well, siblings that disagree, or a correction that would leave a requirement without a test) is refused, and a list edited in the same change licenses nothing. A module-level declaration classes only the tests already in its file: a test added later needs its own declaration, and a real requirement test cannot live in such a file.
   (iterate-2026-11-18-test-infra-tag-class)
+- (E) [AC56] Given the compliance refresh of a finishing run fails before it reports anything (for example a first run that still has to build the compliance plugin environment), when the failure is logged, then the log shows the real error lines from the failed process instead of only the advisory warnings printed before it, and still shows the generator errors the refresh reported as data.
+  (iterate-2026-11-19-infra-tag-catalog-seed)
 
 <a id="fr-0112"></a>
 ### FR-01.12 — Local project preview

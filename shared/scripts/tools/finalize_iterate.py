@@ -31,6 +31,7 @@ from lib.artifact_paths import runtime_path, tracked_path  # noqa: E402
 from lib.events_read import EventLogNotReadable  # noqa: E402
 from lib.events_sentinel import UnsupportedEventsLayout  # noqa: E402
 from lib.events_write import require_run_drops_readable  # noqa: E402
+from lib.failure_text import failure_detail as _compliance_failure_detail  # noqa: E402
 from lib.atomic_write import durable_atomic_write  # noqa: E402
 from lib.campaign_status_io import finalize_campaign_status  # noqa: E402
 from lib.fr_classification import normalize_fr_impact as _normalize_fr_impact  # noqa: E402
@@ -167,19 +168,6 @@ def _update_dashboard(project_root: Path, session_id: str, run_id: str) -> str |
     except Exception as exc:
         print(f"[finalize_iterate] dashboard failed: {exc}", file=sys.stderr)
         return None
-
-
-def _compliance_failure_detail(result: subprocess.CompletedProcess) -> str:
-    """Generator-error detail parsed from stdout JSON; else falls back to stderr."""
-    try:
-        payload = json.loads(result.stdout)
-    except (json.JSONDecodeError, TypeError):
-        payload = None
-    errors = payload.get("generator_errors") if isinstance(payload, dict) else None
-    valid = [e for e in errors if isinstance(e, dict)] if isinstance(errors, list) else []
-    if not valid:
-        return (result.stderr or "")[:200]
-    return "; ".join(f"{e.get('report')}: {e.get('error')}: {e.get('detail')}" for e in valid)
 
 
 def _update_compliance(project_root: Path, run_id: str | None = None) -> list[str]:

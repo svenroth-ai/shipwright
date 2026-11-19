@@ -1,0 +1,8 @@
+[
+  "shared/tests/test_gh_stub.py",
+  "shared/tests/test_golden_driver_freeze.py",
+  "shared/tests/test_golden_trace.py",
+  "shared/tests/test_promise_hash.py",
+  "shared/tests/test_promise_hash_hardening.py",
+  "shared/tests/test_release_scratch.py"
+]

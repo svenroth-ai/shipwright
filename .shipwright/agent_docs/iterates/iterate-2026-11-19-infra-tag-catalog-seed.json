@@ -1,0 +1,66 @@
+{
+  "run_id": "iterate-2026-11-19-infra-tag-catalog-seed",
+  "date": "2026-11-19T07:22:46.324214Z",
+  "event_at": "2026-11-18T23:27:30.706755+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/infra-tag-catalog-seed",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-11-19-infra-tag-catalog-seed",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "a failed compliance refresh logs the real stderr lines, not only uv advisory warnings",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_finalize_iterate_compliance_error_detail.py::test_uv_warning_does_not_hide_the_real_error_behind_it PASSED"
+      },
+      {
+        "behavior": "a stderr of only warnings still shows the warnings plus a stdout tail",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_finalize_iterate_compliance_error_detail.py::test_only_warnings_on_stderr_still_shows_stdout_tail PASSED"
+      },
+      {
+        "behavior": "generator errors reported as JSON on stdout and non-JSON stderr fallbacks keep working",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_finalize_iterate_compliance_error_detail.py (5 pre-existing cases) PASSED"
+      },
+      {
+        "behavior": "the infra test catalog parses without warning, names existing files, no duplicates",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_infra_test_paths_catalog.py (2 tests) PASSED"
+      },
+      {
+        "behavior": "WSL2 section in the guide",
+        "disposition": "untestable",
+        "reason_code": "requires-manual-visual-judgment",
+        "reason": "prose documentation; the commands were run by hand in WSL on 2026-11-19"
+      }
+    ],
+    "counts": {
+      "testable": 4,
+      "tested": 4,
+      "untestable": 1,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 1,
+      "covered_acs": 1
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run --with pytest --with pytest-mock pytest shared/tests/test_finalize_iterate_compliance_error_detail.py shared/tests/test_infra_test_paths_catalog.py -q -p no:cacheprovider",
+    "exit_code": 0,
+    "tests_run": 9,
+    "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\infra-tag-catalog-seed\\.shipwright\\runs\\iterate-2026-11-19-infra-tag-catalog-seed\\surface_verification.log",
+    "timestamp": "2026-11-19T06:56:23.684Z"
+  },
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}

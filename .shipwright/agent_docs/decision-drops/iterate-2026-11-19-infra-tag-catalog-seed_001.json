@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-19-infra-tag-catalog-seed",
+  "date": "2026-11-19",
+  "section": "Iterate - change: infra test catalog seed, compliance failure text, WSL2 docs",
+  "title": "Seed the infrastructure-test catalog and surface real compliance failures",
+  "context": "The covers_none class honours a file only when it is listed in shared/config/infra_test_paths.json as it stood at the merge-base, so the catalog had to land in its own merge. A cold-start compliance failure was logged as only a uv warning because stderr was cut at 200 characters.",
+  "decision": "Seed the catalog with the six testkit meta-test files, move the failure text into lib/failure_text.py (drops uv warning lines, keeps the stderr tail) and document the local Linux run via WSL2 in the guide.",
+  "consequences": "The six files can be reclassified in a follow-up merge. The refresh failure log shows the real error. finalize_iterate.py shrinks by 12 lines.",
+  "rationale": "A catalog edited in the same diff licenses nothing; a small new module keeps the oversized finalize_iterate.py from growing (anti-ratchet).",
+  "rejected": "Retagging in the same PR (the gate would refuse it); an inline stderr cut in finalize_iterate.py (anti-ratchet).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}
