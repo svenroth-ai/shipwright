@@ -29,16 +29,54 @@
     },
     "code": {
       "review_type": "code",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "docs/guide.md",
+          "line": 245,
+          "finding": "The warm-up command pointed update_compliance.py at any git repo and would rewrite tracked files there.",
+          "suggestion": "Use uv sync --project plugins/shipwright-compliance. Fixed.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "docs/guide.md",
+          "line": 245,
+          "finding": "The docs claimed the command runs exactly as CI does, which it does not.",
+          "suggestion": "Dropped the claim. Fixed.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/failure_text.py",
+          "line": 63,
+          "finding": "Empty stderr with non-JSON stdout produced a leading separator, the docstring was inaccurate.",
+          "suggestion": "Join non-empty parts, fix docstring, add a test. Fixed.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/failure_text.py",
+          "line": 61,
+          "finding": "bytes stderr would raise TypeError.",
+          "suggestion": "Decode bytes first. Fixed with a test.",
+          "source": "code-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-11-19T07:25:15.415445+00:00",
-      "disposition": "Run finished inside a forked worker that cannot spawn the Agent tool; a local Tier-3 PR-review preflight (COMMENT, no blockers) ran instead; the coordinator may run code-reviewer and re-record with --force",
-      "recorded_by": "none",
+      "completed_at": "2026-11-19T07:29:17.203185+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "unavailable"
+      "model_tier": "opus",
+      "reviewed_commit": "5896da7070e83b2472b2e9eb197b2a6690676655"
     },
     "doubt": {
       "review_type": "doubt",
