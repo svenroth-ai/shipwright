@@ -29,16 +29,16 @@
     },
     "code": {
       "review_type": "code",
-      "status": "not_applicable",
+      "status": "not_run",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-11-19T06:54:35.622183+00:00",
-      "disposition": "small run, no risk flag, ~90-line diff of config/docs/message formatting",
+      "completed_at": "2026-11-19T07:25:15.415445+00:00",
+      "disposition": "Run finished inside a forked worker that cannot spawn the Agent tool; a local Tier-3 PR-review preflight (COMMENT, no blockers) ran instead; the coordinator may run code-reviewer and re-record with --force",
       "recorded_by": "none",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "diff-below-threshold"
+      "reason_code": "unavailable"
     },
     "doubt": {
       "review_type": "doubt",
