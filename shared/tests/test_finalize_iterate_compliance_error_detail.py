@@ -134,3 +134,16 @@ def test_only_warnings_on_stderr_still_shows_stdout_tail(
     err = capsys.readouterr().err
     assert "something advisory" in err
     assert "crashed while writing the dashboard" in err
+
+
+@pytest.mark.covers("FR-01.11/AC56")
+def test_empty_stderr_and_non_json_stdout_has_no_leading_separator_and_bytes_are_decoded():
+    from lib.failure_text import failure_detail
+
+    class _R:
+        returncode = 1
+        stdout = b"crashed writing the dashboard"
+        stderr = b""
+
+    out = failure_detail(_R())
+    assert out == "stdout: crashed writing the dashboard"

@@ -14,19 +14,26 @@ _STDERR_TAIL = 1500
 _STDOUT_TAIL = 500
 
 
+def _text(value: object) -> str:
+    return value.decode("utf-8", "replace") if isinstance(value, bytes) else (value or "")
+
+
 def failure_detail(result: subprocess.CompletedProcess) -> str:
-    """Generator-error detail parsed from stdout JSON; else the stderr tail without advisory ``warning:`` lines."""
+    """Generator-error detail parsed from stdout JSON; else the stderr tail without advisory ``warning:`` lines.
+
+    When stderr is empty or holds only ``warning:`` lines, the stdout tail is appended, so the log is never blank."""
+    stdout, stderr = _text(result.stdout), _text(result.stderr)
     try:
-        payload = json.loads(result.stdout)
+        payload = json.loads(stdout)
     except (json.JSONDecodeError, TypeError):
         payload = None
     errors = payload.get("generator_errors") if isinstance(payload, dict) else None
     valid = [e for e in errors if isinstance(e, dict)] if isinstance(errors, list) else []
     if valid:
         return "; ".join(f"{e.get('report')}: {e.get('error')}: {e.get('detail')}" for e in valid)
-    lines = (result.stderr or "").splitlines()
+    lines = stderr.splitlines()
     real = [ln for ln in lines if not ln.lstrip().startswith("warning:")]
-    text = "\n".join(real or lines)[-_STDERR_TAIL:]
-    if not real and isinstance(result.stdout, str) and result.stdout.strip():
-        text += " | stdout: " + result.stdout.strip()[-_STDOUT_TAIL:]
-    return text
+    parts = ["\n".join(real or lines)[-_STDERR_TAIL:]]
+    if not real and stdout.strip():
+        parts.append("stdout: " + stdout.strip()[-_STDOUT_TAIL:])
+    return " | ".join(p for p in parts if p)
