@@ -1,0 +1,50 @@
+{
+  "run_id": "iterate-2026-11-19-infra-tag-retag-six",
+  "date": "2026-11-19T08:27:02.304410Z",
+  "event_at": "2026-11-19T07:22:46.718634+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/infra-tag-retag-six",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-11-19-infra-tag-retag-six",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "the six files declare the infrastructure class at module level and carry no covers mark",
+        "disposition": "tested",
+        "evidence": "shared/tests six files, 124 tests PASSED; F11 test-tag gate classes them (infrastructure-classed count)"
+      },
+      {
+        "behavior": "the changelog golden root and meta tests are unaffected",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-changelog/tests/golden PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 2,
+      "tested": 2,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 0,
+      "covered_acs": 0
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run --with pytest --with pytest-mock pytest <six harness test files> -q",
+    "exit_code": 0,
+    "tests_run": 124,
+    "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\infra-tag-retag-six\\.shipwright\\runs\\iterate-2026-11-19-infra-tag-retag-six\\surface_verification.log",
+    "timestamp": "2026-11-19T08:26:55.341Z"
+  },
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}
