@@ -1,0 +1,148 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-19-infra-tag-catalog-seed",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-19T06:54:34.951212+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-19T06:54:35.080841+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "docs/guide.md",
+          "line": 245,
+          "finding": "The warm-up command pointed update_compliance.py at any git repo and would rewrite tracked files there.",
+          "suggestion": "Use uv sync --project plugins/shipwright-compliance. Fixed.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "docs/guide.md",
+          "line": 245,
+          "finding": "The docs claimed the command runs exactly as CI does, which it does not.",
+          "suggestion": "Dropped the claim. Fixed.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/failure_text.py",
+          "line": 63,
+          "finding": "Empty stderr with non-JSON stdout produced a leading separator, the docstring was inaccurate.",
+          "suggestion": "Join non-empty parts, fix docstring, add a test. Fixed.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/failure_text.py",
+          "line": 61,
+          "finding": "bytes stderr would raise TypeError.",
+          "suggestion": "Decode bytes first. Fixed with a test.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-19T07:29:17.203185+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "reviewed_commit": "5896da7070e83b2472b2e9eb197b2a6690676655"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-19T06:54:35.762477+00:00",
+      "disposition": "small run, no risk flag, ~90-line diff of config/docs/message formatting",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "diff-below-threshold"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-19T06:54:35.904658+00:00",
+      "disposition": "small run, no risk flag, ~90-line diff of config/docs/message formatting",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "diff-below-threshold"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-19T07:33:39.131673+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "reviewed_commit": "1b621d25c44acb766f38d8f5f06b95efaf2085c2"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-19T06:54:35.223272+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-19T06:54:35.340293+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}

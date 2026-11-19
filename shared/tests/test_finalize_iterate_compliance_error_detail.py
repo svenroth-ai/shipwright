@@ -95,3 +95,55 @@ def test_malformed_generator_errors_falls_back_to_stderr_without_raising(
     assert result == []
     captured = capsys.readouterr()
     assert "real stderr text" in captured.err
+
+
+@pytest.mark.covers("FR-01.11/AC56")
+def test_uv_warning_does_not_hide_the_real_error_behind_it(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture,
+):
+    """A cold start prints a long uv `warning:` line first; a 200-char head cut showed only that warning
+    and dropped the actual failure after it."""
+
+    class _Result:
+        returncode = 1
+        stdout = ""
+        stderr = ("warning: `VIRTUAL_ENV=/x/.venv` does not match the project environment path "
+                  "`/x/plugins/shipwright-compliance/.venv` and will be ignored; use `--active` to target "
+                  "the active environment instead\nerror: Failed to build `lxml==9.9.9`\n")
+
+    monkeypatch.setattr(finalize_iterate.subprocess, "run", lambda *a, **k: _Result())
+
+    assert finalize_iterate._update_compliance(tmp_path, "some-run-id") == []
+    err = capsys.readouterr().err
+    assert "Failed to build `lxml==9.9.9`" in err
+    assert "VIRTUAL_ENV" not in err
+
+
+@pytest.mark.covers("FR-01.11/AC56")
+def test_only_warnings_on_stderr_still_shows_stdout_tail(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture,
+):
+    class _Result:
+        returncode = 1
+        stdout = "not json: crashed while writing the dashboard"
+        stderr = "warning: something advisory\n"
+
+    monkeypatch.setattr(finalize_iterate.subprocess, "run", lambda *a, **k: _Result())
+
+    finalize_iterate._update_compliance(tmp_path, "some-run-id")
+    err = capsys.readouterr().err
+    assert "something advisory" in err
+    assert "crashed while writing the dashboard" in err
+
+
+@pytest.mark.covers("FR-01.11/AC56")
+def test_empty_stderr_and_non_json_stdout_has_no_leading_separator_and_bytes_are_decoded():
+    from lib.failure_text import failure_detail
+
+    class _R:
+        returncode = 1
+        stdout = b"crashed writing the dashboard"
+        stderr = b""
+
+    out = failure_detail(_R())
+    assert out == "stdout: crashed writing the dashboard"
