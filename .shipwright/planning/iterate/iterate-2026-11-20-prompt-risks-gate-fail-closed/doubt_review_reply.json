@@ -1,0 +1,48 @@
+{
+  "stage": "doubt",
+  "gating": "advisory-must-address",
+  "trigger": "irreversible/merge-gate (security CI gate) + cross-module consumers (compliance A5.8 probe, CI-gate guard)",
+  "doubts": [
+    {
+      "severity": "medium",
+      "lens": "concurrency & ordering / boundary & contract",
+      "claim_under_doubt": "the gate now fails closed whenever the prompt scan did not really run",
+      "disproof_attempt": "In PR (diff) mode, prompt_injection_scan.py get_changed_files() returns [] on ANY git failure. The script then writes a well-formed {\"findings\": []} and exits 0. outcome=success, the file is non-empty and has a findings array, so the gate goes GREEN even though nothing was scanned. The same applies to per-file exceptions, swallowed per file. The report carries no files_scanned field. Not a regression (green before too), but the same 'crashed scan read as 0' class; the AC20 wording reads broader than what the code covers.",
+      "file": "plugins/shipwright-security/scripts/tools/prompt_injection_scan.py:504-518, 648-655; .github/workflows/security.yml:284-294",
+      "what_would_resolve_it": "Make the diff failure fatal in the scanner, or reword the AC, doc and comment to say the guard covers a step failure or a missing/unusable report only, and file the diff-mode silent-[] case as a follow-up."
+    },
+    {
+      "severity": "low",
+      "lens": "hidden coupling",
+      "claim_under_doubt": "docs/security-ci-setup.md: this invariant is enforced going forward by the CI-gate guard check (c)",
+      "disproof_attempt": "check (c) only requires a `! -[fs] prompt_risks.json` test coupled to an exit plus no silent jq fallback. A future edit that turns the `*)` branch into a warning or drops the jq shape check would pass the guard; only shared/tests/test_security_prompt_risks_gate.py catches that. The doc sentence overstates what the guard enforces.",
+      "file": "docs/security-ci-setup.md:97-102; shared/scripts/tools/check_ci_gate_coverage.py:169-177, 223-237",
+      "what_would_resolve_it": "Reword the doc to say the guard enforces the missing/empty-report half and the behaviour test pins the rest."
+    },
+    {
+      "severity": "low",
+      "lens": "boundary & contract",
+      "claim_under_doubt": "outcome 'skipped' means a deliberate opt-out",
+      "disproof_attempt": "The case block cannot tell an `if:`-false skip from a skip caused by an upstream failure. Safe today: the gate has no `if:` so it runs only under success(). If someone later adds `if: always()` to the gate, a crash before the prompt scan would turn into a warning-only skip.",
+      "file": ".github/workflows/security.yml:224-226, 273-283",
+      "what_would_resolve_it": "Add a comment on the gate step saying it must keep the implicit success() condition, or have the guard reject `if: always()` on the gate step."
+    },
+    {
+      "severity": "low",
+      "lens": "blast radius (healthy run turns red)",
+      "claim_under_doubt": "a healthy scan always yields outcome=success",
+      "disproof_attempt": "True today: no --fail-on is passed, so the scanner exits 0 even with findings. If someone adds `--fail-on high` to the scan step, outcome becomes failure on any high finding and the gate blocks on highs. A latent trap, not a current defect.",
+      "file": ".github/workflows/security.yml:166-180, 279-282",
+      "what_would_resolve_it": "A one-line comment on the scan step: no --fail-on here; a non-zero exit is read by the gate as a crash."
+    },
+    {
+      "severity": "low",
+      "lens": "hidden coupling",
+      "claim_under_doubt": "the compliance A5.8 behaviour probe keeps checking the gate",
+      "disproof_attempt": "Nothing breaks: the `${{` sits in step env, not the run body; clean/critical fixtures stage a valid prompt_risks.json with PROMPT_SCAN_OUTCOME unset (strict path). But A5.8 has no scenario with a clean findings.json and a missing or corrupt prompt_risks.json, so the new behaviour is audited only by the repo test.",
+      "file": "plugins/shipwright-compliance/scripts/audit/gate_behavior_probe.py:139-156, 164-180, 210",
+      "what_would_resolve_it": "Optional: add such a scenario, or state that it is accepted as covered by shared/tests."
+    }
+  ],
+  "summary": "No high doubts. No way found for a crashed prompt scan that leaves no usable report to go green, and no way for a healthy run to go red today. One medium remains: in PR mode a failed git diff silently produces a clean report, which still passes green; not a regression. Four lows cover doc/guard overclaim, skip ambiguity, the --fail-on trap and the A5.8 coverage gap."
+}

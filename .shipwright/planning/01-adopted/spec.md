@@ -593,6 +593,10 @@ _Where the work detail lives_ at the end of this document.
   by itself, text padded with blanks to hide content, wording that tells the
   assistant to drop its safety rules, a tool grant that covers everything, and a
   program disguised as a document.
+- (E) [AC20] Given the check that decides whether a change may merge, when the scan for
+  hidden instructions crashed or left no usable result (missing, empty or
+  unreadable), then the check fails instead of counting zero findings; and when
+  that scan was switched off on purpose, then the check only warns.
 
 <a id="fr-0108"></a>
 ### FR-01.08 — Deployment and rollback

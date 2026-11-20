@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-20-prompt-risks-gate-fail-closed",
+  "ci_supplychain_ack": {
+    "run_id": "iterate-2026-11-20-prompt-risks-gate-fail-closed",
+    "paths_fingerprint": "fbe7aa1bbd44a3f7642d3b4e091bc8ff80adbc0c76ae72a45d70f0d5361aae93",
+    "consistent_with": "iterate-2026-05-31-ci-gate-guard",
+    "statement": "Tightens the security workflow critical-gate to fail closed on the prompt-injection report (step id, one env mapping, shell logic). No action added, no pin or permission changed, no trigger changed; third-party actions stay SHA-pinned and GitHub-owned ones stay on tags.",
+    "ci_paths": [
+      ".github/workflows/security.yml"
+    ],
+    "provenance": "worktree",
+    "provenance_ref": null
+  }
+}

@@ -11,7 +11,8 @@ in CI (``ci.yml`` -> "Run CI-gate guard") and fails when:
       carries the ``(gate)`` suffix) carries ``|| true`` or
       ``continue-on-error: true`` and is NOT in the documented allowlist;
   (c) the security.yml critical-gate lacks a fail-closed guard, so an absent
-      ``findings.json`` (scanner crash) would read 0 criticals -> silent green.
+      ``findings.json`` (scanner crash) would read 0 criticals -> silent green;
+      the same holds for ``prompt_risks.json`` wherever the gate reads it.
 
 ``LOOSE_GATE_ALLOWLIST`` (in ``lib/ci_gate_allowlist.py``) is the SSoT for
 intentionally non-gating steps, with both-direction drift protection: forward
@@ -165,25 +166,25 @@ def stale_allowlist_entries(steps: list[Step], allowlist: list[AllowEntry]) -> l
     return stale
 
 
-def _has_coupled_missing_guard(run: str) -> bool:
-    """True iff a ``! -f findings.json`` (or ``! test -f``) test is coupled to a
-    non-zero ``exit`` within the next few lines — a *warning-only* missing
-    branch (no exit) does NOT count."""
+def _has_coupled_missing_guard(run: str, report: str = "findings") -> bool:
+    """True iff a ``! -f <report>.json`` (or ``! test -f`` / ``! -s``) test is
+    coupled to a non-zero ``exit`` within the next few lines — a *warning-only*
+    missing branch (no exit) does NOT count."""
     lines = run.splitlines()
     for i, line in enumerate(lines):
-        if re.search(r"!\s*(?:test\s+)?-f\s+\S*findings\.json", line):
+        if re.search(rf"!\s*(?:test\s+)?-[fs]\s+\S*{report}\.json", line):
             for j in range(i, min(i + 5, len(lines))):
                 if re.search(r"\bexit\s+[1-9]", lines[j]):
                     return True
     return False
 
 
-def _has_silent_findings_default(run: str) -> bool:
-    """True iff the critical COUNT is assigned from ``jq ... findings.json`` with
+def _has_silent_findings_default(run: str, report: str = "findings") -> bool:
+    """True iff the critical COUNT is assigned from ``jq ... <report>.json`` with
     a silent fallback (``2>/dev/null`` or ``|| echo``) — the fail-open pattern
     that reads 0 criticals on a missing/broken scan."""
     for line in run.splitlines():
-        if (re.search(r"=\s*\$\(.*jq.*findings\.json", line)
+        if (re.search(rf"=\s*\$\(.*jq.*{report}\.json", line)
                 and re.search(r"2>\s*/dev/null|\|\|\s*echo", line)):
             return True
     return False
@@ -218,6 +219,21 @@ def check_security_findings_gate(steps: list[Step]) -> list[str]:
                 f"coupled to `exit 1` for an absent findings.json (add "
                 f"`if [ ! -f findings.json ]; then ...; exit 1; fi`). A "
                 f"warning-only branch still lets a scanner crash pass green."
+            )
+    for s in gates:
+        if "prompt_risks.json" in s.run and _has_silent_findings_default(s.run, "prompt_risks"):
+            problems.append(
+                f"security.yml step {s.name!r}: the prompt-injection count is derived "
+                f"from prompt_risks.json with a silent fallback (2>/dev/null / "
+                f"|| echo) — a corrupt report reads 0 criticals and passes green."
+            )
+        elif "prompt_risks.json" in s.run and not _has_coupled_missing_guard(s.run, "prompt_risks"):
+            problems.append(
+                f"security.yml step {s.name!r}: reads prompt_risks.json without a "
+                f"fail-closed guard coupled to `exit 1` for an absent or empty file "
+                f"(add `if [ ! -s prompt_risks.json ]; then ...; exit 1; fi`, and "
+                f"warn only when the scan step was skipped on purpose). A "
+                f"warning-only branch lets a crashed prompt-injection scan pass green."
             )
     return problems
 

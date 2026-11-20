@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "No concrete defects found in the supplied diff. The gate blocks failed or cancelled scans and missing, empty, malformed, or structurally invalid reports, while skipped scans only warn. The behavioral tests exercise the actual gate script across these paths and verify that critical findings still block.\n\nOverall assessment: ship-as-is. Local verification was unavailable because command execution was blocked by policy.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "## Review\n\nI traced the diff against AC20 (\"crashed scan or missing/empty/unreadable report blocks; skipped-on-purpose only warns\") and both the workflow change and the guard/test additions.\n\n### Workflow gate logic\n\nThe case statement over `PROMPT_SCAN_OUTCOME` is sound: `success` proceeds to the file checks, `skipped` warns (and correctly sets `prompt_scan_ran=0`, which also prevents the summary function from double-counting a stale report), and everything else (`failure`, `cancelled`, unknown values like `bogus`) fails closed. The ordering matters and is right: an unusable outcome exits before the file is ever read, so a crashed scan can't be rescued by a leftover file. File checks use `-s` (covers missing and empty) plus a `jq -e` findings-array validation (covers unparseable and non-report JSON). The comment about `outcome` vs `conclusion` is correct \u2014 `outcome` is the pre-`continue-on-error` result, which is exactly what's needed since the scan step has `continue-on-error: true`.\n\nThe implicit `success()` condition on the gate step is also correctly reasoned about in the comment: an upstream step failure stops the job (fail-closed), and the only way the gate sees `skipped` is a deliberate `if:` on the scan step itself.\n\n### Guard tool (`check_ci_gate_coverage.py`)\n\nThe regex changes are compatible with the live workflow: the `[fs]` alternation matches the new `! -s prompt_risks.json` guard, the exit is within the 5-line window, and none of the live assignment lines match the silent-fallback pattern (the `jq -e ... >/dev/null 2>&1` validation line is not a `$(...)` assignment, and `2>&1` doesn't match `2>/dev/null`). The `test_live_security_workflow_passes` test pins this against the real workflow, so drift is caught.\n\n### Tests\n\nThe behavioural test suite is genuinely good: `_assert_blocked` requires exit 1 *plus* a prompt-specific `::error::` line, so a findings.json failure or a launch error (127) can't masquerade as a pass. It covers absent, empty, five malformed-report variants, three non-completing outcomes, the stale-report-under-skip case, and both clean passes. The `GITHUB_STEP_SUMMARY`/`GITHUB_OUTPUT` env scrubbing and CRLF normalization show real attention to running the real script body in isolation.\n\n### Findings\n\n- Category: test\n  Severity: low\n  File: shared/tests/test_security_prompt_risks_gate.py (whole file)\n  Finding: The behavioural tests inject `PROMPT_SCAN_OUTCOME` manually, so nothing validates the wiring in `security.yml` \u2014 that the scan step actually carries `id: prompt-injection-scan` and the gate step actually sets `env.PROMPT_SCAN_OUTCOME: ${{ steps.prompt-injection-scan.outcome }}`. If someone renamed the step id or deleted the env mapping, all tests would still pass while in real Actions the gate would silently see an empty outcome (strict path) \u2014 mostly fail-safe, but the \"skipped \u2192 warn\" branch would become dead and a deliberately-skipped scan would instead hard-fail on the absent report.\n  Suggestion: Add a small test that parses `security.yml` and asserts the scan step has the expected `id` and the gate step's env maps `steps.<that-id>.outcome` to `PROMPT_SCAN_OUTCOME`.\n\n- Category: edge-case\n  Severity: low\n  File: .github/workflows/security.yml (gate `case` block)\n  Finding: When `PROMPT_SCAN_OUTCOME` is unset (e.g., someone runs the gate body outside Actions without the env), it defaults to `success`, i.e., the strict path \u2014 reasonable, and it's documented. However, if the env var is set to an empty string rather than unset in Actions (which doesn't happen for `steps.<id>.outcome`, so this is theoretical), `${PROMPT_SCAN_OUTCOME:-success}` also handles it. No action needed; noting for completeness that this path is safe.\n  Suggestion: None \u2014 this is already handled.\n\n### Overall\n\nThis is a well-executed fail-closed change: the AC is fully implemented, the reasoning about `outcome` vs `conclusion` and `success()` vs `always()` is correct, the guard tool is updated in both directions with drift tests against the live workflow, and the behavioural tests would catch a broken implementation rather than just exercising it. The only gap is untested wiring between the step id and the env var, which is low-risk. Ship-as-is (the wiring test would be a nice follow-up).\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-11-20-prompt-risks-gate-fail-closed",
+    "at": "2026-11-20T21:02:15.594657+00:00"
+  },
+  "verdicts": {
+    "openai": "approve",
+    "glm": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}

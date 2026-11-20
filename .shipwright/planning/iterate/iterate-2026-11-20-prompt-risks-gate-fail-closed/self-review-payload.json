@@ -1,0 +1,10 @@
+{"items": [
+  {"name": "Spec Compliance", "verdict": "pass", "note": "Gate fails closed on an absent, empty or non-report prompt_risks.json and on a scan step that ended failure/cancelled; a skipped step only warns; guard check (c) extended; AC20 added to the spec."},
+  {"name": "Error Handling", "verdict": "pass", "note": "Every failure branch exits 1 with an ::error:: line naming the prompt-injection scan; unset outcome takes the strict path; jq -e validates the findings array."},
+  {"name": "Security Basics", "verdict": "pass", "note": "Step outcome reaches the shell through env, never interpolated into run:; no secrets; the change only tightens a gate."},
+  {"name": "Test Quality", "verdict": "pass", "note": "Behavioural tests execute the real gate shell with bash+jq; block cases assert exit 1 AND an error line naming the prompt scan so a launch error or a findings.json failure cannot satisfy them; pass cases cover clean, unset, high/medium and skipped."},
+  {"name": "Performance Basics", "verdict": "n/a", "note": "CI shell step and a regex guard; no loops over data of size."},
+  {"name": "Naming & Structure", "verdict": "pass", "note": "Matches the existing findings.json guard style; new test file small; step id prompt-injection-scan added."},
+  {"name": "Affected Boundaries", "verdict": "pass", "note": "Producer prompt_injection_scan.py writes prompt_risks.json; the gate in security.yml and generate_security_report.py consume it; the gate behaviour probe in shipwright-compliance runs the same gate body and its 63 tests pass. The adopt template does not run the prompt scan, so it is unchanged."},
+  {"name": "Test Hygiene Probe", "verdict": "pass", "note": "scan_test_hygiene.py --diff: no findings."}
+]}

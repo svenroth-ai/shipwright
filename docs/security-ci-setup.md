@@ -94,9 +94,14 @@ no-op outside PR events; SARIF still uploads on `workflow_dispatch` and
 > findings, so the critical count would otherwise read 0 and pass green
 > (same failure class as the `--report-path -` secret-scanner regression,
 > iterate-2026-06-05-gitleaks-report-path); the `scan_errors` array names
-> the failed scanner + reason. `prompt_risks.json` is a softer signal: its
-> absence warns loudly but does not block. This invariant is enforced
-> going forward by the CI-gate guard
+> the failed scanner + reason. `prompt_risks.json` is held to the same
+> standard in this repo's own workflow: if the prompt-injection scan step
+> crashed, or left a missing, empty or unreadable report, the gate fails
+> closed. A scan step that is skipped on purpose (an `if:` on the step)
+> only warns. A scan that completed but found nothing to scan (in
+> pull-request mode a failed `git diff` yields an empty, well-formed report)
+> is not detected by this gate; that is a known limit of the scanner itself.
+> The missing/empty-report half of this invariant is enforced going forward by the CI-gate guard
 > (`shared/scripts/tools/check_ci_gate_coverage.py`, check (c)).
 
 ### Activation — turn on auto-triggers
