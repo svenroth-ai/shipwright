@@ -1,0 +1,61 @@
+{
+  "run_id": "iterate-2026-11-20-r0a-survey",
+  "date": "2026-11-20T22:29:31.826234Z",
+  "event_at": "2026-11-20T22:29:14.024126+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "prior_source": "keyword",
+  "branch": "iterate/campaign-root-files-into-config--R0a",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-11-20-r0a-survey",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "diff changes no code, test or config outside campaign planning files",
+        "disposition": "tested",
+        "evidence": "spec-reviewer AC6 verdict matches; F0 run_test_suite 18 units GREEN, diff-coverage: no lines with coverage information"
+      },
+      {
+        "behavior": "old-reader behaviour on missing/pointer-shaped root run config is measured, not assumed",
+        "disposition": "tested",
+        "evidence": "probe.py and probe_missing.py run against current code in throwaway dirs; tables in BRIEF 11.5"
+      },
+      {
+        "behavior": "survey file:line claims are accurate",
+        "disposition": "tested",
+        "evidence": "code-reviewer rounds 1 and 2 spot-checked 28 claims; 5 wrong ones fixed, round 2 pass"
+      }
+    ],
+    "counts": {
+      "testable": 3,
+      "tested": 3,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 6,
+      "covered_acs": 6
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "runner": "",
+    "exit_code": 0,
+    "tests_run": 0,
+    "evidence_path": "",
+    "timestamp": "2026-11-20T22:16:38.580Z",
+    "attempts": 0,
+    "justification": "Read-only survey: only two campaign planning markdown files changed; no code, config or runnable path.",
+    "reason_code": "docs-only-surface"
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": [
+    "touches_ci_supplychain"
+  ]
+}

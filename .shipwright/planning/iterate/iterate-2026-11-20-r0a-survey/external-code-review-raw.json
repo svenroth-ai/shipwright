@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "This is a documentation-only survey diff (two markdown files, no executable code), so the review is against the survey spec's acceptance criteria and internal consistency.\n\n- Category: spec\n  Severity: medium\n  File: `.shipwright/planning/campaigns/2026-11-14-root-files-into-shipwright-dir-BRIEF.md` \u2014 section 11.4 (\"Consequences for the resolver (`lock_for(kind)`)\")\n  Finding: The operator decision in the brief's scope states locks live in `.shipwright/locks/`, and 11.4 even notes \"`.shipwright/locks/` already exists as a lock home\" \u2014 yet the `lock_for` consequence paragraph never assigns the two surviving data-file locks (`run_config`, `ac_registry`) to `.shipwright/locks/`; it only says which kinds need a lock. Where the two lock files physically go after the move is left implicit, and `shipwright_events.jsonl.lock` (STAYS) keeps its root location, which is fine, but the moved locks' destination should be stated.\n  Suggestion: Add one sentence to the 11.4 consequence: the `run_config` and `ac_registry` locks are created under `.shipwright/locks/` (with a worktree-unique component if needed), or explicitly record that they stay beside the file and that the operator decision is amended.\n\n- Category: test (data quality of the survey output)\n  Severity: low\n  File: `.shipwright/planning/campaigns/...SURVEY-inventory.md` \u2014 section A, lines for `codex_review_model_resolution.py:140` and `verifiers/changelog_checks.py:212`\n  Finding: The inventory header claims \"Message text and docstrings are excluded\", but these entries carry tokens like `shipwright_model_config.json's ` (trailing possessive) and `shipwright_changelog_config.json: ` (trailing colon), which are clearly prose/message fragments misclassified as `constructed(f-string)`/literal reads. The BRIEF (11.1) says `changelog_checks.py:212` is \"read only\", while the inventory tags it constructed \u2014 a downstream guard built from the inventory would chase a phantom constructed name.\n  Suggestion: Reclassify or strip these two (and re-run the token filter for tokens with trailing non-name characters); note in 11.0 that the exclusion filter for message text is imperfect for possessive/colon forms.\n\n- Category: spec\n  Severity: low\n  File: BRIEF section 11.5, pointer-format block\n  Finding: The pointer format first mandates \"followed by LF\", then a later bullet amends it to CR-stripped matching. The amendment is present but the primary format text still states the stricter rule; a reader implementing R0b from the format block alone could implement the brittle version. Also the sign-off bullet says the text stub \"needs operator sign-off and the third review round BEFORE R1\", which is correctly recorded as open \u2014 the AC checklist in 11.8 does not track this open gate.\n  Suggestion: Rewrite the format block itself to say \"first line `SHIPWRIGHT-POINTER/1`, matched after stripping CR/whitespace\", and add the pending sign-off to 11.8 as an open item.\n\n- Category: edge-case\n  Severity: low\n  File: BRIEF 11.5, row `append_phase_history.append_history`, shape B\n  Finding: The probe shows the writer merges `phase_history` into a shape-B JSON pointer \u2014 a measured corruption path. This is well covered by choosing shape D, but the survey does not record what `updateAutonomy` (WebUI) or any other unlocked writer does to a shape-B/C stub beyond the one WebUI paragraph; 11.5 states the WebUI case explicitly, so this is adequately handled. No action needed beyond keeping the shape-D decision.\n\nNo security issues (no code, no secrets), no regressions (nothing outside the two planning files changed), and the ACs in 11.8 map to real sections that substantively cover each criterion (basenames, reference classes, locks/tmp, old-reader behavior measured by probes, `.github`/WebUI/consumer CI, no code change). The counts I could check internally (21 moves, 4 stays, 3 retired) are consistent with the 11.1 table.\n\nOverall assessment: ship-as-is; the two substantive items (lock home ambiguity, message-text misclassification) are refinements the brief itself already partially flags.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "- Category: spec\n- Severity: medium\n- File: .shipwright/planning/campaigns/2026-11-14-root-files-into-shipwright-dir-BRIEF.md:341\n- Finding: The old-reader acceptance criterion is only partially covered. Section 11.5 tests pointer content for selected run-config readers, while the other moved files have only missing-file behavior recorded. Even the 49 identified run-config reader functions are not individually mapped to pointer behavior. This leaves the proposed pointer\u2019s compatibility evidence incomplete.\n- Suggestion: Map every identified reader to missing-file and proposed-pointer behavior, grouping readers only where their handling is demonstrably identical. Explicitly record where pointer content is inapplicable because no stub will exist.\n\n- Category: spec\n- Severity: medium\n- File: .shipwright/planning/campaigns/2026-11-14-root-files-into-shipwright-dir-BRIEF.md:340\n- Finding: The lock/tmp inventory claims completeness but contains a concrete omission and unresolved entries. Section 11.3 identifies `audit_disclosure.py` as a compliance-config writer with its own temporary file and replace operation, yet 11.4 categorizes compliance config as having no temporary file. Another row says \u201cnone or `<name>.<rand>.tmp`,\u201d without assigning the actual behavior per file.\n- Suggestion: Enumerate the exact temporary filename or pattern for each writer, including `audit_disclosure.py`, and replace ambiguous grouped entries with verified per-file results.\n\nOverall assessment: ship-with-fixes. The read-only scope is respected, but the survey should complete these acceptance criteria before declaring R0a finished.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-11-20-r0a-survey",
+    "at": "2026-11-20T22:15:03.664347+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}
