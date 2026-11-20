@@ -18,6 +18,7 @@ from pathlib import Path
 from tools.grill_trace_format import GrillTrace, grill_traces_dir
 from tools.grill_trace_fr_coverage import extract_fr_names
 from tools.verifiers.common import CheckResult, Severity
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[1] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 TRANSCRIPT_NAME = "shipwright_project_interview.md"
 
@@ -32,7 +33,7 @@ def interview_expected(project_root: Path, planning_dir: Path) -> bool:
         except OSError:
             continue
     try:
-        config = json.loads((project_root / "shipwright_project_config.json").read_text(encoding="utf-8-sig"))
+        config = json.loads((project_root / _sp.rel("project_config")).read_text(encoding="utf-8-sig"))
     except (OSError, ValueError):
         return False
     return isinstance(config, dict) and config.get("status") == "complete"
@@ -40,7 +41,7 @@ def interview_expected(project_root: Path, planning_dir: Path) -> bool:
 
 def is_extension_scope(project_root: Path) -> bool:
     try:
-        config = json.loads((project_root / "shipwright_project_config.json").read_text(encoding="utf-8-sig"))
+        config = json.loads((project_root / _sp.rel("project_config")).read_text(encoding="utf-8-sig"))
     except (OSError, ValueError):
         return False
     return isinstance(config, dict) and config.get("scope") == "extension"
@@ -98,7 +99,7 @@ _SELF_ATTESTED = frozenset({"agent", "claude", "assistant", "ai", "model", "auto
 
 def _has_brief_dir(project_root: Path) -> bool:
     try:
-        config = json.loads((project_root / "shipwright_run_config.json").read_text(encoding="utf-8-sig"))
+        config = json.loads((project_root / _sp.rel("run_config")).read_text(encoding="utf-8-sig"))
     except (OSError, ValueError):
         return False
     return isinstance(config, dict) and bool(config.get("brief_dir"))

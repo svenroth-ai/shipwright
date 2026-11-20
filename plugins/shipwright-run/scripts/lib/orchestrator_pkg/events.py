@@ -16,6 +16,7 @@ import sys
 from pathlib import Path
 
 from .constants import _SHARED_SCRIPTS
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[5] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 
 def _record_pipeline_migration_event(
@@ -59,7 +60,7 @@ def _run_id_of(project_root: Path) -> str:
     """
     try:
         cfg = json.loads(
-            (project_root / "shipwright_run_config.json").read_text(encoding="utf-8")
+            (project_root / _sp.rel("run_config")).read_text(encoding="utf-8")
         )
     except (OSError, json.JSONDecodeError):
         return "unknown-run"

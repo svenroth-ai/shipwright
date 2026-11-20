@@ -58,6 +58,7 @@ from .handoff_phase_canon import check_c3_session_handoff_fresh_after_phase
 from ._test_gate_extras import check_e2e_counts_reconciled
 from ._test_gate_fidelity import check_design_fidelity_triage_matches_recomputation
 from ._test_gate_specs import check_e2e_specs_exist_when_journeys_planned
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[2] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -80,7 +81,7 @@ def check_test_results_file_fresh(project_root: Path) -> CheckResult:
     particular failures are the accepted ones.
     """
     name = "test_results unit layer populated"
-    path = project_root / "shipwright_test_results.json"
+    path = project_root / _sp.rel("test_results")
     if not path.exists():
         return CheckResult(name, False, "shipwright_test_results.json missing")
     try:

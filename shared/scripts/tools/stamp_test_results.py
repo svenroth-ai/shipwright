@@ -63,9 +63,10 @@ from source_state import (  # noqa: E402
     BLOCK_KEY, SHORT_SHA_LEN, UNKNOWN_RUN, safe_run_id, to_block,
 )
 from source_state_git import resolve_git_state  # noqa: E402
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[1] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
-RESULTS_REL = "shipwright_test_results.json"
-RUN_CONFIG_REL = "shipwright_run_config.json"
+RESULTS_REL = _sp.rel("test_results")
+RUN_CONFIG_REL = _sp.rel("run_config")
 
 
 def _run_id_from_config(project_root: Path) -> str | None:

@@ -44,9 +44,10 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 #: Where the register lands — the path the compliance collector looks at.
-REGISTER_REL = "shipwright_known_failures.json"
+REGISTER_REL = _sp.rel("known_failures")
 
 #: The ONLY fields copied out of an observed-baseline payload: exactly what
 #: ``collect_known_failures`` reads. A payload assembled from raw test output can

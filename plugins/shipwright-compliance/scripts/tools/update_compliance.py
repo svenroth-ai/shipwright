@@ -27,7 +27,7 @@ from scripts.lib.change_history import generate_file as generate_change_history
 from scripts.lib.collectors.test_links import generate_file as generate_test_links
 from scripts.lib.compliance_report import generate_file as generate_dashboard
 from scripts.lib._grade_snapshot import emit_grade_snapshot
-from scripts.lib.sbom_generator import (
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p); from scripts.lib.sbom_generator import (
     emit_undeclared_triage,
     generate_file as generate_sbom,
 )
@@ -276,7 +276,7 @@ def main() -> int:
                     grade_snapshot_result = {"appended": 0, "error": str(exc)}
 
     # Update compliance config
-    config_path = project_root / "shipwright_compliance_config.json"
+    config_path = project_root / _sp.rel("compliance_config")
     if config_path.exists():
         config = json.loads(config_path.read_text(encoding="utf-8"))
     else:

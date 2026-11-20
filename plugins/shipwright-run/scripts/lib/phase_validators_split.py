@@ -15,6 +15,7 @@ from typing import Optional
 from lib.config import read_config
 from phase_task_planning import _resolve_splits_with_fallback
 from phase_validators_canon import _run_canon_checks
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 # Mirrors ``tools.verifiers.design_checks._NO_UI_SCOPES`` (pinned equal by a test): a
 # project with no UI surface has nothing for the design phase to produce.
@@ -62,7 +63,7 @@ def _design_not_applicable(project_root: Path) -> Optional[str]:
     ``recover-phase-task --force-status skipped``, so honouring it here would let a
     later completion launder a skip into a clean pass.
     """
-    run_config = _read_json(project_root / "shipwright_run_config.json")
+    run_config = _read_json(project_root / _sp.rel("run_config"))
     if run_config.get("scope") in _NO_UI_SCOPES:
         return f"scope={run_config['scope']} has no UI surface"
     return None

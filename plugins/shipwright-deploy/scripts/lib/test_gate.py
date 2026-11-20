@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 # The routine, non-blocking E2E outcomes for a change with no startable web
 # surface of its own. Anything else — "failed", "partial", "error", or an
@@ -41,7 +42,7 @@ def evaluate_test_gate(project_root: Path, confirmed: bool) -> tuple[str, str | 
     ``failing-*``, not ``no-results`` — a present-but-corrupt file is not the
     same as an absent one.
     """
-    results_path = project_root / "shipwright_test_results.json"
+    results_path = project_root / _sp.rel("test_results")
     if not results_path.exists():
         if confirmed:
             return "no-results", None

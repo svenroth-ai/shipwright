@@ -58,7 +58,7 @@ CLASSIFIER_MARKERS = ("EVENT_FOLDERS", "is_event_folder_path")
 WRITER_MARKERS = ("events_write", "events_stage", "events_target", "_DROPS_DIR")  # the writer module / helpers / adopt's duplicate
 
 TOKEN = re.compile(
-    r"shipwright_events\.jsonl|\b(?:" + "|".join(sorted(KNOWN_ALIASES | TRACKED_DERIVED | set(RESOLVERS))) + r")\b")
+    re.escape(EVENT_FILE) + r"|\b(?:" +"|".join(sorted(KNOWN_ALIASES | TRACKED_DERIVED | set(RESOLVERS))) + r")\b")
 SCAN_ROOTS = ("plugins", "shared", "docs", "scripts", ".github")
 SCAN_SUFFIXES = frozenset({".py", ".md", ".json", ".sh", ".yml", ".yaml", ".template", ".ts", ".js", ".mjs",
                            ".toml", ".txt", ".ps1", ".cmd"})

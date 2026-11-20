@@ -11,7 +11,7 @@ import importlib.util
 import json
 from pathlib import Path
 
-from phase_validators_canon import _run_canon_checks
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p); from phase_validators_canon import _run_canon_checks
 
 
 def _skip_reason(block: dict) -> str:
@@ -67,7 +67,7 @@ def _validate_test(
     validator — the test phase must run again within the pipeline context.
     """
     issues: list[dict[str, str]] = []
-    results_path = project_root / "shipwright_test_results.json"
+    results_path = project_root / _sp.rel("test_results")
 
     if not results_path.exists():
         issues.append({

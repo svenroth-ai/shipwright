@@ -23,6 +23,7 @@ from lib.events_log import event_files  # noqa: E402
 from lib.events_write import new_event_id, write_event_line  # noqa: E402
 from lib.file_lock import FileLock  # noqa: E402
 from lib.handoff_phase_status import completed_phases  # noqa: E402
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[1] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 SCHEMA_VERSION = 1
 
@@ -101,9 +102,9 @@ def convert(project_root: Path) -> list[dict]:
     """Convert all config state to events."""
     events: list[dict] = []
 
-    run_config = _read_json(project_root / "shipwright_run_config.json")
-    build_config = _read_json(project_root / "shipwright_build_config.json")
-    project_config = _read_json(project_root / "shipwright_project_config.json")
+    run_config = _read_json(project_root / _sp.rel("run_config"))
+    build_config = _read_json(project_root / _sp.rel("build_config"))
+    project_config = _read_json(project_root / _sp.rel("project_config"))
 
     # Build split name lookup from project config
     splits = project_config.get("splits", [])
@@ -203,7 +204,7 @@ def main() -> int:
         return 0
 
     # Write
-    out_path = project_root / "shipwright_events.jsonl"
+    out_path = project_root / _sp.rel("events")
     drops = events_layout(project_root) == "drops"
     if out_path.exists() or (drops and any(p.exists() for p in event_files(project_root))):
         print(f"ERROR: {out_path} already exists. Delete it first or use --dry-run.")
@@ -221,7 +222,7 @@ def main() -> int:
 
     # Verify
     section_count = 0
-    for key, val in _read_json(project_root / "shipwright_build_config.json").items():
+    for key, val in _read_json(project_root / _sp.rel("build_config")).items():
         if key == "sections" and isinstance(val, list):
             section_count += len(val)
         elif key.startswith("split_") and key.endswith("_sections") and isinstance(val, list):

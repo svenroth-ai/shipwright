@@ -41,6 +41,7 @@ from typing import Iterable
 # ---------------------------------------------------------------------------
 from shared.contracts.iterate import is_io_boundary_change  # noqa: E402
 from shared.scripts.lib.events_read import read_events_at  # noqa: E402
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -610,7 +611,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     project_root = args.project_root.resolve()
-    events_path = args.events_jsonl or (project_root / "shipwright_events.jsonl")
+    events_path = args.events_jsonl or (project_root / _sp.rel("events"))
 
     specs = scan_specs(project_root)
     rows = correlate_with_commits(specs, events_path, project_root=project_root)

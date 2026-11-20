@@ -39,6 +39,7 @@ from . import _project_gate_extras_rollout as _extras_rollout
 from ._project_gate_manifest import _read_spec_texts, _unreadable_result
 from ._project_gate_rollout_snapshot import build_rollout_snapshot
 from .common import CheckResult, Severity
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[2] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 
 def _to_check_result(name: str, result) -> CheckResult:
@@ -65,7 +66,7 @@ def _read_project_scope(
     external code review round 4 low + round 5 medium); ``config_exists``
     lets a caller distinguish "nothing written yet" from a config that
     exists but has no ``scope`` key (``scope is None`` either way)."""
-    path = project_root / "shipwright_project_config.json"
+    path = project_root / _sp.rel("project_config")
     if not path.exists():
         return None, None, False
     try:

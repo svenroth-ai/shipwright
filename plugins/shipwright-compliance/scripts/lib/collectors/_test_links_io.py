@@ -20,6 +20,7 @@ from ._lib_loader import load_shared_lib
 from ._test_links_profile_roots import (  # noqa: F401  (_WARNED_NO_ROOTS: re-exported, tests clear it)
     _WARNED_NO_ROOTS, profile_test_roots, warn_no_roots, warn_profile_roots_unresolved,
 )
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[5] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 _ZERO_SHA = "0" * 40
 _PY_SUFFIXES = (".py",)
@@ -157,7 +158,7 @@ def default_test_roots(project_root: Path) -> list[Path]:
 def _read_traceability_config(project_root: Path, *, quiet: bool = False) -> dict:
     """Return the ``traceability`` block of ``shipwright_compliance_config.json`` — an empty
     dict when the file/key is absent or unreadable (⇒ the historical default behavior)."""
-    path = project_root / "shipwright_compliance_config.json"
+    path = project_root / _sp.rel("compliance_config")
     if not path.exists():
         return {}
     try:

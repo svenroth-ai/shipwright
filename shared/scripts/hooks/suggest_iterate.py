@@ -29,6 +29,7 @@ from lib.handoff_phase_status import (  # noqa: E402
     phase_tasks_has_usable_entries as _phase_tasks_has_usable_entries,
     phase_tasks_progress as _phase_tasks_progress,
 )
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[1] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 # Multilingual pattern registry — en + de now, extensible for fr/it later
 PHASE_PATTERNS: dict[str, dict[str, str]] = {
@@ -170,7 +171,7 @@ def classify_for_iterate(prompt: str, project_root: Path) -> dict | None:
     except ImportError:
         return None
 
-    sync_config_path = project_root / "shipwright_sync_config.json"
+    sync_config_path = project_root / _sp.rel("sync_config")
     result = classify(
         prompt,
         str(sync_config_path) if sync_config_path.exists() else None,
@@ -209,7 +210,7 @@ def main():
     project_root = Path(cwd)
 
     # Guard 1: Is this a Shipwright project?
-    run_config_path = project_root / "shipwright_run_config.json"
+    run_config_path = project_root / _sp.rel("run_config")
     if not run_config_path.exists():
         sys.exit(0)
 

@@ -180,7 +180,7 @@ def fake_plugin_cache(tmp_path: Path) -> Path:
     # Copy the script we want to invoke.
     shutil.copy2(_SUGGEST_ITERATE, shared_hooks / "suggest_iterate.py")
     # Copy the shared-tree dependency the script imports via sys.path arithmetic.
-    shutil.copy2(_HANDOFF_PHASE_STATUS, shared_lib / _HANDOFF_PHASE_STATUS.name)
+    for f in (_HANDOFF_PHASE_STATUS, _HANDOFF_PHASE_STATUS.parent / "shipwright_paths.py"): shutil.copy2(f, shared_lib / f.name)  # + the path resolver
     # Copy the dependency the script imports via path arithmetic.
     classify_intent_dir = _CLASSIFY_INTENT.parent
     for f in classify_intent_dir.glob("*.py"):

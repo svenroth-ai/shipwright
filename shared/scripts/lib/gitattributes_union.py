@@ -27,6 +27,7 @@ commit-path sibling is imported normally, so it may ``from lib.* import``.)
 from __future__ import annotations
 
 from pathlib import Path
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 # Layout (identical in the dev repo and the ~/.claude marketplace cache):
 #   <root>/shared/scripts/lib/gitattributes_union.py   ← this file
@@ -44,7 +45,7 @@ TEMPLATE_PATH = "shared/templates/gitattributes-union.template"
 #: import-pure for the file-path loader; the drift test asserts this equals
 #: ``{churn_merge.EVENTS_LOG, churn_merge.TRIAGE_LOG}`` so the two cannot diverge.
 #: This is also the "is this a managed repo?" signal for the self-heal sibling.
-UNION_PATHS: tuple[str, ...] = ("shipwright_events.jsonl", ".shipwright/triage.jsonl")
+UNION_PATHS: tuple[str, ...] = (_sp.rel("events"), ".shipwright/triage.jsonl")
 
 #: The drops-layout event folders are DELIBERATELY absent from every union list below: a
 #: drop is an immutable, ADD-only file, so two branches never touch the same one and a

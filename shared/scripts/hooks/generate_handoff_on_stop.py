@@ -17,7 +17,7 @@ from __future__ import annotations
 import json, os, subprocess, sys, time, uuid
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[1] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p); from typing import Any
 
 _SCRIPTS_ROOT = Path(__file__).resolve().parent.parent
 if str(_SCRIPTS_ROOT) not in sys.path:
@@ -63,12 +63,12 @@ def _import_lib_with_retry(do_import=_do_lib_imports, attempts: int = 20, delay:
  _phase_tasks_has_usable_entries, _phase_tasks_progress, resolve_run_id,
  is_shipwright_project, resolve_project_root) = _import_lib_with_retry()
 
-_RUN_CONFIG_NAME = "shipwright_run_config.json"
+_RUN_CONFIG_NAME = _sp.rel("run_config")
 # Matches orchestrator_pkg/run_config_store.py's LOCK_NAME — the same
 # advisory lock every other shipwright_run_config.json writer coordinates
 # through. Not imported (plugin-local, ADR-045 lib collision): a bare
 # filename suffix is a safe duplication.
-_RUN_CONFIG_LOCK_NAME = _RUN_CONFIG_NAME + ".lock"
+_RUN_CONFIG_LOCK_NAME = _sp.lock_rel("run_config")
 
 
 # Canonical home of the agent_docs artifact set, relative to project_root.
@@ -135,7 +135,7 @@ def _detect_phase_complete(current_phase: str, project_root: Path, completed_pha
         return False
 
     if current_phase == "build":
-        config_path = project_root / "shipwright_build_config.json"
+        config_path = project_root / _sp.rel("build_config")
         if config_path.exists():
             try:
                 config = json.loads(config_path.read_text(encoding="utf-8"))
@@ -146,7 +146,7 @@ def _detect_phase_complete(current_phase: str, project_root: Path, completed_pha
             except (json.JSONDecodeError, OSError):
                 pass
     elif current_phase == "plan":
-        config_path = project_root / "shipwright_plan_config.json"
+        config_path = project_root / _sp.rel("plan_config")
         if config_path.exists():
             try:
                 config = json.loads(config_path.read_text(encoding="utf-8"))
@@ -154,7 +154,7 @@ def _detect_phase_complete(current_phase: str, project_root: Path, completed_pha
             except (json.JSONDecodeError, OSError):
                 pass
     elif current_phase == "project":
-        config_path = project_root / "shipwright_project_config.json"
+        config_path = project_root / _sp.rel("project_config")
         if config_path.exists():
             try:
                 config = json.loads(config_path.read_text(encoding="utf-8"))
@@ -162,7 +162,7 @@ def _detect_phase_complete(current_phase: str, project_root: Path, completed_pha
             except (json.JSONDecodeError, OSError):
                 pass
     elif current_phase == "test":
-        results_path = project_root / "shipwright_test_results.json"
+        results_path = project_root / _sp.rel("test_results")
         if results_path.exists():
             try:
                 results = json.loads(results_path.read_text(encoding="utf-8"))

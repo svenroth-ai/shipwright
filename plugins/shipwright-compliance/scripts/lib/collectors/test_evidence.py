@@ -25,6 +25,7 @@ if str(_SHARED_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SHARED_SCRIPTS))
 
 from known_failures import load_accepted_baseline as _load_accepted_baseline  # noqa: E402
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[5] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 
 def _parse_test_results_file(path: Path) -> TestResults | None:
@@ -102,7 +103,7 @@ def collect_test_results(project_root: Path) -> TestResults | None:
             all_results.append(tr)
 
     # Current results
-    current = project_root / "shipwright_test_results.json"
+    current = project_root / _sp.rel("test_results")
     if current.exists():
         tr = _parse_test_results_file(current)
         if tr:

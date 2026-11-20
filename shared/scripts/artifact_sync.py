@@ -9,7 +9,7 @@ import json
 import re
 import subprocess
 import sys
-from pathlib import Path
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[0] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p); from pathlib import Path
 
 
 def run_git(args, *, cwd, timeout=None, check=True):
@@ -170,7 +170,7 @@ def detect_drift(project_root: str, ref: str = "HEAD~1..HEAD") -> dict:
     root = Path(project_root)
 
     # Load sync config
-    config_path = root / "shipwright_sync_config.json"
+    config_path = root / _sp.rel("sync_config")
     if not config_path.exists():
         return {
             "drift_detected": False,

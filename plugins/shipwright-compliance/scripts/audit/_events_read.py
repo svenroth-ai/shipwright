@@ -36,8 +36,9 @@ from pathlib import Path
 from types import ModuleType
 
 from scripts.audit.audit_adapters import load_shared_lib
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
-EVENT_FILE = "shipwright_events.jsonl"
+EVENT_FILE = _sp.rel("events")
 
 
 def _jsonl_records() -> ModuleType:

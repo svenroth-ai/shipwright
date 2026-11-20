@@ -14,6 +14,7 @@ from typing import Any, Callable
 from uuid import uuid4
 
 from scripts.tools.suite_coverage_rules import DATA_DIR
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[1] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 
 _GIT_CONTEXT_KEYS = (
@@ -21,7 +22,7 @@ _GIT_CONTEXT_KEYS = (
 )
 _MEASUREMENT_CONFIG_NAMES = frozenset({
     ".coveragerc", ".python-version", "pyproject.toml", "pytest.ini",
-    "setup.cfg", "shipwright_test_config.json", "tox.ini", "uv.lock",
+    "setup.cfg", _sp.rel("test_config"), "tox.ini", "uv.lock",
 })
 
 

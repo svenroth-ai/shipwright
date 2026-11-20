@@ -79,7 +79,7 @@ from design_gate_extras import (  # noqa: E402
     visual_tokens_present,
 )
 from phase_write_boundary import find_boundary_violations, git_dirty_paths  # noqa: E402
-from tools.verifiers.design_checks import (  # noqa: E402
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p); from tools.verifiers.design_checks import (  # noqa: E402
     check_design_fr_coverage,
     check_design_manifest_screens_exist,
 )
@@ -97,11 +97,11 @@ DESIGNS_DIRNAME = ".shipwright/designs"
 #: that patches shared plumbing has stopped producing mockups.
 DESIGN_ALLOWED_PREFIXES = (
     ".shipwright/",
-    "shipwright_run_config.json",
-    "shipwright_project_config.json",
+    _sp.rel("run_config"),
+    _sp.rel("project_config"),
     "CHANGELOG-unreleased.d/",
     "CHANGELOG.md",  # the design verifier (C5) REQUIRES the "Design: N screens + M flows added" line there
-    "shipwright_events.jsonl", ".shipwright/events/drops/", ".shipwright/events/archive/", ".shipwright/events/quarantine/",  # the pipeline's own event log (file and drops folders): bookkeeping, not a breach
+    _sp.rel("events"), ".shipwright/events/drops/", ".shipwright/events/archive/", ".shipwright/events/quarantine/",  # the pipeline's own event log (file and drops folders): bookkeeping, not a breach
 )
 
 

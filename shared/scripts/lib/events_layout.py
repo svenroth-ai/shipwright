@@ -53,8 +53,9 @@ from .events_log import DROPS_DIR, resolve_events_path
 from .events_read import DROP_NAME, read_events_assembled, sanitize_key  # noqa: F401 -- re-exports
 from .jsonl_records import ends_without_newline
 from .events_sentinel import require_writable_layout
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
-SYNC_CONFIG = "shipwright_sync_config.json"
+SYNC_CONFIG = _sp.rel("sync_config")
 LAYOUTS = ("legacy", "drops")
 
 ENV_LAYOUT = "SHIPWRIGHT_EVENTS_LAYOUT"
@@ -80,7 +81,7 @@ def events_layout(project_root: Path | str) -> str:
 def events_lock_path(project_root: Path | str) -> Path:
     """The advisory lock file -- identical to the legacy ``<log>.lock``, untracked."""
     legacy = resolve_events_path(project_root)
-    return legacy.with_name(legacy.name + ".lock")
+    return _sp.lock_beside(legacy)
 
 
 def _git_identity(root: Path) -> tuple[str, bool, str]:

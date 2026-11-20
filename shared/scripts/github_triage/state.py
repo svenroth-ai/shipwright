@@ -19,6 +19,7 @@ import json
 import os
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[1] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 STATE_FILENAME = "github_import_state.json"
 DEFAULT_THROTTLE_HOURS = 6.0
@@ -32,7 +33,7 @@ def _state_path(project_root) -> Path:
 def _run_config(project_root) -> dict:
     try:
         raw = (
-            Path(project_root) / "shipwright_run_config.json"
+            Path(project_root) / _sp.rel("run_config")
         ).read_text(encoding="utf-8")
         data = json.loads(raw)
         return data if isinstance(data, dict) else {}

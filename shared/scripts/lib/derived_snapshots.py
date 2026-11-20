@@ -47,10 +47,10 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
+from lib import shipwright_paths as _sp
 from lib.churn_merge import (
     CI_SECURITY_SUMMARY,
     DERIVED_MDS,
-    TEST_RESULTS,
     TEST_TRACEABILITY,
     THROUGHPUT_REPORT,
     norm,
@@ -79,7 +79,7 @@ SESSION_HANDOFF = ".shipwright/agent_docs/session_handoff.md"
 DERIVED_SNAPSHOTS: frozenset[str] = DERIVED_MDS | {
     CI_SECURITY_SUMMARY,
     TEST_TRACEABILITY,
-    TEST_RESULTS,
+    *_sp.snapshot_paths(),   # kind=derived: shipwright_test_results.json (+ the new path from R1)
     THROUGHPUT_REPORT,
 }
 
@@ -156,7 +156,7 @@ DERIVED_SNAPSHOTS: frozenset[str] = DERIVED_MDS | {
 #: the release refresh recompute this on the default branch?"* — and its answer is
 #: correctly "no, a refresh could only invent a run id". This set answers *"may the
 #: mid-run restore reset this to HEAD?"*. Two axes, deliberately not one.
-RESTORABLE_SNAPSHOTS: frozenset[str] = DERIVED_SNAPSHOTS - {TEST_RESULTS, SESSION_HANDOFF}
+RESTORABLE_SNAPSHOTS: frozenset[str] = DERIVED_SNAPSHOTS - _sp.run_written_paths() - {SESSION_HANDOFF}
 
 
 def _git(project_root: Path, *args: str) -> subprocess.CompletedProcess[str]:

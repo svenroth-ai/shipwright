@@ -43,8 +43,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # shared/script
 from lib.events_layout import events_layout  # noqa: E402
 from lib.jsonl_records import read_jsonl_records  # noqa: E402
 from lib.events_stage import commit_drops, validate_drops, writer_lock, wt_drops  # noqa: E402
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[1] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
-EVENT_FILE = "shipwright_events.jsonl"
+EVENT_FILE = _sp.rel("events")
 
 
 def _run_git(args: list[str], cwd: Path, check: bool = True) -> subprocess.CompletedProcess:

@@ -88,6 +88,7 @@ from .layer_coverage import check_cross_layer_coverage, check_removal_coverage  
 from .layer_coverage_binding import check_binding_completeness  # noqa: E402, F401
 from .risk_recheck_recording import check_risk_recheck_recorded  # noqa: E402, F401
 from .surface_check import check_surface_verification  # noqa: E402 — F0.5 audit, re-exported
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[2] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 
 SPEC_IMPACT_CHECK_NAME = "spec impact recorded (feature/change/bug)"
@@ -456,7 +457,7 @@ def _freshness_mtime_reference(project_root: Path, run_id: str) -> float | None:
     entry_path = entry_file_for(project_root, run_id)
     if entry_path.exists():
         return entry_path.stat().st_mtime
-    cfg = project_root / "shipwright_run_config.json"
+    cfg = project_root / _sp.rel("run_config")
     if cfg.exists():
         return cfg.stat().st_mtime
     return None

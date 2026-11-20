@@ -28,6 +28,7 @@ import json
 import re
 from pathlib import Path
 from typing import Iterable
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 # Contexts that are never expected in the configured set: they are reported by
 # a third party or are informational, and requiring them is a deliberate choice
@@ -37,7 +38,7 @@ ADVISORY_CONTEXTS: frozenset[str] = frozenset()
 
 # Where a consumer repo records its own "deliberately not required" decision:
 # a top-level list of check names in the run config every Shipwright project has.
-ADVISORY_CONFIG_FILE = "shipwright_run_config.json"
+ADVISORY_CONFIG_FILE = _sp.rel("run_config")
 ADVISORY_CONFIG_KEY = "required_checks_advisory"
 
 

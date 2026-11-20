@@ -19,6 +19,7 @@ import sys
 from dataclasses import dataclass
 from itertools import islice
 from pathlib import Path
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 
 def _jsonl_records():
@@ -210,7 +211,7 @@ def _events_path(root: Path) -> Path | None:
         except OSError:  # removed mid-scan
             continue
     newest = [p for _m, p in sorted(newest, key=lambda t: t[0], reverse=True)]
-    for cand in (root / "shipwright_events.jsonl", root / ".shipwright" / "events.jsonl"):
+    for cand in (root / _sp.rel("events"), root / ".shipwright" / "events.jsonl"):
         if cand.is_file() and _within_root(cand, root):
             # drops hold the newest events: a frozen legacy log must not make a live repo read as stale
             return newest[0] if newest and newest[0].stat().st_mtime > cand.stat().st_mtime else cand

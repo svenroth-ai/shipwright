@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 
 @dataclass
@@ -78,26 +79,26 @@ def plan_standard_writes(
         ProposedWrite(".shipwright/agent_docs/build_dashboard.md", "create", "adoption snapshot"),
         ProposedWrite(f".shipwright/planning/{split_name}/spec.md", "create", "IREB spec from inferred features (+ derived/unconfirmed provenance block)"),
         ProposedWrite(".shipwright/adopt/derived-catalogue.json", "create", "how many requirements were derived, and how many nobody has confirmed"),
-        ProposedWrite("shipwright_known_failures.json", "create", "inherited failures + coverage gaps — recorded as inherited, not as this project's"),
+        ProposedWrite(_sp.rel("known_failures"), "create", "inherited failures + coverage gaps — recorded as inherited, not as this project's"),
         ProposedWrite(".shipwright/compliance/sbom.md", "create", "via shipwright-compliance"),
         ProposedWrite(".shipwright/compliance/change-history.md", "create", "via shipwright-compliance"),
         ProposedWrite(".shipwright/compliance/traceability-matrix.md", "create", "RTM skeleton"),
         ProposedWrite(".shipwright/compliance/test-evidence.md", "create", "stub — fills from first /shipwright-test"),
         ProposedWrite(".shipwright/compliance/dashboard.md", "create", "via shipwright-compliance"),
-        ProposedWrite("shipwright_project_config.json", "create", "splits + requirements"),
-        ProposedWrite("shipwright_plan_config.json", "create", "adopted, empty sections"),
-        ProposedWrite("shipwright_build_config.json", "create", "adopted-baseline section"),
-        ProposedWrite("shipwright_iterate_config.json", "create", "external review enabled, code-review cascade enabled, events_context.mode=compact"),
-        ProposedWrite("shipwright_compliance_config.json", "create", "seeded_by_adopt=true"),
-        ProposedWrite("shipwright_run_config.json", "create", "status=complete, written LAST"),
-        ProposedWrite("shipwright_events.jsonl", "create", "1x adopted event + backfilled commits"),
+        ProposedWrite(_sp.rel("project_config"), "create", "splits + requirements"),
+        ProposedWrite(_sp.rel("plan_config"), "create", "adopted, empty sections"),
+        ProposedWrite(_sp.rel("build_config"), "create", "adopted-baseline section"),
+        ProposedWrite(_sp.rel("iterate_config"), "create", "external review enabled, code-review cascade enabled, events_context.mode=compact"),
+        ProposedWrite(_sp.rel("compliance_config"), "create", "seeded_by_adopt=true"),
+        ProposedWrite(_sp.rel("run_config"), "create", "status=complete, written LAST"),
+        ProposedWrite(_sp.rel("events"), "create", "1x adopted event + backfilled commits"),
         # NB: .claude/settings.json is NOT written — the suggest_iterate
         # UserPromptSubmit hook is plugin-owned (registered in
         # plugins/shipwright-iterate/hooks/hooks.json). Retired
         # 2026-05-05 per iterate-20260505-plugin-hook-registration.
     ]
     if write_sync:
-        writes.append(ProposedWrite("shipwright_sync_config.json", "create", "empty file_to_fr_map"))
+        writes.append(ProposedWrite(_sp.rel("sync_config"), "create", "empty file_to_fr_map"))
     if crawl_succeeded:
         writes.append(ProposedWrite("e2e/flows/adopted-baseline.spec.ts", "create", "Playwright regression guard"))
         writes.append(ProposedWrite(".shipwright/adopt/routes.json", "create", "crawler output"))

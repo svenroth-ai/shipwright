@@ -48,6 +48,7 @@ from ._engagement import (  # noqa: E402
     load_engagement_inputs,
     phase_is_engaged,
 )
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[2] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 
 def phase_from_plugin_root(plugin_root: str | os.PathLike[str] | None) -> str | None:
@@ -163,7 +164,7 @@ def resolve_source(project_root: Path, phase: str) -> str:
     """
     if phase == "iterate":
         return "iterate"
-    run_config = project_root / "shipwright_run_config.json"
+    run_config = project_root / _sp.rel("run_config")
     if not run_config.exists():
         return "standalone"
     try:

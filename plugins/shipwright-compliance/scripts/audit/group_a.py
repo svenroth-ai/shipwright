@@ -23,7 +23,7 @@ first.
 
 from __future__ import annotations
 
-import json
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p); import json
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -337,8 +337,8 @@ def _resolve_a4_targets(
         if "." not in field_spec:
             continue
         config_name, _, dotted = field_spec.partition(".")
-        config_path = project_root / f"shipwright_{config_name}.json"
-        if not config_path.exists():
+        config_path = _sp.json_path_or_none(config_name, project_root)
+        if config_path is None or not config_path.exists():
             continue
         try:
             data = json.loads(config_path.read_text(encoding="utf-8"))

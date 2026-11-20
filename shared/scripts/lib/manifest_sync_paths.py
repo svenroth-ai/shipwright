@@ -14,10 +14,11 @@ import stat
 from pathlib import Path, PurePosixPath
 
 from .manifest_sync_errors import ManifestSyncError
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 __all__ = ["CONFIG_NAME", "load_declared_manifests", "resolve_contained_path"]
 
-CONFIG_NAME = "shipwright_changelog_config.json"
+CONFIG_NAME = _sp.rel("changelog_config")
 
 _DRIVE_LETTER_RE = re.compile(r"^[A-Za-z]:")
 

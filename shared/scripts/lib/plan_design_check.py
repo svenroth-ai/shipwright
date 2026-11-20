@@ -26,6 +26,7 @@ import json
 import re
 from dataclasses import dataclass
 from pathlib import Path
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 __all__ = ["Finding", "design_findings", "design_problems", "is_autonomous_design_run",
            "section_decisions", "section_contradictions", "undecided_marker"]
@@ -83,7 +84,7 @@ def is_autonomous_design_run(project_root: Path) -> bool:
     unreadable config is "not autonomous" (the old behaviour), never a crash.
     """
     try:
-        cfg = json.loads((Path(project_root) / "shipwright_run_config.json").read_text(encoding="utf-8"))
+        cfg = json.loads((Path(project_root) / _sp.rel("run_config")).read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return False
     if not isinstance(cfg, dict):

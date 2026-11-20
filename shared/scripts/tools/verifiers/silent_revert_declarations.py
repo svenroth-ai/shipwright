@@ -35,6 +35,7 @@ if str(_SCRIPTS_ROOT) not in sys.path:
 from lib.iterate_entry import find_entry_by_run_id  # noqa: E402
 
 from ._iterate_latest import STATE_MALFORMED, read_iterate_latest  # noqa: E402
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[2] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 __all__ = ["attributed_declared_removals", "covered_by_declaration"]
 
@@ -55,7 +56,7 @@ def _unattributed_declared_removals(project_root) -> list[dict]:
     :func:`attributed_declared_removals` is about to DISREGARD, so the message
     can say how much was ignored.
     """
-    path = Path(project_root) / "shipwright_test_results.json"
+    path = Path(project_root) / _sp.rel("test_results")
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError, UnicodeDecodeError):

@@ -30,6 +30,7 @@ if str(_SCRIPTS_ROOT) not in sys.path:
 
 from lib.events_read import read_events_assembled  # noqa: E402
 from lib.handoff_phase_status import status_of  # noqa: E402
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[2] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 # Does a v2 ``phase_tasks[]`` status mean "this phase actually ran, or is running"?
 #
@@ -135,7 +136,7 @@ def load_engagement_inputs(project_root: Path) -> tuple[dict | None, list[dict]]
     read error never silently suppresses alerts (AC-1b).
     """
     cfg: dict | None = None
-    cfg_path = project_root / "shipwright_run_config.json"
+    cfg_path = project_root / _sp.rel("run_config")
     if cfg_path.exists():
         try:
             data = json.loads(cfg_path.read_text(encoding="utf-8"))

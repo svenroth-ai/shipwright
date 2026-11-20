@@ -28,7 +28,7 @@ from ._control_block import latest_tests_row, render_consistency_audit, render_c
 from ._dashboard_sections import external_review_evidence, project_velocity, render_date
 from ._provenance import provenance_lines
 from ._traceability import iterate_test_coverage, render_traced_row  # BP-1: informational FR-tag row + test-coverage credit
-from .ci_security import render_ci_security  # AR-10: CI security ingest
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p); from .ci_security import render_ci_security  # AR-10: CI security ingest
 if TYPE_CHECKING:
     from scripts.lib.data_collector import ComplianceData
 
@@ -130,7 +130,7 @@ def generate(data: ComplianceData) -> str:
     # NOTE: Reports now live at .shipwright/compliance/<file>.md (2-deep), so links
     # to project-root files use ../../ instead of ../. Sibling links under
     # .shipwright/ -- agent_docs and planning subdirs -- use the ../<sibling>/ form.
-    if log_rel := next((n for n in ("shipwright_events.jsonl", ".shipwright/events/drops") if (data.project_root / n).exists()), None):
+    if log_rel := next((n for n in (_sp.rel("events"), ".shipwright/events/drops") if (data.project_root / n).exists()), None):
         artifact_rows.insert(0, f"| Event Log | [{log_rel}](../../{log_rel}) | Unified append-only event log |")
     if (data.project_root / "CHANGELOG.md").exists():
         artifact_rows.append("| Changelog | [CHANGELOG.md](../../CHANGELOG.md) | Release notes |")

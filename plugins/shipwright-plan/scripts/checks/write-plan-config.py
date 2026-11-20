@@ -14,6 +14,7 @@ import argparse
 import json
 import sys
 from pathlib import Path
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 
 def main() -> int:
@@ -36,7 +37,7 @@ def main() -> int:
             "sections": args.sections or 0,
         }
 
-    config_path = project_root / "shipwright_plan_config.json"
+    config_path = project_root / _sp.rel("plan_config")
     config_path.write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8")
 
     print(json.dumps(config, indent=2))

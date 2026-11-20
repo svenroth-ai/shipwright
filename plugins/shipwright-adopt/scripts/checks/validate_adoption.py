@@ -22,6 +22,7 @@ import json
 import re
 import sys
 from pathlib import Path
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 
 def _discovery():
@@ -54,11 +55,11 @@ def _events_read():
 
 
 REQUIRED_CONFIGS = [
-    "shipwright_run_config.json",
-    "shipwright_project_config.json",
-    "shipwright_plan_config.json",
-    "shipwright_build_config.json",
-    "shipwright_compliance_config.json",
+    _sp.rel("run_config"),
+    _sp.rel("project_config"),
+    _sp.rel("plan_config"),
+    _sp.rel("build_config"),
+    _sp.rel("compliance_config"),
 ]
 
 REQUIRED_AGENT_DOCS = [
@@ -151,7 +152,7 @@ def _validate_events(project_root: Path) -> list[str]:
 _HONESTY_ARTIFACTS = (
     (".shipwright/adopt/derived-catalogue.json",
      "Step E (generate_adoption_artifacts.py)"),
-    ("shipwright_known_failures.json",
+    (_sp.rel("known_failures"),
      "Step E.18 (record_inherited_baseline.py)"),
 )
 

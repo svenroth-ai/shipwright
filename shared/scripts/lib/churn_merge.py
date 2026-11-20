@@ -24,6 +24,7 @@ from lib.triage_validate import (  # noqa: F401  (re-export surface)
     classify_triage_text,
     validate_triage_text,
 )
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 # --- the churn allowlist (POSIX relpaths) -----------------------------------
 
@@ -37,8 +38,8 @@ AGENT_DOC_MDS: frozenset[str] = frozenset(
 )
 DERIVED_MDS: frozenset[str] = COMPLIANCE_MDS | AGENT_DOC_MDS
 
-EVENTS_LOG = "shipwright_events.jsonl"
-TEST_RESULTS = "shipwright_test_results.json"
+EVENTS_LOG = _sp.rel("events")
+TEST_RESULTS = _sp.rel("test_results")
 #: The triage backlog — an append-only JSONL log tracked since campaign
 #: 2026-06-05-track-triage-jsonl (C). Reconciled like ``EVENTS_LOG`` but with a
 #: triage-specific dedup whose id-collision rule differs from the events one —

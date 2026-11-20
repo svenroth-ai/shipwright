@@ -19,14 +19,15 @@ from typing import Any
 from .events_amend import apply_amendments  # noqa: F401 — re-exported SSOT
 from .events_log import EVENT_FILE
 from .events_read import AssembledRead, read_events_assembled
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 CONFIG_FILES = {
-    "run": "shipwright_run_config.json",
-    "project": "shipwright_project_config.json",
-    "plan": "shipwright_plan_config.json",
-    "build": "shipwright_build_config.json",
-    "security": "shipwright_security_config.json",
-    "compliance": "shipwright_compliance_config.json",
+    "run": _sp.rel("run_config"),
+    "project": _sp.rel("project_config"),
+    "plan": _sp.rel("plan_config"),
+    "build": _sp.rel("build_config"),
+    "security": _sp.rel("security_config"),
+    "compliance": _sp.rel("compliance_config"),
     "events": EVENT_FILE,
 }
 

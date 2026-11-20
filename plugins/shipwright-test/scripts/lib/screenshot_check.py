@@ -36,6 +36,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))  # sibling by unique na
 import png_compare  # noqa: E402
 import screenshot_viewport  # noqa: E402
 from screenshot_viewport import VIEWPORT  # noqa: E402
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 MARKER = "brief-package-applied.json"
 _NN_RE = re.compile(r"^(\d{1,3})-")
@@ -115,7 +116,7 @@ def _playwright_dirs(root: Path) -> list[Path]:
 
 
 def _screen_map(root: Path) -> dict:
-    cfg = _read_json(root / "shipwright_run_config.json")
+    cfg = _read_json(root / _sp.rel("run_config"))
     brief_dir = cfg.get("brief_dir") if isinstance(cfg, dict) else None
     if not isinstance(brief_dir, str) or not brief_dir:
         return {}

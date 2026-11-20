@@ -29,6 +29,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from lib.config import load_build_config
 from lib.sections import extract_section_name
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 
 def detect_project_root(section_path: Path) -> Path:
@@ -106,7 +107,7 @@ def main() -> int:
     # Derive branch name from session-id + project-slug (not section name)
     # Pattern: build/{slug}-{session-id} or build/{session-id} or build/{section-name}
     slug = ""
-    run_config_path = project_root / "shipwright_run_config.json"
+    run_config_path = project_root / _sp.rel("run_config")
     if run_config_path.exists():
         try:
             run_config = json.loads(run_config_path.read_text(encoding="utf-8"))

@@ -46,6 +46,7 @@ if str(_SHARED_ROOT) not in sys.path:
 from scripts.lib import evidence_drop  # noqa: E402
 from scripts.tools import ci_manifest_drift_check as _regen  # noqa: E402
 from scripts.tools import stage_f0_evidence as _f0  # noqa: E402
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[1] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 EXIT_OK = 0
 EXIT_BLOCKED = 1
@@ -53,7 +54,7 @@ EXIT_INFRA = 2
 
 _RATCHET = Path(__file__).resolve().parent / "check_ac_coverage_ratchet.py"
 _COMPLIANCE_PLUGIN = Path("plugins") / "shipwright-compliance"
-_BASELINE = "shipwright_ac_coverage_baseline.json"
+_BASELINE = _sp.rel("ac_coverage_baseline")
 _TIMEOUT_SECONDS = 900
 
 

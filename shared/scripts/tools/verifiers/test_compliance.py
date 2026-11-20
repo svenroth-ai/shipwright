@@ -22,6 +22,7 @@ from lib.phase_quality import (  # noqa: E402
     STATUS_SKIP,
     make_finding,
 )
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[2] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 
 W4_NAME = "W4 coverage meets threshold"
@@ -33,7 +34,7 @@ _DEFAULT_COVERAGE_MIN = 70
 
 
 def _load_threshold(project_root: Path) -> int:
-    cfg = project_root / "shipwright_test_config.json"
+    cfg = project_root / _sp.rel("test_config")
     if not cfg.exists():
         return _DEFAULT_COVERAGE_MIN
     try:
@@ -50,7 +51,7 @@ def _load_threshold(project_root: Path) -> int:
 
 
 def _load_coverage(project_root: Path) -> tuple[float | None, str]:
-    path = project_root / "shipwright_test_results.json"
+    path = project_root / _sp.rel("test_results")
     if not path.exists():
         return None, "shipwright_test_results.json missing"
     try:

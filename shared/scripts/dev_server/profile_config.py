@@ -26,7 +26,7 @@ from ._paths import _PROFILES_DIR
 from ._profile_input import _coerce_int, _resolve_profile
 
 # Re-imported in __init__.py for the package-level surface.
-from .validation import _validate_services
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[1] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p); from .validation import _validate_services
 
 
 def _pkg():
@@ -37,7 +37,7 @@ def _pkg():
 # Constants
 # ---------------------------------------------------------------------------
 
-STATE_FILE = "shipwright_dev_server.json"
+STATE_FILE = _sp.rel("dev_server")
 STATE_VERSION = 2
 
 # Default service used if no profile / no build_config / no inline JSON.
@@ -236,7 +236,7 @@ def _services_from_profile_data(
         return [_normalize_legacy_dev_server(legacy)], warnings
 
     # Build config fallback
-    build_config = cwd / "shipwright_build_config.json"
+    build_config = cwd / _sp.rel("build_config")
     if build_config.exists():
         try:
             data = json.loads(build_config.read_text(encoding="utf-8"))
@@ -277,7 +277,7 @@ def _get_config(profile: str | None, cwd: Path | None = None) -> dict:
     if profile and profile in PROFILE_DEV_SERVERS:
         return dict(PROFILE_DEV_SERVERS[profile])
     if cwd:
-        build_config = cwd / "shipwright_build_config.json"
+        build_config = cwd / _sp.rel("build_config")
         if build_config.exists():
             try:
                 data = json.loads(build_config.read_text(encoding="utf-8"))

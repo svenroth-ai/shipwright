@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Any
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 
 # Top-level dirs that are definitely NOT nested projects (build artifacts,
@@ -56,8 +57,8 @@ def detect_nested_projects(project_root: Path, max_depth: int = 2) -> list[dict[
             if (child / ".git").exists():
                 markers.append(".git")
                 reasons.append("nested-git")
-            if (child / "shipwright_run_config.json").exists():
-                markers.append("shipwright_run_config.json")
+            if (child / _sp.rel("run_config")).exists():
+                markers.append(_sp.rel("run_config"))
                 reasons.append("separate-shipwright-project")
             if (child / "CLAUDE.md").exists() and (child / ".shipwright" / "agent_docs").is_dir():
                 markers.append("CLAUDE.md+.shipwright/agent_docs/")

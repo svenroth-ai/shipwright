@@ -61,6 +61,10 @@ from iterate_worktree_gate_state import (  # noqa: F401 -- _MARKER_TTL_SECONDS/_
     _marker_path,
     _release,
 )
+try:
+    import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)
+except ImportError:  # degraded environment (stale shared cache): keep this hook's own fallbacks
+    _sp = None
 
 
 def _find_shared_scripts() -> Path:
@@ -221,7 +225,7 @@ def _iterate_eligible(main_root: Path) -> bool:
     in files — yet it is exactly what iterate is for). Arming a project the
     skill will refuse would block its session for 24 h for nothing."""
     try:
-        config = json.loads((main_root / "shipwright_run_config.json").read_text(encoding="utf-8"))
+        config = json.loads((main_root / ("shipwright_run_config.json" if _sp is None else _sp.rel("run_config"))).read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return False
     if not isinstance(config, dict):

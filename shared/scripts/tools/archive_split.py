@@ -26,6 +26,7 @@ from pathlib import Path
 # Allow imports from sibling packages
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from lib.config import read_config, write_config
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[1] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 
 def archive_split(project_root: Path, next_split: str) -> dict:
@@ -75,7 +76,7 @@ def archive_split(project_root: Path, next_split: str) -> dict:
     config["completed_splits"] = completed_splits
 
     # Archive test results for this split (if they exist)
-    test_results_path = project_root / "shipwright_test_results.json"
+    test_results_path = project_root / _sp.rel("test_results")
     archived_test_results = False
     if test_results_path.exists():
         dest = project_root / f"split_{prefix}_test_results.json"

@@ -47,6 +47,7 @@ from pathlib import Path
 
 from lib.fr_classification import CHANGE_TYPE_VALUES
 from lib.requirement_impact import is_requirement_spec
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 __all__ = [
     "SHAPE_GENERIC", "SHAPE_MARKERS", "SHAPE_SHIPWRIGHT_MONOREPO",
@@ -59,7 +60,7 @@ SHAPE_SHIPWRIGHT_MONOREPO = "shipwright-monorepo"
 #: Shipwright's own finalization records, written by every iterate.
 _BOOKKEEPING = (
     ".shipwright/**", "CHANGELOG-unreleased.d/**", "CHANGELOG.md",
-    "shipwright_events.jsonl", "shipwright_test_results.json",
+    _sp.rel("events"), _sp.rel("test_results"),
     ".shipwright/events/drops/**", ".shipwright/events/archive/**", ".shipwright/events/quarantine/**",
 )
 _DOCS = (
@@ -77,7 +78,7 @@ _TOOLING = (
     ".editorconfig", ".pre-commit-config.yaml", "ruff.toml", ".ruff.toml", "pyproject.toml",
     ".eslintrc*", "eslint.config.*", ".prettierrc*", "prettier.config.*", ".prettierignore",
     "vitest.config.*", "jest.config.*", "playwright.config.*", "pytest.ini", "tox.ini",
-    "noxfile.py", "Makefile", "justfile", "shipwright_*.json", "shipwright_*.yaml", "audit_config.json",
+    "noxfile.py", "Makefile", "justfile", *_sp.family_globs(), _sp.rel("audit_config"),
 )
 _INFRA = (
     ".github/**", ".gitlab-ci.yml", ".circleci/**", "Dockerfile*", "**/Dockerfile*",
@@ -87,13 +88,13 @@ _INFRA = (
     "requirements*.txt", "package.json", "package-lock.json", "pnpm-lock.yaml",
     "pnpm-workspace.yaml", "yarn.lock", ".npmrc", ".nvmrc", ".python-version",
     "tsconfig*.json", "vite.config.*", "vercel.json", "netlify.toml", "fly.toml",
-    "Procfile", ".env.example", "renovate.json", "scripts/**", "shipwright_*.json", "shipwright_*.yaml",
-    "audit_config.json", ".trivyignore*",
+    "Procfile", ".env.example", "renovate.json", "scripts/**", *_sp.family_globs(),
+    _sp.rel("audit_config"), ".trivyignore*",
 )
 _COMPLIANCE = (
     "SECURITY.md", ".semgrep*", ".semgrep/**", ".gitleaks*", ".trivyignore*",
     ".github/workflows/**", ".github/codeql/**", "THIRD_PARTY*", "**/sbom*",
-    "shipwright_*.json", "shipwright_*.yaml", "audit_config.json",
+    *_sp.family_globs(), _sp.rel("audit_config"),
 )
 #: The requirement catalogs: ``lib.requirement_impact.is_requirement_spec`` (a split's
 #: ``spec.md``, never an iterate's own ``iterate/<run_id>/spec.md``) plus the greenfield

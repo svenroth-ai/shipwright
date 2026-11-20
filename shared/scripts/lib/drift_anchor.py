@@ -14,6 +14,7 @@ import os
 import re
 import sys
 from pathlib import Path
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 # Fallback only — the canonical strip is bloat_baseline.strip_worktree_prefix.
 _WORKTREE_PREFIX_FALLBACK = re.compile(r"^\.worktrees/[^/]+/")
@@ -37,7 +38,7 @@ def is_shipwright_project(project_root) -> bool:
 
         return bool(_shared_marker(root))
     except (ImportError, ValueError):
-        return (root / "shipwright_run_config.json").exists()
+        return (root / _sp.rel("run_config")).exists()
 
 
 def _strip_worktree_prefix(rel: str) -> str:

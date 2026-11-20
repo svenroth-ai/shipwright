@@ -20,6 +20,7 @@ if str(_SCRIPTS_ROOT) not in sys.path:
 from lib.iterate_entry import MIGRATION_QUARANTINED_COUNT_KEY  # noqa: E402
 
 from .common import CheckResult, Severity  # noqa: E402
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[2] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 
 def check_migration_quarantine_empty(project_root: Path) -> CheckResult:
@@ -29,7 +30,7 @@ def check_migration_quarantine_empty(project_root: Path) -> CheckResult:
     unnoticed. Does not fail the check so follow-on work can proceed.
     """
     name = "iterate migration quarantine empty"
-    cfg = project_root / "shipwright_run_config.json"
+    cfg = project_root / _sp.rel("run_config")
     if not cfg.exists():
         return CheckResult(name, None, "no run_config", severity=Severity.SKIPPED.value)
     try:

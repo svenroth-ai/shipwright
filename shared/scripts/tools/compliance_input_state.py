@@ -35,6 +35,7 @@ sys.path.insert(0, str(_SCRIPTS_DIR))
 
 from lib.churn_merge import EVENTS_LOG, TRIAGE_LOG  # noqa: E402
 from lib.events_log import event_files, is_event_folder_path  # noqa: E402
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[1] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 __all__ = ["APPEND_ONLY_INPUTS", "PRODUCER_STATE", "event_folder_files", "producer_inputs", "rewind", "snapshot"]
 
@@ -47,7 +48,7 @@ __all__ = ["APPEND_ONLY_INPUTS", "PRODUCER_STATE", "event_folder_files", "produc
 #: rewrites the compliance config unconditionally. Hashing the derived paths while
 #: letting these drift proves a fixpoint of a projection, not of the producer.
 PRODUCER_STATE: tuple[str, ...] = (
-    EVENTS_LOG, TRIAGE_LOG, "shipwright_compliance_config.json",
+    EVENTS_LOG, TRIAGE_LOG, _sp.rel("compliance_config"),
 )
 
 #: The subset of :data:`PRODUCER_STATE` that is an APPEND-ONLY log, handled

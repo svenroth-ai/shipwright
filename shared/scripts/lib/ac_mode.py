@@ -17,12 +17,13 @@ import json
 import os
 import re
 from pathlib import Path
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 __all__ = ["ENV", "MODES", "is_safe_run_id", "marker_path", "read_marker", "resolve_mode", "source_label", "write_marker"]
 
 ENV = "SHIPWRIGHT_AC_MODE"
 MODES = ("ask", "auto", "off")
-CONFIG_FILE = "shipwright_iterate_config.json"
+CONFIG_FILE = _sp.rel("iterate_config")
 
 
 def is_safe_run_id(run_id: object) -> bool:

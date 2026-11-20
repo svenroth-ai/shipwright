@@ -66,10 +66,11 @@ if str(_SCRIPTS_ROOT) not in sys.path:
 from lib.atomic_write import durable_atomic_write, durable_read_text  # noqa: E402
 from lib.events_log import latest_event_dt  # noqa: E402
 from lib.file_lock import LockTimeout, file_lock  # noqa: E402
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[1] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 
 RETENTION_PER_PHASE = 50
-RUN_CONFIG_NAME = "shipwright_run_config.json"
+RUN_CONFIG_NAME = _sp.rel("run_config")
 
 
 def append_history(
@@ -196,7 +197,7 @@ def main() -> int:
         **extra,
     }
 
-    lock_path = (project_root / RUN_CONFIG_NAME).with_suffix(".json.lock")
+    lock_path = _sp.lock_for("run_config", project_root)
 
     try:
         with file_lock(lock_path, timeout_seconds=args.lock_timeout):

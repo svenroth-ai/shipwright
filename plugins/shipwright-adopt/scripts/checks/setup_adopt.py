@@ -22,6 +22,7 @@ import json
 import subprocess
 import sys
 from pathlib import Path
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 
 def _discovery():
@@ -87,12 +88,12 @@ _EXISTING_ARTIFACT_CANDIDATES: tuple[str, ...] = (
     # it will be backed up before being removed in favor of component_inventory.md.
     ".shipwright/agent_docs/guideline.md",
     ".shipwright/designs/visual-guidelines.md",
-    "shipwright_events.jsonl",
-    "shipwright_sync_config.json",
-    "shipwright_project_config.json",
-    "shipwright_plan_config.json",
-    "shipwright_build_config.json",
-    "shipwright_compliance_config.json",
+    _sp.rel("events"),
+    _sp.rel("sync_config"),
+    _sp.rel("project_config"),
+    _sp.rel("plan_config"),
+    _sp.rel("build_config"),
+    _sp.rel("compliance_config"),
 )
 
 
@@ -140,7 +141,7 @@ def run_preflight(project_root: Path, excludes: list[str]) -> dict:
         )
         return report
 
-    if (project_root / "shipwright_run_config.json").exists():
+    if (project_root / _sp.rel("run_config")).exists():
         report["ok"] = False
         report["hard_stops"].append(
             "shipwright_run_config.json already exists — this project is already adopted. "

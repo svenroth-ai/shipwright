@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any
 
 import rtm_manifest_coverage as manifest_cov
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 DEFAULT_THRESHOLD = 0.80
 _RTM_RELPATH = Path(".shipwright/compliance/traceability-matrix.md")
@@ -69,7 +70,7 @@ def read_threshold(project_root: str) -> tuple[float, list[str], float | None]:
     """
     warnings: list[str] = []
     baseline: float | None = None
-    config_path = os.path.join(project_root, "shipwright_compliance_config.json")
+    config_path = os.path.join(project_root, _sp.rel("compliance_config"))
     if not os.path.exists(config_path):
         return DEFAULT_THRESHOLD, warnings, baseline
     try:

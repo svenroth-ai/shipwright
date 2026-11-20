@@ -40,6 +40,7 @@ _ADDED = str(_SCRIPTS) not in sys.path
 if _ADDED:
     sys.path.append(str(_SCRIPTS))
 from shared_lib_loader import load_shared_lib  # noqa: E402
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[1] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 rules = load_shared_lib("autonomous_rules", prefer_private=True)
 pbb = load_shared_lib("phase_boundary_baseline", prefer_private=True)
@@ -153,7 +154,7 @@ def _profile(root: Path) -> dict | None:
     """The run's stack profile; ``None`` when the run config names none. A profile the config names but
     the resolver refuses (unknown, corrupt, too new) raises -- the caller fails loud (exit 2)."""
     try:
-        name = json.loads((root / "shipwright_run_config.json").read_text(encoding="utf-8")).get("profile")
+        name = json.loads((root / _sp.rel("run_config")).read_text(encoding="utf-8")).get("profile")
     except (OSError, ValueError, AttributeError):  # no readable run config: no profile declares anything
         return None
     if not isinstance(name, str) or not name:

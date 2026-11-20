@@ -16,8 +16,9 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[0] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
-RUN_CONFIG_NAME = "shipwright_run_config.json"
+RUN_CONFIG_NAME = _sp.rel("run_config")
 
 
 def read_run_config(project_root: Path | str) -> dict:

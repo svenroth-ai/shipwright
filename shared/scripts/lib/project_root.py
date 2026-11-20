@@ -18,16 +18,13 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 # Config-file markers — any one of these makes a directory a Shipwright
 # project. ``shipwright_run_config.json`` stays first (the canonical primary)
 # but it carries no special weight in :func:`is_shipwright_project`.
 CONFIG_MARKERS: tuple[str, ...] = (
-    "shipwright_run_config.json",
-    "shipwright_project_config.json",
-    "shipwright_plan_config.json",
-    "shipwright_build_config.json",
-    "shipwright_events.jsonl",
+    *_sp.names_of(marker=True),   # run, project, plan, build config + the event log
     ".shipwright/events/drops",           # the drops layout leaves no legacy file behind
     ".shipwright/events/archive",
     ".shipwright/events/quarantine",

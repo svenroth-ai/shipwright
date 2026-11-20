@@ -28,6 +28,7 @@ prefixes-provenance-anchor, once this file crossed the 300-line guideline).
 from __future__ import annotations
 
 import re
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 __all__ = ["is_generated_path"]
 
@@ -59,8 +60,8 @@ _GENERATED_AGENT_DOCS = frozenset({
 })
 
 _GENERATED_BASENAMES = frozenset({
-    "shipwright_test_results.json",  # latest-run test state (regenerated each run)
-    "shipwright_events.jsonl",       # append-only event log (union-merged)
+    _sp.rel("test_results"),  # latest-run test state (regenerated each run)
+    _sp.rel("events"),       # append-only event log (union-merged)
     "triage.jsonl",                  # append-only triage backlog
     "triage.outbox.jsonl",           # triage outbox staging
 })

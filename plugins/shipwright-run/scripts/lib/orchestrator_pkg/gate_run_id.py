@@ -30,8 +30,9 @@ import json
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Optional
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[5] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
-_RUN_CONFIG = "shipwright_run_config.json"
+_RUN_CONFIG = _sp.rel("run_config")
 NO_ENTRY_SUFFIX = ":no-phase_history-entry-since-claim"
 _SKEW = timedelta(minutes=5)   # clock-skew tolerance for an entry's ``at``
 

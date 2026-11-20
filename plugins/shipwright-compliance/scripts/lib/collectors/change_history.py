@@ -17,6 +17,7 @@ from pathlib import Path
 
 from ._lib_loader import load_shared_lib
 from ._types import CommitEntry, TestRunEvent, WorkEvent
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[5] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -82,7 +83,7 @@ def collect_git_history(project_root: Path) -> list[CommitEntry]:
 # Event log
 # ---------------------------------------------------------------------------
 
-EVENT_FILE = "shipwright_events.jsonl"
+EVENT_FILE = _sp.rel("events")
 
 
 def _resolve_events_path(project_root: Path) -> Path:

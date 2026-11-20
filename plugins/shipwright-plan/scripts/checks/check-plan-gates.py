@@ -63,7 +63,7 @@ from plan_section_quality import (  # noqa: E402
     coverage_report,
     quality_problems,
 )
-from review_marker import (  # noqa: E402
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p); from review_marker import (  # noqa: E402
     REVIEW_STATE_FILE,
     STATE_OK,
     evaluate_review_state,
@@ -75,11 +75,11 @@ GATES = ("review", "sections", "boundary", "all")
 #: (`step-9-completion.md`); `shipwright_plan_config.json` is written every session.
 PLAN_ALLOWED_PREFIXES = (
     ".shipwright/",
-    "shipwright_run_config.json",
-    "shipwright_project_config.json",
-    "shipwright_plan_config.json",
+    _sp.rel("run_config"),
+    _sp.rel("project_config"),
+    _sp.rel("plan_config"),
     "CHANGELOG-unreleased.d/",
-    "shipwright_events.jsonl", ".shipwright/events/drops/", ".shipwright/events/archive/", ".shipwright/events/quarantine/",  # the pipeline's own event log (file and drops folders): bookkeeping, not a breach
+    _sp.rel("events"), ".shipwright/events/drops/", ".shipwright/events/archive/", ".shipwright/events/quarantine/",  # the pipeline's own event log (file and drops folders): bookkeeping, not a breach
 )
 
 

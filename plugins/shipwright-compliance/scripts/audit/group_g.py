@@ -43,7 +43,7 @@ from scripts.audit.audit_adapters import (
     load_shared_lib,
 )
 from scripts.audit import git_log_scan
-from scripts.audit.g2_scopes import unknown_scope_parts
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p); from scripts.audit.g2_scopes import unknown_scope_parts
 
 
 adr_headers = load_shared_lib("adr_headers")
@@ -137,7 +137,7 @@ def _git_commit_bodies(repo: Path, shas: list[str]) -> dict[str, str]:
 
 def _project_split_names(project_root: Path) -> set[str]:
     """Return the set of split names from ``shipwright_project_config.json``."""
-    cfg_path = project_root / "shipwright_project_config.json"
+    cfg_path = project_root / _sp.rel("project_config")
     if not cfg_path.exists():
         return set()
     try:

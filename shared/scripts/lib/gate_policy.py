@@ -27,6 +27,7 @@ from typing import Any, Optional
 from lib.atomic_write import durable_read_text
 from lib.gate_catalog_render import render_catalog_doc
 from lib.gate_unattended import unattended_answer_for, validate_unattended
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 # Policies (order = escalation strength).
 AUTO_DEFAULT = "auto-default"
@@ -55,7 +56,7 @@ INERT_MODE = "standalone"
 _REQUIRED_GATE_KEYS = ("id", "phase", "policy", "default_answer", "constitution", "fires", "summary")
 
 _CATALOG_PATH = Path(__file__).resolve().parents[2] / "config" / "gate_catalog.json"
-_CONFIG_NAME = "shipwright_run_config.json"
+_CONFIG_NAME = _sp.rel("run_config")
 
 
 class GateCatalogError(ValueError):

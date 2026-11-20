@@ -36,6 +36,7 @@ import urllib.request
 from copy import deepcopy
 from pathlib import Path
 from typing import Any
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -690,7 +691,7 @@ def main() -> int:
         return report_failure(exc)
     # Load shipwright_test_config.json.performance (optional)
     test_config_perf: dict[str, Any] | None = None
-    test_cfg_path = project_root / "shipwright_test_config.json"
+    test_cfg_path = project_root / _sp.rel("test_config")
     if test_cfg_path.exists():
         try:
             test_config_perf = json.loads(test_cfg_path.read_text(encoding="utf-8")).get("performance")

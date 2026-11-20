@@ -44,6 +44,7 @@ from lib.adr_headers import (  # noqa: E402
     parse_adr_headers,
 )
 from lib.events_read import read_events_assembled  # noqa: E402
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[2] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 
 # Canonical home of the agent_docs artifact set, relative to project_root.
@@ -126,7 +127,7 @@ def read_run_config(project_root: Path) -> dict[str, Any]:
     how to flag that (usually with a ``missing shipwright_run_config.json``
     error).
     """
-    path = project_root / "shipwright_run_config.json"
+    path = project_root / _sp.rel("run_config")
     if not path.exists():
         return {}
     try:

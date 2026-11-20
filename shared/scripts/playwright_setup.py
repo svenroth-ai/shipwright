@@ -35,6 +35,7 @@ from typing import Any
 # for tests; CLI invocation works because we add it ourselves below.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from lib.cmd_resolver import resolve_executable  # noqa: E402
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[0] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 
 def _find_shared_dir() -> Path:
@@ -102,7 +103,7 @@ def setup(
     if not config_path.exists() and template_config.exists():
         content = template_config.read_text(encoding="utf-8")
         # Self-healing: substitute port from build config if available
-        build_cfg = cwd / "shipwright_build_config.json"
+        build_cfg = cwd / _sp.rel("build_config")
         if build_cfg.exists():
             try:
                 data = json.loads(build_cfg.read_text(encoding="utf-8"))

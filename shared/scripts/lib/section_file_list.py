@@ -25,6 +25,7 @@ from __future__ import annotations
 import re
 
 from lib.requirement_impact import to_repo_relative_posix
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 #: The block heading, at any depth, with or without spaces around the slash and
 #: with any trailing decoration (a count, a note). Case-insensitive.
@@ -71,11 +72,11 @@ FRAMEWORK_BOOKKEEPING: tuple[str, ...] = (
     ".shipwright/agent_docs/session_handoff.md",
     ".shipwright/agent_docs/triage_inbox.md",
     ".shipwright/triage.jsonl",
-    "shipwright_events.jsonl",
+    _sp.rel("events"),
     ".shipwright/events/drops/",
     ".shipwright/events/archive/",
     ".shipwright/events/quarantine/",
-    "shipwright_build_config.json",
+    _sp.rel("build_config"),
     "design-fidelity-report.json",
 )
 #: Prose placeholders an LLM writes when a section declares no files. Kept as a

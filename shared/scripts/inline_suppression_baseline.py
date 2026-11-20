@@ -24,9 +24,10 @@ from typing import Any
 
 from accepted_risks import DECISION_REF_RE
 from inline_suppression_scan import scan_sites
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[0] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 #: Repo-root baseline. Follows the ``shipwright_`` config-file prefix.
-BASELINE_NAME = "shipwright_inline_suppressions.json"
+BASELINE_NAME = _sp.rel("inline_suppressions")
 SCHEMA_VERSION = 1
 
 _ALLOWED_KEYS = frozenset({"rule", "max_sites", "rationale_ref", "statement"})

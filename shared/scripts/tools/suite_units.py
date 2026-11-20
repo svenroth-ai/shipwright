@@ -15,6 +15,7 @@ import json
 import subprocess  # nosec B404 - fixed argv, shell=False; no user-supplied strings
 from dataclasses import dataclass, field, replace
 from pathlib import Path
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[1] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 SHARED_TEST_DIRS = ("shared/tests", "shared/scripts/tests", "shared/scripts/tools/tests")
 INTEGRATION_DIR = "integration-tests"
@@ -37,7 +38,7 @@ UV_RUN = ("uv", "run", "--python", PYTHON_VERSION)
 SHARED_MARKERS = ("-m", "not slow and not cross_plugin")
 #: One shared/scripts/tools test drives the real diff-cover gate (parity with ci.yml).
 SHARED_EXTRA_DEPS = ("diff-cover==10.3.0",)
-CONFIG_NAME = "shipwright_test_config.json"
+CONFIG_NAME = _sp.rel("test_config")
 _ALLOWED_SUITE_KEYS = {"max_workers", "xdist", "timeout_seconds", "_comment"}
 #: A hung unit holds its budget slot and would otherwise block F0 forever with no
 #: output (capture_output). Generous by default: this is a hang guard, not a perf gate.

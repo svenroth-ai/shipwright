@@ -37,13 +37,13 @@ if str(_LIB_DIR) not in sys.path:
     sys.path.insert(0, str(_LIB_DIR))
 
 from atomic_write import durable_atomic_write  # noqa: E402
-from bloat_marker_key import marker_key  # noqa: E402,F401 -- re-export for _bb.marker_key
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p); from bloat_marker_key import marker_key  # noqa: E402,F401 -- re-export for _bb.marker_key
 
 # ---------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------
 
-BASELINE_FILENAME = "shipwright_bloat_baseline.json"
+BASELINE_FILENAME = _sp.rel("bloat_baseline")
 MARKER_TTL_SECONDS = 3600  # 1 hour — campaign §5.2
 
 LIMIT_RUNTIME_PROMPT = 400

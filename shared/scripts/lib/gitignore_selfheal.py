@@ -33,6 +33,7 @@ from lib.atomic_write import durable_atomic_write  # noqa: E402
 from lib.ci_env import ci_active  # noqa: E402
 from lib.events_gitignore import apply_reinclude, reinclude_lines  # noqa: E402
 from lib.gitignore_canon import plan_merge  # noqa: E402
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 #: Where the canonical block lives in a managed repo (repo root).
 GITIGNORE_PATH = ".gitignore"
@@ -41,7 +42,7 @@ GITIGNORE_PATH = ".gitignore"
 #: Kept congruent with ``gitattributes_union.UNION_PATHS`` so the two self-heals
 #: act on exactly the same population of Shipwright-managed repos.
 MANAGED_MARKER_PATHS: tuple[str, ...] = (
-    "shipwright_events.jsonl",
+    _sp.rel("events"),
     ".shipwright/triage.jsonl",
     ".shipwright/events/drops",           # drops layout: ``git ls-files`` takes a directory pathspec
     ".shipwright/events/archive",

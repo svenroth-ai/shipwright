@@ -28,6 +28,7 @@ name.
 """
 
 from __future__ import annotations
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 __all__ = [
     "DIFF_LOC_THRESHOLD",
@@ -54,8 +55,8 @@ UNCOUNTED_PREFIXES: tuple[str, ...] = (
 
 #: Root-level ledgers that F5 / F5b rewrite on every run.
 UNCOUNTED_FILES: frozenset[str] = frozenset({
-    "shipwright_events.jsonl",
-    "shipwright_test_results.json",
+    _sp.rel("events"),
+    _sp.rel("test_results"),
 })
 
 

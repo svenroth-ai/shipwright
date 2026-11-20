@@ -14,6 +14,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from pathlib import Path
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 
 @dataclass
@@ -30,7 +31,7 @@ def load_thresholds(project_root: str | Path) -> EnforcementThresholds:
     Reads from {project_root}/shipwright_compliance_config.json
     field "enforcement". Falls back to defaults if missing.
     """
-    config_path = Path(project_root) / "shipwright_compliance_config.json"
+    config_path = Path(project_root) / _sp.rel("compliance_config")
     if not config_path.exists():
         return EnforcementThresholds()
 

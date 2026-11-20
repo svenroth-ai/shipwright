@@ -497,7 +497,7 @@ def attach_commit_to_event(
     if not path.exists():
         return False
 
-    lock_path = path.with_name(path.name + ".lock")
+    lock_path = events_lock_path(project_root)
     tmp_path = path.with_name(path.name + ".tmp")
 
     patched = False

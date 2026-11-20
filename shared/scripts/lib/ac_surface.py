@@ -24,6 +24,7 @@ import re
 import subprocess
 import tokenize
 from pathlib import Path
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 __all__ = ["git_changes", "is_observable_path", "is_test_path", "merge_base", "observable_files", "parse_diff", "read_blobs", "run_git"]
 
@@ -32,7 +33,7 @@ _MAX_UNTRACKED_BYTES = 1_000_000
 _DOC_ROOTS = frozenset({".shipwright", "docs", "changelog-unreleased.d"})
 _TEST_DIRS = frozenset({"tests", "test", "__tests__", "integration-tests"})
 _TEST_PREFIXES = (("shared", "tests"), ("shared", "scripts", "tests"), ("shared", "scripts", "tools", "tests"))
-_LEDGERS = frozenset({"changelog.md", "readme.md", "shipwright_events.jsonl", "shipwright_test_results.json", "shipwright_bloat_baseline.json"})
+_LEDGERS = frozenset({"changelog.md", "readme.md", _sp.rel("events"), _sp.rel("test_results"), _sp.rel("bloat_baseline")})
 _DOC_EXTS = frozenset({".md", ".rst"})
 _PROMPT_DIRS = frozenset({"agents", "skills", "prompts", "templates"})
 _PROMPT_FILES = frozenset({"constitution.md", "glossary.md", "skill.md", "claude.md"})

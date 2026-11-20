@@ -55,14 +55,14 @@ if str(_SHARED_LIB) not in sys.path:
     sys.path.insert(0, str(_SHARED_LIB))
 from atomic_write import durable_atomic_write, durable_read_text  # noqa: E402
 from file_lock import LockTimeout, file_lock  # noqa: E402
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
-RUN_CONFIG_NAME = "shipwright_run_config.json"
+RUN_CONFIG_NAME = _sp.rel("run_config")
 # Same lock-file PATH `plugins/shipwright-run/scripts/lib/run_config_store.py`
 # uses -- mutual exclusion is guaranteed by the shared path, not by which
 # module acquired it (see that module's docstring). This tool never imports
 # run_config_store directly: that plugin's own `lib` package would collide
 # with this plugin's `lib` namespace under the shared loader (ADR-045).
-LOCK_SUFFIX = ".lock"
 # A module-level constant, not an inline literal, so a test can monkeypatch
 # it down to prove the lock-contention path without a real 30s wait.
 LOCK_TIMEOUT_SECONDS = 30.0
@@ -80,7 +80,7 @@ def run(project_root: Path, *, dry_run: bool) -> dict[str, Any]:
             "already-adopted project; run /shipwright-adopt first."
         )
 
-    lock_path = project_root / (RUN_CONFIG_NAME + LOCK_SUFFIX)
+    lock_path = _sp.lock_for("run_config", project_root)
     # The read-modify-write critical section is held under the SAME advisory
     # lock every other run-config writer (phase_task_lifecycle, the
     # orchestrator) honours, and the whole snapshot is read AFTER acquiring
