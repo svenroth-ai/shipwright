@@ -1,0 +1,15 @@
+{
+  "stage": "spec-compliance",
+  "verdict": "PASS",
+  "spec_citations": [],
+  "summary": "The change does what FR-01.07 AC20 and the plan ask for. The scan step has id prompt-injection-scan and the gate reads its outcome through PROMPT_SCAN_OUTCOME (outcome is taken before continue-on-error, so a crash is visible). The gate blocks with exit 1 and an ::error:: line on failure, cancelled or any unknown value, warns only on skipped (ignoring a leftover report), and when the scan should have run blocks on a missing or empty file or one without a findings array. Real criticals still block; high and medium do not. The CI-gate guard check (c) now demands a coupled exit for prompt_risks.json in any gate step that reads it. The adopt template never reads prompt_risks.json in its gate, so nothing outside this workflow is left unguarded. AC20 is in spec.md with the frozen wording and docs/security-ci-setup.md matches. Tests cover missing, empty, unreadable, failure, cancelled, unknown outcome, skipped, stale file after skip, criticals and clean pass. The guard checks the missing/empty guard but not the outcome or valid-report checks, matching its depth for findings.json. Code-reviewer may proceed.",
+  "ac_verdicts": [
+    {
+      "ac": "FR-01.07.AC20",
+      "verdict": "matches",
+      "diff_location": ".github/workflows/security.yml:265",
+      "reason": "The merge check now fails when the hidden-instruction scan crashed (outcome failure, cancelled or unknown) or left a missing, empty or unreadable report (no findings array), instead of counting zero; a scan skipped on purpose only warns and any leftover report is ignored.",
+      "weakens": false
+    }
+  ]
+}

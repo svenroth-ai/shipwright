@@ -1,0 +1,5 @@
+Goal: Make the security workflow's critical gate fail closed on the prompt-injection report: a crashed scan or a missing, empty or unreadable report blocks; a scan step skipped on purpose only warns.
+Reason: Follow-up of the skill-surface scan iterate: an empty prompt_risks.json read as zero findings, and an absent one only warned, so a broken scan could pass green.
+Reference: origin/main
+AC item: {"ac": "FR-01.07.AC20", "confirmed": false, "decided_by": "code", "files": [".github/workflows/security.yml"], "kind": "add", "new_text": "Given the check that decides whether a change may merge, when the scan for hidden instructions crashed or left no usable result (missing, empty or unreadable), then the check fails instead of counting zero findings; and when that scan was switched off on purpose, then the check only warns.", "owner_fr": "FR-01.07"}
+AC decisions: [{"ac": "FR-01.07.AC20", "mode": "auto", "answer": "auto", "kind": "add", "answered_via": "none", "decided_by": "code", "confirmed": false}]

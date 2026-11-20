@@ -151,6 +151,10 @@ jobs:
         continue-on-error: true
 
       - name: Run Prompt Injection scan
+        id: prompt-injection-scan
+        # No --fail-on below: the scanner exits non-zero only when it crashed, and the
+        # critical-gate reads that (outcome != success) as "the scan did not complete".
+        # Adding --fail-on would turn ordinary findings into a crash signal.
         working-directory: plugins/shipwright-security
         env:
           # Hoist github context into env vars so the run: body never
@@ -223,6 +227,17 @@ jobs:
       - name: Check for critical findings
         id: shipwright-critical-gate
         shell: bash
+        # Keep the implicit success() condition: this step must NOT get `if: always()`.
+        # A skipped prompt-injection scan is read as a deliberate opt-out below, which
+        # is only true while an upstream failure stops the job before this step runs.
+        env:
+          # How the prompt-injection scan step ended: success | failure |
+          # cancelled | skipped. `outcome` (not `conclusion`) is the raw result
+          # BEFORE continue-on-error is applied, so a crashed scan is visible here
+          # even though the step is non-gating. Unset (the gate body is also run
+          # outside Actions by the behaviour probe) is read as `success`, i.e. the
+          # strict path.
+          PROMPT_SCAN_OUTCOME: ${{ steps.prompt-injection-scan.outcome }}
         run: |
           set -e
           # Fail CLOSED if the primary scan produced no output. A missing or
@@ -253,11 +268,34 @@ jobs:
             exit 1
           fi
           critical=$(jq '[.findings[]? | select(.severity == "critical")] | length' findings.json)
-          # prompt_risks.json is a softer signal: warn loudly if absent, don't block.
-          if [ ! -f prompt_risks.json ]; then
-            echo "::warning::prompt_risks.json is absent — prompt-injection scan did not run; treating as 0 prompt-critical."
-            prompt_critical=0
-          else
+          # prompt_risks.json: fail CLOSED when the scan was meant to run but left no
+          # usable report. A crashed scan (step failure, or a missing / empty /
+          # unparseable file) read as "0 prompt-critical" would let a broken scan
+          # pass green — the same failure class as findings.json above. The one
+          # exception is a step that was skipped on purpose (an `if:` on the scan
+          # step): that is a deliberate opt-out and only warns.
+          prompt_critical=0
+          prompt_scan_ran=1
+          case "${PROMPT_SCAN_OUTCOME:-success}" in
+            success) ;;
+            skipped)
+              prompt_scan_ran=0
+              echo "::warning::Prompt-injection scan step was skipped — treating as 0 prompt-critical (deliberate opt-out)."
+              ;;
+            *)
+              echo "::error::Prompt-injection scan step ended '${PROMPT_SCAN_OUTCOME}' — it did not complete. Failing closed."
+              exit 1
+              ;;
+          esac
+          if [ "$prompt_scan_ran" = 1 ]; then
+            if [ ! -s prompt_risks.json ]; then
+              echo "::error::prompt_risks.json is absent or empty — the prompt-injection scan produced no output. Failing closed."
+              exit 1
+            fi
+            if ! jq -e '(.findings | type) == "array"' prompt_risks.json >/dev/null 2>&1; then
+              echo "::error::prompt_risks.json is not a valid report (no findings array) — failing closed."
+              exit 1
+            fi
             prompt_critical=$(jq '[.findings[]? | select(.severity == "critical")] | length' prompt_risks.json)
           fi
           total=$((critical + prompt_critical))
@@ -278,7 +316,7 @@ jobs:
             local sev="$1" n m
             n=$(jq --arg s "$sev" '[.findings[]? | select(.severity == $s)] | length' findings.json)
             m=0
-            if [ -f prompt_risks.json ]; then
+            if [ "$prompt_scan_ran" = 1 ]; then
               m=$(jq --arg s "$sev" '[.findings[]? | select(.severity == $s)] | length' prompt_risks.json)
             fi
             echo $((n + m))

@@ -1,0 +1,92 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-20-prompt-risks-gate-fail-closed",
+    "date": "2026-11-20",
+    "unit": {
+      "status": "passed",
+      "passed": 26731,
+      "skipped": 112,
+      "total": 26843
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 4,
+      "total": 4
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run pytest shared/tests/test_security_prompt_risks_gate.py -q -p no:cacheprovider",
+      "exit_code": 0,
+      "tests_run": 19,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\prompt-risks-gate-fail-closed\\.shipwright\\runs\\iterate-2026-11-20-prompt-risks-gate-fail-closed\\surface_verification.log",
+      "timestamp": "2026-11-20T21:18:53.866Z",
+      "attempts": 1
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "critical gate fails closed when prompt_risks.json is absent, empty, unparseable or has no findings array",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_security_prompt_risks_gate.py::TestFailsClosed PASSED (real bash+jq, asserts exit 1 and an error line naming the prompt scan)"
+        },
+        {
+          "behavior": "critical gate fails closed when the prompt-injection scan step ended failure, cancelled or an unknown outcome, even with a clean report file",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_security_prompt_risks_gate.py::TestFailsClosed PASSED"
+        },
+        {
+          "behavior": "a scan step skipped on purpose only warns and ignores a stale report; clean, unset-outcome and high/medium-only reports pass; a critical prompt finding still blocks",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_security_prompt_risks_gate.py::TestStaysOpenWhereItShould PASSED"
+        },
+        {
+          "behavior": "the workflow wires the scan step id to the gate's PROMPT_SCAN_OUTCOME, keeps the implicit success() condition and passes no --fail-on",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_security_prompt_risks_gate.py::TestWiring PASSED"
+        },
+        {
+          "behavior": "CI-gate guard check (c) flags a missing/empty-report guard or a silent count fallback for prompt_risks.json, and the live workflow passes it",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_check_ci_gate_coverage.py::TestPromptRisksGate PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 5,
+        "tested": 5,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 1,
+        "covered_acs": 1
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-11-20-prompt-risks-gate-fail-closed",
+    "commit": "dd77e0de7b4ec3aad6b24269ca1fb9414ee740df",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

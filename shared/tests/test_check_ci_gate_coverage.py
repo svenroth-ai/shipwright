@@ -9,6 +9,8 @@ real ``.github/workflows`` are broken.
 
 from __future__ import annotations
 
+import pytest
+
 from lib.ci_gate_allowlist import AllowEntry, LOOSE_GATE_ALLOWLIST
 from tools.check_ci_gate_coverage import (
     Step,
@@ -241,6 +243,54 @@ class TestSecurityFindingsGate:
         )
         steps = [_step(workflow="security.yml", name="Check for critical findings", run=run)]
         assert check_security_findings_gate(steps) == []
+
+
+@pytest.mark.covers("FR-01.07/AC20")
+class TestPromptRisksGate:
+    """The guard holds the gate to a fail-closed standard for prompt_risks.json too."""
+
+    _FINDINGS_OK = "if [ ! -f findings.json ]; then echo missing; exit 1; fi\n"
+
+    def _problems(self, run: str) -> list[str]:
+        steps = [_step(workflow="security.yml", name="Check for critical findings", run=run)]
+        return check_security_findings_gate(steps)
+
+    def test_warning_only_absent_branch_is_flagged(self):
+        run = self._FINDINGS_OK + (
+            "if [ ! -f prompt_risks.json ]; then\n"
+            "  echo '::warning::absent; treating as 0'\n"
+            "else\n"
+            "  jq '.' prompt_risks.json\n"
+            "fi\n"
+        )
+        problems = self._problems(run)
+        assert len(problems) == 1 and "prompt_risks.json" in problems[0]
+
+    def test_empty_file_guard_coupled_to_exit_is_ok(self):
+        run = self._FINDINGS_OK + (
+            "if [ ! -s prompt_risks.json ]; then echo empty; exit 1; fi\n"
+            "jq '.' prompt_risks.json\n"
+        )
+        assert self._problems(run) == []
+
+    def test_guard_present_but_silent_count_fallback_is_flagged(self):
+        run = self._FINDINGS_OK + (
+            "if [ ! -s prompt_risks.json ]; then echo empty; exit 1; fi\n"
+            "prompt_critical=$(jq '.findings | length' prompt_risks.json 2>/dev/null || echo 0)\n"
+        )
+        problems = self._problems(run)
+        assert len(problems) == 1 and "silent fallback" in problems[0]
+
+    def test_gate_that_never_reads_the_report_is_not_asked_for_a_guard(self):
+        assert self._problems(self._FINDINGS_OK + "jq '.' findings.json\n") == []
+
+    def test_live_security_workflow_passes(self):
+        from pathlib import Path
+
+        from tools.check_ci_gate_coverage import parse_workflows
+
+        root = Path(__file__).resolve().parents[2]
+        assert check_security_findings_gate(parse_workflows(root)) == []
 
 
 # --------------------------------------------------------------------------- #
