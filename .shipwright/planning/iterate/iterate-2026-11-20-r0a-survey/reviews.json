@@ -1,0 +1,305 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-20-r0a-survey",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-20T22:31:28.493371+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Step 3 (\"measure old-reader behaviour on missing and pointer-shaped root files in temp dirs\") is empirical probing of live code paths. Some shipwright readers may have side effects beyond reading (lock creation, event appends to `events.jsonl`, writes into profiles) when invoked during probing.",
+          "suggestion": "Confirm each probe runs against an isolated temp root/profile with real repo state copied or stubbed, and verify afterward (git status) that no real file was touched. The \"no file outside the two planning files changes\" verification already covers this — make sure it's actually run after the probes, not just after the doc edits.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The reference-class taxonomy (\"literal, glob, constructed name, derived lock/tmp, data-in-profile, prompt text, root-finding walk-up\") risks missing readers that aren't textually greppable: paths passed via env vars, CLI args, config-file values, or embedded in templates that construct paths at render time. The AST+token scan may catch construction but not values sourced externally.",
+          "suggestion": "Add one sweep over config/env/CLI plumbing (e.g., `getenv`, argv parsing, any settings loader) for `shipwright_` fragments before declaring the inventory complete.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The pointer-format proposal derives only from OLD-reader behaviour. Behaviour of the migration tooling itself (R0b+, presumably) isn't listed as an input — a pointer format the old readers tolerate isn't necessarily one that's unambiguous for the new resolver (e.g., pointer content that looks like valid data, or empty vs. textual pointers).",
+          "suggestion": "Note in the survey that the pointer format is provisional pending the new-reader design, and record why each candidate format is safe per old reader, not just that it is.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The acceptance criteria mention \"one consumer repo's CI\" for `.github/.yml` coverage, but the mini-plan's scan scope lists only in-repo locations. Reading a consumer repo implies access to that repo.",
+          "suggestion": "State explicitly which consumer repo is inspected and where the evidence (copied workflow paths) is recorded in the survey, so the claim is auditable without repo access.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "\"Every distinct shipwright_ basename\" could be read as basenames only; sibling files that don't match the prefix (e.g., `.shipwright/locks/` derived names, dotfiles, or files referenced without the prefix) could fall out of scope.",
+          "suggestion": "Clarify that the inventory is anchored on the known root-file list from BRIEF §2 plus any file any reader references, not solely prefix matching.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Appending \"section 11\" to the BRIEF assumes the BRIEF's section numbering is still 1–10; if the BRIEF already has later sections or appendices, appending silently at the end could break cross-references other sub-iterates rely on.",
+          "suggestion": "Verify current BRIEF structure before appending; if it's grown, use an explicit heading rather than a hard-coded number.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency |",
+          "file": null,
+          "line": null,
+          "finding": "The scan covers the application repository but does not explicitly include the required consumer repository’s CI. That external dependency could contain root-path assumptions missed by the survey.",
+          "suggestion": "Identify one consumer repository and revision before scanning, inspect its CI references, and record the findings alongside the application’s `.github/.yml` path filters and WebUI routes/allowlists.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach |",
+          "file": null,
+          "line": null,
+          "finding": "“AST + token scan” and basename classification do not explicitly produce several required outputs: per-module reader/writer roles, reference classes, and lock/temporary-file relationships. Constructed names, profile data, prompt instructions, and root-finding walks can escape a straightforward filename inventory.",
+          "suggestion": "Define the survey columns upfront and trace each discovered basename through its consumers and path helpers. Record classification rationale, source locations, reference class, reader/writer role, and associated lock/`.tmp` paths. Explicitly capture the operator decisions, including `events.jsonl` staying and `run_config` moving last.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk |",
+          "file": null,
+          "line": null,
+          "finding": "Temporary input directories alone do not guarantee that old-reader probes are read-only. Invoking production entry points may create locks, initialize missing files, or fall back to the actual working directory or user profile. The plan also tests “pointer-shaped” content without stating how candidates will be selected.",
+          "suggestion": "Inspect reader behavior first, then probe only in isolated disposable environments with controlled working directories and profile paths. Record fallback, mutation, error, and parsing behavior for each distinct reader implementation on missing files and explicit candidate pointer formats; derive the pointer proposal from those results.  The approach is appropriate for a documentation-only survey, with little direct regression risk. Make the required coverage and probe isolation explicit before proceeding so the resulting inventory can reliably support the later migration.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-20T22:13:56.807092+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Review Findings\n\n- **Category: approach** — Severity: low\n  **Finding:** Step 3 (\"measure old-reader behaviour on missing and pointer-shaped root files in temp dirs\") is empirical probing of live code paths. Some shipwright readers may have side effects beyond reading (lock creation, event appends to `events.jsonl`, writes into profiles) when invoked during probing.\n  **Suggestion:** Confirm each probe runs against an isolated temp root/profile with real repo state copied or stubbed, and verify afterward (git status) that no real file was touched. The \"no file outside the two planning files changes\" verification already covers this — make sure it's actually run *after* the probes, not just after the doc edits.\n\n- **Category: edge-case** — Severity: medium\n  **Finding:** The reference-class taxonomy (\"literal, glob, constructed name, derived lock/tmp, data-in-profile, prompt text, root-finding walk-up\") risks missing readers that aren't textually greppable: paths passed via env vars, CLI args, config-file values, or embedded in templates that construct paths at render time. The AST+token scan may catch construction but not values sourced externally.\n  **Suggestion:** Add one sweep over config/env/CLI plumbing (e.g., `getenv`, argv parsing, any settings loader) for `shipwright_` fragments before declaring the inventory complete.\n\n- **Category: edge-case** — Severity: low\n  **Finding:** The pointer-format proposal derives only from OLD-reader behaviour. Behaviour of the *migration tooling itself* (R0b+, presumably) isn't listed as an input — a pointer format the old readers tolerate isn't necessarily one that's unambiguous for the new resolver (e.g., pointer content that looks like valid data, or empty vs. textual pointers).\n  **Suggestion:** Note in the survey that the pointer format is provisional pending the new-reader design, and record *why* each candidate format is safe per old reader, not just that it is.\n\n- **Category: dependency** — Severity: l […truncated]\n\n[openai] 1. **Category: dependency | Severity: medium**  \n   **Finding:** The scan covers the application repository but does not explicitly include the required consumer repository’s CI. That external dependency could contain root-path assumptions missed by the survey.  \n   **Suggestion:** Identify one consumer repository and revision before scanning, inspect its CI references, and record the findings alongside the application’s `.github/*.yml` path filters and WebUI routes/allowlists.\n\n2. **Category: approach | Severity: medium**  \n   **Finding:** “AST + token scan” and basename classification do not explicitly produce several required outputs: per-module reader/writer roles, reference classes, and lock/temporary-file relationships. Constructed names, profile data, prompt instructions, and root-finding walks can escape a straightforward filename inventory.  \n   **Suggestion:** Define the survey columns upfront and trace each discovered basename through its consumers and path helpers. Record classification rationale, source locations, reference class, reader/writer role, and associated lock/`.tmp` paths. Explicitly capture the operator decisions, including `events.jsonl` staying and `run_config` moving last.\n\n3. **Category: risk | Severity: medium**  \n   **Finding:** Temporary input directories alone do not guarantee that old-reader probes are read-only. Invoking production entry points may create locks, initialize missing files, or fall back to the actual working directory or user profile. The plan also tests “pointer-shaped” content without stating how candidates will be selected.  \n   **Suggestion:** Inspect reader behavior first, then probe only in isolated disposable environments with controlled working directories and profile paths. Record fallback, mutation, error, and parsing behavior for each distinct reader implementation on missing files and explicit candidate pointer formats; derive the pointer proposal from those results.\n\nThe approach is appropria […truncated]",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": "low",
+          "category": null,
+          "file": "BRIEF 11.3/11.4",
+          "line": null,
+          "finding": "audit_disclosure range, compliance tmp row, inventory security row note: fixed after round 2",
+          "suggestion": "none",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-20T22:39:33.521138+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "40d59ea5aba3fe36c862aa78b94cd6f6a60b9d2d"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "hidden coupling / boundary",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: class 8 complete after 11.9 item 1 — events_layout_ci._layout_at reads sync_config from git blobs per commit",
+          "suggestion": "add to class 8 and the guard call shapes",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "reversibility",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: backfill regexes may be rewritten — they parse persisted manifest provenance",
+          "suggestion": "exempt",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: name scan finds every affected rule — .shipwright/ prefix rules name no basename",
+          "suggestion": "scan for prefix rules",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "blast radius",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: .shipwright/ holds only prose — area_catalog.json carries root names",
+          "suggestion": "note and regenerate at R3",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-20T22:43:19.742260+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "f008b3e7f3b97a4565bc2522ef80b2073f588b1a"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": ".shipwright/planning/campaigns/2026-11-14-root-files-into-shipwright-dir-BRIEF.md` — section 11.4 (\"Consequences for the resolver (`lock_for(kind)`)\")",
+          "line": null,
+          "finding": "The operator decision in the brief's scope states locks live in `.shipwright/locks/`, and 11.4 even notes \"`.shipwright/locks/` already exists as a lock home\" — yet the `lock_for` consequence paragraph never assigns the two surviving data-file locks (`run_config`, `ac_registry`) to `.shipwright/locks/`; it only says which kinds need a lock. Where the two lock files physically go after the move is left implicit, and `shipwright_events.jsonl.lock` (STAYS) keeps its root location, which is fine, but the moved locks' destination should be stated.",
+          "suggestion": "Add one sentence to the 11.4 consequence: the `run_config` and `ac_registry` locks are created under `.shipwright/locks/` (with a worktree-unique component if needed), or explicitly record that they stay beside the file and that the operator decision is amended.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test (data quality of the survey output)",
+          "file": ".shipwright/planning/campaigns/...SURVEY-inventory.md` — section A, lines for `codex_review_model_resolution.py:140` and `verifiers/changelog_checks.py",
+          "line": 212,
+          "finding": "The inventory header claims \"Message text and docstrings are excluded\", but these entries carry tokens like `shipwright_model_config.json's ` (trailing possessive) and `shipwright_changelog_config.json: ` (trailing colon), which are clearly prose/message fragments misclassified as `constructed(f-string)`/literal reads. The BRIEF (11.1) says `changelog_checks.py:212` is \"read only\", while the inventory tags it constructed — a downstream guard built from the inventory would chase a phantom constructed name.",
+          "suggestion": "Reclassify or strip these two (and re-run the token filter for tokens with trailing non-name characters); note in 11.0 that the exclusion filter for message text is imperfect for possessive/colon forms.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "spec",
+          "file": "BRIEF section 11.5, pointer-format block",
+          "line": null,
+          "finding": "The pointer format first mandates \"followed by LF\", then a later bullet amends it to CR-stripped matching. The amendment is present but the primary format text still states the stricter rule; a reader implementing R0b from the format block alone could implement the brittle version. Also the sign-off bullet says the text stub \"needs operator sign-off and the third review round BEFORE R1\", which is correctly recorded as open — the AC checklist in 11.8 does not track this open gate.",
+          "suggestion": "Rewrite the format block itself to say \"first line `SHIPWRIGHT-POINTER/1`, matched after stripping CR/whitespace\", and add the pending sign-off to 11.8 as an open item.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "BRIEF 11.5, row `append_phase_history.append_history`, shape B",
+          "line": null,
+          "finding": "The probe shows the writer merges `phase_history` into a shape-B JSON pointer — a measured corruption path. This is well covered by choosing shape D, but the survey does not record what `updateAutonomy` (WebUI) or any other unlocked writer does to a shape-B/C stub beyond the one WebUI paragraph; 11.5 states the WebUI case explicitly, so this is adequately handled. No action needed beyond keeping the shape-D decision.  No security issues (no code, no secrets), no regressions (nothing outside the two planning files changed), and the ACs in 11.8 map to real sections that substantively cover each criterion (basenames, reference classes, locks/tmp, old-reader behavior measured by probes, `.github`/WebUI/consumer CI, no code change). The counts I could check internally (21 moves, 4 stays, 3 retired) are consistent with the 11.1 table.  Overall assessment: ship-as-is; the two substantive items (lock home ambiguity, message-text misclassification) are refinements the brief itself already partially flags.  SHIPWRIGHT_VERDICT: approve",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": ".shipwright/planning/campaigns/2026-11-14-root-files-into-shipwright-dir-BRIEF.md",
+          "line": 341,
+          "finding": "The old-reader acceptance criterion is only partially covered. Section 11.5 tests pointer content for selected run-config readers, while the other moved files have only missing-file behavior recorded. Even the 49 identified run-config reader functions are not individually mapped to pointer behavior. This leaves the proposed pointer’s compatibility evidence incomplete.",
+          "suggestion": "Map every identified reader to missing-file and proposed-pointer behavior, grouping readers only where their handling is demonstrably identical. Explicitly record where pointer content is inapplicable because no stub will exist.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": ".shipwright/planning/campaigns/2026-11-14-root-files-into-shipwright-dir-BRIEF.md",
+          "line": 340,
+          "finding": "The lock/tmp inventory claims completeness but contains a concrete omission and unresolved entries. Section 11.3 identifies `audit_disclosure.py` as a compliance-config writer with its own temporary file and replace operation, yet 11.4 categorizes compliance config as having no temporary file. Another row says “none or `<name>.<rand>.tmp`,” without assigning the actual behavior per file.",
+          "suggestion": "Enumerate the exact temporary filename or pattern for each writer, including `audit_disclosure.py`, and replace ambiguous grouped entries with verified per-file results.  Overall assessment: ship-with-fixes. The read-only scope is respected, but the survey should complete these acceptance criteria before declaring R0a finished.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-20T22:16:06.951980+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] This is a documentation-only survey diff (two markdown files, no executable code), so the review is against the survey spec's acceptance criteria and internal consistency.\n\n- Category: spec\n  Severity: medium\n  File: `.shipwright/planning/campaigns/2026-11-14-root-files-into-shipwright-dir-BRIEF.md` — section 11.4 (\"Consequences for the resolver (`lock_for(kind)`)\")\n  Finding: The operator decision in the brief's scope states locks live in `.shipwright/locks/`, and 11.4 even notes \"`.shipwright/locks/` already exists as a lock home\" — yet the `lock_for` consequence paragraph never assigns the two surviving data-file locks (`run_config`, `ac_registry`) to `.shipwright/locks/`; it only says which kinds need a lock. Where the two lock files physically go after the move is left implicit, and `shipwright_events.jsonl.lock` (STAYS) keeps its root location, which is fine, but the moved locks' destination should be stated.\n  Suggestion: Add one sentence to the 11.4 consequence: the `run_config` and `ac_registry` locks are created under `.shipwright/locks/` (with a worktree-unique component if needed), or explicitly record that they stay beside the file and that the operator decision is amended.\n\n- Category: test (data quality of the survey output)\n  Severity: low\n  File: `.shipwright/planning/campaigns/...SURVEY-inventory.md` — section A, lines for `codex_review_model_resolution.py:140` and `verifiers/changelog_checks.py:212`\n  Finding: The inventory header claims \"Message text and docstrings are excluded\", but these entries carry tokens like `shipwright_model_config.json's ` (trailing possessive) and `shipwright_changelog_config.json: ` (trailing colon), which are clearly prose/message fragments misclassified as `constructed(f-string)`/literal reads. The BRIEF (11.1) says `changelog_checks.py:212` is \"read only\", while the inventory tags it constructed — a downstream guard built from the inventory would chase a phantom constructed name.\n  Suggestion: Reclassif […truncated]\n\n[openai] - Category: spec\n- Severity: medium\n- File: .shipwright/planning/campaigns/2026-11-14-root-files-into-shipwright-dir-BRIEF.md:341\n- Finding: The old-reader acceptance criterion is only partially covered. Section 11.5 tests pointer content for selected run-config readers, while the other moved files have only missing-file behavior recorded. Even the 49 identified run-config reader functions are not individually mapped to pointer behavior. This leaves the proposed pointer’s compatibility evidence incomplete.\n- Suggestion: Map every identified reader to missing-file and proposed-pointer behavior, grouping readers only where their handling is demonstrably identical. Explicitly record where pointer content is inapplicable because no stub will exist.\n\n- Category: spec\n- Severity: medium\n- File: .shipwright/planning/campaigns/2026-11-14-root-files-into-shipwright-dir-BRIEF.md:340\n- Finding: The lock/tmp inventory claims completeness but contains a concrete omission and unresolved entries. Section 11.3 identifies `audit_disclosure.py` as a compliance-config writer with its own temporary file and replace operation, yet 11.4 categorizes compliance config as having no temporary file. Another row says “none or `<name>.<rand>.tmp`,” without assigning the actual behavior per file.\n- Suggestion: Enumerate the exact temporary filename or pattern for each writer, including `audit_disclosure.py`, and replace ambiguous grouped entries with verified per-file results.\n\nOverall assessment: ship-with-fixes. The read-only scope is respected, but the survey should complete these acceptance criteria before declaring R0a finished.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-20T22:39:33.376469+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "40d59ea5aba3fe36c862aa78b94cd6f6a60b9d2d"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-20T22:14:49.108177+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-20T22:13:56.950500+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

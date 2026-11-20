@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "## Review Findings\n\n- **Category: approach** \u2014 Severity: low\n  **Finding:** Step 3 (\"measure old-reader behaviour on missing and pointer-shaped root files in temp dirs\") is empirical probing of live code paths. Some shipwright readers may have side effects beyond reading (lock creation, event appends to `events.jsonl`, writes into profiles) when invoked during probing.\n  **Suggestion:** Confirm each probe runs against an isolated temp root/profile with real repo state copied or stubbed, and verify afterward (git status) that no real file was touched. The \"no file outside the two planning files changes\" verification already covers this \u2014 make sure it's actually run *after* the probes, not just after the doc edits.\n\n- **Category: edge-case** \u2014 Severity: medium\n  **Finding:** The reference-class taxonomy (\"literal, glob, constructed name, derived lock/tmp, data-in-profile, prompt text, root-finding walk-up\") risks missing readers that aren't textually greppable: paths passed via env vars, CLI args, config-file values, or embedded in templates that construct paths at render time. The AST+token scan may catch construction but not values sourced externally.\n  **Suggestion:** Add one sweep over config/env/CLI plumbing (e.g., `getenv`, argv parsing, any settings loader) for `shipwright_` fragments before declaring the inventory complete.\n\n- **Category: edge-case** \u2014 Severity: low\n  **Finding:** The pointer-format proposal derives only from OLD-reader behaviour. Behaviour of the *migration tooling itself* (R0b+, presumably) isn't listed as an input \u2014 a pointer format the old readers tolerate isn't necessarily one that's unambiguous for the new resolver (e.g., pointer content that looks like valid data, or empty vs. textual pointers).\n  **Suggestion:** Note in the survey that the pointer format is provisional pending the new-reader design, and record *why* each candidate format is safe per old reader, not just that it is.\n\n- **Category: dependency** \u2014 Severity: low\n  **Finding:** The acceptance criteria mention \"one consumer repo's CI\" for `.github/*.yml` coverage, but the mini-plan's scan scope lists only in-repo locations. Reading a consumer repo implies access to that repo.\n  **Suggestion:** State explicitly which consumer repo is inspected and where the evidence (copied workflow paths) is recorded in the survey, so the claim is auditable without repo access.\n\n- **Category: edge-case** \u2014 Severity: low\n  **Finding:** \"Every distinct shipwright_* basename\" could be read as basenames only; sibling files that don't match the prefix (e.g., `.shipwright/locks/*` derived names, dotfiles, or files referenced *without* the prefix) could fall out of scope.\n  **Suggestion:** Clarify that the inventory is anchored on the known root-file list from BRIEF \u00a72 plus any file any reader references, not solely prefix matching.\n\n- **Category: risk** \u2014 Severity: low\n  **Finding:** Appending \"section 11\" to the BRIEF assumes the BRIEF's section numbering is still 1\u201310; if the BRIEF already has later sections or appendices, appending silently at the end could break cross-references other sub-iterates rely on.\n  **Suggestion:** Verify current BRIEF structure before appending; if it's grown, use an explicit heading rather than a hard-coded number.\n\n## Overall Assessment\n\nThis is a well-scoped, read-only survey with sensible methodology; the only substantive gap is ensuring the probe step can't mutate real state and widening the reference scan beyond textual `shipwright_*` matches. Sound to proceed.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Category: dependency | Severity: medium**  \n   **Finding:** The scan covers the application repository but does not explicitly include the required consumer repository\u2019s CI. That external dependency could contain root-path assumptions missed by the survey.  \n   **Suggestion:** Identify one consumer repository and revision before scanning, inspect its CI references, and record the findings alongside the application\u2019s `.github/*.yml` path filters and WebUI routes/allowlists.\n\n2. **Category: approach | Severity: medium**  \n   **Finding:** \u201cAST + token scan\u201d and basename classification do not explicitly produce several required outputs: per-module reader/writer roles, reference classes, and lock/temporary-file relationships. Constructed names, profile data, prompt instructions, and root-finding walks can escape a straightforward filename inventory.  \n   **Suggestion:** Define the survey columns upfront and trace each discovered basename through its consumers and path helpers. Record classification rationale, source locations, reference class, reader/writer role, and associated lock/`.tmp` paths. Explicitly capture the operator decisions, including `events.jsonl` staying and `run_config` moving last.\n\n3. **Category: risk | Severity: medium**  \n   **Finding:** Temporary input directories alone do not guarantee that old-reader probes are read-only. Invoking production entry points may create locks, initialize missing files, or fall back to the actual working directory or user profile. The plan also tests \u201cpointer-shaped\u201d content without stating how candidates will be selected.  \n   **Suggestion:** Inspect reader behavior first, then probe only in isolated disposable environments with controlled working directories and profile paths. Record fallback, mutation, error, and parsing behavior for each distinct reader implementation on missing files and explicit candidate pointer formats; derive the pointer proposal from those results.\n\nThe approach is appropriate for a documentation-only survey, with little direct regression risk. Make the required coverage and probe isolation explicit before proceeding so the resulting inventory can reliably support the later migration.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-11-20-r0a-survey",
+    "at": "2026-11-20T22:13:12.097785+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

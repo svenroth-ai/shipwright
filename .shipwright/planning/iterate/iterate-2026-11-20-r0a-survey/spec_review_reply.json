@@ -1,0 +1,1 @@
+{"stage":"spec-compliance","verdict":"PASS","spec_citations":[],"findings":[{"severity":"low","finding":"AC1: integration-tests covered only as test-file counts (11.0), assigned to R0b; stated openly."},{"severity":"low","finding":"AC2: read/write hint is a function-level regex, not dataflow; 11.3 adds hand-checked writer column."}]}

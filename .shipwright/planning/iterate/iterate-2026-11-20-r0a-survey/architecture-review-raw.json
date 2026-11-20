@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "1. **The question, answered in one sentence.** No new standing mechanism is being added \u2014 this is a one-off survey appended to a planning BRIEF, and that is exactly the right shape.\n\n2. **The smallest thing that would do.** Option 2 as proposed: the survey table in the BRIEF. The separate machine-derived inventory file is acceptable but is the outer edge of \"smallest\" \u2014 it is only justified if later units (R0b/R1/R3) will consume it mechanically rather than re-deriving it.\n\n3. **What it costs to keep.** Near zero: a section of a campaign BRIEF that will be archived with the campaign. The risk is staleness if the codebase moves between the survey and R3, but a one-off document staling is cheaper than anything that would prevent it.\n\n4. **What it forecloses.** None identified.\n\n5. **Findings**\n\n- Category: simpler-alternative\n- Severity: low\n- Finding: Option 3 (checked-in script plus CI guard) would convert a one-off planning record into a standing mechanism \u2014 a CI job that must be kept green and correct on every future change, defending against a staleness cost that is cheap and recoverable.\n- Suggestion: Take option 2, not 3. If staleness during the campaign becomes a real problem, re-run the survey as a step in R0b rather than installing a permanent guard.\n\nNo other findings. Doing the survey up front rather than letting each later unit discover call sites (option 1) is right: the whole campaign's correctness hinges on a complete reader inventory, and discovering a missed reader in R3 is the expensive failure.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Should it exist?** Yes\u2014option 2 is proportionate: a one-off survey supports the planned migration without adding a standing mechanism.\n\n2. **Smallest thing that would do:** Append the survey to the BRIEF and retain the machine-derived inventory as a dated snapshot. Discovering shared readers independently in each migration phase would duplicate work; a maintained script and CI guard are unnecessary for this survey.\n\n3. **What it costs to keep:** Two planning records to retain and interpret as historical evidence, with no obligation to keep them synchronized with future code.\n\n4. **What it forecloses:** none identified.\n\n5. **Findings:** No findings.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "architecture",
+  "capture": {
+    "run_id": "iterate-2026-11-20-r0a-survey",
+    "at": "2026-11-20T22:13:25.676155+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "approve"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}

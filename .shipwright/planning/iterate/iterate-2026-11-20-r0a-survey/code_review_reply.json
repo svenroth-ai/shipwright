@@ -1,0 +1,1 @@
+{"verdict":"pass","review":[{"severity":"low","file":"BRIEF 11.3/11.4","line":null,"finding":"audit_disclosure range, compliance tmp row, inventory security row note: fixed after round 2","suggestion":"none"}]}
