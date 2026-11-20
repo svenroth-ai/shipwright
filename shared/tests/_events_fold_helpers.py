@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import json
 import subprocess
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from lib.events_log import ARCHIVE_DIR, DROPS_DIR
 
 OLD = "2026-01-05T10:00:00+00:00"
-NEW = "2026-11-06T10:00:00+00:00"
+# Relative to now: a fixed date aged past the fold cutoff (14 days) on 2026-11-20 and turned "new" into "old".
+NEW = (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()
 
 
 def git(root: Path, *args: str, check: bool = True) -> str:

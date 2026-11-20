@@ -211,6 +211,18 @@ Patterns from [`multica-ai/andrej-karpathy-skills`](https://github.com/multica-a
 
 The shipwright-webui repo carries its own Acknowledgments block referencing the same Multica patterns; the shipwright monorepo carries the constitution and code-reviewer adoptions. Both repos stay MIT.
 
+#### SkillSpector — Skill-Surface Check Categories
+
+[`NVIDIA/SkillSpector`](https://github.com/NVIDIA/SkillSpector) (Apache-2.0, © 2026 NVIDIA CORPORATION & AFFILIATES) is a scanner for third-party agent skills. We ran its static mode over Shipwright's own skills (118 findings, none real) and kept only the *categories* of check that Semgrep, Trivy and Gitleaks do not cover. They are re-implemented from scratch in `plugins/shipwright-security/scripts/tools/skill_surface_*.py`, with **no code or text copied** (the module header carries the attribution):
+
+- Package-source redirection (`.npmrc`, `pip.conf`, `uv.toml`, `.yarnrc`, uv index tables in `pyproject.toml`).
+- Hook and settings analysis (hooks that post to a remote host; `apiKeyHelper`, `statusLine`, `fileSuggestion` shell-command keys).
+- Whitespace padding in any Markdown file; anti-refusal and safety-nullifying instructions only in agent configuration (`SKILL.md`, `CLAUDE.md`, `AGENTS.md`, files under `agents/`, `commands/`, `skills/`, `.claude/`, `.cursor/`), because ordinary product prose is full of look-alikes.
+- Tool-grant wildcards (`allowed-tools` / `tools`) in those same agent configuration files.
+- Executables disguised under a documentation extension.
+
+Deliberately **not** adopted: Python AST/taint/deserialization/SSRF rules (Semgrep), dependency CVEs (Trivy), container/Kubernetes rules (Semgrep), secrets (Gitleaks), YARA signatures, and the prose-heuristic rules, which measured as false-positive-heavy on our own docs. The new findings are **advisory**: clamped to `medium` (below the `high` level that remediation and CONTRIBUTING treat as must-fix), so the critical gate in `security.yml` never blocks on them. The in-file `shipwright-prompt-scan: allow` marker silences them in documentation only; it is deliberately ignored for `SKILL.md`, files under `agents/`, `skills/`, `commands/` and `.claude/`, and for JSON, registry and binary files, because those are the files under suspicion and must not clear themselves. Expect a few false positives in other projects (an internal package mirror in `.npmrc`, a hook that posts to the team's own server): fix the file or record an accepted risk; the rules were tuned on this repository only, so treat the first runs elsewhere as calibration.
+
 ---
 
 ## 2. Prerequisites and Installation
@@ -1042,7 +1054,7 @@ Every layer must report an explicit result (`pass`, `fail`, or `skipped: {reason
 | **OSS** (default) | Semgrep + Trivy + Gitleaks | Local (CLI binaries) | Actively maintained |
 | **Aikido** (optional) | Aikido Security API | Cloud (SaaS) | Legacy: see note below |
 
-> **Plus a prompt-injection scanner.** Beyond the SAST/SCA/secrets chain above, the plugin ships `prompt_injection_scan.py`, a Claude-Code-specific scanner for malicious patterns in skill, hook, and agent files. It runs as its own step in `.github/workflows/security.yml` (diff-scoped on PRs, full on push), emits `prompt_risks.json`, and is merged into the combined report via `generate_security_report.py --prompt-risks`. It is a **separate finding class** from the local Semgrep + Trivy + Gitleaks scan chain and surfaces in triage via the `gh-prompt:{owner}/{repo}` action-unit (§4.11.1).
+> **Plus a prompt-injection scanner.** Beyond the SAST/SCA/secrets chain above, the plugin ships `prompt_injection_scan.py`, a Claude-Code-specific scanner for malicious patterns in skill, hook, and agent files. It runs as its own step in `.github/workflows/security.yml` (diff-scoped on PRs, full on push), emits `prompt_risks.json`, and is merged into the combined report via `generate_security_report.py --prompt-risks`. It is a **separate finding class** from the local Semgrep + Trivy + Gitleaks scan chain and surfaces in triage via the `gh-prompt:{owner}/{repo}` action-unit (§4.11.1). It also runs a small set of **advisory skill-surface checks** (`skill_surface_*.py`: package-source redirection, hook/settings shell and remote-sink entries, whitespace padding, anti-refusal wording, `allowed-tools` wildcards, concealed executables). Their rule ids start with `SURFACE_` and are capped at `medium`, so they are reported but never block the critical gate.
 
 **Command & Arguments:**
 

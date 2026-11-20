@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-20-skill-surface-scan-rules",
+  "date": "2026-11-20",
+  "section": "Iterate — feature: skill-surface scan rules",
+  "title": "Advisory skill-surface checks, re-implemented from SkillSpector categories",
+  "context": "Semgrep, Trivy and Gitleaks do not cover agent-config surfaces (registry redirects, hook sinks, padding, safety wording, wildcard tools, disguised binaries).",
+  "decision": "Extend prompt_injection_scan with six re-implemented rules in skill_surface_*.py, capped at medium so they never block the critical gate; do not integrate SkillSpector.",
+  "consequences": "Findings appear in prompt_risks.json as SURFACE_*; false positives expected on other projects; attribution in README and guide.",
+  "rationale": "SkillSpector is Apache-2.0 and heavy; only a few categories fill real gaps, and own rules keep one schema and gate.",
+  "rejected": "Replace scanners; add SkillSpector as a backend (get_backend picks one); copy its patterns verbatim.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ".shipwright/planning/iterate/2026-11-20-skill-surface-scan-rules.md"
+}

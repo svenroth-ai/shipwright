@@ -468,6 +468,7 @@ Shipwright adopts ideas and adapts specific snippets (with attribution in the re
 - **[addyosmani/agent-skills](https://github.com/addyosmani/agent-skills)** (MIT, © Addy Osmani): Five-axis code-review framework, change-sizing heuristics, and Chesterton-Fence checks; informs the bloat-cleanup ADR template and reviewer prompts.
 - **[multica-ai/andrej-karpathy-skills](https://github.com/multica-ai/andrej-karpathy-skills)** (MIT, © 2025 multica-ai): the four Karpathy principles (Think Before Coding · Simplicity First · Surgical Changes · Goal-Driven Execution) cited verbatim in `shared/constitution.md` and `shared/glossary.md`.
 - **[multica-ai/multica](https://github.com/multica-ai/multica)** (Apache-2.0 *modified*, hosting-restricted): architectural patterns only (WebSocket transcript streaming, multi-workspace isolation, runtime registry, "parse don't cast" config reads) inspire the Shipwright Command Center roadmap. **No code or text is copied** (patterns only, deliberately), so this repo stays cleanly MIT.
+- **[NVIDIA/SkillSpector](https://github.com/NVIDIA/SkillSpector)** (Apache-2.0, © 2026 NVIDIA CORPORATION & AFFILIATES): category ideas only (dependency-source redirection, hook and settings analysis, whitespace padding, anti-refusal instructions, tool-scope wildcards, concealed executables) inspire the advisory skill-surface checks in `shipwright-security` (`scripts/tools/skill_surface_*.py`). **The rules were re-implemented from scratch; no code or text is copied**, so this repo stays MIT.
 
 ## License
 

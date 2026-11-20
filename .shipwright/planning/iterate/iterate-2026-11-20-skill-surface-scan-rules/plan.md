@@ -1,0 +1,6 @@
+Goal: Add advisory skill-surface checks (package-source redirection, hook and settings entries, whitespace padding, anti-refusal wording, allowed-tools wildcard, concealed executables) to the security prompt scan.
+Reason: Semgrep, Trivy and Gitleaks do not cover these surfaces; a static SkillSpector measurement on our own skills found no real issues but showed which categories the chain lacks.
+Reference: Measurement of NVIDIA SkillSpector 2.12.0; rules re-implemented, no code copied
+Affected ACs: FR-01.07.AC19
+AC item: {"confirmed": false, "decided_by": "code", "files": ["plugins/shipwright-security/scripts/tools/skill_surface_scan.py"], "kind": "add", "new_text": "Given a project's package-source settings, hook and tool configuration, and documentation files, when the scan runs, then it also reports, as a warning that never stops a release, a package source redirected away from its default registry, a hook or setting that sends data to another machine or runs a command by itself, text padded with blanks to hide content, wording that tells the assistant to drop its safety rules, a tool grant that covers everything, and a program disguised as a document.", "owner_fr": "FR-01.07"}
+AC decisions: [{"ac": "FR-01.07.new", "mode": "auto", "answer": "auto", "kind": "add", "answered_via": "none", "decided_by": "code", "confirmed": false}]

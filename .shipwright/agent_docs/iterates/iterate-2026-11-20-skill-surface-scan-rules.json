@@ -1,0 +1,101 @@
+{
+  "run_id": "iterate-2026-11-20-skill-surface-scan-rules",
+  "date": "2026-11-20T14:35:09.403497Z",
+  "event_at": "2026-11-19T08:27:02.559144+00:00",
+  "type": "feature",
+  "complexity": "medium",
+  "prior_source": "keyword",
+  "branch": "iterate/skill-surface-scan-rules",
+  "spec": ".shipwright/planning/iterate/2026-11-20-skill-surface-scan-rules.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-11-20-skill-surface-scan-rules",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "package source redirected away from the default registry is reported (npm, yarn, pip, uv string/array/multi-line/inline-table, default+loopback+first-party hosts exempt)",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-security/tests/test_skill_surface_registry_hooks.py + test_skill_surface_review_fixes.py PASSED"
+      },
+      {
+        "behavior": "hook sending data to a remote host (http hook, nc/socat/scp/rsync/curl peers, loopback look-alikes) is reported",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-security/tests/test_skill_surface_registry_hooks.py + test_skill_surface_hardening.py PASSED"
+      },
+      {
+        "behavior": "settings key that runs a shell command by itself is reported, only under .claude/",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-security/tests/test_skill_surface_registry_hooks.py + test_skill_surface_review_fixes.py PASSED"
+      },
+      {
+        "behavior": "whitespace padding (blank lines, space runs, NBSP, table cells) reported; fenced code and aligned tables clean",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-security/tests/test_skill_surface_prose.py + test_skill_surface_hardening.py PASSED"
+      },
+      {
+        "behavior": "anti-refusal / disclaimer-suppression / safety-nullification wording flagged on agent surfaces only; product prose clean",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-security/tests/test_skill_surface_prose.py + test_skill_surface_hardening.py PASSED"
+      },
+      {
+        "behavior": "wildcard tool grant in allowed-tools / tools frontmatter flagged (BOM, block list, commands/agents)",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-security/tests/test_skill_surface_prose.py + test_skill_surface_hardening.py PASSED"
+      },
+      {
+        "behavior": "program disguised as a document (PE/ELF/Mach-O/zip/gzip/shebang) reported",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-security/tests/test_skill_surface_wiring.py PASSED"
+      },
+      {
+        "behavior": "advisory contract: findings never exceed medium, emit routes through the cap, CLI exits 0 under --fail-on critical",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-security/tests/test_skill_surface_review_fixes.py + test_skill_surface_wiring.py PASSED"
+      },
+      {
+        "behavior": "a rule crash or an unencodable string never drops or empties the existing findings/report",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-security/tests/test_skill_surface_hardening.py + test_skill_surface_review_fixes.py PASSED"
+      },
+      {
+        "behavior": "registry/prose regexes stay linear on pathological input",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-security/tests/test_skill_surface_hardening.py + test_skill_surface_review_fixes.py PASSED"
+      },
+      {
+        "behavior": "dependency-scanner move is behaviour-preserving",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-security/tests/test_prompt_injection_scan.py PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 11,
+      "tested": 11,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 4,
+      "covered_acs": 4
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "runner": "",
+    "exit_code": 0,
+    "tests_run": 0,
+    "evidence_path": "",
+    "timestamp": "2026-11-20T14:34:34.582Z",
+    "attempts": 0,
+    "justification": "Command-line scanner library with no startable UI or API surface; exercised end-to-end through scan_file, the CLI main() and a real full-repo scan in the tests.",
+    "reason_code": "no-startable-surface"
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": [
+    "touches_io_boundary"
+  ]
+}
