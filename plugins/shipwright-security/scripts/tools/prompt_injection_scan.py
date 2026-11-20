@@ -54,6 +54,8 @@ sys.path.insert(0, str(SHARED_ROOT / "scripts"))
 sys.path.insert(0, str(SCRIPT_DIR))
 from py_token_filter import blank_noncode_spans  # noqa: E402  (SCRIPT_DIR on path)
 from prompt_injection_decision_drops import is_bullet_path, scan_decision_drop, scan_decision_drop_bullet  # noqa: E402
+from prompt_scan_dependencies import extract_dependency_names as _extract_dependency_names, scan_dependency_file as _scan_dependency_file  # noqa: E402
+from skill_surface_scan import scan_surface  # noqa: E402
 
 try:
     from lib.errors import structured_error, structured_success  # type: ignore
@@ -415,72 +417,13 @@ def scan_python(path: Path, rel_path: str) -> list[dict[str, Any]]:
     return findings
 
 
-# ---------------------------------------------------------------------------
-# Dependency files scanner
-# ---------------------------------------------------------------------------
-
-def scan_dependency_file(
-    path: Path,
-    rel_path: str,
-    baseline_deps: set[str] | None,
-) -> list[dict[str, Any]]:
-    """Flag new dependencies for manual review.
-
-    Without a baseline, we cannot know what's new — so we only flag if
-    baseline_deps is provided (diff mode).
-    """
-    if baseline_deps is None:
-        return []
-
-    try:
-        text = path.read_text(encoding="utf-8")
-    except (OSError, UnicodeDecodeError):
-        return []
-
-    findings: list[dict[str, Any]] = []
-    current_deps = extract_dependency_names(text, path.name)
-    new_deps = current_deps - baseline_deps
-
-    for dep in sorted(new_deps):
-        findings.append(make_finding(
-            severity="info",
-            rule="NEW_DEPENDENCY",
-            description=(
-                f"New dependency '{dep}' added to {path.name}. "
-                f"New dependencies should be reviewed for maintainer "
-                f"reputation, download count, and known security issues."
-            ),
-            affected_file=rel_path,
-            affected_line=None,
-            remediation_class="needs-review",
-            remediation_hint=(
-                f"Verify '{dep}' is from a trusted maintainer and has no "
-                f"known vulnerabilities (Snyk Advisor, deps.dev)."
-            ),
-        ))
-
-    return findings
+# Dependency files scanner: moved to prompt_scan_dependencies.py (this file is at
+# its bloat-baseline ceiling); thin wrappers keep the public names.
+extract_dependency_names = _extract_dependency_names
 
 
-def extract_dependency_names(text: str, filename: str) -> set[str]:
-    """Extract dependency package names from a dep file.
-
-    Lightweight — doesn't fully parse, just pulls names.
-    """
-    names: set[str] = set()
-    if filename == "pyproject.toml":
-        # Match lines like:  "foo>=1.0" or  'foo==1.0',
-        for match in re.finditer(r'["\']([a-zA-Z0-9_\-]+)[>=<~!\s]', text):
-            names.add(match.group(1).lower())
-    elif filename == "package.json":
-        try:
-            data = json.loads(text)
-            for key in ("dependencies", "devDependencies", "peerDependencies"):
-                for name in data.get(key, {}):
-                    names.add(name.lower())
-        except json.JSONDecodeError:
-            pass
-    return names
+def scan_dependency_file(path: Path, rel_path: str, baseline_deps: set[str] | None) -> list[dict[str, Any]]:
+    return _scan_dependency_file(path, rel_path, baseline_deps, make_finding)
 
 
 # ---------------------------------------------------------------------------
@@ -518,7 +461,16 @@ def iter_scannable_files(root: Path) -> list[Path]:
 
 
 
-def scan_file(
+def scan_file(path: Path, root: Path, baseline_deps: set[str] | None = None) -> list[dict[str, Any]]:
+    """Type-specific scan plus the advisory skill-surface checks (skill_surface_scan)."""
+    try:
+        rel_path = path.relative_to(root).as_posix()
+    except ValueError:
+        rel_path = path.as_posix()
+    return _scan_file_by_type(path, root, baseline_deps) + scan_surface(path, rel_path, make_finding, _has_allowlist_marker)
+
+
+def _scan_file_by_type(
     path: Path,
     root: Path,
     baseline_deps: set[str] | None = None,

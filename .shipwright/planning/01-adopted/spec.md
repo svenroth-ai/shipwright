@@ -586,6 +586,13 @@ _Where the work detail lives_ at the end of this document.
   drives the fixes through to completion; given any other repository, then it
   reports what it found and offers to hand the findings over to be worked
   through, rather than changing code it was not asked to change.
+- (E) [AC19] Given a project's package-source settings, hook and tool configuration, and
+  documentation files, when the scan runs, then it also reports, as a warning that
+  never stops a release, a package source redirected away from its default
+  registry, a hook or setting that sends data to another machine or runs a command
+  by itself, text padded with blanks to hide content, wording that tells the
+  assistant to drop its safety rules, a tool grant that covers everything, and a
+  program disguised as a document.
 
 <a id="fr-0108"></a>
 ### FR-01.08 — Deployment and rollback

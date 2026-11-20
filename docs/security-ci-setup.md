@@ -37,7 +37,7 @@ by default. Activate the auto-triggers explicitly when you're ready.
 | **Semgrep** | SAST (taint analysis, security patterns, OWASP rules) |
 | **Trivy** | Dependency CVEs, container vulnerabilities |
 | **Gitleaks** | Hard-coded secrets in source + history |
-| **Shipwright Prompt-Injection Scanner** | LLM prompt-injection risks (unique to Shipwright) |
+| **Shipwright Prompt-Injection Scanner** | LLM prompt-injection risks (unique to Shipwright), plus advisory `SURFACE_*` skill-surface checks (package-source redirection, hook/settings entries, concealed executables) that never block the gate |
 
 The combined output lands in three places:
 
