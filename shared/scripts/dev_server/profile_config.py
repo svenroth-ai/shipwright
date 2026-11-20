@@ -26,7 +26,7 @@ from ._paths import _PROFILES_DIR
 from ._profile_input import _coerce_int, _resolve_profile
 
 # Re-imported in __init__.py for the package-level surface.
-import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[1] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p); from .validation import _validate_services
+import sys as _sys, os as _os; _p = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))), "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p); from .validation import _validate_services
 
 
 def _pkg():

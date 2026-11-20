@@ -22,7 +22,7 @@ _GIT_CONTEXT_KEYS = (
 )
 _MEASUREMENT_CONFIG_NAMES = frozenset({
     ".coveragerc", ".python-version", "pyproject.toml", "pytest.ini",
-    "setup.cfg", _sp.rel("test_config"), "tox.ini", "uv.lock",
+    "setup.cfg", _sp.name("test_config"), "tox.ini", "uv.lock",
 })
 
 

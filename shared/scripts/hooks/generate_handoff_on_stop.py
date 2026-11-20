@@ -17,7 +17,7 @@ from __future__ import annotations
 import json, os, subprocess, sys, time, uuid
 from datetime import datetime, timezone
 from pathlib import Path
-import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[1] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p); from typing import Any
+from typing import Any
 
 _SCRIPTS_ROOT = Path(__file__).resolve().parent.parent
 if str(_SCRIPTS_ROOT) not in sys.path:
@@ -38,10 +38,11 @@ def _do_lib_imports() -> tuple:
         phase_tasks_progress as _phase_tasks_progress,
     )
     from lib.phase_quality import resolve_run_id
+    from lib import shipwright_paths as _sp  # retry-covered: the resolver lives in the same swapped dir
     from lib.project_root import is_shipwright_project, resolve_project_root
     return (durable_atomic_write, write_wave_aware_handoff, parse_canon_frontmatter, LockTimeout, file_lock,
             _phase_tasks_has_usable_entries, _phase_tasks_progress, resolve_run_id,
-            is_shipwright_project, resolve_project_root)
+            is_shipwright_project, resolve_project_root, _sp)
 
 
 def _import_lib_with_retry(do_import=_do_lib_imports, attempts: int = 20, delay: float = 0.05) -> tuple:
@@ -61,13 +62,12 @@ def _import_lib_with_retry(do_import=_do_lib_imports, attempts: int = 20, delay:
 
 (durable_atomic_write, write_wave_aware_handoff, parse_canon_frontmatter, LockTimeout, file_lock,
  _phase_tasks_has_usable_entries, _phase_tasks_progress, resolve_run_id,
- is_shipwright_project, resolve_project_root) = _import_lib_with_retry()
+ is_shipwright_project, resolve_project_root, _sp) = _import_lib_with_retry()
 
 _RUN_CONFIG_NAME = _sp.rel("run_config")
 # Matches orchestrator_pkg/run_config_store.py's LOCK_NAME — the same
 # advisory lock every other shipwright_run_config.json writer coordinates
-# through. Not imported (plugin-local, ADR-045 lib collision): a bare
-# filename suffix is a safe duplication.
+# through. The name comes from the resolver, so the lock cannot drift from the data file.
 _RUN_CONFIG_LOCK_NAME = _sp.lock_rel("run_config")
 
 

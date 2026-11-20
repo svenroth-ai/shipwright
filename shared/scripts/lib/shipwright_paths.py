@@ -156,8 +156,9 @@ def rel(key: str) -> str:
     return spec(key).basename
 
 
-#: Alias: while the files live at the root the relative path IS the file name.
-name = rel
+def name(key: str) -> str:
+    """The bare FILE NAME of *key* (never a path): for ``Path.name`` / basename comparisons."""
+    return spec(key).basename
 
 
 def legacy_rel(key: str) -> str:
@@ -292,4 +293,6 @@ def basename_of(path_like: str | Path) -> str:
 # Best effort at ONE registry object however it was imported: when this file is loaded first as
 # ``lib.shipwright_paths`` the bare name aliases it. (A copy bound first under the other name stays
 # separate - R1, which adds layout state, must keep patching and reading through one import form.)
-sys.modules.setdefault("shipwright_paths", sys.modules[__name__])
+_me = sys.modules.get(__name__)  # absent when a loader execs before registering
+if _me is not None:
+    sys.modules.setdefault("shipwright_paths", _me)

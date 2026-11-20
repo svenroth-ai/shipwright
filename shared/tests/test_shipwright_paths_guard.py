@@ -62,6 +62,8 @@ LITERAL_ALLOWED = {
     "shared/scripts/hooks/track_tool_calls.py": "degraded-import fallback: must not depend on shared lib (R1 item, BRIEF 4.7.1)",
     "shared/scripts/hooks/check_required_checks_hook.py": "degraded-import fallback: must not depend on shared lib (R1 item, BRIEF 4.7.1)",
     "plugins/shipwright-iterate/scripts/hooks/iterate_worktree_gate.py": "fail-open fallback when the resolver cannot be imported",
+    "plugins/shipwright-run/scripts/hooks/master_stop_check.py": "observational hook: must still run when the shared cache is stale",
+    "shared/scripts/hooks/session_start_using_shipwright.py": "session hook: must still run when the shared cache is stale",
 }
 ALLOWED = {"lock-construction": LOCK_ALLOWED, "shipwright-prefix-rule": PREFIX_RULE_ALLOWED, "literal": LITERAL_ALLOWED}
 
@@ -83,12 +85,11 @@ def test_python_goes_through_the_resolver():
     )
 
 
-@pytest.mark.parametrize("table", [LOCK_ALLOWED, PREFIX_RULE_ALLOWED, LITERAL_ALLOWED], ids=["lock", "prefix", "literal"])
-def test_allowlists_have_no_stale_entries(table):
+@pytest.mark.parametrize("rule", sorted(ALLOWED))
+def test_allowlists_have_no_stale_entries(rule):
     """An entry whose file no longer trips the rule is dead weight that would hide a regression."""
     live = {(rule, rel) for rel in scan.production_py() for rule, _, _ in scan.scan_python(rel)}
-    rule = {id(LOCK_ALLOWED): "lock-construction", id(PREFIX_RULE_ALLOWED): "shipwright-prefix-rule"}.get(id(table), "literal")
-    stale = [rel for rel in table if (rule, rel) not in live]
+    stale = [rel for rel in ALLOWED[rule] if (rule, rel) not in live]
     assert not stale, f"remove from the allowlist: {stale}"
 
 

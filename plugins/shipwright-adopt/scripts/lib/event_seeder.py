@@ -118,7 +118,7 @@ def _append_drop(root: Path, event: dict[str, Any]) -> None:
 
 
 def _append_jsonl(path: Path, event: dict[str, Any]) -> None:
-    if path.name == _sp.rel("events") and _drops_layout(path.parent):
+    if path.name == _sp.name("events") and _drops_layout(path.parent):
         _append_drop(path.parent, event)
         return
     path.parent.mkdir(parents=True, exist_ok=True)

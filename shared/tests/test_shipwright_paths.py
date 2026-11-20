@@ -109,5 +109,11 @@ def test_imports_under_a_unique_top_level_name_without_the_lib_package():
     spec = importlib.util.spec_from_file_location("shipwright_paths_probe", Path(sp.__file__))
     mod = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = mod
-    spec.loader.exec_module(mod)
-    assert mod.rel("test_results") == sp.rel("test_results")
+    prior = sys.modules.get("shipwright_paths")
+    try:
+        spec.loader.exec_module(mod)
+        assert mod.rel("test_results") == sp.rel("test_results")
+    finally:
+        sys.modules.pop(spec.name, None)
+        if prior is not None:
+            sys.modules["shipwright_paths"] = prior

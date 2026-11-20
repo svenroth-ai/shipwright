@@ -50,10 +50,7 @@ _RESOLVER = "lib/events_log.py"
 # where ``project_root`` is always the main repo so the raw join is correct.
 # Each entry carries the reason it does not need the worktree-aware helper.
 # If one of these is ever invoked from a worktree, move it to the helper.
-_MAIN_REPO_ONLY = {
-    "tools/convert_configs_to_events.py":
-        "one-time config->events migration tool; never run from an iterate worktree",
-}
+_MAIN_REPO_ONLY: dict[str, str] = {}  # convert_configs_to_events now names the log through the resolver
 
 # A path-join onto the event log: `<expr> / EVENT_FILE` or
 # `<expr> / "shipwright_events.jsonl"` (single or double quoted).

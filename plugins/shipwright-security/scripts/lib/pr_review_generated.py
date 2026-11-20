@@ -60,8 +60,8 @@ _GENERATED_AGENT_DOCS = frozenset({
 })
 
 _GENERATED_BASENAMES = frozenset({
-    _sp.rel("test_results"),  # latest-run test state (regenerated each run)
-    _sp.rel("events"),       # append-only event log (union-merged)
+    _sp.name("test_results"),  # latest-run test state (regenerated each run)
+    _sp.name("events"),       # append-only event log (union-merged)
     "triage.jsonl",                  # append-only triage backlog
     "triage.outbox.jsonl",           # triage outbox staging
 })

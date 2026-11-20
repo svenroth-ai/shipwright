@@ -427,7 +427,7 @@ def generate_handoff(
         if skill == "events":
             continue  # Listed separately below
         status = "exists" if config else "missing"
-        lines.append(f"- `{_sp.rel(skill + '_config')}` — {status}")
+        lines.append(f"- `{_sp.json_path_or_none(skill + '_config', Path('.')).name}` — {status}")
 
     # Event log section (if exists)
     events = read_events(project_root)
