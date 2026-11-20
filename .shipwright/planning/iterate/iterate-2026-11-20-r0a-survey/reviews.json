@@ -140,42 +140,24 @@
     "doubt": {
       "review_type": "doubt",
       "status": "completed",
-      "findings_count": 5,
+      "findings_count": 4,
       "findings": [
         {
-          "severity": "high",
-          "category": "boundary & contract",
+          "severity": "medium",
+          "category": "hidden coupling / boundary",
           "file": null,
           "line": null,
-          "finding": "Claim under doubt: Class 8 lists every historical-commit reader — three more verifiers (_project_gate_rollout_snapshot, ci_supplychain_ack_store, test_results_backfill_check) read moved files via git show / committed blobs / porcelain compare",
-          "suggestion": "add to class 8; per-commit relative-path API in the resolver",
+          "finding": "Claim under doubt: class 8 complete after 11.9 item 1 — events_layout_ci._layout_at reads sync_config from git blobs per commit",
+          "suggestion": "add to class 8 and the guard call shapes",
           "source": "doubt-reviewer"
         },
         {
-          "severity": "medium",
+          "severity": "low",
           "category": "reversibility",
           "file": null,
           "line": null,
-          "finding": "Claim under doubt: every old writer refuses the stub — create_config and adopt write_run_config overwrite it",
-          "suggestion": "correct the claim",
-          "source": "doubt-reviewer"
-        },
-        {
-          "severity": "medium",
-          "category": "hidden coupling",
-          "file": null,
-          "line": null,
-          "finding": "Claim under doubt: gates stay on under the stub — iterate_worktree_gate._iterate_eligible returns False on ValueError",
-          "suggestion": "narrow the claim",
-          "source": "doubt-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": "concurrency & ordering",
-          "file": null,
-          "line": null,
-          "finding": "Claim under doubt: sync_config has no lock — events_fold.set_layout holds the events lock; ensure_layout_key uses a fixed-name tmp",
-          "suggestion": "lock_for(sync_config)=events lock",
+          "finding": "Claim under doubt: backfill regexes may be rewritten — they parse persisted manifest provenance",
+          "suggestion": "exempt",
           "source": "doubt-reviewer"
         },
         {
@@ -183,20 +165,29 @@
           "category": "hidden coupling",
           "file": null,
           "line": null,
-          "finding": "Claim under doubt: missing-file table complete — ensure_layout_key recreates a root stub; check_file_size falls back",
-          "suggestion": "add rows",
+          "finding": "Claim under doubt: name scan finds every affected rule — .shipwright/ prefix rules name no basename",
+          "suggestion": "scan for prefix rules",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "blast radius",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: .shipwright/ holds only prose — area_catalog.json carries root names",
+          "suggestion": "note and regenerate at R3",
           "source": "doubt-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-11-20T22:39:20.374690+00:00",
+      "completed_at": "2026-11-20T22:43:19.742260+00:00",
       "disposition": null,
       "recorded_by": "doubt-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus",
       "verdict": "pass",
-      "reviewed_commit": "40d59ea5aba3fe36c862aa78b94cd6f6a60b9d2d"
+      "reviewed_commit": "f008b3e7f3b97a4565bc2522ef80b2073f588b1a"
     },
     "external_code": {
       "review_type": "external_code",
