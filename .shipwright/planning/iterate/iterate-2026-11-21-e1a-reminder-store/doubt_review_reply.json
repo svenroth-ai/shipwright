@@ -1,0 +1,6 @@
+{"stage":"doubt","gating":"advisory-must-address","doubts":[
+{"severity":"medium","claim_under_doubt":"worktree write always lands in the main store","finding":"git broken -> silent worktree-local fallback. FIXED: writes refuse inside a git checkout when the main root is unresolved; test added."},
+{"severity":"medium","claim_under_doubt":"damaged store never blacks out the reader","finding":"lone surrogate from a non-UTF-8 byte crashed list/show. FIXED: surrogates rejected (counted in corruptLines); test added."},
+{"severity":"low","claim_under_doubt":"corruptLines>0 means damage","finding":"unlocked reader may see a half-written line. REBUTTED: one buffered flush per line, corruptLines is advisory, a lock on readers would add hang risk."},
+{"severity":"low","claim_under_doubt":"command field fully covered","finding":"shell-style credentials pass. REBUTTED: the brief scopes the check to the one pattern set plus URL credentials (Stage-1 reject of a wider rule); output redaction at mail time is E1b/part 2."},
+{"severity":"low","claim_under_doubt":"exit 2 means refused","finding":"argparse also exits 2. FIXED by documenting it in the CLI contract."}]}

@@ -180,6 +180,9 @@ Spec/
 # hard-blocking delivery (iterate-2026-06-30-sweep-outbox-quarantine-orphans). Local
 # operator-review buffer, same gitignored-intent as the outbox above.
 /.shipwright/triage.outbox.quarantine.jsonl
+# reminders.jsonl is the local, per-machine reminder store (written only by
+# tools/reminder_cli.py). Already covered by the wildcard; pinned to keep the intent.
+/.shipwright/reminders.jsonl
 # Re-exclude transient / internal / generated content inside the doc homes:
 /.shipwright/adopt/backups/
 /.shipwright/adopt/screenshots/

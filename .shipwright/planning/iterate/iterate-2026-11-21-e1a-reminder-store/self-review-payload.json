@@ -1,0 +1,9 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"Each Done-when item from brief E1a is tested: round trip, refusals, secret per field, two-process add, worktree to main store, doc row."},
+{"name":"Error Handling","verdict":"pass","note":"Plain messages, exit codes 2/3/4, lock timeout 15s, corrupt lines surfaced."},
+{"name":"Security Basics","verdict":"pass","note":"Secret check on every text field incl. command and link fields; only validated fields persisted; control characters refused."},
+{"name":"Test Quality","verdict":"pass","note":"39 tests incl. real git worktree and real processes; collision retry and lock timeout pinned."},
+{"name":"Performance Basics","verdict":"pass","note":"Fold is linear over a small local log; lock held for one read plus one append."},
+{"name":"Naming & Structure","verdict":"pass","note":"Planned split followed; every file under 300 lines."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Producer reminder_cli to file to consumer read_folded probed in the round-trip and worktree tests; contains_secret promotion covered by existing redact tests."},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"scan_test_hygiene --diff clean."}]}

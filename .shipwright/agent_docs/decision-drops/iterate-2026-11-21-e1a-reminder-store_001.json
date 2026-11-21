@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-21-e1a-reminder-store",
+  "date": "2026-11-21",
+  "section": "Iterate — feature: reminder store and CLI",
+  "title": "Reminders: separate local append-only store with one CLI writer",
+  "context": "The operator needs dated reminders with context (why, decided, open, command) that one later call can return; nothing holds them today.",
+  "decision": "A git-ignored .shipwright/reminders.jsonl at the main root, written only by reminder_cli.py, reusing FileLock and the tolerant JSONL reader, with a secret check on every text field.",
+  "consequences": "The WebUI must call the CLI and never write the file; the secret check is a best-effort shape list; loss on re-clone is accepted. Bookkeeping: new FR FR-01.22 (tests need an FR tag; infra catalog not usable in the same merge).",
+  "rationale": "Operator decisions 4/5: separate local store, no copy of triage entries; WebUI triage writer uses a lock that does not coordinate with the Python FileLock. Architecture review: glm and internal approve, openai reject (rejected with reason).",
+  "rejected": "B: reminders as triage items (cross-writer lock hazard, triage JSON contract change, tracked store). C: do nothing.",
+  "commit": "",
+  "architecture_impact": "data-flow",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-11-21-e1a-reminder-store-reminder-store.md"
+}
