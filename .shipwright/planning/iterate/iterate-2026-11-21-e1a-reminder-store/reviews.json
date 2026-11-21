@@ -1,0 +1,404 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-21-e1a-reminder-store",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-21T18:09:36.858414+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "\"last valid event per id wins\" combined with \"corrupt lines reported, never silently dropped\" leaves ambiguous behavior when the last line for an id is corrupt — is the reminder done/pending? Also, if corrupt lines are reported on every invocation, `list` output becomes noisy and possibly non-machine-readable.",
+          "suggestion": "Define explicitly that a corrupt event line does not affect state derivation (fall back to the last valid event), and route corruption reports to stderr or a dedicated `--strict` check so `list` stays parseable.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "\"two-process concurrency\" test is mentioned but the plan doesn't specify how a crashed process holding the lock is handled (stale lock files after kill -9), nor lock acquisition timeout behavior in the CLI (operator-facing tool may hang on a busy lock).",
+          "suggestion": "Specify lock timeout + stale-lock detection (e.g., pid liveness check or atomic rename-based locking), and define CLI exit behavior on timeout.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "Secret scanning on write catches secrets at entry, but there's no stated handling for a reminder whose link ref or label contains a secret that already slipped in (e.g., via a future importer or manual file edit). Read-time behavior is undefined.",
+          "suggestion": "At minimum, ensure the store's read path doesn't echo unredacted text in logs; consider a read-time redaction or a startup check consistent with the rest of the app.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "ID generation scheme isn't specified. If ids are user-supplied, uniqueness-under-lock is fine, but a race between \"check id uniqueness\" and a concurrent append would need the check inside the lock — the plan says it is, which is good, but id format collisions (case sensitivity, whitespace) are unaddressed.",
+          "suggestion": "Normalize ids (strip, case rules) and state whether they're generated or operator-supplied.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "\"done cannot be snoozed\" is stated, but the reverse ordering question — whether snoozing past a date then marking done, or `done` on an already-done reminder — is idempotent or an error isn't specified.",
+          "suggestion": "Make `done` idempotent, define snooze of a non-existent vs done id distinctly.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "until must be after today (UTC)` implies the CLI needs a clear \"today\" boundary for recurring-ish semantics; if the app elsewhere uses local time or a different timezone anchor, this could surprise operators.",
+          "suggestion": "Confirm UTC is consistent with how the app's other date handling works; document the UTC assumption in the CLI help text.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Tests plan includes \"real git worktree\" — unclear what git interaction the reminder store has; if reminders are stored in a repo, the plan should say whether commits happen in the CLI or only in a wrapper, and what happens on dirty worktree.",
+          "suggestion": "Clarify the storage location's relationship to git; if the CLI writes into a worktree, define commit/rollback behavior.  Overall assessment: The approach is sound and appropriately scoped; the main gaps are under-specified failure semantics (corrupt last event, lock staleness, idempotency) rather than anything structural. Addressing the lock timeout and corruption-report behavior before implementation is the only near-blocking item.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency |",
+          "file": null,
+          "line": null,
+          "finding": "The plan does not derive acceptance criteria from the authoritative E1a `Done when:` list or shared rules. Repository access was blocked by execution policy, so I could not verify those requirements.",
+          "suggestion": "Map the brief’s requirements to implementation and tests before proceeding; the supplied summary alone cannot establish completeness.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk |",
+          "file": null,
+          "line": null,
+          "finding": "“Append under FileLock” and locked ID uniqueness do not explicitly cover state transitions. Concurrent `done` and `snooze` operations could both validate against an open reminder, allowing snooze to overwrite completion.",
+          "suggestion": "Hold the same shared lock across reading, folding, validating the transition, and appending. Add a concurrent `done`/`snooze` test that verifies completion cannot be reversed.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "Reporting corrupt lines does not address appending after an interrupted write leaves an unterminated final record. The next event could join that fragment and become unreadable too.",
+          "suggestion": "Define handling for incomplete tails before appending: either refuse writes with an actionable error or preserve and explicitly separate the damaged record. Test an interrupted append followed by another mutation.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security |",
+          "file": null,
+          "line": null,
+          "finding": "Secret rejection and corruption reporting can themselves expose sensitive text if diagnostics echo rejected values or raw log lines.",
+          "suggestion": "Report field names, line numbers, and error reasons without including offending content. Verify refusal paths leave the store unchanged and do not print secrets.  The store-and-CLI approach is reasonable and proportionate. Resolve the transaction and damaged-tail behavior, specify safe diagnostics, and verify coverage against the authoritative brief before implementation.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-21T18:05:23.187908+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] **Findings**\n\n- **Category: edge-case — Severity: medium**\n  Finding: \"last valid event per id wins\" combined with \"corrupt lines reported, never silently dropped\" leaves ambiguous behavior when the last line for an id is corrupt — is the reminder done/pending? Also, if corrupt lines are reported on every invocation, `list` output becomes noisy and possibly non-machine-readable.\n  Suggestion: Define explicitly that a corrupt event line does not affect state derivation (fall back to the last *valid* event), and route corruption reports to stderr or a dedicated `--strict` check so `list` stays parseable.\n\n- **Category: edge-case — Severity: medium**\n  Finding: \"two-process concurrency\" test is mentioned but the plan doesn't specify how a crashed process holding the lock is handled (stale lock files after kill -9), nor lock acquisition timeout behavior in the CLI (operator-facing tool may hang on a busy lock).\n  Suggestion: Specify lock timeout + stale-lock detection (e.g., pid liveness check or atomic rename-based locking), and define CLI exit behavior on timeout.\n\n- **Category: security — Severity: medium**\n  Finding: Secret scanning on write catches secrets at entry, but there's no stated handling for a reminder whose *link ref or label* contains a secret that already slipped in (e.g., via a future importer or manual file edit). Read-time behavior is undefined.\n  Suggestion: At minimum, ensure the store's read path doesn't echo unredacted text in logs; consider a read-time redaction or a startup check consistent with the rest of the app.\n\n- **Category: edge-case — Severity: low**\n  Finding: ID generation scheme isn't specified. If ids are user-supplied, uniqueness-under-lock is fine, but a race between \"check id uniqueness\" and a concurrent append would need the check *inside* the lock — the plan says it is, which is good, but id format collisions (case sensitivity, whitespace) are unaddressed.\n  Suggestion: Normalize ids (strip, case rules) and state w […truncated]\n\n[openai] 1. **Category: dependency | Severity: medium**\n   **Finding:** The plan does not derive acceptance criteria from the authoritative E1a `Done when:` list or shared rules. Repository access was blocked by execution policy, so I could not verify those requirements.\n   **Suggestion:** Map the brief’s requirements to implementation and tests before proceeding; the supplied summary alone cannot establish completeness.\n\n2. **Category: risk | Severity: medium**\n   **Finding:** “Append under FileLock” and locked ID uniqueness do not explicitly cover state transitions. Concurrent `done` and `snooze` operations could both validate against an open reminder, allowing snooze to overwrite completion.\n   **Suggestion:** Hold the same shared lock across reading, folding, validating the transition, and appending. Add a concurrent `done`/`snooze` test that verifies completion cannot be reversed.\n\n3. **Category: edge-case | Severity: medium**\n   **Finding:** Reporting corrupt lines does not address appending after an interrupted write leaves an unterminated final record. The next event could join that fragment and become unreadable too.\n   **Suggestion:** Define handling for incomplete tails before appending: either refuse writes with an actionable error or preserve and explicitly separate the damaged record. Test an interrupted append followed by another mutation.\n\n4. **Category: security | Severity: medium**\n   **Finding:** Secret rejection and corruption reporting can themselves expose sensitive text if diagnostics echo rejected values or raw log lines.\n   **Suggestion:** Report field names, line numbers, and error reasons without including offending content. Verify refusal paths leave the store unchanged and do not print secrets.\n\nThe store-and-CLI approach is reasonable and proportionate. Resolve the transaction and damaged-tail behavior, specify safe diagnostics, and verify coverage against the authoritative brief before implementation.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "shared/scripts/tools/reminder_cli.py",
+          "line": null,
+          "finding": "No UTF-8 stdout; non-ASCII titles crash on cp1252 pipes. FIXED: stdout/stderr reconfigured to utf-8 plus cp1252 subprocess regression test.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/reminder_store.py",
+          "line": null,
+          "finding": "CRLF refused in multiline fields. FIXED: normalised to newline, test added.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/tests/test_reminder_store.py",
+          "line": null,
+          "finding": "snooze CLI verb untested. FIXED: CLI snooze test with past-date and done refusals.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": "shared/scripts/lib/reminder_secrets.py",
+          "line": null,
+          "finding": "userinfo rule refused harmless ssh://git@ refs. FIXED: requires user:pass; token-only left to contains_secret; negative test.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "reminder_cli.py",
+          "line": null,
+          "finding": "RuntimeError catch too broad. FIXED: LockTimeout and OSError.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "reminder_store.py",
+          "line": null,
+          "finding": "Unicode digits in date regex. FIXED: [0-9] with fullmatch.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "reminder_cli.py",
+          "line": null,
+          "finding": "--why required in CLI but optional in library; nonexistent --project-root. Accepted: deliberate stricter CLI rule, documented in the ADR.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-21T18:16:08.377226+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "c15a1a9cf2a8912c61fa6d53a6060d1ba6306572"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "worktree write always lands in the main store",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "damaged store never blacks out the reader",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "corruptLines>0 means damage",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "command field fully covered",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "exit 2 means refused",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-21T18:19:55.250749+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "5e5c3f3a46386a38b6135d5716242e321a0c4236"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_reminder_store.py (test_round_trip_add_list_show_done_snooze / test_cli_add_done_and_list_hides_done) — The documented machine contract says \"`--json` is never capped: … with every reminder, done ones included\" (CLI docstring, docs/guide.md). No test asserts a done reminder appears in `list --json`; the only done-visibility test uses the text `--all` path. A regressi […truncated]",
+          "line": null,
+          "finding": "Add one assertion after `done`: `list --json` still contains the reminder with `status == \"done\"`.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "shared/scripts/tools/reminder_cli.py:170-174 (`except (RuntimeError, OSError)`) — Any `RuntimeError` from anywhere (e.g. `resolve_main_repo_root`, JSON encode, arg handling) is reported as \"the reminder store is busy or unreadable\" with exit 4, masking unrelated failures behind a misleading message.",
+          "line": null,
+          "finding": "Catch the specific lock-timeout exception (import it from `lib.file_lock`) plus `OSError`; let other RuntimeErrors surface or use a distinct message.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/reminder_cli.py:main + lib/reminder_store.py:read_folded — `cmd_list` / `cmd_show` read without the lock while writers append with `fsync`. A concurrent append can expose a torn final line that is transiently counted in `corruptLines` (or in `show`, misreported as \"may be in one of them\"). The tolerant reader prevents corruption, but a consumer polling `list --jso […truncated]",
+          "line": null,
+          "finding": "Either read under the (shared) lock in list/show, or document that `corruptLines` may transiently over-count during a concurrent write.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/reminder_secrets.py:22-26 (`_URL_SECRET_PARAM`) — The pattern matches `?token=` / `&key=` / `#...sig=` in any prose, with no URL context required, so ordinary text like \"what if the ?key= mapping changes\" is refused. Acceptable for defense-in-depth, but operators get a false \"contains a secret\" refusal with no override path.",
+          "line": null,
+          "finding": "Anchor the param rule to a URL-ish prefix (e.g. require `\\w+://` or `www.` earlier in the string), or document that refusal is final and the operator must reword.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/reminder_store.py:add_reminder — `find_secret_field` is applied to the normalized links, so an extra key on a caller-supplied link dict (e.g. `{\"label\":…, \"note\": <secret>}`) is silently dropped and the add succeeds rather than being refused (see `test_only_validated_fields_are_persisted`, which asserts exactly this). Dropping is safe for the store, but a secret-bea […truncated]",
+          "line": null,
+          "finding": "Run `find_secret_field` on the raw caller input (pre-normalization) as well, or note the drop in the refusal/acceptance path.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_reminder_store.py:test_lock_timeout_gives_a_documented_exit_code — The test's own comment concedes the lock is thread-reentrant and works around it with a thread; this is testing lock timeout only if `FileLock`'s reentrancy is per-thread AND its underlying primitive conflicts across two opens in one process (true for `flock` per-OFD, not for `fcntl`/`lockf` per-proce […truncated]",
+          "line": null,
+          "finding": "Use a real subprocess holding the lock (like the two-process test) to make the timeout path deterministic.  Overall assessment: the implementation matches the mini-plan's rules (fold semantics, under-lock uniqueness, done-cannot-be-snoozed, corrupt-line reporting, secret refusal on every text field, main-root store resolution, docs rows, gitignore/template congruence) and the tests are substantive, including refusal-atomicity and concurrency. The findings above are refinements, not blockers — ship with the JSON-includes-done test added.  SHIPWRIGHT_VERDICT: approve",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/lib/reminder_store.py",
+          "line": 193,
+          "finding": "Structurally invalid events are silently discarded without entering `Folded.corrupt`. For example, an `add` with an invalid due date passes `_is_event`, then `_apply` returns `None`; `list --json` reports zero corrupt lines even though a reminder disappeared. Invalid status events are likewise hidden. This violates the stated requirement that corrupt lines be reported.",
+          "suggestion": "Track schema and transition validation failures as corruption, preserving line numbers. Keep the last valid state, but include rejected events in corruption diagnostics and add tests for malformed JSON objects.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": "shared/scripts/tools/reminder_cli.py",
+          "line": 46,
+          "finding": "Malformed link diagnostics echo the entire supplied value before secret checking. Passing a token or credential-bearing URL as `--link` without the required separators prints that secret to stderr, potentially exposing it in captured logs.",
+          "suggestion": "Report the expected link format without echoing `raw`. Apply the same rule to validation errors that interpolate unvalidated link kinds or dates, and test that rejected secrets never appear in stdout or stderr.  The implementation needs these specific fixes before shipping. Repository access was blocked by execution policy, so I could not read the authoritative brief or run tests; full acceptance-criteria compliance remains unverified.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-21T18:11:32.299267+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] - Category: test\n- Severity: medium\n- File: shared/tests/test_reminder_store.py (test_round_trip_add_list_show_done_snooze / test_cli_add_done_and_list_hides_done) — The documented machine contract says \"`--json` is never capped: … with every reminder, done ones included\" (CLI docstring, docs/guide.md). No test asserts a done reminder appears in `list --json`; the only done-visibility test uses the text `--all` path. A regression that filters done reminders out of the JSON payload would pass the suite.\n- Suggestion: Add one assertion after `done`: `list --json` still contains the reminder with `status == \"done\"`.\n\n- Category: bug\n- Severity: low\n- File: shared/scripts/tools/reminder_cli.py:170-174 (`except (RuntimeError, OSError)`) — Any `RuntimeError` from anywhere (e.g. `resolve_main_repo_root`, JSON encode, arg handling) is reported as \"the reminder store is busy or unreadable\" with exit 4, masking unrelated failures behind a misleading message.\n- Suggestion: Catch the specific lock-timeout exception (import it from `lib.file_lock`) plus `OSError`; let other RuntimeErrors surface or use a distinct message.\n\n- Category: edge-case\n- Severity: low\n- File: shared/scripts/tools/reminder_cli.py:main + lib/reminder_store.py:read_folded — `cmd_list` / `cmd_show` read without the lock while writers append with `fsync`. A concurrent append can expose a torn final line that is transiently counted in `corruptLines` (or in `show`, misreported as \"may be in one of them\"). The tolerant reader prevents corruption, but a consumer polling `list --json` can see corruptLines flap 0→1→0.\n- Suggestion: Either read under the (shared) lock in list/show, or document that `corruptLines` may transiently over-count during a concurrent write.\n\n- Category: edge-case\n- Severity: low\n- File: shared/scripts/lib/reminder_secrets.py:22-26 (`_URL_SECRET_PARAM`) — The pattern matches `?token=` / `&key=` / `#...sig=` in any prose, with no URL context required, so ordinary text like \"what […truncated]\n\n[openai] - Category: bug\n- Severity: medium\n- File: shared/scripts/lib/reminder_store.py:193\n- Finding: Structurally invalid events are silently discarded without entering `Folded.corrupt`. For example, an `add` with an invalid due date passes `_is_event`, then `_apply` returns `None`; `list --json` reports zero corrupt lines even though a reminder disappeared. Invalid status events are likewise hidden. This violates the stated requirement that corrupt lines be reported.\n- Suggestion: Track schema and transition validation failures as corruption, preserving line numbers. Keep the last valid state, but include rejected events in corruption diagnostics and add tests for malformed JSON objects.\n\n- Category: security\n- Severity: medium\n- File: shared/scripts/tools/reminder_cli.py:46\n- Finding: Malformed link diagnostics echo the entire supplied value before secret checking. Passing a token or credential-bearing URL as `--link` without the required separators prints that secret to stderr, potentially exposing it in captured logs.\n- Suggestion: Report the expected link format without echoing `raw`. Apply the same rule to validation errors that interpolate unvalidated link kinds or dates, and test that rejected secrets never appear in stdout or stderr.\n\nThe implementation needs these specific fixes before shipping. Repository access was blocked by execution policy, so I could not read the authoritative brief or run tests; full acceptance-criteria compliance remains unverified.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-21T18:12:10.219150+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "c15a1a9cf2a8912c61fa6d53a6060d1ba6306572"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-21T18:09:41.661539+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-21T18:05:17.841072+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

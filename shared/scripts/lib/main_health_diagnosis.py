@@ -69,8 +69,20 @@ MAX_PARTNERS_BEFORE_ESCALATION = 8
 MAX_FAILED_ATTEMPTS = 2
 
 
+def contains_secret(text: str) -> bool:
+    """True when ``text`` holds a known credential shape (the one public pattern set).
+
+    Shared by :func:`redact` and ``lib.reminder_secrets`` so there is a single
+    list of shapes, not another private copy. Same caveat as ``redact``:
+    defense-in-depth, never a guarantee.
+    """
+    return any(pattern.search(text) for pattern in _SECRET_PATTERNS)
+
+
 def redact(text: str) -> str:
     """Replace known credential shapes. Defense-in-depth, never a guarantee."""
+    if not contains_secret(text):
+        return text
     for pattern in _SECRET_PATTERNS:
         text = pattern.sub(REDACTED, text)
     return text

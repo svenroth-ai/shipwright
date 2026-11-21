@@ -1,0 +1,8 @@
+{"section":"E1a-reminder-store","verdict":"changes-requested","review":[
+{"severity":"high","category":"correctness","file":"shared/scripts/tools/reminder_cli.py","finding":"No UTF-8 stdout; non-ASCII titles crash on cp1252 pipes. FIXED: stdout/stderr reconfigured to utf-8 plus cp1252 subprocess regression test."},
+{"severity":"medium","category":"correctness","file":"shared/scripts/lib/reminder_store.py","finding":"CRLF refused in multiline fields. FIXED: normalised to newline, test added."},
+{"severity":"medium","category":"correctness","file":"shared/tests/test_reminder_store.py","finding":"snooze CLI verb untested. FIXED: CLI snooze test with past-date and done refusals."},
+{"severity":"medium","category":"security","file":"shared/scripts/lib/reminder_secrets.py","finding":"userinfo rule refused harmless ssh://git@ refs. FIXED: requires user:pass; token-only left to contains_secret; negative test."},
+{"severity":"low","category":"correctness","file":"reminder_cli.py","finding":"RuntimeError catch too broad. FIXED: LockTimeout and OSError."},
+{"severity":"low","category":"correctness","file":"reminder_store.py","finding":"Unicode digits in date regex. FIXED: [0-9] with fullmatch."},
+{"severity":"low","category":"correctness","file":"reminder_cli.py","finding":"--why required in CLI but optional in library; nonexistent --project-root. Accepted: deliberate stricter CLI rule, documented in the ADR."}]}

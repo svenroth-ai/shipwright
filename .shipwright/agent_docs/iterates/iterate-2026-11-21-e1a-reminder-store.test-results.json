@@ -1,0 +1,107 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-21-e1a-reminder-store",
+    "date": "2026-11-21",
+    "unit": {
+      "status": "passed",
+      "passed": 26799,
+      "skipped": 111,
+      "total": 26910
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 2,
+      "skipped": 0,
+      "total": 2
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run pytest shared/tests/test_reminder_cli_processes.py -q",
+      "exit_code": 0,
+      "tests_run": 3
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "add/list/show/done/snooze round trip",
+          "disposition": "tested",
+          "evidence": "test_reminder_store.py::test_round_trip_add_list_show_done_snooze PASSED"
+        },
+        {
+          "behavior": "malformed date, unknown status, done-then-snooze, past --until refused with a plain message",
+          "disposition": "tested",
+          "evidence": "test_reminder_store.py::test_malformed_input_is_refused + test_status_refusals + test_cli_snooze_verb_and_its_refusals PASSED"
+        },
+        {
+          "behavior": "secret-shaped text in every text field incl. command and link label/ref and URL credentials refused",
+          "disposition": "tested",
+          "evidence": "test_reminder_store.py::test_secret_in_each_text_field_is_refused + test_secret_in_link_fields_is_refused PASSED"
+        },
+        {
+          "behavior": "two concurrent processes adding both survive with distinct ids",
+          "disposition": "tested",
+          "evidence": "test_reminder_cli_processes.py::test_two_processes_adding_both_survive_with_distinct_ids PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "a reminder written from a git worktree lands in the main store",
+          "disposition": "tested",
+          "evidence": "test_reminder_cli_processes.py::test_reminder_written_from_a_worktree_lands_in_the_main_store PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "damaged/rejected lines, lone surrogate, unterminated tail never read as absence",
+          "disposition": "tested",
+          "evidence": "test_reminder_store.py::test_fold_last_valid_wins_and_tolerates_damage + test_lone_surrogate_from_a_non_utf8_byte_is_rejected_not_crashing PASSED"
+        },
+        {
+          "behavior": "lock timeout and git-broken write refuse with documented exit/refusal",
+          "disposition": "tested",
+          "evidence": "test_reminder_store.py::test_lock_timeout_gives_a_documented_exit_code + test_write_refuses_to_fall_back_when_git_is_broken_inside_a_checkout PASSED"
+        },
+        {
+          "behavior": "Artifact Write Matrix row present in hooks-and-pipeline.md",
+          "disposition": "tested",
+          "evidence": "docs/hooks-and-pipeline.md row for .shipwright/reminders.jsonl; test_gitignore_template_congruent PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 8,
+        "tested": 8,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 8,
+        "covered_acs": 8
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-11-21-e1a-reminder-store",
+    "commit": "171b9fca57be56f0e2ecc3ba5c50b4806f51ec02",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

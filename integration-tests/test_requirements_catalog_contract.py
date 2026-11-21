@@ -27,11 +27,12 @@ CATALOG = REPO_ROOT / ".shipwright" / "planning" / "01-adopted" / "spec.md"
 #: The ids the catalog carries. S6 must not lose or renumber one; a later iterate may
 #: append the next free number (FR-01.16 minted 2026-07-23 REQ-3 Ph1; FR-01.19 2026-07-28
 #: iterate-2026-07-28-main-self-heal; FR-01.20 2026-08-07 iterate-2026-08-07-context-
-#: cost-meter; FR-01.21 2026-09-20 iterate-2026-09-20-codex-plugin-bundle-root-contract).
+#: cost-meter; FR-01.21 2026-09-20 iterate-2026-09-20-codex-plugin-bundle-root-contract;
+#: FR-01.22 2026-11-21 iterate-2026-11-21-e1a-reminder-store).
 #: The bound moves only by APPENDING — a diff that makes this tuple
 #: shorter, or changes an id in it, is the loss this constant exists to catch, and the
 #: number must NOT be adjusted to match.
-EXPECTED_IDS = tuple(f"FR-01.{n:02d}" for n in range(1, 22))
+EXPECTED_IDS = tuple(f"FR-01.{n:02d}" for n in range(1, 23))
 
 _EXPLICIT_ANCHOR = re.compile(r'<a\s+id="([^"]+)"\s*>')
 _TABLE_ROW = re.compile(r"^\|\s*(FR-\d+\.\d+)\s*\|")

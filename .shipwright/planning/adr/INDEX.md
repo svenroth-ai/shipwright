@@ -223,3 +223,4 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [Shipwright's own project profile](iterate-2026-11-16-u5-shipwright-profile-shipwright-profile.md)
 - [The code reviewer reads the architecture rules block](iterate-2026-11-16-u6-reviewers-docs-reviewer-reads-architecture-rules.md)
 - [Infrastructure class for harness tests in the F11 test-tag gate](iterate-2026-11-18-test-infra-tag-class-infra-test-class.md)
+- [Reminder store: a separate local event log with one CLI writer](iterate-2026-11-21-e1a-reminder-store-reminder-store.md)

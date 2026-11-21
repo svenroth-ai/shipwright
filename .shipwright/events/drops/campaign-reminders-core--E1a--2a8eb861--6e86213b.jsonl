@@ -1,0 +1,1 @@
+{"v":1,"id":"evt-de438b81a1324d19","ts":"2026-11-21T18:43:51.171197+00:00","type":"grade_snapshot","session":"ebad072d-1413-4ef9-bb36-5df10bb8ccab","grade":"A","score":99.2,"dirty":true,"lineage":"branch","branch":"iterate/campaign-reminders-core--E1a","base":"0a6bb32963cbb39f65326878ddf05ad5c3f93b90","run":"campaign-reminders-core--E1a"}

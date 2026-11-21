@@ -31,6 +31,7 @@ Shipwright is an AI-powered SDLC framework built on Claude Code. It is structure
 | FR-01.19 | Adopted | Recovery of a broken shared branch | Should | When the shared branch breaks after a change is merged, say so and name the single change that broke it, instead of leaving whoever comes next to discover it. That naming is only trustworthy because every merged change is checked on its own rather than only the newest one, and what a repair needs travels with it: what failed, and which other changes the broken one had never been tested alongside. A repair corrects the mismatch and is never allowed to make a test ask for less — that is refused outright, and refused again independently on the code host. Where repairing would be a guess rather than a correction — a security finding, too many changes implicated, or two attempts already spent — the matter is filed for a decision instead, with the way back included. Only one repair is ever under way for the same breakage, and one that is abandoned releases its place rather than blocking every later attempt. | interview | unit (inferred) |
 | FR-01.20 | Adopted | Context-Cost Meter | Should | Measure what a session actually costs, from the assistant's own record of what it sent and received, counted once per exchange no matter how many lines that exchange left behind — and break the total down by which pipeline phase spent it, shown as the session runs rather than only after it ends. Adds this real, priced figure as an alternative to a rough stand-in that only counted tool calls, usable at the same points that stand-in already warns at — the stand-in itself keeps running until a later change compares the two and switches over. Also checks, the way the existing pre-push checks do, whether the session's own auto-compaction setting and effort level are set sanely for its context window. | code | unit (inferred) |
 | FR-01.21 | Adopted | Codex Plugin Distribution | Should | Shipwright can be installed for Codex as a single, verifiably reproducible plugin bundle carrying every one of its skills, instead of the tool depending on a machine-specific cache directory that was only ever built for a different assistant. The environment variable a script reads to find its own plugin's files resolves the same way no matter which of the two assistants installed it. Its hooks also actually run under Codex, via a global config-layer sync — not just its skills. | other: campaign spec | unit, e2e (inferred) |
+| FR-01.22 | Adopted | Operator reminders | Should | The operator can ask Shipwright to remember something for a given day, together with why it matters, what was already decided, what is still open and the command to run, and can list, look at, finish or postpone it later. Reminders are kept in one place per repository no matter which working copy they are added from, are never created by anything but an explicit request, and are never stored if their text looks like it carries a secret, because they are meant to be shown and mailed in plain text. | other: campaign brief | unit (inferred) |
 
 ## Quality Requirements
 
@@ -1646,6 +1647,30 @@ _Where the work detail lives_ at the end of this document.
   bundle's mandatory lifecycle step the way AC05 alone would still allow. A
   session whose first prompt did not arm it is never denied, regardless of
   what it calls first.
+
+<a id="fr-0122"></a>
+### FR-01.22 — Operator reminders
+
+- (E) [AC01] Given the operator asks for a reminder with a title, a due day and the
+  context behind it, when it is added, then it is stored with that context and
+  can be listed and looked at again one by one, so the reason for the reminder
+  is still there on the day it is due.
+- (E) [AC02] Given a reminder is added or changed from any working copy of the
+  repository, when it is stored, then it lands in the one store of the main
+  checkout, never in a copy that disappears with the working copy.
+- (E) [AC03] Given reminder text, a command or a link that looks like it carries a
+  secret — a key, a token, a password or a web address with credentials, when it
+  is added, then it is refused with a plain message saying which text to reword,
+  and nothing is stored, because reminders are shown and mailed in plain text.
+- (E) [AC04] Given a day that is not a real calendar day, a postponement that is not
+  after today, a status that does not exist, or an attempt to postpone a
+  reminder that is already done, when it is asked for, then it is refused with a
+  plain message and the reminder is left as it was.
+- (E) [AC05] Given two reminders are added at the same moment by two separate
+  processes, when both finish, then both are kept and each has its own id.
+- (E) [AC06] Given the store holds a line that cannot be read, when reminders are
+  listed, then every readable reminder is still shown and the damage is
+  reported as a count, never read as if nothing were there.
 
 ## Provenance
 
