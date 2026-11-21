@@ -26,3 +26,6 @@ Boundary: reminder_cli (producer) to `reminders.jsonl` to `read_folded` (consume
 
 ## Write refusal outside a resolvable main root
 `store_path(for_write=True)` refuses a write inside a git checkout when git does not answer, instead of falling back to the given project root (the brief's fallback applies to reads and to non-git folders). The refusal protects the rule that a reminder written from a worktree lands in the main store, and the risk of bypassing the main-root rule.
+
+## Review dispositions (orchestrator cascade at the final head)
+Fixed: stray store objects and events with a non-ISO `at` are counted as rejected (they used to vanish or break `--json`); a URL with an empty user (`https://:pass@host`) is refused; the newline separator guard is pinned on the raw file. Accepted, best-effort by design (brief section 6): no Unicode normalisation or percent-decoding in the secret check, no detection of plain `password=` outside a URL; the inherited `token` pattern can refuse a title such as `token-budget-design` (reword it); bare-repo and submodule layouts refuse writes with the generic message; a non-git project folder inside a git-tracked parent resolves to that parent. Follow-up candidates, not built here.

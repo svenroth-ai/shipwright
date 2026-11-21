@@ -155,7 +155,9 @@ def _stamp(now: datetime | None) -> str:
 
 
 def _is_event(obj: dict) -> bool:
-    return obj.get("event") in ("add", "status") and isinstance(obj.get("id"), str)
+    at = obj.get("at")  # an ISO stamp only: a stray byte here would break --json output
+    return (obj.get("event") in ("add", "status") and isinstance(obj.get("id"), str)
+            and isinstance(at, str) and re.fullmatch(r"[0-9T:.+Z-]{1,40}", at) is not None)
 
 
 def _validated_add(ev: dict) -> dict:

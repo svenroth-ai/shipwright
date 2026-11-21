@@ -149,7 +149,7 @@ def test_fold_last_valid_wins_and_tolerates_damage(tmp_path):
     rid = _add(root)["id"]
     path = store_path(root)
     with open(path, "a", encoding="utf-8") as fp:  # no trailing newline, then junk
-        fp.write('{"event":"status","id":"%s","status":"done","at":"x"}' % rid)
+        fp.write('{"event":"status","id":"%s","status":"done","at":"2026-01-01T00:00:00Z"}' % rid)
     set_status(root, rid, "open", now=NOW)  # separator guard keeps both records
     with open(path, "a", encoding="utf-8") as fp:
         fp.write('{"event":"status","id":"%s","status":"bogus"}\nnot json\n' % rid)
@@ -177,3 +177,17 @@ def test_main_root_fallback_outside_git(tmp_path):
     assert store_path(tmp_path) == tmp_path / ".shipwright" / "reminders.jsonl"
 
 
+
+
+@pytest.mark.covers("FR-01.22/AC06")
+def test_bad_stamp_is_rejected_so_json_output_survives(tmp_path):
+    root = str(tmp_path)
+    rid = _add(root)["id"]
+    path = store_path(root)
+    bad = r'{"event":"status","id":"%s","status":"done","at":"\ud800"}' % rid
+    with open(path, "a", encoding="utf-8") as fp:
+        fp.write(chr(10) + bad + chr(10))
+    folded = read_folded(path)
+    assert folded.reminders[rid]["status"] == "open"
+    assert len(folded.rejected) + len(folded.corrupt) == 1
+    assert main(["--project-root", root, "list", "--json"]) == 0
