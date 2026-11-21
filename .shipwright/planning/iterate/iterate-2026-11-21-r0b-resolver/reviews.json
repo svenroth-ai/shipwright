@@ -133,85 +133,76 @@
     "code": {
       "review_type": "code",
       "status": "completed",
-      "findings_count": 6,
+      "findings_count": 4,
       "findings": [
         {
-          "severity": "medium",
-          "category": "readability",
-          "file": "plugins/shipwright-compliance/scripts/audit/group_a.py",
-          "line": 26,
-          "finding": "~160 files get the same semicolon-chained bootstrap line, glued onto existing imports",
-          "suggestion": "use package-relative imports for shared/scripts/lib modules; never splice onto an import line",
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/hooks/suggest_iterate.py",
+          "line": 34,
+          "finding": "If the resolver import raises ImportError the sys.path.remove never runs, so shared/scripts/lib stays on sys.path (appended at the end; same as session_start_using_shipwright.py)",
+          "suggestion": "optional try/finally",
           "source": "code-reviewer"
         },
         {
-          "severity": "medium",
-          "category": "architecture",
-          "file": "shared/scripts/lib/shipwright_paths.py",
-          "line": 293,
-          "finding": "bare-name import binds whichever copy loads first; fine while the registry is constant data, risky once R1 adds layout state",
-          "suggestion": "R1 loads copy-locally or adds a test",
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/tools/generate_session_handoff.py",
+          "line": 430,
+          "finding": "the 'or Path(skill)' fallback is unreachable for the six CONFIG_FILES keys",
+          "suggestion": "non-blocking",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/hooks/check_file_size.py",
+          "line": 40,
+          "finding": "noqa on a non-import assignment is a no-op",
+          "suggestion": "cosmetic",
           "source": "code-reviewer"
         },
         {
           "severity": "low",
           "category": "correctness",
-          "file": "plugins/shipwright-compliance/scripts/audit/group_a.py",
-          "line": 340,
-          "finding": "json_path_or_none returns None for events/audit_config/accepted_risks which were probed as nonexistent files before",
-          "suggestion": "state in iterate record",
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": "correctness",
-          "file": "shared/scripts/hooks/required_checks_state.py",
-          "line": 25,
-          "finding": "formerly stdlib-only module now hard-imports the resolver",
-          "suggestion": "guard the import",
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": "readability",
-          "file": "shared/tests/test_shipwright_paths.py",
-          "line": 6184,
-          "finding": "probe module alias left registered after the test",
-          "suggestion": "pop when prior is None",
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": "readability",
-          "file": "shared/scripts/lib/shipwright_paths.py",
-          "line": 188,
-          "finding": "json_path_or_none docstring too long; param name shadows name()",
-          "suggestion": "rename and wrap",
+          "file": "shared/scripts/hooks/check_file_size.py",
+          "line": 79,
+          "finding": "no test runs the _sp is None fallback branch",
+          "suggestion": "optional test",
           "source": "code-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-11-21T00:26:08.665353+00:00",
+      "completed_at": "2026-11-21T00:38:44.692491+00:00",
       "disposition": null,
       "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus",
       "verdict": "pass",
-      "reviewed_commit": "53b4e9f4fe54d77c0ffb0bb2c65dda2d81ecef2b"
+      "reviewed_commit": "f8ee99c0daf552cc81b4255bcde977ebff53814e"
     },
     "doubt": {
       "review_type": "doubt",
       "status": "completed",
-      "findings_count": 5,
+      "findings_count": 3,
       "findings": [
         {
-          "severity": "medium",
-          "category": "reversibility / boundary",
+          "severity": "low",
+          "category": "hidden coupling",
           "file": null,
           "line": null,
-          "finding": "Claim under doubt: R1/R3/R4 are one-file edits in shipwright_paths.py — rel(key) takes no root; 103 root / _sp.rel(key) joins; _sp.path has no production callers",
-          "suggestion": "correct the docstring/BRIEF: R1 must rewrite sites or route joins through path()",
+          "finding": "Claim under doubt: guard still catches new literals in the three hooks — LITERAL_ALLOWED is whole-file",
+          "suggestion": "tag as R1 item / test fallback equals rel",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: fallback branch is tested — no test forces _sp=None",
+          "suggestion": "parametrized test",
           "source": "doubt-reviewer"
         },
         {
@@ -219,47 +210,20 @@
           "category": "hidden coupling",
           "file": null,
           "line": null,
-          "finding": "Claim under doubt: rel vs name chosen correctly — indistinguishable until R3",
-          "suggestion": "test that points rel at .shipwright/config",
-          "source": "doubt-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": "boundary",
-          "file": null,
-          "line": null,
-          "finding": "Claim under doubt: two module objects harmless — three import names",
-          "suggestion": "single object before R1 adds state",
-          "source": "doubt-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": "boundary (stale cache)",
-          "file": null,
-          "line": null,
-          "finding": "Claim under doubt: only guarded hooks need fallback — write_run_config imports at module top",
-          "suggestion": "accept; SessionStart heal covers it",
-          "source": "doubt-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": "reversibility",
-          "file": null,
-          "line": null,
-          "finding": "Claim under doubt: fixed_tmp column accurate — unread and untested",
-          "suggestion": "pin by test before R2 uses it",
+          "finding": "Claim under doubt: handoff listing follows the resolver — json_path_or_none never reads basename",
+          "suggestion": "use CONFIG_FILES name",
           "source": "doubt-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-11-21T00:25:50.000483+00:00",
+      "completed_at": "2026-11-21T00:38:44.846181+00:00",
       "disposition": null,
       "recorded_by": "doubt-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus",
       "verdict": "pass",
-      "reviewed_commit": "53b4e9f4fe54d77c0ffb0bb2c65dda2d81ecef2b"
+      "reviewed_commit": "f8ee99c0daf552cc81b4255bcde977ebff53814e"
     },
     "external_code": {
       "review_type": "external_code",
@@ -374,14 +338,14 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-11-21T00:25:49.669680+00:00",
+      "completed_at": "2026-11-21T00:38:44.533352+00:00",
       "disposition": null,
       "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus",
       "verdict": "pass",
-      "reviewed_commit": "53b4e9f4fe54d77c0ffb0bb2c65dda2d81ecef2b"
+      "reviewed_commit": "f8ee99c0daf552cc81b4255bcde977ebff53814e"
     },
     "plan_internal": {
       "review_type": "plan_internal",
