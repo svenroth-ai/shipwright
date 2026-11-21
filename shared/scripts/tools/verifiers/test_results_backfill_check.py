@@ -19,6 +19,7 @@ from lib.iterate_test_results import (
 from .common import CheckResult, Severity
 from .git_blob_read import GitReadError, committed_bytes_reader
 from .git_helpers import _run_git, git_context
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[2] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 
 BACKFILL_MANIFEST_REL = (
@@ -101,7 +102,7 @@ def _is_modified_snapshot_status(status: str) -> bool:
     if len(lines) != 1 or len(lines[0]) < 4:
         return False
     xy, path = lines[0][:2], lines[0][3:]
-    return xy in {" M", "M ", "MM"} and path == "shipwright_test_results.json"
+    return xy in {" M", "M ", "MM"} and path == _sp.rel_at("test_results")
 
 
 def _validate_source(
@@ -116,7 +117,7 @@ def _validate_source(
     commit_match = _COMMIT_SOURCE.fullmatch(source)
     if commit_match:
         commit = _reachable_commit(root, commit_match.group(1), run_id)
-        candidate = committed_bytes_reader(root, commit)("shipwright_test_results.json")
+        candidate = committed_bytes_reader(root, commit)(_sp.rel_at("test_results", commit))
         if candidate is None:
             raise BackfillError(f"{run_id} source blob is absent")
         rc, commit_text, _ = _run_git(root, "cat-file", "-p", commit)
@@ -130,7 +131,7 @@ def _validate_source(
             if rc != 0:
                 raise BackfillError(f"{run_id} source parent commit is unavailable")
             inherited = committed_bytes_reader(root, parent.strip())(
-                "shipwright_test_results.json"
+                _sp.rel_at("test_results", parent.strip())
             )
             if inherited == candidate:
                 raise BackfillError(f"{run_id} source blob is inherited unchanged")
@@ -148,7 +149,7 @@ def _validate_source(
     if not head.startswith(expected_head):
         raise BackfillError(f"{run_id} source worktree HEAD changed")
     rc, status, _ = _run_git(
-        worktree, "status", "--porcelain=v1", "--", "shipwright_test_results.json"
+        worktree, "status", "--porcelain=v1", "--", _sp.rel_at("test_results")
     )
     if rc != 0 or not _is_modified_snapshot_status(status):
         raise BackfillError(f"{run_id} source worktree snapshot is not run-written dirty")

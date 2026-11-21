@@ -15,13 +15,14 @@ from .area_catalog import load_catalog, match_area, normalize_path
 from .commit_trailers import build_run_id_commit_map, resolve_base_ref
 from .event_context_coverage import aggregate_field_coverage
 from .event_context_source import iter_event_lines, source_stats, strip_run
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 INDEX_SCHEMA_VERSION = 3
 INDEX_RELATIVE_PATH = Path(".shipwright/runtime/events-context-index.json")
 #: The five selection keys this index exists to make rankable — see
 #: iterate-2026-08-07-events-context-backfill-keys.
 PROVENANCE_FIELDS = ("commit", "changed_files", "area_ids", "affected_frs", "supersedes_event_id")
-EVENT_LOG_NAME = "shipwright_events.jsonl"
+EVENT_LOG_NAME = _sp.rel("events")
 MAX_INDEX_STRING = 500
 _CONTROL_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f\x1b]")
 _SECRET_RE = re.compile(

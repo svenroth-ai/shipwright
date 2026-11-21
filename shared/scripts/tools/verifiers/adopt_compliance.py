@@ -43,14 +43,15 @@ from lib.phase_quality import (  # noqa: E402
 from lib.planning_discovery import iter_spec_files  # noqa: E402
 from lib.events_log import event_files  # noqa: E402
 from lib.events_read import read_events_assembled  # noqa: E402
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[2] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 
 REQUIRED_CONFIGS = [
-    "shipwright_run_config.json",
-    "shipwright_project_config.json",
-    "shipwright_plan_config.json",
-    "shipwright_build_config.json",
-    "shipwright_compliance_config.json",
+    _sp.rel("run_config"),
+    _sp.rel("project_config"),
+    _sp.rel("plan_config"),
+    _sp.rel("build_config"),
+    _sp.rel("compliance_config"),
 ]
 
 

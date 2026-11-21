@@ -14,7 +14,7 @@ from lib.events_read import sorted_by_ts
 from lib.handoff_phase_status import FAILED_STATUSES, FINISHED_STATUSES, INTERRUPTED_STATUSES, status_of
 from event_classification import normalize_intent
 from markdown_table import escape_cell
-from tests_block import skip_suffix  # shared skip-vs-fail SSOT
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[1] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p); from tests_block import skip_suffix  # shared skip-vs-fail SSOT
 
 
 def _cell_or_dash(value: str | None) -> str:
@@ -215,7 +215,7 @@ def _generate_build_summary(all_sections: list[dict], completed_splits: list[str
 def _generate_test_results(project_root: Path) -> list[str]:
     """Generate test results table from shipwright_test_results.json."""
     try:
-        data = json.loads((project_root / "shipwright_test_results.json").read_text(encoding="utf-8"))
+        data = json.loads((project_root / _sp.rel("test_results")).read_text(encoding="utf-8"))
     except (FileNotFoundError, json.JSONDecodeError):
         return []
     lines = ["## Test Results", "", "| Layer | Passed | Total | Status |", "|-------|--------|-------|--------|"]
@@ -351,7 +351,7 @@ def generate_dashboard(
 def _read_iterate_test_results(project_root: Path) -> dict | None:
     """Read iterate_latest from shipwright_test_results.json."""
     try:
-        data = json.loads((project_root / "shipwright_test_results.json").read_text(encoding="utf-8"))
+        data = json.loads((project_root / _sp.rel("test_results")).read_text(encoding="utf-8"))
         return data.get("iterate_latest")
     except (FileNotFoundError, json.JSONDecodeError):
         return None

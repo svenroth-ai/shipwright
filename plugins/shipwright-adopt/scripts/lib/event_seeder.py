@@ -17,6 +17,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 
 def _utc_now_iso() -> str:
@@ -60,7 +61,7 @@ def _drops_layout(root: Path) -> bool:
         if forced in ("legacy", "drops"):
             return forced == "drops"
     try:
-        cfg = json.loads((root / "shipwright_sync_config.json").read_text(encoding="utf-8-sig"))
+        cfg = json.loads((root / _sp.rel("sync_config")).read_text(encoding="utf-8-sig"))
         return isinstance(cfg, dict) and cfg.get("events_layout") == "drops"
     except (OSError, ValueError):
         return False
@@ -117,7 +118,7 @@ def _append_drop(root: Path, event: dict[str, Any]) -> None:
 
 
 def _append_jsonl(path: Path, event: dict[str, Any]) -> None:
-    if path.name == "shipwright_events.jsonl" and _drops_layout(path.parent):
+    if path.name == _sp.name("events") and _drops_layout(path.parent):
         _append_drop(path.parent, event)
         return
     path.parent.mkdir(parents=True, exist_ok=True)

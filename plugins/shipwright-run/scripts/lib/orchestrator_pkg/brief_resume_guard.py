@@ -15,10 +15,11 @@ import json
 import sys
 from pathlib import Path
 from typing import Any, Optional
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[5] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 _NAME = "_shipwright_brief_resume_guard_bdi"
 _BDI = Path(__file__).resolve().parents[5] / "shared" / "scripts" / "lib" / "brief_dir_intake.py"
-_CONFIG = "shipwright_run_config.json"
+_CONFIG = _sp.rel("run_config")
 
 
 def _load() -> Any:

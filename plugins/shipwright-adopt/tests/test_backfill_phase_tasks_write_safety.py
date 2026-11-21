@@ -32,6 +32,7 @@ def _copy_config(src_name: str, project_root: Path) -> Path:
     return dest
 
 
+@pytest.mark.covers("FR-01.13")
 def test_a_held_lock_blocks_the_backfill_instead_of_racing_it(
     tmp_path: Path, monkeypatch
 ) -> None:
@@ -43,7 +44,7 @@ def test_a_held_lock_blocks_the_backfill_instead_of_racing_it(
     monkeypatch.setattr(backfill_cli, "LOCK_TIMEOUT_SECONDS", 0.2)
     project = tmp_path / "leadwright"
     config_path = _copy_config("leadwright_run_config.json", project)
-    lock_path = project / (RUN_CONFIG_NAME + backfill_cli.LOCK_SUFFIX)
+    lock_path = project / (RUN_CONFIG_NAME + ".lock")
 
     with file_lock(lock_path, timeout_seconds=5.0):
         with pytest.raises(SystemExit, match="could not acquire the run-config lock"):

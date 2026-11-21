@@ -25,13 +25,14 @@ from pathlib import Path
 
 from .brief_mode_checks import _guarded, verified_package
 from .common import CheckResult
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[2] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 NAME = "brief_design_applied"
 
 
 def _mentions_brief(project_root: Path) -> bool:
     try:
-        raw = (project_root / "shipwright_run_config.json").read_text(encoding="utf-8-sig", errors="ignore")
+        raw = (project_root / _sp.rel("run_config")).read_text(encoding="utf-8-sig", errors="ignore")
     except OSError:
         return False
     return "brief_dir" in raw or "brief_package" in raw

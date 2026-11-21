@@ -45,7 +45,7 @@ _SCRIPTS_ROOT = Path(__file__).resolve().parent.parent
 if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
-from lib.atomic_write import durable_atomic_write  # noqa: E402
+from lib import shipwright_paths as _sp; from lib.atomic_write import durable_atomic_write  # noqa: E402
 from lib.events_log import latest_event_dt  # noqa: E402
 from lib.file_lock import LockTimeout, file_lock  # noqa: E402
 from lib.iterate_entry import (  # noqa: E402
@@ -321,7 +321,7 @@ def append_iterate_entry(
         raise IterateAppendError(f"invalid entry: {err}")
 
     project_root = project_root.resolve()
-    lock_path = (project_root / RUN_CONFIG_NAME).with_suffix(".json.lock")
+    lock_path = _sp.lock_for("run_config", project_root)
 
     migrated = False
     quarantined_count = 0

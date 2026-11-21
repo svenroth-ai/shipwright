@@ -26,6 +26,7 @@ from lib.phase_quality import (  # noqa: E402
     make_finding,
 )
 from tools.verifiers.common import read_run_config  # noqa: E402
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[2] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 
 COMPLIANCE_DIR = ".shipwright/compliance"
@@ -91,7 +92,7 @@ def check_cmp1_dashboard_covers_phases(project_root: Path) -> dict[str, Any]:
 
 
 def _load_rtm_threshold_pct(project_root: Path) -> int:
-    cfg = project_root / "shipwright_compliance_config.json"
+    cfg = project_root / _sp.rel("compliance_config")
     if not cfg.exists():
         return _DEFAULT_RTM_MIN_PCT
     try:

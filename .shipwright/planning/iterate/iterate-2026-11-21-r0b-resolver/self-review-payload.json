@@ -1,0 +1,9 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"All 4 ACs met: Python references through shipwright_paths; guard test with reasoned allowlists; DERIVED/RESTORABLE generated from the KIND list; lock_for returns root names. Carriers (bash/YAML/JSON/md) are ratcheted, not rewritten."},
+{"name":"Error Handling","verdict":"pass","note":"Unknown keys raise KeyError with the known list; json_path_or_none keeps the old construction for unknown names; hooks with an ImportError fallback keep their literal fallbacks."},
+{"name":"Security Basics","verdict":"pass","note":"Stdlib only, no I/O, no subprocess in the resolver; bootstrap appends then removes one sys.path entry derived from __file__."},
+{"name":"Test Quality","verdict":"pass","note":"Frozen pre-resolver names, generated-list equality, scanner shape tests for each reference form, stale-allowlist test; 18 pytest roots run, only pre-existing env failures remain."},
+{"name":"Performance Basics","verdict":"pass","note":"Resolver uses namedtuple (no dataclasses import) so hot-path hooks pay microseconds."},
+{"name":"Naming & Structure","verdict":"pass","note":"One module under shared/scripts/lib; scanner split from the test to stay under the file limit; files at their bloat baseline took zero-cost placement."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Producer/consumer of plugin cache layout probed by mirror tests (design, test, adopt, iterate) plus -I isolated runs of a plugin tool, a shared hook and a stop hook."},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"test_hygiene.py over the two new test files: no findings."}]}

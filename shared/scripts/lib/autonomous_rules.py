@@ -33,6 +33,7 @@ import re
 import shlex
 from html.parser import HTMLParser
 from pathlib import Path
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 
 def _private(name: str):
@@ -139,7 +140,7 @@ def verified_package_mockups(project_root: Path) -> tuple[Path | None, str]:
     the ``brief_package.package_sha256`` run_config records OUTSIDE it; ``(None, why)`` otherwise."""
     root = Path(project_root).resolve()
     bdir = _brief_dir(root)
-    record = _json(root / "shipwright_run_config.json").get("brief_package")
+    record = _json(root / _sp.rel("run_config")).get("brief_package")
     expected = record.get("package_sha256") if isinstance(record, dict) else None
     if bdir is None or not isinstance(expected, str):
         return None, "run_config records no brief package directory and hash to verify against"
@@ -184,7 +185,7 @@ def _norm(text: str) -> str:
 def _brief_dir(project_root: Path) -> Path | None:
     """The package directory run_config names (``brief_dir``: project-relative, inside the project)."""
     root = Path(project_root).resolve()
-    raw = _json(root / "shipwright_run_config.json").get("brief_dir")
+    raw = _json(root / _sp.rel("run_config")).get("brief_dir")
     rel = raw.replace("\\", "/") if isinstance(raw, str) else ""
     if not rel.strip() or Path(rel).is_absolute() or ".." in rel.split("/"):
         return None

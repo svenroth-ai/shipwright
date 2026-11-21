@@ -23,6 +23,7 @@ if str(_SHARED_LIB) not in sys.path:
     sys.path.insert(0, str(_SHARED_LIB))
 
 from atomic_write import durable_atomic_write  # noqa: E402
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 
 def _atomic_write_json(path: Path, data: dict) -> None:
@@ -126,7 +127,7 @@ def main() -> int:
     args = parser.parse_args()
 
     project_root = Path(args.project_root).resolve() if args.project_root else Path.cwd()
-    config_path = project_root / "shipwright_build_config.json"
+    config_path = project_root / _sp.rel("build_config")
 
     config = {}
     if config_path.exists():

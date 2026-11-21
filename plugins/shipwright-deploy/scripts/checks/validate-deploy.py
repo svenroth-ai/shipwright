@@ -45,6 +45,7 @@ if str(_LIB_DIR) not in sys.path:
     sys.path.insert(0, str(_LIB_DIR))
 
 from test_gate import evaluate_test_gate  # noqa: E402
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 
 def _has_migrations(project_root: Path) -> bool:
@@ -69,7 +70,7 @@ def _deploy_target(project_root: Path) -> str | None:
     """The run config's deploy_target, or None when unreadable/absent."""
     try:
         data = json.loads(
-            (project_root / "shipwright_run_config.json").read_text(encoding="utf-8")
+            (project_root / _sp.rel("run_config")).read_text(encoding="utf-8")
         )
         target = data.get("deploy_target")
         return target if isinstance(target, str) else None

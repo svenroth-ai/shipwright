@@ -47,6 +47,7 @@ from typing import Any
 
 from .atomic_write import durable_read_text
 from .iterate_entry import read_iterate_entries
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 #: The phase whose completions live in the iterate ledger, not ``phase_history``.
 #: Named once, so the dispatch and the drift test read one constant.
@@ -224,7 +225,7 @@ def _read_run_config(project_root: Path) -> dict[str, Any]:
     ``json.loads`` rejects at char 0 (``lib/config.py`` BOM-hardened the sibling
     config readers for exactly this).
     """
-    path = Path(project_root) / "shipwright_run_config.json"
+    path = Path(project_root) / _sp.rel("run_config")
     try:
         data = json.loads(durable_read_text(path, encoding="utf-8-sig"))
     except (OSError, json.JSONDecodeError, ValueError):

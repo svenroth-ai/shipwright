@@ -279,9 +279,9 @@ def test_adopt_profile_imports_the_resolver_through_the_plugin_layout(tmp_path):
     lib.mkdir(parents=True)
     shutil.copy2(_REPO / "plugins" / "shipwright-adopt" / "scripts" / "lib" / "adopt_profile.py", lib)
     shared = cache / "shared"
-    (shared / "scripts").mkdir(parents=True)
-    for f in (_REPO / "shared" / "scripts").glob("profile_*.py"):
-        shutil.copy2(f, shared / "scripts" / f.name)
+    (shared / "scripts" / "lib").mkdir(parents=True)
+    for f in (*(_REPO / "shared" / "scripts").glob("profile_*.py"), _REPO / "shared" / "scripts" / "lib" / "shipwright_paths.py"):
+        shutil.copy2(f, shared / "scripts" / f.relative_to(_REPO / "shared" / "scripts"))
     shutil.copytree(_REPO / "shared" / "profiles", shared / "profiles")
     shutil.copytree(_REPO / "shared" / "schemas", shared / "schemas")
     proj = tmp_path / "proj"

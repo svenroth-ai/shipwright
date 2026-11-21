@@ -49,6 +49,7 @@ if str(_LIB) not in sys.path:
     sys.path.insert(0, str(_LIB))
 
 import ac_identity  # noqa: E402
+import shipwright_paths as _sp  # noqa: E402
 from atomic_write import durable_atomic_write  # noqa: E402
 from file_lock import file_lock  # noqa: E402
 
@@ -128,7 +129,7 @@ def main(argv: list[str] | None = None) -> int:
 
     spec_path = Path(args.spec_file)
     registry_path = Path(args.registry_file)
-    lock_path = Path(str(registry_path) + ".lock")
+    lock_path = _sp.lock_beside(registry_path)
 
     with file_lock(lock_path, timeout_seconds=_LOCK_TIMEOUT_SECONDS):
         payload = _mint_once(spec_path, registry_path, write=args.write)

@@ -15,6 +15,7 @@ import json
 from pathlib import Path, PurePosixPath, PureWindowsPath
 
 from .common import CheckResult
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[2] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 _PLANNING_DIRNAME = ".shipwright/planning"
 
@@ -85,8 +86,8 @@ def _declared_split_names(
     The manifest already knows which dirs ARE splits; reading it is THE
     interpretation, shared with the existing WARNING-severity check.
     """
-    run_config_path = project_root / "shipwright_run_config.json"
-    path = project_root / "shipwright_project_config.json"
+    run_config_path = project_root / _sp.rel("run_config")
+    path = project_root / _sp.rel("project_config")
     if path.exists():
         # The authoritative source, checked FIRST. Tier-3 review (PR #729,
         # round 6): a prior version of this function read the run-config
@@ -95,7 +96,7 @@ def _declared_split_names(
         # this, the real manifest, was present and perfectly valid — the
         # fallback must never take priority over, or block on, the
         # manifest it is a fallback FOR.
-        source = "shipwright_project_config.json"
+        source = _sp.rel("project_config")
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
         except (json.JSONDecodeError, OSError) as exc:
@@ -110,7 +111,7 @@ def _declared_split_names(
         # same way the branch above does, lets a malformed run-config
         # surface its own error instead of silently becoming "zero splits
         # declared". Only reached when the project config is ABSENT.
-        source = "shipwright_run_config.json"
+        source = _sp.rel("run_config")
         data: object = {}
         if run_config_path.exists():
             try:

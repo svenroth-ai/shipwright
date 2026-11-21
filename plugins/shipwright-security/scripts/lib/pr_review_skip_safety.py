@@ -16,6 +16,7 @@ provenance-anchor.
 from __future__ import annotations
 
 import re
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 __all__ = ["is_safe_to_skip_review"]
 
@@ -29,8 +30,8 @@ __all__ = ["is_safe_to_skip_review"]
 # never the actual regenerated artifact the basename rule was written for —
 # must not borrow that classification (Stage-3 doubt review, medium finding).
 _SKIP_REVIEW_CANONICAL_BASENAME_PATHS = frozenset({
-    "shipwright_test_results.json",
-    "shipwright_events.jsonl",
+    _sp.rel("test_results"),
+    _sp.rel("events"),
     ".shipwright/triage.jsonl",
     ".shipwright/triage.outbox.jsonl",
 })

@@ -73,6 +73,7 @@ from phase_invocation_mode import (  # noqa: E402
     PIPELINE,
     resolve_invocation_mode,
 )
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[1] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 EXIT_OK = 0
 EXIT_UNRESOLVED_TOKEN = 2
@@ -87,24 +88,24 @@ EXIT_UNRESOLVED_TOKEN = 2
 # per-skill based on what each Skill actually needs to read.
 PHASE_OWN_ARTIFACTS: dict[str, list[str]] = {
     "project": [".shipwright/planning/requirements.md"],
-    "design": [".shipwright/designs/", "shipwright_design_config.json"],
-    "plan": [".shipwright/agent_docs/sections/", "shipwright_plan_config.json"],
-    "build": ["shipwright_build_config.json"],
-    "test": ["shipwright_test_results.json"],
+    "design": [".shipwright/designs/", _sp.rel("design_config")],
+    "plan": [".shipwright/agent_docs/sections/", _sp.rel("plan_config")],
+    "build": [_sp.rel("build_config")],
+    "test": [_sp.rel("test_results")],
     "security": [".shipwright/compliance/security-scan-report.md"],
     "changelog": ["CHANGELOG.md"],
-    "deploy": ["shipwright_deploy_config.json"],
+    "deploy": [_sp.rel("deploy_config")],
 }
 
 # What predecessor artifacts this phase typically reads.
 PHASE_PREREQ_ARTIFACTS: dict[str, list[str]] = {
-    "design": [".shipwright/planning/requirements.md", "shipwright_project_config.json"],
-    "plan": [".shipwright/planning/requirements.md", "shipwright_design_config.json",
+    "design": [".shipwright/planning/requirements.md", _sp.rel("project_config")],
+    "plan": [".shipwright/planning/requirements.md", _sp.rel("design_config"),
              ".shipwright/designs/"],
-    "build": [".shipwright/agent_docs/sections/", "shipwright_plan_config.json"],
-    "test": ["shipwright_build_config.json"],
-    "security": ["shipwright_test_results.json"],
-    "changelog": ["shipwright_test_results.json"],
+    "build": [".shipwright/agent_docs/sections/", _sp.rel("plan_config")],
+    "test": [_sp.rel("build_config")],
+    "security": [_sp.rel("test_results")],
+    "changelog": [_sp.rel("test_results")],
     "deploy": ["CHANGELOG.md"],
 }
 

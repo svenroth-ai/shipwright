@@ -17,6 +17,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from lib.state import detect_state
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 
 def _merge_canonical_gitignore(project_root: Path) -> dict:
@@ -141,7 +142,7 @@ def main() -> int:
             },
         }
 
-    config_path = project_root / "shipwright_project_config.json"
+    config_path = project_root / _sp.rel("project_config")
     config_path.write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8")
 
     # Propagate the canonical .shipwright artifact-ignore block into the

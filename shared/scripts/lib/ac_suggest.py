@@ -30,6 +30,7 @@ from typing import Callable
 
 from lib.ac_catalog import fr_text, words
 from lib.ac_wording import wording_violations
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 __all__ = ["BUDGET", "MODEL", "OFF_ENV", "SWITCH_ENV", "default_transport", "make_suggester", "prompt_text", "propose"]
 
@@ -85,7 +86,7 @@ def _opted_out(project_root: str | Path) -> bool:
     if any(os.environ.get(name, "").strip().lower() in _OFF_WORDS for name in (SWITCH_ENV, OFF_ENV)) or os.environ.get("SHIPWRIGHT_REVIEW_GATEWAY_BASE_URL"):
         return True
     try:
-        own = json.loads((Path(project_root) / "shipwright_iterate_config.json").read_text(encoding="utf-8-sig"))
+        own = json.loads((Path(project_root) / _sp.rel("iterate_config")).read_text(encoding="utf-8-sig"))
         block = own.get("ac_decision") if isinstance(own, dict) else None
         if isinstance(block, dict) and block.get("model_suggest") is False:
             return True

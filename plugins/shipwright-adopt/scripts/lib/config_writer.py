@@ -23,6 +23,7 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from lib.adopted_phase_tasks import build_adopted_phase_task  # noqa: E402
 from lib.events_layout_key import layout_entry  # noqa: E402
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 
 def _utc_now_iso() -> str:
@@ -62,7 +63,7 @@ def write_project_config(
         "adopted": True,
         "updated_at": _utc_now_iso(),
     }
-    path = project_root / "shipwright_project_config.json"
+    path = project_root / _sp.rel("project_config")
     _write_json(path, config)
     return path
 
@@ -79,7 +80,7 @@ def write_plan_config(project_root: Path, *, split_name: str) -> Path:
         ),
         "updated_at": _utc_now_iso(),
     }
-    path = project_root / "shipwright_plan_config.json"
+    path = project_root / _sp.rel("plan_config")
     _write_json(path, config)
     return path
 
@@ -107,7 +108,7 @@ def write_build_config(
         "current_split": None,
         "updated_at": _utc_now_iso(),
     }
-    path = project_root / "shipwright_build_config.json"
+    path = project_root / _sp.rel("build_config")
     _write_json(path, config)
     return path
 
@@ -136,7 +137,7 @@ def write_iterate_config(project_root: Path) -> Path:
         "seeded_by_adopt": True,
         "updated_at": _utc_now_iso(),
     }
-    path = project_root / "shipwright_iterate_config.json"
+    path = project_root / _sp.rel("iterate_config")
     _write_json(path, config)
     return path
 
@@ -148,7 +149,7 @@ def write_compliance_config(project_root: Path) -> Path:
         "last_full_generation": _utc_now_iso(),
         "seeded_by_adopt": True,
     }
-    path = project_root / "shipwright_compliance_config.json"
+    path = project_root / _sp.rel("compliance_config")
     _write_json(path, config)
     return path
 
@@ -160,7 +161,7 @@ def write_sync_config(project_root: Path) -> Path:
         "note": "Empty by default. Populated incrementally by /shipwright-iterate as file changes get mapped to FRs.",
         "updated_at": _utc_now_iso(),
     }
-    path = project_root / "shipwright_sync_config.json"
+    path = project_root / _sp.rel("sync_config")
     config.update(layout_entry(project_root, path))  # issue 978, S7
     _write_json(path, config)
     return path
@@ -219,7 +220,7 @@ def write_run_config(
         "created_at": now,
         "updated_at": now,
     }
-    path = project_root / "shipwright_run_config.json"
+    path = project_root / _sp.rel("run_config")
     _write_json(path, config)
 
     # Initialize the file-per-iterate directories with .gitkeep so a fresh

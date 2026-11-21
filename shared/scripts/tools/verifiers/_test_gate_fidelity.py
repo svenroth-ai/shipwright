@@ -43,6 +43,7 @@ from ._test_gate_fidelity_categorize import (
     validate_triage_counts as _validate_triage_counts,
 )
 from .common import CheckResult, Severity
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[2] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 
 def check_design_fidelity_triage_matches_recomputation(project_root: Path) -> CheckResult:
@@ -98,7 +99,7 @@ def check_design_fidelity_triage_matches_recomputation(project_root: Path) -> Ch
             severity=Severity.SKIPPED.value,
         )
 
-    results_path = _safe_project_file(project_root, "shipwright_test_results.json")
+    results_path = _safe_project_file(project_root, _sp.rel("test_results"))
     if results_path is None:
         return CheckResult(
             name, False,

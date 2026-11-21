@@ -28,6 +28,7 @@ from lib.phase_quality import (  # noqa: E402
     make_finding,
 )
 from tools.verifiers.common import read_events_jsonl  # noqa: E402
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[2] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 
 W7_NAME = "W7 smoke test passed"
@@ -39,7 +40,7 @@ W7_REMEDIATION = (
 
 
 def _smoke_from_deploy_config(project_root: Path) -> str | None:
-    path = project_root / "shipwright_deploy_config.json"
+    path = project_root / _sp.rel("deploy_config")
     if not path.exists():
         return None
     try:
@@ -51,7 +52,7 @@ def _smoke_from_deploy_config(project_root: Path) -> str | None:
 
 
 def _smoke_from_test_results(project_root: Path) -> str | None:
-    path = project_root / "shipwright_test_results.json"
+    path = project_root / _sp.rel("test_results")
     if not path.exists():
         return None
     try:
@@ -87,8 +88,8 @@ def _smoke_from_events(project_root: Path) -> str | None:
 
 def check_w7_smoke_status(project_root: Path) -> dict[str, Any]:
     for source_fn, source_name in (
-        (_smoke_from_deploy_config, "shipwright_deploy_config.json"),
-        (_smoke_from_test_results, "shipwright_test_results.json"),
+        (_smoke_from_deploy_config, _sp.rel("deploy_config")),
+        (_smoke_from_test_results, _sp.rel("test_results")),
         (_smoke_from_events, "events.jsonl"),
     ):
         status = source_fn(project_root)

@@ -28,11 +28,12 @@ if _ADDED:
     sys.path.append(_HERE)
 import profile_resolver as pr  # noqa: E402
 from profile_resolver import ProfileInvalid  # noqa: E402,F401
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[0] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 if _ADDED:
     sys.path.remove(_HERE)
 
-RUN_CONFIG = "shipwright_run_config.json"
+RUN_CONFIG = _sp.rel("run_config")
 SENTINELS = pr.SENTINELS
 
 

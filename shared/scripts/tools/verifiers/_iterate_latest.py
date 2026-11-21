@@ -35,6 +35,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from pathlib import Path
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[2] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 __all__ = [
     "STATE_CURRENT",
@@ -47,7 +48,7 @@ __all__ = [
     "stale_detail",
 ]
 
-RESULTS_NAME = "shipwright_test_results.json"
+RESULTS_NAME = _sp.rel("test_results")
 
 #: The block names this run — the only state in which it is evidence.
 STATE_CURRENT = "current"

@@ -39,6 +39,7 @@ from pathlib import Path
 
 from .common import CheckResult, Severity
 from ._test_gate_paths import _project_file_or_escape
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[2] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # #5 — e2e counts reconciled against Playwright's own stats
@@ -114,7 +115,7 @@ def check_e2e_counts_reconciled(project_root: Path) -> CheckResult:
     module's counting rules ever change — see the note in its own docstring.
     """
     name = "e2e counts reconciled against the playwright tool's own stats"
-    results_path, results_escaped = _project_file_or_escape(project_root, "shipwright_test_results.json")
+    results_path, results_escaped = _project_file_or_escape(project_root, _sp.rel("test_results"))
     pw_path, pw_escaped = _project_file_or_escape(project_root, "e2e-results.json")
 
     # Stage-2 code-reviewer (2026-09-12, PR #748 re-review): the Tier-3 CI

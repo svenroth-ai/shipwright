@@ -48,12 +48,13 @@ from verifiers._ac_baseline_growth import baseline_grown_since_parent  # noqa: E
 from verifiers._ac_binding_state import read_binding_state, spec_path_by_fr  # noqa: E402
 from verifiers._keystone_ac_digest import MANIFEST_RELPATH, ReadError, require_manifest_shape  # noqa: E402
 from verifiers.stdio import ensure_utf8_stdout  # noqa: E402
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[1] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 EXIT_OK = 0
 EXIT_BLOCKED = 1
 EXIT_INFRA = 2
 
-BASELINE_RELPATH = "shipwright_ac_coverage_baseline.json"
+BASELINE_RELPATH = _sp.rel("ac_coverage_baseline")
 
 
 def _emit(payload: dict, code: int) -> int:

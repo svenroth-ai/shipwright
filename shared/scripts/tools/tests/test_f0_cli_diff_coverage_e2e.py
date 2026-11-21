@@ -53,7 +53,7 @@ _RUNNER_FILES = (
     "scripts/lib/_host_resource_locking.py",
     "scripts/lib/_windows_acl.py",
     "scripts/lib/_windows_acl_trust.py",
-    "scripts/lib/atomic_write.py",
+    "scripts/lib/atomic_write.py", "scripts/lib/shipwright_paths.py",
     "scripts/lib/durable_publish.py",
     "scripts/lib/diff_coverage_gate.py",
     "scripts/lib/file_lock.py",

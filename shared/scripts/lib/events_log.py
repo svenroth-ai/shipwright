@@ -44,7 +44,7 @@ pins the two to the same answer; both resolve to the per-tree
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from pathlib import Path
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p); from pathlib import Path
 
 # Record-boundary SSoT, imported to survive THREE load contexts (full rationale:
 # the iterate spec's Mini-plan AC15, pinned by test_events_log_load_contexts):
@@ -98,7 +98,7 @@ except ImportError:  # contexts 2 + 3 — see above.
             raise
     read_jsonl_records = _jr_mod.read_jsonl_records
 
-EVENT_FILE = "shipwright_events.jsonl"
+EVENT_FILE = _sp.rel("events")
 DROPS_DIR = ".shipwright/events/drops"
 ARCHIVE_DIR = ".shipwright/events/archive"
 QUARANTINE_DIR = ".shipwright/events/quarantine"

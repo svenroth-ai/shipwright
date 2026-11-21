@@ -22,7 +22,7 @@ _SHARED_SCRIPTS = Path(__file__).resolve().parents[4] / "shared" / "scripts"
 if str(_SHARED_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SHARED_SCRIPTS))
 from markdown_table import escape_cell  # noqa: E402
-from tests_block import progression_result  # noqa: E402 — shared skip-vs-fail SSOT
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p); from tests_block import progression_result  # noqa: E402 — shared skip-vs-fail SSOT
 
 if TYPE_CHECKING:
     from scripts.lib.data_collector import ComplianceData
@@ -270,7 +270,7 @@ def _collect_split_e2e_results(project_root: Path) -> dict[str, dict]:
     result: dict[str, dict] = {}
 
     # Get split names from project config
-    project_config_path = project_root / "shipwright_project_config.json"
+    project_config_path = project_root / _sp.rel("project_config")
     split_names: dict[str, str] = {}  # "01" -> "01-foundation"
     if project_config_path.exists():
         try:
@@ -283,7 +283,7 @@ def _collect_split_e2e_results(project_root: Path) -> dict[str, dict]:
             pass
 
     # Current test results have aggregate E2E — distribute to last split
-    current = project_root / "shipwright_test_results.json"
+    current = project_root / _sp.rel("test_results")
     if current.exists():
         try:
             data = json.loads(current.read_text(encoding="utf-8"))

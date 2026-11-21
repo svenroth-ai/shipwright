@@ -47,6 +47,7 @@ from .common import (
 from .build_split import build_config_for_split
 from .eslint_rules_check import check_eslint_architecture_rules
 from .handoff_phase_canon import check_c3_session_handoff_fresh_after_phase
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[2] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -54,7 +55,7 @@ from .handoff_phase_canon import check_c3_session_handoff_fresh_after_phase
 # ---------------------------------------------------------------------------
 
 def _read_build_config(project_root: Path, split_id: str | None = None) -> dict:
-    path = project_root / "shipwright_build_config.json"
+    path = project_root / _sp.rel("build_config")
     if not path.exists():
         return {}
     try:  # as ``split_id`` saw it: an archived split's own sections (build_split)

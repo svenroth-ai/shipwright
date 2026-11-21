@@ -30,7 +30,7 @@ import logging
 import re
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Literal, TypedDict
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p); from typing import Any, Literal, TypedDict
 
 
 _logger = logging.getLogger("shipwright.iterate_entry")
@@ -41,7 +41,7 @@ ITERATE_FILE_PREFIX = "iterate-"
 ITERATE_FILE_SUFFIX = ".json"
 QUARANTINE_SUBDIR = "_quarantine"
 META_SUBDIR = "_meta"
-RUN_CONFIG_NAME = "shipwright_run_config.json"
+RUN_CONFIG_NAME = _sp.rel("run_config")
 
 # Config keys that persist migration state
 MIGRATION_STATE_KEY = "_iterate_migration_state"

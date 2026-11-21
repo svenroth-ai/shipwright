@@ -1,0 +1,471 @@
+{
+ "_about": "Ratchet for non-Python carriers of root shipwright_* names (bash, YAML, JSON data, md, templates): per-file, per-name COUNT may only fall. R3 flips these with the plugin version.",
+ "files": {
+  ".github/workflows/bloat-check.yml": {
+   "shipwright_bloat_baseline.json": 2
+  },
+  ".github/workflows/ci.yml": {
+   "shipwright_ac_coverage_baseline.json": 1
+  },
+  ".github/workflows/windows-tests.yml": {
+   "shipwright_test_config.json": 1
+  },
+  ".trivyignore.yaml": {
+   "shipwright_accepted_risks.yaml": 1
+  },
+  "AGENTS.md": {
+   "shipwright_bloat_baseline.json": 1,
+   "shipwright_model_config.json": 1,
+   "shipwright_test_results.json": 1
+  },
+  "CLAUDE.md": {
+   "shipwright_bloat_baseline.json": 1
+  },
+  "plugins/shipwright-adopt/skills/adopt/SKILL.md": {
+   "shipwright_bloat_baseline.json": 1,
+   "shipwright_iterate_config.json": 1,
+   "shipwright_known_failures.json": 1,
+   "shipwright_run_config.json": 2
+  },
+  "plugins/shipwright-adopt/skills/adopt/references/backfill-iterate-config.md": {
+   "shipwright_iterate_config.json": 2
+  },
+  "plugins/shipwright-adopt/skills/adopt/references/backfill-phase-tasks.md": {
+   "shipwright_run_config.json": 2
+  },
+  "plugins/shipwright-adopt/skills/adopt/references/codebase-analysis.md": {
+   "shipwright_run_config.json": 1
+  },
+  "plugins/shipwright-adopt/skills/adopt/references/nested-project-policy.md": {
+   "shipwright_run_config.json": 4
+  },
+  "plugins/shipwright-adopt/skills/adopt/references/step-a-preflight.md": {
+   "shipwright_bloat_baseline.json": 1
+  },
+  "plugins/shipwright-adopt/skills/adopt/references/step-e-artifact-generation.md": {
+   "shipwright_events.jsonl": 2,
+   "shipwright_run_config.json": 1
+  },
+  "plugins/shipwright-adopt/skills/adopt/references/step-e18-inherited-baseline.md": {
+   "shipwright_known_failures.json": 1
+  },
+  "plugins/shipwright-adopt/skills/adopt/references/step-h-validate-commit-handoff.md": {
+   "shipwright_events.jsonl": 1,
+   "shipwright_known_failures.json": 4
+  },
+  "plugins/shipwright-build/agents/code-reviewer.md": {
+   "shipwright_bloat_baseline.json": 2
+  },
+  "plugins/shipwright-build/agents/section-builder.md": {
+   "shipwright_build_config.json": 2
+  },
+  "plugins/shipwright-build/agents/spec-reviewer.md": {
+   "shipwright_run_config.json": 1
+  },
+  "plugins/shipwright-build/skills/build/SKILL.md": {
+   "shipwright_build_config.json": 2
+  },
+  "plugins/shipwright-build/skills/build/references/autonomous-loop.md": {
+   "shipwright_build_config.json": 2
+  },
+  "plugins/shipwright-build/skills/build/references/browser-verify.md": {
+   "shipwright_build_config.json": 4
+  },
+  "plugins/shipwright-build/skills/build/references/code-review.md": {
+   "shipwright_build_config.json": 2,
+   "shipwright_run_config.json": 1
+  },
+  "plugins/shipwright-build/skills/build/references/first-actions.md": {
+   "shipwright_build_config.json": 3,
+   "shipwright_model_config.json": 1,
+   "shipwright_run_config.json": 2
+  },
+  "plugins/shipwright-build/skills/build/references/migrations-apply.md": {
+   "shipwright_run_config.json": 1
+  },
+  "plugins/shipwright-build/skills/build/references/section-doc-update.md": {
+   "shipwright_build_config.json": 1
+  },
+  "plugins/shipwright-build/skills/build/references/section-state.md": {
+   "shipwright_build_config.json": 2
+  },
+  "plugins/shipwright-changelog/skills/changelog/SKILL.md": {
+   "shipwright_events.jsonl": 6,
+   "shipwright_run_config.json": 3
+  },
+  "plugins/shipwright-changelog/skills/changelog/references/compliance-evidence.md": {
+   "shipwright_events.jsonl": 1
+  },
+  "plugins/shipwright-changelog/skills/changelog/references/manifest-sync.md": {
+   "shipwright_changelog_config.json": 6
+  },
+  "plugins/shipwright-compliance/skills/compliance/SKILL.md": {
+   "audit_config.json": 1,
+   "shipwright_bloat_baseline.json": 1,
+   "shipwright_compliance_config.json": 1
+  },
+  "plugins/shipwright-deploy/skills/deploy/SKILL.md": {
+   "shipwright_run_config.json": 1,
+   "shipwright_test_results.json": 1
+  },
+  "plugins/shipwright-deploy/skills/deploy/references/rollback-discipline.md": {
+   "shipwright_events.jsonl": 2
+  },
+  "plugins/shipwright-design/skills/design/SKILL.md": {
+   "shipwright_project_config.json": 2,
+   "shipwright_run_config.json": 1
+  },
+  "plugins/shipwright-design/skills/design/references/brief-compose.md": {
+   "shipwright_run_config.json": 1
+  },
+  "plugins/shipwright-design/skills/design/references/invocation-mode.md": {
+   "shipwright_project_config.json": 1,
+   "shipwright_run_config.json": 1
+  },
+  "plugins/shipwright-design/skills/design/references/review-loop.md": {
+   "shipwright_project_config.json": 2,
+   "shipwright_run_config.json": 1
+  },
+  "plugins/shipwright-design/skills/design/references/review-viewer-template.md": {
+   "shipwright_project_config.json": 2
+  },
+  "plugins/shipwright-design/skills/design/references/step-2-5-brand-extraction.md": {
+   "shipwright_project_config.json": 1
+  },
+  "plugins/shipwright-design/skills/design/references/step-6a-review-viewer.md": {
+   "shipwright_project_config.json": 2
+  },
+  "plugins/shipwright-design/skills/design/references/step-9-finalization.md": {
+   "shipwright_run_config.json": 1
+  },
+  "plugins/shipwright-design/skills/design/references/upload-mode.md": {
+   "shipwright_run_config.json": 2
+  },
+  "plugins/shipwright-grade/skills/grade/SKILL.md": {
+   "shipwright_events.jsonl": 1
+  },
+  "plugins/shipwright-iterate/agents/sub-iterate-runner.md": {
+   "shipwright_bloat_baseline.json": 2,
+   "shipwright_build_config.json": 1,
+   "shipwright_events.jsonl": 1,
+   "shipwright_run_config.json": 1,
+   "shipwright_test_results.json": 1
+  },
+  "plugins/shipwright-iterate/skills/iterate/SKILL.md": {
+   "shipwright_events.jsonl": 4,
+   "shipwright_run_config.json": 2,
+   "shipwright_sync_config.json": 1,
+   "shipwright_test_results.json": 4
+  },
+  "plugins/shipwright-iterate/skills/iterate/references/F-finalize-bundle.md": {
+   "shipwright_test_results.json": 2
+  },
+  "plugins/shipwright-iterate/skills/iterate/references/F0.5.md": {
+   "shipwright_test_results.json": 1
+  },
+  "plugins/shipwright-iterate/skills/iterate/references/F0.md": {
+   "shipwright_ac_coverage_baseline.json": 1,
+   "shipwright_build_config.json": 1,
+   "shipwright_test_config.json": 1
+  },
+  "plugins/shipwright-iterate/skills/iterate/references/F11.md": {
+   "shipwright_events.jsonl": 1,
+   "shipwright_sync_config.json": 1
+  },
+  "plugins/shipwright-iterate/skills/iterate/references/F5.md": {
+   "shipwright_test_results.json": 3
+  },
+  "plugins/shipwright-iterate/skills/iterate/references/F5b.md": {
+   "shipwright_events.jsonl": 3,
+   "shipwright_test_results.json": 1
+  },
+  "plugins/shipwright-iterate/skills/iterate/references/F5c.md": {
+   "shipwright_events.jsonl": 3,
+   "shipwright_run_config.json": 2,
+   "shipwright_test_results.json": 3
+  },
+  "plugins/shipwright-iterate/skills/iterate/references/F6.5.md": {
+   "shipwright_events.jsonl": 1
+  },
+  "plugins/shipwright-iterate/skills/iterate/references/F6.md": {
+   "shipwright_events.jsonl": 4,
+   "shipwright_run_config.json": 1,
+   "shipwright_sync_config.json": 1,
+   "shipwright_test_results.json": 5
+  },
+  "plugins/shipwright-iterate/skills/iterate/references/F7b.md": {
+   "shipwright_events.jsonl": 2
+  },
+  "plugins/shipwright-iterate/skills/iterate/references/artifact-ownership.md": {
+   "shipwright_events.jsonl": 1
+  },
+  "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md": {
+   "shipwright_events.jsonl": 1,
+   "shipwright_model_config.json": 1
+  },
+  "plugins/shipwright-iterate/skills/iterate/references/context-loading.md": {
+   "shipwright_events.jsonl": 1,
+   "shipwright_iterate_config.json": 1,
+   "shipwright_run_config.json": 2,
+   "shipwright_sync_config.json": 1,
+   "shipwright_test_results.json": 1
+  },
+  "plugins/shipwright-iterate/skills/iterate/references/degraded-mode.md": {
+   "shipwright_test_results.json": 1
+  },
+  "plugins/shipwright-iterate/skills/iterate/references/design-and-testing.md": {
+   "shipwright_test_results.json": 2
+  },
+  "plugins/shipwright-iterate/skills/iterate/references/iterate-timings.md": {
+   "shipwright_events.jsonl": 1
+  },
+  "plugins/shipwright-iterate/skills/iterate/references/iteration-planning.md": {
+   "shipwright_model_config.json": 2,
+   "shipwright_sync_config.json": 1,
+   "shipwright_test_results.json": 1
+  },
+  "plugins/shipwright-iterate/skills/iterate/references/iteration-reviews.md": {
+   "shipwright_events.jsonl": 1,
+   "shipwright_iterate_config.json": 2,
+   "shipwright_test_results.json": 1
+  },
+  "plugins/shipwright-iterate/skills/iterate/references/mid-flight-escalation.md": {
+   "shipwright_events.jsonl": 1,
+   "shipwright_test_results.json": 1
+  },
+  "plugins/shipwright-iterate/skills/iterate/references/path-a-feature.md": {
+   "shipwright_iterate_config.json": 1,
+   "shipwright_sync_config.json": 1
+  },
+  "plugins/shipwright-iterate/skills/iterate/references/path-b-change.md": {
+   "shipwright_sync_config.json": 1
+  },
+  "plugins/shipwright-iterate/skills/iterate/references/round-trip-tests.md": {
+   "shipwright_run_config.json": 1
+  },
+  "plugins/shipwright-plan/agents/section-writer.md": {
+   "shipwright_run_config.json": 2
+  },
+  "plugins/shipwright-plan/skills/plan/SKILL.md": {
+   "shipwright_plan_config.json": 1
+  },
+  "plugins/shipwright-plan/skills/plan/references/e2e-test-plan.md": {
+   "shipwright_test_results.json": 1
+  },
+  "plugins/shipwright-plan/skills/plan/references/first-actions.md": {
+   "shipwright_plan_config.json": 3,
+   "shipwright_run_config.json": 2
+  },
+  "plugins/shipwright-plan/skills/plan/references/step-5-external-review.md": {
+   "shipwright_model_config.json": 1
+  },
+  "plugins/shipwright-plan/skills/plan/references/step-9-completion.md": {
+   "shipwright_plan_config.json": 1,
+   "shipwright_project_config.json": 1,
+   "shipwright_run_config.json": 1
+  },
+  "plugins/shipwright-preview/skills/preview/SKILL.md": {
+   "shipwright_build_config.json": 1,
+   "shipwright_run_config.json": 1
+  },
+  "plugins/shipwright-project/skills/project/SKILL.md": {
+   "shipwright_run_config.json": 3
+  },
+  "plugins/shipwright-project/skills/project/references/brief-mode.md": {
+   "shipwright_run_config.json": 1
+  },
+  "plugins/shipwright-project/skills/project/references/first-actions.md": {
+   "shipwright_run_config.json": 3
+  },
+  "plugins/shipwright-project/skills/project/references/project-scaffolding.md": {
+   "shipwright_project_config.json": 1
+  },
+  "plugins/shipwright-project/skills/project/references/step-1-interview.md": {
+   "shipwright_run_config.json": 1,
+   "shipwright_sync_config.json": 1
+  },
+  "plugins/shipwright-project/skills/project/references/step-7-scaffolding.md": {
+   "shipwright_build_config.json": 2
+  },
+  "plugins/shipwright-project/skills/project/references/step-8-completion.md": {
+   "shipwright_run_config.json": 1
+  },
+  "plugins/shipwright-run/agents/phase-runner.md": {
+   "shipwright_run_config.json": 1
+  },
+  "plugins/shipwright-run/skills/run/SKILL.md": {
+   "shipwright_run_config.json": 7
+  },
+  "plugins/shipwright-run/skills/run/references/autonomy-levels.md": {
+   "shipwright_run_config.json": 1
+  },
+  "plugins/shipwright-run/skills/run/references/single-session-loop.md": {
+   "shipwright_events.jsonl": 2,
+   "shipwright_run_config.json": 3
+  },
+  "plugins/shipwright-security/skills/security/SKILL.md": {
+   "shipwright_inline_suppressions.json": 1,
+   "shipwright_project_config.json": 3,
+   "shipwright_run_config.json": 1,
+   "shipwright_security_config.json": 2
+  },
+  "plugins/shipwright-security/skills/security/references/remediation-loop.md": {
+   "shipwright_security_config.json": 3
+  },
+  "plugins/shipwright-security/skills/security/references/suppression-syntax.md": {
+   "shipwright_inline_suppressions.json": 1
+  },
+  "plugins/shipwright-test/agents/test-runner.md": {
+   "shipwright_build_config.json": 1,
+   "shipwright_test_results.json": 1
+  },
+  "plugins/shipwright-test/skills/test/SKILL.md": {
+   "shipwright_build_config.json": 1,
+   "shipwright_events.jsonl": 1,
+   "shipwright_known_failures.json": 1,
+   "shipwright_project_config.json": 1,
+   "shipwright_test_config.json": 3,
+   "shipwright_test_results.json": 3
+  },
+  "plugins/shipwright-test/skills/test/references/completion-gate.md": {
+   "shipwright_known_failures.json": 1
+  },
+  "plugins/shipwright-test/skills/test/references/first-actions.md": {
+   "shipwright_project_config.json": 1,
+   "shipwright_run_config.json": 1,
+   "shipwright_test_results.json": 4
+  },
+  "plugins/shipwright-test/skills/test/references/prerequisite-self-healing.md": {
+   "shipwright_build_config.json": 2
+  },
+  "plugins/shipwright-test/skills/test/references/results-enforcement.md": {
+   "shipwright_known_failures.json": 1
+  },
+  "plugins/shipwright-test/skills/test/references/step-1-unit-tests.md": {
+   "shipwright_run_config.json": 1
+  },
+  "plugins/shipwright-test/skills/test/references/step-2-smoke-test.md": {
+   "shipwright_build_config.json": 1
+  },
+  "plugins/shipwright-test/skills/test/references/step-3.5-e2e-verification.md": {
+   "shipwright_test_results.json": 3
+  },
+  "plugins/shipwright-test/skills/test/references/step-3.6-ui-consistency.md": {
+   "shipwright_test_results.json": 1
+  },
+  "plugins/shipwright-test/skills/test/references/step-3.7-design-fidelity.md": {
+   "shipwright_test_results.json": 1
+  },
+  "plugins/shipwright-test/skills/test/references/step-3.7b-screenshot-check.md": {
+   "shipwright_test_results.json": 1
+  },
+  "plugins/shipwright-test/skills/test/references/step-3.8-performance-budget.md": {
+   "shipwright_test_config.json": 4,
+   "shipwright_test_results.json": 2
+  },
+  "plugins/shipwright-test/skills/test/references/step-3.95-boundary-coverage.md": {
+   "shipwright_events.jsonl": 1,
+   "shipwright_test_config.json": 1,
+   "shipwright_test_results.json": 4
+  },
+  "plugins/shipwright-test/skills/test/references/step-5-report-results.md": {
+   "shipwright_build_config.json": 1,
+   "shipwright_known_failures.json": 3,
+   "shipwright_test_results.json": 3
+  },
+  "scripts/hooks/pre-commit": {
+   "shipwright_bloat_baseline.json": 1
+  },
+  "shared/config/external_review.json": {
+   "shipwright_iterate_config.json": 1
+  },
+  "shared/config/gate_catalog.json": {
+   "shipwright_run_config.json": 1
+  },
+  "shared/config/gate_catalog.md": {
+   "shipwright_run_config.json": 1
+  },
+  "shared/fr-authoring.md": {
+   "shipwright_events.jsonl": 3
+  },
+  "shared/glossary.md": {
+   "shipwright_bloat_baseline.json": 1,
+   "shipwright_dev_server.json": 1,
+   "shipwright_events.jsonl": 2,
+   "shipwright_inline_suppressions.json": 1,
+   "shipwright_run_config.json": 1
+  },
+  "shared/profiles/deploy-profile-schema.md": {
+   "shipwright_test_results.json": 1
+  },
+  "shared/profiles/deploy/compose-vps.json": {
+   "shipwright_test_results.json": 1
+  },
+  "shared/profiles/deploy/jelastic.json": {
+   "shipwright_test_results.json": 1
+  },
+  "shared/profiles/deploy/vercel.json": {
+   "shipwright_test_results.json": 1
+  },
+  "shared/profiles/supabase-nextjs.json": {
+   "shipwright_test_config.json": 1
+  },
+  "shared/profiles/vite-hono.json": {
+   "shipwright_compliance_config.json": 1,
+   "shipwright_test_config.json": 1
+  },
+  "shared/prompts/codex_review_dispatch.md": {
+   "shipwright_model_config.json": 1
+  },
+  "shared/prompts/single-session-gate-discipline.md": {
+   "shipwright_run_config.json": 1
+  },
+  "shared/prompts/using-shipwright.md": {
+   "shipwright_run_config.json": 1
+  },
+  "shared/schemas/model_config.schema.json": {
+   "shipwright_model_config.json": 1
+  },
+  "shared/schemas/run_config.v2.schema.json": {
+   "shipwright_run_config.json": 1
+  },
+  "shared/schemas/stack_profile.schema.json": {
+   "shipwright_compliance_config.json": 1
+  },
+  "shared/schemas/triage_item.schema.json": {
+   "shipwright_events.jsonl": 1
+  },
+  "shared/templates/agent-docs/session-handoff.md.template": {
+   "shipwright_build_config.json": 1,
+   "shipwright_plan_config.json": 1,
+   "shipwright_project_config.json": 1,
+   "shipwright_run_config.json": 1
+  },
+  "shared/templates/claude-md-template.md": {
+   "shipwright_build_config.json": 1,
+   "shipwright_compliance_config.json": 1,
+   "shipwright_plan_config.json": 1,
+   "shipwright_project_config.json": 1,
+   "shipwright_run_config.json": 1,
+   "shipwright_security_config.json": 1
+  },
+  "shared/templates/codex-agents-md-appendix.md": {
+   "shipwright_test_results.json": 1
+  },
+  "shared/templates/gitattributes-union.template": {
+   "shipwright_events.jsonl": 2
+  },
+  "shared/templates/shipwright-gitignore.template": {
+   "shipwright_events.jsonl": 2
+  },
+  "shipwright_accepted_risks.yaml": {
+   "shipwright_inline_suppressions.json": 1
+  },
+  "shipwright_inline_suppressions.json": {
+   "shipwright_accepted_risks.yaml": 1
+  },
+  "shipwright_test_config.json": {
+   "shipwright_test_results.json": 1
+  }
+ }
+}

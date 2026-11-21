@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[5] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 # --- Path bootstrap --------------------------------------------------------
 # orchestrator_pkg lives at:
@@ -26,7 +27,7 @@ if _LOCAL_LIB not in sys.path:
     sys.path.insert(0, _LOCAL_LIB)
 
 # --- Schema constants ------------------------------------------------------
-CONFIG_NAME = "shipwright_run_config.json"
+CONFIG_NAME = _sp.rel("run_config")
 
 # Pipeline schema version. F2+ phase-lifecycle subcommands (claim-phase-task,
 # complete-phase-task, etc.) hard-fail on anything else.

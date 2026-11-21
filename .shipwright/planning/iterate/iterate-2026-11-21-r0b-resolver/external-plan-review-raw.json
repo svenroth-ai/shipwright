@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "## Review Findings\n\n- **Category: risk \u2014 Severity: high**\n  **Finding:** The AST codemod rewrites 262 sites across 150 files to `_sp.rel(\"<key>\")` in one step, while claiming \"byte-identical behaviour\" and \"all 18 pytest roots green.\" That's a large blast radius for a single sub-iterate; a codemod bug (e.g., matching a same-named literal that is *not* a path reference \u2014 comments-adjacent strings, test data, log messages) silently changes behaviour or breaks imports.\n  **Suggestion:** Make the codemod emit a reviewable diff report (file, old literal \u2192 new call) and run it as a separate, reviewable commit before the guard test lands. Verify counts against the R0a survey explicitly (262/262 accounted for: migrated, allowlisted, or hand-migrated).\n\n- **Category: edge-case \u2014 Severity: medium**\n  **Finding:** \"Byte-identical\" is asserted but only tested via pytest. Paths that differ subtly (e.g., `Path(\"./shipwright_config.yaml\")` vs `\"shipwright_config.yaml\"`, Windows separators, absolute vs relative resolution depending on CWD) may pass tests that don't cover the affected call sites.\n  **Suggestion:** Add a test that snapshots the resolver's outputs for every registry key and asserts they equal the pre-change literals verbatim (the plan's `test_shipwright_paths.py` \"frozen pre-resolver names\" seems to cover this \u2014 make sure it also covers `rel_at`, `lock_for`, `lock_beside`, and the family globs, not just basenames).\n\n- **Category: risk \u2014 Severity: medium**\n  **Finding:** The `sys.path` append/restore import contract for 14 plugins is fragile: if plugin code already has a `lib` module, or if imports happen at module top-level rather than inside a function, restore-after-import ordering can break or leak. Also, plugins importing at *startup* (hooks) create the acknowledged \"skew window\" where a hook runs against a stale shared cache \u2014 i.e., a hook could resolve paths from the old registry version mid-update.\n  **Suggestion:** Prefer a single unambiguous import shim (e.g., a tiny `import_shipwright_paths()` helper in one place, or ensure the module name is unique enough that plain `sys.path` insertion is safe without restore). Document the skew-window as accepted or serialize the shared-cache update before hooks fire.\n\n- **Category: edge-case \u2014 Severity: medium**\n  **Finding:** The guard test's per-file count ratchet for bash/YAML/JSON/markdown \"carriers\" is a ratchet against the *current* count, but carriers can't call the resolver \u2014 so the ratchet must never decrease and new carrier files with legitimate references need allowlist entries. The plan doesn't say who/how those get added, or what happens for generated files (templates referencing `{{shipwright_config}}` style names).\n  **Suggestion:** Specify the ratchet-update procedure (allowlist entry + comment in the PR) and confirm generated/template files are either skipped or counted against a stable manifest.\n\n- **Category: edge-case \u2014 Severity: low**\n  **Finding:** Regex and glob references (`review_record_tier`, `events_references`, `change_type_paths`) are hand-migrated, but the guard only scans production Python ASTs. Regexes embedded in bash or markdown (if any exist per the R0a survey) would escape the guard's f-string/`.lock` checks.\n  **Suggestion:** Add a cheap literal-substring grep for `shipwright_` in carriers as a backstop for regex/glob patterns the AST scan can't see.\n\n- **Category: edge-case \u2014 Severity: low**\n  **Finding:** `lock_for` maps `sync_config -> events lock` (11.9 item 4), a non-obvious alias. If the mapping table has a typo here, behaviour changes silently while tests stay green unless a test pins this specific mapping.\n  **Suggestion:** Pin `lock_for` for every kind in `test_shipwright_paths.py`, with an explicit assertion for the `sync_config` \u2192 events-lock case.\n\n- **Category: dependency \u2014 Severity: low**\n  **Finding:** The plan lists generated lists (`CONFIG_MARKERS`, `CONFIG_FILES`, `DERIVED_SNAPSHOTS`, `RESTORABLE_SNAPSHOTS`) as derived from the resolver KIND list, but doesn't state the ordering guarantee. If any consumer depends on list order (e.g., snapshot restore ordering), generating from a dict-style registry could reorder.\n  **Suggestion:** Assert ordering equivalence in the frozen-names test, or generate lists in the same explicit order as the old literals.\n\n## Overall Assessment\n\nThe approach is sound and appropriately scoped for a no-behaviour-change enabler: one resolver module, mechanical migration with a guard ratchet is the right shape, and the out-of-scope boundaries (R1-R3) are clear. The main risk is operational, not architectural \u2014 a 262-site codemod needs a verifiable migration report and frozen-output tests to make the \"byte-identical\" claim checkable rather than aspirational.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Category: approach | Severity: high**  \n   **Finding:** A per-file count ratchet does not satisfy the guard requirement to forbid new references. Replacing an existing reference with a different one can preserve the count and pass. It also leaves bash, YAML, JSON, and Markdown references outside the resolver, despite the stated migration scope.  \n   **Suggestion:** Define how each carrier consumes resolver-owned paths\u2014for example, shell invocations or generated template values. For unavoidable literal references, allowlist the specific reference with a reason, and reject unrecognized references regardless of count.\n\n2. **Category: dependency | Severity: high**  \n   **Finding:** The plan identifies stale shared caches as a risk but provides no mitigation. Adding resolver imports across 14 plugins creates a deployment dependency: updated hooks paired with an older shared cache can fail at startup. Passing repository tests does not verify that installed combinations work.  \n   **Suggestion:** Include the resolver in every relevant packaging/cache deployment path and establish update ordering or cache invalidation before switching callers. Add an installed-layout smoke test covering plugin imports and the supported cache upgrade sequence.\n\n3. **Category: risk | Severity: medium**  \n   **Finding:** Replacing every matching string literal with `_sp.rel(...)` assumes all occurrences represent the same thing. A basename, repository-relative path, regex fragment, and externally emitted identifier can share identical text today but require different semantics later. The proposed hand migrations address some cases, but the codemod rule itself does not enforce those distinctions.  \n   **Suggestion:** Use the R0a reference classifications to select the appropriate API at each site. Review the codemod output by classification and verify exact serialized output, lock locations, and working-directory-sensitive behavior alongside the existing tests.\n\n4. **Category: edge-case | Severity: medium**  \n   **Finding:** The registry adds `marker` and `state` kinds beyond the specification\u2019s five kinds, without explaining their snapshot membership. Since snapshot lists will now be generated from kinds, this can silently change restoration coverage or list ordering.  \n   **Suggestion:** Specify the kind-to-snapshot inclusion rules and preserve existing ordering. Either retain the specified kinds with separate metadata or document the additional kinds explicitly; assert exact equality with both existing snapshot lists.\n\nThe central resolver is a sound direction, but the carrier guard and deployment compatibility need concrete treatment before this qualifies as a behavior-preserving change. The migration also needs explicit semantic and snapshot classification checks.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-11-21-r0b-resolver",
+    "at": "2026-11-20T23:25:13.530195+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

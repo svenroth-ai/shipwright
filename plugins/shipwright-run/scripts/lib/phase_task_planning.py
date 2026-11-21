@@ -23,6 +23,7 @@ from phase_task_core import (
     _read_config,
     _write_config,
 )
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -68,8 +69,8 @@ def freeze_splits(project_root: Path) -> dict[str, Any]:
 def _resolve_splits_with_fallback(project_root: Path) -> tuple[list[str], str, Optional[str]]:
     """Returns (splits, source, warning). Never raises."""
     for candidate, source in (
-        (project_root / "shipwright_design_config.json", "design"),
-        (project_root / "shipwright_project_config.json", "project"),
+        (project_root / _sp.rel("design_config"), "design"),
+        (project_root / _sp.rel("project_config"), "project"),
     ):
         if not candidate.exists():
             continue

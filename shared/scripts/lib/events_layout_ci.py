@@ -23,12 +23,13 @@ from pathlib import Path
 from .events_fold_io import GitError, blob, git, parse_bytes, same_bytes, tree_names  # noqa: F401 -- GitError re-exported for the CLI
 from .events_integrity import Violation
 from .events_log import DROPS_DIR, EVENT_FILE
+from . import shipwright_paths as _sp
 from .events_sentinel import SUPPORTED_LAYOUTS, SYNC_CONFIG
 
 
 def _layout_at(root: Path, rev: str) -> object:
     """The raw ``events_layout`` at ``rev`` (``None`` = absent / unreadable file)."""
-    data = blob(root, rev, SYNC_CONFIG)
+    data = blob(root, rev, _sp.rel_at("sync_config", rev))
     if data is None:
         return None
     try:

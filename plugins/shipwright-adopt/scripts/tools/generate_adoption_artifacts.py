@@ -24,6 +24,7 @@ import subprocess
 import sys
 from pathlib import Path
 from typing import Any
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 
 def _load_lib() -> None:
@@ -500,7 +501,7 @@ def generate(
         results["written"].append(results["env_local"]["path"])
 
     # Events
-    events_path = project_root / "shipwright_events.jsonl"
+    events_path = project_root / _sp.rel("events")
     seed_adopted_event(
         events_path,
         profile=profile, scope=scope,

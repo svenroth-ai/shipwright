@@ -43,6 +43,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 
 # Compliance dir lives at this path inside the project. Kept as a
@@ -53,7 +54,7 @@ COMPLIANCE_DIR = ".shipwright/compliance"
 # Files that signal "this project went through the orchestrator pipeline".
 # Their presence is what distinguishes pipeline-mode security from
 # standalone-mode security.
-PIPELINE_MARKER = "shipwright_project_config.json"
+PIPELINE_MARKER = _sp.rel("project_config")
 
 
 def _is_pipeline_mode(project_root: Path) -> bool:

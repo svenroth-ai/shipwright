@@ -456,7 +456,7 @@ def generate_pr_report(
 # the historical import site.
 # ---------------------------------------------------------------------------
 
-from security_triage_emit import (  # noqa: E402
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p); from security_triage_emit import (  # noqa: E402
     emit_findings_to_triage as _emit_findings_to_triage,
 )
 
@@ -543,7 +543,7 @@ def main() -> int:
         findings = load_findings_from_stdin()
 
     # Priority 3: shipwright_security_config.json
-    config_path = Path(args.project_root) / "shipwright_security_config.json"
+    config_path = Path(args.project_root) / _sp.rel("security_config")
     if not findings:
         findings = load_findings_from_file(config_path)
 

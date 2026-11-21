@@ -23,7 +23,7 @@ from typing import Callable
 # Add shared lib to path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from lib.config import read_all_configs, read_events
+from lib import shipwright_paths as _sp; from lib.config import read_all_configs, read_events
 from lib.events_log import latest_event_dt
 from lib.events_read import sorted_by_ts
 from lib.handoff_iterate import render_iterate_progress
@@ -427,7 +427,7 @@ def generate_handoff(
         if skill == "events":
             continue  # Listed separately below
         status = "exists" if config else "missing"
-        lines.append(f"- `shipwright_{skill}_config.json` — {status}")
+        lines.append(f"- `{(_sp.json_path_or_none(skill + '_config', '') or Path(skill)).name}` — {status}")
 
     # Event log section (if exists)
     events = read_events(project_root)

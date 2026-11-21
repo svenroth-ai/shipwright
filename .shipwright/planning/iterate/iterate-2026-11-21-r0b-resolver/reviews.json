@@ -1,0 +1,377 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-21-r0b-resolver",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-20T23:41:04.226703+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The AST codemod rewrites 262 sites across 150 files to `_sp.rel(\"<key>\")` in one step, while claiming \"byte-identical behaviour\" and \"all 18 pytest roots green.\" That's a large blast radius for a single sub-iterate; a codemod bug (e.g., matching a same-named literal that is not a path reference — comments-adjacent strings, test data, log messages) silently changes behaviour or breaks imports.",
+          "suggestion": "Make the codemod emit a reviewable diff report (file, old literal → new call) and run it as a separate, reviewable commit before the guard test lands. Verify counts against the R0a survey explicitly (262/262 accounted for: migrated, allowlisted, or hand-migrated).",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "\"Byte-identical\" is asserted but only tested via pytest. Paths that differ subtly (e.g., `Path(\"./shipwright_config.yaml\")` vs `\"shipwright_config.yaml\"`, Windows separators, absolute vs relative resolution depending on CWD) may pass tests that don't cover the affected call sites.",
+          "suggestion": "Add a test that snapshots the resolver's outputs for every registry key and asserts they equal the pre-change literals verbatim (the plan's `test_shipwright_paths.py` \"frozen pre-resolver names\" seems to cover this — make sure it also covers `rel_at`, `lock_for`, `lock_beside`, and the family globs, not just basenames).",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The `sys.path` append/restore import contract for 14 plugins is fragile: if plugin code already has a `lib` module, or if imports happen at module top-level rather than inside a function, restore-after-import ordering can break or leak. Also, plugins importing at startup (hooks) create the acknowledged \"skew window\" where a hook runs against a stale shared cache — i.e., a hook could resolve paths from the old registry version mid-update.",
+          "suggestion": "Prefer a single unambiguous import shim (e.g., a tiny `import_shipwright_paths()` helper in one place, or ensure the module name is unique enough that plain `sys.path` insertion is safe without restore). Document the skew-window as accepted or serialize the shared-cache update before hooks fire.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The guard test's per-file count ratchet for bash/YAML/JSON/markdown \"carriers\" is a ratchet against the current count, but carriers can't call the resolver — so the ratchet must never decrease and new carrier files with legitimate references need allowlist entries. The plan doesn't say who/how those get added, or what happens for generated files (templates referencing `{{shipwright_config}}` style names).",
+          "suggestion": "Specify the ratchet-update procedure (allowlist entry + comment in the PR) and confirm generated/template files are either skipped or counted against a stable manifest.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Regex and glob references (`review_record_tier`, `events_references`, `change_type_paths`) are hand-migrated, but the guard only scans production Python ASTs. Regexes embedded in bash or markdown (if any exist per the R0a survey) would escape the guard's f-string/`.lock` checks.",
+          "suggestion": "Add a cheap literal-substring grep for `shipwright_` in carriers as a backstop for regex/glob patterns the AST scan can't see.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "lock_for` maps `sync_config -> events lock` (11.9 item 4), a non-obvious alias. If the mapping table has a typo here, behaviour changes silently while tests stay green unless a test pins this specific mapping.",
+          "suggestion": "Pin `lock_for` for every kind in `test_shipwright_paths.py`, with an explicit assertion for the `sync_config` → events-lock case.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan lists generated lists (`CONFIG_MARKERS`, `CONFIG_FILES`, `DERIVED_SNAPSHOTS`, `RESTORABLE_SNAPSHOTS`) as derived from the resolver KIND list, but doesn't state the ordering guarantee. If any consumer depends on list order (e.g., snapshot restore ordering), generating from a dict-style registry could reorder.",
+          "suggestion": "Assert ordering equivalence in the frozen-names test, or generate lists in the same explicit order as the old literals.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach |",
+          "file": null,
+          "line": null,
+          "finding": "A per-file count ratchet does not satisfy the guard requirement to forbid new references. Replacing an existing reference with a different one can preserve the count and pass. It also leaves bash, YAML, JSON, and Markdown references outside the resolver, despite the stated migration scope.",
+          "suggestion": "Define how each carrier consumes resolver-owned paths—for example, shell invocations or generated template values. For unavoidable literal references, allowlist the specific reference with a reason, and reject unrecognized references regardless of count.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "dependency |",
+          "file": null,
+          "line": null,
+          "finding": "The plan identifies stale shared caches as a risk but provides no mitigation. Adding resolver imports across 14 plugins creates a deployment dependency: updated hooks paired with an older shared cache can fail at startup. Passing repository tests does not verify that installed combinations work.",
+          "suggestion": "Include the resolver in every relevant packaging/cache deployment path and establish update ordering or cache invalidation before switching callers. Add an installed-layout smoke test covering plugin imports and the supported cache upgrade sequence.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk |",
+          "file": null,
+          "line": null,
+          "finding": "Replacing every matching string literal with `_sp.rel(...)` assumes all occurrences represent the same thing. A basename, repository-relative path, regex fragment, and externally emitted identifier can share identical text today but require different semantics later. The proposed hand migrations address some cases, but the codemod rule itself does not enforce those distinctions.",
+          "suggestion": "Use the R0a reference classifications to select the appropriate API at each site. Review the codemod output by classification and verify exact serialized output, lock locations, and working-directory-sensitive behavior alongside the existing tests.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "The registry adds `marker` and `state` kinds beyond the specification’s five kinds, without explaining their snapshot membership. Since snapshot lists will now be generated from kinds, this can silently change restoration coverage or list ordering.",
+          "suggestion": "Specify the kind-to-snapshot inclusion rules and preserve existing ordering. Either retain the specified kinds with separate metadata or document the additional kinds explicitly; assert exact equality with both existing snapshot lists.  The central resolver is a sound direction, but the carrier guard and deployment compatibility need concrete treatment before this qualifies as a behavior-preserving change. The migration also needs explicit semantic and snapshot classification checks.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-20T23:41:00.425095+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Review Findings\n\n- **Category: risk — Severity: high**\n  **Finding:** The AST codemod rewrites 262 sites across 150 files to `_sp.rel(\"<key>\")` in one step, while claiming \"byte-identical behaviour\" and \"all 18 pytest roots green.\" That's a large blast radius for a single sub-iterate; a codemod bug (e.g., matching a same-named literal that is *not* a path reference — comments-adjacent strings, test data, log messages) silently changes behaviour or breaks imports.\n  **Suggestion:** Make the codemod emit a reviewable diff report (file, old literal → new call) and run it as a separate, reviewable commit before the guard test lands. Verify counts against the R0a survey explicitly (262/262 accounted for: migrated, allowlisted, or hand-migrated).\n\n- **Category: edge-case — Severity: medium**\n  **Finding:** \"Byte-identical\" is asserted but only tested via pytest. Paths that differ subtly (e.g., `Path(\"./shipwright_config.yaml\")` vs `\"shipwright_config.yaml\"`, Windows separators, absolute vs relative resolution depending on CWD) may pass tests that don't cover the affected call sites.\n  **Suggestion:** Add a test that snapshots the resolver's outputs for every registry key and asserts they equal the pre-change literals verbatim (the plan's `test_shipwright_paths.py` \"frozen pre-resolver names\" seems to cover this — make sure it also covers `rel_at`, `lock_for`, `lock_beside`, and the family globs, not just basenames).\n\n- **Category: risk — Severity: medium**\n  **Finding:** The `sys.path` append/restore import contract for 14 plugins is fragile: if plugin code already has a `lib` module, or if imports happen at module top-level rather than inside a function, restore-after-import ordering can break or leak. Also, plugins importing at *startup* (hooks) create the acknowledged \"skew window\" where a hook runs against a stale shared cache — i.e., a hook could resolve paths from the old registry version mid-update.\n  **Suggestion:** Prefer a single unambiguous impo […truncated]\n\n[openai] 1. **Category: approach | Severity: high**  \n   **Finding:** A per-file count ratchet does not satisfy the guard requirement to forbid new references. Replacing an existing reference with a different one can preserve the count and pass. It also leaves bash, YAML, JSON, and Markdown references outside the resolver, despite the stated migration scope.  \n   **Suggestion:** Define how each carrier consumes resolver-owned paths—for example, shell invocations or generated template values. For unavoidable literal references, allowlist the specific reference with a reason, and reject unrecognized references regardless of count.\n\n2. **Category: dependency | Severity: high**  \n   **Finding:** The plan identifies stale shared caches as a risk but provides no mitigation. Adding resolver imports across 14 plugins creates a deployment dependency: updated hooks paired with an older shared cache can fail at startup. Passing repository tests does not verify that installed combinations work.  \n   **Suggestion:** Include the resolver in every relevant packaging/cache deployment path and establish update ordering or cache invalidation before switching callers. Add an installed-layout smoke test covering plugin imports and the supported cache upgrade sequence.\n\n3. **Category: risk | Severity: medium**  \n   **Finding:** Replacing every matching string literal with `_sp.rel(...)` assumes all occurrences represent the same thing. A basename, repository-relative path, regex fragment, and externally emitted identifier can share identical text today but require different semantics later. The proposed hand migrations address some cases, but the codemod rule itself does not enforce those distinctions.  \n   **Suggestion:** Use the R0a reference classifications to select the appropriate API at each site. Review the codemod output by classification and verify exact serialized output, lock locations, and working-directory-sensitive behavior alongside the existing tests.\n\n4. **Category: […truncated]",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/hooks/suggest_iterate.py",
+          "line": 34,
+          "finding": "If the resolver import raises ImportError the sys.path.remove never runs, so shared/scripts/lib stays on sys.path (appended at the end; same as session_start_using_shipwright.py)",
+          "suggestion": "optional try/finally",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/tools/generate_session_handoff.py",
+          "line": 430,
+          "finding": "the 'or Path(skill)' fallback is unreachable for the six CONFIG_FILES keys",
+          "suggestion": "non-blocking",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/hooks/check_file_size.py",
+          "line": 40,
+          "finding": "noqa on a non-import assignment is a no-op",
+          "suggestion": "cosmetic",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/hooks/check_file_size.py",
+          "line": 79,
+          "finding": "no test runs the _sp is None fallback branch",
+          "suggestion": "optional test",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-21T00:38:44.692491+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "f8ee99c0daf552cc81b4255bcde977ebff53814e"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "hidden coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: guard still catches new literals in the three hooks — LITERAL_ALLOWED is whole-file",
+          "suggestion": "tag as R1 item / test fallback equals rel",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: fallback branch is tested — no test forces _sp=None",
+          "suggestion": "parametrized test",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: handoff listing follows the resolver — json_path_or_none never reads basename",
+          "suggestion": "use CONFIG_FILES name",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-21T00:38:44.846181+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "f8ee99c0daf552cc81b4255bcde977ebff53814e"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": "shared/scripts/tools/record_event.py:500 (`attach_commit_to_event`)",
+          "line": null,
+          "finding": "The lock path was changed from `path.with_name(path.name + \".lock\")` to `events_lock_path(project_root)`, but no import of `events_lock_path` is added anywhere in the visible diff for this file. If it isn't already imported at the top (the original file built locks by hand, so it almost certainly isn't), this is a `NameError` at runtime on every commit-attach. Additionally, the lock target changed: previously the lock sat beside the specific event file being patched; now it is always the canonical events lock from `events_layout`. If `path` can ever be a drops-layout drop file (drops are per-file, and the old code locked `<that file>.lock`), two writers that previously coordinated on different locks now contend on one — or, worse, code that still locks beside the drop no longer shares the lock with this writer.",
+          "suggestion": "Add `from lib.events_layout import events_lock_path` (or route through `_sp.lock_for`) and confirm `path == resolve_events_path(project_root)` in every caller; if it can be a drop file, keep `lock_beside(path)` for that case.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "regression",
+          "file": "shared/scripts/tools/generate_session_handoff.py:430 — `lines.append(f\"- \\`{_sp.rel(skill + '_config')}\\` — {status}\")",
+          "line": null,
+          "finding": "The old code rendered `shipwright_{skill}_config.json` for any skill name from the loop; the new code calls `_sp.rel(skill + '_config')`, which raises `KeyError` for any skill without a `<skill>_config` registry entry (e.g. a skill named `intake`, `review`, or anything added later). R0b is specified as byte-identical behaviour; this is a crash path, not a rename.",
+          "suggestion": "Use `sp.SPECS.get(f\"{skill}_config\")` and fall back to the old f-string (or skip) for unregistered skills; or assert the loop's skill set against the registry in a test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/lib/events_references.py:61 — `TOKEN = re.compile(re.escape(EVENT_FILE) + ...)",
+          "line": null,
+          "finding": "EVENT_FILE` is now referenced but the diff shows no import of it into this module (the original used the literal `shipwright_events.jsonl` inline). If `EVENT_FILE` is not imported from `.events_log`, this is a module-load `NameError`. Also note the alternation is no longer sorted-longest-first (the escaped literal is now first and the `\\b(?:...)` group second), which is fine here only because the aliases can't be prefixes of `shipwright_events.jsonl` — worth a comment if intentional.",
+          "suggestion": "Verify/add `from .events_log import EVENT_FILE` (it is imported transitively at the top of the file in the committed version; if not, this fails on import).",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-security/scripts/tools/review_record_tier.py:25 — `from _shipwright_shared_review_lib import shipwright_paths as _sp",
+          "line": null,
+          "finding": "_shipwright_shared_review_lib` is an assembled private package (loaded via importlib from a directory of copied shared modules, per the surrounding lines). Unless the packaging step that builds it now also copies `shipwright_paths.py` into that directory, this import fails at tool start. Nothing in the diff updates that packaging/copy list.",
+          "suggestion": "Add `shipwright_paths.py` to whatever manifest populates `_shipwright_shared_review_lib` (and to any drift/sync test that pins its contents), or import it the same way sibling tools do.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_shipwright_paths.py:112 (`test_imports_under_a_unique_top_level_name...`)",
+          "line": null,
+          "finding": "Loading a second copy under `shipwright_paths_probe` triggers the module's `sys.modules.setdefault(\"shipwright_paths\", ...)` line, which replaces the canonical `shipwright_paths` entry in `sys.modules` with the probe module for the remainder of the test session. In R0b (immutable data) this is harmless, but the test silently normalizes exactly the \"two module objects\" hazard the docstring warns about, and from R1 (layout state) it becomes a real cross-contamination vector with no test catching it.",
+          "suggestion": "Have the test clean up (`sys.modules.pop(spec.name)` and restore the prior `shipwright_paths` entry), or assert that `sys.modules[\"shipwright_paths\"]` is unchanged after the probe load.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/shipwright_paths.py:~150 (`json_path_or_none`) + group_a.py",
+          "line": 340,
+          "finding": "json_path_or_none` returns `root / f\"shipwright_{name}.json\"` for unknown names — i.e. it deliberately preserves the pre-resolver f-string construction of a `shipwright_` name outside the registry. That is documented, but it means the guard's \"no constructed shipwright_ names\" rule has a sanctioned hole exactly at the A4 field-spec reader: a new audit field naming an unregistered file will silently keep building root paths by string surgery, defeating the campaign's whole point.",
+          "suggestion": "Either make unknown names return `None` (and let A4 skip, which matches today's `.exists()` outcome) or add a registry entry for every real field-spec target and assert in the guard that `json_path_or_none` is only called with registry keys.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_shipwright_paths_guard.py:66 (`test_allowlists_have_no_stale_entries`)",
+          "line": null,
+          "finding": "The rule lookup uses `id()` of the parametrized dict objects — correct today only because the `ids=` order happens to line up with the hardcoded `id(LOCK_ALLOWED)`/`id(PREFIX_ALLOWED)` mapping and the literal table falls through to the default. It's fragile (reorder the params and `LITERAL_ALLOWED` silently gets checked against the wrong rule, so a stale literal entry would pass). Also `\"constructed-name\"` and `\"class8-uses-rel\"` have no allowlist at all — fine — but nothing asserts that, so a future allowlist added for them won't get the staleness check.",
+          "suggestion": "Parametrize with `(table, rule_name)` pairs explicitly instead of the `id()` map.  Spec-compliance overall: the resolver, frozen-name test, generated `CONFIG_MARKERS`/`CONFIG_FILES`/`DERIVED_SNAPSHOTS`/`RESTORABLE_SNAPSHOTS`, `lock_for` semantics (run_config/ac_registry data locks, sync under the events lock), the guard (AST f-string/concat/`.lock` detection, class-8 `rel` vs `rel_at`, `.shipwright/` prefix rules, per-file carrier ratchet) are all present and the frozen-value tests would catch a real rename. The gaps are the four code-path issues above, not the design.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "regression",
+          "file": "shared/scripts/hooks/generate_handoff_on_stop.py",
+          "line": 20,
+          "finding": "The resolver import runs before `_import_lib_with_retry()`. During a cache update where shared dependencies are temporarily unavailable, the hook now exits immediately with `ImportError`, bypassing its existing retry mechanism and losing the handoff.",
+          "suggestion": "Import the resolver inside the retry-protected dependency loader so it receives the same recovery behaviour as the other shared dependencies.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/lib/shipwright_paths.py",
+          "line": 191,
+          "finding": "json_path_or_none()` changes existing behaviour for registry keys whose filenames differ from `shipwright_<name>.json`. For example, an audit field `events.some_field` previously inspected `shipwright_events.json`; it now returns `None`, causing `_resolve_a4_targets()` to silently skip it even when that file exists. The new test explicitly enshrines this change despite R0b requiring unchanged behaviour.",
+          "suggestion": "Preserve the previous constructed path for these inputs during R0b, and test equivalence with the original construction.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_shipwright_paths_guard.py",
+          "line": 73,
+          "finding": "Allowlist exemptions apply to an entire file and rule. Adding another hardcoded config path anywhere in `iterate_worktree_gate.py`, for example, passes because that file already has one permitted fallback literal. The stale-entry test only requires one matching occurrence, so it cannot detect this growth. This fails the requirement that the guard forbid new references.",
+          "suggestion": "Allowlist specific literal values and permitted occurrence counts, or specific fallback expressions. Add a test proving that an extra reference in an already allowlisted file fails.  Overall assessment: ship-with-fixes. The central resolver largely preserves current paths, but the retry regression, changed audit lookup behaviour, and guard loophole need correction first.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-20T23:57:22.188304+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- Category: bug\n  Severity: high\n  File: shared/scripts/tools/record_event.py:500 (`attach_commit_to_event`)\n  Finding: The lock path was changed from `path.with_name(path.name + \".lock\")` to `events_lock_path(project_root)`, but no import of `events_lock_path` is added anywhere in the visible diff for this file. If it isn't already imported at the top (the original file built locks by hand, so it almost certainly isn't), this is a `NameError` at runtime on every commit-attach. Additionally, the lock *target* changed: previously the lock sat beside the specific event file being patched; now it is always the canonical events lock from `events_layout`. If `path` can ever be a drops-layout drop file (drops are per-file, and the old code locked `<that file>.lock`), two writers that previously coordinated on different locks now contend on one — or, worse, code that still locks beside the drop no longer shares the lock with this writer.\n  Suggestion: Add `from lib.events_layout import events_lock_path` (or route through `_sp.lock_for`) and confirm `path == resolve_events_path(project_root)` in every caller; if it can be a drop file, keep `lock_beside(path)` for that case.\n\n- Category: regression\n  Severity: medium\n  File: shared/scripts/tools/generate_session_handoff.py:430 — `lines.append(f\"- \\`{_sp.rel(skill + '_config')}\\` — {status}\")`\n  Finding: The old code rendered `shipwright_{skill}_config.json` for *any* skill name from the loop; the new code calls `_sp.rel(skill + '_config')`, which raises `KeyError` for any skill without a `<skill>_config` registry entry (e.g. a skill named `intake`, `review`, or anything added later). R0b is specified as byte-identical behaviour; this is a crash path, not a rename.\n  Suggestion: Use `sp.SPECS.get(f\"{skill}_config\")` and fall back to the old f-string (or skip) for unregistered skills; or assert the loop's skill set against the registry in a test.\n\n- Category: bug\n  Severity: medium\n  File: shared/scri […truncated]\n\n[openai] - Category: regression\n- Severity: medium\n- File: shared/scripts/hooks/generate_handoff_on_stop.py:20\n- Finding: The resolver import runs before `_import_lib_with_retry()`. During a cache update where shared dependencies are temporarily unavailable, the hook now exits immediately with `ImportError`, bypassing its existing retry mechanism and losing the handoff.\n- Suggestion: Import the resolver inside the retry-protected dependency loader so it receives the same recovery behaviour as the other shared dependencies.\n\n- Category: spec\n- Severity: medium\n- File: shared/scripts/lib/shipwright_paths.py:191\n- Finding: `json_path_or_none()` changes existing behaviour for registry keys whose filenames differ from `shipwright_<name>.json`. For example, an audit field `events.some_field` previously inspected `shipwright_events.json`; it now returns `None`, causing `_resolve_a4_targets()` to silently skip it even when that file exists. The new test explicitly enshrines this change despite R0b requiring unchanged behaviour.\n- Suggestion: Preserve the previous constructed path for these inputs during R0b, and test equivalence with the original construction.\n\n- Category: test\n- Severity: medium\n- File: shared/tests/test_shipwright_paths_guard.py:73\n- Finding: Allowlist exemptions apply to an entire file and rule. Adding another hardcoded config path anywhere in `iterate_worktree_gate.py`, for example, passes because that file already has one permitted fallback literal. The stale-entry test only requires one matching occurrence, so it cannot detect this growth. This fails the requirement that the guard forbid new references.\n- Suggestion: Allowlist specific literal values and permitted occurrence counts, or specific fallback expressions. Add a test proving that an extra reference in an already allowlisted file fails.\n\nOverall assessment: ship-with-fixes. The central resolver largely preserves current paths, but the retry regression, changed audit lookup behaviour, and  […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-21T00:38:44.533352+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "f8ee99c0daf552cc81b4255bcde977ebff53814e"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-20T23:41:00.568062+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-20T23:41:00.703025+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

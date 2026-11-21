@@ -7,6 +7,7 @@ import json
 import re
 from pathlib import Path
 from typing import Any
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 
 SECTION_NAME_PATTERN = re.compile(r"^\d{2}-[a-z0-9]+(?:-[a-z0-9]+)*$")
@@ -39,7 +40,7 @@ def get_section_scope(section_name: str) -> str:
 
 def load_section_states(project_root: str | Path) -> dict[str, Any]:
     """Load section states from shipwright_build_config.json."""
-    config_path = Path(project_root) / "shipwright_build_config.json"
+    config_path = Path(project_root) / _sp.rel("build_config")
     if not config_path.exists():
         return {}
     try:

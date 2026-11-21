@@ -42,6 +42,7 @@ from lib.phase_quality import (  # noqa: E402
     make_finding,
 )
 from tools.verifiers.common import read_decision_log  # noqa: E402
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[2] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 
 Q1_NAME = "Q1 latest ADR has substantive Context/Decision/Consequences"
@@ -144,7 +145,7 @@ def _read_plan_section_names(project_root: Path) -> list[str] | None:
     of ``None`` means "no plan material found yet" and downstream logic
     should SKIP instead of FAILing.
     """
-    snapshot = project_root / "shipwright_plan_snapshot.json"
+    snapshot = project_root / _sp.rel("plan_snapshot")
     if snapshot.exists():
         try:
             data = json.loads(snapshot.read_text(encoding="utf-8"))
@@ -176,7 +177,7 @@ _ARCHIVED_SPLIT_KEY_RE = re.compile(r"^split_.+_sections$")
 
 
 def _read_build_section_status(project_root: Path) -> dict[str, str] | None:
-    cfg = project_root / "shipwright_build_config.json"
+    cfg = project_root / _sp.rel("build_config")
     if not cfg.exists():
         return None
     try:

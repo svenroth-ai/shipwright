@@ -29,6 +29,7 @@ from lib.events_fold_full import apply_full_fold  # noqa: E402
 from lib.events_fold_io import KEEP_NAME, GitError, git  # noqa: E402
 from lib.events_log import DROPS_DIR, QUARANTINE_DIR  # noqa: E402
 from tools.verifiers.stdio import ensure_utf8_stdout  # noqa: E402
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[1] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 DEFAULT_BASE = "origin/main"
 REFUSED = ("conflict", "changed_since_plan", "archive_incomplete", "copy_mismatch",
@@ -44,12 +45,12 @@ def _stage_paths(result: dict) -> list[str]:
         paths += [result["archive"]] if result.get("archive") else []
         paths += result.get("removed_files", [])
         if result.get("mode") == "emergency" or status == "folded_into_legacy":
-            paths.append("shipwright_sync_config.json")
+            paths.append(_sp.rel("sync_config"))
         paths += [result["legacy_log"]] if result.get("legacy_log") else []
     if status.startswith("quarantined"):
         paths += [f"{folder}/{n}" for folder in (QUARANTINE_DIR, DROPS_DIR) for n in result.get("files", [])]
     if status == "nothing_to_fold" and result.get("mode") == "emergency":
-        paths.append("shipwright_sync_config.json")   # an emergency fold with nothing left still resets the layout
+        paths.append(_sp.rel("sync_config"))   # an emergency fold with nothing left still resets the layout
     return paths
 
 

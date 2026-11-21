@@ -57,10 +57,11 @@ from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[0] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 #: Repo-root register filename. Follows the ``shipwright_`` config prefix
 #: convention; YAML (not JSON) because it is hand-written and needs comments.
-REGISTER_NAME = "shipwright_accepted_risks.yaml"
+REGISTER_NAME = _sp.rel("accepted_risks")
 SCHEMA_VERSION = 1
 
 TARGET_TRIVY_IGNORE = "trivy-ignore"

@@ -46,6 +46,7 @@ from typing import Any
 # `sys.path` before importing it, so the package context this relies on is
 # already established by the time this line runs.
 from .repo_root import resolve_main_repo_root
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 #: The spawn roles this feature distinguishes. Not every role has a
 #: live consuming spawn site in every skill (e.g. iterate has no
@@ -79,7 +80,7 @@ RANKED_TIERS: frozenset[str] = frozenset({"opus", "sonnet", "haiku"})
 #: Rank order low-to-high, for floor comparisons.
 RANK: dict[str, int] = {"haiku": 1, "sonnet": 2, "opus": 3}
 
-_CONFIG_FILENAME = "shipwright_model_config.json"
+_CONFIG_FILENAME = _sp.rel("model_config")
 
 
 class ModelTierConfigError(ValueError):
@@ -108,7 +109,7 @@ def _config_path(project_root: Path | str) -> Path:
     """
     project_root = Path(project_root)
     main_root = resolve_main_repo_root(project_root)
-    return (main_root or project_root) / _CONFIG_FILENAME
+    return _sp.main_path("model_config", project_root, main_root)
 
 
 def load_model_config(project_root: Path | str) -> dict[str, Any]:

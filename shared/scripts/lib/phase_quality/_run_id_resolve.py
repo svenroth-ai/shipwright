@@ -25,6 +25,7 @@ from lib.campaign_wave import (  # noqa: E402
     resolve_wave_safe_unit_value,
 )
 from ._run_id import pointer_run_id  # noqa: E402
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[2] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 
 def resolve_run_id(project_root: Path, session_id: str) -> str:
@@ -85,7 +86,7 @@ def resolve_run_id(project_root: Path, session_id: str) -> str:
     if from_pointer:
         return from_pointer
 
-    run_config = project_root / "shipwright_run_config.json"
+    run_config = project_root / _sp.rel("run_config")
     if run_config.exists():
         try:
             data = json.loads(run_config.read_text(encoding="utf-8"))

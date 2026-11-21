@@ -58,7 +58,7 @@ CLASSIFIER_MARKERS = ("EVENT_FOLDERS", "is_event_folder_path")
 WRITER_MARKERS = ("events_write", "events_stage", "events_target", "_DROPS_DIR")  # the writer module / helpers / adopt's duplicate
 
 TOKEN = re.compile(
-    r"shipwright_events\.jsonl|\b(?:" + "|".join(sorted(KNOWN_ALIASES | TRACKED_DERIVED | set(RESOLVERS))) + r")\b")
+    r"shipwright_events\.jsonl|\b(?:rel|rel_at|path|name|legacy_rel|main_path)\(\s*[\"']events[\"']|\b(?:" + "|".join(sorted(KNOWN_ALIASES | TRACKED_DERIVED | set(RESOLVERS))) + r")\b")
 SCAN_ROOTS = ("plugins", "shared", "docs", "scripts", ".github")
 SCAN_SUFFIXES = frozenset({".py", ".md", ".json", ".sh", ".yml", ".yaml", ".template", ".ts", ".js", ".mjs",
                            ".toml", ".txt", ".ps1", ".cmd"})
@@ -94,7 +94,6 @@ REGISTRY: dict[str, tuple[str, ...]] = {
         "shared/scripts/lib/churn_merge.py",
         "shared/scripts/lib/gitattributes_union.py",
         "shared/scripts/lib/gitignore_selfheal.py",
-        "shared/scripts/lib/project_root.py",
         "shared/scripts/lib/review_diff_threshold.py",
         "shared/scripts/lib/section_file_list.py",
         "shared/scripts/lib/worktree_isolation.py",
@@ -112,6 +111,7 @@ REGISTRY: dict[str, tuple[str, ...]] = {
         "shared/scripts/tools/record_event.py",
     ),
     "S": (
+        "shared/scripts/lib/shipwright_paths.py",
         "shared/scripts/lib/events_gitignore.py",
         "shared/scripts/lib/events_layout.py",
         "shared/scripts/lib/events_layout_ci.py",
@@ -217,7 +217,7 @@ def scan(repo: Path) -> dict[str, str]:
 
 def alias_problems(rel: str, text: str) -> list[str]:
     """Module-level aliases of the literal outside :data:`KNOWN_ALIASES`, and renaming imports."""
-    if not rel.endswith(".py"):
+    if not rel.endswith(".py") or rel == "shared/scripts/lib/shipwright_paths.py":  # the registry names it by design
         return []
     try:
         tree = ast.parse(text)

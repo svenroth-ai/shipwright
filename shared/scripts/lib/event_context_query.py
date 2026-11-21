@@ -10,6 +10,7 @@ from typing import Any, Iterable
 from .area_catalog import load_catalog, match_area, normalize_path
 from .event_context_index import build_index, event_log_stats, load_full_events, load_or_rebuild_index
 from .event_context_metrics import record_metric
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 DEFAULT_MAX_EVENTS = 15
 DEFAULT_MAX_TOKENS = 15_000
@@ -90,12 +91,12 @@ def resolve_mode(project_root: Path | str, requested: str | None = None) -> tupl
         if requested not in MODES:
             raise ValueError(f"unknown context mode: {requested}")
         return requested, "cli"
-    config_path = Path(project_root) / "shipwright_iterate_config.json"
+    config_path = Path(project_root) / _sp.rel("iterate_config")
     try:
         config = json.loads(config_path.read_text(encoding="utf-8"))
         value = config.get("events_context", {}).get("mode", "compact")
         if value in MODES:
-            return value, "shipwright_iterate_config.json"
+            return value, _sp.rel("iterate_config")
     except (OSError, UnicodeError, json.JSONDecodeError, AttributeError):
         pass
     return "compact", "default"
@@ -179,7 +180,7 @@ def query_events(project_root: Path | str, *, run_id: str, mode: str | None = No
                   "version": index.get("index_schema_version", 1)},
         "mode": selected_mode,
         "mode_source": mode_source,
-        "provenance": {"raw_source": "shipwright_events.jsonl", "raw_source_of_truth": True,
+        "provenance": {"raw_source": _sp.rel("events"), "raw_source_of_truth": True,
                        "selection": "derived-disposable-index"},
         "query_parameters": {"affected_frs": sorted(frs), "area_ids": sorted(mapped_areas),
                              "changed_files": sorted(paths), "event_types": sorted(types),

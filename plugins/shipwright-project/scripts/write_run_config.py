@@ -26,6 +26,7 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[3] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 
 def _build_v1_style_phase_task_seed(now: str) -> dict[str, Any]:
@@ -89,7 +90,7 @@ def detect_profile(project_root: Path) -> str | None:
 
 def write_run_config(project_root: Path, profile: str) -> Path:
     """Write shipwright_run_config.json with initial state."""
-    config_path = project_root / "shipwright_run_config.json"
+    config_path = project_root / _sp.rel("run_config")
     if config_path.exists():
         raise FileExistsError(f"shipwright_run_config.json already exists at {config_path}")
     now = datetime.now(timezone.utc).isoformat()

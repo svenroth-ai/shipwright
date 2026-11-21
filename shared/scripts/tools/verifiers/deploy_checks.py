@@ -52,7 +52,7 @@ from .common import (
     check_phase_history_has_run,
     read_run_config,
 )
-from .handoff_phase_canon import check_c3_session_handoff_fresh_after_phase
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[2] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p); from .handoff_phase_canon import check_c3_session_handoff_fresh_after_phase
 
 # Both relative paths are the deploy plugin's own contract
 # (``rollback_audit.py`` / ``smoke_test.py --output``), duplicated here as
@@ -142,7 +142,7 @@ def check_test_gate_passed(project_root: Path) -> CheckResult:
     alone without importing phase_validators.
     """
     name = "test gate: unit tests passed upstream"
-    path = project_root / "shipwright_test_results.json"
+    path = project_root / _sp.rel("test_results")
     if not path.exists():
         return CheckResult(
             name, False,

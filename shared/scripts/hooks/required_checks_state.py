@@ -22,6 +22,10 @@ import json
 import os
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+try:
+    import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[1] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)
+except ImportError:  # stale shared cache: this hook keeps its own fallback
+    _sp = None  # noqa: E402
 
 STATE_FILENAME = "required_checks_state.json"
 DEFAULT_THROTTLE_HOURS = 6.0
@@ -74,7 +78,7 @@ def throttle_hours(project_root: Path | None = None) -> float:
     """
     if project_root is not None:
         try:
-            raw = (Path(project_root) / "shipwright_run_config.json").read_text(
+            raw = (Path(project_root) / ("shipwright_run_config.json" if _sp is None else _sp.rel("run_config"))).read_text(
                 encoding="utf-8"
             )
             cfg = json.loads(raw).get("triage")

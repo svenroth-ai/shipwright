@@ -40,6 +40,7 @@ _ADDED = _SCRIPTS not in sys.path
 if _ADDED:
     sys.path.append(_SCRIPTS)
 import profile_consumer as pc  # noqa: E402
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[0] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 if _ADDED:  # shared/scripts holds a `tools` package that would shadow a plugin's own
     sys.path.remove(_SCRIPTS)
@@ -295,7 +296,7 @@ def init_env_file(
     ``detecting``) names no profile file and is skipped.
     """
     # Load profile
-    run_config_path = project_root / "shipwright_run_config.json"
+    run_config_path = project_root / _sp.rel("run_config")
     if not run_config_path.exists():
         return {"action": "skipped", "reason": "No shipwright_run_config.json found"}
 
@@ -471,7 +472,7 @@ def validate(
     Returns a result dict suitable for JSON output.
     """
     # Read run config to get profile name
-    if not (project_root / "shipwright_run_config.json").exists():
+    if not (project_root / _sp.rel("run_config")).exists():
         return _skipped(phase, None, "No shipwright_run_config.json found — skipping env validation")
     profile_name = None
     try:

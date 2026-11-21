@@ -51,8 +51,9 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterable, NamedTuple
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
-CONFIG_FILE = "shipwright_compliance_config.json"
+CONFIG_FILE = _sp.rel("compliance_config")
 LAST_AUDIT_KEY = "last_audit"
 LAST_FULL_AUDIT_KEY = "last_full_audit"
 SCOPE_FULL = "full"

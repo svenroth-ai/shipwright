@@ -40,7 +40,7 @@ from scripts.audit.audit_adapters import (
     import_iterate12_checks,
 )
 from scripts.audit import git_log_scan
-from scripts.audit._events_read import load_events
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p); from scripts.audit._events_read import load_events
 
 
 # ---------------------------------------------------------------------------
@@ -83,10 +83,10 @@ _load_events = load_events
 
 
 def _check_b1(project_root: Path) -> tuple[str, str, list[str]]:
-    project_cfg = _load_json(project_root / "shipwright_project_config.json")
+    project_cfg = _load_json(project_root / _sp.rel("project_config"))
     if project_cfg is None:
         return "skip", "no shipwright_project_config.json", []
-    plan_cfg = _load_json(project_root / "shipwright_plan_config.json") or {}
+    plan_cfg = _load_json(project_root / _sp.rel("plan_config")) or {}
 
     splits = project_cfg.get("splits", []) or []
     complete_splits = [
@@ -142,7 +142,7 @@ def _section_count(sections: Any) -> int:
 
 
 def _check_b2(project_root: Path) -> tuple[str, str, list[str]]:
-    plan_cfg = _load_json(project_root / "shipwright_plan_config.json")
+    plan_cfg = _load_json(project_root / _sp.rel("plan_config"))
     if plan_cfg is None:
         return "skip", "no shipwright_plan_config.json", []
 
@@ -256,7 +256,7 @@ def _preventive_fail(check_id: str, label: str, exc: BaseException) -> Finding:
 
 
 def _check_b4(project_root: Path) -> tuple[str, str, list[str]]:
-    project_cfg = _load_json(project_root / "shipwright_project_config.json")
+    project_cfg = _load_json(project_root / _sp.rel("project_config"))
     if project_cfg is None:
         return "skip", "no shipwright_project_config.json", []
     splits = project_cfg.get("splits", []) or []
@@ -294,7 +294,7 @@ def _check_b4(project_root: Path) -> tuple[str, str, list[str]]:
 
 
 def _check_b5(project_root: Path) -> tuple[str, str, list[str]]:
-    run_cfg = _load_json(project_root / "shipwright_run_config.json")
+    run_cfg = _load_json(project_root / _sp.rel("run_config"))
     if run_cfg is None:
         return "skip", "no shipwright_run_config.json", []
 

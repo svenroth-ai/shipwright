@@ -30,11 +30,11 @@ import os
 import re
 import sys
 from pathlib import Path
-from typing import Any, Mapping, Optional
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p); from typing import Any, Mapping, Optional
 
 FIXTURE_ENV = "SHIPWRIGHT_ACCEPT_FIXTURE_APPROVAL"
 FIXTURE_PREFIX = "fixture:"
-CONFIG_NAME = "shipwright_run_config.json"
+CONFIG_NAME = _sp.rel("run_config")
 _LIB = Path(__file__).resolve().parent
 _PKG = "_shipwright_brief_dir_lib"
 _SHA_RE = re.compile(r"[0-9a-f]{64}")
@@ -214,7 +214,7 @@ def record(project_root: Path, brief_dir: str, env: Optional[Mapping[str, str]] 
         raise BriefRefused("no_run_config", f"{CONFIG_NAME} does not exist yet; run write-config first")
     bdir = resolve_dir(brief_dir, root)
     rel = _relative(bdir, root)
-    with _lib("file_lock").file_lock(path.with_name(CONFIG_NAME + ".lock"), timeout_seconds=5.0):
+    with _lib("file_lock").file_lock(_sp.lock_for("run_config", root), timeout_seconds=5.0):
         cfg = load_config(root)
         if cfg.get("brief_dir") not in (None, rel):
             raise BriefRefused("brief_dir_conflict", f"run_config already records {cfg['brief_dir']!r}; "

@@ -34,6 +34,10 @@ if str(_SHARED_SCRIPTS) not in sys.path:
 from lib import bloat_baseline as _bb  # noqa: E402
 from lib.atomic_write import durable_atomic_write  # noqa: E402
 from lib.repo_root import main_repo_root_or  # noqa: E402
+try:
+    import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[1] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)
+except ImportError:  # stale shared cache: this hook keeps its own fallback
+    _sp = None  # noqa: E402
 
 DEFAULT_MAX_LINES = _bb.LIMIT_SOURCE  # 300; runtime-prompts override to 400.
 
@@ -72,7 +76,7 @@ def _limit_for(file_path: str, cwd: Path) -> int | None:
     base = _bb.limit_for(file_path)
     if base is None:
         return None
-    config = cwd / "shipwright_build_config.json"
+    config = cwd / ("shipwright_build_config.json" if _sp is None else _sp.rel("build_config"))
     if not config.is_file():
         return base
     try:

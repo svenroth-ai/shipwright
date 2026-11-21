@@ -21,6 +21,7 @@ import argparse
 import json
 import sys
 from pathlib import Path
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 
 def merge(input_path: Path, target_path: Path) -> None:
@@ -64,7 +65,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--target",
         type=Path,
-        default=Path("shipwright_test_results.json"),
+        default=Path(_sp.rel("test_results")),
         help="Path to shipwright_test_results.json. Created if missing.",
     )
     args = parser.parse_args(argv)

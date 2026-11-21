@@ -39,6 +39,7 @@ if str(_SCRIPTS_ROOT) not in sys.path:
 from lib.review_record_schema import is_safe_run_id  # noqa: E402
 
 from .git_blob_read import read_committed_text  # noqa: E402
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[2] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 __all__ = [
     "ACK_FILENAME", "SCHEMA_VERSION", "ack_relpath", "is_safe_run_id",
@@ -47,7 +48,7 @@ __all__ = [
 
 #: Beside ``reviews.json`` in the run's own planning directory.
 ACK_FILENAME = "ci_supplychain_ack.json"
-_RESULTS = "shipwright_test_results.json"
+_RESULTS = _sp.rel("test_results")
 #: The envelope shape this verifier knows how to read.
 SCHEMA_VERSION = 1
 
@@ -131,7 +132,7 @@ def _read_legacy(
     on disk yields an ack that will not ship — and reporting it merely as "legacy"
     dropped the non-shipping warning for exactly that case (external code review).
     """
-    raw, err = read_committed_text(project_root, commit, _RESULTS)
+    raw, err = read_committed_text(project_root, commit, _sp.rel_at("test_results", commit))
     if err:
         return None, err, False
     from_commit = raw is not None

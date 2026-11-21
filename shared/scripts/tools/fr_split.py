@@ -36,10 +36,11 @@ from lib.fr_split_check import check_bindings, check_catalog, check_manifest, ch
 from lib.fr_split_report import origin_numbers, origin_readable, report  # noqa: E402
 from lib.fr_split_spec import SplitError, split_spec, taken_fr_numbers  # noqa: E402
 from lib.fr_split_tags import rewrite_tags  # noqa: E402
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[1] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
-BASELINE = "shipwright_ac_coverage_baseline.json"
+BASELINE = _sp.rel("ac_coverage_baseline")
 MANIFEST = ".shipwright/compliance/test-traceability.json"
-REGISTRY = "shipwright_ac_registry.json"
+REGISTRY = _sp.rel("ac_registry")
 NL = chr(10)
 _BASELINE_ITEM = re.compile(r'^(\s*)"(FR-\d+\.\d+/AC\d+)"(,?)(\r?)$')
 _REGEN = ("import sys\nfrom pathlib import Path\nsys.path.insert(0, sys.argv[1])\n"

@@ -22,6 +22,7 @@ package = importlib.util.module_from_spec(package_spec)
 sys.modules[PACKAGE_NAME] = package
 package_spec.loader.exec_module(package)
 
+from _shipwright_shared_review_lib import shipwright_paths as _sp  # noqa: E402
 from _shipwright_shared_review_lib.review_record_core import entry_for  # noqa: E402
 from _shipwright_shared_review_lib.review_record_schema import validate_record  # noqa: E402
 
@@ -68,10 +69,10 @@ SENSITIVE_PATH_RE = re.compile(
     r"|\.github/actions/"
     r"|shared/templates/github-actions/"
     r"|\.trivyignore(?:\.ya?ml)?$"
-    r"|shipwright_accepted_risks\.yaml"
+    r"|" + re.escape(_sp.rel("accepted_risks")) +
     r"|\.semgrepignore"
     r"|\.claude/settings\.json"
-    r"|shipwright_bloat_baseline\.json"
+    r"|" + re.escape(_sp.rel("bloat_baseline")) +
     r"|scripts/hooks/"
     r"|scripts/install-hooks\."
     r")"

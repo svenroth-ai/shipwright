@@ -36,6 +36,7 @@ import os
 import sys
 from pathlib import Path
 from typing import Any
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 # Make sibling shared/scripts/lib importable so we can pick up `env` (load_shipwright_env).
 _SHARED_LIB = Path(__file__).resolve().parent
@@ -69,7 +70,7 @@ _OPUS_LEG_PROVIDERS: set[str] = {"claude_cli", "openrouter"}
 _ENV_OVERRIDE_PREFIX = "SHIPWRIGHT_REVIEW_MODEL_"
 
 
-_PROJECT_ITERATE_CONFIG_NAME = "shipwright_iterate_config.json"
+_PROJECT_ITERATE_CONFIG_NAME = _sp.rel("iterate_config")
 
 
 def _deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:

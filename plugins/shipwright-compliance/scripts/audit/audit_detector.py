@@ -16,7 +16,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable
 
-from scripts.audit.audit_adapters import (
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p); from scripts.audit.audit_adapters import (
     Finding,
     ImportGateError,
     verify_imports,
@@ -189,7 +189,7 @@ def load_audit_config(project_root: Path) -> dict[str, Any]:
     """
     # The default config lives next to the compliance plugin; users can
     # override via a project-local ``audit_config.json`` at project root.
-    override = project_root / "audit_config.json"
+    override = project_root / _sp.rel("audit_config")
     if override.exists():
         try:
             user_cfg = json.loads(override.read_text(encoding="utf-8"))

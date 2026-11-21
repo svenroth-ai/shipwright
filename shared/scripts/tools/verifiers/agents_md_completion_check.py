@@ -26,6 +26,7 @@ if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
 from lib.agents_md_substitutions import apply_codex_substitutions  # noqa: E402
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[2] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 _NAME = "AGENTS.md completion (Codex appendix present)"
 
@@ -114,7 +115,7 @@ def check_agents_md_completion(project_root: Path) -> CheckResult:
     re-validate CLAUDE.md itself. ERROR severity, like C1/C4/C5: a Full
     Application project without a correct AGENTS.md is not actually done.
     """
-    path = project_root / "shipwright_project_config.json"
+    path = project_root / _sp.rel("project_config")
     if not path.exists():
         return CheckResult(_NAME, True, "no project config yet — nothing to check")
     try:

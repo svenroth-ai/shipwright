@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "1. **The question, answered in one sentence.** Yes \u2014 a central resolver module plus a guard test is warranted here, because the campaign has already committed to the move this prepares, and without it the move is a 350-file sweep done twice (once to migrate, once to move).\n\n2. **The smallest thing that would do.** Option 2 is essentially it: one stdlib-only module owning the ~20 names with a kind enum and path/lock helpers, plus the guard test. Option 3 is smaller but incoherent \u2014 it leaves the long tail literal, so the eventual move still needs the full repo-wide sweep it was trying to avoid, meaning you pay the sweep anyway *and* keep partial indirection. Option 4 adds a runtime data dependency for no benefit over a Python module, and a data file is strictly harder to keep correct (no call-site checking). Option 1 means the move itself becomes a blind mass edit with no guard against reintroduction \u2014 acceptable for a one-shot, but the brief states old plugins and skew-window hooks must keep working, which argues for the names living in one auditable place.\n\n3. **What it costs to keep.** (a) The resolver module becomes a chokepoint every new file kind must be added to. (b) The guard test's allowlist must be maintained \u2014 every legitimate exception (fixture, migration tool, hard-abort) is a permanent entry someone has to justify and eventually prune. (c) The ratchet on non-Python carriers needs someone to notice when it grows; an unwatched ratchet is a lint rule people learn to bypass rather than fix.\n\n4. **What it forecloses.** Moving a file later requires touching only the resolver \u2014 good. It makes *renaming a file's kind* or having two files share a lock slightly more involved, and the resolver's import name becomes load-bearing for every plugin's lib package. No other foreclosures identified.\n\n- Category: ownership\n- Severity: low\n- Finding: The allowlist and the non-Python no-growth ratchet are both mechanisms that decay silently if nobody owns them; entries accrete and the ratchet fires on unrelated PRs until someone adds \"just one more\" allowlist line.\n- Suggestion: Require each allowlist entry to carry a comment naming the owner/reason and a removal ticket reference; give the resolver module a single named owner in its docstring so a failing guard test has a default addressee.\n\n- Category: proportionality\n- Severity: low\n- Finding: Byte-identical behaviour plus full migration of ~350 files is the expensive part; the standing mechanism (module + test) is cheap by comparison. The cost is front-loaded effort, not ongoing complexity \u2014 which is the right trade only if the move actually happens.\n- Suggestion: Confirm the move is still committed before landing R0b; if the move were cancelled, this resolver becomes permanent indirection with no payoff.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Should it exist?** Yes\u2014option 2 is proportionate: centralizing names used across roughly 350 files gives the planned move one authoritative place to change.\n\n2. **Smallest thing that would do:** One stdlib-only module owning current paths, lock names and file kinds, with Python consumers using it, snapshot lists derived from kinds, and a guard preventing new literals while ratcheting existing non-Python references. A runtime JSON registry adds unnecessary machinery; migrating only core readers leaves the eventual move distributed.\n\n3. **What it costs to keep:** Maintainers must update the registry when adding files and maintain the guard\u2019s scanning rules and explicit exceptions; the existing test runner keeps enforcement active.\n\n4. **What it forecloses:** Consumers lose the freedom to define independent paths and lock names without changing the shared contract or declaring an exception. That constraint supports the stated migration.\n\n5. **Findings:** No findings.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "architecture",
+  "capture": {
+    "run_id": "iterate-2026-11-21-r0b-resolver",
+    "at": "2026-11-20T23:25:37.975034+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "approve"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}

@@ -1,0 +1,68 @@
+{
+  "run_id": "iterate-2026-11-21-r0b-resolver",
+  "date": "2026-11-21T00:12:21.470014Z",
+  "event_at": "2026-11-21T00:07:44.238251+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "prior_source": "keyword",
+  "branch": "iterate/campaign-root-files-into-config--R0b",
+  "spec": ".shipwright/planning/iterate/campaigns/root-files-into-config/sub-iterates/R0b-resolver.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-11-21-r0b-resolver",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "every registry name equals the pre-resolver root literal",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_shipwright_paths.py::test_every_name_is_the_pre_resolver_root_name PASSED"
+      },
+      {
+        "behavior": "lock_for returns today's root lock names and the events lock for sync_config",
+        "disposition": "tested",
+        "evidence": "test_shipwright_paths.py::test_locks_only_where_a_data_file_lock_exists PASSED"
+      },
+      {
+        "behavior": "DERIVED/RESTORABLE/CONFIG_MARKERS lists are generated from the registry with unchanged contents",
+        "disposition": "tested",
+        "evidence": "test_shipwright_paths.py::test_generated_lists_equal_the_hand_written_lists_they_replaced PASSED"
+      },
+      {
+        "behavior": "no production Python names a root file or lock outside the resolver; carriers do not grow",
+        "disposition": "tested",
+        "evidence": "test_shipwright_paths_guard.py::test_python_goes_through_the_resolver PASSED"
+      },
+      {
+        "behavior": "hooks keep working when the resolver import fails or races a cache swap",
+        "disposition": "tested",
+        "evidence": "test_generate_handoff_cache_race_retry.py (real stop-hook process, lib vanishing mid-import) PASSED; plus the -I isolated hook runs",
+        "category": "integration"
+      }
+    ],
+    "counts": {
+      "testable": 5,
+      "tested": 5,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 4,
+      "covered_acs": 4
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run pytest shared/tests/test_shipwright_paths.py shared/tests/test_shipwright_paths_guard.py -q -p no:cacheprovider",
+    "exit_code": 0,
+    "tests_run": 23,
+    "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\campaign-root-files-into-config--R0b\\.shipwright\\runs\\iterate-2026-11-21-r0b-resolver\\surface_verification.log",
+    "timestamp": "2026-11-20T23:37:09.963Z",
+    "attempts": 1
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}

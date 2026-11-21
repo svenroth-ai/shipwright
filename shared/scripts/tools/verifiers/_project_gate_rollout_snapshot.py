@@ -40,6 +40,7 @@ from pathlib import Path
 from . import _project_gate_rollout as _rollout
 from ._project_gate_manifest import _is_safe_split_name
 from .git_helpers import _run_git
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[2] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 _GIT_TIMEOUT_SECONDS = 30.0
 
@@ -168,11 +169,11 @@ def _rollout_declared_split_names(project_root: Path, sha: str) -> frozenset[str
     key = (sha, str(project_root))
     if key in _MANIFEST_CACHE:
         return _MANIFEST_CACHE[key]
-    primary_text = _read_at_commit(project_root, sha, "shipwright_project_config.json")
+    primary_text = _read_at_commit(project_root, sha, _sp.rel_at("project_config", sha))
     if primary_text is not None:
         result = _parse_declared_split_names(primary_text) or frozenset()
     else:
-        fallback_text = _read_at_commit(project_root, sha, "shipwright_run_config.json")
+        fallback_text = _read_at_commit(project_root, sha, _sp.rel_at("run_config", sha))
         result = _parse_declared_split_names(fallback_text) or frozenset()
     _MANIFEST_CACHE[key] = result
     return result

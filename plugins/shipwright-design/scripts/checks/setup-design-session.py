@@ -34,11 +34,12 @@ _ADDED = _SHARED not in sys.path
 if _ADDED:
     sys.path.append(_SHARED)
 import profile_consumer as pc  # noqa: E402
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 if _ADDED:
     sys.path.remove(_SHARED)
 
-PROJECT_CONFIG = "shipwright_project_config.json"
+PROJECT_CONFIG = _sp.rel("project_config")
 PROFILE_KEYS_READ = ("design_system",)  # D6: consumed profile keys (checked against the schema)
 
 

@@ -71,7 +71,7 @@ if str(_SHARED_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SHARED_SCRIPTS))
 
 from lib.drift_parsers import collect_requirements_from_planning  # noqa: E402
-from lib.plan_manifest import parse_manifest  # noqa: E402
+import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[2] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p); from lib.plan_manifest import parse_manifest  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -97,7 +97,7 @@ def _parse_section_manifest(plan_path: Path) -> list[str]:
 def check_plan_config_status_complete(project_root: Path) -> CheckResult:
     """``shipwright_plan_config.json::status`` must be ``complete``."""
     name = "plan_config status=complete"
-    path = project_root / "shipwright_plan_config.json"
+    path = project_root / _sp.rel("plan_config")
     if not path.exists():
         return CheckResult(name, False, "shipwright_plan_config.json missing")
     try:
