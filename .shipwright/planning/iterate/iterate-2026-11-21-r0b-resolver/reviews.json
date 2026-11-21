@@ -136,69 +136,69 @@
       "findings_count": 6,
       "findings": [
         {
-          "severity": "high",
-          "category": "correctness",
-          "file": "shared/scripts/hooks/generate_handoff_on_stop.py",
-          "line": 20,
-          "finding": "resolver import ran outside the cache-race retry",
-          "suggestion": "moved into _do_lib_imports (fixed in f8f40a143)",
-          "source": "code-reviewer"
-        },
-        {
           "severity": "medium",
-          "category": "correctness",
-          "file": "shared/scripts/hooks/session_start_using_shipwright.py",
-          "line": 31,
-          "finding": "unguarded import defeats the hook's fallback; same in master_stop_check",
-          "suggestion": "try/except ImportError with literal fallback (fixed)",
+          "category": "readability",
+          "file": "plugins/shipwright-compliance/scripts/audit/group_a.py",
+          "line": 26,
+          "finding": "~160 files get the same semicolon-chained bootstrap line, glued onto existing imports",
+          "suggestion": "use package-relative imports for shared/scripts/lib modules; never splice onto an import line",
           "source": "code-reviewer"
         },
         {
           "severity": "medium",
           "category": "architecture",
           "file": "shared/scripts/lib/shipwright_paths.py",
-          "line": 160,
-          "finding": "name = rel conflates basename and path",
-          "suggestion": "real name() and basename sites switched (fixed)",
+          "line": 293,
+          "finding": "bare-name import binds whichever copy loads first; fine while the registry is constant data, risky once R1 adds layout state",
+          "suggestion": "R1 loads copy-locally or adds a test",
           "source": "code-reviewer"
         },
         {
-          "severity": "medium",
+          "severity": "low",
           "category": "correctness",
-          "file": "shared/scripts/lib/events_references.py",
-          "line": 61,
-          "finding": "event-log reference guard blind to resolver call forms",
-          "suggestion": "TOKEN extended (fixed)",
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "medium",
-          "category": "correctness",
-          "file": "shared/tests/test_shipwright_paths_guard.py",
-          "line": 182,
-          "finding": "allowlists are per file, not per hit",
-          "suggestion": "deferred to R1 with reason in mini-plan.md",
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "medium",
-          "category": "readability",
           "file": "plugins/shipwright-compliance/scripts/audit/group_a.py",
-          "line": 26,
-          "finding": "packed bootstrap one-liners",
-          "suggestion": "rejected-with-reason: zero-net-line placement forced by anti-ratchet",
+          "line": 340,
+          "finding": "json_path_or_none returns None for events/audit_config/accepted_risks which were probed as nonexistent files before",
+          "suggestion": "state in iterate record",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/hooks/required_checks_state.py",
+          "line": 25,
+          "finding": "formerly stdlib-only module now hard-imports the resolver",
+          "suggestion": "guard the import",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_shipwright_paths.py",
+          "line": 6184,
+          "finding": "probe module alias left registered after the test",
+          "suggestion": "pop when prior is None",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/shipwright_paths.py",
+          "line": 188,
+          "finding": "json_path_or_none docstring too long; param name shadows name()",
+          "suggestion": "rename and wrap",
           "source": "code-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-11-21T00:04:19.792813+00:00",
+      "completed_at": "2026-11-21T00:26:08.665353+00:00",
       "disposition": null,
       "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus",
       "verdict": "pass",
-      "reviewed_commit": "8dbdf0e57d7fa11de20670fdf37a1a9e893f6000"
+      "reviewed_commit": "53b4e9f4fe54d77c0ffb0bb2c65dda2d81ecef2b"
     },
     "doubt": {
       "review_type": "doubt",
