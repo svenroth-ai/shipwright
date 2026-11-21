@@ -63,6 +63,10 @@ LITERAL_ALLOWED = {
     "shared/scripts/hooks/check_required_checks_hook.py": "degraded-import fallback: must not depend on shared lib (R1 item, BRIEF 4.7.1)",
     "plugins/shipwright-iterate/scripts/hooks/iterate_worktree_gate.py": "fail-open fallback when the resolver cannot be imported",
     "plugins/shipwright-run/scripts/hooks/master_stop_check.py": "observational hook: must still run when the shared cache is stale",
+    "plugins/shipwright-compliance/scripts/lib/security_gate.py": "fail-closed deploy gate must not depend on a possibly stale shared tree",
+    "plugins/shipwright-compliance/scripts/lib/rtm_gate_support.py": "commit gate must keep evaluating when the shared tree is stale",
+    "plugins/shipwright-grade/scripts/lib/routing.py": "grade stays usable without shared (lazy/soft-fail design)",
+    "plugins/shipwright-grade/scripts/lib/authoritative.py": "grade stays usable without shared (lazy/soft-fail design)",
     "shared/scripts/hooks/session_start_using_shipwright.py": "session hook: must still run when the shared cache is stale",
 }
 ALLOWED = {"lock-construction": LOCK_ALLOWED, "shipwright-prefix-rule": PREFIX_RULE_ALLOWED, "literal": LITERAL_ALLOWED}

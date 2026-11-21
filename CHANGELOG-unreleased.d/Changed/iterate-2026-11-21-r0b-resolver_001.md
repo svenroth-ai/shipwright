@@ -1,0 +1,1 @@
+refactor(paths): one resolver (shared/scripts/lib/shipwright_paths.py) now owns the names, kinds, locks and per-commit paths of the root shipwright_* files; every Python reference goes through it and a guard test forbids new literals (no behaviour change, files stay at the repo root)

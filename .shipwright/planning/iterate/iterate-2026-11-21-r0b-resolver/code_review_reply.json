@@ -1,0 +1,7 @@
+{"review":[
+{"severity":"high","category":"correctness","file":"shared/scripts/hooks/generate_handoff_on_stop.py","line":20,"finding":"resolver import ran outside the cache-race retry","suggestion":"moved into _do_lib_imports (fixed in f8f40a143)"},
+{"severity":"medium","category":"correctness","file":"shared/scripts/hooks/session_start_using_shipwright.py","line":31,"finding":"unguarded import defeats the hook's fallback; same in master_stop_check","suggestion":"try/except ImportError with literal fallback (fixed)"},
+{"severity":"medium","category":"architecture","file":"shared/scripts/lib/shipwright_paths.py","line":160,"finding":"name = rel conflates basename and path","suggestion":"real name() and basename sites switched (fixed)"},
+{"severity":"medium","category":"correctness","file":"shared/scripts/lib/events_references.py","line":61,"finding":"event-log reference guard blind to resolver call forms","suggestion":"TOKEN extended (fixed)"},
+{"severity":"medium","category":"correctness","file":"shared/tests/test_shipwright_paths_guard.py","line":182,"finding":"allowlists are per file, not per hit","suggestion":"deferred to R1 with reason in mini-plan.md"},
+{"severity":"medium","category":"readability","file":"plugins/shipwright-compliance/scripts/audit/group_a.py","line":26,"finding":"packed bootstrap one-liners","suggestion":"rejected-with-reason: zero-net-line placement forced by anti-ratchet"}]}

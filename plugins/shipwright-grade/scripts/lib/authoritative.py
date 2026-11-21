@@ -26,7 +26,10 @@ from report_model import ReportModel, build_report_model
 from repo_context import RepoContext
 from reuse_bridge import load_compliance_ingest
 from routing import RoutingDecision, real_dir
-import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
+try:
+    import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
+except ImportError:  # stale or absent shared tree: keep this module usable
+    _sp = None
 
 _MODE_AUTHORITATIVE = "authoritative"
 
@@ -78,7 +81,7 @@ def _authoritative_provenance() -> dict[str, dict]:
 def _eventlog_over_cap(root: Path) -> bool:
     """True when the target's event log exceeds the authoritative size ceiling."""
     total = 0  # folder bytes only: each legacy log keeps its own per-file ceiling
-    for cand in (root / _sp.rel("events"), root / ".shipwright" / "events.jsonl"):
+    for cand in (root / ("shipwright_events.jsonl" if _sp is None else _sp.rel("events")), root / ".shipwright" / "events.jsonl"):
         try:
             if cand.is_file() and cand.stat().st_size > _MAX_AUTHORITATIVE_EVENTLOG_BYTES:
                 return True

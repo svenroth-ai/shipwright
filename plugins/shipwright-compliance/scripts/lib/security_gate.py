@@ -25,7 +25,10 @@ import json
 import os
 import stat
 from pathlib import Path
-import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
+try:
+    import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
+except ImportError:  # stale or absent shared tree: keep this module usable
+    _sp = None
 
 #: Canonical literal (not assembled from segments) so the artifact-path-canon
 #: AST lint sees the ``.shipwright/`` prefix — same reason as ci_security.py.
@@ -34,7 +37,7 @@ CI_SECURITY_REL = ".shipwright/compliance/ci-security.json"
 #: :func:`read_security_summary` sentinel for a present-but-untrustworthy file.
 UNUSABLE = "unusable"
 
-CONFIG_FILENAME = _sp.rel("compliance_config")
+CONFIG_FILENAME = ("shipwright_compliance_config.json" if _sp is None else _sp.rel("compliance_config"))
 
 
 def read_security_summary(project_root: str | Path) -> dict | str | None:

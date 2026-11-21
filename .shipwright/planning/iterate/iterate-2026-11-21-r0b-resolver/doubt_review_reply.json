@@ -1,0 +1,4 @@
+{"doubts":[
+{"severity":"medium","lens":"boundary","claim_under_doubt":"hooks survive import failure","disproof_attempt":"security_gate and rtm_gate_support import the resolver transitively; stale shared tree blocks deploys","file":"plugins/shipwright-compliance/scripts/lib/security_gate.py:28","what_would_resolve_it":"guarded import with literal fallback (done)"},
+{"severity":"medium","lens":"blast radius","claim_under_doubt":"no behaviour change","disproof_attempt":"grade routing/authoritative import shared eagerly","file":"plugins/shipwright-grade/scripts/lib/routing.py:22","what_would_resolve_it":"guarded import with literal fallback (done)"},
+{"severity":"low","lens":"concurrency","claim_under_doubt":"two module objects harmless","disproof_attempt":"three import names for one resolver","file":"shared/scripts/lib/shipwright_paths.py:293","what_would_resolve_it":"R1 keeps module stateless or unifies imports"}]}
