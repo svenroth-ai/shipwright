@@ -32,6 +32,7 @@ def _copy_config(src_name: str, project_root: Path) -> Path:
     return dest
 
 
+@pytest.mark.covers("FR-01.13")
 def test_a_held_lock_blocks_the_backfill_instead_of_racing_it(
     tmp_path: Path, monkeypatch
 ) -> None:
