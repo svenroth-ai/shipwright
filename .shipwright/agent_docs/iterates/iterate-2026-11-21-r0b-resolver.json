@@ -1,6 +1,6 @@
 {
   "run_id": "iterate-2026-11-21-r0b-resolver",
-  "date": "2026-11-21T00:08:00.974078Z",
+  "date": "2026-11-21T00:12:21.470014Z",
   "event_at": "2026-11-21T00:07:44.238251+00:00",
   "type": "change",
   "complexity": "medium",
@@ -35,7 +35,8 @@
       {
         "behavior": "hooks keep working when the resolver import fails or races a cache swap",
         "disposition": "tested",
-        "evidence": "test_generate_handoff_cache_race_retry.py PASSED"
+        "evidence": "test_generate_handoff_cache_race_retry.py (real stop-hook process, lib vanishing mid-import) PASSED; plus the -I isolated hook runs",
+        "category": "integration"
       }
     ],
     "counts": {

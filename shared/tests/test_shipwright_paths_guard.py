@@ -81,6 +81,7 @@ def _violations():
     return out
 
 
+@pytest.mark.covers("FR-01.11")
 def test_python_goes_through_the_resolver():
     found = _violations()
     assert not found, (
@@ -89,6 +90,7 @@ def test_python_goes_through_the_resolver():
     )
 
 
+@pytest.mark.covers("FR-01.11")
 @pytest.mark.parametrize("rule", sorted(ALLOWED))
 def test_allowlists_have_no_stale_entries(rule):
     """An entry whose file no longer trips the rule is dead weight that would hide a regression."""
@@ -97,6 +99,7 @@ def test_allowlists_have_no_stale_entries(rule):
     assert not stale, f"remove from the allowlist: {stale}"
 
 
+@pytest.mark.covers("FR-01.11")
 def test_carriers_do_not_grow():
     """bash / YAML / deploy-profile JSON / md / templates: per-file, per-name count of root names is a ratchet."""
     baseline, now = scan.load_baseline(), scan.carrier_counts()
@@ -110,6 +113,7 @@ def test_carriers_do_not_grow():
     )
 
 
+@pytest.mark.covers("FR-01.11")
 def test_carrier_scan_covers_every_carrier_kind():
     """The scan must actually see bash, YAML, deploy-profile JSON and SKILL/agent md."""
     seen = set(scan.carrier_files())
@@ -120,6 +124,7 @@ def test_carrier_scan_covers_every_carrier_kind():
     assert any("/agents/" in p and p.endswith(".md") for p in seen)
 
 
+@pytest.mark.covers("FR-01.11")
 @pytest.mark.parametrize("snippet,rule", [
     ('p = root / f"shipwright_{name}.json"\n', "constructed-name"),
     ('p = root / ("shipwright_" + name + ".json")\n', "constructed-name"),
@@ -137,6 +142,7 @@ def test_scanner_catches_each_reference_shape(tmp_path, monkeypatch, snippet, ru
     assert rule in {r for r, _, _ in scan.scan_python("mod.py")}
 
 
+@pytest.mark.covers("FR-01.11")
 def test_scanner_ignores_prose_docstrings_and_resolver_calls(tmp_path, monkeypatch):
     f = tmp_path / "mod.py"
     f.write_text('"""Reads shipwright_run_config.json."""\nmsg = "no shipwright_run_config.json found"\n'

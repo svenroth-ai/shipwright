@@ -55,7 +55,8 @@
     {
      "behavior": "hooks keep working when the resolver import fails or races a cache swap",
      "disposition": "tested",
-     "evidence": "test_generate_handoff_cache_race_retry.py PASSED"
+     "evidence": "test_generate_handoff_cache_race_retry.py (real stop-hook process, lib vanishing mid-import) PASSED; plus the -I isolated hook runs",
+     "category": "integration"
     }
    ],
    "counts": {

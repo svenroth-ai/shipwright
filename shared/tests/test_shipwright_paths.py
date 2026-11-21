@@ -42,11 +42,13 @@ FROZEN = {
 }
 
 
+@pytest.mark.covers("FR-01.11")
 def test_every_name_is_the_pre_resolver_root_name():
     assert {k: sp.rel(k) for k in sp.SPECS} == FROZEN
     assert sp.name("run_config") == sp.legacy_rel("run_config") == sp.rel_at("run_config", "deadbeef")
 
 
+@pytest.mark.covers("FR-01.11")
 def test_kinds_are_the_documented_set_and_every_file_has_one():
     assert set(sp.KINDS) == {"config", "baseline", "register", "derived", "marker", "state", "pointer"}
     assert all(s.kind in sp.KINDS for s in sp.SPECS.values())
@@ -56,6 +58,7 @@ def test_kinds_are_the_documented_set_and_every_file_has_one():
         "bloat_baseline", "ac_coverage_baseline", "adr_collision_baseline", "inline_suppressions", "known_failures"))
 
 
+@pytest.mark.covers("FR-01.11")
 def test_path_main_path_and_unknown_keys(tmp_path):
     assert sp.path("run_config", tmp_path) == tmp_path / "shipwright_run_config.json"
     main = tmp_path / "main"
@@ -67,6 +70,7 @@ def test_path_main_path_and_unknown_keys(tmp_path):
     assert sp.key_for_basename("README.md") is None
 
 
+@pytest.mark.covers("FR-01.11")
 def test_json_path_or_none_only_accepts_exact_shipwright_json_names(tmp_path):
     assert sp.json_path_or_none("run_config", tmp_path) == tmp_path / "shipwright_run_config.json"
     assert sp.json_path_or_none("events", tmp_path) is None        # .jsonl, not shipwright_events.json
@@ -74,6 +78,7 @@ def test_json_path_or_none_only_accepts_exact_shipwright_json_names(tmp_path):
     assert sp.json_path_or_none("accepted_risks", tmp_path) is None  # .yaml
 
 
+@pytest.mark.covers("FR-01.11")
 def test_locks_only_where_a_data_file_lock_exists(tmp_path):
     assert sp.lock_for("run_config", tmp_path) == tmp_path / "shipwright_run_config.json.lock"
     assert sp.lock_for("ac_registry", tmp_path) == tmp_path / "shipwright_ac_registry.json.lock"
@@ -87,6 +92,7 @@ def test_locks_only_where_a_data_file_lock_exists(tmp_path):
     assert sp.lock_for("sync_config", tmp_path) == events_lock_path(tmp_path)  # one events lock, two routes
 
 
+@pytest.mark.covers("FR-01.11")
 def test_generated_lists_equal_the_hand_written_lists_they_replaced():
     assert CONFIG_MARKERS == (
         "shipwright_run_config.json", "shipwright_project_config.json", "shipwright_plan_config.json",
@@ -96,6 +102,7 @@ def test_generated_lists_equal_the_hand_written_lists_they_replaced():
     assert sp.family_globs() == ("shipwright_*.json", "shipwright_*.yaml")
 
 
+@pytest.mark.covers("FR-01.11")
 def test_derived_and_restorable_snapshots_come_from_the_kind_list():
     assert sp.snapshot_paths() == frozenset({"shipwright_test_results.json"})   # retired names are not snapshots
     assert sp.run_written_paths() == sp.snapshot_paths()   # restore exclusion comes from the run_written flag
@@ -103,6 +110,7 @@ def test_derived_and_restorable_snapshots_come_from_the_kind_list():
     assert "shipwright_test_results.json" not in RESTORABLE_SNAPSHOTS and len(RESTORABLE_SNAPSHOTS) == 10
 
 
+@pytest.mark.covers("FR-01.11")
 def test_imports_under_a_unique_top_level_name_without_the_lib_package():
     """Plugins append shared/scripts/lib to sys.path and ``import shipwright_paths`` (ADR-045: their
     own ``lib`` package must not be shadowed). The module must load with no intra-package import."""
