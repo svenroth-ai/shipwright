@@ -18,7 +18,7 @@ from lib.main_health_diagnosis import contains_secret
 #: ``scheme://user:pass@host`` — credentials embedded in a URL authority. A token-only
 #: userinfo (``https://<token>@host``) is left to ``contains_secret``'s token shapes, so a
 #: harmless ``ssh://git@host/repo`` ref is not refused.
-_URL_USERINFO = re.compile(r"[A-Za-z][A-Za-z0-9+.\-]*://[^\s/@:?#]*:[^\s/@]+@")
+_URL_USERINFO = re.compile(r"\b[A-Za-z][A-Za-z0-9+.\-]*://[^\s/@:?#]*:[^\s/@]+@")
 #: A bare ``user:pass@host`` (no scheme) is not matched on purpose: it is
 #: indistinguishable from an e-mail address plus a colon in prose.
 _URL_SECRET_PARAM = re.compile(
@@ -34,8 +34,12 @@ REFUSAL = (
 
 
 _PEM_BLOCK = re.compile(
-    r"-----BEGIN [A-Z ]*PRIVATE KEY-----.*?(?:-----END [A-Z ]*PRIVATE KEY-----|\Z)", re.DOTALL)
-_PLAIN_SECRET = re.compile(r"(?i)\b(\w*(?:password|passwd|pwd|secret|passphrase))([\"']?\s*[=:]\s*)[\"']?[^\s\"',}]+")
+    r"-----BEGIN [A-Z ]*PRIVATE KEY(?: BLOCK)?-----.*?(?:-----END [A-Z ]*PRIVATE KEY(?: BLOCK)?-----|\Z)", re.DOTALL)
+# a NAME=value pair whose name ends in a secret word (HF_TOKEN, DB_PASS, AWS_SECRET_ACCESS_KEY ...)
+# and whose value is a quoted string (to the closing quote) or one bare word
+_PLAIN_SECRET = re.compile(
+    r"(?i)\b(\w*(?:password|passwd|pwd|secret|passphrase|token|api_?key|access_?key|private_?key|_pass)"
+    r"(?:_\w+)?|pass)([\"']?\s*[=:]\s*)(?:\"[^\"]*\"|'[^']*'|[^\s\"',}]+)")
 _OUT_PARAM = re.compile(
     r"(?i)([?&#]\w*(?:password|passwd|pwd|secret|passphrase|token|api_?key|key|auth|sig))=[^\s&#]+")
 

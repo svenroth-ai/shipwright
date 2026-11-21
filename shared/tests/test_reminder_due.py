@@ -254,3 +254,38 @@ def test_from_a_subdirectory_triage_is_still_read(tmp_path, capsys):
 def test_no_shipwright_directory_is_reported_not_read_as_empty(tmp_path, capsys):
     out = _due(tmp_path, capsys)
     assert out["items"] == [] and "FileNotFoundError" in out["triageError"]
+
+
+@pytest.mark.covers("FR-01.22/AC08")
+@pytest.mark.parametrize("text, leaked", [
+    ("HF_" + "TOK" + "EN=hf_abcdefghijklmnop", "hf_abcdefghijklmnop"),
+    ("AWS_" + "SEC" + "RET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG", "wJalrXUtnFEMI"),
+    ("STRIPE_" + "SEC" + "RET_KEY=sk_live_abcdef123456", "sk_live_abcdef123456"),
+    ("DB_" + "PA" + "SS=hunter2", "hunter2"),
+    ("pass" + "word: \"correct horse battery\"", "horse"),
+    ("pass" + "word='abc,def'", "def"),
+])
+def test_environment_style_secret_names_are_masked(text, leaked):
+    assert leaked not in _clean(text)
+
+
+@pytest.mark.covers("FR-01.22/AC08")
+def test_pgp_key_block_and_huge_fields_are_handled():
+    pgp = "-----BEGIN PGP PRIVATE KEY BLOCK-----\nAAAA1234\n-----END PGP PRIVATE KEY BLOCK-----"
+    assert "AAAA1234" not in _clean("see " + pgp, multiline=True)
+    out = _clean("a" * 200_000)
+    assert out is not None and len(out) <= 8000
+
+
+@pytest.mark.covers("FR-01.22/AC07")
+def test_empty_on_is_refused_not_read_as_today(tmp_path, capsys):
+    assert main(["--project-root", str(tmp_path), "due", "--on", "", "--json"]) == 2
+
+
+@pytest.mark.covers("FR-01.22/AC07")
+def test_unreadable_store_exits_4(tmp_path):
+    from lib.reminder_store import store_path
+    path = store_path(tmp_path, for_write=True)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.mkdir()  # the store path is a directory: reading it is an OS error, not a crash
+    assert main(["--project-root", str(tmp_path), "due", "--json"]) == 4

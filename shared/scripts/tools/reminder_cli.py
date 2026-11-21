@@ -124,7 +124,7 @@ def cmd_snooze(args) -> int:
 
 
 def cmd_due(args) -> int:
-    answer = build_due(args.project_root, parse_day(args.on, "--on") if args.on else None)
+    answer = build_due(args.project_root, parse_day(args.on, "--on") if args.on is not None else None)
     if args.json:
         print(json.dumps(answer, ensure_ascii=False))
     else:

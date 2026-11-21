@@ -65,6 +65,9 @@ _CONTROL_KEEP_NL = re.compile(
     r"[\x00-\x09\x0b-\x1f\x7f-\x9f\u2028\u2029\u200b-\u200f\u202a-\u202e\u2066-\u2069\ufeff]")
 
 
+_MAX_FIELD = 8000  # a hand-edited or foreign record must not stall or bloat the mailed answer
+
+
 def _clean(value: object, multiline: bool = False) -> str | None:
     """Text for output: redacted (it leaves the machine), never a non-string.
 
@@ -79,7 +82,7 @@ def _clean(value: object, multiline: bool = False) -> str | None:
         value = _CONTROL_KEEP_NL.sub(" ", value.replace("\r\n", "\n").replace("\r", "\n"))
     else:  # a single-line field (a mail subject, say) never carries a line break
         value = _CONTROL.sub(" ", value)
-    return redact(redact_urls(value))
+    return redact(redact_urls(value))[:_MAX_FIELD]
 
 
 def _link(label: object, kind: object, ref: object) -> dict:
@@ -127,6 +130,8 @@ def _due_reminders(reminders: dict, today: date) -> list[dict]:
 def _triage_root(project_root: Path | str) -> Path:
     """The checkout top (nearest ancestor with ``.git``): triage does not walk up by itself."""
     here = Path(project_root).resolve()
+    if (here / ".shipwright").is_dir():  # a project of its own, even when nested in a bigger repo
+        return here
     return next((p for p in (here, *here.parents) if (p / ".git").exists()), here)
 
 
