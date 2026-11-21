@@ -8,6 +8,8 @@
   done <id>
   snooze <id> --until YYYY-MM-DD            must be after today (UTC); never on a
                                             reminder that is already done
+  due [--on YYYY-MM-DD] [--json]            reminders AND expired triage parks due that
+                                            UTC day (read-only; see lib/reminder_due.py)
 
 `--json` is the machine contract and is never capped: `{"contractVersion": 1,
 "reminders": [...]}` with every reminder, done ones included. The store lives at
@@ -33,8 +35,9 @@ if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
 
 from lib.file_lock import LockTimeout  # noqa: E402
+from lib.reminder_due import build_due  # noqa: E402
 from lib.reminder_store import (  # noqa: E402
-    LINK_KINDS, ReminderError, ReminderNotFound, add_reminder, read_folded,
+    LINK_KINDS, ReminderError, ReminderNotFound, add_reminder, parse_day, read_folded,
     set_status, store_path, not_found_message,
 )
 
@@ -120,6 +123,25 @@ def cmd_snooze(args) -> int:
     return 0
 
 
+def cmd_due(args) -> int:
+    answer = build_due(args.project_root, parse_day(args.on, "--on") if args.on is not None else None)
+    if args.json:
+        print(json.dumps(answer, ensure_ascii=False))
+    else:
+        for it in answer["items"]:
+            print(f"{it['kind']:<8}  {it['id']}  {it['due']}  {it['title']}")
+        if not answer["items"]:
+            print(f"nothing due on {answer['on']}")
+        print(f"source_root: {answer['sourceRoot']}")
+    if answer["triageError"]:
+        print(f"warning: the triage side could not be read: {answer['triageError']}",
+              file=sys.stderr)
+    if answer["reminderCorruptLines"]:
+        print(f"warning: {answer['reminderCorruptLines']} unreadable or rejected line(s) in the "
+              "reminder store", file=sys.stderr)
+    return 0
+
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="reminder_cli", description=__doc__.split("\n")[0])
     parser.add_argument("--project-root", default=".", help="Project root (default: .)")
@@ -154,6 +176,11 @@ def _build_parser() -> argparse.ArgumentParser:
     p.add_argument("reminder_id")
     p.add_argument("--until", required=True, metavar="YYYY-MM-DD")
     p.set_defaults(func=cmd_snooze)
+
+    p = sub.add_parser("due", help="everything due: reminders and expired triage parks")
+    p.add_argument("--on", default=None, metavar="YYYY-MM-DD", help="the UTC day (default: today)")
+    p.add_argument("--json", action="store_true", help="versioned machine contract, never capped")
+    p.set_defaults(func=cmd_due)
 
     # Root accepted before AND after the verb, like triage_cli.py.
     for sp in {id(q): q for q in sub.choices.values()}.values():

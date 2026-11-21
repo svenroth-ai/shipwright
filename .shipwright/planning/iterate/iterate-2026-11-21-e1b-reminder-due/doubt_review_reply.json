@@ -1,0 +1,7 @@
+{"stage":"doubt","gating":"advisory-must-address","doubts":[
+{"severity":"medium","claim_under_doubt":"worktree and main answer consistently","finding":"Triage silently read as empty from a subdirectory or a folder without .shipwright. FIXED: triage root is the checkout top; a missing .shipwright is reported in triageError; tests added."},
+{"severity":"medium","claim_under_doubt":"reminderStore is the store that was read","finding":"Read path fell back to an empty local file when git cannot find the main root. FIXED: due uses the same refusal as the write path."},
+{"severity":"medium","claim_under_doubt":"triage text cannot leak a secret","finding":"JSON-quoted keys passed redaction. FIXED: optional quotes accepted; test added. Authorization: Basic not covered: accepted best-effort."},
+{"severity":"low","claim_under_doubt":"nothing breaks --json","finding":"Paths not cleaned and import outside try. FIXED."},
+{"severity":"low","claim_under_doubt":"reminderCorruptLines means damage","finding":"Unlocked read may count a half-written line. Documented as possibly transient."},
+{"severity":"low","claim_under_doubt":"read-only via read_all_items","finding":"String-grep test is weak; sibling-worktree merge now stated in the docstring. Accepted."}]}

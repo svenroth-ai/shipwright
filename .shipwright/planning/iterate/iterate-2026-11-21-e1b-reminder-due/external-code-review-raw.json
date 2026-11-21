@@ -1,0 +1,50 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 1,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "status": "error",
+      "via": "codex",
+      "reason": "codex exec exited 1: Error: turn/start: turn/start failed: Input exceeds the maximum length of 1048576 characters. (code -32602), data: {\"input_error_code\":\"input_too_large\",\"max_chars\":1048576,\"actual_chars\":4075880}"
+    },
+    "glm": {
+      "feedback": "- Category: bug | Severity: medium\n- File: shared/scripts/lib/reminder_due.py:84 (`_triage_item`)\n- Finding: `\"due\": item.get(\"revisitAt\")` \u2014 the triage item's `due` is passed through raw without `_clean`. If `revisitAt` is a non-string (e.g. a dict/number from a hand-edited triage line) or contains a lone surrogate, it leaks into `--json` uncleaned, and a lone surrogate there would break UTF-8 encoding of the whole output \u2014 exactly the failure mode `test_odd_text_cannot_break_json_output` claims is impossible. Also the sort key `i[\"due\"] or \"\"` mixes a possibly non-string value with strings in tuple comparison, which can raise `TypeError` on mixed types.\n- Suggestion: apply `_clean(item.get(\"revisitAt\"))` and normalize the sort key with `str(...)` or `_clean`.\n\n- Category: bug | Severity: medium\n- File: shared/scripts/lib/reminder_due.py:66 (`_reminder_item`)\n- Finding: `\"id\": _clean(rem.get(\"id\"))` \u2014 `_clean` redacts and flattens the id. For a triage id, `redact_urls`/`redact` could mangle a legitimate id if it happens to match a secret shape; worse, the identity contract says identity is `(kind, id)`, but `_clean(None)` returns `None`, and a `None` id from a damaged reminder line collides with every other `None`-id reminder in the consumer's dedup. The ADR says identity is (kind, id) \u2014 masked ids undermine that.\n- Suggestion: validate ids at read time; skip/count (not emit) items whose id is not a usable string, rather than emitting a redacted/None id.\n\n- Category: bug | Severity: high\n- File: shared/scripts/lib/reminder_secrets.py:40-53 (`redact_urls`)\n- Finding: `_PLAIN_SECRET = re.compile(r\"(?i)\\b(password|passwd|secret)(\\s*[=:]\\s*)\\S+\")` \u2014 the sub replaces only up to the first whitespace via `\\S+`, so `password=hunter2 leaked-token` leaves the token intact \u2014 fine \u2014 but the bigger issue: `redact_urls` applies `redact`'s *reuse* of the write-time patterns at output time over text that was already accepted. More concretely, `_URL_SECRET_PARAM` sub uses `m.group(0)[0] + m.group(0)[1:].split(\"=\", 1)[0] + \"=[REDACTED]\"` \u2014 if the match starts after `?`/`&`, `group(0)[0]` preserves only the first char of the param name prefix; for a match like `?api_key=abc` it depends on the unseen `_URL_SECRET_PARAM` regex, but the manual string surgery on `group(0)` is fragile and untested for the param case (the test only covers userinfo and `password=`).\n- Suggestion: rewrite with a capture-group regex (`(?P<name>[?&]\\w+)=(?P<val>\\S+)`) and replace via `m.group('name') + \"=[REDACTED]\"`; add a test for the query-param case.\n\n- Category: bug | Severity: low\n- File: shared/scripts/tools/reminder_cli.py:130 (`cmd_due`)\n- Finding: `parse_day(args.on, \"--on\")` is called unconditionally when `args.on` is falsy-checked inside the ternary \u2014 fine \u2014 but the docstring contract says malformed `--on` is \"refused with exit 2\"; the test asserts `main(...) == 2`, which only holds if `parse_day` raises something `main` maps to exit 2. That mapping isn't in the diff; if `parse_day` raises an uncaught exception the CLI crashes with a traceback instead of exit 2. Verify `main` catches `ReminderError`/ValueError for the due path (the existing `add` path presumably does, but `due` was never wired through that handler before).\n- Suggestion: confirm the shared error handler covers `due`; add a test that the error goes to stderr without a traceback.\n\n- Category: spec | Severity: medium\n- File: shared/scripts/lib/reminder_due.py:137-147 (`build_due`)\n- Finding: The docstring/ADR states an unreadable store \"fails the command (exit 4)\" \u2014 but `read_folded(store)` is called with no try/except here, and `cmd_due` doesn't catch anything either; an OS-level read error inside `read_folded` propagates as an unhandled exception (traceback, exit 1), not the documented exit 4. The test suite only covers a *corrupt line* (damaged count), never an unreadable store file (e.g. permission denied), so this documented behavior is untested and likely not implemented.\n- Suggestion: catch the lock-timeout/OS errors in `cmd_due` (or `build_due`) and exit 4, with a test using a directory-as-file or chmod-0 store.\n\n- Category: test | Severity: medium\n- File: shared/tests/test_reminder_due.py:33 (`_due` helper)\n- Finding: `_due` always passes `--on DAY` where `DAY = \"2099-01-10\"` and the reminders/parks are created with that same literal, plus `NOW` frozen at 2026. But `test_default_day_is_today_utc_and_text_output_names_the_root` is the *only* test of the no-`--on` default path, and it asserts only the empty case. The AC's \"due on or before that day\" boundary for the *default* (today) path \u2014 including whether `read_all_items`' `now` stamp actually lands at current-moment rather than midnight \u2014 is only exercised with an explicit `--on`. A bug in the default-now stamp (e.g. passing `utc_date(now_utc())` instead of `now_utc()`, changing triage's same-day semantics) would pass all tests.\n- Suggestion: add a test with a park whose revisitAt is today (no `--on`) asserting it appears.\n\n- Category: edge-case | Severity: medium\n- File: shared/scripts/lib/reminder_due.py:128-136 (`_due_reminders`)\n- Finding: A reminder whose `due` fails `parse_revisit_date` (bad hand-edited date) is silently dropped with no count \u2014 inconsistent with the corrupt-line policy (\"skipped, counted\") and with the triage side where `revisitDue` derivation handles it. The consumer sees \"nothing due\" while a reminder with an unparseable due date is invisible. The docstring never states this.\n- Suggestion: either count skipped-due-reminder lines in a diagnostic or document the drop; add a test.\n\n- Category: edge-case | Severity: low\n- File: shared/scripts/lib/reminder_due.py:107-116 (`_triage_item` mapping)\n- Finding: `open` carries triage `detail` (multiline, uncapped, explicitly noted \"no length limit\"). A hostile/very large triage detail makes `due --json` emit an unbounded blob into a mail path. Stated in the ADR as \"Not probed\" \u2014 a known, accepted gap, but combined with redaction-only-fragment fixtures, a 10 MB detail would be redacted then emitted whole.\n- Suggestion: cap `open`/`why` at output (or document the WebUI's responsibility to truncate) since the producer knows it's mailed.\n\n- Category: test | Severity: low\n- File: shared/tests/test_reminder_due.py:117-122 (`test_triage_text_is_redacted_at_output_time`)\n- Finding: The secret fixtures are built by concatenation (`\"gh\" + \"p_\" + ...`) to dodge the write-time scanner, good \u2014 but the assertion only checks the *specific* fragments don't appear. If `redact` masks only the exact `ghp_` prefix shape but a slightly different token format (e.g. `sk-`, `AKIA`, bearer) slips through, the test passes. The unit-level `test_control_characters_are_flattened_and_blocks_redacted` covers PEM and `password=` but not other token families.\n- Suggestion: add direct unit tests on `redact_urls` for the token shapes the write-time check refuses (github, AWS, generic `token=`), since output redaction is the last line before mail.\n\nOverall: the implementation is coherent and the review trail is unusually honest (including the accepted URL-password leak), but the unvalidated `revisitAt` pass-through, the untested/likely-unimplemented exit-4 unreadable-store behavior, and the silent drop of unparseable reminder due dates are concrete gaps against the change's own stated contract. Ship-with-fixes.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "partially_degraded": true,
+  "partially_degraded_legs": [
+    "openai"
+  ],
+  "missing_legs": [
+    "openai"
+  ],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-11-21-e1b-reminder-due",
+    "at": "2026-11-21T20:14:35.409185+00:00"
+  },
+  "verdicts": {
+    "openai": "unavailable",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "error",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": false,
+    "requires_resolution": true,
+    "reason": "only one reviewer answered \u2014 openai did not (glm=revise, openai=unavailable)"
+  }
+}

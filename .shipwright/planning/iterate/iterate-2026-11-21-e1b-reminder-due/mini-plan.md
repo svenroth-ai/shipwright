@@ -1,0 +1,5 @@
+# Mini-plan E1b: the one `due` answer
+Files: lib/reminder_due.py (build_due: fold reminders, read triage via triage.read_all_items, merge, redact, versioned envelope), lib/reminder_secrets.py (+redact_urls), tools/reminder_cli.py (+`due [--on D] [--json]`), tests (test_reminder_due.py, test_reminder_due_contract.py), docs rows (hooks-and-pipeline, guide), spec ACs.
+Rules: today = utc_date(now_utc()); --on D -> midnight UTC aware for triage; open due<=D; snoozed snoozed_until<=D with due=snoozed_until; done never; triage items with revisitDue true; text redacted (triage and reminder text); non-text or lone surrogate never breaks --json; read-only; no code opens triage.jsonl.
+Contract: {contractVersion:1,on,sourceRoot,corruptLines,items}; fixed 10-field item; triage link carries label "Triage <id>" so every link has {label,kind,ref}.
+Spec bookkeeping: extends FR-01.22 with AC07-AC09 (no new FR; same feature, the read side of the same operator reminders), recorded in the ADR and decision drop; integration FR-count pins unchanged.
