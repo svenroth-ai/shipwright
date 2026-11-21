@@ -156,6 +156,20 @@ def test_fold_last_valid_wins_and_tolerates_damage(tmp_path):
     folded = read_folded(path)
     assert folded.reminders[rid]["status"] == "open"
     assert len(folded.corrupt) == 1 and len(folded.rejected) == 1
+    # the separator guard is pinned on the raw file: one object per physical line
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if line.strip() and line != "not json":
+            assert isinstance(json.loads(line), dict)
+
+
+@pytest.mark.covers("FR-01.22/AC06")
+def test_stray_object_is_counted_not_dropped(tmp_path):
+    root = str(tmp_path)
+    path = store_path(root)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text('{"event":"Add","id":"rem-0000000c"}' + chr(10), encoding="utf-8")
+    folded = read_folded(path)
+    assert not folded.reminders and len(folded.rejected) + len(folded.corrupt) == 1
 
 
 @pytest.mark.covers("FR-01.22/AC02")

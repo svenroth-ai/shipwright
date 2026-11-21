@@ -207,6 +207,7 @@ def read_folded(path: Path | str) -> Folded:
     out = Folded(corrupt=rr.corrupt)
     for ev in rr.records:
         if not _is_event(ev):
+            out.rejected.append(ev)  # a stray object is counted, never dropped
             continue
         try:
             out.reminders[ev["id"]] = _apply(out.reminders.get(ev["id"]), ev)

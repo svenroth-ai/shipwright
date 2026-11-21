@@ -18,7 +18,7 @@ from lib.main_health_diagnosis import contains_secret
 #: ``scheme://user:pass@host`` — credentials embedded in a URL authority. A token-only
 #: userinfo (``https://<token>@host``) is left to ``contains_secret``'s token shapes, so a
 #: harmless ``ssh://git@host/repo`` ref is not refused.
-_URL_USERINFO = re.compile(r"[A-Za-z][A-Za-z0-9+.\-]*://[^\s/@:?#]+:[^\s/@]+@")
+_URL_USERINFO = re.compile(r"[A-Za-z][A-Za-z0-9+.\-]*://[^\s/@:?#]*:[^\s/@]+@")
 #: A bare ``user:pass@host`` (no scheme) is not matched on purpose: it is
 #: indistinguishable from an e-mail address plus a colon in prose.
 _URL_SECRET_PARAM = re.compile(
