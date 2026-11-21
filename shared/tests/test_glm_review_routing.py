@@ -35,6 +35,8 @@ from external_review_routing import (  # noqa: E402
     resolve_reviewer_model,
 )
 
+pytestmark = pytest.mark.covers_none("tooling")  # a test of the external-review tooling (model identity/routing): proves no product requirement (infrastructure class, shared/config/infra_test_paths.json)
+
 
 EXPECTED_PROVIDER = {
     "only": ["novita", "together"],
@@ -135,7 +137,7 @@ def test_forbidden_provider_config_stops_before_client_creation(monkeypatch):
 @pytest.mark.parametrize(
     "reviewer,route,model_key,forbidden",
     [
-        ("glm", "openrouter", "openrouter_glm", "openai/gpt-6.1-sol"),
+        ("glm", "openrouter", "openrouter_glm", "openai/gpt-6.2-sol"),
         ("openai", "openrouter", "openrouter_chatgpt", "z-ai/glm-5.3"),
         ("openai", "direct", "chatgpt", "z-ai/glm-5.3"),
     ],
@@ -248,7 +250,7 @@ def test_gpt_openrouter_body_has_no_glm_provider_policy(monkeypatch):
     )
 
     assert result["status"] == "success"
-    assert captured[0]["model"] == "openai/gpt-6.1-sol"
+    assert captured[0]["model"] == "openai/gpt-6.2-sol"
     assert "provider" not in captured[0]
     assert "reasoning" not in captured[0]
     assert "models" not in captured[0]

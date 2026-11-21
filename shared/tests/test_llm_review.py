@@ -16,6 +16,9 @@ if str(_LIB_DIR) not in sys.path:
     sys.path.insert(0, str(_LIB_DIR))
 
 from external_review_degraded import DEFAULT_TIMEOUT_SECONDS, MAX_OUTPUT_TOKENS  # noqa: E402
+import pytest
+
+pytestmark = pytest.mark.covers_none("tooling")  # a test of the external-review tooling (model identity/routing): proves no product requirement (infrastructure class, shared/config/infra_test_paths.json)
 
 
 class _FakeMessage:
@@ -59,7 +62,7 @@ def test_llm_review_openai_uses_max_completion_tokens(monkeypatch):
 
     result = llm_review._review_openai(
         "CONTENT", "CONTEXT", "system", "u {CONTENT} {CONTEXT}",
-        {"models": {"chatgpt": "gpt-6.1-sol"}}, 5,
+        {"models": {"chatgpt": "gpt-6.2-sol"}}, 5,
     )
 
     assert result["status"] == "success"

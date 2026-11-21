@@ -11,6 +11,9 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from tools import condense_release_notes as crn  # noqa: E402
+import pytest
+
+pytestmark = pytest.mark.covers_none("tooling")  # a test of the external-review tooling (model identity/routing): proves no product requirement (infrastructure class, shared/config/infra_test_paths.json)
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _SCRIPTS = _REPO_ROOT / "shared" / "scripts"
@@ -214,15 +217,15 @@ def test_release_notes_prompt_file_exists_with_required_markers():
         assert marker in text, f"prompt file is missing the {marker!r} section marker"
 
 
-def test_fallback_model_is_gpt_6_1_sol_when_config_has_no_model(tmp_path: Path, monkeypatch):
-    """With no configured model the hardcoded fallback must be the live GPT-6.1 Sol slug."""
+def test_fallback_model_is_gpt_6_2_sol_when_config_has_no_model(tmp_path: Path, monkeypatch):
+    """With no configured model the hardcoded fallback must be the live GPT-6.2 Sol slug."""
     fake_response = MagicMock()
     fake_response.choices = [MagicMock(message=MagicMock(content="## Highlights\n"))]
     monkeypatch.setattr(crn, "resolve_model", lambda *_a, **_k: None)
 
     for env, unset, expected in (
-        ("OPENROUTER_API_KEY", "OPENAI_API_KEY", "openai/gpt-6.1-sol"),
-        ("OPENAI_API_KEY", "OPENROUTER_API_KEY", "gpt-6.1-sol"),
+        ("OPENROUTER_API_KEY", "OPENAI_API_KEY", "openai/gpt-6.2-sol"),
+        ("OPENAI_API_KEY", "OPENROUTER_API_KEY", "gpt-6.2-sol"),
     ):
         monkeypatch.setenv(env, "test-key")
         monkeypatch.delenv(unset, raising=False)

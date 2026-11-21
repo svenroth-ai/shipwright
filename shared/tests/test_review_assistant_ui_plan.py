@@ -10,6 +10,9 @@ _TOOLS = Path(__file__).resolve().parents[1] / "scripts" / "tools"
 sys.path.insert(0, str(_TOOLS))
 
 import review_assistant_ui_plan as subject  # noqa: E402
+import pytest
+
+pytestmark = pytest.mark.covers_none("tooling")  # a test of the external-review tooling (model identity/routing): proves no product requirement (infrastructure class, shared/config/infra_test_paths.json)
 
 
 def test_degraded_review_keeps_reason_and_partial_body(tmp_path, monkeypatch):
@@ -38,6 +41,6 @@ def test_degraded_review_keeps_reason_and_partial_body(tmp_path, monkeypatch):
     assert "- Status: **degraded**" in rendered
     assert "- Reason: reply cut off" in rendered
     assert "## Reviewer: glm" in rendered
-    assert "z-ai/glm-5.3, openai/gpt-6.1-sol" in rendered
+    assert "z-ai/glm-5.3, openai/gpt-6.2-sol" in rendered
     assert "partial finding body" in rendered
     assert captured["timeout"] == 240

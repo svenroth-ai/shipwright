@@ -19,8 +19,11 @@ for _d in (_LIB_DIR, _TOOLS_DIR):
 
 import cmd_resolver  # noqa: E402
 import external_review_default_legs as legs  # noqa: E402
+import pytest
 
-_CONFIG = {"models": {"codex": "gpt-6.1-sol"}, "codex": {"max_retries": 1}}
+pytestmark = pytest.mark.covers_none("tooling")  # a test of the external-review tooling (model identity/routing): proves no product requirement (infrastructure class, shared/config/infra_test_paths.json)
+
+_CONFIG = {"models": {"codex": "gpt-6.2-sol"}, "codex": {"max_retries": 1}}
 
 
 class _FakeCompleted:
@@ -100,7 +103,7 @@ def test_review_codex_reports_a_nonzero_exit_as_error_without_retrying(monkeypat
     monkeypatch.setattr(legs, "is_codex_available", lambda: (True, ""))
     monkeypatch.setattr(cmd_resolver.shutil, "which", lambda _name: "/usr/bin/codex")
     monkeypatch.setattr(legs.tempfile, "TemporaryDirectory", lambda prefix="", ignore_cleanup_errors=False: _DirCtx(tmp_path))
-    config_with_retries = {"models": {"codex": "gpt-6.1-sol"}, "codex": {"max_retries": 2}}
+    config_with_retries = {"models": {"codex": "gpt-6.2-sol"}, "codex": {"max_retries": 2}}
     attempts = {"n": 0}
 
     def _fake_run(*_a, **_k):
@@ -118,7 +121,7 @@ def test_review_codex_timeout_is_error_and_not_retried(monkeypatch, tmp_path):
     monkeypatch.setattr(legs, "is_codex_available", lambda: (True, ""))
     monkeypatch.setattr(cmd_resolver.shutil, "which", lambda _name: "/usr/bin/codex")
     monkeypatch.setattr(legs.tempfile, "TemporaryDirectory", lambda prefix="", ignore_cleanup_errors=False: _DirCtx(tmp_path))
-    config_with_retries = {"models": {"codex": "gpt-6.1-sol"}, "codex": {"max_retries": 2, "timeout_seconds": 1}}
+    config_with_retries = {"models": {"codex": "gpt-6.2-sol"}, "codex": {"max_retries": 2, "timeout_seconds": 1}}
     attempts = {"n": 0}
 
     def _raise(*_a, **_k):

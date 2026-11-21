@@ -17,6 +17,9 @@ for _p in (_SHARED / "scripts" / "tools", _SHARED / "scripts" / "lib"):
         sys.path.insert(0, str(_p))
 
 from external_review_degraded import MAX_OUTPUT_TOKENS  # noqa: E402
+import pytest
+
+pytestmark = pytest.mark.covers_none("tooling")  # a test of the external-review tooling (model identity/routing): proves no product requirement (infrastructure class, shared/config/infra_test_paths.json)
 
 
 class _FakeMessage:
@@ -64,7 +67,7 @@ def test_review_with_openai_uses_max_completion_tokens(monkeypatch):
     monkeypatch.setattr(openai, "OpenAI", _make_fake_openai(captured))
 
     config = {
-        "models": {"chatgpt": "gpt-6.1-sol"},
+        "models": {"chatgpt": "gpt-6.2-sol"},
         "llm_client": {"timeout_seconds": 5},
     }
     result = external_review.review_with_openai(

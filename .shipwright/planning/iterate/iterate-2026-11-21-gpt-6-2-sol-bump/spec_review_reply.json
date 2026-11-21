@@ -1,0 +1,1 @@
+{"stage": "spec-compliance", "verdict": "PASS", "spec_citations": [], "summary": "Round 2 PASS. Round-1 REJECT (dated 2026-10-02 docstring in test_codex_review_schemas_typed.py:4) fixed by restoring gpt-6.1-sol; all live references on 6.2 slug; history untouched; luna/Haiku untouched."}
