@@ -1,0 +1,8 @@
+{"section":"E1b-reminder-due","verdict":"approved","review":[
+{"severity":"medium","category":"security","file":"shared/scripts/lib/reminder_secrets.py","finding":"Prefixed secret names (client_secret, db_password) were not redacted at output. FIXED: output-time patterns accept a word prefix; tests added. Write-side pattern left as in E1a (accepted)."},
+{"severity":"medium","category":"correctness","file":"shared/tests/test_reminder_due.py","finding":"No test pinned the UTC day boundary. FIXED: monkeypatched now_utc at UTC-5 and 23:59:59 UTC."},
+{"severity":"low","category":"security","file":"shared/scripts/lib/reminder_due.py","finding":"Unicode line separators and bidi controls survived. FIXED."},
+{"severity":"low","category":"security","file":"shared/scripts/lib/reminder_due.py","finding":"triageError could carry a local path. FIXED: exception type only."},
+{"severity":"low","category":"architecture","file":"shared/tests/test_reminder_due.py","finding":"ITEM_FIELDS/LINK_FIELDS unused by the end-to-end test. FIXED: asserted against the real output."},
+{"severity":"low","category":"correctness","file":"shared/tests/test_reminder_due.py","finding":"worktree test fragile with gpgsign and no returncode check. FIXED."},
+{"severity":"low","category":"correctness","file":"shared/scripts/lib/reminder_due.py","finding":"One malformed triage item drops all parks (reported via triageError). Accepted, optional."}]}

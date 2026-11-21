@@ -33,6 +33,26 @@ REFUSAL = (
 )
 
 
+_PEM_BLOCK = re.compile(
+    r"-----BEGIN [A-Z ]*PRIVATE KEY-----.*?(?:-----END [A-Z ]*PRIVATE KEY-----|\Z)", re.DOTALL)
+_PLAIN_SECRET = re.compile(r"(?i)\b(\w*(?:password|passwd|pwd|secret|passphrase))([\"']?\s*[=:]\s*)[\"']?[^\s\"',}]+")
+_OUT_PARAM = re.compile(
+    r"(?i)([?&#]\w*(?:password|passwd|pwd|secret|passphrase|token|api_?key|key|auth|sig))=[^\s&#]+")
+
+
+def redact_urls(text: str) -> str:
+    """Mask URL credentials, whole PEM key blocks and ``password=...`` in ``text``.
+
+    Output-time companion of the write-time check. Best effort: a URL password
+    containing ``/`` or ``@`` can still leak part of itself.
+    """
+    text = _PEM_BLOCK.sub("[REDACTED]", text)
+    text = _OUT_PARAM.sub(lambda m: m.group(1) + "=[REDACTED]", text)
+    text = _PLAIN_SECRET.sub(lambda m: m.group(1) + m.group(2) + "[REDACTED]", text)
+    text = _URL_USERINFO.sub(lambda m: m.group(0).split("://", 1)[0] + "://[REDACTED]@", text)
+    return _URL_SECRET_PARAM.sub(lambda m: m.group(0)[0] + m.group(0)[1:].split("=", 1)[0] + "=[REDACTED]", text)
+
+
 def text_has_secret(text: str) -> bool:
     """True when ``text`` carries a known secret shape or URL credentials."""
     if not isinstance(text, str):

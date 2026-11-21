@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "# Review: E1b \u2014 Combined `due` Answer\n\n## Findings\n\n**Category: edge-case | Severity: medium**\n**Finding:** The `--on D` rule says \"midnight UTC aware for triage,\" but the plan doesn't state whether `--on` accepts dates only (`2026-11-21`) or datetimes, nor how it's parsed/validated. Ambiguous or locale-sensitive date parsing (e.g., `D-M-Y` vs `M-D-Y`) will produce silently wrong answers.\n**Suggestion:** Pin the accepted format (ISO-8601 date, UTC) in the plan and reject anything else with a clear CLI error. Add a test for an unparseable `--on` value.\n\n**Category: edge-case | Severity: medium**\n**Finding:** The snooze rule (`snoozed_until <= D` with `due = snoozed_until`) has an implicit question: after the snooze threshold, does the item's effective due date revert to the original `due` on subsequent days, or stay `snoozed_until` forever? The plan reads as \"snoozed_until permanently replaces due,\" which may be intended, but \"snoozed until Friday, then due Monday next week\" is a plausible alternative semantic. This is a cross-repo contract decision being made implicitly.\n**Suggestion:** Confirm the intended semantics against the BRIEF's `Done when:` list explicitly and record it in the contract note; add a test for `D` far past `snoozed_until`.\n\n**Category: edge-case | Severity: low**\n**Finding:** \"Corrupt lines\" are surfaced as a count (`corruptLines`) but the plan doesn't say whether a corrupt triage.jsonl line causes a hard error or is skipped-then-counted. Given the contract explicitly carries the field, presumably counted \u2014 but the reminder-fold side needs the same policy stated.\n**Suggestion:** State one policy: corrupt lines are skipped, counted per source, and never fail `due`. Ensure `--json` output can't be broken by corrupt input (the plan does say lone surrogates/non-text never break `--json`, which is good \u2014 just extend that guarantee explicitly to corrupt lines).\n\n**Category: risk | Severity: medium**\n**Finding:** `redact_urls` is being added to `lib/reminder_secrets.py`, implying reminder text can contain URLs with embedded secrets. Redaction here is a display/leak-prevention concern, but the plan is silent on whether redaction is applied to *stored* reminders or only at `due` output time. If reminders are stored unredacted and triage.jsonl contains URLs, `--json` output must redact consistently with the same function or the guarantee is partial.\n**Suggestion:** Clarify redaction applies at output time only (read-only change, consistent with \"no code opens triage.jsonl\" except via `triage.read_all_items`) and that both reminder text and triage text pass through the *same* redaction function. Add a test with a URL containing a token in both sources.\n\n**Category: dependency | Severity: low**\n**Finding:** The triage link shape (`{label, kind, ref}` with label `\"Triage <id>\"`) is a cross-repo contract element. If the triage repo's item ids are opaque or can contain characters that collide with other link labels, downstream consumers parsing `label` strings may break. Also, if the triage repo later changes id format, this label format is pinned in `contractVersion:1`.\n**Suggestion:** Confirm the id format with the triage repo before freezing it in version 1; consumers should rely on `ref`, not parse `label`.\n\n**Category: approach | Severity: low**\n**Finding:** `--on D` sets \"midnight UTC aware\" for the triage read, but reminder folding (`due <= D`) appears to compare against the date itself. Mixed comparisons between an aware-datetime boundary and date-valued `due` fields are a classic off-by-one source, especially across DST-irrelevant-but-leap-day-relevant inputs.\n**Suggestion:** Normalize once: convert `D` to a single boundary value and compare both sources against it with one helper, tested at boundary (`due == D`) and one tick past.\n\n**Category: edge-case | Severity: low**\n**Finding:** Empty-state behavior is unspecified: what does `due` print when there are zero due items, or when triage.jsonl is absent entirely? The JSON envelope should still be well-formed (`items: []`), and human output should not print an error.\n**Suggestion:** Add explicit empty-result tests for both `--json` and text output, and for missing triage file (distinct from corrupt).\n\n## Overall Assessment\n\nThe plan is well-scoped, read-only, and shows good contract discipline (versioned envelope, fixed item shape, redaction guarantee). The main gaps are underspecified semantics at the boundaries \u2014 `--on` parsing, post-snooze due-date behavior, corrupt-line policy, and empty/missing-file handling \u2014 all cheap to resolve in the plan before implementation.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "Review limited to the supplied mini-plan: filesystem access was blocked, so I could not verify the authoritative brief or existing implementation.\n\n1. **Category:** dependency \u00b7 **Severity:** medium  \n   **Finding:** The plan does not derive acceptance criteria from E1b\u2019s authoritative `Done when:` list. Adding AC07\u2013AC09 alone does not establish coverage of the shared rules or sections 5\u20136.  \n   **Suggestion:** Map each authoritative requirement to its implementation or test before proceeding, including the cross-repo contract note explicitly included in scope.\n\n2. **Category:** approach \u00b7 **Severity:** medium  \n   **Finding:** The versioned contract remains underspecified: \u201cfixed 10-field item\u201d does not identify fields, types, nullability, ordering, or how `corruptLines` combines diagnostics from both sources. Independent consumers could implement incompatible interpretations of version 1.  \n   **Suggestion:** Record the exact schema and deterministic ordering in the contract note, with a representative mixed-source fixture enforced by the contract tests.\n\n3. **Category:** edge-case \u00b7 **Severity:** medium  \n   **Finding:** Corrupt-line reporting is planned, but source-level failure behavior is unspecified. An unreadable reminder or triage store could either abort the command or produce an apparently complete but partial answer.  \n   **Suggestion:** Define missing-store versus unreadable-store behavior and CLI exit status. Test these alongside malformed records, ensuring partial results cannot silently masquerade as a complete successful answer.\n\nThe overall design is coherent: reuse the triage reader, fold reminder state, and expose one read-only result. Resolve the acceptance mapping, contract definition, and source-failure behavior before implementation.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-11-21-e1b-reminder-due",
+    "at": "2026-11-21T19:56:50.009553+00:00"
+  },
+  "verdicts": {
+    "glm": "revise",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}
