@@ -1,4 +1,4 @@
 # Mini-plan E1a: reminder store and CLI
 Files: lib/reminder_store.py (path at main root, append under FileLock, fold, strict validation), lib/reminder_secrets.py (secret check on every text field incl. command and link label/ref; reuses promoted public contains_secret in main_health_diagnosis plus URL-credential rules), tools/reminder_cli.py (add/list/show/done/snooze), tests in shared/tests (round trip, refusals, two-process concurrency, real git worktree), docs row in hooks-and-pipeline.md and guide.md, gitignore lines.
 Rules: done cannot be snoozed; --until must be after today (UTC); id uniqueness checked under the lock; last valid event per id wins; corrupt lines reported, never silently dropped.
-Spec bookkeeping: tooling (no new FR), reason: operator-facing utility store with no phase output.
+Spec bookkeeping: new FR FR-01.22, reason: tests need an FR tag and the infra catalog is not usable in the same merge.

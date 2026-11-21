@@ -1,6 +1,6 @@
 # Reminder store: a separate local event log with one CLI writer
 
-Run: `iterate-2026-11-21-e1a-reminder-store` (campaign `reminders-core`, unit E1a). Spec bookkeeping: `tooling`, no new FR (an operator utility store with no phase output; the requirement lives in the campaign brief).
+Run: `iterate-2026-11-21-e1a-reminder-store` (campaign `reminders-core`, unit E1a). Spec bookkeeping: new FR `FR-01.22` (the tests need an FR tag and the infra catalog is not usable in the same merge); an operator utility store with no phase output, requirement source is the campaign brief.
 
 ## Decision
 A new append-only `.shipwright/reminders.jsonl` (git-ignored, resolved at the MAIN root), written only by `tools/reminder_cli.py`, reusing `FileLock` and the tolerant JSONL reader, with a secret check (`lib/reminder_secrets.py`) built on the one public `contains_secret()` promoted in `lib/main_health_diagnosis.py`.
