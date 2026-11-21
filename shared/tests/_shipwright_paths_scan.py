@@ -31,7 +31,7 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(REPO / "shared" / "scripts" / "lib"))
+sys.path.append(str(REPO / "shared" / "scripts" / "lib"))
 import shipwright_paths as sp  # noqa: E402
 
 BASENAMES = sorted(sp.all_basenames())

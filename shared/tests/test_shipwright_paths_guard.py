@@ -20,7 +20,7 @@ from pathlib import Path
 
 import pytest
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))  # for _shipwright_paths_scan
+sys.path.append(str(Path(__file__).resolve().parent))  # for _shipwright_paths_scan
 
 import _shipwright_paths_scan as scan  # noqa: E402
 
