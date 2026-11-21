@@ -23,3 +23,6 @@ Boundary: reminder_cli (producer) to `reminders.jsonl` to `read_folded` (consume
 
 ## Self-review note
 `add --why` is required on the CLI (the library accepts none): a deliberate stricter choice, real context is the point of a reminder. The command-flag secret rules suggested by the plan reviewer were removed after a Stage-1 reject: the brief scopes the check to the one pattern set plus URL credentials.
+
+## Write refusal outside a resolvable main root
+`store_path(for_write=True)` refuses a write inside a git checkout when git does not answer, instead of falling back to the given project root (the brief's fallback applies to reads and to non-git folders). The refusal protects the rule that a reminder written from a worktree lands in the main store, and the risk of bypassing the main-root rule.
