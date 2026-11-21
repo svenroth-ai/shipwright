@@ -203,45 +203,63 @@
     "doubt": {
       "review_type": "doubt",
       "status": "completed",
-      "findings_count": 3,
+      "findings_count": 5,
       "findings": [
         {
           "severity": "medium",
-          "category": "boundary",
-          "file": "plugins/shipwright-compliance/scripts/lib/security_gate.py:28",
+          "category": "reversibility / boundary",
+          "file": null,
           "line": null,
-          "finding": "Claim under doubt: hooks survive import failure — security_gate and rtm_gate_support import the resolver transitively; stale shared tree blocks deploys",
-          "suggestion": "guarded import with literal fallback (done)",
-          "source": "doubt-reviewer"
-        },
-        {
-          "severity": "medium",
-          "category": "blast radius",
-          "file": "plugins/shipwright-grade/scripts/lib/routing.py:22",
-          "line": null,
-          "finding": "Claim under doubt: no behaviour change — grade routing/authoritative import shared eagerly",
-          "suggestion": "guarded import with literal fallback (done)",
+          "finding": "Claim under doubt: R1/R3/R4 are one-file edits in shipwright_paths.py — rel(key) takes no root; 103 root / _sp.rel(key) joins; _sp.path has no production callers",
+          "suggestion": "correct the docstring/BRIEF: R1 must rewrite sites or route joins through path()",
           "source": "doubt-reviewer"
         },
         {
           "severity": "low",
-          "category": "concurrency",
-          "file": "shared/scripts/lib/shipwright_paths.py:293",
+          "category": "hidden coupling",
+          "file": null,
           "line": null,
-          "finding": "Claim under doubt: two module objects harmless — three import names for one resolver",
-          "suggestion": "R1 keeps module stateless or unifies imports",
+          "finding": "Claim under doubt: rel vs name chosen correctly — indistinguishable until R3",
+          "suggestion": "test that points rel at .shipwright/config",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: two module objects harmless — three import names",
+          "suggestion": "single object before R1 adds state",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary (stale cache)",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: only guarded hooks need fallback — write_run_config imports at module top",
+          "suggestion": "accept; SessionStart heal covers it",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "reversibility",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: fixed_tmp column accurate — unread and untested",
+          "suggestion": "pin by test before R2 uses it",
           "source": "doubt-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-11-21T00:04:19.907757+00:00",
+      "completed_at": "2026-11-21T00:25:50.000483+00:00",
       "disposition": null,
       "recorded_by": "doubt-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus",
       "verdict": "pass",
-      "reviewed_commit": "f8f40a143e95efd75203f6f1ebb2aacfa5319524"
+      "reviewed_commit": "53b4e9f4fe54d77c0ffb0bb2c65dda2d81ecef2b"
     },
     "external_code": {
       "review_type": "external_code",
@@ -356,14 +374,14 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-11-20T23:41:00.869156+00:00",
+      "completed_at": "2026-11-21T00:25:49.669680+00:00",
       "disposition": null,
       "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus",
       "verdict": "pass",
-      "reviewed_commit": "8dbdf0e57d7fa11de20670fdf37a1a9e893f6000"
+      "reviewed_commit": "53b4e9f4fe54d77c0ffb0bb2c65dda2d81ecef2b"
     },
     "plan_internal": {
       "review_type": "plan_internal",
