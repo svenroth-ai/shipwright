@@ -33,7 +33,7 @@ if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
 from lib.events_log import resolve_events_path  # noqa: E402
-from lib.events_layout import events_layout, events_lock_path  # noqa: E402
+from lib.events_layout import events_layout, events_lock_path; from lib.shipwright_paths import lock_beside  # noqa: E402
 from lib.events_sentinel import UnsupportedEventsLayout, require_writable_layout  # noqa: E402
 from lib.events_read import EventLogNotReadable  # noqa: E402
 from lib.events_write import amend_commit, new_event_id, require_run_drops_readable, write_event_line  # noqa: E402
@@ -497,7 +497,7 @@ def attach_commit_to_event(
     if not path.exists():
         return False
 
-    lock_path = events_lock_path(project_root)
+    lock_path = lock_beside(path)  # follows the file actually patched, as before
     tmp_path = path.with_name(path.name + ".tmp")
 
     patched = False

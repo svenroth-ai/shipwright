@@ -68,6 +68,9 @@ LITERAL_ALLOWED = {
     "plugins/shipwright-grade/scripts/lib/routing.py": "grade stays usable without shared (lazy/soft-fail design)",
     "plugins/shipwright-grade/scripts/lib/authoritative.py": "grade stays usable without shared (lazy/soft-fail design)",
     "shared/scripts/hooks/session_start_using_shipwright.py": "session hook: must still run when the shared cache is stale",
+    "shared/scripts/hooks/suggest_iterate.py": "hook must not crash when the shared cache is stale: guarded import with a literal fallback (Tier-3 review, PR 1089)",
+    "shared/scripts/hooks/check_file_size.py": "hook must not crash when the shared cache is stale: guarded import with a literal fallback (Tier-3 review, PR 1089)",
+    "shared/scripts/hooks/required_checks_state.py": "hook must not crash when the shared cache is stale: guarded import with a literal fallback (Tier-3 review, PR 1089)",
 }
 ALLOWED = {"lock-construction": LOCK_ALLOWED, "shipwright-prefix-rule": PREFIX_RULE_ALLOWED, "literal": LITERAL_ALLOWED}
 
