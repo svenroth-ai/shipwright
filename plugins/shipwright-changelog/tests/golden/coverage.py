@@ -7,9 +7,12 @@
 * **P8c** every AC of FR-01.09 is judged by the oracle in at least one scenario, or is listed judgement-only
   (``JUDGEMENT_ONLY``, empty: every AC has an oracle function and a scenario).
 
-The inventory and the prose are read from the repository as they stand. At stop 2 the prose copy is pinned by hash
-and P8b is pointed at the pin (programme P7); P7 of the pilot retires the inventory with its checker. This module
-only reads; the tests are in ``test_coverage_checks.py``.
+The inventory is read from the repository as it stands. P8b reads the PINNED prose (``pinned_prose/``, programme P7):
+a byte-exact copy of ``SKILL.md`` and ``references/*.md`` taken at stop 2 and frozen by hash in ``golden.lock.json``,
+so a later prose edit (P5, P8) does not move P8b until that unit re-pins the copy with an approved delta. The copies
+carry a ``.pin`` suffix so no repository-wide prose scanner or size gate reads them as live skill text. The
+replay citations, the frozen-chain comparison and S19 read the same pin (``replay_commands.SKILL``). P7 of the
+pilot retires the inventory with its checker. This module only reads; the tests are in ``test_coverage_checks.py``.
 """
 
 from __future__ import annotations
@@ -18,7 +21,7 @@ import json
 import re
 from typing import Iterable
 
-from .replay_commands import CITES, NOT_REPLAYED, REPO_ROOT
+from .replay_commands import CITES, NOT_REPLAYED, REPO_ROOT, SKILL as PINNED_SKILL
 
 INVENTORY = REPO_ROOT / ".shipwright/planning/campaigns/2026-10-25-dfp-pilot-changelog-inventory/inventory.json"
 SPEC = REPO_ROOT / ".shipwright/planning/01-adopted/spec.md"
@@ -92,6 +95,11 @@ CONDITIONALS: dict[int, tuple[str, str]] = {
 _CONDITIONAL = re.compile(r"^\s*(?:- )?(?:\*\*)?(?:If\b|Only if\b|Omit\b|Autonomous\b|Guided\b|`status: \"ok\"`|Read `status`"
                           r"|`(?:pipeline|standalone|error)`\*\*)")
 _PIPELINE_ITEM = re.compile(r"^- \*\*`(?:pipeline|standalone|error)`\*\*")
+
+
+def pinned_skill_lines() -> list[str]:
+    """The lines of the pinned ``SKILL.md`` copy: what P8b and its line table are checked against."""
+    return PINNED_SKILL.read_text(encoding="utf-8").splitlines()
 
 
 def fenced_blocks(lines: list[str]) -> list[tuple[int, int]]:

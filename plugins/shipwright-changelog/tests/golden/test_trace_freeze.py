@@ -2,9 +2,11 @@
 
 Before the operator's stop 2 there is no lock: the harness is "unfrozen" and this file only
 proves the check works. Stop 2's iterate commits ``golden.lock.json`` (path -> sha256 of the
-frozen ``golden_trace.py`` and every ``*.trace.json``) and, only when needed, an
-``approved_deltas.json`` list; from then on a diff to a frozen file fails here unless a delta
-names exactly that change. Known limit: deleting the lock reads as "unfrozen"; the stop-2
+frozen ``golden_trace.py``, every ``*.trace.json`` and every REQUIRED file), ``promise.lock.json``
+(``path::test`` -> AC ids + fingerprint of every promise test) and an empty
+``approved_deltas.json``, all written by ``shared/testkit/golden_lock.py``; from then on a diff
+to a frozen file fails here unless a delta names exactly that change, and a promise test that
+moved fails the promise-lock check. Known limit: deleting the lock reads as "unfrozen"; the stop-2
 iterate also pins its existence in review, because a test cannot tell a deletion from a start.
 Residual risk, accepted here and handed to the operator procedure: a diff may re-pin a trace and its
 hash together, or write an approved delta with any approver string; only review (a sensitive-path rule or
@@ -21,14 +23,15 @@ from pathlib import Path
 import pytest
 
 
-pytestmark = pytest.mark.covers("FR-01.09/AC14")  # test support for the changelog pilot (programme P2a); the gate refuses removing it (tag-removed), see the P2b1 FINDINGS note
+pytestmark = pytest.mark.covers_none("tooling")  # the freeze checker of the golden-trace harness: proves no product requirement (infrastructure class, shared/config/infra_test_paths.json)
+import golden_lock as gl
 import golden_trace as gt
 from .conftest import DELTAS_PATH, GOLDEN_DIR, LOCK_PATH, REPO_ROOT, STEPS
 
 TRACE_SUFFIX = ".trace.json"
 HARNESS = "shared/testkit/golden_trace.py"
 # What shapes every trace besides the trace files: a lock that leaves one out is refused. P2b added the replay
-# driver and its command table, P2b2 the second half of the scenarios, the coverage checks and the seeded regressions; P2p added the promise tests and the hashing helper; the promise-hash hardening adds the lock's two modules, their tests and the conftests above the golden root; P2-op adds the pinned prose copy and the promise lock to this list.
+# driver and its command table, P2b2 the second half of the scenarios, the coverage checks and the seeded regressions; P2p added the promise tests and the hashing helper; the promise-hash hardening adds the lock's two modules, their tests and the conftests above the golden root; P2-op adds the pinned prose copy, the promise lock and the lock writer with its tests.
 REQUIRED = (HARNESS, "shared/testkit/gh_stub.py", "shared/testkit/release_scratch.py",
             "plugins/shipwright-changelog/tests/golden/conftest.py",
             "plugins/shipwright-changelog/tests/golden/driver_replay.py",
@@ -64,7 +67,22 @@ REQUIRED = (HARNESS, "shared/testkit/gh_stub.py", "shared/testkit/release_scratc
             # what pytest applies to every promise test without the test naming it: the parent conftests (an autouse fixture or a
             # pytest_* hook there), the root conftest and the package markers. Frozen here instead of hashed into every closure. Known cost: once the lock exists, any edit of these files (the root conftest too) needs an approved delta.
             "conftest.py", "plugins/shipwright-changelog/tests/conftest.py",
-            "plugins/shipwright-changelog/tests/__init__.py", "plugins/shipwright-changelog/tests/golden/__init__.py")
+            "plugins/shipwright-changelog/tests/__init__.py", "plugins/shipwright-changelog/tests/golden/__init__.py",
+            # P2-op (stop 2): the lock writer and its tests, the promise lock it writes, and the pinned prose P8b reads
+            "shared/testkit/golden_lock.py", "shared/tests/test_golden_driver_freeze.py",
+            "plugins/shipwright-changelog/tests/golden/promise.lock.json",
+            "plugins/shipwright-changelog/tests/golden/pinned_prose/SKILL.md.pin",
+            "plugins/shipwright-changelog/tests/golden/pinned_prose/references/bullet-folding.md.pin",
+            "plugins/shipwright-changelog/tests/golden/pinned_prose/references/changelog-format.md.pin",
+            "plugins/shipwright-changelog/tests/golden/pinned_prose/references/compliance-evidence.md.pin",
+            "plugins/shipwright-changelog/tests/golden/pinned_prose/references/conventional-commits.md.pin",
+            "plugins/shipwright-changelog/tests/golden/pinned_prose/references/event-fold.md.pin",
+            "plugins/shipwright-changelog/tests/golden/pinned_prose/references/first-actions.md.pin",
+            "plugins/shipwright-changelog/tests/golden/pinned_prose/references/manifest-sync.md.pin",
+            "plugins/shipwright-changelog/tests/golden/pinned_prose/references/release-notes-prompt.md.pin",
+            "plugins/shipwright-changelog/tests/golden/pinned_prose/references/release-workflow.md.pin",
+            "plugins/shipwright-changelog/tests/golden/pinned_prose/references/rerunning-a-release.md.pin")
+SPEC = REPO_ROOT / gl.DEFAULT_SPEC
 
 
 def tree_problems(repo_root: Path, golden_dir: Path) -> list[str]:
@@ -89,6 +107,28 @@ def test_the_real_tree_respects_the_freeze():
 
 def test_the_lock_and_deltas_files_have_one_agreed_home():
     assert LOCK_PATH.parent == DELTAS_PATH.parent == GOLDEN_DIR
+    assert LOCK_PATH.name == gl.GOLDEN_LOCK and gl.PROMISE_LOCK in {Path(r).name for r in REQUIRED}
+
+
+@pytest.mark.covers_none("tooling")
+def test_the_promise_lock_holds_once_the_tree_is_frozen():
+    """A promise test whose assertions, helpers, fixtures or AC ids moved since the freeze fails here (stale lock), and
+    the lock writer's own check (``golden_lock.py --check``: exact file set, deltas honoured) agrees with this file."""
+    if LOCK_PATH.is_file():
+        assert gl.promise_lock_problems(REPO_ROOT, GOLDEN_DIR, SPEC) == []
+        assert gl.freeze_problems(REPO_ROOT, GOLDEN_DIR, Path(__file__), SPEC) == []
+
+
+@pytest.mark.covers_none("tooling")
+def test_the_lock_writer_reads_this_files_required_list_as_it_stands():
+    assert gl.required_files(Path(__file__)) == list(REQUIRED)
+    assert HARNESS == gl.HARNESS and Path(__file__).name == gl.FREEZE_TEST
+
+
+@pytest.mark.covers_none("tooling")
+def test_every_pinned_prose_file_is_frozen():
+    pinned = {p.relative_to(REPO_ROOT).as_posix() for p in (GOLDEN_DIR / "pinned_prose").rglob("*") if p.is_file()}
+    assert pinned and pinned <= set(REQUIRED), sorted(pinned - set(REQUIRED))
 
 
 def make_tree(tmp_path: Path, *, frozen: bool = True) -> tuple[Path, Path]:

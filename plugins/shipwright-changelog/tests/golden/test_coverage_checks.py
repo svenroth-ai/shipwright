@@ -1,4 +1,4 @@
-"""The coverage checks P8a-c (programme P8), green on the unchanged skill, and proof that each one can go red."""
+"""The coverage checks P8a-c (programme P8), green on the pinned skill prose, and proof that each one can go red."""
 
 from __future__ import annotations
 
@@ -7,10 +7,9 @@ import pytest
 
 from . import coverage, oracle
 from .conftest import STEPS
-from .replay_commands import SKILL
 from .scenario_core import GOLDEN_DIR
 
-LINES = SKILL.read_text(encoding="utf-8").splitlines()
+LINES = coverage.pinned_skill_lines()  # the pin, not the live prose: a later prose edit moves P8b only once it is approved
 
 
 @pytest.mark.covers("FR-01.09/AC01")

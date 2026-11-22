@@ -1,0 +1,32 @@
+{
+  "stage": "doubt",
+  "gating": "advisory-must-address",
+  "trigger": "irreversible-ish freeze of a cross-plugin harness (shared/testkit <-> plugins/shipwright-changelog), new dependency edge test_trace_freeze.py -> shared/testkit/golden_lock.py",
+  "doubts": [
+    {"severity": "high", "lens": "boundary & contract",
+     "claim_under_doubt": "the covers_none(\"tooling\") retag and the new tests in the two catalogued files pass the F11 test-tag gate",
+     "evidence": "_tag_binding_infra_pass.py:106-108 refuses a test new since the merge-base unless covers_none sits on the function itself",
+     "disposition": "accepted-and-fixed: each of the 13 new test functions (3 in test_trace_freeze.py, 10 in test_golden_driver_freeze.py) carries its own @pytest.mark.covers_none(\"tooling\"); the retagged existing tests rely on the module mark"},
+    {"severity": "medium", "lens": "hidden coupling & blast radius",
+     "claim_under_doubt": "pointing replay_commands.SKILL at the pin loses nothing that matters after the freeze",
+     "evidence": "the frozen-chain comparison now compares two frozen files; a live SKILL.md edit before P5 is caught only by promise-list anchors and the older prose tests",
+     "disposition": "rebutted-with-reason and handed to the operator: the brief asks that prose edits in P5/P8 move the coverage checks only once approved, which is what the pin does; freezing the live prose as well is a scope decision for the operator (recorded in FINDINGS, Stop 2 section, item 2, with the option to add the live prose to REQUIRED until P5)"},
+    {"severity": "medium", "lens": "reversibility",
+     "claim_under_doubt": "after the freeze every later unit changes frozen files only through approved deltas",
+     "evidence": "a delta covers a changed hash only; adds and removals need --repin, which rewrote the lock without a per-entry account",
+     "disposition": "accepted-and-fixed: --repin now reports entries {added, removed, changed} against the old lock (tested), and the BRIEF P2-op item states that P5/P7/P8 adds or removals are re-pins reviewed against that list"},
+    {"severity": "medium", "lens": "hidden coupling & blast radius",
+     "claim_under_doubt": "the freeze test and the promise-lock check run on every later change",
+     "evidence": "plugins/shipwright-changelog/pyproject.toml addopts and CI -m expressions are outside REQUIRED; the stop-2 open items had no disposition",
+     "disposition": "handed to the operator explicitly: FINDINGS Stop 2 section lists the unfrozen pytest config, the live prose and the unchecked 'passing' status as open operator decisions with their options; not decided by this iterate"},
+    {"severity": "low", "lens": "boundary & contract",
+     "claim_under_doubt": "--promise-only prints the sha256 pair its approved delta needs",
+     "evidence": "before was the file on disk, wrong from the second promise change on",
+     "disposition": "accepted-and-fixed: before = the hash the golden lock holds; a test covers a second promise change"},
+    {"severity": "low", "lens": "cross-interpreter",
+     "claim_under_doubt": "promise.lock.json computed locally holds on Linux CI (3.11)",
+     "evidence": "lock possibly written on 3.13",
+     "disposition": "accepted: the final lock is written with the project venv (CPython 3.11.15) and --check is run under 3.11 and 3.13 on Windows and under Linux (WSL) before push"}
+  ],
+  "summary": "1 high (tag gate) fixed; 3 medium: one fixed (repin entry report + BRIEF rule), two handed to the operator in FINDINGS; 2 low fixed or verified."
+}

@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "## Findings\n\n- Category: spec \u00b7 Severity: high \u00b7 File: entire diff (missing files)\n  Finding: Deliverables 2 and 4 require the actual artifacts to be committed by this iterate: the byte-exact pinned prose copies (`plugins/shipwright-changelog/tests/golden/pinned_prose/*.pin`), `golden.lock.json`, and `promise.lock.json`. The diff adds `approved_deltas.json` and the SECOND-PASS doc, but none of the `.pin` files and neither lock file appear as new files. As shipped, the tree is self-inconsistent:\n  - `coverage.pinned_skill_lines()` (coverage.py, new `PINNED_SKILL` / `pinned_skill_lines`) does `read_text` on `pinned_prose/SKILL.md.pin`, which does not exist \u2192 every test in `test_coverage_checks.py` fails at import/collection with `FileNotFoundError`.\n  - `test_every_pinned_prose_file_is_frozen` (test_trace_freeze.py, new test) rglobs a nonexistent dir \u2192 `pinned` is empty \u2192 `assert pinned` fails.\n  - Running the writer fails: `golden_files` \u2192 `golden_doc` raises `LockError: ...pinned_prose/SKILL.md.pin: named for the lock but missing`, so the lock cannot even be generated without first hand-creating the pins.\n  Suggestion: Generate the `.pin` copies, run the writer, and commit `pinned_prose/*`, `golden.lock.json`, and `promise.lock.json` in this change. If these were intentionally left to a follow-up commit, the diff must not land alone, because the freeze test's own `REQUIRED` and `test_every_pinned_prose_file_is_frozen` fail in this state.\n\n- Category: edge-case \u00b7 Severity: low \u00b7 shared/testkit/golden_lock.py:66-92 (`required_files`)\n  Finding: The AST reader collects module-level string constants in the same single pass that parses `REQUIRED`, so a `REQUIRED` element referencing a constant defined *after* `REQUIRED` in the file (e.g. `REQUIRED = (HARNESS, ...)` with `HARNESS = \"...\"` below it) is refused as \"not a string literal\", and an `AnnAssign` (`REQUIRED: tuple = (...)`) is silently skipped, later surfacing as \"no module-level REQUIRED\". Both are confusing failure modes rather than data corruption; the current freeze test uses neither pattern.\n  Suggestion: Do two passes (collect all constants first, then parse `REQUIRED`) and explicitly reject `AnnAssign` targets named `REQUIRED` with a clear message.\n\n- Category: edge-case \u00b7 Severity: low \u00b7 shared/testkit/golden_lock.py:186-199 (`main`, `--check`)\n  Finding: With `--check`, a *missing* lock file is reported with status `\"stale\"` and exit 1 \u2014 reasonable \u2014 but the report key `\"stale\"` only appears under `args.check`; in write mode the same list appears under `\"written\"` and `status` stays `\"ok\"` even when `--repin` rewrote a lock that existed with different content. A repin is a decision; the CLI gives it no distinct status, so a scripted `--repin` is indistinguishable from a first write in the output.\n  Suggestion: Include a `\"repinned\": true/false` (or distinct status) in the report when an existing file's bytes changed.\n\n- Category: test \u00b7 Severity: low \u00b7 shared/tests/test_golden_driver_freeze.py (`test_the_lock_is_byte_stable_lf_and_ignores_crlf_in_the_hashed_files`)\n  Finding: The byte-stability check asserts absence of `\\r\\n` and a trailing `}\\n` but does not pin an exact digest of either lock file, so a change in JSON key ordering or indent (the \"byte-stable\" guarantee the spec names) would still pass as long as sorted-keys output happened to be regenerated the same way by the same (changed) serializer. The promise-hash workstream explicitly learned this (\"pin a literal digest\"); the lock writer's test does not follow it.\n  Suggestion: Pin sha256 digests of the two lock files for the fixture tree (or compare against a literal expected JSON string).\n\nOtherwise the writer logic looks correct: promise lock hashed via the `overrides` mechanism before it is written, refusal-without-`--repin` writes nothing (verified by the test comparing bytes before/after), `--check` writes nothing, and the CLI/plugin parameterization matches the spec. The doc updates (BRIEF, FINDINGS, LEARNINGS, hooks-and-pipeline) cover deliverable 5.\n\n**Overall assessment:** the writer, tests, and docs are well built, but the change is not shippable as-is: the central deliverables \u2014 the pinned prose copies and the two lock files \u2014 are referenced by `REQUIRED` and read by `coverage.py` yet absent from the diff, so the golden test suite fails in the committed state. Ship-with-fixes: add the generated artifacts (or split so no intermediate commit is red).\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "- Category: spec\n- Severity: high\n- File: plugins/shipwright-changelog/tests/golden/test_coverage_checks.py:12\n- Finding: The diff switches coverage tests to `pinned_prose/SKILL.md.pin`, but adds none of the pinned prose files. It also omits `golden.lock.json` and `promise.lock.json`. Coverage test collection therefore fails with `FileNotFoundError`, and the required stop-2 freeze is not delivered.\n- Suggestion: Add the byte-exact prose copies, then generate and commit both locks after all frozen files are finalized.\n\n- Category: bug\n- Severity: medium\n- File: shared/testkit/golden_lock.py:98\n- Finding: A missing spec silently becomes empty spec text. A typo in `--spec` therefore allows the writer to generate or repin locks without resolving AC IDs through the required AC-Move-Map.\n- Suggestion: Reject a supplied spec path that does not exist or is not a file before planning or writing either lock. Add a test confirming that this failure leaves existing locks unchanged.\n\n- Category: spec\n- Severity: medium\n- File: .shipwright/planning/campaigns/2026-10-25-dfp-pilot-changelog-BRIEF.md:178\n- Finding: The BRIEF marks the baseline complete and references `2026-10-25-dfp-pilot-changelog-FULLRUN-REPORT.md`, but that required report is absent from the diff. The evidence supporting the empty approved-delta baseline is therefore missing.\n- Suggestion: Include the full-run report required by deliverable 5.\n\nShip-with-fixes: the writer largely follows the requested design, but the submitted change lacks the artifacts needed to run the tests and establish the freeze.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-11-23-dfp-pilot-p2op-lock",
+    "at": "2026-11-22T23:13:41.987239+00:00"
+  },
+  "verdicts": {
+    "glm": "revise",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

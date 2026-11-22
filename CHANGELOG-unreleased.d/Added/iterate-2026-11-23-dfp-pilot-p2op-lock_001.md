@@ -1,0 +1,1 @@
+test(testkit): a generic golden-lock writer (shared/testkit/golden_lock.py) writes and checks a plugin's golden.lock.json and promise.lock.json; the changelog pilot is frozen at stop 2 with its skill prose pinned for the coverage checks
