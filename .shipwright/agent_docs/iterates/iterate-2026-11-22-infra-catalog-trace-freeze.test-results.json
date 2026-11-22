@@ -1,0 +1,41 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-22-infra-catalog-trace-freeze",
+    "date": "2026-11-22",
+    "unit": {
+      "status": "passed",
+      "passed": 2,
+      "skipped": 0,
+      "total": 2
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "n/a",
+      "reason_code": "trivial-auto"
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run pytest shared/tests/test_infra_test_paths_catalog.py -q",
+      "exit_code": 0,
+      "tests_run": 2,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\infra-catalog-trace-freeze\\.shipwright\\runs\\iterate-2026-11-22-infra-catalog-trace-freeze\\surface_verification.log",
+      "timestamp": "2026-11-22T20:07:39.912Z",
+      "attempts": 1
+    }
+  }
+}

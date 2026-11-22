@@ -1,4 +1,5 @@
 [
+  "plugins/shipwright-changelog/tests/golden/test_trace_freeze.py",
   "shared/tests/test_gh_stub.py",
   "shared/tests/test_golden_driver_freeze.py",
   "shared/tests/test_golden_trace.py",
