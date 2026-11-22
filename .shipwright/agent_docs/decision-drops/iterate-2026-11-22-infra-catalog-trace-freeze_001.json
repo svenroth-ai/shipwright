@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-22-infra-catalog-trace-freeze",
+  "date": "2026-11-22",
+  "section": "Iterate - change: catalogue the changelog golden freeze test",
+  "title": "Catalogue the changelog golden freeze test as an infrastructure test",
+  "context": "The stop-2 lock freezes the changelog golden traces and harness files. The freeze test still carries a stand-in requirement tag; the test-tag gate honours covers_none only for files in the catalog at the merge-base.",
+  "decision": "Add plugins/shipwright-changelog/tests/golden/test_trace_freeze.py to shared/config/infra_test_paths.json. The retag to covers_none follows in the lock iterate, after this merges.",
+  "consequences": "The file may declare the infrastructure class in the next merge, so the lock hashes its final content.",
+  "rationale": "Two merges are required because the gate reads the catalog at the merge-base.",
+  "rejected": "Catalogue and retag in one PR (the gate would not honour the class).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}
