@@ -1,0 +1,82 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-23-dfp-pilot-brief-p8-split",
+    "date": "2026-11-23",
+    "unit": {
+      "status": "passed",
+      "passed": 26851,
+      "skipped": 112,
+      "total": 26963
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "none",
+      "runner": "",
+      "exit_code": 0,
+      "tests_run": 0,
+      "evidence_path": "",
+      "timestamp": "2026-11-23T11:38:57.904Z",
+      "attempts": 0,
+      "justification": "Docs-only: one campaign planning brief edited; no code, config or runnable path.",
+      "reason_code": "docs-only-surface"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "diff changes only the campaign planning brief",
+          "disposition": "tested",
+          "evidence": "git diff --stat: one file under .shipwright/planning/campaigns; F0 run_test_suite 18 units GREEN"
+        },
+        {
+          "behavior": "brief agrees with the draft campaign on units, order and P8a/P8b scope",
+          "disposition": "tested",
+          "evidence": "cross-checked campaign.md and sub-iterates P8a/P8b specs: ids, depends_on, F3/F5 in P8a, F9/F8 and Q6 amendment in P8b"
+        },
+        {
+          "behavior": "stop-3 harness is outside the repo at the named backup path",
+          "disposition": "tested",
+          "evidence": "git ls-files finds none of the four scripts; ls of the backup path lists them with baseline-runs and FULLRUN-REPORT.md"
+        }
+      ],
+      "counts": {
+        "testable": 3,
+        "tested": 3,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 4,
+        "covered_acs": 4
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-11-23-dfp-pilot-brief-p8-split",
+    "commit": "0c026e314e4ac2262598b37afd585033d9ba42bb",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
