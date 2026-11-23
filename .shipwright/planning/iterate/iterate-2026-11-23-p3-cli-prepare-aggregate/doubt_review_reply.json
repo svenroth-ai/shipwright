@@ -1,56 +1,10 @@
-{
-  "stage": "doubt",
-  "gating": "advisory-must-address",
-  "trigger": "irreversible operations (writes to CHANGELOG drops and a run-state file that pins a permanent release date) + cross-plugin path resolution (release_paths -> shipwright-run orchestrator)",
-  "doubts": [
-    {
-      "severity": "medium",
-      "lens": "reversibility",
-      "claim_under_doubt": "A stored state is reused only for an interrupted release, so the stored date is always the right date.",
-      "disproof_attempt": "`prepare` saves the state unconditionally, before any preview, question or aggregate. `resolve` reuses any stored state with the same version, no tag and an age under 48h. Failing case: on Monday an operator runs prepare for 1.3.0, previews, and abandons. On Tuesday the real release runs prepare again, gets Monday's date back, and `aggregate` renders `## [1.3.0] - <Monday>`. Under the old prose an unpassed date defaulted to today.",
-      "file": "plugins/shipwright-changelog/scripts/lib/release_runstate.py:82 (with release_prepare.py:97)",
-      "what_would_resolve_it": "Reuse the stored date only when a real aggregate has already run for that version, or when `## [version]` is already in CHANGELOG.md; otherwise take today's date and keep only the run id."
-    },
-    {
-      "severity": "medium",
-      "lens": "concurrency & ordering (idempotency on re-run)",
-      "claim_under_doubt": "A page that already has its upgrade-note drop writes nothing on a re-run, even after the model has reworded it.",
-      "disproof_attempt": "`_run_id` keeps '.' in the run id. `write_changelog_drop.py` names the file with `sanitize_run_id_for_filename`, which turns '.' into '-'. `_has_drop` globs the unsanitized id, so a page named `v0.36-split.md` never matches its own drop, and after a model edit a later prepare writes a second drop with the original wording.",
-      "file": "plugins/shipwright-changelog/scripts/lib/release_upgrade_notes.py:67-73",
-      "what_would_resolve_it": "Glob with the sanitized id, or strip '.' in `_run_id`. Add a test with a dotted page name."
-    },
-    {
-      "severity": "low",
-      "lens": "boundary & contract (golden equivalence masking)",
-      "claim_under_doubt": "The CLI driver's traces equal the frozen traces, so behaviour is preserved.",
-      "disproof_attempt": "driver_cli.py records `out_of_sequence: asked` whenever the warning is set and never reads `gates.out_of_sequence`; it always passes an explicit `--release-date`, so the stored-date default path (A6) never runs in any golden scenario.",
-      "file": "plugins/shipwright-changelog/tests/golden/driver_cli.py:70-71, :80",
-      "what_would_resolve_it": "Derive out_of_sequence from the gates answer, add a scenario without --release-date, or state explicitly that A6 is covered by L1 tests only."
-    },
-    {
-      "severity": "low",
-      "lens": "hidden coupling (self-approved freeze delta)",
-      "claim_under_doubt": "The golden-lock delta for coverage.py is an operator-approved change.",
-      "disproof_attempt": "The BRIEF P3 row lists inventory.json in its touch set, not the frozen coverage.py. The approved_deltas.json entry justifies itself by inference and was written in the same diff.",
-      "file": "plugins/shipwright-changelog/tests/golden/approved_deltas.json (4th entry); coverage.py",
-      "what_would_resolve_it": "Point to the operator decision that covers editing coverage.py, or flag it for the operator at the next stop."
-    },
-    {
-      "severity": "low",
-      "lens": "concurrency & ordering",
-      "claim_under_doubt": "The run-state write is atomic and safe.",
-      "disproof_attempt": "The temp name is fixed (`release_run.json.tmp`); two overlapping release.py calls in one checkout can make the second os.replace fail.",
-      "file": "plugins/shipwright-changelog/scripts/lib/release_runstate.py:59-64",
-      "what_would_resolve_it": "Use a unique temp name and report an OSError as JSON, or rebut: one release per checkout is serial by contract."
-    },
-    {
-      "severity": "low",
-      "lens": "boundary & contract (upgrade-note text)",
-      "claim_under_doubt": "The page's own words make a correct changelog bullet.",
-      "disproof_attempt": "No injection found (argv element, newlines flattened). Quality: real pages yield bullets that drop list items after a colon or double the link; a 400-character cut can split a backtick.",
-      "file": "plugins/shipwright-changelog/scripts/lib/release_upgrade_notes.py:38-64",
-      "what_would_resolve_it": "Accept as designed, since the model reviews the drop."
-    }
-  ],
-  "disposition": "medium 1 fixed (unrendered state from an earlier day takes today's date); medium 2 fixed (run id has no dots); low 5 fixed (per-process temp name); low 3, 4, 6 accepted and recorded in FINDINGS D27/D31."
-}
+{"stage":"doubt","gating":"advisory-must-address","trigger":"irreversible operations (drop writes, run-state) + cross-plugin path (orchestrator.py) + golden-freeze conversion","doubts":[
+{"severity":"medium","lens":"boundary & contract","claim_under_doubt":"every scenario through driver_cli equals its frozen trace, so behaviour is preserved","disproof_attempt":"driver_cli.py and test_driver_cli.py are not in REQUIRED (test_trace_freeze.py:35-84); the mapping that turns CLI JSON back into trace fields can be edited by any later unit with no delta, and no seeded regression shows the CLI comparison can fail","file":"plugins/shipwright-changelog/tests/golden/test_trace_freeze.py","what_would_resolve_it":"repin with driver_cli.py and test_driver_cli.py in REQUIRED (or record it as a P4 obligation) and add one seeded regression through CliDriver"},
+{"severity":"medium","lens":"behaviour drift","claim_under_doubt":"only A2/A3/A6 change behaviour","disproof_attempt":"fallback entries are appended only on the real run (release_aggregate.py:38-40); the old prose and the frozen replay appended them before the dry run, so the preview named them; now an operator approves a preview that never mentions them; no frozen scenario combines dry run and fallback","file":"plugins/shipwright-changelog/scripts/lib/release_aggregate.py","what_would_resolve_it":"show the pending fallback bullets in the dry run, or record this as a named approved behaviour change"},
+{"severity":"low-medium","lens":"behaviour drift","claim_under_doubt":"the SKILL.md A1 delta only turns steps into calls","disproof_attempt":"the aggregate_decisions.py --dry-run ADR-number preview was deleted and the CLI has no replacement","file":"plugins/shipwright-changelog/skills/changelog/SKILL.md","what_would_resolve_it":"have aggregate --dry-run return the ADR numbers it would assign, or state the removal explicitly"},
+{"severity":"low-medium","lens":"irreversibility","claim_under_doubt":"each page that needs an action gets exactly one upgrade-note drop","disproof_attempt":"_has_drop globs '{id}_*.md', so a.md is seen as done once a_b.md's drop exists; the flattened path makes x/y.md collide with x-y.md; the status reads action_drop_exists and the note is silently lost","file":"plugins/shipwright-changelog/scripts/lib/release_upgrade_notes.py:67-72","what_would_resolve_it":"match '^{id}_\\d{3}\\.md$', make the id unique per page path, add a test"},
+{"severity":"low","lens":"hidden coupling","claim_under_doubt":"the gate policy has one source (C1)","disproof_attempt":"release_gates.answers re-derives the rule from the raw policy plus its own mode/autonomy logic and ignores the resolver's effective_policy/should_stop","file":"plugins/shipwright-changelog/scripts/lib/release_gates.py:23-27","what_would_resolve_it":"use the resolver's effective_policy with --autonomy"},
+{"severity":"low","lens":"gap in the new SKILL.md","claim_under_doubt":"the prose is consistent with the stored-date default","disproof_attempt":"rerunning-a-release.md:44-47 still says the default is today and to pass --release-date, while SKILL.md says pass no date","file":"plugins/shipwright-changelog/skills/changelog/references/rerunning-a-release.md","what_would_resolve_it":"one line plus an approved delta"},
+{"severity":"low","lens":"boundary & contract","claim_under_doubt":"orchestrator_path finds the right orchestrator in every layout","disproof_attempt":"the mirror tree is tried before the installed version; the highest version wins without matching this plugin's version or skipping orphaned copies","file":"plugins/shipwright-changelog/scripts/lib/release_paths.py:42-52","what_would_resolve_it":"prefer the same version, skip orphans, test the mirror-plus-installed layout"},
+{"severity":"low","lens":"concurrency","claim_under_doubt":"the run state belongs to one release","disproof_attempt":"the state is keyed per git directory, not per project root; two projects in one checkout releasing the same version share run id and date","file":"plugins/shipwright-changelog/scripts/lib/release_runstate.py","what_would_resolve_it":"key on the project root too, or rebut"}],
+"summary":"8 doubts (2 medium, 2 low-medium, 4 low). Main ones: the CLI comparison harness is not frozen, and fallback bullets drop out of the preview. None blocks the commit; disposition: carried into P4 as a closed fix list."}
