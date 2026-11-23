@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "## Review findings\n\n- **Category: edge-case \u2014 Severity: medium**\n  **Finding:** The fallback `git ls-remote --tags origin` makes the hook's decision depend on a network call inside a synchronous PreToolUse hook. Network failure mid-release is treated as \"release is over, allow\" \u2014 the exact moment the guard is meant to work. Also adds latency to every denied/checked push.\n  **Suggestion:** On ls-remote *transport* error, deny (fail-closed) rather than allow, or at minimum distinguish \"tag found\" from \"could not reach remote\". Distinguish this from a non-existent-remote/unknown-ref error if you want to allow there.\n\n- **Category: edge-case \u2014 Severity: medium**\n  **Finding:** Fail-open on any exception (`Any exception: allow`) silently disables the guard. A regression in the lexer/decision code (e.g., an unhandled payload shape from a future Claude Code version) means the \"prevent before\" net F1a/F1b/F4 is gone with no signal.\n  **Suggestion:** At minimum log the exception to a hook-side diagnostics path so the failure is discoverable; the tests should cover the specific garbled-payload shapes you've enumerated rather than relying on the catch-all.\n\n- **Category: edge-case \u2014 Severity: low**\n  **Finding:** Command substitution is not handled: `$(git push origin main)` or backtick forms slip through the lexer (`shlex` + splitting on `&& || ; | &`). Similarly a push hidden in `sh -c \"git push --tags\"` or `make push` is invisible. This is inherent to Bash-matcher hooks, but the full-run report showed models improvise command forms.\n  **Suggestion:** Accept the limitation, but note it in the registry row and LEARNINGS so the campaign doesn't over-trust the hook as the sole net (it explicitly sits under F1a/F1b/F4 code paths, which is the right layering).\n\n- **Category: edge-case \u2014 Severity: low**\n  **Finding:** The 48-hour staleness window means a genuinely long-running release (paused >48h, then resumed) is silently allowed through. Combined with ls-remote fallback this creates two independent \"allow\" paths that don't cross-check each other.\n  **Suggestion:** Cheap improvement: if the state file exists but is stale AND the record for HEAD is missing, still require the ls-remote check before allowing (i.e., staleness downgrades \"deny\" to \"check remote\", never to unconditional allow).\n\n- **Category: risk \u2014 Severity: low**\n  **Finding:** Trunk detection by fixed names (main/master/develop) plus \"no refspec or HEAD on a trunk branch\" will miss trunk-adjacent branches (e.g., `release/*`, `hotfix/*`) that the skill's release flow may actually push. If the skill's own flow pushes a release branch, the guard blocks the skill's own recovery commands (e.g., finishing a partially-completed release).\n  **Suggestion:** Confirm against the skill's actual post-P4 commands that the release flow's own pushes are always preceded by a valid record for HEAD; add a test for \"skill resumes release and its push is allowed once the record exists\".\n\n- **Category: dependency \u2014 Severity: low**\n  **Finding:** The mini-plan's Files list and test list look complete (hooks.json entry, two scripts, three test files, registry row, LEARNINGS/FINDINGS), but it doesn't mention the doc obligation trigger: the deny output is a user-visible message, so per the spec's own rule (\"guide only if a user-visible message is introduced\") the diff may owe a guide mention, not just the registry row.\n  **Suggestion:** Decide up front whether the deny JSON's `reason` text counts as user-visible under the repo's convention; if yes, add the guide touch to the file list now rather than discovering it in review.\n\n- **Category: approach \u2014 Severity: low**\n  **Finding:** The lexer/decision split with an `Action` dataclass is the right amount of structure for the matching complexity required (heredocs, redirects, `-C`, Windows paths) \u2014 this is not over-produced. Keep `release_guard_commands.py` genuinely pure so the parser table tests stay git-free.\n  **Suggestion:** No change; affirming the design shape.\n\nOverall: the approach is sound, well-scoped, and correctly layered under the code-side nets; the main substantive change needed is the fail-open/fail-closed behavior around the ls-remote fallback and the exception catch-all, both addressable without redesign.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Category: approach | Severity: high**  \n   **Finding:** The plan accepts a record for an ancestor of HEAD when intervening commits contain only events. The specification explicitly requires a record for current HEAD and says a record for a different commit must block.  \n   **Suggestion:** Require exact HEAD equality. If P4\u2019s event commits make that impossible, STRICT-STOP for an operator decision on the producer/consumer contract before implementing the exception.\n\n2. **Category: security | Severity: high**  \n   **Finding:** An `ls-remote` error allows the action. A network outage, authentication failure, or missing `origin` therefore bypasses the guard precisely when an active release has no valid record. The blanket \u201cany exception: allow\u201d creates the same bypass for internal failures.  \n   **Suggestion:** Once an active release and protected action are established, deny if record validation cannot complete. Keep malformed tool input and inactive releases separate from errors validating an active release.\n\n3. **Category: approach | Severity: high**  \n   **Finding:** The 48-hour expiry, remote-tag completion check, and environment-variable bypass introduce exemptions absent from the supplied specification. An interrupted release can remain incomplete beyond 48 hours, and a published tag does not establish that subsequent merge or release-page actions have the required record.  \n   **Suggestion:** Use the existing producer\u2019s documented release lifecycle to determine activity. Remove these exemptions unless the referenced operator decisions explicitly authorize them; otherwise STRICT-STOP. Removing the remote lookup also avoids network latency on protected tool calls.\n\n4. **Category: edge-case | Severity: medium**  \n   **Finding:** Hard-coding `main`, `master`, and `develop` does not identify the repository\u2019s actual trunk. The matcher can miss a custom trunk or a push such as `git push origin HEAD:refs/heads/<trunk>`, while treating an unrelated `develop` branch as protected.  \n   **Suggestion:** Resolve trunk using the project\u2019s established configuration and classify refspec destinations, including explicit `HEAD:<trunk>` forms. Add focused tests for custom trunk names and source-to-destination refspecs.\n\n5. **Category: dependency | Severity: medium**  \n   **Finding:** The plan does not establish that command execution context and state lookup stay aligned. `git -C` changes the target repository, while `gh --repo` can target another project; resolving state solely from the hook\u2019s cwd can validate the wrong release or falsely block another project.  \n   **Suggestion:** Resolve the action\u2019s target before locating release state, following existing repository conventions. Test `-C` from outside the project and explicit GitHub repository selection. If cross-repository targeting has no defined policy, obtain the required operator decision.\n\nThe hook is a suitable mechanism, but the proposed decision logic weakens the explicit HEAD requirement and introduces unsupported ways to bypass an active release guard. This assessment uses the supplied specification and mini-plan; local file inspection was blocked by execution policy.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-11-23-p4b-release-guard-hook",
+    "at": "2026-11-23T23:08:44.642568+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

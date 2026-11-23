@@ -226,3 +226,4 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [Reminder store: a separate local event log with one CLI writer](iterate-2026-11-21-e1a-reminder-store-reminder-store.md)
 - [The one due answer for reminders and parked triage entries](iterate-2026-11-21-e1b-reminder-due-reminder-due.md)
 - [P4: release CLI part 2 (sync, commit-and-tag, record-event, close-phase)](iterate-2026-11-23-p4-cli-sync-commit-close-release-cli-part-2.md)
+- [Release guard hook (P4b, second pass B2)](iterate-2026-11-23-p4b-release-guard-hook-release-guard.md)

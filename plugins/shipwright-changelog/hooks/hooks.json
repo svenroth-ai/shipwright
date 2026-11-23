@@ -10,6 +10,17 @@
         ]
       }
     ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --no-project \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/release_guard.py\""
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [

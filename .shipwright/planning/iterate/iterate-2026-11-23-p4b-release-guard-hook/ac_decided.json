@@ -1,0 +1,56 @@
+{
+  "unattended": true,
+  "resolved_items": [
+    {
+      "kind": "unchanged",
+      "ac": "FR-01.09.AC01",
+      "files": [
+        "plugins/shipwright-changelog/hooks/hooks.json",
+        "plugins/shipwright-changelog/scripts/hooks/release_guard.py",
+        "plugins/shipwright-changelog/scripts/hooks/release_guard_commands.py"
+      ],
+      "decided_by": "code",
+      "confirmed": false
+    }
+  ],
+  "ac_decisions": [
+    {
+      "ac": "FR-01.09.AC01",
+      "mode": "auto",
+      "answer": "auto",
+      "kind": "unchanged",
+      "answered_via": "none",
+      "decided_by": "code",
+      "confirmed": false
+    }
+  ],
+  "counts": {
+    "total": 1,
+    "auto": 0,
+    "asked": 0,
+    "exempt": 0,
+    "restore": 0,
+    "unchanged": 1,
+    "answered_inline": 0,
+    "unconfirmed": 0,
+    "exempt_share": 0.0,
+    "restore_share": 0.0
+  },
+  "status": "ok",
+  "ac_mode": {
+    "mode": "auto",
+    "source": "--ac-mode"
+  },
+  "run_id": "iterate-2026-11-23-p4b-release-guard-hook",
+  "bind_id": "dfp-pilot-changelog-p3-p8--P4b@2026-11-23T11:31:16.576992+00:00",
+  "exemption_check": "tested against the current diff (18 file(s), 15 not observable)",
+  "surface": {
+    "observable": true,
+    "files": [
+      "plugins/shipwright-changelog/hooks/hooks.json",
+      "plugins/shipwright-changelog/scripts/hooks/release_guard.py",
+      "plugins/shipwright-changelog/scripts/hooks/release_guard_commands.py"
+    ],
+    "ignored": 15
+  }
+}

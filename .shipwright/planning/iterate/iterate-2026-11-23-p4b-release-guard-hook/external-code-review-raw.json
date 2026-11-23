@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "**Findings**\n\n- Category: test\n- Severity: low\n- File: `plugins/shipwright-changelog/tests/test_release_guard.py:97-101` (`test_old_behaviour_nothing_blocks_without_the_hook`)\n- Finding: The test named for the \"fails-on-old\" AC is really the false-block test: it runs the *new* hook with no release state. It only \"fails on old\" incidentally (the script wouldn't exist pre-change, so `subprocess.run` errors). The AC is technically met, but the docstring claims it demonstrates today's behaviour while it actually exercises the new inert path.\n- Suggestion: Rename it as the false-block/inert test and add one comment line noting the fails-on-old half is structural (the script itself is new), or assert on the hook being absent from pre-change `hooks.json` in the integration test.\n\n- Category: edge-case\n- Severity: low\n- File: `plugins/shipwright-changelog/scripts/hooks/release_guard.py:~60` (`_is_tag_push`, `_TAG_LIKE`)\n- Finding: A branch named version-like (`git push origin 2.0-hotfix`, matching `v?\\d+\\.\\d+([-+.\\w]*)`) is treated as a tag push, so an ordinary feature-branch push is denied mid-release \u2014 violating \"ordinary pushes are never blocked\". `_TAG_LIKE` also matches `v1.2.3+metadata` shapes that are legal branch names.\n- Suggestion: Require the `v` prefix (the release tag format used by the plugin) or fall through to the `show-ref` check only, so a bare `2.0`-shaped ref that is a branch is not assumed to be a tag.\n\n- Category: spec\n- Severity: low\n- File: (whole diff)\n- Finding: The spec obliges appending what the unit taught to `.shipwright/planning/campaigns/2026-10-25-dfp-pilot-changelog-LEARNINGS.md` in the same unit; nothing in the diff touches it. This may land in a separate doc commit outside the shown diff, but if not it is a spec miss.\n- Suggestion: Confirm the LEARNINGS append is part of the unit's changes; if it was omitted, add it.\n\n**Non-issues verified**: parser correctness (heredoc blanking, non-POSIX lexing for Windows `-C` paths, quoted `-m` text as data, refspec destination reduction, `HEAD:main` \u2192 trunk, `git push` with no refspec \u2192 current branch); inert conditions (48h age, tag-on-origin, project-root containment); fail-open paths and the one deliberate fail-closed remote check; `--mirror` implying tags; garbled-payload tests; the `hooks.json` registration shape and the `cross_component` integration case composing the real CLI outputs (`release_runstate.save`, `release_commit.write_state`) with the hook's reads; the doc registry row. Command forms from FULLRUN-REPORT (`git push --tags origin main`, `git push origin HEAD`, `gh pr merge`) are all covered. No frozen file is touched, so no golden delta is required.\n\nThe implementation is careful and the tests exercise real git state rather than mocks; the findings above are refinements, not blockers.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "- Category: bug\n- Severity: high\n- File: plugins/shipwright-changelog/scripts/hooks/release_guard_commands.py:135\n- Finding: Shell directory changes are ignored. For `cd /release-repo && git push --tags origin main`, the hook checks the payload\u2019s original directory instead of `/release-repo`. If the original directory has no active release, the push passes despite a missing release record in the target repository. The parser test includes this command shape but only checks that a push is found.\n- Suggestion: Track directory changes across shell segments, or resolve each action\u2019s effective directory before checking release state. Add a behavioral test starting outside the release repository.\n\n- Category: bug\n- Severity: medium\n- File: plugins/shipwright-changelog/scripts/hooks/release_guard_commands.py:98\n- Finding: The parser always treats the first positional argument as the remote, including when `--repo` already supplies it. On a feature branch, `git push --repo origin main` therefore produces no refspecs and is allowed, although Git pushes the local `main` branch.\n- Suggestion: Track whether `--repo` supplied the repository and treat all remaining positional arguments as refspecs in that case. Cover both `--repo origin` and `--repo=origin`.\n\n- Category: spec\n- Severity: medium\n- File: plugins/shipwright-changelog/scripts/hooks/release_guard.py:122\n- Finding: The event-only exception checks the aggregate tree difference, rather than the intervening commits. A code-changing commit followed by its revert produces an empty difference, so a stale release record is accepted even though HEAD descended through non-event commits. This exceeds the stated exception for the `record-event` commit.\n- Suggestion: Inspect the changed paths of each intervening commit and enforce the permitted event-commit sequence. Add a change-then-revert test that must remain blocked.\n\nOverall assessment: ship-with-fixes. The guard has concrete matching gaps that allow required release actions through; repository checks and the required planning files could not be inspected because command execution was blocked by the environment.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-11-23-p4b-release-guard-hook",
+    "at": "2026-11-23T23:10:44.620201+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

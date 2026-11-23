@@ -1,0 +1,1 @@
+- (2026-11-24) iterate - a PreToolUse Bash hook lexes with shlex non-POSIX (Windows backslash paths), runs no git until a command is a candidate, and a cross-plugin producer round trip from the integration root needs a fresh interpreter (cached lib). [-> iterate-2026-11-23-p4b-release-guard-hook]

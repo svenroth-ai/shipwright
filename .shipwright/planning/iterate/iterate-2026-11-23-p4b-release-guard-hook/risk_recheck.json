@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-23-p4b-release-guard-hook",
+  "risk_recheck": {
+    "changed_file_count": 9,
+    "diff_loc": 696,
+    "risk_flags": [
+      "cross_component",
+      "touches_auth",
+      "touches_build",
+      "touches_io_boundary",
+      "touches_rls"
+    ],
+    "diff_risk_flags": [
+      "cross_component",
+      "touches_io_boundary"
+    ],
+    "complexity_floor": "medium",
+    "stage1_complexity": "large",
+    "declared_complexity": "medium",
+    "effective_complexity": "large",
+    "upgraded": false,
+    "plan_review_required": true,
+    "ci_ack_recorded": false,
+    "escalate": {
+      "required": false,
+      "reason_code": null,
+      "paths": []
+    }
+  }
+}
