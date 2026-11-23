@@ -69,7 +69,7 @@ class Git:
     """Answers the two git calls of the check from a table of pages."""
 
     def __init__(self, listing: str, write_drops: bool = True):
-        self.listing, self.drops, self.write_drops = listing, [], write_drops
+        self.listing, self.drops, self.write_drops = listing.replace(chr(10), chr(0)), [], write_drops  # `git -z`: NUL-separated
 
     def __call__(self, key, argv, cwd):
         if key == "migration-pages":
@@ -157,7 +157,7 @@ def test_a_rerun_after_the_section_was_rendered_adds_no_drop(tmp_path):
 
 def test_a_failed_drop_write_is_reported_not_swallowed(tmp_path):
     root = project(tmp_path, page=ACTION)
-    out = notes.check(Recorder(lambda k, a, c: CmdResult(k, tuple(a), 0 if k == "migration-pages" else 1, "docs/migrations/page.md\n" if k == "migration-pages" else ""), root), SHARED, "v1.0.0", "1.1.0")
+    out = notes.check(Recorder(lambda k, a, c: CmdResult(k, tuple(a), 0 if k == "migration-pages" else 1, "docs/migrations/page.md" + chr(0) if k == "migration-pages" else ""), root), SHARED, "v1.0.0", "1.1.0")
     assert out["status"] == "action_drop_failed" and out["pages"][0]["drop"] == "failed"
 
 
@@ -202,6 +202,56 @@ def test_a_rendered_section_keeps_the_stored_date_on_a_later_day_and_an_unrender
     rs.save(tmp_path, {"schema": 1, "version": "1.3.0", "release_date": "2026-10-01", "run_id": "r", "created_at": "2026-10-01T08:00:00+00:00"})
     later = lambda: datetime(2026, 11, 23, 9, 0, tzinfo=timezone.utc)  # noqa: E731
     assert rs.resolve(tmp_path, "1.3.0", tag_exists=False, require_fresh=False, released=True, clock=later)["release_date"] == "2026-10-01"
-    assert rs.resolve(tmp_path, "1.3.0", tag_exists=False, require_fresh=False, clock=later)["release_date"] == "2026-11-23"
+    assert rs.resolve(tmp_path, "1.3.0", tag_exists=False, require_fresh=False, clock=later)["release_date"] == "2026-10-01"  # aggregate keeps the date: a release may cross midnight
+    assert rs.resolve(tmp_path, "1.3.0", tag_exists=False, clock=later)["release_date"] == "2026-11-23"  # prepare re-dates a stale look
     (tmp_path / "CHANGELOG.md").write_text("# Changelog\n\n## [1.3.0] - 2026-10-01\n", encoding="utf-8")
     assert notes.released(tmp_path, "1.3.0") and not notes.released(tmp_path, "1.4.0")
+
+
+def test_an_underscore_or_flattened_path_never_makes_another_page_look_done(tmp_path):
+    drops = tmp_path / "CHANGELOG-unreleased.d" / "Changed"
+    drops.mkdir(parents=True)
+    (drops / "upgrade-notes-a_b_001.md").write_text("x\n", encoding="utf-8")
+    assert notes._has_drop(tmp_path, "upgrade-notes-a_b") and not notes._has_drop(tmp_path, "upgrade-notes-a")
+    assert notes._run_id("docs/migrations/x/y.md") != notes._run_id("docs/migrations/x-y.md")
+    assert notes._run_id("docs/migrations/plain.md") == "upgrade-notes-plain"
+
+
+def test_a_non_ascii_page_name_is_listed_not_dropped(tmp_path):
+    root = project(tmp_path, **{"übersicht": ACTION})
+    out = check(root, Git("docs/migrations/übersicht.md\n"))
+    assert [p["page"] for p in out["pages"]] == ["docs/migrations/übersicht.md"]
+
+
+def test_a_rendered_section_with_an_action_page_says_so_in_its_own_sentence(tmp_path):
+    root = project(tmp_path, **{"p": ACTION})
+    (root / "CHANGELOG.md").write_text("# Changelog\n\n## [1.1.0] - 2026-10-01\n", encoding="utf-8")
+    out = check(root, Git("docs/migrations/p.md\n"))
+    assert out["status"] == "skipped_release_written" and "already written" in out["sentence"]
+
+
+def _aggregate(tmp_path, **kw):
+    from lib import release_aggregate
+    from lib.release_runner import CmdResult as R
+    calls = []
+
+    def fake(key, argv, cwd):
+        calls.append(key)
+        return R(key, tuple(argv), 1 if key == "tag-check" else 0, '{"version": "1.3.0"}' if key.startswith("aggregate") else "")
+    out = release_aggregate.aggregate(Recorder(fake, tmp_path), Path(SHARED).parent / "plugins" / "shipwright-changelog", version="1.3.0", **kw)
+    return calls, out[1]
+
+
+@pytest.mark.covers("FR-01.09/AC10")
+def test_the_preview_names_the_pending_cherry_picked_bullets_and_writes_nothing(tmp_path):
+    calls, out = _aggregate(tmp_path, dry_run=True, fallback_entries=[("Fixed", "A cherry-picked fix")])
+    assert out["fallback_pending"] == ["Fixed: A cherry-picked fix"] and "fallback-append" not in calls
+
+
+@pytest.mark.covers("FR-01.09/AC05")
+def test_a_rerun_after_the_section_was_rendered_appends_no_second_cherry_picked_bullet(tmp_path):
+    (tmp_path / "CHANGELOG.md").write_text("# Changelog\n\n## [1.3.0] - 2026-11-23\n", encoding="utf-8")
+    calls, out = _aggregate(tmp_path, fallback_entries=[("Fixed", "A cherry-picked fix")])
+    assert "fallback-append" not in calls and out["fallback_skipped"] == "release_written"
+    (tmp_path / "CHANGELOG.md").write_text("# Changelog\n", encoding="utf-8")
+    assert "fallback-append" in _aggregate(tmp_path, fallback_entries=[("Fixed", "A cherry-picked fix")])[0]

@@ -32,10 +32,13 @@ def aggregate(rec: Recorder, plugin_root: Path, *, version: str, dry_run: bool =
               clock: release_runstate.Clock = release_runstate.utc_now) -> tuple[int, dict[str, Any]]:
     shared, root = release_paths.shared_root(plugin_root), rec.cwd
     tag_exists = rec.run("tag-check", ["git", "rev-parse", "-q", "--verify", f"refs/tags/v{version}"]).exit == 0
+    already = release_upgrade_notes.released(root, version)
     state = release_runstate.resolve(root, version, tag_exists=tag_exists, release_date=release_date, clock=clock,
-                                     require_fresh=False, released=release_upgrade_notes.released(root, version))  # only `prepare` starts a release; aggregate consumes what it stored
+                                     require_fresh=False, released=already)  # only `prepare` starts a release; aggregate consumes what it stored
     tools = shared / "scripts/tools"
-    fallbacks = [] if dry_run else [rec.run("fallback-append", uv_script(
+    pending = [f"{category}: {entry}" for category, entry in fallback_entries]  # a preview names them; it writes nothing
+    skip_fallbacks = dry_run or already  # a rendered section means an earlier run already took them: a re-run must not append twice (D31)
+    fallbacks = [] if skip_fallbacks else [rec.run("fallback-append", uv_script(
         tools / "append_changelog_entry.py", "--project-root", str(root), "--category", category, "--entry", entry))
         for category, entry in fallback_entries]
     if any(r.exit != 0 for r in fallbacks):  # a lost cherry-picked bullet must stop the release, not vanish
@@ -53,7 +56,8 @@ def aggregate(rec: Recorder, plugin_root: Path, *, version: str, dry_run: bool =
         "legacy_unreleased_bullet_texts": info.get("legacy_unreleased_bullet_texts") or [],
         "section_written": info.get("section_written", ""),
         "release": {"date": state["release_date"], "run_id": state["run_id"], "state_file": str(release_runstate.state_path(root))},
-        "fallback_entries": [r.exit for r in fallbacks]}
+        "fallback_entries": [r.exit for r in fallbacks],
+        "fallback_pending": pending if dry_run else [], "fallback_skipped": "release_written" if already and pending and not dry_run else None}
     if done.exit != 0:
         out["reason"] = "aggregator_refused"  # reconcile by hand: references/rerunning-a-release.md, never a retry
     elif not dry_run:

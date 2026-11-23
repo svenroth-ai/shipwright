@@ -12,6 +12,7 @@ nothing; the pages themselves are never edited.
 
 from __future__ import annotations
 
+import hashlib
 import re
 from pathlib import Path
 from typing import Any
@@ -26,12 +27,12 @@ _MAX_ANSWER = 400
 
 def _pages(rec: Recorder, last_tag: str | None) -> list[str] | None:
     """Relative paths of the pages added or changed since ``last_tag``; all of them without a tag."""
-    argv = (["git", "diff", "--name-only", "--relative", "--end-of-options", f"{last_tag}..HEAD", "--", PAGES_DIR] if last_tag
-            else ["git", "ls-files", "--", PAGES_DIR])
+    argv = (["git", "diff", "--name-only", "-z", "--relative", "--end-of-options", f"{last_tag}..HEAD", "--", PAGES_DIR] if last_tag
+            else ["git", "ls-files", "-z", "--", PAGES_DIR])  # -z: a non-ASCII path is not C-quoted and silently dropped
     done = rec.run("migration-pages", argv)
     if done.exit != 0:  # an unresolvable tag is not "no page changed"
         return None
-    names = [ln.strip() for ln in done.stdout.splitlines() if ln.strip().endswith(".md")]
+    names = [n for n in done.stdout.split("\0") if n.endswith(".md")]
     return sorted(n for n in names if (rec.cwd / n).is_file())  # a page deleted since the tag has nothing to say
 
 
@@ -66,11 +67,15 @@ def note_for(page: str, answer: str | None) -> str:
 
 def _run_id(page: str) -> str:
     rel = Path(page).with_suffix("").as_posix().removeprefix(PAGES_DIR + "/")  # the path, not the stem: two pages may share one
-    return "upgrade-notes-" + re.sub(r"[^A-Za-z0-9_-]+", "-", rel).strip("-")
+    slug = re.sub(r"[^A-Za-z0-9_-]+", "-", rel).strip("-")
+    if slug == rel:
+        return f"upgrade-notes-{slug}"
+    return f"upgrade-notes-{slug}-{hashlib.sha1(rel.encode('utf-8')).hexdigest()[:6]}"  # x/y and x-y flatten alike: a lossy name gets the path's hash
 
 
 def _has_drop(project_root: Path, run_id: str) -> bool:
-    return any((project_root / "CHANGELOG-unreleased.d" / "Changed").glob(f"{run_id}_*.md"))
+    drops = (project_root / "CHANGELOG-unreleased.d" / "Changed")
+    return drops.is_dir() and any(re.fullmatch(rf"{re.escape(run_id)}_\d{{3}}\.md", p.name) for p in drops.iterdir())
 
 
 def released(project_root: Path, version: str) -> bool:
@@ -107,6 +112,7 @@ def check(rec: Recorder, shared_root: Path, last_tag: str | None, version: str) 
                   "action_drop_written" if written else "action_drop_exists" if actions else "no_action" if pages else "none_changed")
     since = f"since {last_tag}" if last_tag else "in this repository"
     sentence = (f"No migration page changed {since}: no upgrade note added." if not pages else
+                f"{len(actions)} migration page(s) {since} need an action; the release section is already written, no new drop was made." if status == "skipped_release_written" else
                 f"{len(pages)} migration page(s) changed {since}; none needs an action: no upgrade note added." if not actions else
                 f"{len(actions)} migration page(s) {since} need an action: review the upgrade-note drop(s) before the release.")
     return {"status": status, "pages": results, "sentence": sentence}

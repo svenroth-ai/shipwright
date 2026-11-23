@@ -267,7 +267,7 @@ def test_aggregate_reads_an_old_unfinished_state_of_its_own_version_prepare_alon
                                     "created_at": "2026-10-01T08:00:00+00:00"})
     fake = Fake(aggregate=AGG_OK, **{"tag-check": {"exit": 1}})
     _, out = run_aggregate(tmp_path, plugin_root, fake, version="1.3.0")
-    assert out["release"]["date"] == "2026-11-23" and out["release"]["run_id"] == "r-old"  # not rendered yet: today
+    assert out["release"]["date"] == "2026-10-01" and out["release"]["run_id"] == "r-old"  # aggregate keeps what prepare stored, even across midnight
 
 
 def test_a_malformed_fallback_entry_is_refused_not_dropped(tmp_path):

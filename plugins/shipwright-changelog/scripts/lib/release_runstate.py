@@ -82,8 +82,8 @@ def resolve(project_root: Path, version: str, *, tag_exists: bool, release_date:
     stored, now = load(project_root), clock()
     if stored and stored["version"] == version and not tag_exists and (_fresh(stored, now) or not require_fresh):
         state = dict(stored, reused=True)
-        if not released and not str(stored.get("created_at", "")).startswith(f"{now:%Y-%m-%d}"):
-            state["release_date"] = f"{now:%Y-%m-%d}"  # an abandoned look at yesterday must not date today's release
+        if not released and require_fresh and not str(stored.get("created_at", "")).startswith(f"{now:%Y-%m-%d}"):
+            state["release_date"], state["created_at"] = f"{now:%Y-%m-%d}", now.isoformat(timespec="seconds")  # only `prepare` re-dates (an abandoned look at yesterday must not date today's release); a release that crosses midnight keeps its date
         env_id = os.environ.get("SHIPWRIGHT_RUN_ID") if use_env_run_id else None
         if env_id and _SAFE_ID.fullmatch(env_id):  # a new dispatch names its own run
             state["run_id"] = env_id
