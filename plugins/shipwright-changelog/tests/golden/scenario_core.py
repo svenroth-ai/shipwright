@@ -93,16 +93,23 @@ def release_flow(driver: ReplayDriver, scratch: Any, autonomy: str = "guided", *
         return results
     if step("commit-and-tag", version=version).exit_code:
         return results
+    waits = False  # F1b: a guided release leaves its PR open, so nothing is pushed or published until the PR is merged
     if scratch.git("rev-parse", "--abbrev-ref", "HEAD") not in MAIN_BRANCHES:
-        step("open-pr", version=version)
-        step("record-event", version=version)
+        if step("open-pr", version=version).exit_code:  # F4: no PR, no release: the tag stays local
+            return results
+        if step("record-event", version=version).exit_code:  # F6: a rejected push stops here (SKILL.md:341, the `&&` chain)
+            return results
         if autonomy != "guided" and not pipeline:
-            step("merge-pr")  # SKILL.md:349-351
-    else:
-        step("record-event", version=version)
-    if "push-tags" not in skip:
-        step("push-tags")
-    if release_page:
+            if step("merge-pr").exit_code:  # F4: an unmerged release is not published
+                return results
+        else:
+            waits = autonomy == "guided" and not pipeline
+    elif step("record-event", version=version).exit_code:
+        return results
+    if "push-tags" not in skip and not waits:
+        if step("push-tags").exit_code:  # F4: a refused tag push ends the release before the page
+            return results
+    if release_page and not waits:
         step("release-page", version=version)
     if close:
         step("close-phase", version=version)

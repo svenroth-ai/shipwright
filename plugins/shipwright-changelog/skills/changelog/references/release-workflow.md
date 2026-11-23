@@ -1,6 +1,8 @@
 # Release workflow — the parts that are rationale, not instruction
 
-Reference for **Step 7** of `/shipwright-changelog`. Moved out of `SKILL.md` when
+Reference for **Step 7** of `/shipwright-changelog`. Since unit P4 (operator decisions F1a, F1b, F4, F6, F10, 2026-11-23): from a feature branch only the tag is
+pushed (never a local trunk); in guided mode the tag is pushed and the release page made only after the release PR is merged; a failed `gh pr create`,
+a rejected push or a refused tag push stops the release; `close-phase` verifies the release read-only and leaves a clean tree. Moved out of `SKILL.md` when
 the compliance-evidence step was added (iterate-2026-07-31-derived-docs-at-release):
 the skill is an index of what to DO, and this is the reasoning behind it.
 

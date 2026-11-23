@@ -325,7 +325,7 @@
   },
   "origin": {
     "branches": {
-      "main": "docs: changelog history@5#2f90492d",
+      "main": "chore: project scaffolding@2#ed53eaf0",
       "release/next": "chore(release): record changelog event for v1.3.0@9#f15f34e3"
     },
     "tags": {

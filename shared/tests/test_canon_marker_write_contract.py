@@ -51,11 +51,12 @@ _INVOCATION_RE = re.compile(
 #: check cannot notice one of ten invocations dropping out of scope, which is
 #: precisely how a guard rots into a rubber stamp. Adding or removing a call
 #: site is a deliberate act — update this set in the same commit.
+#: (The changelog's closure call moved from SKILL.md into ``release_close.py`` with unit P4; its argv is pinned in
+#: ``plugins/shipwright-changelog/tests/test_release_p4_cli.py``.)
 EXPECTED_CALL_SITES = {
     "plugins/shipwright-build/skills/build/SKILL.md",
     "plugins/shipwright-build/skills/build/references/section-doc-update.md",
     "plugins/shipwright-build/skills/build/references/section-state.md",
-    "plugins/shipwright-changelog/skills/changelog/SKILL.md",
     "plugins/shipwright-deploy/skills/deploy/SKILL.md",
     "plugins/shipwright-design/skills/design/references/step-9-finalization.md",
     "plugins/shipwright-iterate/skills/iterate/references/F11.md",

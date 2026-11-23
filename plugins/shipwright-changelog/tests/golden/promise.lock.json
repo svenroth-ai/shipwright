@@ -100,25 +100,25 @@
       "acs": [
         "FR-01.09/AC14"
       ],
-      "hash": "fedc2776d6ffa7f4805a1be3494a5daa3725433bd53a29cb0dd64aa46a684294"
+      "hash": "c05afb32e37df06543b0d95a40cda33961dc73f5eba161efbd803371b37c2574"
     },
     "plugins/shipwright-changelog/tests/golden/test_promise_release.py::test_ac14_the_release_page_has_a_checked_summary_and_title_and_link_built_from_facts": {
       "acs": [
         "FR-01.09/AC14"
       ],
-      "hash": "ffb1fe399275fb6f65fa6352b165033f74bc135eb9c921150f4173c114daa936"
+      "hash": "c0d56ca43c05c795399ba0efdc67a1b232a36a6cffeb3c48281dc240fbbca3ae"
     },
     "plugins/shipwright-changelog/tests/golden/test_promise_release.py::test_ac15_a_release_page_that_cannot_be_created_does_not_undo_the_release_and_is_reported": {
       "acs": [
         "FR-01.09/AC15"
       ],
-      "hash": "6980bdddf8937ce3ffc0aa89b63bbabea42f5fda04fe86158624a8713bfa30f1"
+      "hash": "e4af5dadd1cd866ce5723daaaac46f0ffabe99d0e12f25c8454ec4199e5f55f6"
     },
     "plugins/shipwright-changelog/tests/golden/test_promise_release.py::test_ac15_an_earlier_version_gets_no_page_retroactively": {
       "acs": [
         "FR-01.09/AC15"
       ],
-      "hash": "bff97aff9a1e90da430d02b8c0815cdb0aa8b49a50f223ad4af792b153b48069"
+      "hash": "023263ab4f40ae0de1763af868783ae9ce1059760d63596b1ff2b712e487fde8"
     }
   },
   "version": 1

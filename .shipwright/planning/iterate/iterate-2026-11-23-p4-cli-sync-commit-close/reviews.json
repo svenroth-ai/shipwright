@@ -1,0 +1,549 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-23-p4-cli-sync-commit-close",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-23T21:10:18.738928+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 12,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The spec's \"Closed fix list carried over from P3\" says \"do these FIRST in P4\" (six open items, each needing a fails-on-old test, plus freezing `driver_cli.py`), but the mini-plan doesn't mention any of them. Item 2 in particular — freezing `driver_cli.py` via `--repin` and adding a seeded CliDriver regression — directly collides with this unit's own `--repin` plans; doing them as separate uncoordinated re-pins would churn `golden.lock.json` twice and potentially void each other's approved deltas (a re-pin empties `approved_deltas.json`).",
+          "suggestion": "Fold the P3 fix list explicitly into the mini-plan's sequencing: do the fixes first, re-pin once, then build the P4 subcommands on top, so there is a single lock rewrite and one delta set to review at stop 3.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "F1b and B4 are in tension and the mini-plan doesn't resolve it. B4's `verify` checks that the tag is local and on origin naming the release commit; F1b says in guided mode the tag reaches the remote only after the PR merges — which happens after `close-phase` finishes. As written, every guided-mode `verify` would fail on \"tag not on origin\".",
+          "suggestion": "Make `verify` mode-aware: in guided mode the origin-tag check becomes \"tag exists locally and the release PR is merged/open as expected\" — and decide (operator, STRICT-STOP if unclear) who actually pushes the tag post-merge and whether a post-merge re-verify exists. The spec's \"PR state fits the mode\" hints at this, but the tag-on-origin check needs the explicit split.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "reducibility",
+          "file": null,
+          "line": null,
+          "finding": "Two new subprocess scripts (`verify_release_tag.py`, `restore_derived.py`) duplicate logic that already exists as importable code: `_validate_changelog` in `phase_validators_late.py` (F7 says the code owns exactly this check) and `restore_derived_to_head` in `shared/scripts/lib/derived_snapshots.py` (the F10 decision names that function). New subprocess seams also add path/import fragility for one call site each.",
+          "suggestion": "Import `phase_validators_late` and `derived_snapshots` directly from the lib modules behind the injected runner; drop both scripts unless there's a concrete reason a subprocess is needed (e.g. git env isolation — if so, say so in the plan).",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The mini-plan puts the run-state file \"in the git directory\" but carries the open P3 finding that run state keyed per git directory (not project root) is wrong, with the fix \"key on the project root too, or rebut it.\" Putting new state (`release_state.json`) in the git directory without resolving that finding risks perpetuating the collision (two project roots sharing one git dir, worktrees).",
+          "suggestion": "Resolve or explicitly carry the keying decision into `release_state.json`'s location now, since B1's file is new in this unit and moving it later would churn P4b's hook dependency.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The plugin-local lib package shadowing the shared lib is listed as a risk with no mitigation named. The plan adds five new `scripts/lib/release_.py` files under the plugin — exactly the shape that produces the shadowing bug — and a mid-unit discovery there would touch the frozen `pyproject.toml`/conftest paths.",
+          "suggestion": "Name the mitigation up front (package naming/distinct import roots, plus one import-resolution test) and, if it can't be resolved locally, STRICT-STOP per the brief rather than improvise.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "F4's \"failure leaves no tag on the remote\" and F6's replay stop rule are handled for push rejection, but the local state after a rejected tag push isn't: the tag exists locally and the release commit exists. The replay must be alignment-safe on rerun (don't re-create the commit, don't double-tag, don't skip the F7 check on the pre-existing tag). The plan says \"the replay is aligned\" without saying what that means mechanically.",
+          "suggestion": "Specify rerun semantics: `commit-and-tag` detects existing local tag/commit and resumes at the push step; add a fails-on-old test for rerun-after-rejected-push.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The merge policy section contradicts itself (base rule says admin merge not granted; the later block grants it). The mini-plan is silent, which is fine for the runner, but the plan should reference the superseding block to avoid the orchestrator stalling on a blocked PR Review.",
+          "suggestion": "Cite the 2026-11-23 admin-merge grant in the plan's push/merge step.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach ·",
+          "file": null,
+          "line": null,
+          "finding": "The plan leaves PR creation/merge and tag push as literal commands, but does not define how the CLI enforces their ordering. These operations control F1b/F4: an interrupted or failed guided release must never push its tag before the PR is merged.",
+          "suggestion": "Define the command boundaries and persisted prerequisites explicitly. Before tag push, confirm the PR is merged and the intended release commit is available on origin. Test failed PR creation, an unmerged PR, and resume after interruption.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "risk ·",
+          "file": null,
+          "line": null,
+          "finding": "Guided merging can change the release commit through squash or rebase. The plan does not explain how that interacts with the local tag and B1’s recorded release commit. B4 could consequently fail after the tag has already reached origin.",
+          "suggestion": "Establish the permitted merge strategy and commit identity before publication. Either preserve the verified release commit through merge or verify the resulting commit before tagging it. Keep `release_state.json`, the tag, and the remote commit consistent.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency ·",
+          "file": null,
+          "line": null,
+          "finding": "“A run-state file in the git directory” repeats the unresolved P3 state-isolation issue. The mini-plan also omits the other carried-over fixes that must happen first, including the driver freeze and seeded regression.",
+          "suggestion": "Include the open P3 fixes explicitly. Key state by project root as well as git directory, or provide the required rebuttal; complete the driver re-pin and review its entries before adding P4 golden changes.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "The close sequence is underspecified. B4 requires the completion event to be committed, while F10 prohibits committing bookkeeping and requires a clean tree. Snapshot restoration can also discard pre-existing dashboard edits unless entry conditions rule those out.",
+          "suggestion": "Specify the close ordering and file ownership: record and commit the permitted event paths, apply mode-specific bookkeeping rules, restore derived snapshots, then run read-only verification. Enforce the applicable clean-entry condition and test that unrelated changes are preserved or cause refusal.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach ·",
+          "file": null,
+          "line": null,
+          "finding": "Two new subprocess helpers are proposed without explaining why these operations require separate executable boundaries. This adds packaging, import-resolution, and error-propagation work alongside the already identified `lib` shadowing risk.",
+          "suggestion": "Prefer direct reuse of existing validation and snapshot functions. Add subprocess adapters only where isolation is necessary, and document that necessity. Ensure F7 runs on every applicable path, including resumed runs.  The approach is broadly viable, but publication ordering, release commit identity, and close-phase ownership need concrete contracts before implementation. The carried-over P3 fixes should also be explicit prerequisites.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "codex",
+      "completed_at": "2026-11-23T21:10:14.577827+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: dependency — Severity: high**\n  **Finding:** The spec's \"Closed fix list carried over from P3\" says \"do these FIRST in P4\" (six open items, each needing a fails-on-old test, plus freezing `driver_cli.py`), but the mini-plan doesn't mention any of them. Item 2 in particular — freezing `driver_cli.py` via `--repin` and adding a seeded CliDriver regression — directly collides with this unit's own `--repin` plans; doing them as separate uncoordinated re-pins would churn `golden.lock.json` twice and potentially void each other's approved deltas (a re-pin empties `approved_deltas.json`).\n  **Suggestion:** Fold the P3 fix list explicitly into the mini-plan's sequencing: do the fixes first, re-pin once, then build the P4 subcommands on top, so there is a single lock rewrite and one delta set to review at stop 3.\n\n- **Category: edge-case — Severity: high**\n  **Finding:** F1b and B4 are in tension and the mini-plan doesn't resolve it. B4's `verify` checks that the tag is local **and on origin** naming the release commit; F1b says in guided mode the tag reaches the remote only after the PR merges — which happens *after* `close-phase` finishes. As written, every guided-mode `verify` would fail on \"tag not on origin\".\n  **Suggestion:** Make `verify` mode-aware: in guided mode the origin-tag check becomes \"tag exists locally and the release PR is merged/open as expected\" — and decide (operator, STRICT-STOP if unclear) who actually pushes the tag post-merge and whether a post-merge re-verify exists. The spec's \"PR state fits the mode\" hints at this, but the tag-on-origin check needs the explicit split.\n\n- **Category: reducibility — Severity: medium**\n  **Finding:** Two new subprocess scripts (`verify_release_tag.py`, `restore_derived.py`) duplicate logic that already exists as importable code: `_validate_changelog` in `phase_validators_late.py` (F7 says the code owns exactly this check) and `restore_derived_to_head` in `shared/scripts/lib/de […truncated]\n\n[openai] Repository access was blocked by policy, so this review is based on the supplied specification and mini-plan.\n\n1. **Category: approach · Severity: high**  \n   **Finding:** The plan leaves PR creation/merge and tag push as literal commands, but does not define how the CLI enforces their ordering. These operations control F1b/F4: an interrupted or failed guided release must never push its tag before the PR is merged.  \n   **Suggestion:** Define the command boundaries and persisted prerequisites explicitly. Before tag push, confirm the PR is merged and the intended release commit is available on origin. Test failed PR creation, an unmerged PR, and resume after interruption.\n\n2. **Category: risk · Severity: high**  \n   **Finding:** Guided merging can change the release commit through squash or rebase. The plan does not explain how that interacts with the local tag and B1’s recorded release commit. B4 could consequently fail after the tag has already reached origin.  \n   **Suggestion:** Establish the permitted merge strategy and commit identity before publication. Either preserve the verified release commit through merge or verify the resulting commit before tagging it. Keep `release_state.json`, the tag, and the remote commit consistent.\n\n3. **Category: dependency · Severity: medium**  \n   **Finding:** “A run-state file in the git directory” repeats the unresolved P3 state-isolation issue. The mini-plan also omits the other carried-over fixes that must happen first, including the driver freeze and seeded regression.  \n   **Suggestion:** Include the open P3 fixes explicitly. Key state by project root as well as git directory, or provide the required rebuttal; complete the driver re-pin and review its entries before adding P4 golden changes.\n\n4. **Category: edge-case · Severity: medium**  \n   **Finding:** The close sequence is underspecified. B4 requires the completion event to be committed, while F10 prohibits committing bookkeeping and requires a clean tree […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 14,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_verify.py",
+          "line": 72,
+          "finding": "_pr_check ignored mode: in a driven (pipeline) run the PR is never auto-merged, so close-phase failed on every autonomous driven release.",
+          "suggestion": "Expect the merge only for standalone + autonomous/unattended; pipeline = PR left open. (Fixed in f114d7854, re-verified.)",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_verify.py",
+          "line": 80,
+          "finding": "ancestry test used ls-remote without fetch; exit 128 gave a false 'not on origin/main'; trunk hard-coded.",
+          "suggestion": "Fetch first, treat 128 as unknown, take the trunk from state. (Fixed except that nothing writes state base_branch; falls back to origin/HEAD.)",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/scripts/checks/verify_release_tag.py",
+          "line": 33,
+          "finding": "F7 gated on the latest-tag comparison, which refuses rc-then-final and backport releases and deletes the tag.",
+          "suggestion": "Gate only on tag_exists + changelog_names_release. (Fixed, tests added.)",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
+          "line": 503,
+          "finding": "git push --tags pushes orphan tags of refused releases.",
+          "suggestion": "Push exactly refs/tags/v{version}. (Fixed, replay and delta updated.)",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
+          "line": 495,
+          "finding": "Guided squash/rebase merge can leave the tag on a commit not on main; nothing checks after the merge.",
+          "suggestion": "Post-merge push-tag step in code. (Recorded as Q1/P8a follow-up, not built.)",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "architecture",
+          "file": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
+          "line": 495,
+          "finding": "F1a/F1b/F4 branching is still left to the model in prose.",
+          "suggestion": "Move into a release.py subcommand. (Recorded as P5 follow-up.)",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_close.py",
+          "line": 79,
+          "finding": "F10 clean-tree check exempted only the untracked form of triage.jsonl.",
+          "suggestion": "Match any status form. (Fixed.)",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_verify.py",
+          "line": 59,
+          "finding": "no_decision_drops did not look into decision-drops/bullets/.",
+          "suggestion": "rglob. (Fixed.)",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_commit.py",
+          "line": 79,
+          "finding": "tag made on implicit HEAD; tag-remove exit ignored; status exit unchecked before the re-run shortcut.",
+          "suggestion": "Tag the verified SHA, report tag_remove_failed, require pending.exit==0. (Fixed.)",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_verify.py",
+          "line": 81,
+          "finding": "commit read from release_state.json unvalidated; ls-remote positional without --end-of-options.",
+          "suggestion": "Validate SHA, add --end-of-options. (Fixed; the re-review found SHA.match accepted a trailing newline, fixed with fullmatch in 228638fc0.)",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_event.py",
+          "line": 42,
+          "finding": "git diff --cached exit unchecked; detail names main on develop.",
+          "suggestion": "Stop with event_paths_failed; use the branch name. (Fixed.)",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "plugins/shipwright-changelog/scripts/checks/verify_release_tag.py",
+          "line": 29,
+          "finding": "imports private helpers across the plugin boundary.",
+          "suggestion": "Public wrapper. (Recorded as follow-up.)",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_close.py",
+          "line": 83,
+          "finding": "Re-review: the tree-status exit code was never checked; a failed git status passed as a clean tree.",
+          "suggestion": "Fail on non-zero exit. (Fixed in 228638fc0 with a test.)",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_prepare.py",
+          "line": 105,
+          "finding": "Re-review: the tree_before baseline changes the operator's F10 wording (git status empty) and can mask a file already modified before the release.",
+          "suggestion": "Record as a deviation for operator confirmation at stop 3. (Recorded, not built.)",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-23T22:26:22.156309+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "228638fc0cc4f6c56dc00cfb646454694a71aa9b",
+      "reviewer_notes": "Independent opus code-review (two passes: the final tree a0020b7b1, then the fix round f114d7854). Pass 2 verdict: PASS, no high findings. Architecture rules block read; no profile mismatch."
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "hidden coupling & blast radius",
+          "file": "shared/tests",
+          "line": null,
+          "finding": "Claim under doubt: every affected test was updated (changelog root green) — shared/tests/test_events_drop_hardening.py and test_release_pathspec_doc_sync.py pin the old SKILL.md Step 6 text and fail outside the changelog root",
+          "suggestion": "Run shared/tests and rebind the pins. (Done in f114d7854: pins rebound to release_commit.commit_pathspec; two more shared guards fixed.)",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-changelog/scripts/checks/verify_release_tag.py",
+          "line": null,
+          "finding": "Claim under doubt: F7 only refuses a real mismatch — latest-tag semantics refuse rc-then-final and backport releases",
+          "suggestion": "Gate on tag_exists + changelog_names_release. (Done.)",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "reversibility",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_close.py",
+          "line": null,
+          "finding": "Claim under doubt: F10 tree is clean and a dirty tree means the release broke — pre-existing dirt and a tracked triage.jsonl give false failures after the tag is pushed",
+          "suggestion": "Baseline at prepare, match triage in any form. (Done; baseline deviation recorded for the operator.)",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract (scope authority)",
+          "file": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
+          "line": null,
+          "finding": "Claim under doubt: every frozen-prose change is backed by a P4 decision — the F7 prose removal (P5) and an F3 sentence (P8a) landed in P4",
+          "suggestion": "Remove the F3 sentence (done); record the F7 pull-forward (done in FINDINGS).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_close.py",
+          "line": null,
+          "finding": "Claim under doubt: F10 in a driven run follows the operator decision — close-phase itself calls append_phase_history.py in a driven run rather than the pipeline writer",
+          "suggestion": "Name the deviation for operator confirmation at stop 3. (Recorded.)",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling",
+          "file": "plugins/shipwright-changelog/tests/test_release_event_real_git.py",
+          "line": null,
+          "finding": "Claim under doubt: deleting test_skill_event_blocks_behaviour.py lost no coverage and was authorised — coverage ported 1:1 to test_release_event_real_git.py; the BRIEF says rebind not delete",
+          "suggestion": "Name the rebind in the PR; add a case through release.main (done).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "concurrency & ordering",
+          "file": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
+          "line": null,
+          "finding": "Claim under doubt: F1b guided mode is recoverable — nothing hands off the post-merge tag push; squash merge leaves the tag off main",
+          "suggestion": "Accepted as Q1/P8a follow-up; order now stated in the prose.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_verify.py",
+          "line": null,
+          "finding": "Claim under doubt: verify only reads — could not disprove read-only; trunk hard-coded to main (P8a), private shared imports, P3-era run states without project_root read as absent",
+          "suggestion": "Noted as follow-ups.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-23T22:26:22.285527+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "228638fc0cc4f6c56dc00cfb646454694a71aa9b"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 13,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_verify.py:69` (`shared = Path(plugin_root).resolve().parents[1] / \"shared\"`)",
+          "line": null,
+          "finding": "verify()` re-derives the shared root as `plugin_root.parents[1] / \"shared\"` instead of calling `release_paths.shared_root(plugin_root)`. That expression only happens to be right in the plain-checkout layout; `release_paths` exists precisely because the mirror, installed-cache and Codex layouts place `shared` elsewhere. In those layouts `verify_release_tag.py` is invoked with a bogus `--shared-root`, exits nonzero, and every `close-phase` fails `changelog_matches_tag` on a perfectly good release.",
+          "suggestion": "use `release_paths.shared_root(plugin_root)` (release_close already imports release_paths for the same purpose).",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_close.py:52-58` (the `for key, script, args in steps` loop)",
+          "line": null,
+          "finding": "in pipeline mode a failing canon step does not stop the loop — `failed = failed or (...)` records it but the remaining steps still run, so a dashboard failure is followed by handoff and phase_history writes. Every other chain in this unit (commit-and-tag, record-event, the prose's `&&`) stops at the first failure; partial canon records are exactly the split-brain state the phase gate could misread.",
+          "suggestion": "break` on the first nonzero exit (or run the steps only while `failed is None`).",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "diff (absent)",
+          "line": null,
+          "finding": "The spec's doc obligations require an `inventory.json` update \"in the same diff\" (new scripts `restore_derived.py`, `verify_release_tag.py`, the new subcommands) and appends to FINDINGS/LEARNINGS; none of those files appear in the diff. The hooks-and-pipeline rows are updated, but inventory.json is not.",
+          "suggestion": "add the inventory.json row updates and the FINDINGS/LEARNINGS entries, or name them explicitly as out-of-diff.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "spec",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_close.py:60-65",
+          "line": null,
+          "finding": "F10's \"the tree is clean after close-phase\" is only reported (`tree_clean` in the JSON) — it is not a verify check and a dirty tree still exits 0. The B4 test list doesn't include it, so this is arguably in-spec, but the AC (\"tree is clean after close-phase\") is not enforced anywhere in the code path; only the golden test asserts it on the happy path.",
+          "suggestion": "either add `tree_clean` as a verify check in standalone mode, or state in the PR that reporting (not enforcing) is the accepted reading of F10.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_event.py:33` (`detail = ... \"tagged on main\"`), and `release_close.py` summary for `status ok` with no URL (`page` falls through to `\"ok: \"` after `rstrip`).",
+          "line": null,
+          "finding": "On the `develop` trunk the event detail still says \"tagged on main\"; and the A9 summary renders `Release:    ok: ` when `--release-status ok` is passed without a URL. Both are wrong output in real states the code explicitly supports.",
+          "suggestion": "use the actual branch name for the trunk detail; fall back to \"url not reported\" when status is ok/exists and URL is empty.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_close.py:46-49",
+          "line": null,
+          "finding": "If `SHIPWRIGHT_RUN_ID` is present but empty (falsy), `run_id` falls back to state, but `ours = \"SHIPWRIGHT_RUN_ID\" not in os.environ` is False, so `setdefault` never repairs the empty value and the three tools run with an empty run id — the gate (`gate_run_id.py`) then can't match the `phase_history` entry.",
+          "suggestion": "treat an empty value as absent: delete it before `setdefault`, or compute `ours` from `os.environ.get(...)` being truthy.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "plugins/shipwright-changelog/tests/golden/test_p4_decisions.py:66` (`assert driver.name in (\"replay\", \"cli\")`)",
+          "line": null,
+          "finding": "This assertion is tautological (the parametrize ids are exactly those strings) and validates nothing; it pads the F1b test without adding coverage.",
+          "suggestion": "Delete it, or replace it with a behavioural assertion (e.g. that the run state records the waiting branch kind).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_verify.py:74-76` (`_pr_check`, pipeline branch)",
+          "line": null,
+          "finding": "For a pipeline run the PR check returns ok unconditionally (\"PR opened, left for the merge\") even when the run is autonomous and `merge-pr` was supposed to have merged it — B4 says \"PR state fits the mode (merged when the run merges it)\". A pipeline autonomous release whose merge silently failed still verifies green.",
+          "suggestion": "For pipeline + autonomous, check the merge the same way the standalone branch does (or verify the merged flag the flow recorded).  The core flow, the operator decisions F1a/F1b/F4/F6/F7/F10, B1, A9 and the golden-freeze bookkeeping all look implemented and well-tested (fails-on-old coverage is real, on real git for the behaviour changes). The findings above are fixes, not design problems — the shared-root duplication in `release_verify` and the missing inventory.json are the two that must land before merge.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_close.py",
+          "line": 56,
+          "finding": "Pipeline mode still writes `phase_history` through `append_phase_history.py`, writes the dashboard and handoff, and skips derived-snapshot restoration. This contradicts F10’s explicit ownership decision and leaves tracked bookkeeping dirty after closing a driven release. The updated documentation describes this contrary behavior as intended.",
+          "suggestion": "Leave driven-run phase completion to the specified pipeline writer and restore restorable derived snapshots before returning. Add a driven-run test asserting the required ownership and clean-tree behavior.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_verify.py",
+          "line": 49,
+          "finding": "Verification reconstructs `shared` using `plugin_root.parents[1] / \"shared\"` instead of the existing layout resolver. In an installed versioned cache, this points inside the plugin cache rather than the shared distribution, so `close-phase` fails its tag check even though `commit-and-tag` resolved the same tools correctly.",
+          "suggestion": "Use `release_paths.shared_root(plugin_root)` here too, and exercise verification against an installed-cache layout.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_verify.py",
+          "line": 79,
+          "finding": "Guided and pipeline PR verification succeeds solely because `pr_url` is nonempty. A nonexistent or closed, unmerged PR passes B4; no remote PR state is inspected. Existing tests explicitly pass `\"u\"` as a successful PR.",
+          "suggestion": "Query the PR and verify its actual state against the mode. Add failures for nonexistent and closed, unmerged PRs.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_verify.py",
+          "line": 62,
+          "finding": "The release-page check accepts `--release-status ok` or `exists` without checking that a release page exists, or even requiring a URL. Consequently, B4 can report success after the page was deleted or when publication was incorrectly reported.",
+          "suggestion": "Perform a read-only lookup for the release tag and validate existence. Retain the explicit reason requirement for skipped publication.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_close.py",
+          "line": 76,
+          "finding": "tree_clean` is informational only: the exit status depends exclusively on `verify` checks. A dirty tree therefore produces `status: \"ok\"` and a completion summary, violating F10’s clean-close acceptance criterion. The real-git test also filters out an untracked audit artifact instead of asserting the specified empty porcelain output.",
+          "suggestion": "Resolve release-generated dirt and make remaining dirt fail closing verification. Test the unfiltered `git status --porcelain` result.  Overall assessment: ship-with-fixes. The wrappers preserve much of the release ordering, but F10 and several mandatory verification guarantees remain incomplete. Repository inspection was blocked by execution policy, so these findings are based on the supplied diff.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "codex",
+      "completed_at": "2026-11-23T21:10:14.763849+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] - Category: bug\n- Severity: medium\n- File: `plugins/shipwright-changelog/scripts/lib/release_verify.py:69` (`shared = Path(plugin_root).resolve().parents[1] / \"shared\"`)\n- Finding: `verify()` re-derives the shared root as `plugin_root.parents[1] / \"shared\"` instead of calling `release_paths.shared_root(plugin_root)`. That expression only happens to be right in the plain-checkout layout; `release_paths` exists precisely because the mirror, installed-cache and Codex layouts place `shared` elsewhere. In those layouts `verify_release_tag.py` is invoked with a bogus `--shared-root`, exits nonzero, and every `close-phase` fails `changelog_matches_tag` on a perfectly good release.\n- Suggestion: use `release_paths.shared_root(plugin_root)` (release_close already imports release_paths for the same purpose).\n\n- Category: bug\n- Severity: medium\n- File: `plugins/shipwright-changelog/scripts/lib/release_close.py:52-58` (the `for key, script, args in steps` loop)\n- Finding: in pipeline mode a failing canon step does not stop the loop — `failed = failed or (...)` records it but the remaining steps still run, so a dashboard failure is followed by handoff and phase_history writes. Every other chain in this unit (commit-and-tag, record-event, the prose's `&&`) stops at the first failure; partial canon records are exactly the split-brain state the phase gate could misread.\n- Suggestion: `break` on the first nonzero exit (or run the steps only while `failed is None`).\n\n- Category: spec\n- Severity: medium\n- File: diff (absent)\n- Finding: The spec's doc obligations require an `inventory.json` update \"in the same diff\" (new scripts `restore_derived.py`, `verify_release_tag.py`, the new subcommands) and appends to FINDINGS/LEARNINGS; none of those files appear in the diff. The hooks-and-pipeline rows are updated, but inventory.json is not.\n- Suggestion: add the inventory.json row updates and the FINDINGS/LEARNINGS entries, or name them explicitly as out-of-diff.\n\n- Category: s […truncated]\n\n[openai] - Category: spec\n- Severity: high\n- File: plugins/shipwright-changelog/scripts/lib/release_close.py:56\n- Finding: Pipeline mode still writes `phase_history` through `append_phase_history.py`, writes the dashboard and handoff, and skips derived-snapshot restoration. This contradicts F10’s explicit ownership decision and leaves tracked bookkeeping dirty after closing a driven release. The updated documentation describes this contrary behavior as intended.\n- Suggestion: Leave driven-run phase completion to the specified pipeline writer and restore restorable derived snapshots before returning. Add a driven-run test asserting the required ownership and clean-tree behavior.\n\n- Category: bug\n- Severity: high\n- File: plugins/shipwright-changelog/scripts/lib/release_verify.py:49\n- Finding: Verification reconstructs `shared` using `plugin_root.parents[1] / \"shared\"` instead of the existing layout resolver. In an installed versioned cache, this points inside the plugin cache rather than the shared distribution, so `close-phase` fails its tag check even though `commit-and-tag` resolved the same tools correctly.\n- Suggestion: Use `release_paths.shared_root(plugin_root)` here too, and exercise verification against an installed-cache layout.\n\n- Category: spec\n- Severity: medium\n- File: plugins/shipwright-changelog/scripts/lib/release_verify.py:79\n- Finding: Guided and pipeline PR verification succeeds solely because `pr_url` is nonempty. A nonexistent or closed, unmerged PR passes B4; no remote PR state is inspected. Existing tests explicitly pass `\"u\"` as a successful PR.\n- Suggestion: Query the PR and verify its actual state against the mode. Add failures for nonexistent and closed, unmerged PRs.\n\n- Category: spec\n- Severity: medium\n- File: plugins/shipwright-changelog/scripts/lib/release_verify.py:62\n- Finding: The release-page check accepts `--release-status ok` or `exists` without checking that a release page exists, or even requiring a URL. Consequently, B4 can […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-23T22:26:22.034605+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "228638fc0cc4f6c56dc00cfb646454694a71aa9b"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-23T21:10:14.950972+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-23T21:10:15.132881+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

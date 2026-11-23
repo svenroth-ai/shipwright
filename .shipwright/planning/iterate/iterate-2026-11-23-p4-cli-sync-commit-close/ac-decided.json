@@ -1,0 +1,352 @@
+{
+  "unattended": true,
+  "resolved_items": [
+    {
+      "kind": "unchanged",
+      "ac": "FR-01.09.AC01",
+      "owner_fr": "FR-01.09",
+      "files": [
+        "plugins/shipwright-changelog/scripts/release.py",
+        "plugins/shipwright-changelog/skills/changelog/SKILL.md"
+      ],
+      "decided_by": "code",
+      "confirmed": false
+    },
+    {
+      "kind": "unchanged",
+      "ac": "FR-01.09.AC02",
+      "owner_fr": "FR-01.09",
+      "files": [
+        "plugins/shipwright-changelog/scripts/release.py",
+        "plugins/shipwright-changelog/skills/changelog/SKILL.md"
+      ],
+      "decided_by": "code",
+      "confirmed": false
+    },
+    {
+      "kind": "unchanged",
+      "ac": "FR-01.09.AC03",
+      "owner_fr": "FR-01.09",
+      "files": [
+        "plugins/shipwright-changelog/scripts/release.py",
+        "plugins/shipwright-changelog/skills/changelog/SKILL.md"
+      ],
+      "decided_by": "code",
+      "confirmed": false
+    },
+    {
+      "kind": "unchanged",
+      "ac": "FR-01.09.AC04",
+      "owner_fr": "FR-01.09",
+      "files": [
+        "plugins/shipwright-changelog/scripts/release.py",
+        "plugins/shipwright-changelog/skills/changelog/SKILL.md"
+      ],
+      "decided_by": "code",
+      "confirmed": false
+    },
+    {
+      "kind": "unchanged",
+      "ac": "FR-01.09.AC05",
+      "owner_fr": "FR-01.09",
+      "files": [
+        "plugins/shipwright-changelog/scripts/release.py",
+        "plugins/shipwright-changelog/skills/changelog/SKILL.md"
+      ],
+      "decided_by": "code",
+      "confirmed": false
+    },
+    {
+      "kind": "unchanged",
+      "ac": "FR-01.09.AC06",
+      "owner_fr": "FR-01.09",
+      "files": [
+        "plugins/shipwright-changelog/scripts/release.py",
+        "plugins/shipwright-changelog/skills/changelog/SKILL.md"
+      ],
+      "decided_by": "code",
+      "confirmed": false
+    },
+    {
+      "kind": "unchanged",
+      "ac": "FR-01.09.AC07",
+      "owner_fr": "FR-01.09",
+      "files": [
+        "plugins/shipwright-changelog/scripts/release.py",
+        "plugins/shipwright-changelog/skills/changelog/SKILL.md"
+      ],
+      "decided_by": "code",
+      "confirmed": false
+    },
+    {
+      "kind": "unchanged",
+      "ac": "FR-01.09.AC08",
+      "owner_fr": "FR-01.09",
+      "files": [
+        "plugins/shipwright-changelog/scripts/release.py",
+        "plugins/shipwright-changelog/skills/changelog/SKILL.md"
+      ],
+      "decided_by": "code",
+      "confirmed": false
+    },
+    {
+      "kind": "unchanged",
+      "ac": "FR-01.09.AC09",
+      "owner_fr": "FR-01.09",
+      "files": [
+        "plugins/shipwright-changelog/scripts/release.py",
+        "plugins/shipwright-changelog/skills/changelog/SKILL.md"
+      ],
+      "decided_by": "code",
+      "confirmed": false
+    },
+    {
+      "kind": "unchanged",
+      "ac": "FR-01.09.AC10",
+      "owner_fr": "FR-01.09",
+      "files": [
+        "plugins/shipwright-changelog/scripts/release.py",
+        "plugins/shipwright-changelog/skills/changelog/SKILL.md"
+      ],
+      "decided_by": "code",
+      "confirmed": false
+    },
+    {
+      "kind": "unchanged",
+      "ac": "FR-01.09.AC11",
+      "owner_fr": "FR-01.09",
+      "files": [
+        "plugins/shipwright-changelog/scripts/release.py",
+        "plugins/shipwright-changelog/skills/changelog/SKILL.md"
+      ],
+      "decided_by": "code",
+      "confirmed": false
+    },
+    {
+      "kind": "unchanged",
+      "ac": "FR-01.09.AC12",
+      "owner_fr": "FR-01.09",
+      "files": [
+        "plugins/shipwright-changelog/scripts/release.py",
+        "plugins/shipwright-changelog/skills/changelog/SKILL.md"
+      ],
+      "decided_by": "code",
+      "confirmed": false
+    },
+    {
+      "kind": "unchanged",
+      "ac": "FR-01.09.AC13",
+      "owner_fr": "FR-01.09",
+      "files": [
+        "plugins/shipwright-changelog/scripts/release.py",
+        "plugins/shipwright-changelog/skills/changelog/SKILL.md"
+      ],
+      "decided_by": "code",
+      "confirmed": false
+    },
+    {
+      "kind": "unchanged",
+      "ac": "FR-01.09.AC14",
+      "owner_fr": "FR-01.09",
+      "files": [
+        "plugins/shipwright-changelog/scripts/release.py",
+        "plugins/shipwright-changelog/skills/changelog/SKILL.md"
+      ],
+      "decided_by": "code",
+      "confirmed": false
+    },
+    {
+      "kind": "unchanged",
+      "ac": "FR-01.09.AC15",
+      "owner_fr": "FR-01.09",
+      "files": [
+        "plugins/shipwright-changelog/scripts/release.py",
+        "plugins/shipwright-changelog/skills/changelog/SKILL.md"
+      ],
+      "decided_by": "code",
+      "confirmed": false
+    }
+  ],
+  "ac_decisions": [
+    {
+      "ac": "FR-01.09.AC01",
+      "mode": "auto",
+      "answer": "auto",
+      "kind": "unchanged",
+      "answered_via": "none",
+      "decided_by": "code",
+      "confirmed": false
+    },
+    {
+      "ac": "FR-01.09.AC02",
+      "mode": "auto",
+      "answer": "auto",
+      "kind": "unchanged",
+      "answered_via": "none",
+      "decided_by": "code",
+      "confirmed": false
+    },
+    {
+      "ac": "FR-01.09.AC03",
+      "mode": "auto",
+      "answer": "auto",
+      "kind": "unchanged",
+      "answered_via": "none",
+      "decided_by": "code",
+      "confirmed": false
+    },
+    {
+      "ac": "FR-01.09.AC04",
+      "mode": "auto",
+      "answer": "auto",
+      "kind": "unchanged",
+      "answered_via": "none",
+      "decided_by": "code",
+      "confirmed": false
+    },
+    {
+      "ac": "FR-01.09.AC05",
+      "mode": "auto",
+      "answer": "auto",
+      "kind": "unchanged",
+      "answered_via": "none",
+      "decided_by": "code",
+      "confirmed": false
+    },
+    {
+      "ac": "FR-01.09.AC06",
+      "mode": "auto",
+      "answer": "auto",
+      "kind": "unchanged",
+      "answered_via": "none",
+      "decided_by": "code",
+      "confirmed": false
+    },
+    {
+      "ac": "FR-01.09.AC07",
+      "mode": "auto",
+      "answer": "auto",
+      "kind": "unchanged",
+      "answered_via": "none",
+      "decided_by": "code",
+      "confirmed": false
+    },
+    {
+      "ac": "FR-01.09.AC08",
+      "mode": "auto",
+      "answer": "auto",
+      "kind": "unchanged",
+      "answered_via": "none",
+      "decided_by": "code",
+      "confirmed": false
+    },
+    {
+      "ac": "FR-01.09.AC09",
+      "mode": "auto",
+      "answer": "auto",
+      "kind": "unchanged",
+      "answered_via": "none",
+      "decided_by": "code",
+      "confirmed": false
+    },
+    {
+      "ac": "FR-01.09.AC10",
+      "mode": "auto",
+      "answer": "auto",
+      "kind": "unchanged",
+      "answered_via": "none",
+      "decided_by": "code",
+      "confirmed": false
+    },
+    {
+      "ac": "FR-01.09.AC11",
+      "mode": "auto",
+      "answer": "auto",
+      "kind": "unchanged",
+      "answered_via": "none",
+      "decided_by": "code",
+      "confirmed": false
+    },
+    {
+      "ac": "FR-01.09.AC12",
+      "mode": "auto",
+      "answer": "auto",
+      "kind": "unchanged",
+      "answered_via": "none",
+      "decided_by": "code",
+      "confirmed": false
+    },
+    {
+      "ac": "FR-01.09.AC13",
+      "mode": "auto",
+      "answer": "auto",
+      "kind": "unchanged",
+      "answered_via": "none",
+      "decided_by": "code",
+      "confirmed": false
+    },
+    {
+      "ac": "FR-01.09.AC14",
+      "mode": "auto",
+      "answer": "auto",
+      "kind": "unchanged",
+      "answered_via": "none",
+      "decided_by": "code",
+      "confirmed": false
+    },
+    {
+      "ac": "FR-01.09.AC15",
+      "mode": "auto",
+      "answer": "auto",
+      "kind": "unchanged",
+      "answered_via": "none",
+      "decided_by": "code",
+      "confirmed": false
+    }
+  ],
+  "counts": {
+    "total": 15,
+    "auto": 0,
+    "asked": 0,
+    "exempt": 0,
+    "restore": 0,
+    "unchanged": 15,
+    "answered_inline": 0,
+    "unconfirmed": 0,
+    "exempt_share": 0.0,
+    "restore_share": 0.0
+  },
+  "status": "ok",
+  "ac_mode": {
+    "mode": "auto",
+    "source": "--ac-mode"
+  },
+  "run_id": "iterate-2026-11-23-p4-cli-sync-commit-close",
+  "bind_id": "dfp-pilot-changelog-p3-p8--P4@2026-11-23",
+  "exemption_check": "tested against the current diff (73 file(s), 54 not observable)",
+  "surface": {
+    "observable": true,
+    "files": [
+      "plugins/shipwright-changelog/scripts/checks/restore_derived.py",
+      "plugins/shipwright-changelog/scripts/checks/verify_release_tag.py",
+      "plugins/shipwright-changelog/scripts/lib/release_aggregate.py",
+      "plugins/shipwright-changelog/scripts/lib/release_close.py",
+      "plugins/shipwright-changelog/scripts/lib/release_commit.py",
+      "plugins/shipwright-changelog/scripts/lib/release_event.py",
+      "plugins/shipwright-changelog/scripts/lib/release_paths.py",
+      "plugins/shipwright-changelog/scripts/lib/release_prepare.py",
+      "plugins/shipwright-changelog/scripts/lib/release_runstate.py",
+      "plugins/shipwright-changelog/scripts/lib/release_sync.py",
+      "plugins/shipwright-changelog/scripts/lib/release_upgrade_notes.py",
+      "plugins/shipwright-changelog/scripts/lib/release_verify.py",
+      "plugins/shipwright-changelog/scripts/release.py",
+      "plugins/shipwright-changelog/skills/changelog/SKILL.md",
+      "plugins/shipwright-changelog/skills/changelog/references/compliance-evidence.md",
+      "plugins/shipwright-changelog/skills/changelog/references/event-fold.md",
+      "plugins/shipwright-changelog/skills/changelog/references/manifest-sync.md",
+      "plugins/shipwright-changelog/skills/changelog/references/release-workflow.md",
+      "plugins/shipwright-changelog/skills/changelog/references/rerunning-a-release.md"
+    ],
+    "ignored": 54
+  }
+}

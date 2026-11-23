@@ -104,6 +104,10 @@ schema with contract tests.
 
 ## Why Step 8 needs the restore
 
+**Since unit P4 (operator decision F10) the release no longer calls `update-step`, and a hand-invoked `close-phase` ends with every derived
+snapshot restored to `HEAD` (`restore_derived_to_head`), so the tree is clean without the `--restore` call below; the paragraph stays as the
+reason the restore exists.** The tag/CHANGELOG check that `update-step` provided runs in `release.py commit-and-tag` (operator decision F7).
+
 `orchestrator update-step --step changelog --status complete` regenerates all
 seven a **second** time — unstamped, and at a different commit than the one that
 was just tagged. Without `--restore` the release ends with a permanently dirty

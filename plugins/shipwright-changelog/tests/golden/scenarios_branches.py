@@ -43,11 +43,11 @@ def _check_s14a(run: Run) -> None:
     pr = run.step("open-pr")
     # D7: `gh pr create` (SKILL.md:333) runs before `git push origin HEAD` (:349), so the host refuses the request
     assert pr.exit_code != 0 and "is not on the remote" in run.commands("open-pr")[0]["stderr"], run.commands("open-pr")[0]
-    assert s.gh_state()["prs"] == [] and run.step("record-event").exit_code == 0  # the push that follows comes too late
-    assert _on_origin(s, "refs/heads/release/fresh")
-    # ... and `git push --tags origin main` pushes a local main that never got the release (stale), the tag goes with it
-    assert _on_origin(s, "refs/tags/v1.3.0") and run.step("push-tags").exit_code == 0
-    assert s.run(["git", "--git-dir", s.origin.as_posix(), "merge-base", "--is-ancestor", "v1.3.0", "main"]).returncode == 1
+    assert s.gh_state()["prs"] == []
+    # F4 (operator 2026-11-23): no request, no release. The flow stops here: the head was never pushed, no event was
+    # recorded and the tag exists on this machine only
+    assert [r.step for r in run.results][-1] == "open-pr" and not _on_origin(s, "refs/heads/release/fresh")
+    assert not _on_origin(s, "refs/tags/v1.3.0") and _tag_made(s) and run.commands("record-event-pr") == []
     oracle.check_tag_on_release_commit(s.git("log", "-1", "--format=%s", "v1.3.0"), "1.3.0")
     oracle.check_ac01(ss.notes_of(s), _tag_made(s), request_open=False, outcome="no_request")  # AC01: no request was opened
     oracle.check_ac11_not_published(s.gh_state(), tag_on_remote=_on_origin(s, "refs/tags/v1.3.0"), pr_open=any(p["state"] == "open" for p in s.gh_state()["prs"]))  # AC11: no request, so no breach
@@ -73,12 +73,11 @@ def _s14c(make_project, layout: str) -> Run:
 
 def _check_s14c(run: Run) -> None:
     s = run.scratch
-    assert s.git("rev-parse", "--abbrev-ref", "HEAD") == "master" and run.commands("record-event-pr")  # D24: master is a "feature branch"
+    assert s.git("rev-parse", "--abbrev-ref", "HEAD") == "master" and run.commands("open-pr")  # D24: master is a "feature branch"
     pr = run.step("open-pr")
     assert pr.exit_code != 0 and "base branch 'main' is not on the remote" in run.commands("open-pr")[0]["stderr"]
-    push = run.step("push-tags")  # `git push --tags origin main`: there is no local main to push
-    assert push.exit_code != 0 and "main" in run.commands("push-tags")[0]["stderr"], run.commands("push-tags")[0]
-    assert not _on_origin(s, "refs/tags/v1.3.0") and run.step("release-page").output["status"] == "failed"
+    # F4 (operator 2026-11-23): the refused request stops the release; nothing is pushed and the tag stays on this machine
+    assert [r.step for r in run.results][-1] == "open-pr" and not _on_origin(s, "refs/tags/v1.3.0")
     oracle.check_ac01(ss.notes_of(s), _tag_made(s), request_open=False, outcome="no_request")  # AC01: tag only on this machine
     oracle.check_ac11_not_published(s.gh_state(), tag_on_remote=_on_origin(s, "refs/tags/v1.3.0"), pr_open=any(p["state"] == "open" for p in s.gh_state()["prs"]))
 

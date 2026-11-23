@@ -16,6 +16,7 @@ from pathlib import Path
 
 ORCHESTRATOR = ("scripts", "lib", "orchestrator.py")  # inside the run plugin
 RUN_PLUGIN = "shipwright-run"
+ORPHAN_MARKER = ".orphaned_at"  # the cache installer's tombstone inside a replaced plugin version
 
 
 def shared_root(plugin_root: Path) -> Path:
@@ -47,6 +48,8 @@ def orchestrator_path(plugin_root: Path) -> Path | None:
                   root.parent / RUN_PLUGIN / rel]  # Codex bundle: sibling plugins under origin/
     installed = root.parent.parent / RUN_PLUGIN  # cache/shipwright/shipwright-run/<version>
     if installed.is_dir():
-        versions = sorted((v for v in installed.iterdir() if v.is_dir()), key=_version_key, reverse=True)
-        candidates += [v / rel for v in versions]  # newest version first
+        versions = sorted((v for v in installed.iterdir() if v.is_dir() and not (v / ORPHAN_MARKER).exists()),
+                          key=_version_key, reverse=True)  # a version the installer marked orphaned is not a live copy
+        own = [v for v in versions if v.name == root.name]  # the run plugin of the SAME version as this plugin first, then the newest
+        candidates += [v / rel for v in own + [v for v in versions if v not in own]]
     return next((c for c in candidates if c.is_file()), None)

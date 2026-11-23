@@ -133,9 +133,9 @@ def test_ac13_a_version_written_in_several_places_of_one_manifest_is_written_in_
 
 
 def _page_flow(make_project, mode="ok", skip=()):
-    s = scenario_support.ready_release(make_project)
+    s = scenario_support.ready_release(make_project, autonomy="autonomous")  # F1b: a guided release pushes the tag only after the merge, so it makes no page yet
     s.env["SHIPWRIGHT_TEST_CONDENSE_FIXTURE_MODEL"] = mode
-    driver, results = _flow(s, skip=skip)
+    driver, results = _flow(s, autonomy="autonomous", skip=skip)
     return s, driver, results
 
 
