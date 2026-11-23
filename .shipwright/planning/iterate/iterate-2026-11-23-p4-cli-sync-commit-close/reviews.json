@@ -141,29 +141,234 @@
     },
     "code": {
       "review_type": "code",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 14,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_verify.py",
+          "line": 72,
+          "finding": "_pr_check ignored mode: in a driven (pipeline) run the PR is never auto-merged, so close-phase failed on every autonomous driven release.",
+          "suggestion": "Expect the merge only for standalone + autonomous/unattended; pipeline = PR left open. (Fixed in f114d7854, re-verified.)",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_verify.py",
+          "line": 80,
+          "finding": "ancestry test used ls-remote without fetch; exit 128 gave a false 'not on origin/main'; trunk hard-coded.",
+          "suggestion": "Fetch first, treat 128 as unknown, take the trunk from state. (Fixed except that nothing writes state base_branch; falls back to origin/HEAD.)",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/scripts/checks/verify_release_tag.py",
+          "line": 33,
+          "finding": "F7 gated on the latest-tag comparison, which refuses rc-then-final and backport releases and deletes the tag.",
+          "suggestion": "Gate only on tag_exists + changelog_names_release. (Fixed, tests added.)",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
+          "line": 503,
+          "finding": "git push --tags pushes orphan tags of refused releases.",
+          "suggestion": "Push exactly refs/tags/v{version}. (Fixed, replay and delta updated.)",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
+          "line": 495,
+          "finding": "Guided squash/rebase merge can leave the tag on a commit not on main; nothing checks after the merge.",
+          "suggestion": "Post-merge push-tag step in code. (Recorded as Q1/P8a follow-up, not built.)",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "architecture",
+          "file": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
+          "line": 495,
+          "finding": "F1a/F1b/F4 branching is still left to the model in prose.",
+          "suggestion": "Move into a release.py subcommand. (Recorded as P5 follow-up.)",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_close.py",
+          "line": 79,
+          "finding": "F10 clean-tree check exempted only the untracked form of triage.jsonl.",
+          "suggestion": "Match any status form. (Fixed.)",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_verify.py",
+          "line": 59,
+          "finding": "no_decision_drops did not look into decision-drops/bullets/.",
+          "suggestion": "rglob. (Fixed.)",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_commit.py",
+          "line": 79,
+          "finding": "tag made on implicit HEAD; tag-remove exit ignored; status exit unchecked before the re-run shortcut.",
+          "suggestion": "Tag the verified SHA, report tag_remove_failed, require pending.exit==0. (Fixed.)",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_verify.py",
+          "line": 81,
+          "finding": "commit read from release_state.json unvalidated; ls-remote positional without --end-of-options.",
+          "suggestion": "Validate SHA, add --end-of-options. (Fixed; the re-review found SHA.match accepted a trailing newline, fixed with fullmatch in 228638fc0.)",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_event.py",
+          "line": 42,
+          "finding": "git diff --cached exit unchecked; detail names main on develop.",
+          "suggestion": "Stop with event_paths_failed; use the branch name. (Fixed.)",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "plugins/shipwright-changelog/scripts/checks/verify_release_tag.py",
+          "line": 29,
+          "finding": "imports private helpers across the plugin boundary.",
+          "suggestion": "Public wrapper. (Recorded as follow-up.)",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_close.py",
+          "line": 83,
+          "finding": "Re-review: the tree-status exit code was never checked; a failed git status passed as a clean tree.",
+          "suggestion": "Fail on non-zero exit. (Fixed in 228638fc0 with a test.)",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_prepare.py",
+          "line": 105,
+          "finding": "Re-review: the tree_before baseline changes the operator's F10 wording (git status empty) and can mask a file already modified before the release.",
+          "suggestion": "Record as a deviation for operator confirmation at stop 3. (Recorded, not built.)",
+          "source": "code-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-11-23T21:10:33.802611+00:00",
-      "disposition": "the runner spawned these reviewers and fixed their findings afterwards, so no pass of the final tree was read in full; the orchestrator re-runs the cascade at 3f-bis (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-11-23T22:26:22.156309+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "228638fc0cc4f6c56dc00cfb646454694a71aa9b",
+      "reviewer_notes": "Independent opus code-review (two passes: the final tree a0020b7b1, then the fix round f114d7854). Pass 2 verdict: PASS, no high findings. Architecture rules block read; no profile mismatch."
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "hidden coupling & blast radius",
+          "file": "shared/tests",
+          "line": null,
+          "finding": "Claim under doubt: every affected test was updated (changelog root green) — shared/tests/test_events_drop_hardening.py and test_release_pathspec_doc_sync.py pin the old SKILL.md Step 6 text and fail outside the changelog root",
+          "suggestion": "Run shared/tests and rebind the pins. (Done in f114d7854: pins rebound to release_commit.commit_pathspec; two more shared guards fixed.)",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-changelog/scripts/checks/verify_release_tag.py",
+          "line": null,
+          "finding": "Claim under doubt: F7 only refuses a real mismatch — latest-tag semantics refuse rc-then-final and backport releases",
+          "suggestion": "Gate on tag_exists + changelog_names_release. (Done.)",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "reversibility",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_close.py",
+          "line": null,
+          "finding": "Claim under doubt: F10 tree is clean and a dirty tree means the release broke — pre-existing dirt and a tracked triage.jsonl give false failures after the tag is pushed",
+          "suggestion": "Baseline at prepare, match triage in any form. (Done; baseline deviation recorded for the operator.)",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract (scope authority)",
+          "file": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
+          "line": null,
+          "finding": "Claim under doubt: every frozen-prose change is backed by a P4 decision — the F7 prose removal (P5) and an F3 sentence (P8a) landed in P4",
+          "suggestion": "Remove the F3 sentence (done); record the F7 pull-forward (done in FINDINGS).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_close.py",
+          "line": null,
+          "finding": "Claim under doubt: F10 in a driven run follows the operator decision — close-phase itself calls append_phase_history.py in a driven run rather than the pipeline writer",
+          "suggestion": "Name the deviation for operator confirmation at stop 3. (Recorded.)",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling",
+          "file": "plugins/shipwright-changelog/tests/test_release_event_real_git.py",
+          "line": null,
+          "finding": "Claim under doubt: deleting test_skill_event_blocks_behaviour.py lost no coverage and was authorised — coverage ported 1:1 to test_release_event_real_git.py; the BRIEF says rebind not delete",
+          "suggestion": "Name the rebind in the PR; add a case through release.main (done).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "concurrency & ordering",
+          "file": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
+          "line": null,
+          "finding": "Claim under doubt: F1b guided mode is recoverable — nothing hands off the post-merge tag push; squash merge leaves the tag off main",
+          "suggestion": "Accepted as Q1/P8a follow-up; order now stated in the prose.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_verify.py",
+          "line": null,
+          "finding": "Claim under doubt: verify only reads — could not disprove read-only; trunk hard-coded to main (P8a), private shared imports, P3-era run states without project_root read as absent",
+          "suggestion": "Noted as follow-ups.",
+          "source": "doubt-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-11-23T21:10:34.763225+00:00",
-      "disposition": "the runner spawned these reviewers and fixed their findings afterwards, so no pass of the final tree was read in full; the orchestrator re-runs the cascade at 3f-bis (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-11-23T22:26:22.285527+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "228638fc0cc4f6c56dc00cfb646454694a71aa9b"
     },
     "external_code": {
       "review_type": "external_code",
@@ -301,16 +506,18 @@
     },
     "spec": {
       "review_type": "spec",
-      "status": "not_run",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-11-23T21:10:32.319158+00:00",
-      "disposition": "the runner spawned these reviewers and fixed their findings afterwards, so no pass of the final tree was read in full; the orchestrator re-runs the cascade at 3f-bis (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-11-23T22:26:22.034605+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "228638fc0cc4f6c56dc00cfb646454694a71aa9b"
     },
     "plan_internal": {
       "review_type": "plan_internal",
