@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-23-dfp-pilot-freeze-gaps",
+  "risk_recheck": {
+    "changed_file_count": 7,
+    "diff_loc": 63,
+    "risk_flags": [],
+    "diff_risk_flags": [],
+    "complexity_floor": "trivial",
+    "stage1_complexity": "small",
+    "declared_complexity": null,
+    "effective_complexity": "small",
+    "upgraded": false,
+    "plan_review_required": false,
+    "ci_ack_recorded": false,
+    "escalate": {
+      "required": false,
+      "reason_code": null,
+      "paths": []
+    }
+  }
+}

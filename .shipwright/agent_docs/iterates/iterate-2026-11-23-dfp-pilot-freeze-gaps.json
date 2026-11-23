@@ -1,0 +1,64 @@
+{
+  "run_id": "iterate-2026-11-23-dfp-pilot-freeze-gaps",
+  "date": "2026-11-23T07:16:32.908895Z",
+  "event_at": "2026-11-22T23:39:50.861159+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "keyword",
+  "branch": "iterate/dfp-pilot-freeze-gaps",
+  "spec": ".shipwright/planning/iterate/iterate-2026-11-23-dfp-pilot-freeze-gaps/plan.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-11-23-dfp-pilot-freeze-gaps",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "the changelog pyproject.toml and the live SKILL.md with its ten references are in the golden lock; the real tree respects the freeze after the re-pin (107 files, 43 traces, 20 promises, approved_deltas [])",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "plugins/shipwright-changelog/tests/golden/test_trace_freeze.py::test_the_real_tree_respects_the_freeze, ::test_the_promise_lock_holds_once_the_tree_is_frozen PASSED on Windows CPython 3.11 (F0) and on Linux via WSL (golden root 125 passed); golden_lock.py --check ok on both"
+      },
+      {
+        "behavior": "every live prose file under the changelog skill folder is frozen, so a reference added later without being frozen fails",
+        "disposition": "tested",
+        "evidence": "test_trace_freeze.py::test_every_live_prose_file_is_frozen_until_p5 PASSED"
+      },
+      {
+        "behavior": "the ini file the pytest session actually runs under is frozen, also when pytest is started from the repo root",
+        "disposition": "tested",
+        "evidence": "test_trace_freeze.py::test_the_pytest_config_this_session_runs_under_is_frozen PASSED from the plugin dir (F0, Windows) and from the repo root (WSL Linux and Windows probe)"
+      },
+      {
+        "behavior": "an edit of SKILL.md, a reference or the pytest config fails the freeze unless an approved delta names it",
+        "disposition": "tested",
+        "evidence": "test_trace_freeze.py::test_an_edit_of_the_live_prose_or_the_pytest_config_fails_unless_a_delta_names_it[3 cases] PASSED; real-tree probe edits of event-fold.md and pyproject.toml failed test_the_real_tree_respects_the_freeze and were restored"
+      },
+      {
+        "behavior": "the lock writer still reads REQUIRED as the freeze test defines it after the additions",
+        "disposition": "tested",
+        "evidence": "test_trace_freeze.py::test_the_lock_writer_reads_this_files_required_list_as_it_stands PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 5,
+      "tested": 5,
+      "untestable": 0,
+      "untested_testable": 0
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run --directory plugins/shipwright-changelog --with pytest --with pytest-mock pytest tests/golden/test_trace_freeze.py tests/golden/test_coverage_checks.py tests/golden/test_promises_meta.py tests/golden/test_replay_driver.py -q -p no:cacheprovider",
+    "exit_code": 0,
+    "tests_run": 49,
+    "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\dfp-pilot-freeze-gaps\\.shipwright\\runs\\iterate-2026-11-23-dfp-pilot-freeze-gaps\\surface_verification.log",
+    "timestamp": "2026-11-23T06:56:05.365Z",
+    "attempts": 1
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}

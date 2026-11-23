@@ -36,9 +36,10 @@ OBVIOUS = clear answer, decided without the maintainer. ASK = a genuine judgemen
 - **F1a (known D2) OBVIOUS.** `git push --tags origin main` run from the release branch also pushes the local
   `main` and publishes a tag that points at an unmerged commit (S10, S11a, S12a, S12b, S13, S18b, S19, S1l,
   S2g). Decision: from a feature branch push only the tag; push `main` only when the release is cut on `main`.
-- **F1b ASK.** In guided mode, should the tag reach the remote before the release PR is merged? Default: hold
-  the tag until the PR is merged (a public tag on unreviewed code cannot be taken back cleanly). Today's
-  behaviour stays frozen in the lock; the change is a P4 delta.
+- **F1b DECIDED (operator, 2026-11-23).** In guided mode, should the tag reach the remote before the release PR
+  is merged? No: the tag is pushed only after the release PR is merged (otherwise a failed release leaves a tag
+  with no release). Today's behaviour stays frozen in the lock; the change lands in P4 with F1a, as an approved
+  delta.
 - **F2 (D12) OBVIOUS.** The preview question comes after CHANGELOG.md is written and the untracked drops are
   deleted, so Cancel leaves a written section and lost input (S18a, S18b). Decision: ask Accept/Edit/Cancel after
   the dry run and before the real write; Edit changes the drop and repeats the dry run.
@@ -51,17 +52,33 @@ OBVIOUS = clear answer, decided without the maintainer. ASK = a genuine judgemen
   (S14c). Decision: take the default branch from the remote and use it everywhere.
 - **F6 OBVIOUS (replay).** The replay ignores the `&&` stop rule of SKILL 341 and goes on to push the tag after
   a rejected push (S16e). Decision: the prose stands; fix the replay.
-- **F7 ASK.** The prose says both "standalone: no `orchestrator.py update-step`" (SKILL 58-60) and calls it
-  unconditionally (407-409). Two runs called it and left three stray changes (S12b, S2u). Default: the skill
-  never calls it; the CLI owns the check it provides (consistent with plan item A5).
+- **F7 DECIDED (operator, 2026-11-23).** The prose says both "standalone: no `orchestrator.py update-step`"
+  (SKILL 58-60) and calls it unconditionally (407-409). Two runs called it and left three stray changes (S12b,
+  S2u). Decision: the CLI (code) owns the check and is always used; the skill prose never calls
+  `orchestrator.py update-step` itself and must not contradict itself. P5 removes SKILL 407-409 and the
+  `--restore` call after it; the check moves into the code path of Steps 6/7 (consistent with plan item A5).
 - **F8 OBVIOUS (tool).** A refused evidence refresh leaves staged files, while compliance-evidence.md:62-64 says
   the tree is restored (S16b). Decision: the tool unstages what it staged when it refuses.
 - **F9 OBVIOUS.** The cherry-pick fallback writes the bullet into legacy `[Unreleased]`, so it misses the
   release it was written for (S10). Decision: write a drop file instead.
-- **F10 ASK.** The closing steps (C2, C3, phase history) leave `build_dashboard.md` and
-  `shipwright_run_config.json` modified and `session_handoff.md` untracked after the last commit, in the main
-  checkout after an autonomous merge. Default: run them before the event commit and commit them in the release,
-  so the release ends clean. Alternative: gitignore them.
+- **F10 DECIDED (operator, 2026-11-23; corrects the earlier default).** The closing steps (C2, C3, phase
+  history) leave `build_dashboard.md` and `shipwright_run_config.json` modified and `session_handoff.md`
+  untracked after the last commit, in the main checkout after an autonomous merge. Decision: the release does
+  NOT commit them; the closing steps must leave the tree clean. The dashboard and the handover note are derived
+  stop-hook snapshots (`shared/scripts/lib/derived_snapshots.py`; `.gitignore`: tracked variants are produced
+  only by iterate finalize, a derived snapshot is never committed). Per file, read from the code:
+  `build_dashboard.md` is in `DERIVED_SNAPSHOTS` and in `RESTORABLE_SNAPSHOTS`, so after C2 the close step
+  restores it to HEAD with `restore_derived_to_head` (or does not write it in standalone mode);
+  `session_handoff.md` is in `DERIVED_SNAPSHOTS` but NOT in `RESTORABLE_SNAPSHOTS` (its canon marker is run
+  identity, and `restore_derived_to_head` skips a modified run-written path and every untracked one), so a
+  restore cannot clean it: in standalone mode C3 does not write it; `shipwright_run_config.json` is in neither
+  list: it is real tracked config (the run-config project marker of `shipwright_paths.py`), not a derived
+  snapshot, so no restore applies: in standalone mode the `phase_history` append is a run-state write and is not
+  made (SKILL 60 says only "skip pipeline state updates"; P4 makes the `phase_history` rule explicit, the same
+  rule as F7); where a pipeline owns the run
+  state, its phase-completion writer (`single-session-apply` in a driven run, SKILL 54-56) owns it; P4 names
+  the exact writer. Lands in P4 (the closing summary / close-phase unit), with a
+  test that the tree is clean after `close-phase`.
 - **F11 (D9) OBVIOUS.** `--from` is advertised (SKILL 26) but no script takes it (S19). Decision: remove it.
 - **F12 OBVIOUS.** Two runs printed the version question after the dry run had started (S12b, S16f); harmless.
   The prose stands; a CLI that owns the gate answers (plan item A2).
@@ -80,7 +97,17 @@ S6, S8, S9). P2 a project without `decision-drops/` or `planning/adr/` aborts th
 tracked drop deletions are not in the Step 6 pathspec (S1t). P4 a "BREAKING" drop under a `fix` commit gets a
 patch bump (S3b). P5 the release audit leaves an untracked `triage.jsonl`.
 
-## Decisions waiting for the maintainer (none blocks the lock)
+## Decisions (operator, 2026-11-23)
 
-F1b, F7, F10, each with its default above. The lock freezes today's behaviour; each fix lands as an approved
-delta in P3 to P8.
+The three ASK findings are decided; none blocks the lock, which freezes today's behaviour, and each fix lands as
+an approved delta in its unit.
+
+- **F1b:** in guided mode the tag is NOT pushed before the release PR is merged (a failed release must not leave
+  a tag with no release). Lands in **P4**, together with F1a.
+- **F7:** the CLI owns the check and is always used; the skill prose never calls `orchestrator.py update-step`
+  itself and does not contradict itself. **P5** removes SKILL 407-409 and its `--restore`; the check moves into
+  the code path of Steps 6/7 (P3/P4 build it).
+- **F10 (corrects the earlier default "run them before the event commit and commit them in the release"):** the
+  release never commits `build_dashboard.md`, `session_handoff.md` or the run-config bookkeeping; the close step
+  leaves the tree clean (per file as in F10 above: restore the dashboard to HEAD, do not write the handover note
+  or the `phase_history` entry in standalone mode). Lands in **P4** (the closing summary / close-phase unit).
