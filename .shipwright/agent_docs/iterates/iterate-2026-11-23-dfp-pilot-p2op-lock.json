@@ -1,0 +1,64 @@
+{
+  "run_id": "iterate-2026-11-23-dfp-pilot-p2op-lock",
+  "date": "2026-11-22T23:39:50.566843Z",
+  "event_at": "2026-11-22T20:07:59.129749+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/dfp-pilot-p2op-lock",
+  "spec": ".shipwright/planning/iterate/iterate-2026-11-23-dfp-pilot-p2op-lock/plan.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-11-23-dfp-pilot-p2op-lock",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "the lock writer locks every trace, every REQUIRED file and the harness, byte-stable LF with a pinned digest, CRLF read as LF on hashed files and on a CRLF checkout of the locks",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_golden_driver_freeze.py (23 tests) PASSED on CPython 3.11 and 3.13"
+      },
+      {
+        "behavior": "the writer refuses a changed lock without --repin, a missing spec, an unreadable REQUIRED and a promise test without covers ids (exit 2, nothing written); --check honours approved deltas and flags missing or extra entries; --promise-only names the delta pair from the golden lock; --repin lists added, removed and changed entries",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_golden_driver_freeze.py::test_check_honours_an_approved_delta_like_the_freeze_test_and_writes_nothing, ::test_promise_only_rewrites_the_promise_lock_alone_and_names_the_delta_the_golden_lock_needs, ::test_a_full_repin_reports_the_deltas_it_makes_moot, ::test_the_cli_takes_the_golden_dir_or_the_plugin_and_refuses_a_missing_spec_or_a_bad_promise_test PASSED"
+      },
+      {
+        "behavior": "on the real tree the freeze holds: golden.lock.json (95 files, 43 traces) and promise.lock.json (20 promise tests) agree with tree_problems, the writer's own check and promise_lock.lock_problems; the writer reads REQUIRED as the module defines it; every pinned prose file is frozen",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "plugins/shipwright-changelog/tests/golden/test_trace_freeze.py PASSED (F0.5 cli run, 44 tests); golden_lock.py --check ok on CPython 3.11, 3.12 and 3.13"
+      },
+      {
+        "behavior": "coverage check P8b, the replay citations, the frozen-chain comparison and S19 read the pinned prose copy and stay green",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-changelog/tests/golden/test_coverage_checks.py and test_replay_driver.py PASSED; changelog root green in F0 (18/18 units)"
+      },
+      {
+        "behavior": "the promise tests and their fingerprints are unchanged by this run (promise lock written from the unchanged tests)",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-changelog/tests/golden/test_promises_meta.py PASSED; promise.lock.json unchanged across both re-pins of this run"
+      }
+    ],
+    "counts": {
+      "testable": 5,
+      "tested": 5,
+      "untestable": 0,
+      "untested_testable": 0
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run --directory plugins/shipwright-changelog pytest tests/golden/test_trace_freeze.py tests/golden/test_coverage_checks.py tests/golden/test_promises_meta.py tests/golden/test_replay_driver.py -q -p no:cacheprovider",
+    "exit_code": 0,
+    "tests_run": 44,
+    "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\dfp-pilot-p2op-lock\\.shipwright\\runs\\iterate-2026-11-23-dfp-pilot-p2op-lock\\surface_verification.log",
+    "timestamp": "2026-11-22T23:38:41.181Z",
+    "attempts": 1
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}

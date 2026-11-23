@@ -1,8 +1,10 @@
 """The commands today's ``SKILL.md`` prescribes, each with the line it comes from (programme P7).
 
 ``CITES`` is the citation table: replay key -> ``(line, needle)`` pairs. A test (``test_replay_citations``)
-reads the live ``SKILL.md`` and fails when a line no longer holds its needle, so a prose edit that moves a
-command is noticed. The three shell chains below are FROZEN copies of the fenced blocks (comments dropped,
+reads ``SKILL`` and fails when a line no longer holds its needle. Since stop 2 ``SKILL`` is the PINNED copy of the
+prose (``pinned_prose/SKILL.md.pin``, frozen in ``golden.lock.json``), not the live file: the citations, the
+frozen chains and the coverage checks describe today's prose, and a later prose edit (P5, P8) moves them only when
+that unit re-pins the copy with an approved delta. The three shell chains below are FROZEN copies of the fenced blocks (comments dropped,
 placeholders marked ``@name@``): the replay runs the copy, not the live prose, so editing ``SKILL.md`` later
 cannot change what the replay does. Line numbers are those of ``SKILL.md`` at the freeze (P2a's tree).
 
@@ -17,7 +19,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[4]
 PLUGIN = REPO_ROOT / "plugins" / "shipwright-changelog"
 SHARED = REPO_ROOT / "shared"
-SKILL = PLUGIN / "skills" / "changelog" / "SKILL.md"
+SKILL = PLUGIN / "tests" / "golden" / "pinned_prose" / "SKILL.md.pin"  # the pin of skills/changelog/SKILL.md
 
 CITES: dict[str, list[tuple[int, str]]] = {
     "context": [(46, "get_phase_context.py")],
