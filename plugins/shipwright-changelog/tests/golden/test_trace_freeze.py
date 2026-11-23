@@ -81,7 +81,23 @@ REQUIRED = (HARNESS, "shared/testkit/gh_stub.py", "shared/testkit/release_scratc
             "plugins/shipwright-changelog/tests/golden/pinned_prose/references/manifest-sync.md.pin",
             "plugins/shipwright-changelog/tests/golden/pinned_prose/references/release-notes-prompt.md.pin",
             "plugins/shipwright-changelog/tests/golden/pinned_prose/references/release-workflow.md.pin",
-            "plugins/shipwright-changelog/tests/golden/pinned_prose/references/rerunning-a-release.md.pin")
+            "plugins/shipwright-changelog/tests/golden/pinned_prose/references/rerunning-a-release.md.pin",
+            # stop-2 follow-up: the pytest config that decides whether this file runs at all (addopts, testpaths, markers;
+            # pytest roots the changelog tests here, never at the repo-root pyproject), and the live skill prose until P5
+            # thins it. Known cost: a later edit of either (P5, P8) needs an approved delta or a --repin.
+            "plugins/shipwright-changelog/pyproject.toml",
+            "plugins/shipwright-changelog/skills/changelog/SKILL.md",
+            "plugins/shipwright-changelog/skills/changelog/references/bullet-folding.md",
+            "plugins/shipwright-changelog/skills/changelog/references/changelog-format.md",
+            "plugins/shipwright-changelog/skills/changelog/references/compliance-evidence.md",
+            "plugins/shipwright-changelog/skills/changelog/references/conventional-commits.md",
+            "plugins/shipwright-changelog/skills/changelog/references/event-fold.md",
+            "plugins/shipwright-changelog/skills/changelog/references/first-actions.md",
+            "plugins/shipwright-changelog/skills/changelog/references/manifest-sync.md",
+            "plugins/shipwright-changelog/skills/changelog/references/release-notes-prompt.md",
+            "plugins/shipwright-changelog/skills/changelog/references/release-workflow.md",
+            "plugins/shipwright-changelog/skills/changelog/references/rerunning-a-release.md")
+LIVE_PROSE = "plugins/shipwright-changelog/skills/changelog"
 SPEC = REPO_ROOT / gl.DEFAULT_SPEC
 
 
@@ -131,6 +147,22 @@ def test_every_pinned_prose_file_is_frozen():
     assert pinned and pinned <= set(REQUIRED), sorted(pinned - set(REQUIRED))
 
 
+@pytest.mark.covers_none("tooling")
+def test_every_live_prose_file_is_frozen_until_p5():
+    live = {p.relative_to(REPO_ROOT).as_posix() for p in (REPO_ROOT / LIVE_PROSE).rglob("*") if p.is_file()}
+    assert f"{LIVE_PROSE}/SKILL.md" in live and live <= set(REQUIRED), sorted(live - set(REQUIRED))
+
+
+@pytest.mark.covers_none("tooling")
+def test_the_pytest_config_this_session_runs_under_is_frozen(pytestconfig):
+    """Whatever config file decided this session's addopts, testpaths and markers is in the lock, so an edit of it is a
+    delta. Limit: a NEW ini file or plugin-root conftest that deselects this very file switches this check off with it
+    (accepted residual risk; P7's junit reader closes it)."""
+    inipath, root = pytestconfig.inipath, REPO_ROOT.resolve()
+    assert inipath is not None and root in inipath.resolve().parents, f"pytest config outside the repo: {inipath}"
+    assert inipath.resolve().relative_to(root).as_posix() in REQUIRED
+
+
 def make_tree(tmp_path: Path, *, frozen: bool = True) -> tuple[Path, Path]:
     golden = tmp_path / "plugins" / "p" / "golden"
     (tmp_path / "shared" / "testkit").mkdir(parents=True)
@@ -169,6 +201,21 @@ def test_a_changed_harness_after_the_freeze_fails_unless_a_delta_names_it(tmp_pa
     assert tree_problems(root, golden)
     delta = {"scenario": HARNESS, "field": "sha256", "before": before, "after": gt.file_sha256(root / HARNESS),
              "approver": "operator", "date": "2026-11-17"}
+    (golden / "approved_deltas.json").write_text(json.dumps([delta]), encoding="utf-8")
+    assert tree_problems(root, golden) == []
+
+
+@pytest.mark.covers_none("tooling")
+@pytest.mark.parametrize("rel", ["plugins/shipwright-changelog/skills/changelog/SKILL.md",
+                                 "plugins/shipwright-changelog/skills/changelog/references/release-workflow.md",
+                                 "plugins/shipwright-changelog/pyproject.toml"])
+def test_an_edit_of_the_live_prose_or_the_pytest_config_fails_unless_a_delta_names_it(tmp_path, rel):
+    root, golden = make_tree(tmp_path)
+    before = gt.file_sha256(root / rel)
+    (root / rel).write_text("x = 1\nedited after the freeze\n", encoding="utf-8")
+    assert any(p.startswith(f"{rel}: changed") for p in tree_problems(root, golden)), tree_problems(root, golden)
+    delta = {"scenario": rel, "field": "sha256", "before": before, "after": gt.file_sha256(root / rel),
+             "approver": "operator", "date": "2026-11-23"}
     (golden / "approved_deltas.json").write_text(json.dumps([delta]), encoding="utf-8")
     assert tree_problems(root, golden) == []
 

@@ -1,0 +1,189 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-23-dfp-pilot-freeze-gaps",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-23T06:46:07.574145+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-23T06:47:11.257793+00:00",
+      "disposition": "small iterate (classifier + diff re-check, no risk flag, 63 changed lines): plan and architecture reviews are medium+ only; the code cascade (spec, code, doubt at opus) ran",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-changelog/tests/golden/test_trace_freeze.py",
+          "line": 161,
+          "finding": "An ini file outside the repo makes relative_to raise ValueError instead of failing the assertion with a clear message (still fails closed)",
+          "suggestion": "Check that REPO_ROOT.resolve() is in inipath.resolve().parents before relative_to, with a clear message",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": ".shipwright/planning/campaigns/2026-10-25-dfp-pilot-changelog-FINDINGS.md",
+          "line": 44,
+          "finding": "The 'not frozen, deliberately' list names only the CI command line; PYTEST_ADDOPTS and -o/--override-ini can also switch the freeze test off outside the frozen pyproject",
+          "suggestion": "Name PYTEST_ADDOPTS and -o/--override-ini as accepted residual risk in the same sentence",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-changelog/tests/golden/test_trace_freeze.py",
+          "line": 152,
+          "finding": "rglob('*') counts untracked local files under skills/changelog, so a stray file fails the test locally while CI stays green",
+          "suggestion": "Accept as fail-closed, or limit to *.md",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-23T06:50:20.871255+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "d71c875267c99f781725277ec82939a057de7308"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-changelog/tests/golden/test_trace_freeze.py:156-162",
+          "line": null,
+          "finding": "Claim under doubt: the inipath test catches any other pytest config that could switch the freeze off — a NEW plugins/shipwright-changelog/pytest.ini (or tests/pytest.ini) with addopts --ignore=tests/golden/test_trace_freeze.py, or a new plugin-root conftest.py with collect_ignore / pytest_collection_modifyitems, ignores the file holding both the freeze and the ini-path check; the root still emits JUnit so ci_junit_plan.py:104 stays green",
+          "suggestion": "a sentinel in another root, or reword FINDINGS and list new-ini/new-conftest deselection as accepted residual risk",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling & blast radius",
+          "file": "FINDINGS stop-2 follow-up, Known cost",
+          "line": null,
+          "finding": "the known cost is P5/P8 prose edits",
+          "suggestion": "say 'any iterate'",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "SKILL.md:391-405; BRIEF P5",
+          "line": null,
+          "finding": "F7/F10 plan removes the prose's self-contradiction",
+          "suggestion": "name 391-405 as replaced by the close-phase call in P5",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "FULLRUN-REPORT F10",
+          "line": null,
+          "finding": "SKILL 54-60 already forbids run-state writes in standalone",
+          "suggestion": "cite line 60 precisely",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling & blast radius",
+          "file": "FINDINGS stop-2 follow-up",
+          "line": null,
+          "finding": "freezing the repo-root conftest covers what pytest applies to the golden root",
+          "suggestion": "one-clause correction",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-23T06:55:05.401250+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "d71c875267c99f781725277ec82939a057de7308"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-23T06:47:11.611951+00:00",
+      "disposition": "small iterate, 63 changed lines (at most 100) and no risk flag: the external code review is advisory here; the internal cascade spec, code, doubt at opus ran",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "diff-below-threshold"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-23T06:47:46.921293+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "d71c875267c99f781725277ec82939a057de7308"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-23T06:47:11.375802+00:00",
+      "disposition": "small iterate (classifier + diff re-check, no risk flag, 63 changed lines): plan and architecture reviews are medium+ only; the code cascade (spec, code, doubt at opus) ran",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-23T06:47:11.497954+00:00",
+      "disposition": "small iterate (classifier + diff re-check, no risk flag, 63 changed lines): plan and architecture reviews are medium+ only; the code cascade (spec, code, doubt at opus) ran",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}
