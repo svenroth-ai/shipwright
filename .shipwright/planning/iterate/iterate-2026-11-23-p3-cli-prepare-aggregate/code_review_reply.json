@@ -1,0 +1,12 @@
+{"section":"P3-cli-prepare-aggregate","review":[
+{"severity":"medium","category":"correctness","file":"SKILL.md","line":31,"finding":"stop reasons list incomplete; 'nothing was written' false","suggestion":"fixed: lists all reasons"},
+{"severity":"medium","category":"architecture","file":"release_runstate.py","line":37,"finding":"state_path calls git outside the Runner","suggestion":"docstring corrected; FINDINGS D31"},
+{"severity":"medium","category":"correctness","file":"release_runstate.py","line":86,"finding":"version/date not validated at the CLI boundary","suggestion":"fixed: argparse types"},
+{"severity":"medium","category":"correctness","file":"release_aggregate.py","line":38,"finding":"fallback entries not idempotent","suggestion":"FINDINGS D31"},
+{"severity":"medium","category":"architecture","file":"SKILL.md","line":108,"finding":"reference block repeats flag rules","suggestion":"kept: pinned prose tests require it; P5 thins"},
+{"severity":"low","category":"correctness","file":"release_runstate.py","line":85,"finding":"new dispatch run id ignored on reuse","suggestion":"fixed"},
+{"severity":"low","category":"correctness","file":"release.py","line":47,"finding":"aggregate-dry stderr not echoed","suggestion":"fixed"},
+{"severity":"low","category":"correctness","file":"release_upgrade_notes.py","line":67,"finding":"drop key from stem only","suggestion":"fixed: path based"},
+{"severity":"low","category":"readability","file":"release_aggregate.py","line":22,"finding":"_json duplicated","suggestion":"accepted"},
+{"severity":"low","category":"correctness","file":"release_gates.py","line":288,"finding":"ask in pipeline ambiguous","suggestion":"first-actions.md states it"},
+{"severity":"low","category":"readability","file":"release_prepare.py","line":80,"finding":"setup exit split","suggestion":"unreachable today; accepted"}]}

@@ -1,1 +1,38 @@
-[]
+[
+  {
+    "scenario": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
+    "field": "sha256",
+    "before": "b39cbce0314692c909fc75242d74a23596dc35d929dfe63c25a9fa004d76a6ad",
+    "after": "0b5a109513b19604c933638fd340e6fdd92210ec1dad694de4609135cf7ae9ea",
+    "approver": "pilot BRIEF section 4 P3 row and the operator-approved SECOND-PASS plan items: Steps A-4 become one release.py call each, the gate-policy prose copies are replaced by `gates` (A2, C1): P3 spec iterate-P3-cli-prepare-aggregate, SECOND-PASS plan items A1/A2/C1",
+    "date": "2026-11-23",
+    "source": "A1"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/skills/changelog/references/first-actions.md",
+    "field": "sha256",
+    "before": "85a3e7d5b386fdfb2d184f07069780c752671c15ee78a5bc974063c20418b164",
+    "after": "cdefa7e209858b4397d4d2e817a18f31cb150767fd0901c26a38b160c48de9f9",
+    "approver": "pilot BRIEF section 4 P3 row and the operator-approved SECOND-PASS plan items: the gate-policy prose copy is deleted and the file says to follow `gates` (SECOND-PASS C1, P3 spec)",
+    "date": "2026-11-23",
+    "source": "C1"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/skills/changelog/references/release-workflow.md",
+    "field": "sha256",
+    "before": "acad43a2c549a8c95b16abfd2ffa8341877dd8223678d02512737b44031adf1b",
+    "after": "b01de46655448e73b651644a38d699e75a88e24ef374fcfd3fd58fe4681028a1",
+    "approver": "pilot BRIEF section 4 P3 row and the operator-approved SECOND-PASS plan items: the upgrade-notes check moves to code, the model reviews the drop (SECOND-PASS A3, P3 spec)",
+    "date": "2026-11-23",
+    "source": "A3"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/coverage.py",
+    "field": "sha256",
+    "before": "24ac0d72f5dde997cad575ac136061aef818168647ee1e9f90e3d140d78a80f1",
+    "after": "275be6630048671d3ab93d7ed142a5a3330a6b8427b3c8334c8f6feaded61774",
+    "approver": "pilot BRIEF section 4 P3 row and the operator-approved SECOND-PASS plan items: the P8a coverage table follows the inventory.json headings that P3 updated (BRIEF section 4 P3 row: inventory.json is in the touch set); no scenario or trace changed",
+    "date": "2026-11-23",
+    "source": "A1"
+  }
+]

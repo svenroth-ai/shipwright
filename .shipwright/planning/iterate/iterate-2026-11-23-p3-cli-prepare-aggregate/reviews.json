@@ -1,0 +1,486 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-23-p3-cli-prepare-aggregate",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-23T15:43:05.198339+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 13,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "reducibility / over-production",
+          "file": null,
+          "line": null,
+          "finding": "scripts/lib/release_{runner,paths,runstate,gates,upgrade_notes,prepare,aggregate}.py` — seven modules for two thin subcommands wrapping existing tools. A `gates` reader is a few lines against a JSON catalog; `runstate` is a read/write of one small file; `paths` is one constant with a lookup. Single-use wrapper modules for this size are the exact anti-pattern the plan should avoid, and each new file adds a golden-freeze / cache-sync surface.",
+          "suggestion": "release.py` (subcommand dispatch + arg parsing) plus at most one or two helpers (e.g. `release_state.py` for the run-state file). Revisit only if `release.py` would exceed the 300-line new-file cap — and the plan should say so.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "driver_cli.py` joining `REQUIRED` forces a `--repin`, which the spec itself says \"makes every existing delta moot (empty `approved_deltas.json`)\". The mini-plan hardcodes \"approved_deltas.json (4 entries)\" — that's only true if no repin happens. If the repin path triggers, the 4 deltas vanish and the diff loses the per-file `source` provenance the spec requires for review.",
+          "suggestion": "make this explicit: either repin first (empty deltas) or find a way to cover `driver_cli.py` without adding it to `REQUIRED` (the spec hints the comparison \"should cover it\" — resolve which path before coding, else STRICT-STOP per the BRIEF). The \"4 entries\" line should be conditional, not fixed.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "run-state file (A6/F14) has unhandled failure modes: `aggregate` run before `prepare` (missing/corrupt file), stale state from an aborted earlier run (spec says \"a re-run after an interruption works with any run id\" — but what does `aggregate` do if it finds a run-state whose git state doesn't match the current checkout, e.g. after the interruption left the tree mid-write?), and concurrent invocations.",
+          "suggestion": "define the file's schema and the resolution rules explicitly: `prepare` is idempotent/overwrites (with a warning?), `aggregate` fails fast with a clear JSON error on missing/mismatched state, and stale detection uses the git postcondition re-check the plan already promises.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "C1 deletes \"the two prose copies\" of gate policy, but the plan lists only `SKILL.md` and `first-actions.md` as edits. If a third copy exists in another reference (the spec hedges: \"plus any other reference the gate-policy copies live in\"), a leftover copy becomes stale policy the model may still follow.",
+          "suggestion": "do the prose-rule map (item 7) first and let its output enumerate the copies to delete — it's already a P3 deliverable, so sequence it before the C1 edits rather than after.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "\"the trace changes the BRIEF assigns to P3 (A2, A3) — one delta per trace, any other trace that moves is a STRICT-STOP.\" The mini-plan says \"driver_cli maps JSON back to the whitelisted trace fields\" — subtle serialization differences (key order, list-vs-scalar for gates, timestamps) are a classic silent trace-mover.",
+          "suggestion": "assert exact trace equivalence field-by-field in `test_driver_cli.py` and pin the JSON serialization (sorted keys / explicit field order) so the driver's output, not just the trace comparison, is deterministic.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "the plan mentions `promise_list.json` anchor hashes but the spec's promise-lock procedure names `golden_lock.py --promise-only --repin` and `promise.lock.json`. Ensure the plan uses the documented mechanism; also the \"AC record `unchanged`\" and the hooks-doc rows are listed only via \"inventory data\" — the doc obligations should be named deliverables in the order list, since a missing hooks-doc row in the same diff is a review-blockable miss.",
+          "suggestion": "add `docs/hooks-and-pipeline.md` rows and the AC record as explicit checklist items in the order.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "run-state file holds a run id and release date; if written into the repo tree (vs. cache), it could leak into the changelog commit itself, and `prepare` writing a file into the working tree changes `git status` the postcondition re-check relies on.",
+          "suggestion": "write run-state to the cache/plugin-root location the orchestrator path constant already defines (the four-layout path test should cover it), and confirm it's gitignored so it can't pollute the release commit.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "risk |",
+          "file": null,
+          "line": null,
+          "finding": "Mapping CLI JSON back to “whitelisted trace fields” could hide regressions. The plan also says traces must not move, although A2/A3 explicitly permit changes to gate answers and upgrade-note drops.",
+          "suggestion": "Preserve the existing trace observations, including observable files and tool flags. Compare every scenario against the frozen trace, recording only authorized A2/A3 differences; stop on other differences.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "dependency |",
+          "file": null,
+          "line": null,
+          "finding": "The freeze strategy is incomplete. Adding `driver_cli.py` to `REQUIRED` requires a repin of both locks and clearing existing deltas, which conflicts with the proposed fixed “4 entries.” The plan also changes `promise_list.json` anchor hashes without explaining authorization or its relationship to the untouched promise tests.",
+          "suggestion": "Decide frozen-set membership first, then follow the applicable repin or delta procedure. Review the printed entries against the declared touch set, and establish authorization before changing promise-related metadata.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "A cross-process state test does not cover the required interruption recovery. The plan does not explain how `prepare` preserves the original date/run ID on retries, how `aggregate` handles missing or invalid state, or how either command verifies existing outputs.",
+          "suggestion": "Specify atomic state creation and validation, preserve initialized values, and re-check postconditions from git and the filesystem on every invocation. Test retries after partial completion and an invocation with a different environment run ID.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach |",
+          "file": null,
+          "line": null,
+          "finding": "Seven new library modules plus the entry point risk overproducing a two-subcommand wrapper. The plan gives no responsibility boundaries showing that this split avoids duplicated policy or orchestration.",
+          "suggestion": "Start with `release.py` and the smallest necessary supporting modules. Reuse existing tool entry points and helpers; split further only where a distinct responsibility warrants it.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "The upgrade-notes tests cover an action line and no changed page, but the implementation must classify each changed migration page. Multiple pages, pages without action lines, and repeated execution remain unspecified.",
+          "suggestion": "Follow the existing classifier and drop conventions, and test mixed classifications across multiple pages plus reruns without duplicate drops.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency |",
+          "file": null,
+          "line": null,
+          "finding": "The work list omits explicit completion of the prose-rule map and FINDINGS entry, ADR decision-drop, LEARNINGS update, and `unchanged` AC record listing observable files. These are required deliverables.",
+          "suggestion": "Add them to the implementation sequence and final verification checklist.  The direction is sound, but trace fidelity, freeze handling, and interruption recovery need specific changes before implementation. Repository inspection was blocked by execution policy, so this assessment is based on the supplied specification and mini-plan.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-23T15:42:55.078442+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Review findings\n\n- **Category: reducibility / over-production — severity: medium**\n  Finding: `scripts/lib/release_{runner,paths,runstate,gates,upgrade_notes,prepare,aggregate}.py` — seven modules for two thin subcommands wrapping existing tools. A `gates` reader is a few lines against a JSON catalog; `runstate` is a read/write of one small file; `paths` is one constant with a lookup. Single-use wrapper modules for this size are the exact anti-pattern the plan should avoid, and each new file adds a golden-freeze / cache-sync surface.\n  Suggestion: `release.py` (subcommand dispatch + arg parsing) plus at most one or two helpers (e.g. `release_state.py` for the run-state file). Revisit only if `release.py` would exceed the 300-line new-file cap — and the plan should say so.\n\n- **Category: risk — severity: medium**\n  Finding: `driver_cli.py` joining `REQUIRED` forces a `--repin`, which the spec itself says \"makes every existing delta moot (empty `approved_deltas.json`)\". The mini-plan hardcodes \"approved_deltas.json (4 entries)\" — that's only true if no repin happens. If the repin path triggers, the 4 deltas vanish and the diff loses the per-file `source` provenance the spec requires for review.\n  Suggestion: make this explicit: either repin first (empty deltas) or find a way to cover `driver_cli.py` without adding it to `REQUIRED` (the spec hints the comparison \"should cover it\" — resolve which path before coding, else STRICT-STOP per the BRIEF). The \"4 entries\" line should be conditional, not fixed.\n\n- **Category: edge-case — severity: medium**\n  Finding: run-state file (A6/F14) has unhandled failure modes: `aggregate` run before `prepare` (missing/corrupt file), stale state from an aborted earlier run (spec says \"a re-run after an interruption works with any run id\" — but what does `aggregate` do if it finds a run-state whose git state doesn't match the current checkout, e.g. after the interruption left the tree mid-write?), and concurrent invocation […truncated]\n\n[openai] 1. **Category: risk | Severity: high**  \n   **Finding:** Mapping CLI JSON back to “whitelisted trace fields” could hide regressions. The plan also says traces must not move, although A2/A3 explicitly permit changes to gate answers and upgrade-note drops.  \n   **Suggestion:** Preserve the existing trace observations, including observable files and tool flags. Compare every scenario against the frozen trace, recording only authorized A2/A3 differences; stop on other differences.\n\n2. **Category: dependency | Severity: high**  \n   **Finding:** The freeze strategy is incomplete. Adding `driver_cli.py` to `REQUIRED` requires a repin of both locks and clearing existing deltas, which conflicts with the proposed fixed “4 entries.” The plan also changes `promise_list.json` anchor hashes without explaining authorization or its relationship to the untouched promise tests.  \n   **Suggestion:** Decide frozen-set membership first, then follow the applicable repin or delta procedure. Review the printed entries against the declared touch set, and establish authorization before changing promise-related metadata.\n\n3. **Category: edge-case | Severity: high**  \n   **Finding:** A cross-process state test does not cover the required interruption recovery. The plan does not explain how `prepare` preserves the original date/run ID on retries, how `aggregate` handles missing or invalid state, or how either command verifies existing outputs.  \n   **Suggestion:** Specify atomic state creation and validation, preserve initialized values, and re-check postconditions from git and the filesystem on every invocation. Test retries after partial completion and an invocation with a different environment run ID.\n\n4. **Category: approach | Severity: medium**  \n   **Finding:** Seven new library modules plus the entry point risk overproducing a two-subcommand wrapper. The plan gives no responsibility boundaries showing that this split avoids duplicated policy or orchestration.  \n   **Suggesti […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      },
+      "model_tier": "opus"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "SKILL.md",
+          "line": 31,
+          "finding": "stop reasons list incomplete; 'nothing was written' false",
+          "suggestion": "fixed: lists all reasons",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "architecture",
+          "file": "release_runstate.py",
+          "line": 37,
+          "finding": "state_path calls git outside the Runner",
+          "suggestion": "docstring corrected; FINDINGS D31",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "release_runstate.py",
+          "line": 86,
+          "finding": "version/date not validated at the CLI boundary",
+          "suggestion": "fixed: argparse types",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "release_aggregate.py",
+          "line": 38,
+          "finding": "fallback entries not idempotent",
+          "suggestion": "FINDINGS D31",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "architecture",
+          "file": "SKILL.md",
+          "line": 108,
+          "finding": "reference block repeats flag rules",
+          "suggestion": "kept: pinned prose tests require it; P5 thins",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "release_runstate.py",
+          "line": 85,
+          "finding": "new dispatch run id ignored on reuse",
+          "suggestion": "fixed",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "release.py",
+          "line": 47,
+          "finding": "aggregate-dry stderr not echoed",
+          "suggestion": "fixed",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "release_upgrade_notes.py",
+          "line": 67,
+          "finding": "drop key from stem only",
+          "suggestion": "fixed: path based",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "release_aggregate.py",
+          "line": 22,
+          "finding": "_json duplicated",
+          "suggestion": "accepted",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "release_gates.py",
+          "line": 288,
+          "finding": "ask in pipeline ambiguous",
+          "suggestion": "first-actions.md states it",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "release_prepare.py",
+          "line": 80,
+          "finding": "setup exit split",
+          "suggestion": "unreachable today; accepted",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-23T15:52:13.888085+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "f5e770384be7f2eb123f4c468a78a68254cbafab"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "reversibility",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_runstate.py:82 (with release_prepare.py:97)",
+          "line": null,
+          "finding": "Claim under doubt: A stored state is reused only for an interrupted release, so the stored date is always the right date. — `prepare` saves the state unconditionally, before any preview, question or aggregate. `resolve` reuses any stored state with the same version, no tag and an age under 48h. Failing case: on Monday an operator runs prepare for 1.3.0, previews, and abandons. On Tuesday the real release runs prepare again, gets Monday's date back, and `aggregate` renders `## [1.3.0] - <Monday>`. Under the old prose an unpassed date defaulted to today.",
+          "suggestion": "Reuse the stored date only when a real aggregate has already run for that version, or when `## [version]` is already in CHANGELOG.md; otherwise take today's date and keep only the run id.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "concurrency & ordering (idempotency on re-run)",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_upgrade_notes.py:67-73",
+          "line": null,
+          "finding": "Claim under doubt: A page that already has its upgrade-note drop writes nothing on a re-run, even after the model has reworded it. — `_run_id` keeps '.' in the run id. `write_changelog_drop.py` names the file with `sanitize_run_id_for_filename`, which turns '.' into '-'. `_has_drop` globs the unsanitized id, so a page named `v0.36-split.md` never matches its own drop, and after a model edit a later prepare writes a second drop with the original wording.",
+          "suggestion": "Glob with the sanitized id, or strip '.' in `_run_id`. Add a test with a dotted page name.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract (golden equivalence masking)",
+          "file": "plugins/shipwright-changelog/tests/golden/driver_cli.py:70-71, :80",
+          "line": null,
+          "finding": "Claim under doubt: The CLI driver's traces equal the frozen traces, so behaviour is preserved. — driver_cli.py records `out_of_sequence: asked` whenever the warning is set and never reads `gates.out_of_sequence`; it always passes an explicit `--release-date`, so the stored-date default path (A6) never runs in any golden scenario.",
+          "suggestion": "Derive out_of_sequence from the gates answer, add a scenario without --release-date, or state explicitly that A6 is covered by L1 tests only.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling (self-approved freeze delta)",
+          "file": "plugins/shipwright-changelog/tests/golden/approved_deltas.json (4th entry); coverage.py",
+          "line": null,
+          "finding": "Claim under doubt: The golden-lock delta for coverage.py is an operator-approved change. — The BRIEF P3 row lists inventory.json in its touch set, not the frozen coverage.py. The approved_deltas.json entry justifies itself by inference and was written in the same diff.",
+          "suggestion": "Point to the operator decision that covers editing coverage.py, or flag it for the operator at the next stop.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "concurrency & ordering",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_runstate.py:59-64",
+          "line": null,
+          "finding": "Claim under doubt: The run-state write is atomic and safe. — The temp name is fixed (`release_run.json.tmp`); two overlapping release.py calls in one checkout can make the second os.replace fail.",
+          "suggestion": "Use a unique temp name and report an OSError as JSON, or rebut: one release per checkout is serial by contract.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract (upgrade-note text)",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_upgrade_notes.py:38-64",
+          "line": null,
+          "finding": "Claim under doubt: The page's own words make a correct changelog bullet. — No injection found (argv element, newlines flattened). Quality: real pages yield bullets that drop list items after a colon or double the link; a 400-character cut can split a backtick.",
+          "suggestion": "Accept as designed, since the model reviews the drop.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-23T15:57:58.846345+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "f5e770384be7f2eb123f4c468a78a68254cbafab"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "spec |",
+          "file": null,
+          "line": null,
+          "finding": "add the full test set and doc obligations before this can merge, or the runner should STRICT-STOP for a split unit.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec |",
+          "file": null,
+          "line": null,
+          "finding": "add the three approved-delta entries with the correct sources, or re-pin with the entries list reviewed.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "bug |",
+          "file": null,
+          "line": null,
+          "finding": "drop `--end-of-options` (the tag comes from `git describe`-style output, and the existing `--` already guards the path), or place it after the revision range.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug |",
+          "file": null,
+          "line": null,
+          "finding": "verify the resolver's literal mode values and test the driven-mode case; the missing L1 tests make this unverifiable from the diff.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug |",
+          "file": null,
+          "line": null,
+          "finding": "distinguish `setup.exit != 0` (reason `setup_failed`) from `not has_unreleased` (reason `no_unreleased_changes`) explicitly.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "skip `save` when `tag_exists` and the run was a converging no-op, or require a stored state in `aggregate`.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
+          "line": 18,
+          "finding": "This changes frozen prose, along with two frozen references, but the diff includes neither the required approved deltas nor a lock re-pin. It also omits the required CLI driver, scenario comparisons, L1/boundary tests, inventory update, AC record, ADR drop, and FINDINGS/LEARNINGS updates. The specified freeze and acceptance checks are therefore incomplete.",
+          "suggestion": "Include the required artifacts and freeze authorization records, then run the golden-lock check and changelog test root. Add tests covering catalog-driven gates, migration drops, and date/run-id persistence across processes.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_runstate.py",
+          "line": 81,
+          "finding": "Stored state is discarded after 48 hours or whenever the version’s tag exists. Consequently, an interrupted release resumed after two days—or an aggregate call after tagging—receives a new date and run id. This violates A6/F14’s requirement that later calls read the facts established by `prepare`, and can change a release heading during recovery.",
+          "suggestion": "Separate starting a release from consuming its state. Have `aggregate` read the matching stored state without age/tag invalidation; starting or replacing state should be an explicit `prepare` operation consistent with the approved recovery rules.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_upgrade_notes.py",
+          "line": 32,
+          "finding": "A failed migration-page git query is converted into an empty page list. `prepare` then succeeds and reports “No migration page changed,” allowing aggregation to proceed without required upgrade notes—for example, when the comparison tag cannot be resolved.",
+          "suggestion": "Propagate the query failure as a failed upgrade-notes check and stop `prepare`, preserving the command’s diagnostic output.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_upgrade_notes.py",
+          "line": 44,
+          "finding": "When the question occupies its own paragraph, the blank line immediately after it terminates parsing before the answer is read. A valid page containing `Do you have to do anything?`, a blank line, and `No.` is classified as requiring action and produces an empty “Existing projects” drop.",
+          "suggestion": "Skip leading blank lines after a question with no inline answer, then read the answer paragraph. Cover both inline answers and answers in the following paragraph.  Ship-with-fixes: the state recovery and migration-check paths need correction, and the required validation artifacts are missing from the supplied diff. Repository context could not be inspected because command execution was blocked, so this assessment is limited to the supplied specification and diff.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-23T15:45:03.798090+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] **Findings**\n\n- Category: spec | Severity: high | `plugins/shipwright-changelog/tests/golden/` (absent from diff)\n  The spec's core deliverables are missing entirely: `driver_cli.py`, `test_driver_cli.py`, the L1 injected-runner tests for `prepare`/`aggregate` (AC: \"L1 tests with an injected runner per subcommand\"), `tests/test_release_paths_and_boundary.py` (which `release_paths.py`'s own docstring claims exists), the \"fails on old behaviour\" tests for gates/upgrade-notes/run-state, `inventory.json`, the FINDINGS prose-rule-map result, LEARNINGS entry, and the ADR decision-drop. There is not a single test in this diff. This cannot meet the ACs as written.\n  Suggestion: add the full test set and doc obligations before this can merge, or the runner should STRICT-STOP for a split unit.\n\n- Category: spec | Severity: high | `plugins/shipwright-changelog/skills/changelog/SKILL.md`, `first-actions.md`, `release-workflow.md` (frozen REQUIRED files, changed with no `approved_deltas.json`)\n  All three are frozen per `golden.lock.json`/`REQUIRED`; the diff edits them but shows no `approved_deltas.json` entries (before/after sha256, source A1/A2/A3/C1) and no `--repin`. `golden_lock.py --check` will fail as-is.\n  Suggestion: add the three approved-delta entries with the correct sources, or re-pin with the entries list reviewed.\n\n- Category: bug | Severity: high | `plugins/shipwright-changelog/scripts/lib/release_upgrade_notes.py:29-31` (`_pages`)\n  `[\"git\", \"diff\", \"--name-only\", \"--relative\", \"--end-of-options\", f\"{last_tag}..HEAD\", \"--\", PAGES_DIR]`: `--end-of-options` tells git that *everything after it is a pathspec*, so `last_tag..HEAD` is parsed as a path, not a revision. Every tagged repository gets an empty (or errored) page list, so the A3 upgrade-notes check silently never fires — exactly the \"broken implementation the tests must catch\", and there are no tests to catch it.\n  Suggestion: drop `--end-of-options` (the tag comes from `git describe`-style out […truncated]\n\n[openai] - Category: spec\n- Severity: high\n- File: plugins/shipwright-changelog/skills/changelog/SKILL.md:18\n- Finding: This changes frozen prose, along with two frozen references, but the diff includes neither the required approved deltas nor a lock re-pin. It also omits the required CLI driver, scenario comparisons, L1/boundary tests, inventory update, AC record, ADR drop, and FINDINGS/LEARNINGS updates. The specified freeze and acceptance checks are therefore incomplete.\n- Suggestion: Include the required artifacts and freeze authorization records, then run the golden-lock check and changelog test root. Add tests covering catalog-driven gates, migration drops, and date/run-id persistence across processes.\n\n- Category: bug\n- Severity: high\n- File: plugins/shipwright-changelog/scripts/lib/release_runstate.py:81\n- Finding: Stored state is discarded after 48 hours or whenever the version’s tag exists. Consequently, an interrupted release resumed after two days—or an aggregate call after tagging—receives a new date and run id. This violates A6/F14’s requirement that later calls read the facts established by `prepare`, and can change a release heading during recovery.\n- Suggestion: Separate starting a release from consuming its state. Have `aggregate` read the matching stored state without age/tag invalidation; starting or replacing state should be an explicit `prepare` operation consistent with the approved recovery rules.\n\n- Category: bug\n- Severity: medium\n- File: plugins/shipwright-changelog/scripts/lib/release_upgrade_notes.py:32\n- Finding: A failed migration-page git query is converted into an empty page list. `prepare` then succeeds and reports “No migration page changed,” allowing aggregation to proceed without required upgrade notes—for example, when the comparison tag cannot be resolved.\n- Suggestion: Propagate the query failure as a failed upgrade-notes check and stop `prepare`, preserving the command’s diagnostic output.\n\n- Category: edge-case\n- Severit […truncated]",
+      "verdicts": {
+        "glm": "reject",
+        "openai": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-23T15:48:14.141374+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "f5e770384be7f2eb123f4c468a78a68254cbafab"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-23T15:42:55.249352+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-23T15:42:55.430082+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

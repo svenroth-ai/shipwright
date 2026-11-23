@@ -1,0 +1,8 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"prepare/aggregate exist, JSON out, wrap the tools; gates from catalog; upgrade notes in code; run state once; deltas with source; check exit 0."},
+{"name":"Error Handling","verdict":"pass","note":"After plan review: stop with a named reason on parse-commits failure, missing version, failed upgrade drop, failed fallback append and failed decision numbering; malformed --fallback-entry refused."},
+{"name":"Security Basics","verdict":"pass","note":"argv lists only, no shell; run-state shape checked on read; run id taken from the environment only for a dispatched run; --end-of-options before a tag."},
+{"name":"Test Quality","verdict":"pass","note":"Each moved behaviour has a failing-on-old test (gates from catalog, upgrade drop, state across processes, stale state, error stops); all 43 scenarios and 20 promise tests pass through the CLI driver."},
+{"name":"Performance Basics","verdict":"pass","note":"About 6 uv runs per prepare, acceptable for a release command; no loops over data."},
+{"name":"Naming & Structure","verdict":"pass","note":"Seven modules, each under 115 lines, one responsibility; tests under 300 lines."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Producer/consumer: release.py JSON -> driver_cli (real subprocess round trip through 43 scenarios) and run-state file written by prepare, read by aggregate in a separate process (test); gate catalog -> resolver rows (real resolver run)."}]}

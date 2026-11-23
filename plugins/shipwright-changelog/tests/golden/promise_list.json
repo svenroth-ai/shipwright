@@ -400,7 +400,7 @@
         "heading_path": [
           "Step 3: Determine Version Bump"
         ],
-        "content_hash": "cbbb5630e9f5f1f6f9d7e42c963bd971ae0cdb95d8845f594a5960de18dabd9e"
+        "content_hash": "5427ddfaeafb0601f92c7828f3df615b408efc265a1c94ecc4f447d9324b515c"
       },
       "class": "ask",
       "check": {
@@ -429,7 +429,7 @@
         "heading_path": [
           "Step 5: Preview and Confirm"
         ],
-        "content_hash": "a5895c275a5da6ab1e064fd3ac5546ddf322c01a3ae7fc7117f4b05d7f0f05fe"
+        "content_hash": "170d3a9b92ee6360be9c91191587d2ae6a02a1f3003e7b886244310216ed0900"
       },
       "class": "ask",
       "check": {
@@ -458,7 +458,7 @@
         "heading_path": [
           "C. Detect Invocation Mode"
         ],
-        "content_hash": "28f78a7fad76e327ad65ebf2a5385686318858289c2dff5d88d28dcc62131458"
+        "content_hash": "09762568e64de13a345f55aaf789c2e56e222e80a7b5a372f2de3daffce751b9"
       },
       "class": "ask",
       "check": {
@@ -483,7 +483,7 @@
         "heading_path": [
           "Upgrade-notes check"
         ],
-        "content_hash": "9366fdcc30945c863dc35f1367242b74003d499ca708f056d541d0c5a0382f0d"
+        "content_hash": "d7fdffed4a146d8fa5ff0782ac6177625d4a73487c58eb51d1fdf6ad85c555fc"
       },
       "class": "mechanic",
       "check": null,

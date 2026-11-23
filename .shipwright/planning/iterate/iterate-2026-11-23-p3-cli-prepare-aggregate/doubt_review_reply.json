@@ -1,0 +1,56 @@
+{
+  "stage": "doubt",
+  "gating": "advisory-must-address",
+  "trigger": "irreversible operations (writes to CHANGELOG drops and a run-state file that pins a permanent release date) + cross-plugin path resolution (release_paths -> shipwright-run orchestrator)",
+  "doubts": [
+    {
+      "severity": "medium",
+      "lens": "reversibility",
+      "claim_under_doubt": "A stored state is reused only for an interrupted release, so the stored date is always the right date.",
+      "disproof_attempt": "`prepare` saves the state unconditionally, before any preview, question or aggregate. `resolve` reuses any stored state with the same version, no tag and an age under 48h. Failing case: on Monday an operator runs prepare for 1.3.0, previews, and abandons. On Tuesday the real release runs prepare again, gets Monday's date back, and `aggregate` renders `## [1.3.0] - <Monday>`. Under the old prose an unpassed date defaulted to today.",
+      "file": "plugins/shipwright-changelog/scripts/lib/release_runstate.py:82 (with release_prepare.py:97)",
+      "what_would_resolve_it": "Reuse the stored date only when a real aggregate has already run for that version, or when `## [version]` is already in CHANGELOG.md; otherwise take today's date and keep only the run id."
+    },
+    {
+      "severity": "medium",
+      "lens": "concurrency & ordering (idempotency on re-run)",
+      "claim_under_doubt": "A page that already has its upgrade-note drop writes nothing on a re-run, even after the model has reworded it.",
+      "disproof_attempt": "`_run_id` keeps '.' in the run id. `write_changelog_drop.py` names the file with `sanitize_run_id_for_filename`, which turns '.' into '-'. `_has_drop` globs the unsanitized id, so a page named `v0.36-split.md` never matches its own drop, and after a model edit a later prepare writes a second drop with the original wording.",
+      "file": "plugins/shipwright-changelog/scripts/lib/release_upgrade_notes.py:67-73",
+      "what_would_resolve_it": "Glob with the sanitized id, or strip '.' in `_run_id`. Add a test with a dotted page name."
+    },
+    {
+      "severity": "low",
+      "lens": "boundary & contract (golden equivalence masking)",
+      "claim_under_doubt": "The CLI driver's traces equal the frozen traces, so behaviour is preserved.",
+      "disproof_attempt": "driver_cli.py records `out_of_sequence: asked` whenever the warning is set and never reads `gates.out_of_sequence`; it always passes an explicit `--release-date`, so the stored-date default path (A6) never runs in any golden scenario.",
+      "file": "plugins/shipwright-changelog/tests/golden/driver_cli.py:70-71, :80",
+      "what_would_resolve_it": "Derive out_of_sequence from the gates answer, add a scenario without --release-date, or state explicitly that A6 is covered by L1 tests only."
+    },
+    {
+      "severity": "low",
+      "lens": "hidden coupling (self-approved freeze delta)",
+      "claim_under_doubt": "The golden-lock delta for coverage.py is an operator-approved change.",
+      "disproof_attempt": "The BRIEF P3 row lists inventory.json in its touch set, not the frozen coverage.py. The approved_deltas.json entry justifies itself by inference and was written in the same diff.",
+      "file": "plugins/shipwright-changelog/tests/golden/approved_deltas.json (4th entry); coverage.py",
+      "what_would_resolve_it": "Point to the operator decision that covers editing coverage.py, or flag it for the operator at the next stop."
+    },
+    {
+      "severity": "low",
+      "lens": "concurrency & ordering",
+      "claim_under_doubt": "The run-state write is atomic and safe.",
+      "disproof_attempt": "The temp name is fixed (`release_run.json.tmp`); two overlapping release.py calls in one checkout can make the second os.replace fail.",
+      "file": "plugins/shipwright-changelog/scripts/lib/release_runstate.py:59-64",
+      "what_would_resolve_it": "Use a unique temp name and report an OSError as JSON, or rebut: one release per checkout is serial by contract."
+    },
+    {
+      "severity": "low",
+      "lens": "boundary & contract (upgrade-note text)",
+      "claim_under_doubt": "The page's own words make a correct changelog bullet.",
+      "disproof_attempt": "No injection found (argv element, newlines flattened). Quality: real pages yield bullets that drop list items after a colon or double the link; a 400-character cut can split a backtick.",
+      "file": "plugins/shipwright-changelog/scripts/lib/release_upgrade_notes.py:38-64",
+      "what_would_resolve_it": "Accept as designed, since the model reviews the drop."
+    }
+  ],
+  "disposition": "medium 1 fixed (unrendered state from an earlier day takes today's date); medium 2 fixed (run id has no dots); low 5 fixed (per-process temp name); low 3, 4, 6 accepted and recorded in FINDINGS D27/D31."
+}

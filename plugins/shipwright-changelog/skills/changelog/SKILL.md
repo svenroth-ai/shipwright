@@ -15,39 +15,36 @@ Generates changelogs from Conventional Commits and manages release workflow.
 
 **Governing rules:** Read and follow `shared/constitution.md` (ALWAYS / ASK FIRST / NEVER boundaries).
 
-### A. Print Intro Banner
+### A, B, D, Steps 0-2. Prepare: one call
 
-```
-================================================================================
-SHIPWRIGHT-CHANGELOG: Release Management
-================================================================================
-Analyzes git history, generates changelog, creates PR.
+The intro banner, the plugin root, the mode check, the setup script, the history and the commit types run in one call.
+`{plugin_root}` is the `SHIPWRIGHT_PLUGIN_ROOT` the SessionStart hook injects.
 
-Usage: /shipwright-changelog | /shipwright-changelog --from v0.1.0 | invoked by /shipwright-run (orchestrator)
-
-Steps: analyze commits -> categorize -> generate entry -> confirm -> sync
-manifests/evidence -> commit + tag -> publish GitHub Release -> optional PR
-================================================================================
+```bash
+uv run "{plugin_root}/scripts/release.py" prepare --project-root "$(pwd)" --phase-task-id "{phaseTaskId}"
 ```
 
-### B. Discover Plugin Root
+Omit `--phase-task-id` if you were not handed one; add `--version "{X.Y.Z}"` only for a custom version an operator typed
+(Step 3) and `--from vX` only when the operator gave one. The banner and the notices (`notices`) go to stderr: show them.
+The JSON on stdout is the answer:
 
-The SessionStart hook injects `SHIPWRIGHT_PLUGIN_ROOT=<path>`. Use it directly.
+- `status` is `ok`, or `stop` with a `reason`: `mode_error` (see C), `setup_refused`, `gate_catalog_unavailable`, or
+  `no_unreleased_changes` ("No unreleased changes"), or another reason it names (`parse_commits_failed`, `no_version`, `upgrade_notes_query_failed`, `upgrade_note_drop_failed`). Report a stop and end the release.
+- `mode`, `last_tag`, `branch`, `commits_since_tag`, `commits` (Steps 1-2), `version`, `suggested`, `version_reason` (Step 3).
+  `previous_tag_has_release` is advisory, never a gate; its notice is already in `notices`.
+- `gates`: what each question does (`version`, `preview`, `out_of_sequence`), `auto` or `ask`. **Do what `gates` says.** The
+  rule behind it lives in the gate catalog, not here; the contract: [first-actions](references/first-actions.md).
+- `release`: the date and the run id, stored once in `release_run.json` in the checkout's git directory. Every later call reads them:
+  pass no date, export no run id.
+- `upgrade_notes`: the upgrade-notes check of Step 4, already done.
+- `skill_artifacts_to_read` (Step 0): with a `phaseTaskId`, read that list before going on.
 
 ### C. Detect Invocation Mode
 
 **The `phaseTaskId` the orchestrator hands you at dispatch is the authority** — NOT any
-state field inside `shipwright_run_config.json`. The pipeline's v1 state fields are no
-longer advanced, so keying on them made every driven phase past the first misclassify
-itself as standalone; the rationale is in `shared/scripts/lib/phase_invocation_mode.py`.
-**Never re-derive the mode yourself.** Ask the resolver:
-
-```bash
-uv run "{shared_root}/scripts/tools/get_phase_context.py" \
-  --phase-task-id "{phaseTaskId}" --phase changelog --project-root "{project_root}"
-```
-
-Omit `--phase-task-id` if you were not handed one. Set `invocation_mode` from the returned
+state field inside `shipwright_run_config.json`; the rationale is in `shared/scripts/lib/phase_invocation_mode.py`.
+**Never re-derive the mode yourself.** `prepare` asks the resolver
+(`get_phase_context.py --phase-task-id "{phaseTaskId}" --phase changelog`). Set `invocation_mode` from the returned
 `mode`, which is exactly one of:
 
 - **`pipeline`** — you were dispatched. Enforce gates (Single-Session Gate Discipline: [first-actions](references/first-actions.md)), and do the phase's real work.
@@ -59,73 +56,12 @@ Omit `--phase-task-id` if you were not handed one. Set `invocation_mode` from th
   release: `/shipwright-changelog` is usually invoked by hand):
   - Skip pipeline state updates (no `orchestrator.py update-step` calls)
   - Still produce all artifacts (`CHANGELOG.md`, version tags, PRs)
-  - Print: `"Running in standalone mode — pipeline state will not be updated."`
-  - If `requires_out_of_sequence_warning` is `true`, a driven run is LIVE at
-    `active_phases`. Warn that cutting a release out-of-band may collide with it, and
-    **ask the user before continuing** (gate `changelog.out-of-sequence-continue`;
-    Single-Session Gate Discipline: [first-actions](references/first-actions.md)).
-- **`error`** (exit code 2) — you were dispatched but the token does not resolve (stale,
+  - If `out_of_sequence_warning` is `true`, a driven run is LIVE at `active_phases`. Warn that
+    cutting a release out-of-band may collide with it, then do what `gates.out_of_sequence` says.
+- **`error`** (`prepare` exits 2, `reason: "mode_error"`) — you were dispatched but the token does not resolve (stale,
   terminal, wrong phase, or an unreadable config). **STOP.** Do NOT continue as
   standalone: that is precisely what stamps a driven run's artifacts `"mode": "standalone"`
   and deadlocks the pipeline. Surface it to the orchestrator as an `ok: false` result.
-
-### D. Run Setup Script
-
-```bash
-uv run "{plugin_root}/scripts/checks/setup-changelog.py" \
-  --plugin-root "{plugin_root}"
-```
-
-Parse JSON output for git state, last tag, and unreleased commits.
-
----
-
-## Step 0: Phase Session Context Recovery
-
-If the orchestrator handed you a `phaseTaskId`, the `get_phase_context.py` call you
-already made in **Detect Invocation Mode** is the one this step needs — reuse that
-payload and read its `skill_artifacts_to_read` list before proceeding. No
-`phaseTaskId` → standalone; continue with Step 1.
-
----
-
-## Step 1: Analyze Git History
-
-**Goal:** Collect all commits since the last version tag.
-
-The setup script returns:
-- `last_tag` — most recent semver tag (or null if none)
-- `commits_since_tag` — list of commit messages + hashes
-- `branch` — current branch name
-- `previous_tag_has_release` — advisory tri-state, never a gate. `false` prints
-  one line (`Notice: {last_tag} has no GitHub Release — see release-workflow.md`); `true`/`null` print nothing.
-
-If no commits since last tag: print "No unreleased changes" and stop.
-
----
-
-## Step 2: Categorize Commits
-
-See [conventional-commits.md](references/conventional-commits.md) for parsing rules.
-
-**Goal:** Parse each commit message into type, scope, and description.
-
-```bash
-uv run "{plugin_root}/scripts/lib/git_utils.py" parse-commits \
-  --since "{last_tag}" \
-  --format json
-```
-
-Categories:
-| Type | Changelog Section |
-|------|------------------|
-| `feat` | Added |
-| `fix` | Fixed |
-| `refactor` | Changed |
-| `docs` | Documentation |
-| `test` | Testing |
-| `chore` | Maintenance |
-| `BREAKING CHANGE` | Breaking Changes |
 
 ---
 
@@ -133,97 +69,78 @@ Categories:
 
 **Goal:** Propose the next version from the commit types.
 
-Do NOT compute the bump yourself. Use `suggested_version` and `version_reason`
-from the setup script (Run Setup Script, above) verbatim; it comes from
-`git_utils.suggest_version_bump`, which applies FR-01.09 AC04 (a breaking change
+Do NOT compute the bump yourself. `version` is the setup script's `suggested_version` used verbatim (`version_reason` says why);
+it comes from `git_utils.suggest_version_bump`, which applies FR-01.09 AC04 (a breaking change
 raises the first number, or the second before 1.0; a `feat` the second; anything
-else the third; no previous tag → `0.1.0`). The tag is `v{suggested_version}`.
+else the third; no previous tag → `0.1.0`). The tag is `v{version}`.
 
-**Autonomous mode** (`autonomy` is `autonomous` or `unattended` in `shipwright_run_config.json`; gate `changelog.version-suggestion`):
-Accept the suggested version automatically. No prompt.
-
-**Guided mode** (default):
-Present suggestion to user:
+Then do what `gates.version` says. `auto`: accept the suggestion, no prompt. `ask`:
 ```
-Suggested version: v{suggested_version} (based on: {version_reason})
+Suggested version: v{version} (based on: {version_reason})
 Accept or enter custom version:
 ```
+A custom version is the `{version}` of every later call: run `prepare` again with `--version "{X.Y.Z}"` first, so the stored date and run id belong to that version (a run state is keyed on the version).
 
 ---
 
 ## Step 4: Generate Changelog Entry
 
-FIRST run the upgrade-notes check in [release-workflow.md](references/release-workflow.md), in every mode, before any aggregator call: it can add a drop that this release must still pick up. Since the file-per-iterate refactor, iterate F4 writes one Markdown file
-per bullet under `CHANGELOG-unreleased.d/<category>/`. Release time
-reads those drop files, renders a versioned Keep-a-Changelog section,
-inserts it at the structural point in `CHANGELOG.md` (above the first
-existing `## [version]` heading, NOT blindly at the top — that would
-corrupt the `# Changelog` title), and deletes only the drop files that
-were actually aggregated.
+The upgrade-notes check already ran inside `prepare`, in every mode, before any aggregator call, so a drop it adds is picked up by
+this release ([release-workflow.md](references/release-workflow.md)). Read `upgrade_notes.status`: `action_drop_written` means a
+migration page asks projects to act and a drop under `CHANGELOG-unreleased.d/Changed/` now says so; read it, fix the wording if
+it misleads, and where the page names a companion release that must come first, name its minimum version and confirm it is
+published before the release PR is merged. Any other status: say `upgrade_notes.sentence` in the Step 5 preview, or in the
+closing summary when the mode skips the preview. Since the file-per-iterate refactor, iterate F4 writes one Markdown file
+per bullet under `CHANGELOG-unreleased.d/<category>/`; the aggregation renders them into a versioned Keep-a-Changelog section,
+inserts it above the first existing `## [version]` heading (NOT at the top: that would corrupt the `# Changelog` title) and
+deletes only the drop files it aggregated.
 
-Use `--dry-run` first to preview the rendered section without modifying
-disk. **Never pass `--fail-if-empty` alongside `--dry-run`** — the check
+Preview first, then run for real. One call each; `aggregate` owns the flags and the release date:
+
+```bash
+uv run "{plugin_root}/scripts/release.py" aggregate --project-root "$(pwd)" --version "{version}" --dry-run
+uv run "{plugin_root}/scripts/release.py" aggregate --project-root "$(pwd)" --version "{version}"
+```
+
+What it runs, for reference (never type these): the preview passes `--dry-run` to `aggregate_changelog.py`.
+**Never pass `--fail-if-empty` alongside `--dry-run`** — the check
 raises unconditionally on an empty release regardless of `--dry-run`, so
 combining them turns a preview of "nothing pending" into a hard failure
 instead of a preview:
 
 ```bash
-uv run "{shared_root}/scripts/tools/aggregate_changelog.py" \
-  --project-root "{project_root}" \
-  --version "{version}" \
-  [--release-date "{YYYY-MM-DD}"] \
-  --dry-run
+uv run "{shared_root}/scripts/tools/aggregate_changelog.py" --project-root "{project_root}" --version "{version}" --release-date "{stored date}" --dry-run
 ```
 
-Once satisfied with the preview, run for real. **Always pass `--fail-if-empty`**
+The real run: **Always pass `--fail-if-empty`**
 here — nothing recorded for a version never released before is refused
 (exit 1, `AggregatorError`), not silently tagged as an empty release;
 re-running an already-released version still converges as a safe no-op
 (unaffected):
 
 ```bash
-uv run "{shared_root}/scripts/tools/aggregate_changelog.py" \
-  --project-root "{project_root}" \
-  --version "{version}" \
-  [--release-date "{YYYY-MM-DD}"] \
-  --fail-if-empty
+uv run "{shared_root}/scripts/tools/aggregate_changelog.py" --project-root "{project_root}" --version "{version}" --release-date "{stored date}" --fail-if-empty
 ```
 
-When the aggregator encounters legacy bullets under
-`## [Unreleased]` (e.g. from pre-refactor iterates that wrote directly
-to `CHANGELOG.md`), it prints a **loud stderr WARNING naming each bullet's
-own text**, not just a count. Those bullets are NOT migrated
-automatically — the operator chooses whether to fold them into the new
-version manually or accept the split-brain.
+A legacy bullet under `## [Unreleased]` (pre-refactor iterates wrote straight to `CHANGELOG.md`) is NOT migrated: the
+aggregator prints a **loud stderr WARNING naming each bullet's own text** (also in `legacy_unreleased_bullet_texts`), and the
+operator chooses whether to fold it into the new version by hand or accept the split-brain.
 
 **Re-running a release is safe.** An interruption after the changelog was written leaves the drops pending; the same version again **replaces** that section, but only when what is on record is still what the drops say, else it **stops with a non-zero exit** and names the disagreement (reconcile by hand, not a transient error).
 `changelog_updated` means *bytes were written*, not *the run succeeded*: a converging re-run reports `"section_action": "unchanged"` and is a **success**. State table, the `--release-date` rule and why it refuses: [rerunning-a-release.md](references/rerunning-a-release.md).
 
 ### ADR decision-drops
 
-Iterate F3 no longer appends ADRs directly to `decision_log.md`. Since
-the unconditional-worktree refactor it writes one JSON drop per ADR
-under `.shipwright/agent_docs/decision-drops/`, keyed by run_id. Release
-time is the ONE serialized point that assigns the sequential `ADR-NNN`,
-so two parallel iterates can never claim the same number:
+The real run then numbers the ADR drops itself (`aggregate_decisions.py`, `decisions` in the JSON): iterate F3 writes one JSON
+drop per ADR under `.shipwright/agent_docs/decision-drops/`, keyed by run_id, and release time is the ONE serialized point that
+assigns the sequential `ADR-NNN`, so two parallel iterates can never claim the same number. It renders each drop into
+`decision_log.md`, embeds a `Run-ID:` line for run-id ↔ ADR traceability, and deletes only the drops it aggregated; drops written
+after the snapshot survive into the next release. Pending bullet drops fold first: `references/bullet-folding.md`.
 
-```bash
-uv run "{shared_root}/scripts/tools/aggregate_decisions.py" \
-  --project-root "{project_root}" \
-  [--dry-run]
-```
-
-It renders each drop into `decision_log.md` (continuing the ADR
-numbering), embeds a `Run-ID:` line for run-id ↔ ADR traceability, and
-deletes only the drops it aggregated. Run with `--dry-run` first to
-preview the numbers that will be assigned. Drops written after the
-snapshot survive into the next release. Pending bullet drops fold first: `references/bullet-folding.md`.
-
-Fallback for non-iterate commits: if this release includes bullets that
-weren't produced through iterate F4 (rare — e.g. a cherry-pick from an
-unrelated branch), write them with `append_changelog_entry.py` BEFORE
-running the aggregator; they land in the legacy `[Unreleased]` block
-and surface as a warning at aggregation time.
+Fallback for non-iterate commits: if this release includes bullets that weren't produced through iterate F4 (rare — e.g. a
+cherry-pick from an unrelated branch), hand each one to the real run as `--fallback-entry "<Category>:<text>"` (repeatable;
+`append_changelog_entry.py` writes them BEFORE the aggregator runs); they land in the legacy `[Unreleased]` block and surface as a
+warning at aggregation time.
 
 See [changelog-format.md](references/changelog-format.md) for output
 format details.
@@ -234,10 +151,7 @@ format details.
 
 **Goal:** Show the generated changelog entry to the user.
 
-**Autonomous mode** (`autonomy` is `autonomous` or `unattended` in `shipwright_run_config.json`; gate `changelog.entry-preview`):
-Skip preview confirmation. Continue with Step 5.3, then 5.4, 5.5 and Step 6, in that order.
-
-**Guided mode** (default):
+Do what `gates.preview` says. `auto`: skip preview confirmation and continue with Step 5.3, then 5.4, 5.5 and Step 6, in that order. `ask`:
 Present the full entry and ask:
 ```
 AskUserQuestion:
