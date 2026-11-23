@@ -205,7 +205,7 @@ def test_the_preview_passes_dry_run_never_fail_if_empty_and_writes_no_state(tmp_
     code, out = run_aggregate(tmp_path, plugin_root, fake, version="1.3.0", dry_run=True)
     argv = fake.argv("aggregate-dry")
     assert code == 0 and "--dry-run" in argv and "--fail-if-empty" not in argv
-    assert fake.keys() == ["tag-check", "aggregate-dry"] and not release_runstate.state_path(tmp_path).exists()
+    assert fake.keys() == ["tag-check", "aggregate-dry", "decisions-dry"] and not release_runstate.state_path(tmp_path).exists()
 
 
 @pytest.mark.covers("FR-01.09/AC03")

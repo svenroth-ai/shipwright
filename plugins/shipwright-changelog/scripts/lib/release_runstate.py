@@ -44,8 +44,14 @@ def state_path(project_root: Path) -> Path:
     return found if found.is_absolute() else root / found
 
 
+def _root_key(project_root: Path) -> str:
+    return Path(project_root).resolve().as_posix()
+
+
 def load(project_root: Path) -> dict[str, Any] | None:
-    """The stored state, or ``None`` when there is none or it is unreadable (a damaged file is never trusted)."""
+    """The stored state, or ``None`` when there is none or it is unreadable (a damaged file is never trusted). The file lives
+    in the git directory, which a repository shares with every project root inside it (a sub-project, a monorepo package):
+    a state written for another root is not this release's."""
     try:
         data = json.loads(state_path(project_root).read_text(encoding="utf-8"))
     except (OSError, ValueError):
@@ -53,11 +59,12 @@ def load(project_root: Path) -> dict[str, Any] | None:
     ok = isinstance(data, dict) and data.get("schema") == SCHEMA and all(
         isinstance(data.get(k), str) and data[k] for k in ("version", "release_date", "run_id"))
     ok = ok and _DATE.fullmatch(data["release_date"]) and _SAFE_ID.fullmatch(data["run_id"])  # read back from disk: check the shape
-    return data if ok else None
+    return data if ok and data.get("project_root") == _root_key(project_root) else None
 
 
 def save(project_root: Path, state: dict[str, Any]) -> None:
     path = state_path(project_root)
+    state = {**state, "project_root": _root_key(project_root)}
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(f".{os.getpid()}.tmp")
     tmp.write_text(json.dumps(state, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
@@ -94,4 +101,18 @@ def resolve(project_root: Path, version: str, *, tag_exists: bool, release_date:
                  "created_at": now.isoformat(timespec="seconds"), "reused": False}
     if release_date:
         state["release_date"] = release_date
+    return state
+
+
+def stored(project_root: Path, version: str) -> dict[str, Any] | None:
+    """The stored state when it is this release's (same version, same project root); later subcommands read it after the tag exists."""
+    state = load(project_root)
+    return state if state and state["version"] == version else None
+
+
+def patch(project_root: Path, version: str, clock: Clock = utc_now, **fields: Any) -> dict[str, Any]:
+    """Add facts a step decided (pathspecs, the branch, the PR) to this release's state and save it; a missing state is made first."""
+    base = stored(project_root, version) or resolve(project_root, version, tag_exists=False, clock=clock, require_fresh=False, released=True)
+    state = {**base, **fields}
+    save(project_root, state)
     return state

@@ -2,37 +2,235 @@
   {
     "scenario": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
     "field": "sha256",
-    "before": "b39cbce0314692c909fc75242d74a23596dc35d929dfe63c25a9fa004d76a6ad",
-    "after": "0b5a109513b19604c933638fd340e6fdd92210ec1dad694de4609135cf7ae9ea",
-    "approver": "pilot BRIEF section 4 P3 row and the operator-approved SECOND-PASS plan items: Steps A-4 become one release.py call each, the gate-policy prose copies are replaced by `gates` (A2, C1): P3 spec iterate-P3-cli-prepare-aggregate, SECOND-PASS plan items A1/A2/C1",
+    "before": "0b5a109513b19604c933638fd340e6fdd92210ec1dad694de4609135cf7ae9ea",
+    "after": "940e5329d1bbf91a72f5bbcff4b8c33cbc20b270af148cfb84e313825ce6ae93",
+    "approver": "pilot BRIEF section 4 P4 row and SECOND-PASS A9/B1/B4 with the operator decisions F1a, F1b, F4, F6, F10 (FULLRUN-REPORT 'Decisions (operator, 2026-11-23)'): Steps 5.3 to 7 become release.py calls (P4 spec)",
     "date": "2026-11-23",
-    "source": "A1"
+    "source": "P4"
   },
   {
-    "scenario": "plugins/shipwright-changelog/skills/changelog/references/first-actions.md",
+    "scenario": "plugins/shipwright-changelog/skills/changelog/references/compliance-evidence.md",
     "field": "sha256",
-    "before": "85a3e7d5b386fdfb2d184f07069780c752671c15ee78a5bc974063c20418b164",
-    "after": "cdefa7e209858b4397d4d2e817a18f31cb150767fd0901c26a38b160c48de9f9",
-    "approver": "pilot BRIEF section 4 P3 row and the operator-approved SECOND-PASS plan items: the gate-policy prose copy is deleted and the file says to follow `gates` (SECOND-PASS C1, P3 spec)",
+    "before": "1d4e81c70abedd02df1cbccc4e9552e460cd8257752265768d3df96d389462b8",
+    "after": "8dfb1918b18ff0382e1b12a14c551fe265924c6110b4627016c0750373810e86",
+    "approver": "pilot BRIEF section 4 P4 row: the reference notes that Steps 5.3 to 7 now run through release.py; operator decisions F7 and F10 (FULLRUN-REPORT 'Decisions (operator, 2026-11-23)')",
     "date": "2026-11-23",
-    "source": "C1"
+    "source": "F10"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/skills/changelog/references/event-fold.md",
+    "field": "sha256",
+    "before": "0231c04668ee27265ca6a700a72e35f50c5f29a578d76aaa67f76e6f66794469",
+    "after": "7f62d8ff5aed01d8f53b99ddabacc430433f739509ff9dbc6bea3f9f5d3fa011",
+    "approver": "pilot BRIEF section 4 P4 row: the reference notes that Steps 5.3 to 7 now run through release.py; operator decisions F7 and F10 (FULLRUN-REPORT 'Decisions (operator, 2026-11-23)')",
+    "date": "2026-11-23",
+    "source": "F10"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/skills/changelog/references/manifest-sync.md",
+    "field": "sha256",
+    "before": "c3aad640cd462030212c4fb74226bda85e5c7692795776570a707d3cf92e64ea",
+    "after": "eb1888f53a304661ba095c73b186d37e2d3992ad27535ef02d6dd3e7622c74db",
+    "approver": "pilot BRIEF section 4 P4 row: the reference notes that Steps 5.3 to 7 now run through release.py; operator decisions F7 and F10 (FULLRUN-REPORT 'Decisions (operator, 2026-11-23)')",
+    "date": "2026-11-23",
+    "source": "F10"
   },
   {
     "scenario": "plugins/shipwright-changelog/skills/changelog/references/release-workflow.md",
     "field": "sha256",
-    "before": "acad43a2c549a8c95b16abfd2ffa8341877dd8223678d02512737b44031adf1b",
-    "after": "b01de46655448e73b651644a38d699e75a88e24ef374fcfd3fd58fe4681028a1",
-    "approver": "pilot BRIEF section 4 P3 row and the operator-approved SECOND-PASS plan items: the upgrade-notes check moves to code, the model reviews the drop (SECOND-PASS A3, P3 spec)",
+    "before": "b01de46655448e73b651644a38d699e75a88e24ef374fcfd3fd58fe4681028a1",
+    "after": "533b2c8cf0c235bbe2c8eec576d6f0479844a66d70d21060d55f7f3a52b5db31",
+    "approver": "pilot BRIEF section 4 P4 row: the reference notes that Steps 5.3 to 7 now run through release.py; operator decisions F7 and F10 (FULLRUN-REPORT 'Decisions (operator, 2026-11-23)')",
     "date": "2026-11-23",
-    "source": "A3"
+    "source": "F10"
   },
   {
-    "scenario": "plugins/shipwright-changelog/tests/golden/coverage.py",
+    "scenario": "plugins/shipwright-changelog/skills/changelog/references/rerunning-a-release.md",
     "field": "sha256",
-    "before": "24ac0d72f5dde997cad575ac136061aef818168647ee1e9f90e3d140d78a80f1",
-    "after": "275be6630048671d3ab93d7ed142a5a3330a6b8427b3c8334c8f6feaded61774",
-    "approver": "pilot BRIEF section 4 P3 row and the operator-approved SECOND-PASS plan items: the P8a coverage table follows the inventory.json headings that P3 updated (BRIEF section 4 P3 row: inventory.json is in the touch set); no scenario or trace changed",
+    "before": "98b45355e24b49bceb319c25c4a81d15fad1ccce25700d9258284034a01f26ad",
+    "after": "72be2e5618a0b2245546e012fb32c572185374e62a75d0253e5fa23131576f29",
+    "approver": "pilot BRIEF section 4 P4 row: the reference notes that Steps 5.3 to 7 now run through release.py; operator decisions F7 and F10 (FULLRUN-REPORT 'Decisions (operator, 2026-11-23)')",
     "date": "2026-11-23",
-    "source": "A1"
+    "source": "F10"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/S1.legacy.trace.json",
+    "field": "sha256",
+    "before": "2a2afacc78f0f4168fcf967371844c5761ae5dbd8b5cbdf8c72be531a6df94d2",
+    "after": "e8df268978573c4e15f33ddc83a6d29fc9ca0cdee9565236acb3090196089c2f",
+    "approver": "operator decisions F1b, F4, F6 (FULLRUN-REPORT 'Decisions (operator, 2026-11-23)'): the scenario now stops where the decision says, regenerated with SHIPWRIGHT_GOLDEN_REGEN=1",
+    "date": "2026-11-23",
+    "source": "F1b/F4/F6"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/S11a.trace.json",
+    "field": "sha256",
+    "before": "61d055dcf7297e87076a5ea2a78e6959be03d2c6b4104020c4d234582193753f",
+    "after": "4fa681b37f89d7c49e8b6c0d07e368966ccf02e75350c1ba9c55224b02db1b83",
+    "approver": "operator decisions F1b, F4, F6 (FULLRUN-REPORT 'Decisions (operator, 2026-11-23)'): the scenario now stops where the decision says, regenerated with SHIPWRIGHT_GOLDEN_REGEN=1",
+    "date": "2026-11-23",
+    "source": "F1b/F4/F6"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/S12a.trace.json",
+    "field": "sha256",
+    "before": "7a671b518be96af98e113e1577751b31bbb8bf90421b43182054106a93a93590",
+    "after": "ed325e7f0e4fe636ce1d1c44321f0075848d94d2dfb47c4e7b3124c761b29fa2",
+    "approver": "operator decisions F1b, F4, F6 (FULLRUN-REPORT 'Decisions (operator, 2026-11-23)'): the scenario now stops where the decision says, regenerated with SHIPWRIGHT_GOLDEN_REGEN=1",
+    "date": "2026-11-23",
+    "source": "F1b/F4/F6"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/S12b.trace.json",
+    "field": "sha256",
+    "before": "34383e3d78d476721d743b426a94b322658ac161b9e76c39fec16f26a4fdfac8",
+    "after": "1f2966aa00a10e1a8422e6a843c609fe01fbeaad38e5665304b5eac72d1fd508",
+    "approver": "operator decisions F1b, F4, F6 (FULLRUN-REPORT 'Decisions (operator, 2026-11-23)'): the scenario now stops where the decision says, regenerated with SHIPWRIGHT_GOLDEN_REGEN=1",
+    "date": "2026-11-23",
+    "source": "F1b/F4/F6"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/S12c.trace.json",
+    "field": "sha256",
+    "before": "da51f084cef17cf8932e5f10caca1fc63efce0ecc8c07c9e7e452e1c969f5c58",
+    "after": "8ad222ca653ed86040835bbe27b5f80a934ecb29b776ea4f471078ffb73a0bcc",
+    "approver": "operator decisions F1b, F4, F6 (FULLRUN-REPORT 'Decisions (operator, 2026-11-23)'): the scenario now stops where the decision says, regenerated with SHIPWRIGHT_GOLDEN_REGEN=1",
+    "date": "2026-11-23",
+    "source": "F1b/F4/F6"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/S13.trace.json",
+    "field": "sha256",
+    "before": "9d45be35a4127ef0bbf1537ebb62639995c956571fa81641ecf9a09e7add8b9a",
+    "after": "2d3daf361e26785343c2d6d0cf754568584f52387403ca38899ef063a7832c9c",
+    "approver": "operator decisions F1b, F4, F6 (FULLRUN-REPORT 'Decisions (operator, 2026-11-23)'): the scenario now stops where the decision says, regenerated with SHIPWRIGHT_GOLDEN_REGEN=1",
+    "date": "2026-11-23",
+    "source": "F1b/F4/F6"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/S14a.trace.json",
+    "field": "sha256",
+    "before": "13c9e4c7124e00fa7de2b2e8ed32b143084b18b80facbbb9c6209039c1ad7d58",
+    "after": "2054a37cb72906130573c991d20902550b7cd386add2f2de632d79c25e981192",
+    "approver": "operator decisions F1b, F4, F6 (FULLRUN-REPORT 'Decisions (operator, 2026-11-23)'): the scenario now stops where the decision says, regenerated with SHIPWRIGHT_GOLDEN_REGEN=1",
+    "date": "2026-11-23",
+    "source": "F1b/F4/F6"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/S14c.trace.json",
+    "field": "sha256",
+    "before": "be3ce03636f5b1d07ce3251df76d9bf1fbf2922573c7816b76a4c934136f3d88",
+    "after": "505ccf4d50945a5728fff7d36c7c89211d63f7b3d739450ec99d673c8fd8afe0",
+    "approver": "operator decisions F1b, F4, F6 (FULLRUN-REPORT 'Decisions (operator, 2026-11-23)'): the scenario now stops where the decision says, regenerated with SHIPWRIGHT_GOLDEN_REGEN=1",
+    "date": "2026-11-23",
+    "source": "F1b/F4/F6"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/S16e.trace.json",
+    "field": "sha256",
+    "before": "5f33e1413fbaf69c30765df5fa48757e5f14752ff1d22560ab3d1ca5ee83fbec",
+    "after": "66acf89a3b193bb8271f6edd8530e60fd5925620ff2b785c320a948096b55620",
+    "approver": "operator decisions F1b, F4, F6 (FULLRUN-REPORT 'Decisions (operator, 2026-11-23)'): the scenario now stops where the decision says, regenerated with SHIPWRIGHT_GOLDEN_REGEN=1",
+    "date": "2026-11-23",
+    "source": "F1b/F4/F6"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/S16f.trace.json",
+    "field": "sha256",
+    "before": "70edb58c9ce51b26359596a07dac8d416465554a993cbe3379f7f1ef65812d5d",
+    "after": "57e590bd1d9270e8f03f53abc0a62bcbd8115cd27a47debbfbd8020f33c0751f",
+    "approver": "operator decisions F1b, F4, F6 (FULLRUN-REPORT 'Decisions (operator, 2026-11-23)'): the scenario now stops where the decision says, regenerated with SHIPWRIGHT_GOLDEN_REGEN=1",
+    "date": "2026-11-23",
+    "source": "F1b/F4/F6"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/S2g.legacy.trace.json",
+    "field": "sha256",
+    "before": "8ce42cf5572c8cfbf87733c3040de3061f68be7d5b87ae8ceb4213ccbc976c77",
+    "after": "698651add6ecd0a7404de1edb09c3e843d804981ebbf89fc76fffe6fce4619e5",
+    "approver": "operator decisions F1b, F4, F6 (FULLRUN-REPORT 'Decisions (operator, 2026-11-23)'): the scenario now stops where the decision says, regenerated with SHIPWRIGHT_GOLDEN_REGEN=1",
+    "date": "2026-11-23",
+    "source": "F1b/F4/F6"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/driver_cli.py",
+    "field": "sha256",
+    "before": "d4b031541cd0e0f543be445716020244cd31181f63cc4dc830fb2974cba6e007",
+    "after": "f9b8ee5b8117e37bf69bc84a03172a3f0d74f2714cd20180a6f94f567a428ff1",
+    "approver": "pilot BRIEF section 4 P4 row: the CLI driver drives sync, commit-and-tag, record-event and close-phase through release.py; SECOND-PASS A9/B1/B4",
+    "date": "2026-11-23",
+    "source": "P4"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/driver_replay.py",
+    "field": "sha256",
+    "before": "3c0095727d51693e71a9c2b44687fea2d0de23849b1354eaee7b1589540930c1",
+    "after": "7284b8dff7a09c53255f6d3ce158a8cb843af661ed35b9a6336d41d7d248eb97",
+    "approver": "operator decisions F1a and F10 (FULLRUN-REPORT 'Decisions (operator, 2026-11-23)'): tag-only push from a feature branch, close step writes nothing standalone",
+    "date": "2026-11-23",
+    "source": "F1a/F10"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/promise.lock.json",
+    "field": "sha256",
+    "before": "3dbd26df480a946edab06fb801177283adc31527ef8c0f3b7762a2a09f861ade",
+    "after": "ed41d48abee1e98a2ae8977ba4b9afbc8e0fba3bf9edfd6526df44f91bc9353c",
+    "approver": "operator decisions F1b, F4, F6 (FULLRUN-REPORT 'Decisions (operator, 2026-11-23)'): the scenario flow and its checks stop where the decisions say",
+    "date": "2026-11-23",
+    "source": "F1b/F4/F6"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/scenario_core.py",
+    "field": "sha256",
+    "before": "01dd6755137917bc440863aa490ccec3258d047326e3da0bf5217bfd3be92b32",
+    "after": "555af2a4a105d6fb1455ce9d03a25fe2217a3a91414eeb873e73f0e564678cc8",
+    "approver": "operator decisions F1b, F4, F6 (FULLRUN-REPORT 'Decisions (operator, 2026-11-23)'): the scenario flow and its checks stop where the decisions say",
+    "date": "2026-11-23",
+    "source": "F1b/F4/F6"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/scenarios_assets.py",
+    "field": "sha256",
+    "before": "8dfcf274d7c718590d5c97a0d6817bf55e9aa697d76934ed25a12002ac7631b2",
+    "after": "9dcfe268b4d98f47159f38bd1c0470e0c90e4d090fba9501e0bbb55bf663d71a",
+    "approver": "operator decisions F1b, F4, F6 (FULLRUN-REPORT 'Decisions (operator, 2026-11-23)'): the scenario flow and its checks stop where the decisions say",
+    "date": "2026-11-23",
+    "source": "F1b/F4/F6"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/scenarios_branches.py",
+    "field": "sha256",
+    "before": "0b2454a788ce12b66382731e601fd85770c8f57ddf18d1346f5dc32aebc193d4",
+    "after": "0d2318ff79c48614ebdacce6170aa94c1fc21e172bac78dddf1ad07ac6b26931",
+    "approver": "operator decisions F1b, F4, F6 (FULLRUN-REPORT 'Decisions (operator, 2026-11-23)'): the scenario flow and its checks stop where the decisions say",
+    "date": "2026-11-23",
+    "source": "F1b/F4/F6"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/scenarios_refusals.py",
+    "field": "sha256",
+    "before": "7d7b0d19bb5a0387657037efbe33761c4d5508a106381393c7ef5485bc605091",
+    "after": "f3ea039691b5d0e1138f362a85e15470703cfeed7bf510732bf5694531a405c7",
+    "approver": "operator decisions F1b, F4, F6 (FULLRUN-REPORT 'Decisions (operator, 2026-11-23)'): the scenario flow and its checks stop where the decisions say",
+    "date": "2026-11-23",
+    "source": "F1b/F4/F6"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/scenarios_release.py",
+    "field": "sha256",
+    "before": "0eb08d3f30df7d068559c25231c28911465359ee31f845de8ef0219365f7b44f",
+    "after": "d7faebb39ec565cae476151cfca949e52da0661d61fd948066fb0e5c98bc5c35",
+    "approver": "operator decisions F1b, F4, F6 (FULLRUN-REPORT 'Decisions (operator, 2026-11-23)'): the scenario flow and its checks stop where the decisions say",
+    "date": "2026-11-23",
+    "source": "F1b/F4/F6"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/test_promise_release.py",
+    "field": "sha256",
+    "before": "b0d906c6de07ea813b441cac2e5dd05f1649fb0e1874b2129320932988e81446",
+    "after": "61d26447bbb8f8e7b89dda116df373d16c96dd6d03e83bb4bb4640d712628da8",
+    "approver": "operator decision F1b (FULLRUN-REPORT 'Decisions (operator, 2026-11-23)'): a promise test that runs the whole flow names autonomy, because a guided release now waits for the merge; BRIEF section 5 P3/P4 item 9",
+    "date": "2026-11-23",
+    "source": "F1b"
   }
 ]

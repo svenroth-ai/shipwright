@@ -88,7 +88,9 @@ A custom version is the `{version}` of every later call: run `prepare` again wit
 The upgrade-notes check already ran inside `prepare`, in every mode, before any aggregator call, so a drop it adds is picked up by
 this release ([release-workflow.md](references/release-workflow.md)). Read `upgrade_notes.status`: `action_drop_written` means a
 migration page asks projects to act and a drop under `CHANGELOG-unreleased.d/Changed/` now says so; read it, fix the wording if
-it misleads, and where the page names a companion release that must come first, name its minimum version and confirm it is
+it misleads. `action_drop_deferred` means the same page was found while a question (`gates`) was still open, so nothing was written yet:
+the real `aggregate` files the drop(s) (`upgrade_notes.pending` has the text, and the preview names it in `upgrade_notes_pending`) and
+the preview's `decisions_preview` names the ADR numbers it will give. In both cases, where the page names a companion release that must come first, name its minimum version and confirm it is
 published before the release PR is merged. Any other status: say `upgrade_notes.sentence` in the Step 5 preview, or in the
 closing summary when the mode skips the preview. Since the file-per-iterate refactor, iterate F4 writes one Markdown file
 per bullet under `CHANGELOG-unreleased.d/<category>/`; the aggregation renders them into a versioned Keep-a-Changelog section,
@@ -151,7 +153,7 @@ format details.
 
 **Goal:** Show the generated changelog entry to the user.
 
-Do what `gates.preview` says. `auto`: skip preview confirmation and continue with Step 5.3, then 5.4, 5.5 and Step 6, in that order. `ask`:
+Do what `gates.preview` says. `auto`: skip preview confirmation and continue with `sync` (Steps 5.3 to 5.5), then Step 6, in that order. `ask`:
 Present the full entry and ask:
 ```
 AskUserQuestion:
@@ -166,73 +168,36 @@ If edit: apply changes and re-preview.
 
 ---
 
-## Step 5.3: Fold Old Event Files (automatic housekeeping)
+## Step 5.3: Fold Old Event Files, then Sync Manifests and Evidence (Steps 5.3 to 5.5, one call)
 
-Folds old per-run event files into `.shipwright/events/archive/` in a commit of their own, BEFORE anything of the release is staged. It never blocks the release (always exit 0; every failure puts the tree back):
-
-```bash
-uv run "{shared_root}/scripts/tools/fold_events_for_release.py" --project-root "$(pwd)"
-```
-
-Add at most ONE line to the closing summary from its JSON `status`; every status, the `rolled_back: false` repair and the revert rule: [event-fold.md](references/event-fold.md).
-
-## Step 5.4: Sync Published Package Manifests
-
-**Goal:** keep every declared published-package manifest's version in
-lock-step with this release, tag and manifest by construction. Runs
-BEFORE Step 5.5 — a worktree write must not land in the staging→commit
-gap Step 6 warns about. Full contract: [manifest-sync.md](references/manifest-sync.md).
+One call, in this order (a worktree write must not land in the staging-to-commit gap Step 6 warns about):
 
 ```bash
-uv run "{shared_root}/scripts/tools/sync_release_manifests.py" \
-  --project-root . --version "{version}" --stage \
-  --result-file ".shipwright/runtime/manifest_sync_result.json"
+uv run "{plugin_root}/scripts/release.py" sync --project-root "$(pwd)" --version "{version}"
 ```
 
-`status: "ok"` → proceed, keeping `manifest_pathspec` for Step 6's commit
-pathspec. **Anything else — stop, do not tag.** No config / no declared
-manifests → no-op.
-
-## Step 5.5: Refresh the Compliance Evidence Documents
-
-The seven documents under `.shipwright/compliance/` ship *with* the release
-instead of standing frozen. Why, and every refusal: [compliance-evidence.md](references/compliance-evidence.md).
-
-```bash
-uv run "{shared_root}/scripts/tools/refresh_compliance_docs.py" \
-  --project-root "$(pwd)" --stage --release "v{version}"
-```
-
-`status: "ok"` → proceed. **Anything else → stop, do not tag.** Step 6's later `--verify-commit --release-audit` performs the release-authoritative full A-I compliance convergence (Group E included — not assessed by iterate delivery). `--release-audit` is what gates this; plain `--verify-commit` (adopt Step H's usage) stays a pure verifier and never touches the global backlog.
+It folds old per-run event files into `.shipwright/events/archive/` in a commit of their own (never blocks; `fold.status`: add at most ONE line
+to the closing summary, [event-fold.md](references/event-fold.md)), then syncs every declared published-package manifest to this version
+([manifest-sync.md](references/manifest-sync.md); no declared manifests is a no-op), then refreshes the seven compliance evidence
+documents ([compliance-evidence.md](references/compliance-evidence.md)). `status: "ok"` → proceed. **Anything else — stop, do not tag**
+(`reason`: `manifest_sync_failed` or `evidence_refresh_failed`; the JSON names each tool's own status). The pathspecs Step 6 commits are kept in the
+run state: copy nothing.
 
 ## Step 6: Commit and Tag
 
-Commit **by explicit pathspec** — never `.shipwright/compliance/`, which commits
-every tracked file under it and widens the pinned seven. Use Step 5.5's
-`evidence_pathspec` and Step 5.4's `manifest_pathspec`: both omit any path
-this project lacks / didn't declare, and a pathspec matching no file aborts
-the whole commit.
-
 ```bash
-BULLET_DOCS=""; for f in architecture conventions; do if [ -f ".shipwright/agent_docs/$f.md" ]; then BULLET_DOCS="$BULLET_DOCS .shipwright/agent_docs/$f.md"; fi; done  # ONE shell invocation for this block ($BULLET_DOCS must be set at `git commit`); only docs the project HAS (a pathspec matching no file aborts the commit)
-git add CHANGELOG.md
-git add .shipwright/agent_docs/decision_log.md .shipwright/agent_docs/decision_log_index.md $BULLET_DOCS  # if Step 4 folded/refreshed (bullets: references/bullet-folding.md)
-git add -A .shipwright/agent_docs/decision-drops/ .shipwright/planning/adr/  # stages Step 4's deletions + ADR-dir dirt — see below
-git commit -m "chore(release): v{version}" -- \
-  CHANGELOG.md .shipwright/agent_docs/decision_log.md .shipwright/agent_docs/decision_log_index.md $BULLET_DOCS \
-  .shipwright/agent_docs/decision-drops/ .shipwright/planning/adr/ <every path from evidence_pathspec> \
-  <every path from manifest_pathspec> \
-  && uv run "{shared_root}/scripts/tools/refresh_compliance_docs.py" \
-       --project-root "$(pwd)" --verify-commit "$(git rev-parse HEAD)" --release-audit \
-  && uv run "{shared_root}/scripts/tools/sync_release_manifests.py" \
-       --project-root "$(pwd)" --version "{version}" \
-       --verify-commit "$(git rev-parse HEAD)" \
-       --result-file ".shipwright/runtime/manifest_sync_result.json" \
-  && git tag -a v{version} -m "Release v{version}"
-# The chain starts at `git commit` — a failed/no-op commit must not leave `$(git rev-parse HEAD)` re-resolving to the PREVIOUS commit and tagging the wrong one; `git commit -- <paths>` reads the WORKTREE, not the index (manifest-sync.md's "the pair that actually closes the card's regression").
+uv run "{plugin_root}/scripts/release.py" commit-and-tag --project-root "$(pwd)" --version "{version}"
 ```
 
-> `.shipwright/planning/adr/` is a DIRECTORY pathspec deliberately, and leaving it unstaged breaks CI — both in [compliance-evidence.md](references/compliance-evidence.md). `decision_log_index.md` needs the same treatment (Step 4 refreshes it every non-dry-run pass, drops or not) — leaving it unstaged reds `test_decision_log_index_producers.py::test_committed_index_is_not_stale` on main. `decision-drops/` is TRACKED (iterate-2026-08-08-track-decision-drops): Step 4 already deleted the drops it folded, and `-A` is what stages that deletion — skip it and the next release re-folds the same drops under new ADR numbers. `&&` withholds the tag on ANY nonzero exit here, including the audit subprocess failing to even start (e.g. `uv`/PyYAML unavailable) — a genuinely verified evidence commit with `status: "verified_release_audit_incomplete"` reads as environmental, not a real block; re-run once the dependency resolves. The manifest `--verify-commit` reads the COMMITTED blob, never the worktree — full contract in [manifest-sync.md](references/manifest-sync.md); a project with no declared manifests sees it report `status: "ok"` immediately, at negligible cost.
+It commits **by explicit pathspec** (never `.shipwright/compliance/`, which would widen the pinned seven; `.shipwright/planning/adr/` and
+`decision-drops/` are directory pathspecs on purpose, see [compliance-evidence.md](references/compliance-evidence.md)), then runs the release
+audit (`--verify-commit --release-audit`) and the manifest `--verify-commit` against the committed `HEAD`, and only when every step exited 0
+makes the annotated tag `v{version}` on that commit. It then checks that the tag exists and names this release and that the CHANGELOG's top
+version is this release (the check `update-step` used to be the only caller of); a mismatch removes the tag again. It writes
+`.shipwright/runtime/release_state.json` (version, release commit, checks passed).
+
+`status: "ok"` → continue. **Anything else — stop; no tag was made** (`reason` names the step; an audit that could not even start, such as
+`uv`/PyYAML unavailable, reads as environmental: re-run once the dependency resolves). Never edit the worktree between `sync` and this call.
 
 ---
 
@@ -247,37 +212,37 @@ gh pr create \
   --base main
 ```
 
+**A failed `gh pr create` stops the release here:** nothing is pushed and the tag stays on this machine; report it. The PR needs the branch on
+the remote, so push the branch first when it is new.
+
 > **Parallel iterates:** rebase-per-PR is expected, tagging is single-writer,
 > and `CHANGELOG.md [Unreleased]` is the one merge hotspot. Detail:
 > [release-workflow.md](references/release-workflow.md); full conventions live
 > in `/shipwright-iterate` B1a.
 
-**Record changelog event — BEFORE the merge, so it ships in the release PR** (an append after the merge strands uncommitted in the main checkout: webui v0.28.0, monorepo v0.34.0). Needs `{PR_URL}`. `{shared_root}` = `{plugin_root}/../../shared`. Chained with `&&`: a failing step stops the release before anything is pushed.
+**Record the changelog event — BEFORE the merge, so it ships in the release PR** (an append after the merge strands uncommitted in the main
+checkout: webui v0.28.0, monorepo v0.34.0). On a feature branch it commits only the event paths and pushes the head; on main it commits and
+never pushes (main is pushed once, with the tag). A non-zero exit (a rejected push too) **stops the release**: the tag stays local.
+
 ```bash
-uv run "{shared_root}/scripts/tools/record_event.py" --project-root "$(pwd)" --type phase_completed --phase changelog --run-id "release-v{version}" --detail "v{version} — {PR_URL}" \
-&& uv run "{shared_root}/scripts/tools/stage_event_drops.py" --project-root "$(pwd)" --run-id "release-v{version}" \
-&& { [ ! -f shipwright_events.jsonl ] || git add shipwright_events.jsonl; paths=$(git diff --cached --name-only -- shipwright_events.jsonl .shipwright/events/drops); [ -z "$paths" ] || git commit -m "chore(release): record changelog event for v{version}" -- $paths; } \
-&& git push origin HEAD
+uv run "{plugin_root}/scripts/release.py" record-event --project-root "$(pwd)" --version "{version}" --pr-url "{PR_URL}"
 ```
 
-**Autonomous / unattended mode:** After creating the PR, merge it immediately:
+Omit `--pr-url` on main.
+
+**Autonomous / unattended mode:** after recording the event, merge immediately; a failed merge stops the release:
 ```bash
 gh pr merge --merge --delete-branch
 ```
 
-**Guided mode:** PR stays open for manual review and merge.
+**Guided mode:** the PR stays open for manual review and merge, and **the release stops here for now: the tag is not pushed and no release
+page is made before the PR is merged**, so a failed release can never leave a tag with no release. Run the two blocks below after the merge.
 
-**If already on main:** skip the PR and record the event with the block below — it commits but never pushes (main is pushed once, with the tag, by the next block; the tag stays on the release commit, not on the event commit).
+**Push the tag.** From a feature branch push only the tag, never a local trunk:
 ```bash
-uv run "{shared_root}/scripts/tools/record_event.py" --project-root "$(pwd)" --type phase_completed --phase changelog --run-id "release-v{version}" --detail "v{version} — tagged on main" \
-&& uv run "{shared_root}/scripts/tools/stage_event_drops.py" --project-root "$(pwd)" --run-id "release-v{version}" \
-&& { [ ! -f shipwright_events.jsonl ] || git add shipwright_events.jsonl; paths=$(git diff --cached --name-only -- shipwright_events.jsonl .shipwright/events/drops); [ -z "$paths" ] || git commit -m "chore(release): record changelog event for v{version}" -- $paths; }
+git push origin "v{version}"
 ```
-
-**Push tags and updated main to remote:**
-```bash
-git push --tags origin main
-```
+On main (the release was cut there) push the trunk with the tag: `git push --tags origin main`. A refused push stops the release.
 
 **Create GitHub Release (best-effort, never blocks this phase):** condenses
 the just-released `CHANGELOG.md` section into a short, human-readable body
@@ -287,61 +252,23 @@ outcome: [release-workflow.md](references/release-workflow.md).
 uv run "{shared_root}/scripts/tools/publish_release_notes.py" \
   --project-root "$(pwd)" --version "{version}"
 ```
-Read `status` from the JSON and add ONE line to the closing summary:
-`ok`/`exists` (with `url`) print the release link; `skipped`/`failed` print
-`reason` verbatim — never swallowed, never a hard stop. If the command exits non-zero with no JSON (uv could not fetch the script's packages, e.g. offline), print that as `skipped` with the stderr line and continue.
+Read `status` from the JSON: `ok`/`exists` (with `url`), `skipped`/`failed` (with `reason`, verbatim — never swallowed, never a hard stop). If
+the command exits non-zero with no JSON (uv could not fetch the script's packages, e.g. offline), that is `skipped` with the stderr line.
 
-**Phase complete — update pipeline state:**
-
-Canon C1/C2/C3 only — C4 and C5 are deliberately out; why:
-[release-workflow.md](references/release-workflow.md).
+**Phase complete:** one call writes the phase's canon records where a driven run needs them, verifies the release read-only and prints the
+closing summary (stderr). Pass what the release page step reported; in guided mode, before the merge, `--release-status waiting
+--release-note "waits for the PR merge"`.
 
 ```bash
-: "${SHIPWRIGHT_RUN_ID:=changelog-v{version}-$(date +%Y%m%d-%H%M%S)}"
-export SHIPWRIGHT_RUN_ID
-
-# C1 — already emitted as the phase_completed event above.
-
-# C2 — delivery dashboard
-uv run "{shared_root}/scripts/tools/update_build_dashboard.py" \
-  --project-root "$(pwd)" --phase changelog --session-id "{SHIPWRIGHT_SESSION_ID}"
-
-# C3 (NEW 12.4) — canon-marker handoff
-uv run "{shared_root}/scripts/tools/generate_session_handoff.py" \
-  --project-root "$(pwd)" --canon-marker --phase changelog \
-  --reason "release v{version}"
-
-# C4 — SKIPPED by policy. C5 — n/a (this plugin prepends the released version block; adding a new [Unreleased] bullet would collide with the next release).
-
-# phase_history (NEW 12.4)
-uv run "{shared_root}/scripts/tools/append_phase_history.py" \
-  --project-root "$(pwd)" --phase changelog --run-id "$SHIPWRIGHT_RUN_ID" \
-  --entry-json '{"version":"v{version}","outcome":"tagged"}'
-
-# Mark changelog phase complete (triggers compliance update automatically). _validate_changelog() now runs test_checks + check_git_tag_exists/check_changelog_version_matches_tag, so a broken tag push or CHANGELOG drift blocks this call.
-uv run "{plugin_root}/../../plugins/shipwright-run/scripts/lib/orchestrator.py" \
-  update-step --project-root "$(pwd)" --step changelog --status complete
-
-# update-step regenerates the seven evidence documents a SECOND time, unstamped, at a different commit than the one just tagged — put the committed copies back.
-uv run "{shared_root}/scripts/tools/refresh_compliance_docs.py" \
-  --project-root "$(pwd)" --restore
+uv run "{plugin_root}/scripts/release.py" close-phase --project-root "$(pwd)" --version "{version}" --session-id "{SHIPWRIGHT_SESSION_ID}" \
+  --release-status "{ok|exists|skipped|failed|waiting}" --release-url "{url}" --release-note "{reason}"
 ```
 
-**Print Summary:**
-```
-================================================================================
-SHIPWRIGHT-CHANGELOG COMPLETE
-================================================================================
-Version:    v{version}
-Commits:    {N} categorized
-Changelog:  CHANGELOG.md updated
-Tag:        v{version} created
-PR:         {PR_URL | "skipped (on main)"}
-Release:    {release URL | "skipped: <reason>" | "failed: <reason>"}
-
-Tags + main pushed to origin
-================================================================================
-```
+In a driven run it writes C2/C3 (with `--canon-marker --phase changelog`) and the `phase_history` entry the master's gate reads; in a hand-invoked
+release it writes nothing and restores every derived snapshot to `HEAD`, so the tree is clean. It never calls `update-step`. `status: "ok"`
+means every `verify` check passed (tag local and on origin, CHANGELOG matches the tag, event committed, no decision drops left, PR state fits
+the mode, release page present or skipped with a reason); a failed check is exit 1 and names itself: report it, never ignore it. C4 and C5
+are deliberately out: [release-workflow.md](references/release-workflow.md).
 
 ---
 

@@ -1,0 +1,1 @@
+- **iterate-2026-11-23-p4-cli-sync-commit-close** (2026-11-23): Component — changelog release CLI part 2: release.py sync, commit-and-tag, record-event, close-phase (lib/release_sync, commit, event, close, verify). → decision_log (ADR via Run-ID: iterate-2026-11-23-p4-cli-sync-commit-close)

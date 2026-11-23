@@ -1,8 +1,10 @@
-"""The CLI driver: ``prepare`` and ``aggregate`` through ``release.py`` (unit P3), the rest as the replay runs it.
+"""The CLI driver: ``prepare``/``aggregate`` (unit P3) and the steps 5.3 to 7 (unit P4) through ``release.py``, the rest as the replay runs it.
 
 It implements the same per-step driver interface as ``driver_replay`` (programme P7). A step it moved becomes one
 ``release.py`` call; every other step is the replay's, so a scenario written for the replay runs unchanged and its trace
-is compared with the frozen one. P4 moves the steps 5.4 to 7 here too.
+is compared with the frozen one. P4 moves ``fold-events``/``sync``/``evidence`` (one ``sync`` call, answered from its payload),
+``commit-and-tag``, ``record-event`` and ``close-phase`` here; ``open-pr``, ``merge-pr``, ``push-tags`` and ``release-page``
+stay literal outward commands (BRIEF section 2: one line each).
 
 ``release.py`` reports every tool it ran (``commands``: key, exit code, stdout, stderr); this driver replays them into
 ``log``, so the scenarios that read a tool's own output (``run.commands("aggregate")[-1]["stderr"]``) read the same
@@ -27,7 +29,12 @@ from .driver_replay import STEPS, ReplayDriver
 from .replay_commands import CITES, PLUGIN
 
 RELEASE_CLI = PLUGIN / "scripts" / "release.py"
-CLI_STEPS = frozenset({"prepare", "aggregate"})
+CLI_STEPS = frozenset({"prepare", "aggregate", "fold-events", "sync", "evidence", "commit-and-tag", "record-event", "close-phase"})
+CHAIN_KEYS = {"commit-and-tag": ("git-add-changelog", "git-add-log", "git-add-drops", "commit", "verify-evidence", "verify-manifests", "tag",
+                                 "verify-tag", "tag-remove"),
+              "record-event": ("event-record", "event-stage", "event-add", "event-commit", "event-push"),
+              "close-phase": ("dashboard", "handoff", "phase-history", "restore-derived")}
+QUERY_KEYS = ("head", "tag-commit", "branch", "event-paths")  # the CLI asks git; the prose chain did not log these
 
 
 def _json(text: str) -> dict[str, Any]:
@@ -91,3 +98,66 @@ class CliDriver(ReplayDriver):
             fields["reason"] = f"exit_{code}"
         return gt.StepResult("aggregate", code, fields)
 
+
+    # ---- Steps 5.3 to 5.5 (one ``sync`` call; the three steps read its payload) ----------------------
+    def _sync(self, scratch: Any, version: str) -> tuple[int, dict[str, Any]]:
+        if self.state.get("sync_for") != version:
+            code, out = self._release(scratch, "sync", "--version", version)
+            self.state.update(sync_for=version, sync=(code, out))
+        return self.state["sync"]
+
+    def step_fold_events(self, scratch: Any) -> gt.StepResult:
+        _, out = self._sync(scratch, self.state["version"])
+        return gt.StepResult("fold-events", out["fold"]["exit"], {"status": out["fold"]["status"]})
+
+    def step_sync(self, scratch: Any, version: str) -> gt.StepResult:
+        _, out = self._sync(scratch, version)
+        done = next(c for c in out["commands"] if c["key"] == "sync")
+        manifests = out["manifests"]
+        return gt.StepResult("sync", done["exit"], {"status": manifests["status"], "version": manifests["version"], "pathspec": manifests["pathspec"]})
+
+    def step_evidence(self, scratch: Any, version: str) -> gt.StepResult:
+        _, out = self._sync(scratch, version)
+        done = next(c for c in out["commands"] if c["key"] == "evidence")
+        return gt.StepResult("evidence", done["exit"], {"status": out["evidence"]["status"], "pathspec": out["evidence"]["pathspec"]})
+
+    # ---- Steps 6 and 7 -------------------------------------------------------------------------------
+    def _chain(self, scratch: Any, *args: str) -> tuple[int, dict[str, Any]]:
+        code, payload = self._release(scratch, *args)
+        merged = CHAIN_KEYS.get(args[0])
+        if merged:  # the prose ran one shell chain: its log entry is one command, with the chain's output and first failing exit
+            chain = [self.log.pop() for _ in range(len(payload.get("commands", [])))][::-1]
+            self.log += [e for e in chain if e["key"] not in merged and e["key"] not in QUERY_KEYS]
+            mine = [e for e in chain if e["key"] in merged]
+            key = args[0] if args[0] != "record-event" else ("record-event-main" if payload.get("on_trunk") else "record-event-pr")
+            if mine:
+                self.log.append({"key": key, "cites": CITES.get(key, []), "exit": next((e["exit"] for e in mine if e["exit"]), 0),
+                                 "stdout": "".join(e["stdout"] for e in mine), "stderr": "".join(e["stderr"] for e in mine)})
+        return code, payload
+
+    @staticmethod
+    def _plain(step: str, code: int, **fields: Any) -> gt.StepResult:
+        return gt.StepResult(step, code, {"status": "ok" if code == 0 else "failed", **fields, **({"reason": f"exit_{code}"} if code else {})})
+
+    def step_commit_and_tag(self, scratch: Any, version: str) -> gt.StepResult:
+        code, _ = self._chain(scratch, "commit-and-tag", "--version", version)
+        return self._plain("commit-and-tag", code, version=version)
+
+    def step_record_event(self, scratch: Any, version: str) -> gt.StepResult:
+        code, _ = self._chain(scratch, "record-event", "--version", version, "--pr-url", self.state.get("pr_url", ""))
+        return self._plain("record-event", code)
+
+    def step_release_page(self, scratch: Any, version: str) -> gt.StepResult:
+        result = super().step_release_page(scratch, version)
+        page = _json(self.log[-1]["stdout"])
+        self.state["release_page"] = (result.output["status"], page.get("url") or result.output.get("reason") or "")
+        return result
+
+    def step_close_phase(self, scratch: Any, version: str, session_id: str = "replay-session") -> gt.StepResult:
+        status, note = self.state.get("release_page", (None, ""))
+        args = ["--session-id", session_id, *(["--release-status", status] if status else []),
+                *(["--release-url", note] if status in ("ok", "exists") and note else []),
+                *(["--release-note", note] if status not in (None, "ok", "exists") and note else [])]
+        code, out = self._chain(scratch, "close-phase", "--version", version, *args)
+        self.state["closed"] = out
+        return self._plain("close-phase", code, version=version)

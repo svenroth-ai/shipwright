@@ -429,7 +429,7 @@
         "heading_path": [
           "Step 5: Preview and Confirm"
         ],
-        "content_hash": "170d3a9b92ee6360be9c91191587d2ae6a02a1f3003e7b886244310216ed0900"
+        "content_hash": "30203998348aee563e201cf200a8ca3991d96e0d37786e0a62acaabdc2fff1f2"
       },
       "class": "ask",
       "check": {
@@ -499,7 +499,7 @@
         "heading_path": [
           "Step 5.3: Fold Old Event Files"
         ],
-        "content_hash": "aebdef7b61f5bd0b8cc8b0e43353f81d86bf9365a6a512b4e08d3fafddc18684"
+        "content_hash": "68e9e53a130ea94aac0813619c729ca90e467978f2cb8956b3bc3b46ee1bde0b"
       },
       "class": "mechanic",
       "check": null,
@@ -515,7 +515,7 @@
         "heading_path": [
           "Step 7: Create PR (Optional)"
         ],
-        "content_hash": "a5142cd0353386cb04bab24071bce651fab28cce0a57b80d696a556880b29948"
+        "content_hash": "30702249949ae89189a847fd5ea2f4681be2a16f7c355611dc2dade805e89483"
       },
       "class": "mechanic",
       "check": null,

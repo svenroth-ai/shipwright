@@ -95,16 +95,21 @@ def prepare(rec: Recorder, plugin_root: Path, *, phase_task_id: str | None = Non
     tag_exists = rec.run("tag-check", ["git", "rev-parse", "-q", "--verify", f"refs/tags/v{chosen}"]).exit == 0
     state = release_runstate.resolve(root, chosen, tag_exists=tag_exists, clock=clock, use_env_run_id=mode == "pipeline",
                                      released=release_upgrade_notes.released(root, chosen))
-    notes = release_upgrade_notes.check(rec, shared, last_tag, chosen)
+    autonomy = _autonomy(shared, root)
+    gates = release_gates.answers(rows, mode=mode, autonomy=autonomy)
+    asks = gates["version"] == "ask" or (bool(context.get("requires_out_of_sequence_warning")) and gates["out_of_sequence"] == "ask")
+    notes = release_upgrade_notes.check(rec, shared, last_tag, chosen, write=not asks)  # a question that can still end the release is open: write nothing yet (D-P3 review 1)
     if notes["status"] in ("action_drop_failed", "query_failed"):
         return _stop(rec, 1, "upgrade_note_drop_failed" if notes["status"] == "action_drop_failed" else "upgrade_notes_query_failed",
                      **facts, upgrade_notes=notes)
+    state.update(mode=mode, autonomy=autonomy, commits=len(_json_list(parsed.stdout)))  # facts the later steps read (the close summary, the verify)
+    state["upgrade_pending"] = notes.get("pending", [])  # `aggregate` files them once the questions are answered
     release_runstate.save(root, state)
     notices = [BANNER] + ([STANDALONE_NOTICE] if mode == "standalone" else []) + (
         [f"Notice: {last_tag} has no GitHub Release — see release-workflow.md"] if info.get("previous_tag_has_release") is False else [])
     return 0, {
         "status": "ok", "version": chosen, "suggested": info.get("suggested_version"), "version_reason": info.get("version_reason"),
-        **facts, "gates": release_gates.answers(rows, mode=mode, autonomy=_autonomy(shared, root)),
+        **facts, "gates": gates,
         "out_of_sequence_warning": bool(context.get("requires_out_of_sequence_warning")),
         "active_phases": context.get("active_phases") or [], "skill_artifacts_to_read": context.get("skill_artifacts_to_read") or [],
         "release": {"date": state["release_date"], "run_id": state["run_id"], "reused": state["reused"], "state_file": str(release_runstate.state_path(root))},

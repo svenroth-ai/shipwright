@@ -44,6 +44,12 @@ def aggregate(rec: Recorder, plugin_root: Path, *, version: str, dry_run: bool =
     if any(r.exit != 0 for r in fallbacks):  # a lost cherry-picked bullet must stop the release, not vanish
         return 1, {"status": "failed", "reason": "fallback_entry_failed", "dry_run": dry_run, "fallback_entries": [r.exit for r in fallbacks],
                    "commands": rec.as_json()}
+    pending_notes = state.get("upgrade_pending") or []
+    if pending_notes and not dry_run and not already:  # prepare held them back while a question was open (D-P3 review 1)
+        drops = release_upgrade_notes.write_pending(rec, shared, pending_notes)
+        if "failed" in drops:
+            return 1, {"status": "failed", "reason": "upgrade_note_drop_failed", "dry_run": dry_run, "commands": rec.as_json()}
+        state["upgrade_pending"] = []
     flags = ["--dry-run"] if dry_run else ["--fail-if-empty"]
     done = rec.run("aggregate-dry" if dry_run else "aggregate", uv_script(
         tools / "aggregate_changelog.py", "--project-root", str(root), "--version", version,
@@ -57,7 +63,7 @@ def aggregate(rec: Recorder, plugin_root: Path, *, version: str, dry_run: bool =
         "section_written": info.get("section_written", ""),
         "release": {"date": state["release_date"], "run_id": state["run_id"], "state_file": str(release_runstate.state_path(root))},
         "fallback_entries": [r.exit for r in fallbacks],
-        "fallback_pending": pending if dry_run else [], "fallback_skipped": "release_written" if already and pending and not dry_run else None}
+        "fallback_pending": pending if dry_run else [], "upgrade_notes_pending": [p["note"] for p in pending_notes] if dry_run else [], "fallback_skipped": "release_written" if already and pending and not dry_run else None}
     if done.exit != 0:
         out["reason"] = "aggregator_refused"  # reconcile by hand: references/rerunning-a-release.md, never a retry
     elif not dry_run:
@@ -68,5 +74,8 @@ def aggregate(rec: Recorder, plugin_root: Path, *, version: str, dry_run: bool =
             out["status"], out["reason"] = "failed", "decisions_numbering_failed"
             out["commands"] = rec.as_json()
             return decisions.exit, out
+    if dry_run and done.exit == 0:  # the preview names the ADR numbers the real run will give (it writes nothing)
+        out["decisions_preview"] = {"summary": rec.run("decisions-dry", uv_script(
+            tools / "aggregate_decisions.py", "--project-root", str(root), "--dry-run")).stdout.strip()}
     out["commands"] = rec.as_json()
     return done.exit, out

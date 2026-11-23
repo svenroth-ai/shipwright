@@ -41,10 +41,10 @@ is a prompt to reconcile the two by hand, not a transient error to retry.
 
 ## Dates
 
-`--release-date` defaults to today, and the comparison deliberately ignores the
-date so a release resumed the next morning still converges. A replace adopts
-the newly rendered heading, so pass `--release-date` explicitly when the
-original date matters.
+`release.py aggregate` passes the date `prepare` stored (`release.date`; today only when no run state exists), so a release
+resumed the next morning renders the same heading. The aggregator itself defaults `--release-date` to today, and its comparison
+deliberately ignores the date so a resumed release still converges. A replace adopts the newly rendered heading, so pass
+`--release-date` explicitly when a date other than the stored one matters.
 
 A heading carrying more than a version and a date —
 `## [1.2.0] - 2026-04-23 [YANKED]` — is refused rather than silently rewritten,

@@ -1,6 +1,7 @@
 # Published-package manifest sync
 
-Reference for **Step 5.4** and **Step 6** of `/shipwright-changelog`.
+Reference for **Step 5.4** and **Step 6** of `/shipwright-changelog`. Since unit P4 `release.py sync` runs the Step 5.4 write and `release.py commit-and-tag` the Step 6 verify,
+with the flags and the `&&` order shown below; they keep `manifest_pathspec` in the run state, so nobody copies it.
 Background: `.shipwright/planning/iterate/iterate-2026-08-11-changelog-manifest-version-sync.md`.
 
 ## Why this exists

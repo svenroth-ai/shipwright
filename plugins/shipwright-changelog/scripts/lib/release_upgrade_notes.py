@@ -70,7 +70,7 @@ def _run_id(page: str) -> str:
     slug = re.sub(r"[^A-Za-z0-9_-]+", "-", rel).strip("-")
     if slug == rel:
         return f"upgrade-notes-{slug}"
-    return f"upgrade-notes-{slug}-{hashlib.sha1(rel.encode('utf-8')).hexdigest()[:6]}"  # x/y and x-y flatten alike: a lossy name gets the path's hash
+    return f"upgrade-notes-{slug}-{hashlib.sha256(rel.encode('utf-8')).hexdigest()[:8]}"  # x/y and x-y flatten alike: a lossy name gets the path's hash
 
 
 def _has_drop(project_root: Path, run_id: str) -> bool:
@@ -86,33 +86,49 @@ def released(project_root: Path, version: str) -> bool:
     return re.search(rf"^## \[{re.escape(version)}\]", text, re.MULTILINE) is not None
 
 
-def check(rec: Recorder, shared_root: Path, last_tag: str | None, version: str) -> dict[str, Any]:
+def _drop(rec: Recorder, shared_root: Path, run_id: str, note: str) -> str:
+    if _has_drop(rec.cwd, run_id):
+        return "exists"
+    done = rec.run("upgrade-note-drop", uv_script(
+        shared_root / "scripts/tools/write_changelog_drop.py", "--project-root", str(rec.cwd), "--run-id", run_id,
+        "--category", "Changed", "--bullet", note))
+    return "written" if done.exit == 0 else "failed"
+
+
+def write_pending(rec: Recorder, shared_root: Path, pending: list[dict[str, str]]) -> list[str]:
+    """The drops ``check(write=False)`` held back, written at aggregate time (after every question is answered)."""
+    return [_drop(rec, shared_root, p["run_id"], p["note"]) for p in pending]
+
+
+def check(rec: Recorder, shared_root: Path, last_tag: str | None, version: str, *, write: bool = True) -> dict[str, Any]:
+    """``write=False``: nothing is written (a question that can still end the release is open); the drops are returned
+    as ``pending`` and ``write_pending`` files them at aggregate time."""
     root, pages, results = rec.cwd, _pages(rec, last_tag), []
     if pages is None:
-        return {"status": "query_failed", "pages": [], "sentence": "The migration pages could not be listed: stop and report it."}
+        return {"status": "query_failed", "pages": [], "pending": [], "sentence": "The migration pages could not be listed: stop and report it."}
     for page in pages:
         answer = answer_of((root / page).read_text(encoding="utf-8", errors="replace"))
         results.append({"page": page, "answer": answer, "action": needs_action(answer), "drop": None})
     actions = [r for r in results if r["action"]]
+    pending: list[dict[str, str]] = []
     if released(root, version):  # the section is already rendered: a new drop would disagree with it on the re-run
         status = "skipped_release_written" if actions else "no_action" if pages else "none_changed"
+    elif not write:
+        pending = [{"run_id": _run_id(r["page"]), "note": note_for(r["page"], r["answer"])} for r in actions]
+        for r in actions:
+            r["drop"] = "deferred"
+        status = "action_drop_deferred" if actions else "no_action" if pages else "none_changed"
     else:
         written = 0
         for r in actions:
-            run_id = _run_id(r["page"])
-            if _has_drop(root, run_id):
-                r["drop"] = "exists"
-                continue
-            done = rec.run("upgrade-note-drop", uv_script(
-                shared_root / "scripts/tools/write_changelog_drop.py", "--project-root", str(root), "--run-id", run_id,
-                "--category", "Changed", "--bullet", note_for(r["page"], r["answer"])))
-            r["drop"] = "written" if done.exit == 0 else "failed"
-            written += done.exit == 0
+            r["drop"] = _drop(rec, shared_root, _run_id(r["page"]), note_for(r["page"], r["answer"]))
+            written += r["drop"] == "written"
         status = ("action_drop_failed" if any(r["drop"] == "failed" for r in actions) else
                   "action_drop_written" if written else "action_drop_exists" if actions else "no_action" if pages else "none_changed")
     since = f"since {last_tag}" if last_tag else "in this repository"
     sentence = (f"No migration page changed {since}: no upgrade note added." if not pages else
                 f"{len(actions)} migration page(s) {since} need an action; the release section is already written, no new drop was made." if status == "skipped_release_written" else
                 f"{len(pages)} migration page(s) changed {since}; none needs an action: no upgrade note added." if not actions else
+                f"{len(actions)} migration page(s) {since} need an action: the upgrade note(s) are filed when the changelog section is written (`aggregate`)." if status == "action_drop_deferred" else
                 f"{len(actions)} migration page(s) {since} need an action: review the upgrade-note drop(s) before the release.")
-    return {"status": status, "pages": results, "sentence": sentence}
+    return {"status": status, "pages": results, "pending": pending, "sentence": sentence}

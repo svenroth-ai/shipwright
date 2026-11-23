@@ -1,0 +1,1 @@
+- (2026-11-23) iterate — A CLI chain that decides when a release stops (F4, F6) needs one decision test per driver; deleting a skill heading breaks promise_list.json anchors (startswith match), so keep the heading words. [-> iterate-2026-11-23-p4-cli-sync-commit-close]
