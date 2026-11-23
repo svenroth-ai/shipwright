@@ -30,21 +30,15 @@ JUDGEMENT_ONLY: dict[str, str] = {}
 
 # (file, last heading of the section, start of the part's ``what`` or "") -> scenario ids, or "not_exercised: <reason>"
 EXERCISED: list[tuple[str, str, str, tuple[str, ...] | str]] = [
-    ("SKILL.md", "A. Print Intro Banner", "", ("S19",)),
-    ("SKILL.md", "B. Discover Plugin Root", "", NOT_EXERCISED + "an environment variable the host injects (SHIPWRIGHT_PLUGIN_ROOT); the replay passes the plugin path itself"),
+    ("SKILL.md", "A, B, D, Steps 0-2. Prepare: one call", "", ("S19", "S13", "S17a", "S17b", "S1", "S2g", "S3", "S5a")),  # P3 (A1): the one `release.py prepare` call replaced sections A-D and Steps 0-2
     ("SKILL.md", "C. Detect Invocation Mode", "resolve the mode", ("S13", "S17a", "S17b")),
     ("SKILL.md", "C. Detect Invocation Mode", "error mode", ("S17a",)),
     ("SKILL.md", "C. Detect Invocation Mode", "standalone notice", NOT_EXERCISED + "printed text, no command and no state"),
     ("SKILL.md", "C. Detect Invocation Mode", "out-of-sequence", ("S17b",)),
-    ("SKILL.md", "D. Run Setup Script", "", ("S1", "S2g", "S5a")),
-    ("SKILL.md", "Step 0: Phase Session Context Recovery", "", ("S13",)),
-    ("SKILL.md", "Step 1: Analyze Git History", "", ("S5a", "S1")),
-    ("SKILL.md", "Step 2: Categorize Commits", "", ("S1", "S3")),
     ("SKILL.md", "Step 3: Determine Version Bump", "use suggested_version", ("S3", "S4", "S2g")),
-    ("SKILL.md", "Step 3: Determine Version Bump", "guided:", ("S2g",)),
-    ("SKILL.md", "Step 3: Determine Version Bump", "autonomous or unattended", ("S2a", "S2u")),
+    ("SKILL.md", "Step 3: Determine Version Bump", "`gates.version` decides", ("S2g", "S2a", "S2u")),  # P3 (A2): the two prose branches became the one `gates` answer
     ("SKILL.md", "Step 4: Generate Changelog Entry", "upgrade-notes check: list", NOT_EXERCISED + "needs a project whose migration pages changed since the tag; no brief scenario builds one (finding D12)"),
-    ("SKILL.md", "Step 4: Generate Changelog Entry", "upgrade-notes check: read", NOT_EXERCISED + "judgement: a model reads the pages (NOT_REPLAYED)"),
+    ("SKILL.md", "Step 4: Generate Changelog Entry", "upgrade-notes check: the code", NOT_EXERCISED + "judgement: the model reviews an action drop; the code half is covered by the L1 tests of release_upgrade_notes (A3)"),
     ("SKILL.md", "Step 4: Generate Changelog Entry", "aggregate:", ("S2g", "S6", "S9")),
     ("SKILL.md", "Step 4: Generate Changelog Entry", "legacy bullets", ("S8", "S10")),
     ("SKILL.md", "Step 4: Generate Changelog Entry", "refused re-run", ("S7a", "S7b", "S7c")),
@@ -66,8 +60,8 @@ EXERCISED: list[tuple[str, str, str, tuple[str, ...] | str]] = [
     ("SKILL.md", "Step 7: Create PR (Optional)", "print the closing summary", NOT_EXERCISED + "printed text, no command"),
     ("references/event-fold.md", "Reading the result", "", NOT_EXERCISED + "needs old per-run event files to fold; no brief scenario builds them (the fold step itself runs in every full release)"),
     ("references/first-actions.md", "Single-Session Gate Discipline", "", ("S13",)),
-    ("references/release-workflow.md", "Upgrade-notes check (first thing in Step 4, every mode)", "list migration", NOT_EXERCISED + "same as SKILL.md Step 4: no scenario with a changed migration page"),
-    ("references/release-workflow.md", "Upgrade-notes check (first thing in Step 4, every mode)", "read each page", NOT_EXERCISED + "judgement: a model reads the pages"),
+    ("references/release-workflow.md", "Upgrade-notes check (first thing in Step 4, every mode)", "list, classify", NOT_EXERCISED + "no brief scenario builds a changed migration page; the L1 tests of release_upgrade_notes cover it (A3)"),
+    ("references/release-workflow.md", "Upgrade-notes check (first thing in Step 4, every mode)", "review the drop", NOT_EXERCISED + "judgement: a model reviews the drop"),
 ]
 
 # Conditionals of SKILL.md (a line that starts one) -> (needle of the line, "step:<replay step>" or "not_replayed:<key>")

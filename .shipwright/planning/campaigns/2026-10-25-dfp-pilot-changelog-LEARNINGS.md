@@ -116,3 +116,12 @@ Source: a read of NVIDIA NeMo Guardrails and its Colang 2.0 runtime (github.com/
 Also noted from their tests, for P2a and P2b: they compare event lists as an ordered subset with exact length, drop volatile keys (uids, timestamps), and feed scripted model answers in order. Our golden files are recorded, theirs are written by hand, so ours is a step further. Colang 2.0 is documented as beta, and open issues name rails that fail open on missing globals. That is another reason not to depend on it.
 
 Older workflow tools (state machines, BPMN, job schedulers) have the same shape, so none of this is new. The pilot is the cheap test of whether it pays for skills.
+
+## P3 (2026-11-23): CLI part 1
+
+1. **Steps and effort.** P3 took two runner attempts (the first built the draft, the second reviewed and froze it) because the keyword classifier said `large` and the operator had to accept it. Biggest time sinks: the changelog test root takes about 15 minutes (43 scenario replays plus the same 43 through the CLI driver), so every full re-run is a decision; and the freeze bookkeeping (4 deltas, 4 promise anchors, 3 inventory files) cost more than the CLI.
+2. **Code or AI decisions.** Code: gate answers (checkable against the catalog), the upgrade-notes classification (a regex over a fixed question line), the dry-run/real flag rules, the stored date. AI: reviewing an upgrade-note drop and naming a companion release's minimum version (needs reading). Changed after review: the run-state file moved from the tree to the git directory.
+3. **Recurring patterns.** The CLI returns every tool's own stdout/stderr/exit (`commands`) so a golden driver can replay them into the old trace shape: the trace stays an equality and the CLI stays a pure wrapper. An injectable runner gives L1 tests without a subprocess.
+4. **Pitfalls.** A state file written into the working tree is a side effect the dirty-tree guard sees. A frozen table keyed on headings breaks on any prose move. A keyword classifier reads words, not diffs: three risk flags (`auth`, `rls`, `migrations`) fired on the words of a changelog spec.
+5. **Tools.** `golden_lock.py --check` (generic, stdlib); `check_skill_inventory.py` (Shipwright-specific data files, generic idea); the injected-runner pattern (generic).
+6. **Doable by a stranger?** The CLI: yes with the tools above. The freeze bookkeeping: yes, but only with the lock tool's printed entries; a stranger would not know that `promise_list.json` anchors need re-hashing.

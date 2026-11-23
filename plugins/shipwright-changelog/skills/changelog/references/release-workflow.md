@@ -18,29 +18,29 @@ the skill is an index of what to DO, and this is the reasoning behind it.
 
 A release must tell an existing project what, if anything, it has to do. The
 person cutting the release sees only the release, not the campaign that
-produced it, so the action has to be in the release itself. Run this BEFORE
+produced it, so the action has to be in the release itself. The check runs BEFORE
 the first `aggregate_changelog.py` call, preview or real: the real run renders
 the drops into `CHANGELOG.md` and deletes them, so a drop added afterwards
-would ship one release late.
+would ship one release late. Since the second pass (A3) the CODE does it, inside
+`release.py prepare` (`lib/release_upgrade_notes.py`); the model only reviews what it wrote.
 
-1. List the pages under `docs/migrations/` that were added or changed since the
+1. It lists the pages under `docs/migrations/` that were added or changed since the
    previous tag (`git diff --name-only <previous-tag>..HEAD -- docs/migrations`;
-   with no previous tag, list every page).
-2. For each one, read its "Do you have to do anything?" line. A page without
+   with no previous tag, every page).
+2. For each one it reads the "Do you have to do anything?" line. A page without
    that line, or with an answer other than a plain "no", counts as action
-   required: summarise the page. Then add a drop under
-   `CHANGELOG-unreleased.d/Changed/` that states the action in one or two plain
-   sentences and links the page, e.g. `Existing projects: update the WebUI to
-   <min-webui-version> first (take the real number from the WebUI release),
-   then the plugins; see docs/migrations/events-drop-files.md.` The
-   release-notes condenser may file an item under `Breaking Changes` when the
-   reader must act to keep working, otherwise it stays under `Changed`; keep the
-   wording factual, not alarming.
-3. If a page says a companion release (another repository) must come first,
-   name its minimum version in that drop and confirm it is published before the
-   release PR is merged.
-4. No migration page changed: nothing to add. Say so in the Step 5 preview, or
-   in the Step 6 summary when the mode skips the preview.
+   required: it adds a drop under `CHANGELOG-unreleased.d/Changed/` that carries
+   the page's own words and links the page (`Existing projects: <the answer> (see
+   docs/migrations/<page>.md)`), through `write_changelog_drop.py`, once per page and never
+   after the version's section is already in `CHANGELOG.md` (a re-run must not add a drop the section lacks).
+   `upgrade_notes.status` is then `action_drop_written`.
+3. **The model's part:** read each such drop, shorten or sharpen it where the page's line is too long or
+   misleads, and keep it factual, not alarming (the release-notes condenser may file an item under
+   `Breaking Changes` when the reader must act to keep working, otherwise it stays under `Changed`). If a page says
+   a companion release (another repository) must come first, name its minimum version in that drop
+   (take the real number from that release) and confirm it is published before the release PR is merged.
+4. No migration page changed, or none needs an action: `upgrade_notes.sentence` is the sentence to say in the Step 5
+   preview, or in the Step 6 summary when the mode skips the preview.
 
 The check never edits the migration pages.
 
