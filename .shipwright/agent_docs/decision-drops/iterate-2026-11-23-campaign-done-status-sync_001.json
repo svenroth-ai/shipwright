@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-23-campaign-done-status-sync",
+  "date": "2026-11-23",
+  "section": "Iterate — bug: campaign finalize writes status back to main tree",
+  "title": "Campaign finalize projects status.json into the main tree for gitignored campaigns",
+  "context": "campaigns/ is gitignored, so an iterate worktree never contains a fresh campaign dir; F5b Step 6 skipped with 'campaign.md absent' and the main-tree board stayed active.",
+  "decision": "finalize_campaign_status falls back to the main tree (main_repo_root_or), projects from the worktree event log with the main status.json as never-downgrade baseline, and writes there; F6 does not stage it.",
+  "consequences": "A finished campaign reads complete in the main tree without relying on the WebUI events projection. Concurrent sibling finalizes may briefly overwrite each other; the next finalize self-heals.",
+  "rationale": "Smallest fix at the producer that already owns the board; no new store or flag.",
+  "rejected": "Archive flag and WebUI auto-hide: deferred to a follow-up that needs a WebUI change.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

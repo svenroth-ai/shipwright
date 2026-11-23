@@ -90,15 +90,27 @@ def finalize_campaign_status(project_root, event_extras) -> dict:
     try:
         project_root = Path(project_root)
         campaign_dir = project_root / _CAMPAIGNS_REL / slug
+        write_root = project_root
         if not (campaign_dir / "campaign.md").exists():
-            return {"skipped": True, "reason": f"campaign.md absent ({slug})"}
+            # `campaigns/` is gitignored, so a fresh campaign's dir exists ONLY in the
+            # main tree — never in an iterate worktree cut from origin/main. Without this
+            # fallback the board write was skipped and status.json stayed `active` forever.
+            # Events come from the WORKTREE log (it holds this run's own event); the
+            # never-downgrade baseline is the main tree's status.json. Best-effort: sibling
+            # finalizes may overwrite each other briefly; the next finalize self-heals.
+            from lib.repo_root import main_repo_root_or
+            write_root = main_repo_root_or(project_root)
+            campaign_dir = write_root / _CAMPAIGNS_REL / slug
+            if not (campaign_dir / "campaign.md").exists():
+                return {"skipped": True, "reason": f"campaign.md absent ({slug})"}
         status_path = campaign_dir / "status.json"
         if status_path.is_symlink():
             return {"skipped": True, "reason": "symlink"}
         status, summary = write_campaign_status(
             campaign_dir, resolve_events_path(project_root))  # per-tree log via SSoT resolver
         return {
-            "written": str(status_path.relative_to(project_root)),
+            "written": str(status_path.relative_to(write_root)),
+            "main_tree": write_root != project_root,
             "campaign_status": status.get("status"),
             "complete": summary.get("complete"),
             "sub_count": summary.get("sub_count"),

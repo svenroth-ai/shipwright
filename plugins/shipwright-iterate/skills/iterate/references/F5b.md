@@ -145,6 +145,12 @@ heuristics against branch names.
 > **F6 stages it** and the producer-owned board ships in the PR. This replaces
 > the old write-once main-tree file; the autonomous-loop 3g main-tree
 > `campaign_progress update-status` is demoted to a local-board convenience.
+> **Gitignored campaign (the default):** `campaigns/` is gitignored, so a fresh
+> campaign's dir exists only in the MAIN tree. When the worktree has no
+> `campaign.md`, the board is projected from this worktree's event log and written
+> into the main tree's `status.json` (never-downgrade baseline = main's file;
+> `main_tree: true` in the result) — F6 does NOT stage it. Concurrent siblings may
+> briefly overwrite each other; the next finalize self-heals.
 > Best-effort + no-op for a non-campaign iterate. Reads back at
 > `result["steps"]["campaign_status"]`.
 
