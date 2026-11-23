@@ -458,7 +458,7 @@ producer-owned and **projected from the tracked event log**: F5b Step 6
 (`campaign_status_io.finalize_campaign_status` → `write_campaign_status`)
 regenerates a sub-iterate's `status.json` from its `campaign.md` skeleton +
 `shipwright_events.jsonl` (top-level `campaign`/`sub_iterate_id`, never-downgrade)
-and F6 ships it in the PR. Because the path is variable, the resolver admits it
+and F6 ships it in the PR — for a *tracked* campaign only: `campaigns/` is gitignored, so a fresh campaign exists solely in the main tree, and F5b then writes the board THERE (`main_tree: true`, not staged, not shipped). Because the path is variable, the resolver admits it
 via `churn_merge.is_campaign_status` (single-segment `fnmatchcase` on
 `campaigns/*/status.json`) — deliberately OUTSIDE the 1:1 table above, so
 `test_churn_merge_doc_sync` stays exact. On merge it is in the **regenerate**

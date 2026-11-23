@@ -1,0 +1,1 @@
+{"stage":"spec-compliance","verdict":"PASS","spec_citations":[],"summary":"No gaps between the change and the spec; main-tree fallback via main_repo_root_or, unknown campaign / invalid slug / symlink still skip, best-effort catch-all kept. Note: tests do not cover slug/symlink skips on the fallback path."}

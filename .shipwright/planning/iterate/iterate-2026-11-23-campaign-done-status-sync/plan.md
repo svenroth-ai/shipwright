@@ -1,0 +1,1 @@
+Goal: Campaign finalize writes the final status.json back so a finished campaign stops reading active. | Reason: campaigns/ is gitignored, so the worktree has no campaign dir and F5b skipped the board write; the main-tree board stayed active. | Reference: operator report 2026-11-23 (dfp-pilot-changelog-p1-p2p)

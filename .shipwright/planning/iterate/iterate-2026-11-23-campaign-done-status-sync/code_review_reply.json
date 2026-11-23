@@ -1,0 +1,34 @@
+{
+ "stage": "code-review",
+ "verdict": "pass_with_findings",
+ "review": [
+  {
+   "severity": "medium",
+   "category": "architecture",
+   "file": "docs/hooks-and-pipeline.md",
+   "line": 457,
+   "finding": "Docs said F6 ships the campaign board in the PR; with the main-tree fallback a gitignored campaign's status.json is never staged. Fixed in hooks-and-pipeline.md, F5b.md and F6.md."
+  },
+  {
+   "severity": "low",
+   "category": "correctness",
+   "file": "shared/scripts/lib/campaign_status_io.py",
+   "line": 106,
+   "finding": "Lost-update window between concurrent sibling finalizes on the main-tree file; accepted as best-effort and documented in code and F5b.md."
+  },
+  {
+   "severity": "low",
+   "category": "correctness",
+   "file": "shared/scripts/lib/campaign_status_io.py",
+   "line": 107,
+   "finding": "Event log choice implicit; comment added (events from worktree log, baseline from main status.json)."
+  },
+  {
+   "severity": "low",
+   "category": "correctness",
+   "file": "shared/tests/test_campaign_status_main_fallback.py",
+   "line": 41,
+   "finding": "Missing tests for never-downgrade baseline, worktree-local campaign, invalid slug; added."
+  }
+ ]
+}
