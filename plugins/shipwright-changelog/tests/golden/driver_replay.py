@@ -219,12 +219,12 @@ class ReplayDriver:
         return self._result("merge-pr", self._gh("merge-pr", scratch, "pr", "merge", "--merge", "--delete-branch"))
 
     def step_push_tags(self, scratch: Any, version: str | None = None) -> gt.StepResult:
-        """F1a (operator 2026-11-23): from a feature branch only the tag goes out, never a local trunk; on the trunk the
-        prose's ``git push --tags origin main`` stays (the trunk check is today's, F5 is P8a)."""
+        """F1a (operator 2026-11-23): from a feature branch only the tag goes out, never a local trunk; on the trunk
+        the trunk and exactly this tag go out in one push (``--tags`` would also push the orphan tags of refused releases)."""
         if self.on_feature_branch(scratch):
             argv = ["git", "push", "origin", f"refs/tags/v{version or self.state['version']}"]
         else:
-            argv = ["git", "push", "--tags", "origin", "main"]
+            argv = ["git", "push", "origin", "main", f"refs/tags/v{version or self.state['version']}"]
         return self._result("push-tags", self._run("push-tags", scratch, argv))
 
     def step_release_page(self, scratch: Any, version: str) -> gt.StepResult:

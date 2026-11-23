@@ -41,12 +41,14 @@ def test_event_is_recorded_once_per_flow():
 @pytest.mark.covers("FR-01.09/AC01")
 def test_on_main_case_records_before_tag_push_without_its_own_push():
     step = _step_7()
-    assert step.index("Omit `--pr-url` on main") < step.index("git push --tags origin main")
+    assert step.index("Omit `--pr-url` on main") < step.index('git push origin main "refs/tags/v{version}"')
     assert "git push origin HEAD" not in step  # the head push is inside `record-event`, on a feature branch only
 
 
 @pytest.mark.covers("FR-01.09/AC11")
 def test_a_guided_release_pushes_only_the_tag_and_only_after_the_merge():
     step = _step_7()
-    assert "the tag is not pushed and no release" in step and "page is made before the PR is merged" in step
+    assert "**after the PR is merged**" in step and "Neither is done before the merge" in step
+    assert step.index("run `close-phase` now") < step.index("**after the PR is merged**")  # close first (waiting), tag and page after the merge
     assert 'git push origin "v{version}"' in step and "never a local trunk" in step
+    assert "--tags origin" not in step and "git push --tags" not in step.replace("(never `--tags`", "")

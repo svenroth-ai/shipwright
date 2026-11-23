@@ -16,8 +16,11 @@ that absence, which is the only thing left that a human can get wrong.
 
 from __future__ import annotations
 
-import re
+import json
+import subprocess
 import sys
+
+import pytest
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -46,11 +49,15 @@ def test_the_skill_names_no_individual_evidence_path():
     )
 
 
-def test_the_skill_points_at_the_computed_pathspec_instead():
-    """The absence above is only safe because something else supplies the paths."""
-    assert "evidence_pathspec" in _skill_text(), (
-        "Step 6 must tell the operator where the evidence paths come from"
-    )
+_RELEASE_COMMIT = REPO_ROOT / "plugins" / "shipwright-changelog" / "scripts" / "lib" / "release_commit.py"
+
+
+@pytest.mark.covers("FR-01.09/AC01")
+def test_the_release_code_takes_the_computed_pathspec_instead():
+    """The absence above is only safe because something else supplies the paths: since unit P4 ``release_commit.commit_pathspec``
+    reads the ``evidence_pathspec`` that ``release.py sync`` kept from the tool."""
+    source = _RELEASE_COMMIT.read_text(encoding="utf-8")
+    assert "evidence_pathspec" in source and "REFRESH_SET" not in source, "the commit must use the tool's pathspec, not a list of its own"
 
 
 def test_the_skill_still_forbids_the_directory_pathspec():
@@ -60,18 +67,14 @@ def test_the_skill_still_forbids_the_directory_pathspec():
     assert _PROHIBITION in _skill_text()
 
 
+@pytest.mark.covers("FR-01.09/AC01")
 def test_the_release_artifacts_are_still_committed():
-    """The regression this file now exists to catch. Rewriting Step 6 to fix the
-    directory-pathspec problem silently dropped `decision_log.md` and the ADR
-    folder from the release commit, taking the aggregator's INDEX.md repair with
-    them."""
-    text = _skill_text()
-    commit = re.search(r"git commit -m \"chore\(release\): v\{version\}\" --(.*?)\n\n",
-                       text, re.DOTALL)
-    assert commit, "could not find the Step 6 release commit — update this reader"
-    for required in ("CHANGELOG.md",
-                     ".shipwright/agent_docs/decision_log.md",
-                     ".shipwright/planning/adr/"):
-        assert required in commit.group(1), (
-            f"the release commit no longer carries {required}"
-        )
+    """The regression this file exists to catch: a rewrite of the commit that silently dropped ``decision_log.md`` and the ADR folder,
+    taking the aggregator's INDEX.md repair with them. The pathspec is read from ``release_commit.commit_pathspec`` (own process)."""
+    code = ("import json, sys\nfrom pathlib import Path\nsys.path.insert(0, sys.argv[1])\nfrom lib import release_commit\n"
+            "print(json.dumps(release_commit.commit_pathspec(Path(sys.argv[2]), {})[2]))")
+    done = subprocess.run([sys.executable, "-c", code, str(_RELEASE_COMMIT.parent.parent), str(REPO_ROOT)], capture_output=True, text=True, timeout=60)
+    assert done.returncode == 0, done.stderr
+    paths = json.loads(done.stdout)
+    for required in ("CHANGELOG.md", ".shipwright/agent_docs/decision_log.md", ".shipwright/planning/adr/"):
+        assert required in paths, f"the release commit no longer carries {required}"

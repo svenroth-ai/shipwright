@@ -104,6 +104,15 @@ def resolve(project_root: Path, version: str, *, tag_exists: bool, release_date:
     return state
 
 
+def tree_snapshot(project_root: Path) -> list[str]:
+    """``git status --porcelain`` lines now (asked directly, like the state path): what is already dirty before a release starts."""
+    try:
+        done = subprocess.run(["git", "status", "--porcelain"], cwd=project_root, capture_output=True, text=True, encoding="utf-8", timeout=60)
+    except (OSError, subprocess.SubprocessError):
+        return []
+    return done.stdout.splitlines() if done.returncode == 0 else []
+
+
 def stored(project_root: Path, version: str) -> dict[str, Any] | None:
     """The stored state when it is this release's (same version, same project root); later subcommands read it after the tag exists."""
     state = load(project_root)

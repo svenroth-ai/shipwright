@@ -10,8 +10,6 @@ project has.
 from __future__ import annotations
 
 import json
-import os
-import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -258,40 +256,39 @@ def test_committed_check_finds_the_drop_in_heads_tree_when_project_root_is_a_sub
 # --- 7. the release skill stages only the agent docs a project has ---------------------------------------------
 
 
-def _skill_step6() -> str:
-    text = SKILL.read_text(encoding="utf-8")
-    return text[text.index("## Step 6: Commit and Tag"):]
+_RELEASE_COMMIT = ROOT / "plugins" / "shipwright-changelog" / "scripts" / "lib" / "release_commit.py"
 
 
-def test_release_skill_never_names_architecture_or_conventions_unconditionally():
-    step = _skill_step6()
-    block = step[step.index("```bash"):step.index("```", step.index("```bash") + 7)]
-    assert "BULLET_DOCS" in block
-    for line in block.splitlines():
-        if line.lstrip().startswith(("git add", "git commit", "CHANGELOG.md")):
+def _release_pathspec(project: Path) -> list[str]:
+    """The release commit's pathspec as ``release_commit.commit_pathspec`` computes it, in a process of its own (the plugin has a ``lib``
+    package of its own, which must not meet the shared one in this process)."""
+    code = ("import json, sys\nfrom pathlib import Path\nsys.path.insert(0, sys.argv[1])\nfrom lib import release_commit\n"
+            "print(json.dumps(release_commit.commit_pathspec(Path(sys.argv[2]), {'evidence_pathspec': ['E'], 'manifest_pathspec': ['M']})[2]))")
+    done = subprocess.run([sys.executable, "-c", code, str(_RELEASE_COMMIT.parent.parent), str(project)], capture_output=True, text=True, timeout=60)
+    assert done.returncode == 0, done.stderr
+    return json.loads(done.stdout)
+
+
+def test_release_commit_never_names_architecture_or_conventions_unconditionally():
+    """Since unit P4 Step 6 is ``release.py commit-and-tag``; the filter over the bullet docs lives in ``release_commit.py``."""
+    source = _RELEASE_COMMIT.read_text(encoding="utf-8")
+    assert "BULLET_DOCS" in source and "is_file()" in source
+    for line in source.splitlines():
+        if "git" in line and "add" in line and not line.lstrip().startswith(("#", '"""')):
             assert "architecture.md" not in line and "conventions.md" not in line, line
 
 
 @pytest.mark.parametrize("have", [(), ("architecture",), ("architecture", "conventions")])
-def test_release_skill_snippet_commits_in_a_project_without_the_bullet_docs(tmp_path, have):
-    bash = shutil.which("bash")
-    if bash is None:
-        if os.environ.get("CI", "").lower() in ("true", "1"):
-            pytest.fail("bash is required to execute the release skill snippet; install Git for Windows / bash")
-        pytest.skip("bash not available")
-    step = _skill_step6()
-    loop = next(line for line in step.splitlines() if line.startswith("BULLET_DOCS="))
+def test_release_commit_pathspec_commits_in_a_project_without_the_bullet_docs(tmp_path, have):
     repo = make_repo(tmp_path)
     docs = repo / ".shipwright" / "agent_docs"
     docs.mkdir(parents=True)
     for name in ("decision_log.md", "decision_log_index.md", *(f"{h}.md" for h in have)):
         (docs / name).write_text("x\n", encoding="utf-8")
     (repo / "CHANGELOG.md").write_text("c\n", encoding="utf-8")
-    script = (loop + "\ngit add CHANGELOG.md\n"
-              "git add .shipwright/agent_docs/decision_log.md .shipwright/agent_docs/decision_log_index.md $BULLET_DOCS\n"
-              'git commit -q -m rel -- CHANGELOG.md .shipwright/agent_docs/decision_log.md .shipwright/agent_docs/decision_log_index.md $BULLET_DOCS\n')
-    run = subprocess.run([bash, "-c", script], cwd=repo, capture_output=True, text=True, timeout=60)
-    assert run.returncode == 0, run.stderr
+    paths = [p for p in _release_pathspec(repo) if p not in ("E", "M") and not p.endswith("/")]  # the pathspecs of directories and of the evidence need not exist here
+    git(repo, "add", *paths)
+    git(repo, "commit", "-q", "-m", "rel", "--", *paths)
     committed = git(repo, "show", "--name-only", "--format=", "HEAD").split()
     assert sorted(p for p in committed if p.endswith(("architecture.md", "conventions.md"))) == sorted(
         f".shipwright/agent_docs/{h}.md" for h in have)

@@ -212,8 +212,7 @@ gh pr create \
   --base main
 ```
 
-**A failed `gh pr create` stops the release here:** nothing is pushed and the tag stays on this machine; report it. The PR needs the branch on
-the remote, so push the branch first when it is new.
+**A failed `gh pr create` stops the release here:** nothing is pushed and the tag stays on this machine; report it.
 
 > **Parallel iterates:** rebase-per-PR is expected, tagging is single-writer,
 > and `CHANGELOG.md [Unreleased]` is the one merge hotspot. Detail:
@@ -235,14 +234,16 @@ Omit `--pr-url` on main.
 gh pr merge --merge --delete-branch
 ```
 
-**Guided mode:** the PR stays open for manual review and merge, and **the release stops here for now: the tag is not pushed and no release
-page is made before the PR is merged**, so a failed release can never leave a tag with no release. Run the two blocks below after the merge.
+**Guided mode:** the PR stays open for manual review and merge. The order is: run `close-phase` now with `--release-status waiting
+--release-note "waits for the PR merge"` (last block of this step); then, **after the PR is merged**, push the tag and make the release
+page (the next two blocks). Neither is done before the merge, so a failed release can never leave a tag with no release.
 
 **Push the tag.** From a feature branch push only the tag, never a local trunk:
 ```bash
 git push origin "v{version}"
 ```
-On main (the release was cut there) push the trunk with the tag: `git push --tags origin main`. A refused push stops the release.
+On main (the release was cut there) push the trunk and exactly this tag: `git push origin main "refs/tags/v{version}"` (never `--tags`: it
+would also push the tags of releases that were refused). A refused push stops the release.
 
 **Create GitHub Release (best-effort, never blocks this phase):** condenses
 the just-released `CHANGELOG.md` section into a short, human-readable body
@@ -256,7 +257,7 @@ Read `status` from the JSON: `ok`/`exists` (with `url`), `skipped`/`failed` (wit
 the command exits non-zero with no JSON (uv could not fetch the script's packages, e.g. offline), that is `skipped` with the stderr line.
 
 **Phase complete:** one call writes the phase's canon records where a driven run needs them, verifies the release read-only and prints the
-closing summary (stderr). Pass what the release page step reported; in guided mode, before the merge, `--release-status waiting
+closing summary (stderr). Pass what the release page step reported; in guided mode this call comes first, with `--release-status waiting
 --release-note "waits for the PR merge"`.
 
 ```bash

@@ -121,6 +121,8 @@ REGISTRY: dict[str, tuple[str, ...]] = {
         "shared/scripts/lib/events_references.py",
     ),
     "M": (
+        "plugins/shipwright-changelog/scripts/lib/release_event.py",
+        "plugins/shipwright-changelog/scripts/lib/release_verify.py",
         "plugins/shipwright-adopt/scripts/checks/setup_adopt.py",
         "shared/scripts/lib/gitattributes_selfheal.py",
         "plugins/shipwright-adopt/scripts/lib/dry_run_reporter.py",
@@ -141,7 +143,6 @@ REGISTRY: dict[str, tuple[str, ...]] = {
         "plugins/shipwright-adopt/scripts/lib/gitattributes_scaffolder.py",
         "plugins/shipwright-adopt/skills/adopt/references/step-e-artifact-generation.md",
         "plugins/shipwright-adopt/skills/adopt/references/step-h-validate-commit-handoff.md",
-        "plugins/shipwright-changelog/skills/changelog/SKILL.md",
         "plugins/shipwright-changelog/skills/changelog/references/compliance-evidence.md",
         "plugins/shipwright-compliance/scripts/audit/_group_d_promise.py",
         "plugins/shipwright-compliance/scripts/audit/group_f.py",

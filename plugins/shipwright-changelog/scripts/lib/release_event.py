@@ -17,7 +17,6 @@ from . import release_paths, release_runstate
 from .release_runner import Recorder, uv_script
 
 TRUNKS = ("main", "develop")
-EVENT_PATHS = ("shipwright_events.jsonl", ".shipwright/events/drops")
 
 
 def record_event(rec: Recorder, plugin_root: Path, *, version: str, pr_url: str = "") -> tuple[int, dict[str, Any]]:
@@ -25,7 +24,7 @@ def record_event(rec: Recorder, plugin_root: Path, *, version: str, pr_url: str 
     tools, run_id = shared / "scripts/tools", f"release-v{version}"
     branch = rec.run("branch", ["git", "rev-parse", "--abbrev-ref", "HEAD"]).stdout.strip()
     on_trunk = branch in TRUNKS
-    detail = f"v{version} — tagged on main" if on_trunk else f"v{version} — {pr_url}"
+    detail = f"v{version} — tagged on {branch}" if on_trunk else f"v{version} — {pr_url}"
     out: dict[str, Any] = {"version": version, "branch": branch, "on_trunk": on_trunk, "pr_url": pr_url, "committed": [], "pushed": False}
     if not on_trunk and not pr_url:  # nothing is recorded or pushed yet, and a pushed event cannot be taken back
         return 1, {**out, "status": "failed", "reason": "pr_url_missing", "commands": rec.as_json()}
@@ -39,9 +38,13 @@ def record_event(rec: Recorder, plugin_root: Path, *, version: str, pr_url: str 
         done = rec.run(key, uv_script(tools / script, "--project-root", str(root), *args))
         if done.exit != 0:
             return stop(done, f"{key.replace('-', '_')}_failed")
-    if (root / EVENT_PATHS[0]).is_file():
-        rec.run("event-add", ["git", "add", EVENT_PATHS[0]])  # not part of the chain, as in the prose
-    paths = [p for p in rec.run("event-paths", ["git", "diff", "--cached", "--name-only", "--", *EVENT_PATHS]).stdout.split() if p]
+    event_paths = ("shipwright_events.jsonl", ".shipwright/events/drops")  # the plugin cannot import the shared resolver (own lib package)
+    if (root / event_paths[0]).is_file():
+        rec.run("event-add", ["git", "add", event_paths[0]])  # not part of the chain, as in the prose
+    listed = rec.run("event-paths", ["git", "diff", "--cached", "--name-only", "-z", "--", *event_paths])
+    if listed.exit != 0:
+        return stop(listed, "event_paths_failed")
+    paths = [p for p in listed.stdout.split(chr(0)) if p]
     if paths:
         done = rec.run("event-commit", ["git", "commit", "-m", f"chore(release): record changelog event for v{version}", "--", *paths])
         if done.exit != 0:

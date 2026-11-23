@@ -30,7 +30,7 @@ def summary(version: str, state: dict[str, Any], checks: list[dict[str, Any]], r
             release_note: str | None) -> str:
     waiting = release_verify.waits_for_merge(state)
     if state.get("on_trunk"):
-        pr, pushed = "skipped (on main)", "Tag + main pushed to origin"
+        pr, pushed = "skipped (on main)", f"Tag + {state.get('branch') or 'main'} pushed to origin"
     else:
         pr = state.get("pr_url") or "not opened"
         pushed = "Tag is pushed after the PR is merged" if waiting else "Tag pushed to origin"
@@ -79,7 +79,9 @@ def close_phase(rec: Recorder, plugin_root: Path, *, version: str, session_id: s
     if failed:
         return failed.exit or 1, {**out, "status": "failed", "reason": f"{failed.key}_failed", "commands": rec.as_json()}
     checks = release_verify.verify(rec, plugin_root, version=version, state=state, release_status=release_status, release_note=release_note)
-    dirty = "\n".join(line for line in rec.run("tree-status", ["git", "status", "--porcelain"]).stdout.splitlines() if line.strip() != f"?? {ADVISORY}")
+    before = set(state.get("tree_before") or [])  # what was already dirty when the release started is not the release's
+    dirty = "\n".join(line for line in rec.run("tree-status", ["git", "status", "--porcelain"]).stdout.splitlines()
+                      if line not in before and not line.rstrip().endswith(ADVISORY))
     if not pipeline:  # F10: a hand-invoked release ends with a clean tree (the advisory audit finding is not the release's write)
         checks.append({"name": "tree_clean", "ok": not dirty, "detail": "clean" if not dirty else f"dirty: {dirty[:200]}"})
     text = summary(version, state, checks, release_status, release_url, release_note)

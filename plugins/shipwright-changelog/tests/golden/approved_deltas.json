@@ -3,7 +3,7 @@
     "scenario": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
     "field": "sha256",
     "before": "0b5a109513b19604c933638fd340e6fdd92210ec1dad694de4609135cf7ae9ea",
-    "after": "940e5329d1bbf91a72f5bbcff4b8c33cbc20b270af148cfb84e313825ce6ae93",
+    "after": "cfd740cfa8f5081ac454dab971405020f30d1eb203b1f194570aef761dd06ffa",
     "approver": "pilot BRIEF section 4 P4 row and SECOND-PASS A9/B1/B4 with the operator decisions F1a, F1b, F4, F6, F10 (FULLRUN-REPORT 'Decisions (operator, 2026-11-23)'): Steps 5.3 to 7 become release.py calls (P4 spec)",
     "date": "2026-11-23",
     "source": "P4"
@@ -165,7 +165,7 @@
     "scenario": "plugins/shipwright-changelog/tests/golden/driver_replay.py",
     "field": "sha256",
     "before": "3c0095727d51693e71a9c2b44687fea2d0de23849b1354eaee7b1589540930c1",
-    "after": "7284b8dff7a09c53255f6d3ce158a8cb843af661ed35b9a6336d41d7d248eb97",
+    "after": "00d59409c7a1c1ba3948d2ed62c360fd506dbadb1c13ade03732fdc3a72a3f6e",
     "approver": "operator decisions F1a and F10 (FULLRUN-REPORT 'Decisions (operator, 2026-11-23)'): tag-only push from a feature branch, close step writes nothing standalone",
     "date": "2026-11-23",
     "source": "F1a/F10"
@@ -232,5 +232,14 @@
     "approver": "operator decision F1b (FULLRUN-REPORT 'Decisions (operator, 2026-11-23)'): a promise test that runs the whole flow names autonomy, because a guided release now waits for the merge; BRIEF section 5 P3/P4 item 9",
     "date": "2026-11-23",
     "source": "F1b"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/coverage.py",
+    "field": "sha256",
+    "before": "275be6630048671d3ab93d7ed142a5a3330a6b8427b3c8334c8f6feaded61774",
+    "after": "e97d15132c1611ebb513b07cf4a38df556e75247dc4fc216a49b3f3e3a670372",
+    "approver": "pilot BRIEF section 4 P4 row (the inventory follows the skill's headings) and the orchestrator's P4 review decision of 2026-11-23: steps 5.3 to 5.5 are one `sync` section, so three coverage rows become one",
+    "date": "2026-11-23",
+    "source": "P4"
   }
 ]

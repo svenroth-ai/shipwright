@@ -80,7 +80,7 @@ def test_commit_and_tag_runs_the_prose_chain_by_explicit_pathspec_and_tags_the_c
     assert fake.keys().index("head") > fake.keys().index("commit")  # HEAD is read only after the commit
     assert fake.argv("verify-evidence")[-3:] == ["--verify-commit", HEAD, "--release-audit"]
     assert fake.argv("verify-manifests")[-4:-2] == ["--verify-commit", HEAD]
-    assert fake.argv("tag") == ["git", "tag", "-a", f"v{VERSION}", "-m", f"Release v{VERSION}"]
+    assert fake.argv("tag") == ["git", "tag", "-a", f"v{VERSION}", "-m", f"Release v{VERSION}", HEAD]  # the verified SHA
 
 
 @pytest.mark.parametrize("failing", ["commit", "verify-evidence", "verify-manifests"])
@@ -125,7 +125,7 @@ def test_b1_the_release_state_names_the_committed_head_and_the_checks_that_passe
 
 
 def event_fake(branch: str, **over) -> Fake:
-    return Fake(branch={"stdout": branch + "\n"}, **{"event-paths": {"stdout": "shipwright_events.jsonl\n"}, **over})
+    return Fake(branch={"stdout": branch + "\n"}, **{"event-paths": {"stdout": "shipwright_events.jsonl\0"}, **over})
 
 
 def test_record_event_on_a_feature_branch_commits_only_the_event_paths_and_pushes_the_head(tmp_path, plugin_root):
@@ -143,7 +143,7 @@ def test_record_event_on_the_trunk_commits_but_never_pushes(tmp_path, plugin_roo
     fake = event_fake(trunk)
     code, out = release_event.record_event(rec(tmp_path, fake), plugin_root, version=VERSION)
     assert code == 0 and out["on_trunk"] is True and "event-push" not in fake.keys()
-    assert fake.argv("event-record")[-1] == f"v{VERSION} — tagged on main"
+    assert fake.argv("event-record")[-1] == f"v{VERSION} — tagged on {trunk}"
 
 
 @pytest.mark.parametrize(("failing", "later"), [("event-record", "event-stage"), ("event-stage", "event-commit"), ("event-commit", "event-push")])

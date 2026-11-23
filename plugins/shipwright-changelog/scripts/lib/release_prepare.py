@@ -102,6 +102,7 @@ def prepare(rec: Recorder, plugin_root: Path, *, phase_task_id: str | None = Non
     if notes["status"] in ("action_drop_failed", "query_failed"):
         return _stop(rec, 1, "upgrade_note_drop_failed" if notes["status"] == "action_drop_failed" else "upgrade_notes_query_failed",
                      **facts, upgrade_notes=notes)
+    state.setdefault("tree_before", release_runstate.tree_snapshot(root))  # the baseline close-phase's clean-tree check compares against
     state.update(mode=mode, autonomy=autonomy, commits=len(_json_list(parsed.stdout)))  # facts the later steps read (the close summary, the verify)
     state["upgrade_pending"] = notes.get("pending", [])  # `aggregate` files them once the questions are answered
     release_runstate.save(root, state)
