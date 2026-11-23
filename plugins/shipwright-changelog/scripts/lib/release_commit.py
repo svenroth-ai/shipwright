@@ -55,7 +55,7 @@ def read_state(root: Path) -> dict[str, Any] | None:
         data = json.loads((root / RELEASE_STATE).read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return None
-    if not isinstance(data, dict) or not SHA.match(str(data.get("commit", ""))):  # a hand-edited or torn record is no record
+    if not isinstance(data, dict) or not SHA.fullmatch(str(data.get("commit", ""))):  # a hand-edited or torn record is no record
         return None
     return data
 

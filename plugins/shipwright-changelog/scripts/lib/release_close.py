@@ -80,8 +80,10 @@ def close_phase(rec: Recorder, plugin_root: Path, *, version: str, session_id: s
         return failed.exit or 1, {**out, "status": "failed", "reason": f"{failed.key}_failed", "commands": rec.as_json()}
     checks = release_verify.verify(rec, plugin_root, version=version, state=state, release_status=release_status, release_note=release_note)
     before = set(state.get("tree_before") or [])  # what was already dirty when the release started is not the release's
-    dirty = "\n".join(line for line in rec.run("tree-status", ["git", "status", "--porcelain"]).stdout.splitlines()
-                      if line not in before and not line.rstrip().endswith(ADVISORY))
+    status = rec.run("tree-status", ["git", "status", "--porcelain"])
+    dirty = "\n".join(line for line in status.stdout.splitlines() if line not in before and not line.rstrip().endswith(ADVISORY))
+    if status.exit != 0:  # a status that failed is not a clean tree
+        dirty = f"git status failed (exit {status.exit}): {status.stderr[:120]}"
     if not pipeline:  # F10: a hand-invoked release ends with a clean tree (the advisory audit finding is not the release's write)
         checks.append({"name": "tree_clean", "ok": not dirty, "detail": "clean" if not dirty else f"dirty: {dirty[:200]}"})
     text = summary(version, state, checks, release_status, release_url, release_note)

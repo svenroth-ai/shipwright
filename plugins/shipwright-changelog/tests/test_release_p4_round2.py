@@ -48,6 +48,8 @@ def test_a_dirt_that_existed_before_the_release_is_not_the_releases(tmp_path, pl
 
 def test_a_dirt_the_release_made_still_fails_and_the_advisory_finding_matches_in_any_status_form(tmp_path, plugin_root):
     seed(tmp_path, mode="standalone", branch="release/x", on_trunk=False, pr_url="u", tree_before=[])
+    code, out = close(tmp_path, plugin_root, Fake(**GOOD, **{"tree-status": {"exit": 128, "stderr": "fatal"}}))
+    assert code == 1 and out["tree_clean"] is False  # a failed status is not a clean tree
     code, _ = close(tmp_path, plugin_root, Fake(**GOOD, **{"tree-status": {"stdout": " M .shipwright/triage.jsonl\n?? .shipwright/triage.jsonl\n"}}))
     assert code == 0
     code, out = close(tmp_path, plugin_root, Fake(**GOOD, **{"tree-status": {"stdout": " M .shipwright/agent_docs/session_handoff.md\n"}}))
