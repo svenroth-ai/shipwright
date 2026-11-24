@@ -11,6 +11,7 @@ Shipwright uses a layered testing strategy. Each layer catches different classes
 - **Tool:** Vitest (Next.js), pytest (Python)
 - **When:** After every code change
 - **Speed:** Fast (< 30s)
+- **Also:** property-based and differential tests run here — see [property-and-differential-tests](property-and-differential-tests.md)
 
 ### 1.5. Integration Tests (Real DB)
 - **What:** CRUD operations, API routes, server actions against real Supabase (localhost only)
