@@ -1,0 +1,21 @@
+{
+  "run_id": "iterate-2026-11-24-infra-test-catalog",
+  "date": "2026-11-24T21:48:16.213224Z",
+  "event_at": "2026-11-24T20:28:54.222200+00:00",
+  "type": "change",
+  "complexity": "trivial",
+  "prior_source": "keyword",
+  "branch": "iterate/infra-test-catalog",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-11-24-infra-test-catalog",
+  "test_completeness": {
+    "status": "n/a",
+    "reason_code": "trivial-auto"
+  },
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}

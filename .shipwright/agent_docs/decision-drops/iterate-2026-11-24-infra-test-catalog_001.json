@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-24-infra-test-catalog",
+  "date": "2026-11-24",
+  "section": "Iterate — change: infra test catalog entries",
+  "title": "Review-tooling tests join the infrastructure-test catalog",
+  "context": "Tests of the external-review model routing prove no product requirement, and the tag gate only accepts covers_none for files already in the catalog at the merge-base.",
+  "decision": "Added 8 external-review tooling test files to shared/config/infra_test_paths.json in their own earlier merge.",
+  "consequences": "A follow-up PR can mark them covers_none(tooling); no behavior change.",
+  "rationale": "The catalog gate demands the entry exist at the merge-base, so it cannot ship in the same PR as the markers.",
+  "rejected": "Tagging them to an unrelated FR; minting a new FR for a model slug.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}
