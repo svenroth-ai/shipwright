@@ -1,0 +1,91 @@
+{
+  "run_id": "iterate-2026-11-24-p7-conversion-check-retire",
+  "date": "2026-11-24T22:41:16.739419Z",
+  "event_at": "2026-11-24T22:34:59.198644+00:00",
+  "type": "feature",
+  "complexity": "large",
+  "complexity_override": "operator-accepted-large",
+  "prior_source": "keyword",
+  "branch": "iterate/campaign-dfp-pilot-changelog-p3-p8--P7",
+  "spec": "C:/01_Development/shipwright/.shipwright/planning/iterate/campaigns/dfp-pilot-changelog-p3-p8/sub-iterates/P7-conversion-check-retire.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-11-24-p7-conversion-check-retire",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "an A-item back in the live prose, a missing B-item, a subcommand the prose never calls, a missing CLI and a stale trace.json export are each caught; the real changelog tree is converted",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_check_plugin_conversion.py::test_an_a_item_back_in_the_skill_prose_is_caught, test_a_missing_b_item_is_caught, test_a_stale_export_is_caught, test_the_real_changelog_tree_is_converted PASSED"
+      },
+      {
+        "behavior": "the Codex bundle holds the CLI and every cited script and the CLI starts; a hanging run is a finding",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_check_plugin_conversion.py::test_the_codex_bundle_resolves_the_cli_and_every_cited_script, test_a_bundle_without_the_cli_a_skill_copy_or_a_cited_script_is_caught, test_a_hanging_cli_or_verify_run_is_a_finding_not_a_traceback PASSED"
+      },
+      {
+        "behavior": "the JUnit reader: a passing promise whose test skipped, is missing or is ambiguous is a finding; the sentinel and seeded tests must have run",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_junit_promises.py (13) and test_check_plugin_conversion.py::test_main_runs_the_static_checks_the_report_and_writes_the_export PASSED"
+      },
+      {
+        "behavior": "the retired coverage checks' P8c twin pair and orphan-trace guard live on in scenario_index; the golden lock re-pinned with no trace change",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-changelog/tests/golden/test_scenario_index.py, test_trace_freeze.py::test_the_real_tree_respects_the_freeze; golden_lock.py --check exit 0 PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 4,
+      "tested": 4,
+      "untestable": 0,
+      "untested_testable": 0
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run shared/scripts/tools/check_plugin_conversion.py --plugin shipwright-changelog --junit <changelog.xml>",
+    "exit_code": 0,
+    "tests_run": 1,
+    "evidence_path": ".shipwright/runs/iterate-2026-11-24-p7-conversion-check-retire/surface_verification.json",
+    "timestamp": "2026-11-24T22:50:00Z"
+  },
+  "declared_removals": [
+    {
+      "path": "shared/scripts/tools/check_skill_inventory.py",
+      "reason": "retired pilot scaffolding (programme P7 scope)"
+    },
+    {
+      "path": "shared/scripts/tools/tests/test_check_skill_inventory.py",
+      "reason": "tests of the retired inventory checker"
+    },
+    {
+      "path": ".shipwright/planning/campaigns/2026-10-25-dfp-pilot-changelog-inventory/inventory.json",
+      "reason": "inventory data, retired with its tool"
+    },
+    {
+      "path": ".shipwright/planning/campaigns/2026-10-25-dfp-pilot-changelog-inventory/truth_table.json",
+      "reason": "inventory data, retired with its tool"
+    },
+    {
+      "path": ".shipwright/planning/campaigns/2026-10-25-dfp-pilot-changelog-inventory/subprocess_map.json",
+      "reason": "inventory data, retired with its tool"
+    },
+    {
+      "path": "plugins/shipwright-changelog/tests/golden/coverage.py",
+      "reason": "P8a/P8b coverage checks retired; P8c moved to scenario_index.py"
+    },
+    {
+      "path": "plugins/shipwright-changelog/tests/golden/test_coverage_checks.py",
+      "reason": "tests of the retired coverage checks; P8c tests moved to test_scenario_index.py"
+    }
+  ],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": [
+    "touches_auth",
+    "touches_build",
+    "touches_rls"
+  ]
+}

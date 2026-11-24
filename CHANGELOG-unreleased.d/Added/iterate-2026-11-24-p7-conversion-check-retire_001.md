@@ -1,0 +1,1 @@
+Conversion check for converted plugins (check_plugin_conversion.py) with a JUnit reader that holds each passing promise against the run's own report; the pilot's inventory and coverage checks are retired

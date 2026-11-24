@@ -21,7 +21,7 @@ import pytest
 import promise_hash as ph
 import promise_lock as pl
 
-from . import coverage
+from . import scenario_index
 from .conftest import GOLDEN_DIR, REPO_ROOT
 
 PROMISES = GOLDEN_DIR / "promise_list.json"
@@ -58,7 +58,7 @@ def _test_defs(path):
 
 
 def _spec_texts():
-    block = coverage.SPEC.read_text(encoding="utf-8").split("### FR-01.09 —", 1)[1].split("\n### FR-", 1)[0]
+    block = scenario_index.SPEC.read_text(encoding="utf-8").split("### FR-01.09 —", 1)[1].split("\n### FR-", 1)[0]
     return {m.group(1): " ".join(m.group(2).split()) for m in re.finditer(r"\(E\) \[(AC\d+)\] (.*?)(?=\n- \(|\Z)", block, re.S)}
 
 
@@ -123,7 +123,7 @@ def test_the_source_anchor_hashes_the_acceptance_criterion_it_names_and_other_an
     for e in _entries():
         file = REPO_ROOT / e["source"]["file"]
         assert file.is_file(), e["id"]
-        if e["source"]["file"] == str(coverage.SPEC.relative_to(REPO_ROOT).as_posix()):
+        if e["source"]["file"] == str(scenario_index.SPEC.relative_to(REPO_ROOT).as_posix()):
             ac = e["source"]["heading_path"][-1]
             assert ac in texts, f"{e['id']}: the spec has no {ac} any more"
             assert e["source"]["content_hash"] == hashlib.sha256(texts[ac].encode()).hexdigest(), f"{e['id']}: the spec text of {ac} changed, review the sentence and re-hash"
@@ -136,7 +136,7 @@ def test_the_source_anchor_hashes_the_acceptance_criterion_it_names_and_other_an
 @pytest.mark.covers("FR-01.09/AC01")
 def test_every_ac_of_the_requirement_has_an_entry_and_the_replay_only_parts_are_marked_oracle_trace():
     entries = {e["id"]: e for e in _entries()}
-    assert set(coverage.spec_acs()) <= set(entries)
+    assert set(scenario_index.spec_acs()) <= set(entries)
     assert {i for i, e in entries.items() if e["status"] == "gap"} == {"FR-01.09/AC11"}  # a full pass must be a deliberate edit
     assert entries["FR-01.09/AC11"]["status"] == "gap" and entries["FR-01.09/AC11/aggregation"]["status"] == "passing"
     traced = {i for i, e in entries.items() if e["oracle"] == "trace"}
@@ -189,7 +189,7 @@ def test_scenarios_json_is_valid_in_the_schema_of_the_comparison_tool_and_covers
     doc = json.loads(SCENARIOS.read_text(encoding="utf-8"))  # compare_runs.check_scenarios, restated
     items = doc["scenarios"]
     assert isinstance(items, list) and items
-    known, seen = set(coverage.all_scenarios()), set()
+    known, seen = set(scenario_index.all_scenarios()), set()
     for s in items:
         for key in ("id", "setup", "ask", "expected"):
             assert key in s, f"scenario {s.get('id', '?')} lacks {key!r}"
@@ -254,7 +254,7 @@ def test_the_fingerprint_is_stable_for_every_promise_test_follows_the_conftest_f
 
 @pytest.mark.covers("FR-01.09/AC01")
 def test_the_lock_entry_of_a_promise_test_names_its_acceptance_criterion_through_the_move_map():
-    spec = coverage.SPEC.read_text(encoding="utf-8")
+    spec = scenario_index.SPEC.read_text(encoding="utf-8")
     source = (GOLDEN_DIR / "test_promise_release.py").read_text(encoding="utf-8")
     entry = pl.lock_entry("test_ac13_a_version_written_in_several_places_of_one_manifest_is_written_in_all_together", source, spec, [_golden_sources()])
     assert entry["acs"] == ["FR-01.09/AC13"] and len(entry["hash"]) == 64

@@ -1,0 +1,45 @@
+{
+  "_comment": "Registry of converted plugins for shared/scripts/tools/check_plugin_conversion.py (programme Tz, pilot unit P7). Per plugin: 'a_items' are second-pass items that moved into code, so the live prose must no longer carry them (a 'forbidden' regex per file group: 'skill' = SKILL.md, 'prose' = SKILL.md plus references/*.md); 'b_items' are the checks and records that must exist (a 'pattern' found in 'file'); 'seeded' are the L1/L2 tests that catch a regression put in on purpose, and 'sentinel' the test that must run in the plugin's own report. Paths are repo-relative.",
+  "schema_version": 1,
+  "plugins": [
+    {
+      "plugin": "shipwright-changelog",
+      "skill": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
+      "references": "plugins/shipwright-changelog/skills/changelog/references",
+      "cli": "plugins/shipwright-changelog/scripts/release.py",
+      "subcommands": ["prepare", "aggregate", "sync", "commit-and-tag", "record-event", "push-tag", "close-phase"],
+      "promise_list": "plugins/shipwright-changelog/tests/golden/promise_list.json",
+      "export": ".shipwright/planning/campaigns/2026-10-25-dfp-pilot-changelog-baseline/trace.json",
+      "sentinel": {
+        "file": "plugins/shipwright-changelog/tests/golden/test_trace_freeze.py",
+        "name": "test_the_real_tree_respects_the_freeze"
+      },
+      "seeded": [
+        "plugins/shipwright-changelog/tests/golden/test_seeded_regressions.py::test_a_tag_on_the_parent_of_the_release_commit_is_caught",
+        "plugins/shipwright-changelog/tests/golden/test_seeded_regressions.py::test_a_release_commit_made_without_the_pathspec_is_caught",
+        "plugins/shipwright-changelog/tests/golden/test_seeded_regressions.py::test_pending_entries_that_the_aggregation_does_not_delete_are_caught",
+        "plugins/shipwright-changelog/tests/golden/test_seeded_regressions_cli.py::test_pending_entries_that_the_cli_aggregation_does_not_delete_are_caught"
+      ],
+      "a_items": [
+        {"id": "A1", "scope": "skill", "forbidden": "setup-changelog\\.py|^\\s*(?:uv run|python)\\b.*get_phase_context\\.py", "why": "mode, banner and setup run inside `release.py prepare`, not as prose commands"},
+        {"id": "A2", "scope": "skill", "forbidden": "\\*\\*(?:Autonomous|Guided) mode\\*\\*", "why": "gate answers come from `prepare` (`gates`), the prose keeps no per-mode branches for them"},
+        {"id": "A3", "scope": "skill", "forbidden": "docs/migrations|Do you have to do anything", "why": "the upgrade-notes check is code (`release_upgrade_notes`); SKILL.md carries only the status it reads"},
+        {"id": "A4", "scope": "skill", "forbidden": "--fail-if-empty", "why": "`aggregate` owns the flags; the 'never combine' rule is gone by construction"},
+        {"id": "A5", "scope": "prose", "forbidden": "update-step", "why": "`close-phase` decides; no prose line calls `orchestrator.py update-step` (F7)"},
+        {"id": "A6", "scope": "skill", "forbidden": "--release-date[ =][\"{0-9]|export SHIPWRIGHT_RUN_ID", "why": "the release date and run id are stored once by `prepare`; the model passes and exports neither"},
+        {"id": "A9", "scope": "skill", "forbidden": "Commits: \\{N\\}|categorized", "why": "the closing summary is printed by `close-phase`, not filled in by the model"},
+        {"id": "A10", "scope": "skill", "forbidden": "^\\s*(?:git (?:commit|tag|add|rm)\\b|uv run .*(?:aggregate_changelog|aggregate_decisions|sync_release_manifests|refresh_compliance_docs|fold_events_for_release|record_event|append_phase_history)\\.py)", "why": "commit, tag, sync and event steps are `release.py` subcommands (A10, A11)"}
+      ],
+      "b_items": [
+        {"id": "A2+", "file": "plugins/shipwright-changelog/scripts/lib/release_prepare.py", "pattern": "[\"']gates[\"']", "why": "prepare returns the gate answers"},
+        {"id": "A3+", "file": "plugins/shipwright-changelog/scripts/lib/release_upgrade_notes.py", "pattern": "^def ", "why": "the upgrade-notes check exists in code"},
+        {"id": "A6+", "file": "plugins/shipwright-changelog/scripts/lib/release_runstate.py", "pattern": "^def (?:save|load)", "why": "the release date is stored once in a run state"},
+        {"id": "A9+", "file": "plugins/shipwright-changelog/scripts/lib/release_close.py", "pattern": "^def summary", "why": "close-phase prints the closing summary"},
+        {"id": "B1", "file": "plugins/shipwright-changelog/scripts/lib/release_commit.py", "pattern": "release_state\\.json", "why": "commit-and-tag writes the release record"},
+        {"id": "B2", "file": "plugins/shipwright-changelog/hooks/hooks.json", "pattern": "release_guard\\.py", "why": "the PreToolUse release guard is registered"},
+        {"id": "B2+", "file": "plugins/shipwright-changelog/scripts/hooks/release_guard.py", "pattern": "release_state", "why": "the guard reads the record B1 writes"},
+        {"id": "B4", "file": "plugins/shipwright-changelog/scripts/lib/release_close.py", "pattern": "release_verify\\.verify\\(", "why": "close-phase runs the read-only verify at the end"}
+      ]
+    }
+  ]
+}

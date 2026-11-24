@@ -1,0 +1,47 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-24-p7-conversion-check-retire",
+    "date": "2026-11-24",
+    "unit": {"status": "passed", "passed": 18230, "skipped": 88, "total": 18318},
+    "integration": {"status": "passed", "passed": 684, "skipped": 0, "total": 684},
+    "pgtap": {"status": "not_run"},
+    "e2e": {"status": "not_run"},
+    "design_fidelity": {"status": "not_run"},
+    "smoke": {"status": "not_run"},
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run shared/scripts/tools/check_plugin_conversion.py --plugin shipwright-changelog --junit <changelog.xml>",
+      "exit_code": 0,
+      "tests_run": 1,
+      "evidence_path": ".shipwright/runs/iterate-2026-11-24-p7-conversion-check-retire/surface_verification.json",
+      "timestamp": "2026-11-24T22:50:00Z"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "an A-item back in the live prose, a missing B-item, a subcommand the prose never calls, a missing CLI and a stale trace.json export are each caught; the real changelog tree is converted",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_check_plugin_conversion.py::test_an_a_item_back_in_the_skill_prose_is_caught, test_a_missing_b_item_is_caught, test_a_stale_export_is_caught, test_the_real_changelog_tree_is_converted PASSED"
+        },
+        {
+          "behavior": "the Codex bundle holds the CLI and every cited script and the CLI starts; a hanging run is a finding",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_check_plugin_conversion.py::test_the_codex_bundle_resolves_the_cli_and_every_cited_script, test_a_bundle_without_the_cli_a_skill_copy_or_a_cited_script_is_caught, test_a_hanging_cli_or_verify_run_is_a_finding_not_a_traceback PASSED"
+        },
+        {
+          "behavior": "the JUnit reader: a passing promise whose test skipped, is missing or is ambiguous is a finding; the sentinel and seeded tests must have run",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_junit_promises.py (13) and test_check_plugin_conversion.py::test_main_runs_the_static_checks_the_report_and_writes_the_export PASSED"
+        },
+        {
+          "behavior": "the retired coverage checks' P8c twin pair and orphan-trace guard live on in scenario_index; the golden lock re-pinned with no trace change",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-changelog/tests/golden/test_scenario_index.py, test_trace_freeze.py::test_the_real_tree_respects_the_freeze; golden_lock.py --check exit 0 PASSED"
+        }
+      ],
+      "counts": {"testable": 4, "tested": 4, "untestable": 0, "untested_testable": 0}
+    }
+  }
+}
