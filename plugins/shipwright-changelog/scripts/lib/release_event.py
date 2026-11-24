@@ -16,7 +16,8 @@ from typing import Any
 from . import release_paths, release_runstate
 from .release_runner import Recorder, uv_script
 
-TRUNKS = ("main", "develop")
+TRUNKS = ("main", "develop")  # release_guard.TRUNKS also has master (FINDINGS, recorded, not built)
+PR_BASE = "main"  # SKILL.md opens the release PR with `--base main`: the base the merge check reads
 
 
 def record_paths() -> tuple[str, str]:
@@ -35,7 +36,7 @@ def record_event(rec: Recorder, plugin_root: Path, *, version: str, pr_url: str 
         return 1, {**out, "status": "failed", "reason": "pr_url_missing", "commands": rec.as_json()}
 
     def stop(done, reason: str) -> tuple[int, dict[str, Any]]:
-        release_runstate.patch(root, version, branch=branch, on_trunk=on_trunk, pr_url=pr_url)
+        release_runstate.patch(root, version, branch=branch, on_trunk=on_trunk, pr_url=pr_url, base_branch=None if on_trunk else PR_BASE)
         return done.exit or 1, {**out, "status": "failed", "reason": reason, "commands": rec.as_json()}
 
     for key, script, args in (("event-record", "record_event.py", ["--type", "phase_completed", "--phase", "changelog", "--run-id", run_id, "--detail", detail]),
@@ -60,5 +61,5 @@ def record_event(rec: Recorder, plugin_root: Path, *, version: str, pr_url: str 
         if done.exit != 0:
             return stop(done, "head_push_failed")
         out["pushed"] = True
-    release_runstate.patch(root, version, branch=branch, on_trunk=on_trunk, pr_url=pr_url)
+    release_runstate.patch(root, version, branch=branch, on_trunk=on_trunk, pr_url=pr_url, base_branch=None if on_trunk else PR_BASE)
     return 0, {**out, "status": "ok", "commands": rec.as_json()}

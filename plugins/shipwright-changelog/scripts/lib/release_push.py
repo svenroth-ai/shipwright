@@ -1,69 +1,93 @@
-"""``release.py push-tag``: the tag push of Step 7 and the decision before it, in one call (unit P5, carried over from P4).
+"""``release.py push-tag``: the decision before the tag push of Step 7 (unit P5). It never runs ``git push``.
 
-The branching the prose used to describe is decided here from the run state (``record-event`` kept the branch kind):
+The push stays one literal line in ``SKILL.md`` (BRIEF section 2, programme P4: outward commands are never moved behind a generic CLI), so
+the release guard hook (``scripts/hooks/release_guard.py``) sees it. This call reads the run state and answers which line to run, or why none:
 
-- **F1a** from a feature branch only the tag goes out, never a local trunk (``git push origin refs/tags/vX``); on the trunk the
-  trunk and exactly this tag go out in one push (``--tags`` would also push the orphan tags of refused releases).
-- **F1b** in a hand-invoked release from a feature branch the tag goes out only once the release commit is on the PR's base branch on origin: a guided
-  release leaves its PR open, so this refuses (``waiting_for_merge``, exit 1) until a person has merged it. Run it again then.
-- **F4** a refused push ends the release (the push's own exit code); no PR, no event: ``record-event`` already refused.
+- ``status: "ok"`` with ``argv`` and ``line``: F1a. From a feature branch only the tag goes out (``git push origin refs/tags/vX``); on the
+  trunk the trunk and exactly this tag go out together and all-or-nothing (``git push --atomic origin main refs/tags/vX``).
+- ``status: "waiting_for_merge"`` (exit 1): F1b. A hand-invoked release (``mode: standalone``) from a feature branch pushes only once the
+  release commit is on the PR's base branch on origin. A driven run (``mode: pipeline``) never merges its PR and never waits.
+- ``status: "refused"`` (exit 1) with a ``reason``: no recorded release, no recorded event, a tag that names another commit, a trunk that moved
+  by more than the event commit (the hook's rule, ``release_descent``), a PR merged without the release commit
+  (``merged_without_release_commit``), or a merge state that could not be read.
 
-Nothing is pushed unless ``commit-and-tag`` recorded this release's commit. The push happens inside this call, where the release guard hook
-(``scripts/hooks/release_guard.py``, which reads Bash commands) cannot see it, so the trunk push keeps the guard's rule: HEAD may differ from the
-release commit only by event files (``head_moved_since_release``).
+The same ``release_verify.waits_for_merge`` answers "does this release wait" for the closing verify.
 """
 
 from __future__ import annotations
 
+import json
+import sys
 from pathlib import Path
 from typing import Any
 
-from . import release_commit, release_event, release_runstate, release_verify
-from .release_runner import Recorder
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "hooks"))
+import release_descent  # noqa: E402  (stdlib-only, shared with the release guard hook)
 
-EVENT_FILE, EVENT_DROPS = release_event.record_paths()[0], release_event.record_paths()[1] + "/"  # what `record-event` adds after the tag
+from . import release_commit, release_event, release_runstate, release_verify  # noqa: E402
+from .release_runner import Recorder  # noqa: E402
+
+SQUASHED = ("the PR was merged, but the release commit is not on {base}: the tag would name a commit that is not on the trunk "
+            "(a squash or rebase merge). Nothing is pushed; an operator decides how to tag the merge commit")
 
 
 def push_tag(rec: Recorder, plugin_root: Path, *, version: str) -> tuple[int, dict[str, Any]]:
     root, tag = rec.cwd, f"v{version}"
     state, record = release_runstate.stored(root, version) or {}, release_commit.read_state(root) or {}
-    out: dict[str, Any] = {"version": version, "tag": tag, "pushed": False}
+    out: dict[str, Any] = {"version": version, "tag": tag}
 
-    def refuse(reason: str, code: int = 1, **more: Any) -> tuple[int, dict[str, Any]]:
-        return code, {**out, **more, "status": "failed", "reason": reason, "commands": rec.as_json()}
+    def answer(status: str, code: int, **more: Any) -> tuple[int, dict[str, Any]]:
+        return code, {**out, **more, "status": status, "commands": rec.as_json()}
 
-    if record.get("version") != version:  # no release was cut: there is no tag to push
+    def refuse(reason: str, **more: Any) -> tuple[int, dict[str, Any]]:
+        return answer("refused", 1, reason=reason, **more)
+
+    commit, branch = record.get("commit"), state.get("branch")
+    if record.get("version") != version or not commit:  # no release was cut: there is no tag to push
         return refuse("release_not_committed")
-    branch = state.get("branch")
-    if not branch:  # record-event keeps the branch kind: the push of a release whose event was never recorded would leave it out of the PR
+    if not branch:  # record-event keeps the branch kind: a release whose event was never recorded would leave it out of the PR
         return refuse("event_not_recorded")
     if state.get("mode") not in ("pipeline", "standalone"):  # a rebuilt or damaged state must not read as a driven run (close-phase refuses it too)
         return refuse("run_state_missing")
     on_trunk = bool(state.get("on_trunk"))
-    if on_trunk and branch not in release_event.TRUNKS:  # read from disk: never put an unchecked name into a push
+    if on_trunk and branch not in release_event.TRUNKS:  # read from disk: never put an unchecked name into a push line
         return refuse("branch_not_a_trunk")
     out.update(branch=branch, on_trunk=on_trunk)
-    commit = record.get("commit")
-    if not commit:
-        return refuse("release_not_committed")
     named = rec.run("push-tag-commit", ["git", "rev-parse", "--verify", "-q", f"refs/tags/{tag}^{{commit}}"]).stdout.strip()
     if named != commit:  # a tag moved since commit-and-tag would publish another commit as the release
         return refuse("tag_not_the_release_commit", tag_commit=named)
     if on_trunk:
-        if rec.run("push-head", ["git", "rev-parse", "--abbrev-ref", "HEAD"]).stdout.strip() != branch:  # the check below reads HEAD, the push sends the branch
+        if rec.run("push-head", ["git", "rev-parse", "--abbrev-ref", "HEAD"]).stdout.strip() != branch:  # the rule below reads HEAD, the push sends the branch
             return refuse("head_not_on_branch")
-        moved = rec.run("push-moved", ["git", "diff", "--name-only", "-z", commit, "HEAD"])  # the trunk goes out too: only the release and its event
-        extra = [p for p in moved.stdout.split(chr(0)) if p and p != EVENT_FILE and not p.startswith(EVENT_DROPS)]
-        if moved.exit != 0 or extra:
-            return refuse("head_check_failed" if moved.exit != 0 else "head_moved_since_release", moved.exit or 1, paths=extra[:5])
-        argv = ["git", "push", "--end-of-options", "origin", f"refs/heads/{branch}", f"refs/tags/{tag}"]
+
+        def git(*args: str) -> tuple[int, str]:
+            done = rec.run("push-git", ["git", *args])
+            return done.exit, done.stdout
+
+        if not release_descent.is_the_release(git, commit, rec.run("push-tip", ["git", "rev-parse", "HEAD"]).stdout.strip()):
+            return refuse("head_moved_since_release")
+        argv = ["git", "push", "--atomic", "origin", branch, f"refs/tags/{tag}"]
     else:
         argv = ["git", "push", "origin", f"refs/tags/{tag}"]
-    if not on_trunk and state.get("mode") == "standalone":  # a driven run never merges its PR (the master does): its tag goes out with the PR open
-        reached, base, detail = release_verify.on_base(rec, state, commit)
-        if not reached:
-            return refuse("waiting_for_merge" if reached is False else "merge_state_unknown", base=base, detail=detail)
-    done = rec.run("push-tags", argv)
-    if done.exit != 0:
-        return refuse("tag_push_failed", done.exit or 1)
-    return 0, {**out, "pushed": True, "status": "ok", "commands": rec.as_json()}
+        if release_verify.waits_for_merge(state):
+            reached, base, detail = release_verify.on_base(rec, state, commit)
+            if reached is None:
+                return refuse("merge_state_unknown", base=base, detail=detail)
+            if not reached:
+                if _merged(rec, state):  # waiting would never end: ancestry cannot prove a squash or rebase merge
+                    return refuse("merged_without_release_commit", base=base, detail=SQUASHED.format(base=base))
+                return answer("waiting_for_merge", 1, reason="waiting_for_merge", base=base, detail="the PR is not merged yet; run this again after the merge")
+    return answer("ok", 0, argv=argv, line=" ".join(argv))
+
+
+def _merged(rec: Recorder, state: dict[str, Any]) -> bool:
+    """``gh pr view`` says the release PR is MERGED (any way). Unknown, an unreadable answer or no PR URL is not merged."""
+    url = state.get("pr_url")
+    if not url:
+        return False
+    done = rec.run("push-pr-view", ["gh", "pr", "view", url, "--json", "state,mergeCommit"])
+    try:
+        found = json.loads(done.stdout)
+    except ValueError:
+        return False
+    return done.exit == 0 and isinstance(found, dict) and found.get("state") == "MERGED"

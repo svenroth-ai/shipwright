@@ -51,5 +51,6 @@ def test_a_guided_release_pushes_only_the_tag_and_only_after_the_merge():
     assert "**after the PR is merged**" in step and "Neither is done before the merge" in step
     assert step.index("run `close-phase` now") < step.index("**after the PR is merged**")  # close first (waiting), tag and page after the merge
     flat = " ".join(step.split())
-    assert 'release.py" push-tag' in flat and "never a local trunk" in flat and "`reason: \"waiting_for_merge\"`" in flat
-    assert "git push" not in step  # the push, and the decision before it, are `release.py push-tag` (F1a/F1b/F4; proven in test_release_p5.py)
+    assert 'release.py" push-tag' in flat and "never a local trunk" in flat and '`status: "waiting_for_merge"`' in flat
+    assert 'git push origin "refs/tags/v{version}"' in flat and "never `--tags`" in flat  # the push is a literal line; the decision before it is `push-tag`
+    assert "git push origin HEAD" not in step and "git push --tags" not in step

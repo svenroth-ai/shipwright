@@ -27,7 +27,7 @@ def test_step_4_runs_the_upgrade_notes_check_before_any_aggregator_call():
     """A drop added after the real aggregate run would ship one release late, so the pointer sits at the top of Step 4."""
     step4 = SKILL.split("## Step 4: Generate Changelog Entry", 1)[1].split("\n## ", 1)[0]
     assert "upgrade-notes check" in step4
-    assert step4.index("upgrade-notes check") < step4.index("aggregate_changelog.py")
+    assert step4.index("upgrade-notes check") < step4.index('release.py" aggregate')
 
 
 @pytest.mark.covers("FR-01.09/AC01")

@@ -104,11 +104,11 @@ schema with contract tests.
 
 ## Why the tree ends clean
 
-The phase's own regeneration of the seven documents (a driven run's compliance step) writes them a **second** time: unstamped, and at a different commit
-than the one just tagged. A hand-invoked release must not leave that behind, so `release.py close-phase` puts every derived snapshot back to `HEAD`
-(`restore_derived_to_head`): the committed, stamped copies win and the working tree ends clean. A driven run keeps its canon records (the master's gate
-reads them) and restores nothing. The restore is a no-op when nothing regenerated, so no path needs to know which case it is in.
-The tag and CHANGELOG check runs in `release.py commit-and-tag`, not in the phase's state update.
+Step 5.5 writes the seven documents once and Step 6 commits them (stamped, by explicit pathspec). The derived snapshots are never committed
+otherwise (`shared/scripts/lib/derived_snapshots.py`, `DERIVED_SNAPSHOTS`), and any producer that rewrites one after that commit leaves a tree
+that disagrees with what was committed. A hand-invoked release must not end that way, so `release.py close-phase` runs
+`restore_derived_to_head` (through `checks/restore_derived.py`): the committed copies win and the tree ends clean. It is a no-op when nothing was
+rewritten, so no path needs to know which producer ran. A driven run keeps its canon records (the master's gate reads them) and restores nothing.
 
 ## Between releases
 

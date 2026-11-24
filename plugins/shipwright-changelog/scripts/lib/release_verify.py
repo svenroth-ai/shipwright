@@ -25,8 +25,14 @@ def _check(name: str, ok: bool, detail: str) -> dict[str, Any]:
 
 
 def waits_for_merge(state: dict[str, Any]) -> bool:
-    """A guided release on a feature branch leaves the PR open: the tag is pushed after the merge (F1b)."""
-    return not state.get("on_trunk", False) and state.get("autonomy") not in AUTONOMOUS
+    """A hand-invoked release on a feature branch may wait for the PR merge: the tag is pushed after it (F1b). A driven run never merges its PR and never waits.
+    ``release.py push-tag`` and the closing verify ask this one question."""
+    return not state.get("on_trunk", False) and state.get("mode") == "standalone"
+
+
+def tag_may_be_pending(state: dict[str, Any]) -> bool:
+    """At the closing verify the tag may still be off origin: the release waits (``waits_for_merge``) and a person, not this run, merges the PR."""
+    return waits_for_merge(state) and state.get("autonomy") not in AUTONOMOUS
 
 
 def verify(rec: Recorder, plugin_root: Path, *, version: str, state: dict[str, Any], release_status: str | None,
@@ -44,7 +50,7 @@ def verify(rec: Recorder, plugin_root: Path, *, version: str, state: dict[str, A
     if pushed:
         checks.append(_check("tag_remote", bool(commit) and pushed == commit, f"origin {tag} -> {pushed}"))
     else:
-        waiting = waits_for_merge(state)
+        waiting = tag_may_be_pending(state)
         checks.append(_check("tag_remote", waiting and remote.exit == 0, "not pushed: waits for the PR merge" if waiting else f"{tag} is not on origin"
                              + (f" ({remote.stderr.strip()})" if remote.exit else "")))
     shared = release_paths.shared_root(plugin_root)
@@ -93,5 +99,5 @@ def on_base(rec: Recorder, state: dict[str, Any], commit: str | None) -> tuple[b
     fetched = rec.run("verify-fetch", ["git", "fetch", "--quiet", "--end-of-options", url, base])
     ancestry = rec.run("verify-merged", ["git", "merge-base", "--is-ancestor", commit or "", "FETCH_HEAD"]) if commit and fetched.exit == 0 else None
     if ancestry is None or ancestry.exit not in (0, 1):
-        return None, base, (fetched.stderr or (ancestry.stderr if ancestry else "")).strip()[:120] or "no release commit recorded"
+        return None, base, (fetched.stderr or (ancestry.stderr if ancestry else "")).strip()[:120] or ("git could not tell" if commit else "no release commit recorded")
     return ancestry.exit == 0, base, ""

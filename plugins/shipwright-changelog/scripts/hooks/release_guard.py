@@ -32,6 +32,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import release_descent  # noqa: E402
 from release_guard_commands import Action, find_actions  # noqa: E402
 
 RUN_STATE_GIT_PATH = "shipwright/release_run.json"
@@ -142,19 +143,12 @@ def _record_commit(root: Path, version: str) -> str | None:
 
 
 def _is_the_release(root: Path, commit: str, tip: str) -> bool:
-    """``tip`` is the record's commit, or descends from it through event-only commits (each with at least one path)."""
-    if tip == commit:
-        return True
-    if not tip or _git(root, "merge-base", "--is-ancestor", commit, tip).returncode != 0:
-        return False
-    if _git(root, "rev-list", "--merges", f"{commit}..{tip}").stdout.strip():
-        return False
-    done = _git(root, "log", "--no-renames", "--name-only", "--format=%x01", f"{commit}..{tip}")  # each commit's own paths
-    blocks = done.stdout.split("\x01")[1:]
-    event_paths = ("shipwright_events.jsonl", ".shipwright/events/drops/")  # what record-event commits
-    return done.returncode == 0 and bool(blocks) and all(
-        (paths := [n.strip() for n in b.splitlines() if n.strip()]) and all(n == event_paths[0] or n.startswith(event_paths[1]) for n in paths)
-        for b in blocks)
+    """``tip`` is the record's commit, or descends from it through event-only commits (the rule is ``release_descent``, shared with ``release.py push-tag``)."""
+    def git(*args: str) -> tuple[int, str]:
+        done = _git(root, *args)
+        return done.returncode, done.stdout
+
+    return release_descent.is_the_release(git, commit, tip)
 
 
 def _judged_commit(root: Path, version: str, by_tag: bool) -> str:

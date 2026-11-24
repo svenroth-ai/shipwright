@@ -90,10 +90,7 @@ it misleads. `action_drop_deferred` means the same page was found while a questi
 the real `aggregate` files the drop(s) (`upgrade_notes.pending` has the text, and the preview names it in `upgrade_notes_pending`) and
 the preview's `decisions_preview` names the ADR numbers it will give. In both cases, where the page names a companion release that must come first, name its minimum version and confirm it is
 published before the release PR is merged. Any other status: say `upgrade_notes.sentence` in the Step 5 preview, or in the
-closing summary when the mode skips the preview. Since the file-per-iterate refactor, iterate F4 writes one Markdown file
-per bullet under `CHANGELOG-unreleased.d/<category>/`; the aggregation renders them into a versioned Keep-a-Changelog section,
-inserts it above the first existing `## [version]` heading (NOT at the top: that would corrupt the `# Changelog` title) and
-deletes only the drop files it aggregated.
+closing summary when the mode skips the preview.
 
 Preview first, then run for real. One call each; `aggregate` owns the flags and the release date:
 
@@ -102,32 +99,13 @@ uv run "{plugin_root}/scripts/release.py" aggregate --project-root "$(pwd)" --ve
 uv run "{plugin_root}/scripts/release.py" aggregate --project-root "$(pwd)" --version "{version}"
 ```
 
-What it runs, for reference (never type these): the preview passes `--dry-run` to `aggregate_changelog.py`.
-**Never pass `--fail-if-empty` alongside `--dry-run`** — the check
-raises unconditionally on an empty release regardless of `--dry-run`, so
-combining them turns a preview of "nothing pending" into a hard failure
-instead of a preview:
-
-```bash
-uv run "{shared_root}/scripts/tools/aggregate_changelog.py" --project-root "{project_root}" --version "{version}" --release-date "{stored date}" --dry-run
-```
-
-The real run: **Always pass `--fail-if-empty`**
-here — nothing recorded for a version never released before is refused
-(exit 1, `AggregatorError`), not silently tagged as an empty release;
-re-running an already-released version still converges as a safe no-op
-(unaffected):
-
-```bash
-uv run "{shared_root}/scripts/tools/aggregate_changelog.py" --project-root "{project_root}" --version "{version}" --release-date "{stored date}" --fail-if-empty
-```
+The command owns the aggregator's flags (an empty release is refused only by the real run): add none by hand.
 
 A legacy bullet under `## [Unreleased]` (pre-refactor iterates wrote straight to `CHANGELOG.md`) is NOT migrated: the
 aggregator prints a **loud stderr WARNING naming each bullet's own text** (also in `legacy_unreleased_bullet_texts`), and the
 operator chooses whether to fold it into the new version by hand or accept the split-brain.
 
-**Re-running a release is safe.** An interruption after the changelog was written leaves the drops pending; the same version again **replaces** that section, but only when what is on record is still what the drops say, else it **stops with a non-zero exit** and names the disagreement (reconcile by hand, not a transient error).
-`changelog_updated` means *bytes were written*, not *the run succeeded*: a converging re-run reports `"section_action": "unchanged"` and is a **success**. State table, the `--release-date` rule and why it refuses: [rerunning-a-release.md](references/rerunning-a-release.md).
+Re-running a release is safe: [rerunning-a-release.md](references/rerunning-a-release.md) has the state table, the `--release-date` rule and why a disagreement stops with a non-zero exit. `section_action: "unchanged"` is a success.
 
 ### ADR decision-drops
 
@@ -227,22 +205,26 @@ uv run "{plugin_root}/scripts/release.py" record-event --project-root "$(pwd)" -
 
 Omit `--pr-url` on main.
 
-**Autonomous / unattended mode:** after recording the event, merge immediately; a failed merge stops the release:
+**A hand-invoked release with autonomy `autonomous` or `unattended`:** after recording the event, merge immediately; a failed merge stops the release:
 ```bash
 gh pr merge --merge --delete-branch
 ```
 
-**Guided mode:** the PR stays open for manual review and merge. The order is: run `close-phase` now with `--release-status waiting
+**Any other hand-invoked release:** the PR stays open for manual review and merge. The order is: run `close-phase` now with `--release-status waiting
 --release-note "waits for the PR merge"` (last block of this step); then, **after the PR is merged**, push the tag and make the release
 page (the next two blocks). Neither is done before the merge, so a failed release can never leave a tag with no release.
 
-**Push the tag.** One call; it reads the run state and decides: from a feature branch only the tag goes out (never a local trunk, never
-`--tags`), and a hand-invoked release pushes only once the release commit is on the PR's base branch; on main the trunk and exactly this tag
-go out together.
+**A driven run** neither merges nor waits: the master owns the PR. Go straight on.
+
+**Push the tag.** Ask first; the call decides and never pushes:
 ```bash
 uv run "{plugin_root}/scripts/release.py" push-tag --project-root "$(pwd)" --version "{version}"
 ```
-`reason: "waiting_for_merge"` (exit 1) means the PR is not merged yet: run it again after the merge. Any other non-zero exit (a refused push) stops the release.
+`status: "ok"` gives the one `line` to run: from a feature branch `git push origin "refs/tags/v{version}"` (only the tag, never a local trunk,
+never `--tags`), on main `git push --atomic origin main "refs/tags/v{version}"` (the trunk and exactly this tag, together or not at all).
+Run that line as printed. `status: "waiting_for_merge"` (exit 1) means a hand-invoked release's PR is not merged yet: run `push-tag` again after the merge.
+`status: "refused"` stops the release and names the `reason` (`merged_without_release_commit`: the PR was merged without the release commit, so
+the tag would name a commit that is not on the trunk; do not run it again, report it). A refused push stops the release.
 
 **Create GitHub Release (best-effort, never blocks this phase):** condenses
 the just-released `CHANGELOG.md` section into a short, human-readable body
@@ -256,7 +238,7 @@ Read `status` from the JSON: `ok`/`exists` (with `url`), `skipped`/`failed` (wit
 the command exits non-zero with no JSON (uv could not fetch the script's packages, e.g. offline), that is `skipped` with the stderr line.
 
 **Phase complete:** one call writes the phase's canon records where a driven run needs them, verifies the release read-only and prints the
-closing summary (stderr). Pass what the release page step reported; in guided mode this call comes first, with `--release-status waiting
+closing summary (stderr). Pass what the release page step reported; in a release that waits for the merge this call comes first, with `--release-status waiting
 --release-note "waits for the PR merge"`.
 
 ```bash
