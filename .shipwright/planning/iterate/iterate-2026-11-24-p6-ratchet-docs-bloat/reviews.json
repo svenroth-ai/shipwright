@@ -1,0 +1,279 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-24-p6-ratchet-docs-bloat",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-24T05:09:30.881548+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "approach / dependency",
+          "file": null,
+          "line": null,
+          "finding": "The spec's doc obligation names \"guide.md chapter 8 (quality gates)\"; the mini-plan says \"guide chapter 9.\" If chapter 8 is where quality gates live, the update lands in the wrong chapter or the plan silently renumbers content.",
+          "suggestion": "Confirm the guide's structure before writing; the doc edit must land where the quality-gates chapter actually is (the BRIEF says chapter 8). Fix the plan line.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The checker's exit-code contract (0/1/2) is under-specified. The `(gate)` CI step and `verify_local.py` will both fail on any nonzero exit unless exit 2 (presumably \"skipped / not a converted skill\" or \"config error\") is deliberately mapped to success or a distinct treatment. A config error (missing registry, malformed JSON) surfacing as \"skip\" would silently disable the ratchet — the opposite of the unit's goal.",
+          "suggestion": "Define exit semantics explicitly: 0 = clean, 1 = mechanics found, 2 = tool/config error, and have the gate step treat 2 as a failure too. Add a test for a malformed `converted_skills.json`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "\"Fails on chain operators outside quotes\" needs a precise definition — a naive scan will false-positive on `&&` inside quoted prose, heredocs, or strings like \"and/or\" (no, but `;` inside code examples in non-shell fenced blocks, e.g. `python` blocks, will trip a checker that doesn't first confirm the fence language is a shell language). The real thin SKILL.md may contain non-shell fenced blocks with `;` or `||` characters.",
+          "suggestion": "The plan says \"fenced shell blocks only\" — make sure that means fence-language-aware (bash/shell/console), and include a negative test with a Python fenced block containing `;` or `#` comment text with `&&`. Since the test suite runs against the real SKILL.md, this is likely to be caught, but name it.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Bloat baseline lowering (443 → 263) is correctly sequenced last, but the pre-commit anti-ratchet hook \"accepts it\" only if the measured number is exactly the current file size. Any doc edits in this same diff must not touch SKILL.md (they shouldn't — guide/glossary only), so 263 should be stable; still, measure immediately before the baseline edit, not at plan time.",
+          "suggestion": "Measure and pin in the same commit as the baseline change; don't carry a number computed before the diff's doc edits.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The CI supply-chain ack is expected to make the unit return `escalated` at the ci.yml edit. The mini-plan doesn't state how the partial diff is handled at that point — is the checker + tests + docs work parked in the branch while waiting, and does the drift test (`test_verify_local_ci_drift.py`) fail in the interim because `verify_local.py` references a gate not yet in ci.yml?",
+          "suggestion": "Either land the `verify_local.py` LOCAL_GATES entry and the ci.yml step in the same resumed run, or add both behind the operator ack together — a half-state where local gates and CI gates disagree is exactly what the drift test exists to forbid.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach |",
+          "file": null,
+          "line": null,
+          "finding": "Scanning only fenced shell blocks leaves the ratchet incomplete. New commands in inline code, indented blocks, or fences tagged `bash`, `console`, or left untagged could escape detection. Non-shell mechanics are also outside the stated checker design.",
+          "suggestion": "Define the prohibited mechanics from the campaign brief and cover their supported Markdown forms. Add negative tests for newly introduced commands outside shell fences and for each required mechanic category.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "“Command key” matching and “chain operators outside quotes” are underspecified. An allowed executable could gain additional mechanics through arguments, command substitution, redirects, or continuations while retaining its registered key. The proposed thin-skill and seeded-chain tests do not establish C5 coverage.",
+          "suggestion": "Specify precisely what constitutes an approved command and which edits invalidate approval. Add independent tests for an unregistered standalone command, changed arguments, substitutions, multiline commands, and stale or over-budget escapes. Keep parsing proportional to the syntax actually allowed.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency |",
+          "file": null,
+          "line": null,
+          "finding": "The documentation plan targets guide chapter 9, while the specification requires chapter 8. “Architecture bullet” also omits the explicit requirement to update the architecture document through its producer.",
+          "suggestion": "Correct the guide target and identify the architecture producer and required inputs before implementation. Follow the same producer requirements for FR/AC test tags and the `unchanged` AC record.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk |",
+          "file": null,
+          "line": null,
+          "finding": "The plan acknowledges the CI trust boundary but does not explicitly schedule the mandatory escalation and rerun. It also hardcodes the baseline reduction to 263 without making measurement and anti-ratchet acceptance part of completion.",
+          "suggestion": "Make the CI acknowledgement a strict execution stop, with the operator recording it externally before rerun. Lower the baseline last using the measured value, verify the pre-commit hook accepts it, and include the required local checks, golden-lock check, and changelog test root in final validation.  The approach is appropriately small and preserves the frozen skill, but the proposed detection boundary does not yet demonstrate the required ratchet coverage. Resolve that boundary and the concrete workflow omissions before implementation.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-24T05:09:22.578435+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Review Findings\n\n- **Category: approach / dependency — Severity: medium**\n  Finding: The spec's doc obligation names \"guide.md chapter 8 (quality gates)\"; the mini-plan says \"guide chapter 9.\" If chapter 8 is where quality gates live, the update lands in the wrong chapter or the plan silently renumbers content.\n  Suggestion: Confirm the guide's structure before writing; the doc edit must land where the quality-gates chapter actually is (the BRIEF says chapter 8). Fix the plan line.\n\n- **Category: edge-case — Severity: medium**\n  Finding: The checker's exit-code contract (0/1/2) is under-specified. The `(gate)` CI step and `verify_local.py` will both fail on *any* nonzero exit unless exit 2 (presumably \"skipped / not a converted skill\" or \"config error\") is deliberately mapped to success or a distinct treatment. A config error (missing registry, malformed JSON) surfacing as \"skip\" would silently disable the ratchet — the opposite of the unit's goal.\n  Suggestion: Define exit semantics explicitly: 0 = clean, 1 = mechanics found, 2 = tool/config error, and have the gate step treat 2 as a failure too. Add a test for a malformed `converted_skills.json`.\n\n- **Category: edge-case — Severity: low**\n  Finding: \"Fails on chain operators outside quotes\" needs a precise definition — a naive scan will false-positive on `&&` inside quoted prose, heredocs, or strings like \"and/or\" (no, but `;` inside code examples in *non-shell* fenced blocks, e.g. `python` blocks, will trip a checker that doesn't first confirm the fence language is a shell language). The real thin SKILL.md may contain non-shell fenced blocks with `;` or `||` characters.\n  Suggestion: The plan says \"fenced shell blocks only\" — make sure that means fence-language-aware (bash/shell/console), and include a negative test with a Python fenced block containing `;` or `#` comment text with `&&`. Since the test suite runs against the real SKILL.md, this is likely to be caught, but name it.\n\n- **Category: r […truncated]\n\n[openai] 1. **Category: approach | Severity: high**  \n   **Finding:** Scanning only fenced shell blocks leaves the ratchet incomplete. New commands in inline code, indented blocks, or fences tagged `bash`, `console`, or left untagged could escape detection. Non-shell mechanics are also outside the stated checker design.  \n   **Suggestion:** Define the prohibited mechanics from the campaign brief and cover their supported Markdown forms. Add negative tests for newly introduced commands outside shell fences and for each required mechanic category.\n\n2. **Category: edge-case | Severity: medium**  \n   **Finding:** “Command key” matching and “chain operators outside quotes” are underspecified. An allowed executable could gain additional mechanics through arguments, command substitution, redirects, or continuations while retaining its registered key. The proposed thin-skill and seeded-chain tests do not establish C5 coverage.  \n   **Suggestion:** Specify precisely what constitutes an approved command and which edits invalidate approval. Add independent tests for an unregistered standalone command, changed arguments, substitutions, multiline commands, and stale or over-budget escapes. Keep parsing proportional to the syntax actually allowed.\n\n3. **Category: dependency | Severity: medium**  \n   **Finding:** The documentation plan targets guide chapter 9, while the specification requires chapter 8. “Architecture bullet” also omits the explicit requirement to update the architecture document through its producer.  \n   **Suggestion:** Correct the guide target and identify the architecture producer and required inputs before implementation. Follow the same producer requirements for FR/AC test tags and the `unchanged` AC record.\n\n4. **Category: risk | Severity: medium**  \n   **Finding:** The plan acknowledges the CI trust boundary but does not explicitly schedule the mandatory escalation and rerun. It also hardcodes the baseline reduction to 263 without making measurement and […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-24T05:09:23.029539+00:00",
+      "disposition": "orchestrator runs the opus cascade (campaign instruction for unit P6)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "delegated-to-orchestrator"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-24T05:09:23.174495+00:00",
+      "disposition": "orchestrator runs the opus cascade (campaign instruction for unit P6)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "delegated-to-orchestrator"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec |",
+          "file": null,
+          "line": null,
+          "finding": "run the architecture-doc producer and include its output, or state in the PR that the producer derives the content and no delta was needed.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec |",
+          "file": null,
+          "line": null,
+          "finding": "lower `limit` to (or near) 263 and clear the exception state/ADR reference (via the recorded ADR process), so growth beyond the measured size is what fails.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "track both quote characters with nesting (like `chain_operators` does) instead of a bare boolean toggle.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "require the closing line to be fence characters plus nothing but an optional info string, or at minimum that the closing fence be at least as long and the line contain no other content.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test |",
+          "file": null,
+          "line": null,
+          "finding": "add one assertion that the registry's `commands` are only `release.py` subcommands plus the two `gh` verbs, so registry widening shows up in a reviewable test diff.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "either check all unlabelled blocks, or add a finding when an unlabelled block looks executable but matches no known non-shell language.  Everything else checks out: the gate runs in `ci.yml` and `verify_local.py` with identical invocation (`--project-root .`), the counts in `docs/hooks-and-pipeline.md` (6 tabulated + 3 = 9, 4 mirrored + 5 = 9) are internally consistent, the `verify_local` count test is updated, no frozen file is touched, and the escape-budget/stale-escape logic correctly makes the registry a one-way ratchet. The tests are behavioral (single seeded regression per test, exit codes via `main`), not just smoke calls.  Overall: the checker and its wiring are sound and well-tested; the missing architecture doc and the un-lowered `limit` on the bloat entry should be addressed before merge.  SHIPWRIGHT_VERDICT: revise",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/tools/check_prompt_mechanics.py",
+          "line": 131,
+          "finding": "Substitution detection treats apostrophes inside double quotes as shell single-quote delimiters. An allowed command followed by `--note \"don't $(touch /tmp/x)\"` passes: the apostrophe disables substitution scanning, although the shell executes `touch`.",
+          "suggestion": "Track double-quote and escape state alongside single quotes. Add a regression test for a command substitution following an apostrophe inside a double-quoted argument.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/tools/check_prompt_mechanics.py",
+          "line": 97,
+          "finding": "Unlabelled shell blocks are identified only by their first nonblank line and a small command-prefix list. Adding a comment before an otherwise detected command—for example, an unlabelled block containing `# publish` followed by `git push origin main`—makes the entire block bypass checking. This leaves C5 partially implemented.",
+          "suggestion": "Ignore leading comments when identifying shell blocks and cover this case with a test. Define detection for other unlabelled shell commands so the prefix list does not silently exempt them.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "docs/guide.md",
+          "line": 2211,
+          "finding": "The documentation update omits the required architecture document under `.shipwright/agent_docs/`. The acceptance criterion explicitly requires guide, glossary and architecture updates; the supplied diff updates only the first two.",
+          "suggestion": "Update the architecture document through its designated producer to describe the registry, checker, and enforcement surfaces.  Overall assessment: ship-with-fixes. The gate and local integration are present, but detection bypasses and the missing architecture update need correction before shipping.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-24T05:16:35.320647+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] **Findings**\n\n- Category: spec | Severity: medium | File: diff (`.shipwright/agent_docs/` — absent)\n  The spec's doc obligations require the architecture doc under `.shipwright/agent_docs/` to be updated \"via its producer\" in the same diff. No change to any `.shipwright/agent_docs/` file appears in the diff. If the producer regenerates it from `ci.yml`/`verify_local.py` automatically, confirm that; otherwise the ratchet is undocumented in the architecture layer and AC \"Guide, glossary and architecture docs updated\" is only two-thirds done.\n  Suggestion: run the architecture-doc producer and include its output, or state in the PR that the producer derives the content and no delta was needed.\n\n- Category: spec | Severity: medium | File: `shipwright_bloat_baseline.json:184-186`\n  The entry lowers `current` 443→263 but keeps `limit: 400` and `state: \"exception\"` with `ADR-348`. With current below limit the exception is moot, and leaving `limit` at 400 lets the file grow back 137 lines before the hook fires — the opposite of a ratchet. The spec says \"the bloat entry lowered to the measured size\"; the *limit*, not just the recorded current, is the enforcement number.\n  Suggestion: lower `limit` to (or near) 263 and clear the exception state/ADR reference (via the recorded ADR process), so growth beyond the measured size is what fails.\n\n- Category: edge-case | Severity: low | File: `shared/scripts/tools/check_prompt_mechanics.py:132-140` (`substitutions`)\n  The single-quote toggle ignores quoting context: a command like `--note \"it's here; rm -rf $(x)\"` flips `single` at the apostrophe inside double quotes, so a real `$(...)` substitution after it goes undetected. Same class of issue exists in `chain_operators` only for quotes it tracks correctly — here it's a real detection gap in the security-relevant direction (missed finding, not false positive).\n  Suggestion: track both quote characters with nesting (like `chain_operators` does) instead of a bare boolean  […truncated]\n\n[openai] - Category: bug\n- Severity: medium\n- File: shared/scripts/tools/check_prompt_mechanics.py:131\n- Finding: Substitution detection treats apostrophes inside double quotes as shell single-quote delimiters. An allowed command followed by `--note \"don't $(touch /tmp/x)\"` passes: the apostrophe disables substitution scanning, although the shell executes `touch`.\n- Suggestion: Track double-quote and escape state alongside single quotes. Add a regression test for a command substitution following an apostrophe inside a double-quoted argument.\n\n- Category: spec\n- Severity: medium\n- File: shared/scripts/tools/check_prompt_mechanics.py:97\n- Finding: Unlabelled shell blocks are identified only by their first nonblank line and a small command-prefix list. Adding a comment before an otherwise detected command—for example, an unlabelled block containing `# publish` followed by `git push origin main`—makes the entire block bypass checking. This leaves C5 partially implemented.\n- Suggestion: Ignore leading comments when identifying shell blocks and cover this case with a test. Define detection for other unlabelled shell commands so the prefix list does not silently exempt them.\n\n- Category: spec\n- Severity: medium\n- File: docs/guide.md:2211\n- Finding: The documentation update omits the required architecture document under `.shipwright/agent_docs/`. The acceptance criterion explicitly requires guide, glossary **and architecture** updates; the supplied diff updates only the first two.\n- Suggestion: Update the architecture document through its designated producer to describe the registry, checker, and enforcement surfaces.\n\nOverall assessment: ship-with-fixes. The gate and local integration are present, but detection bypasses and the missing architecture update need correction before shipping.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-24T05:09:22.873985+00:00",
+      "disposition": "orchestrator runs the opus cascade (campaign instruction for unit P6)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "delegated-to-orchestrator"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-24T05:13:10.966990+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-24T05:09:15.563927+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

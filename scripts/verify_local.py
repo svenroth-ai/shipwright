@@ -96,6 +96,8 @@ LOCAL_GATES = (
          ("--project-root", ".")),
     Gate("Contract surface (gate)", "scripts/verify_contract_surface.py"),
     Gate("Sweep delivery surface (gate)", "scripts/verify_sweep_delivery_surface.py"),
+    Gate("Converted-skill prompt mechanics (gate)", "shared/scripts/tools/check_prompt_mechanics.py",
+         ("--project-root", ".")),
 )
 
 #: NOT mirrored, with the reason. Recorded rather than dropped so this tool cannot

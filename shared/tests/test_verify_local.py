@@ -26,6 +26,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _VERIFY_LOCAL = _REPO_ROOT / "scripts" / "verify_local.py"
 
@@ -117,10 +119,11 @@ def test_every_gate_runs_even_when_an_earlier_one_fails(capsys) -> None:
     )
 
 
+@pytest.mark.covers("FR-01.17")
 def test_exit_code_is_zero_when_every_gate_passes(capsys) -> None:
     runner, _ = _fake()
     assert verify_local.verify(runner=runner) == 0
-    assert "PASS — all 3 mirrored gates green." in capsys.readouterr().out
+    assert "PASS — all 4 mirrored gates green." in capsys.readouterr().out
 
 
 def test_exit_code_is_nonzero_when_any_gate_fails(capsys) -> None:
