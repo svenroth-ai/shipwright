@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-24-p6-ratchet-docs-bloat",
+  "ci_supplychain_ack": {
+    "run_id": "iterate-2026-11-24-p6-ratchet-docs-bloat",
+    "paths_fingerprint": "17ea3b6334d5ac5e9b94ddc9b27332b4ca2556aa5fa1b4d66351dc6668e4f060",
+    "consistent_with": "iterate-2026-11-24-p6-ratchet-docs-bloat",
+    "statement": "Adds one gate step to python-checks that runs a repo-local stdlib script; no new third-party action, no secret, no permission change.",
+    "ci_paths": [
+      ".github/workflows/ci.yml"
+    ],
+    "provenance": "commit",
+    "provenance_ref": "efb2664a12cc70d2e45dcb71e3a2197ae7e40dcb"
+  }
+}
