@@ -24,9 +24,10 @@ def test_close_phase_refuses_when_the_run_state_is_missing(tmp_path, plugin_root
     assert code == 1 and out["reason"] == "run_state_missing"
 
 
-def test_a_guided_pipeline_release_waits_for_the_merge_like_any_guided_release():
-    assert release_verify.waits_for_merge({"mode": "pipeline", "autonomy": "guided"}) is True
-    assert release_verify.waits_for_merge({"mode": "pipeline", "autonomy": "autonomous"}) is False
+def test_a_driven_release_never_waits_for_the_merge_whatever_its_autonomy():
+    """One key (P5 fix round): the mode. The master owns a driven run's PR, so it neither merges nor waits."""
+    assert release_verify.waits_for_merge({"mode": "pipeline", "autonomy": "guided"}) is False
+    assert release_verify.waits_for_merge({"mode": "standalone", "autonomy": "autonomous"}) is True
 
 
 def test_a_rerun_after_a_failed_audit_verifies_and_tags_the_release_commit_that_is_already_there(tmp_path, plugin_root):

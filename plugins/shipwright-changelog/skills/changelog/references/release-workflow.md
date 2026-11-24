@@ -1,10 +1,12 @@
 # Release workflow — the parts that are rationale, not instruction
 
-Reference for **Step 7** of `/shipwright-changelog`. Since unit P4 (operator decisions F1a, F1b, F4, F6, F10, 2026-11-23): from a feature branch only the tag is
-pushed (never a local trunk); in guided mode the tag is pushed and the release page made only after the release PR is merged; a failed `gh pr create`,
-a rejected push or a refused tag push stops the release; `close-phase` verifies the release read-only and leaves a clean tree. Moved out of `SKILL.md` when
-the compliance-evidence step was added (iterate-2026-07-31-derived-docs-at-release):
-the skill is an index of what to DO, and this is the reasoning behind it.
+Reference for **Step 7** of `/shipwright-changelog`. From a feature branch only the tag is pushed (never a local trunk); in a hand-invoked release
+the tag is pushed and the release page made only after the release PR is merged (`release.py push-tag` answers `waiting_for_merge` until the release
+commit is on the base branch; a driven run neither merges nor waits). `push-tag` only decides: the push stays a literal line the release guard hook can see.
+A PR merged by squash or rebase leaves the release commit off the base; `push-tag` then refuses (`merged_without_release_commit`) because the tag would
+name a commit that is not on the trunk. A failed `gh pr create`, a rejected push or a refused tag push stops the release; `close-phase` verifies the
+release read-only and leaves a clean tree.
+The skill is an index of what to DO, and this is the reasoning behind it.
 
 ## Parallel iterate handling
 

@@ -16,7 +16,13 @@ from typing import Any
 from . import release_paths, release_runstate
 from .release_runner import Recorder, uv_script
 
-TRUNKS = ("main", "develop")
+TRUNKS = ("main", "develop")  # release_guard.TRUNKS also has master (FINDINGS, recorded, not built)
+PR_BASE = "main"  # SKILL.md opens the release PR with `--base main`: the base the merge check reads
+
+
+def record_paths() -> tuple[str, str]:
+    """The two event paths a release commits (the plugin cannot import the shared resolver: own lib package)."""
+    return ("shipwright_events.jsonl", ".shipwright/events/drops")
 
 
 def record_event(rec: Recorder, plugin_root: Path, *, version: str, pr_url: str = "") -> tuple[int, dict[str, Any]]:
@@ -30,7 +36,7 @@ def record_event(rec: Recorder, plugin_root: Path, *, version: str, pr_url: str 
         return 1, {**out, "status": "failed", "reason": "pr_url_missing", "commands": rec.as_json()}
 
     def stop(done, reason: str) -> tuple[int, dict[str, Any]]:
-        release_runstate.patch(root, version, branch=branch, on_trunk=on_trunk, pr_url=pr_url)
+        release_runstate.patch(root, version, branch=branch, on_trunk=on_trunk, pr_url=pr_url, base_branch=None if on_trunk else PR_BASE)
         return done.exit or 1, {**out, "status": "failed", "reason": reason, "commands": rec.as_json()}
 
     for key, script, args in (("event-record", "record_event.py", ["--type", "phase_completed", "--phase", "changelog", "--run-id", run_id, "--detail", detail]),
@@ -38,7 +44,7 @@ def record_event(rec: Recorder, plugin_root: Path, *, version: str, pr_url: str 
         done = rec.run(key, uv_script(tools / script, "--project-root", str(root), *args))
         if done.exit != 0:
             return stop(done, f"{key.replace('-', '_')}_failed")
-    event_paths = ("shipwright_events.jsonl", ".shipwright/events/drops")  # the plugin cannot import the shared resolver (own lib package)
+    event_paths = record_paths()
     if (root / event_paths[0]).is_file():
         rec.run("event-add", ["git", "add", event_paths[0]])  # not part of the chain, as in the prose
     listed = rec.run("event-paths", ["git", "diff", "--cached", "--name-only", "-z", "--", *event_paths])
@@ -55,5 +61,5 @@ def record_event(rec: Recorder, plugin_root: Path, *, version: str, pr_url: str 
         if done.exit != 0:
             return stop(done, "head_push_failed")
         out["pushed"] = True
-    release_runstate.patch(root, version, branch=branch, on_trunk=on_trunk, pr_url=pr_url)
+    release_runstate.patch(root, version, branch=branch, on_trunk=on_trunk, pr_url=pr_url, base_branch=None if on_trunk else PR_BASE)
     return 0, {**out, "status": "ok", "commands": rec.as_json()}

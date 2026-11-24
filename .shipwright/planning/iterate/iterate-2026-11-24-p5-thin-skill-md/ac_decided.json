@@ -1,0 +1,70 @@
+{
+  "unattended": true,
+  "resolved_items": [
+    {
+      "kind": "unchanged",
+      "ac": "FR-01.09.AC01",
+      "files": [
+        "plugins/shipwright-changelog/skills/changelog/SKILL.md",
+        "plugins/shipwright-changelog/skills/changelog/references/compliance-evidence.md",
+        "plugins/shipwright-changelog/skills/changelog/references/manifest-sync.md",
+        "plugins/shipwright-changelog/skills/changelog/references/release-workflow.md",
+        "plugins/shipwright-changelog/skills/changelog/references/rerunning-a-release.md",
+        "plugins/shipwright-changelog/scripts/release.py",
+        "plugins/shipwright-changelog/scripts/lib/release_push.py",
+        "plugins/shipwright-changelog/scripts/lib/release_verify.py",
+        "plugins/shipwright-changelog/scripts/checks/verify_release_tag.py",
+        "shared/scripts/tools/verifiers/changelog_checks.py"
+      ],
+      "decided_by": "code",
+      "confirmed": false
+    }
+  ],
+  "ac_decisions": [
+    {
+      "ac": "FR-01.09.AC01",
+      "mode": "auto",
+      "answer": "auto",
+      "kind": "unchanged",
+      "answered_via": "none",
+      "decided_by": "code",
+      "confirmed": false
+    }
+  ],
+  "counts": {
+    "total": 1,
+    "auto": 0,
+    "asked": 0,
+    "exempt": 0,
+    "restore": 0,
+    "unchanged": 1,
+    "answered_inline": 0,
+    "unconfirmed": 0,
+    "exempt_share": 0.0,
+    "restore_share": 0.0
+  },
+  "status": "ok",
+  "ac_mode": {
+    "mode": "auto",
+    "source": "--ac-mode"
+  },
+  "run_id": "iterate-2026-11-24-p5-thin-skill-md",
+  "bind_id": "campaign-dfp-pilot-changelog-p3-p8--P5",
+  "exemption_check": "tested against the current diff (28 file(s), 18 not observable)",
+  "surface": {
+    "observable": true,
+    "files": [
+      "plugins/shipwright-changelog/scripts/checks/verify_release_tag.py",
+      "plugins/shipwright-changelog/scripts/lib/release_push.py",
+      "plugins/shipwright-changelog/scripts/lib/release_verify.py",
+      "plugins/shipwright-changelog/scripts/release.py",
+      "plugins/shipwright-changelog/skills/changelog/SKILL.md",
+      "plugins/shipwright-changelog/skills/changelog/references/compliance-evidence.md",
+      "plugins/shipwright-changelog/skills/changelog/references/manifest-sync.md",
+      "plugins/shipwright-changelog/skills/changelog/references/release-workflow.md",
+      "plugins/shipwright-changelog/skills/changelog/references/rerunning-a-release.md",
+      "shared/scripts/tools/verifiers/changelog_checks.py"
+    ],
+    "ignored": 18
+  }
+}

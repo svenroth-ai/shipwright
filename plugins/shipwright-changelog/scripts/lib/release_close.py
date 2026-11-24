@@ -28,7 +28,7 @@ ADVISORY = ".shipwright/triage.jsonl"  # the release audit's advisory finding, u
 
 def summary(version: str, state: dict[str, Any], checks: list[dict[str, Any]], release_status: str | None, release_url: str | None,
             release_note: str | None) -> str:
-    waiting = release_verify.waits_for_merge(state)
+    waiting = release_verify.tag_may_be_pending(state)
     if state.get("on_trunk"):
         pr, pushed = "skipped (on main)", f"Tag + {state.get('branch') or 'main'} pushed to origin"
     else:

@@ -29,18 +29,9 @@ def main(argv: list[str] | None = None) -> int:
     sys.path.insert(0, str(Path(args.shared_root) / "scripts"))
     from tools.verifiers import changelog_checks as cc  # noqa: E402
 
-    root = Path(args.project_root).resolve()
-    top = cc._extract_latest_version_from_changelog(root)
-    named = cc.CheckResult("CHANGELOG top version is this release", top == f"v{args.version}", f"top={top} release=v{args.version}")
-    tag_ok, tag_detail = cc._git_tag_exists(root, f"v{args.version}")
-    gating = {"tag_exists": cc.CheckResult("release tag exists", tag_ok, tag_detail), "changelog_names_release": named}
-    out = {name: {"ok": r.ok is True, "detail": r.detail} for name, r in gating.items()}
-    ok = all(v["ok"] for v in out.values())
-    # latest-tag semantics refuse a final cut over its own prerelease and a backport while a newer tag exists: reported, never gating
-    latest = cc.check_changelog_version_matches_tag(root)
-    print(json.dumps({"ok": ok, "checks": out, "advisory": {"changelog_matches_latest_tag": {"ok": latest.ok is True, "detail": latest.detail}}},
-                     ensure_ascii=False))
-    return 0 if ok else 1
+    result = cc.check_release_tag(Path(args.project_root).resolve(), args.version)  # the public entry: never a `_` helper of the shared module
+    print(json.dumps(result, ensure_ascii=False))
+    return 0 if result["ok"] else 1
 
 
 if __name__ == "__main__":

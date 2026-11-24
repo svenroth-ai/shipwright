@@ -1,15 +1,22 @@
 # Re-running a release
 
 Referenced from SKILL.md Step 4. Covers what happens when
-`aggregate_changelog.py` is run for a version that is already in
+`release.py aggregate` is run for a version that is already in
 `CHANGELOG.md` — the normal consequence of a release that stopped partway.
+
+## The short version
+
+Re-running a release is safe. An interruption after the changelog was written leaves the drops pending; the same version again **replaces** that
+section, but only when what is on record is still what the drops say, else it **stops with a non-zero exit** and names the disagreement (reconcile
+by hand, not a transient error). `changelog_updated` means *bytes were written*, not *the run succeeded*: a converging re-run reports
+`"section_action": "unchanged"` and is a **success**. The `--release-date` rule: `release.py aggregate` reads the stored date, so a re-run keeps it.
 
 ## Why a re-run happens at all
 
 The aggregator writes `CHANGELOG.md` **before** it deletes the drop files it
 consumed. There is no way to make those two steps one atomic act, so an
 interruption in that window is a real state: the section is written *and* every
-drop is still pending. The operator's instinct — run it again — used to insert
+drop is still pending. The operator's instinct — run it again — would insert
 a second `## [x.y.z]`.
 
 ## What a re-run does

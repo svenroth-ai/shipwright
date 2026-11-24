@@ -241,5 +241,59 @@
     "approver": "pilot BRIEF section 4 P4 row (the inventory follows the skill's headings) and the orchestrator's P4 review decision of 2026-11-23: steps 5.3 to 5.5 are one `sync` section, so three coverage rows become one",
     "date": "2026-11-23",
     "source": "P4"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/skills/changelog/references/compliance-evidence.md",
+    "field": "sha256",
+    "before": "1d4e81c70abedd02df1cbccc4e9552e460cd8257752265768d3df96d389462b8",
+    "after": "5ad623d63d942e3c5f4b65ffee4957afa588b8625de6e88fce2fb610d23fa989",
+    "approver": "pilot BRIEF section 5 P5 (F7) with the operator decision F7 of 2026-11-23 (FULLRUN-REPORT 'Decisions (operator, 2026-11-23)'): the skill prose names no run-state write (update-step, --restore) and carries no unit history; P5 spec",
+    "date": "2026-11-24",
+    "source": "P5/F7"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/skills/changelog/references/manifest-sync.md",
+    "field": "sha256",
+    "before": "c3aad640cd462030212c4fb74226bda85e5c7692795776570a707d3cf92e64ea",
+    "after": "7d600443f22f9315ebf9c49bb14e962b11d040e73b2241d32e6be00140f8522f",
+    "approver": "pilot BRIEF section 5 P5 (F7) with the operator decision F7 of 2026-11-23 (FULLRUN-REPORT 'Decisions (operator, 2026-11-23)'): the skill prose names no run-state write (update-step, --restore) and carries no unit history; P5 spec",
+    "date": "2026-11-24",
+    "source": "P5/F7"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/skills/changelog/references/release-workflow.md",
+    "field": "sha256",
+    "before": "b01de46655448e73b651644a38d699e75a88e24ef374fcfd3fd58fe4681028a1",
+    "after": "cf457c2dcf2c92d2103b70a794574dc53c90f117396549f4f24e61fc9dd87f58",
+    "approver": "pilot BRIEF section 5 P5 (F7) with the operator decision F7 of 2026-11-23 (FULLRUN-REPORT 'Decisions (operator, 2026-11-23)'): the skill prose names no run-state write (update-step, --restore) and carries no unit history; P5 spec",
+    "date": "2026-11-24",
+    "source": "P5/F7"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/skills/changelog/references/rerunning-a-release.md",
+    "field": "sha256",
+    "before": "98b45355e24b49bceb319c25c4a81d15fad1ccce25700d9258284034a01f26ad",
+    "after": "b079b6b9d31547e1888ff9ad82d5487ecf983cd203e048d1b55c52c603089e20",
+    "approver": "pilot BRIEF section 5 P5 (F7) with the operator decision F7 of 2026-11-23 (FULLRUN-REPORT 'Decisions (operator, 2026-11-23)'): the skill prose names no run-state write (update-step, --restore) and carries no unit history; P5 spec",
+    "date": "2026-11-24",
+    "source": "P5/F7"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/driver_cli.py",
+    "field": "sha256",
+    "before": "d4b031541cd0e0f543be445716020244cd31181f63cc4dc830fb2974cba6e007",
+    "after": "945939756fd881353a90d2b2b11545ad9ba76a2b58b70a2a4654229516c0909e",
+    "approver": "pilot BRIEF section 2 (line 42: outward commands stay literal) and programme P4 (never moved behind a generic CLI), with the orchestrator decision of 2026-11-24 (P5 fix round, option B): push-tag only decides and SKILL.md keeps the literal push line; the CLI driver replays the decision then the printed line. Recorded for stop 3 as 'orchestrator chose B; operator may amend' (FINDINGS D39, D40)",
+    "date": "2026-11-24",
+    "source": "P5"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
+    "field": "sha256",
+    "before": "0b5a109513b19604c933638fd340e6fdd92210ec1dad694de4609135cf7ae9ea",
+    "after": "db12fe9f66618e0a1a15cbd180f07bd4a1de1178fb75e6104f01c070fb526a46",
+    "approver": "pilot BRIEF section 2 (line 42: outward commands stay literal) and programme P4 (never moved behind a generic CLI), with the orchestrator decision of 2026-11-24 (P5 fix round, option B): push-tag only decides and SKILL.md keeps the literal push line; the CLI driver replays the decision then the printed line. Recorded for stop 3 as 'orchestrator chose B; operator may amend' (FINDINGS D39, D40); and pilot BRIEF section 5 P5 (F7) with the operator decision F7 of 2026-11-23 (FULLRUN-REPORT 'Decisions (operator, 2026-11-23)'): the skill prose names no run-state write (update-step, --restore) and carries no unit history; P5 spec",
+    "date": "2026-11-24",
+    "source": "P5/F7"
   }
 ]

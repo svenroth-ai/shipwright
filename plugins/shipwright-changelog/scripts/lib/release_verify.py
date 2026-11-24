@@ -25,8 +25,14 @@ def _check(name: str, ok: bool, detail: str) -> dict[str, Any]:
 
 
 def waits_for_merge(state: dict[str, Any]) -> bool:
-    """A guided release on a feature branch leaves the PR open: the tag is pushed after the merge (F1b)."""
-    return not state.get("on_trunk", False) and state.get("autonomy") not in AUTONOMOUS
+    """A hand-invoked release on a feature branch may wait for the PR merge: the tag is pushed after it (F1b). A driven run never merges its PR and never waits.
+    ``release.py push-tag`` and the closing verify ask this one question."""
+    return not state.get("on_trunk", False) and state.get("mode") == "standalone"
+
+
+def tag_may_be_pending(state: dict[str, Any]) -> bool:
+    """At the closing verify the tag may still be off origin: the release waits (``waits_for_merge``) and a person, not this run, merges the PR."""
+    return waits_for_merge(state) and state.get("autonomy") not in AUTONOMOUS
 
 
 def verify(rec: Recorder, plugin_root: Path, *, version: str, state: dict[str, Any], release_status: str | None,
@@ -44,7 +50,7 @@ def verify(rec: Recorder, plugin_root: Path, *, version: str, state: dict[str, A
     if pushed:
         checks.append(_check("tag_remote", bool(commit) and pushed == commit, f"origin {tag} -> {pushed}"))
     else:
-        waiting = waits_for_merge(state)
+        waiting = tag_may_be_pending(state)
         checks.append(_check("tag_remote", waiting and remote.exit == 0, "not pushed: waits for the PR merge" if waiting else f"{tag} is not on origin"
                              + (f" ({remote.stderr.strip()})" if remote.exit else "")))
     shared = release_paths.shared_root(plugin_root)
@@ -79,11 +85,19 @@ def _pr_check(rec: Recorder, state: dict[str, Any], commit: str | None) -> dict[
         return _check("pr_state", False, "released from a feature branch but no PR was opened")
     if state.get("mode") != "standalone" or state.get("autonomy") not in AUTONOMOUS:  # a driven run never merges its PR; a guided one waits for a person
         return _check("pr_state", True, f"PR opened, left for the merge: {state['pr_url']}")
+    reached, base, detail = on_base(rec, state, commit)
+    if reached is None:
+        return _check("pr_state", False, f"unknown: cannot tell whether the release commit reached {base} ({detail})")
+    return _check("pr_state", reached, f"the release commit is on {base} (origin)" if reached else f"this run merges its PR, but the release commit is not on {base}")
+
+
+def on_base(rec: Recorder, state: dict[str, Any], commit: str | None) -> tuple[bool | None, str, str]:
+    """``(reached, base, detail)``: is the release commit on the PR's base branch on origin? ``None`` = cannot tell (no commit, no
+    fetch, or git could not answer: unknown is not "not merged"). Only FETCH_HEAD moves, never a ref or the tree."""
     base = state.get("base_branch") or rec.run("verify-base", ["git", "symbolic-ref", "--short", "-q", "refs/remotes/origin/HEAD"]).stdout.strip().removeprefix("origin/") or "main"
     url = rec.run("verify-remote-url", ["git", "remote", "get-url", "--push", "origin"]).stdout.strip() or "origin"  # where a push goes, like the tag check
-    fetched = rec.run("verify-fetch", ["git", "fetch", "--quiet", "--end-of-options", url, base])  # only FETCH_HEAD moves, never a ref or the tree
+    fetched = rec.run("verify-fetch", ["git", "fetch", "--quiet", "--end-of-options", url, base])
     ancestry = rec.run("verify-merged", ["git", "merge-base", "--is-ancestor", commit or "", "FETCH_HEAD"]) if commit and fetched.exit == 0 else None
-    if ancestry is None or ancestry.exit not in (0, 1):  # no commit, no fetch, or git could not tell (128: a missing object): unknown is not "not merged"
-        return _check("pr_state", False, f"unknown: cannot tell whether the release commit reached {base} ({(fetched.stderr or (ancestry.stderr if ancestry else '')).strip()[:120] or 'no release commit recorded'})")
-    merged = ancestry.exit == 0
-    return _check("pr_state", merged, f"the release commit is on {base} (origin)" if merged else f"this run merges its PR, but the release commit is not on {base}")
+    if ancestry is None or ancestry.exit not in (0, 1):
+        return None, base, (fetched.stderr or (ancestry.stderr if ancestry else "")).strip()[:120] or ("git could not tell" if commit else "no release commit recorded")
+    return ancestry.exit == 0, base, ""
