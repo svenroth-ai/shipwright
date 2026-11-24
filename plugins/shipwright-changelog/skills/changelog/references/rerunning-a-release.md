@@ -9,7 +9,7 @@ Referenced from SKILL.md Step 4. Covers what happens when
 The aggregator writes `CHANGELOG.md` **before** it deletes the drop files it
 consumed. There is no way to make those two steps one atomic act, so an
 interruption in that window is a real state: the section is written *and* every
-drop is still pending. The operator's instinct — run it again — used to insert
+drop is still pending. The operator's instinct — run it again — would insert
 a second `## [x.y.z]`.
 
 ## What a re-run does

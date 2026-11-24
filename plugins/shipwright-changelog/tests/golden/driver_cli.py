@@ -3,8 +3,8 @@
 It implements the same per-step driver interface as ``driver_replay`` (programme P7). A step it moved becomes one
 ``release.py`` call; every other step is the replay's, so a scenario written for the replay runs unchanged and its trace
 is compared with the frozen one. P4 moves ``fold-events``/``sync``/``evidence`` (one ``sync`` call, answered from its payload),
-``commit-and-tag``, ``record-event`` and ``close-phase`` here; ``open-pr``, ``merge-pr``, ``push-tags`` and ``release-page``
-stay literal outward commands (BRIEF section 2: one line each).
+``commit-and-tag``, ``record-event`` and ``close-phase`` here; P5 moves ``push-tags`` (F1a/F1b/F4: the decision reads the run
+state); ``open-pr``, ``merge-pr`` and ``release-page`` stay literal outward commands (BRIEF section 2: one line each).
 
 ``release.py`` reports every tool it ran (``commands``: key, exit code, stdout, stderr); this driver replays them into
 ``log``, so the scenarios that read a tool's own output (``run.commands("aggregate")[-1]["stderr"]``) read the same
@@ -29,12 +29,12 @@ from .driver_replay import STEPS, ReplayDriver
 from .replay_commands import CITES, PLUGIN
 
 RELEASE_CLI = PLUGIN / "scripts" / "release.py"
-CLI_STEPS = frozenset({"prepare", "aggregate", "fold-events", "sync", "evidence", "commit-and-tag", "record-event", "close-phase"})
+CLI_STEPS = frozenset({"prepare", "aggregate", "fold-events", "sync", "evidence", "commit-and-tag", "record-event", "push-tags", "close-phase"})
 CHAIN_KEYS = {"commit-and-tag": ("git-add-changelog", "git-add-log", "git-add-drops", "commit", "verify-evidence", "verify-manifests", "tag",
                                  "verify-tag", "tag-remove"),
               "record-event": ("event-record", "event-stage", "event-add", "event-commit", "event-push"),
               "close-phase": ("dashboard", "handoff", "phase-history", "restore-derived")}
-QUERY_KEYS = ("head", "tag-commit", "branch", "event-paths")  # the CLI asks git; the prose chain did not log these
+QUERY_KEYS = ("head", "tag-commit", "branch", "event-paths", "verify-base", "verify-remote-url", "verify-fetch", "verify-merged", "push-moved", "push-head", "push-tag-commit")  # the CLI asks git; the prose did not log these
 
 
 def _json(text: str) -> dict[str, Any]:
@@ -146,6 +146,12 @@ class CliDriver(ReplayDriver):
     def step_record_event(self, scratch: Any, version: str) -> gt.StepResult:
         code, _ = self._chain(scratch, "record-event", "--version", version, "--pr-url", self.state.get("pr_url", ""))
         return self._plain("record-event", code)
+
+    def step_push_tags(self, scratch: Any, version: str | None = None) -> gt.StepResult:
+        start = len(self.log)
+        code, _ = self._release(scratch, "push-tag", "--version", version or self.state["version"])
+        self.log[start:] = [e for e in self.log[start:] if e["key"] not in QUERY_KEYS]
+        return self._plain("push-tags", code)
 
     def step_release_page(self, scratch: Any, version: str) -> gt.StepResult:
         result = super().step_release_page(scratch, version)

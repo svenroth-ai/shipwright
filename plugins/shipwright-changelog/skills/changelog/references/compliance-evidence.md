@@ -102,25 +102,13 @@ not exist yet. The two `.json` members carry no banner: `ci-security.json` state
 its own provenance in `source` / `scan_date`, and `test-traceability.json` has a
 schema with contract tests.
 
-## Why Step 8 needs the restore
+## Why the tree ends clean
 
-**Since unit P4 (operator decision F10) the release no longer calls `update-step`, and a hand-invoked `close-phase` ends with every derived
-snapshot restored to `HEAD` (`restore_derived_to_head`), so the tree is clean without the `--restore` call below; the paragraph stays as the
-reason the restore exists.** The tag/CHANGELOG check that `update-step` provided runs in `release.py commit-and-tag` (operator decision F7).
-
-`orchestrator update-step --step changelog --status complete` regenerates all
-seven a **second** time — unstamped, and at a different commit than the one that
-was just tagged. Without `--restore` the release ends with a permanently dirty
-working tree whose contents disagree with what was committed. The restore makes
-the committed, stamped copies win.
-
-**Not on every path**, and the difference is worth knowing rather than assuming:
-in a driven `single_session` run that `update-step` call is mechanically inert
-(`orchestrator_pkg/cli.py`), and `single_session_apply` never invokes
-`run_compliance_update` at all. The second regeneration therefore happens on the
-standalone/legacy path only. `--restore` is a no-op when nothing regenerated, so
-running it unconditionally costs nothing and removes the need to know which path
-you are on.
+The phase's own regeneration of the seven documents (a driven run's compliance step) writes them a **second** time: unstamped, and at a different commit
+than the one just tagged. A hand-invoked release must not leave that behind, so `release.py close-phase` puts every derived snapshot back to `HEAD`
+(`restore_derived_to_head`): the committed, stamped copies win and the working tree ends clean. A driven run keeps its canon records (the master's gate
+reads them) and restores nothing. The restore is a no-op when nothing regenerated, so no path needs to know which case it is in.
+The tag and CHANGELOG check runs in `release.py commit-and-tag`, not in the phase's state update.
 
 ## Between releases
 

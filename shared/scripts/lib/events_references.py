@@ -122,6 +122,7 @@ REGISTRY: dict[str, tuple[str, ...]] = {
     ),
     "M": (
         "plugins/shipwright-changelog/scripts/lib/release_event.py",
+        "plugins/shipwright-changelog/scripts/lib/release_push.py",
         "plugins/shipwright-changelog/scripts/lib/release_verify.py",
         "plugins/shipwright-changelog/scripts/hooks/release_guard.py",
         "plugins/shipwright-adopt/scripts/checks/setup_adopt.py",

@@ -1,0 +1,225 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-24-p5-thin-skill-md",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-24T02:06:20.120807+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "dependency ·",
+          "file": null,
+          "line": null,
+          "finding": "The plan covers pins in `test_skill_event_ships_in_release_pr.py`, but does not account for all 30 P0.3 tests across 13 files. It also does not explicitly preserve the description, visible mode resolution, literal PR/merge commands, or truth-table questions. These are central acceptance requirements.",
+          "suggestion": "Inventory every P0.3 pin and its replacement before editing, then include the required old-test → new-test mapping. Identify how each retained prose contract will be verified, including the cross-plugin guards.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "The `push-tag` design describes F1a, F1b, and refused pushes, but omits two binding branches: guided mode stops before pushing, and failed PR creation stops the flow. “A driven run never merges its PR” does not establish either prerequisite. Moving the push into the CLI could therefore bypass an existing stop.",
+          "suggestion": "Define and test the subcommand’s behavior for guided mode and missing/failed PR creation. Enforce applicable prerequisites from recorded run state before invoking Git.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency ·",
+          "file": null,
+          "line": null,
+          "finding": "The golden plan lists deltas for prose and `driver_cli.py`, but omits the explicitly required promise-anchor review and updates. Rewriting section text intentionally invalidates those hashes; retaining live prose in `REQUIRED` does not avoid that work.",
+          "suggestion": "Include sentence-by-sentence promise review, anchor updates, and the corresponding freeze bookkeeping. Check whether moved promise tests require `--promise-only --repin`, and document the `REQUIRED` decision in both the PR and FINDINGS.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk ·",
+          "file": null,
+          "line": null,
+          "finding": "The plan acknowledges that squash-merged hand-invoked releases will be refused, without resolving whether that is compatible with the existing release flow. Commit ancestry cannot establish inclusion after a squash merge, so this can strand tag publication after a successful merge.",
+          "suggestion": "Confirm the mandated merge strategy from the campaign documents. If squash merges are supported, define an authorized verification path; if they are prohibited, make the refusal actionable and test it. Any unresolved operator decision remains a strict stop.  The approach is directionally sound, particularly moving push decisions into code and exposing a public verifier boundary. It needs complete pin coverage, explicit stop behavior, and the missing freeze work before implementation is ready.  Repository inspection was blocked by the execution policy, so this assessment is based on the supplied specification and mini-plan.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-24T02:06:20.294190+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: approach** — **Severity: high** — The spec's scope for P5 is: thin SKILL.md, move the 30 P0.3 pins, remove F7 prose. The mini-plan additionally builds `release_push.py`, a `push-tag` subcommand with F1a/F1b/F4 branching, an `on_base` extraction, and the `verify_release_tag.py` public-wrapper fix. Those come from the \"Carried over from P4\" section, which reads as *context to carry*, not \"implement in P5\" — the F1a/F1b/F4 item is explicitly phrased as a direction (\"move the decision... into a release.py subcommand\") that may or may not be P5's job. If P5 is supposed to be only the prose rewrite + pin moves, the plan roughly doubles the unit. **Suggestion:** confirm with the operator (or the BRIEF §5 P5 unit table) whether the carried-over items are in P5's touch set; if yes, the PR mapping table must cover them and the complexity is no longer \"medium.\" If they were already done in P4's follow-up, delete them from the plan — a plan that re-implements shipped code is a defect.\n\n- **Category: risk** — **Severity: high** — New CLI-driven push behavior plus \"CLI driver replays `push-tags` through the CLI\" implies at least one new trace. The spec is explicit: \"No trace should change... a moved trace is a STRICT-STOP,\" and any trace added to the frozen set forces `--repin`, which empties `approved_deltas.json` and makes the planned per-file approved deltas moot. The mini-plan's golden strategy (item 6: approved deltas, no re-pin) is internally inconsistent with its own test plan (item 5: driver replays). **Suggestion:** resolve before coding: either the push-tag tests are in-process only (no new trace, no re-pin), or the whole golden approach flips to `--repin` with an empty deltas file. Do not discover this at `golden_lock.py --check` time.\n\n- **Category: edge-case** — **Severity: medium** — The spec flags that the SKILL.md rewrite *purposefully* trips `test_promises_meta.py` and requires re-reviewing every sentence and updating the a […truncated]\n\n[openai] 1. **Category: dependency · Severity: high**  \n   **Finding:** The plan covers pins in `test_skill_event_ships_in_release_pr.py`, but does not account for all 30 P0.3 tests across 13 files. It also does not explicitly preserve the description, visible mode resolution, literal PR/merge commands, or truth-table questions. These are central acceptance requirements.  \n   **Suggestion:** Inventory every P0.3 pin and its replacement before editing, then include the required old-test → new-test mapping. Identify how each retained prose contract will be verified, including the cross-plugin guards.\n\n2. **Category: edge-case · Severity: high**  \n   **Finding:** The `push-tag` design describes F1a, F1b, and refused pushes, but omits two binding branches: guided mode stops before pushing, and failed PR creation stops the flow. “A driven run never merges its PR” does not establish either prerequisite. Moving the push into the CLI could therefore bypass an existing stop.  \n   **Suggestion:** Define and test the subcommand’s behavior for guided mode and missing/failed PR creation. Enforce applicable prerequisites from recorded run state before invoking Git.\n\n3. **Category: dependency · Severity: medium**  \n   **Finding:** The golden plan lists deltas for prose and `driver_cli.py`, but omits the explicitly required promise-anchor review and updates. Rewriting section text intentionally invalidates those hashes; retaining live prose in `REQUIRED` does not avoid that work.  \n   **Suggestion:** Include sentence-by-sentence promise review, anchor updates, and the corresponding freeze bookkeeping. Check whether moved promise tests require `--promise-only --repin`, and document the `REQUIRED` decision in both the PR and FINDINGS.\n\n4. **Category: risk · Severity: medium**  \n   **Finding:** The plan acknowledges that squash-merged hand-invoked releases will be refused, without resolving whether that is compatible with the existing release flow. Commit ancestry cannot establish […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-24T02:06:21.010048+00:00",
+      "disposition": "the orchestrator runs the independent opus cascade for this campaign unit (brief of the runner); the runner did not spawn the code reviewer",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "delegated-to-orchestrator"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-24T02:06:21.188433+00:00",
+      "disposition": "the orchestrator runs the independent opus cascade for this campaign unit (brief of the runner); the runner did not spawn the doubt reviewer",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "delegated-to-orchestrator"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_push.py:52-56` (`if not on_trunk and state.get(\"mode\") == \"standalone\":`)",
+          "line": null,
+          "finding": "The F1b gate (\"in guided mode no tag before the PR is merged\", per the operator decision and `docs/hooks-and-pipeline.md`) keys on `mode == \"standalone\"` only and never reads `autonomy`. A driven pipeline run with `autonomy: guided` skips the `on_base` check entirely and pushes the tag while its PR is still open — exactly the state F1b forbids. The test suite has no case for `pipeline` + `guided`, so this hole is untested (the \"driven run never merges its PR\" test uses the default autonomous autonomy).",
+          "suggestion": "Apply the base-branch gate when `state.get(\"mode\") == \"standalone\"` or autonomy is guided (or equivalently: skip it only when the run itself merges the PR, mirroring `_pr_check`'s `AUTONOMOUS` logic), and add a `pipeline`+`guided` test asserting `waiting_for_merge`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_push.py:47` (`record[\"commit\"]`)",
+          "line": null,
+          "finding": "After the `record.get(\"version\") != version` guard, `record[\"commit\"]` is accessed directly (twice: the diff and the `on_base` call). A `release_state.json` that names this version but lacks `commit` (truncated/partial write) raises `KeyError` instead of refusing with a JSON reason.",
+          "suggestion": "Use `record.get(\"commit\")` and refuse with `release_not_committed` when it is missing.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "whole diff (PR-level, verified against the test files touched)",
+          "line": null,
+          "finding": "The spec requires \"every pin from P0.3 (30 tests in 13 files) moved or replaced in this diff, mapped one by one in the PR.\" The diff touches only one existing pin file (`test_skill_event_ships_in_release_pr.py`) plus the new `test_release_p5.py`. If any of the other pin tests assert prose that this rewrite changed (e.g. lines quoting `git push origin \"v{version}\"`, the `update-step` mention, or the release-workflow/compliance-evidence headings), they will fail; if none do, the \"mapped one by one\" obligation must at least be discharged in the PR body — nothing in the diff evidences the mapping.",
+          "suggestion": "Confirm the changelog test root is green and include the old-test → new-test table in the PR; if any pin in the other 12 files referenced changed prose, that file must appear in this diff.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "spec",
+          "file": "whole diff",
+          "line": null,
+          "finding": "Two spec obligations are not visible in the diff: (a) the written decision \"whether the live prose leaves `REQUIRED` of `test_trace_freeze.py`\" with its reason (no `test_trace_freeze.py` or FINDINGS edit is shown, so presumably \"stays\" — but the reason must be recorded in the PR/FINDINGS), and (b) the required append to `LEARNINGS.md` (§8). Repo rules put docs in the same diff.",
+          "suggestion": "Add the FINDINGS entry (decision + reason) and the LEARNINGS append to this change, or point to them if the runner attaches them outside the diff.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "plugins/shipwright-changelog/tests/golden/driver_cli.py:32` (`QUERY_KEYS` extension)",
+          "line": null,
+          "finding": "verify-base`/`verify-remote-url`/`verify-fetch`/`verify-merged` also run inside `close-phase` (via `_pr_check` → `on_base`). If `QUERY_KEYS` is applied anywhere beyond `step_push_tags` (e.g. in `_chain`), those keys would be stripped from the frozen `close-phase` traces — a moved trace, which the spec declares a STRICT-STOP. From the visible diff it is filtered only in `step_push_tags`, but this is exactly the kind of silent trace drift the freeze is meant to catch.",
+          "suggestion": "Confirm `golden_lock.py --check` and the trace-comparison tests pass on the merged tree, and that the `close-phase` traces are byte-identical to the frozen ones.  Positive notes: the `push_tag` logic is otherwise sound (trunk names validated against `TRUNKS` before entering argv, refspecs rather than raw branch names, `--end-of-options` used, event-only HEAD diff rule carried over, `waiting_for_merge` vs `merge_state_unknown` distinguished); the public `check_release_tag` wrapper plus the boundary test and the `cc\\._` source scan properly close the P4 private-import carry-over; the F7 prose tests fail on the old prose by construction (they scan for `update-step`/`--restore`/writer names across SKILL.md and all references, excluding the runtime prompt as required). Approved deltas are present for every changed frozen prose file with `source: P5/F7` as specified.  Overall: the implementation is coherent and well-tested for the mainline paths, but the F1b guided-pipeline hole is a real spec violation and the pin-mapping/decision-record obligations are not evidenced in the diff. Ship-with-fixes.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_push.py",
+          "line": 46,
+          "finding": "The trunk safety check examines `HEAD`, but the push sends the stored `refs/heads/{branch}`. If the checkout has changed since `record-event`, these can identify different commits: `HEAD` can pass the check while the stored trunk contains unrelated changes that will be published.",
+          "suggestion": "Resolve and validate the actual trunk ref being pushed against the recorded release commit. Also verify that the current branch matches the recorded branch, or explicitly support pushing from another checkout state.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_push.py",
+          "line": 47,
+          "finding": "startswith(EVENT_PATHS)` treats `shipwright_events.jsonl` as a prefix, allowing unrelated paths such as `shipwright_events.jsonl.py` through the event-only check. Such a committed file would be published despite the stated restriction.",
+          "suggestion": "Match `shipwright_events.jsonl` exactly and use a prefix match only for `.shipwright/events/drops/`. Add a test showing that a filename with the event filename as its prefix is refused.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_push.py",
+          "line": 57,
+          "finding": "The command never verifies that the tag being pushed still resolves to the recorded release commit. If the local tag is moved after `commit-and-tag`, both the merge check and trunk check can pass while an unrelated commit is published as the release. Verification during `close-phase` happens after publication.",
+          "suggestion": "Before pushing, resolve `refs/tags/v{version}^{commit}` and require it to equal the recorded release commit. Cover a moved tag with a real Git test that verifies nothing reaches the remote.  The extracted verifier preserves the previous behavior, but the new push command needs fixes before shipping because its checks do not reliably validate the refs it publishes. Repository inspection was blocked by the execution policy, so this assessment is based on the supplied diff; tests were not run.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-24T02:07:59.136130+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- Category: bug\n  Severity: medium\n  File: `plugins/shipwright-changelog/scripts/lib/release_push.py:52-56` (`if not on_trunk and state.get(\"mode\") == \"standalone\":`)\n  Finding: The F1b gate (\"in guided mode no tag before the PR is merged\", per the operator decision and `docs/hooks-and-pipeline.md`) keys on `mode == \"standalone\"` only and never reads `autonomy`. A driven **pipeline** run with `autonomy: guided` skips the `on_base` check entirely and pushes the tag while its PR is still open — exactly the state F1b forbids. The test suite has no case for `pipeline` + `guided`, so this hole is untested (the \"driven run never merges its PR\" test uses the default autonomous autonomy).\n  Suggestion: Apply the base-branch gate when `state.get(\"mode\") == \"standalone\"` **or** autonomy is guided (or equivalently: skip it only when the run itself merges the PR, mirroring `_pr_check`'s `AUTONOMOUS` logic), and add a `pipeline`+`guided` test asserting `waiting_for_merge`.\n\n- Category: edge-case\n  Severity: low\n  File: `plugins/shipwright-changelog/scripts/lib/release_push.py:47` (`record[\"commit\"]`)\n  Finding: After the `record.get(\"version\") != version` guard, `record[\"commit\"]` is accessed directly (twice: the diff and the `on_base` call). A `release_state.json` that names this version but lacks `commit` (truncated/partial write) raises `KeyError` instead of refusing with a JSON reason.\n  Suggestion: Use `record.get(\"commit\")` and refuse with `release_not_committed` when it is missing.\n\n- Category: spec\n  Severity: medium\n  File: whole diff (PR-level, verified against the test files touched)\n  Finding: The spec requires \"every pin from P0.3 (30 tests in 13 files) moved or replaced in this diff, mapped one by one in the PR.\" The diff touches only **one** existing pin file (`test_skill_event_ships_in_release_pr.py`) plus the new `test_release_p5.py`. If any of the other pin tests assert prose that this rewrite changed (e.g. lines quoting `git push orig […truncated]\n\n[openai] - Category: bug\n- Severity: high\n- File: plugins/shipwright-changelog/scripts/lib/release_push.py:46\n- Finding: The trunk safety check examines `HEAD`, but the push sends the stored `refs/heads/{branch}`. If the checkout has changed since `record-event`, these can identify different commits: `HEAD` can pass the check while the stored trunk contains unrelated changes that will be published.\n- Suggestion: Resolve and validate the actual trunk ref being pushed against the recorded release commit. Also verify that the current branch matches the recorded branch, or explicitly support pushing from another checkout state.\n\n- Category: bug\n- Severity: medium\n- File: plugins/shipwright-changelog/scripts/lib/release_push.py:47\n- Finding: `startswith(EVENT_PATHS)` treats `shipwright_events.jsonl` as a prefix, allowing unrelated paths such as `shipwright_events.jsonl.py` through the event-only check. Such a committed file would be published despite the stated restriction.\n- Suggestion: Match `shipwright_events.jsonl` exactly and use a prefix match only for `.shipwright/events/drops/`. Add a test showing that a filename with the event filename as its prefix is refused.\n\n- Category: bug\n- Severity: high\n- File: plugins/shipwright-changelog/scripts/lib/release_push.py:57\n- Finding: The command never verifies that the tag being pushed still resolves to the recorded release commit. If the local tag is moved after `commit-and-tag`, both the merge check and trunk check can pass while an unrelated commit is published as the release. Verification during `close-phase` happens after publication.\n- Suggestion: Before pushing, resolve `refs/tags/v{version}^{commit}` and require it to equal the recorded release commit. Cover a moved tag with a real Git test that verifies nothing reaches the remote.\n\nThe extracted verifier preserves the previous behavior, but the new push command needs fixes before shipping because its checks do not reliably validate the refs it publishes. Reposi […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-24T02:06:20.837157+00:00",
+      "disposition": "the orchestrator runs the independent opus cascade for this campaign unit (brief of the runner); the runner did not spawn the spec reviewer",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "delegated-to-orchestrator"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-24T02:06:20.489185+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-24T02:06:20.666289+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

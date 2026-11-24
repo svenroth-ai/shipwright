@@ -19,6 +19,11 @@ from .release_runner import Recorder, uv_script
 TRUNKS = ("main", "develop")
 
 
+def record_paths() -> tuple[str, str]:
+    """The two event paths a release commits (the plugin cannot import the shared resolver: own lib package)."""
+    return ("shipwright_events.jsonl", ".shipwright/events/drops")
+
+
 def record_event(rec: Recorder, plugin_root: Path, *, version: str, pr_url: str = "") -> tuple[int, dict[str, Any]]:
     shared, root = release_paths.shared_root(plugin_root), rec.cwd
     tools, run_id = shared / "scripts/tools", f"release-v{version}"
@@ -38,7 +43,7 @@ def record_event(rec: Recorder, plugin_root: Path, *, version: str, pr_url: str 
         done = rec.run(key, uv_script(tools / script, "--project-root", str(root), *args))
         if done.exit != 0:
             return stop(done, f"{key.replace('-', '_')}_failed")
-    event_paths = ("shipwright_events.jsonl", ".shipwright/events/drops")  # the plugin cannot import the shared resolver (own lib package)
+    event_paths = record_paths()
     if (root / event_paths[0]).is_file():
         rec.run("event-add", ["git", "add", event_paths[0]])  # not part of the chain, as in the prose
     listed = rec.run("event-paths", ["git", "diff", "--cached", "--name-only", "-z", "--", *event_paths])

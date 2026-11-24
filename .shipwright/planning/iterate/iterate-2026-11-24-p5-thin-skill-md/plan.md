@@ -1,0 +1,6 @@
+Goal: The changelog skill prose writes no run state; the release tag push and its branching are one CLI call.
+Reason: P5 of the changelog pilot: F7 mentions left in the prose and the P4 review carry-overs (push-tag, public verifier entry).
+Reference: campaign dfp-pilot-changelog-p3-p8 unit P5; FR-01.09
+Affected ACs: FR-01.09.AC01
+AC item: {"ac": "FR-01.09.AC01", "confirmed": false, "decided_by": "code", "files": ["plugins/shipwright-changelog/scripts/checks/verify_release_tag.py", "plugins/shipwright-changelog/scripts/lib/release_push.py", "plugins/shipwright-changelog/scripts/lib/release_verify.py", "plugins/shipwright-changelog/scripts/release.py", "plugins/shipwright-changelog/skills/changelog/SKILL.md", "plugins/shipwright-changelog/skills/changelog/references/compliance-evidence.md", "plugins/shipwright-changelog/skills/changelog/references/manifest-sync.md", "plugins/shipwright-changelog/skills/changelog/references/release-workflow.md", "plugins/shipwright-changelog/skills/changelog/references/rerunning-a-release.md", "shared/scripts/tools/verifiers/changelog_checks.py"], "kind": "unchanged"}
+AC decisions: [{"ac": "FR-01.09.AC01", "mode": "auto", "answer": "auto", "kind": "unchanged", "answered_via": "none", "decided_by": "code", "confirmed": false}]

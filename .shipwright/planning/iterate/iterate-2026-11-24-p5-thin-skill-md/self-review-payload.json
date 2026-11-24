@@ -1,0 +1,9 @@
+{"items": [
+ {"name": "Spec Compliance", "verdict": "pass", "note": "No prose line names update-step, --restore or a run-state writer (fails-on-old test); push-tag carries F1a/F1b/F4; public tag-check wrapper with a boundary test; deltas for every changed frozen file; the open points are recorded in FINDINGS D39-D43."},
+ {"name": "Error Handling", "verdict": "pass", "note": "push-tag refuses a missing release record, event record, mode, a non-trunk name, an unreadable merge state and a moved trunk; each refusal has a reason code and a test."},
+ {"name": "Security Basics", "verdict": "pass", "note": "The branch name is read from disk, checked against the trunk list and pushed as refs/heads/<name> after --end-of-options; the hook is blind to this push, so the CLI repeats its record rule (D39)."},
+ {"name": "Test Quality", "verdict": "pass", "note": "In-process tests with the injected runner for every refusal and for the CLI dispatch, a real-git script test, and all 73 scenarios replayed through the CLI driver."},
+ {"name": "Performance Basics", "verdict": "pass", "note": "One git diff and, off the trunk, one fetch per call; no loops."},
+ {"name": "Naming & Structure", "verdict": "pass", "note": "New lib module release_push.py under 60 lines; on_base extracted from the PR check so verify and push share one ancestry test."},
+ {"name": "Affected Boundaries", "verdict": "pass", "note": "push-tag reads release_run.json (written by release_runstate.patch) and release_state.json (written by release_commit.write_state) through their own readers; the tag-check script and the shared verifier meet at check_release_tag, tested through the script on real git."}
+]}

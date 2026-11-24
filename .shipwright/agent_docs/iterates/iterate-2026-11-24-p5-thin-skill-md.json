@@ -1,0 +1,78 @@
+{
+  "run_id": "iterate-2026-11-24-p5-thin-skill-md",
+  "date": "2026-11-24T02:16:53.449127Z",
+  "event_at": "2026-11-23T23:43:47.496488+00:00",
+  "type": "change",
+  "complexity": "large",
+  "complexity_override": "operator-accepted-large",
+  "prior_source": "keyword",
+  "branch": "iterate/campaign-dfp-pilot-changelog-p3-p8--P5",
+  "spec": ".shipwright/planning/iterate/campaigns/dfp-pilot-changelog-p3-p8/sub-iterates/P5-thin-skill-md.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-11-24-p5-thin-skill-md",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "no skill prose line names update-step, --restore or a run-state writer",
+        "disposition": "tested",
+        "evidence": "test_release_p5.py::test_f7_no_prose_line_writes_run_state_in_any_mode PASSED (fails on the old prose)"
+      },
+      {
+        "behavior": "the phase close is one close-phase call and every push is the CLI",
+        "disposition": "tested",
+        "evidence": "test_release_p5.py::test_f7_the_phase_close_is_one_close_phase_call_and_every_push_is_the_cli PASSED"
+      },
+      {
+        "behavior": "push-tag: trunk pushes trunk and exactly the tag; feature branch pushes only the tag after the merge; driven run without a merge check",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "test_release_p5.py push-tag tests PASSED; golden/test_driver_cli.py replays every scenario through the CLI driver PASSED"
+      },
+      {
+        "behavior": "push-tag refuses: not committed, event not recorded, no mode, foreign branch, moved tag, other branch, moved trunk, unreadable merge state, refused push",
+        "disposition": "tested",
+        "evidence": "test_release_p5.py refusal tests PASSED"
+      },
+      {
+        "behavior": "the tag check script uses the public shared entry and gives the same answer",
+        "disposition": "tested",
+        "evidence": "test_release_p5.py::test_the_tag_check_script_uses_the_public_entry_and_agrees_with_it, shared/tests/test_check_release_tag.py PASSED"
+      },
+      {
+        "behavior": "frozen traces unchanged, every changed frozen file has an approved delta",
+        "disposition": "tested",
+        "evidence": "golden/test_trace_freeze.py PASSED; golden_lock.py --check exit 0"
+      }
+    ],
+    "counts": {
+      "testable": 6,
+      "tested": 6,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 1,
+      "covered_acs": 1
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run --project plugins/shipwright-changelog pytest plugins/shipwright-changelog/tests/test_release_p5.py -q -p no:cacheprovider",
+    "exit_code": 0,
+    "tests_run": 13,
+    "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\campaign-dfp-pilot-changelog-p3-p8--P5\\.shipwright\\runs\\iterate-2026-11-24-p5-thin-skill-md\\surface_verification.log",
+    "timestamp": "2026-11-24T02:05:55.180Z",
+    "attempts": 1
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": [
+    "touches_auth",
+    "touches_build",
+    "touches_rls"
+  ]
+}

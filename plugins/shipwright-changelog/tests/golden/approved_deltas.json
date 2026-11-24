@@ -241,5 +241,59 @@
     "approver": "pilot BRIEF section 4 P4 row (the inventory follows the skill's headings) and the orchestrator's P4 review decision of 2026-11-23: steps 5.3 to 5.5 are one `sync` section, so three coverage rows become one",
     "date": "2026-11-23",
     "source": "P4"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
+    "field": "sha256",
+    "before": "0b5a109513b19604c933638fd340e6fdd92210ec1dad694de4609135cf7ae9ea",
+    "after": "eec9c926bd1b6ed4122bd6f730b0c8671fe6027c6332a7440a41a9bd995655ee",
+    "approver": "pilot BRIEF section 5 P5 and the P4 review carry-over (spec 'Carried over from P4'): the tag push and its F1a/F1b/F4 decision are release.py push-tag, one line in SKILL.md; the CLI driver replays the push-tags step through it (FINDINGS D39, D40; stop 3 confirms); and pilot BRIEF section 5 P5 (F7) with the operator decision F7 of 2026-11-23 (FULLRUN-REPORT 'Decisions (operator, 2026-11-23)'): the skill prose names no run-state write (update-step, --restore) and carries no unit history; P5 spec",
+    "date": "2026-11-24",
+    "source": "P5/F7"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/skills/changelog/references/compliance-evidence.md",
+    "field": "sha256",
+    "before": "1d4e81c70abedd02df1cbccc4e9552e460cd8257752265768d3df96d389462b8",
+    "after": "2948d85e8be855dbcf37bfd6999aaec6e0270432843d852c5b352602d4d1f40f",
+    "approver": "pilot BRIEF section 5 P5 (F7) with the operator decision F7 of 2026-11-23 (FULLRUN-REPORT 'Decisions (operator, 2026-11-23)'): the skill prose names no run-state write (update-step, --restore) and carries no unit history; P5 spec",
+    "date": "2026-11-24",
+    "source": "P5/F7"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/skills/changelog/references/manifest-sync.md",
+    "field": "sha256",
+    "before": "c3aad640cd462030212c4fb74226bda85e5c7692795776570a707d3cf92e64ea",
+    "after": "7d600443f22f9315ebf9c49bb14e962b11d040e73b2241d32e6be00140f8522f",
+    "approver": "pilot BRIEF section 5 P5 (F7) with the operator decision F7 of 2026-11-23 (FULLRUN-REPORT 'Decisions (operator, 2026-11-23)'): the skill prose names no run-state write (update-step, --restore) and carries no unit history; P5 spec",
+    "date": "2026-11-24",
+    "source": "P5/F7"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/skills/changelog/references/release-workflow.md",
+    "field": "sha256",
+    "before": "b01de46655448e73b651644a38d699e75a88e24ef374fcfd3fd58fe4681028a1",
+    "after": "ae82b6970fa42cb418bb3159fdc8052f4de84e3dea222ae5cfd0673524ef256a",
+    "approver": "pilot BRIEF section 5 P5 (F7) with the operator decision F7 of 2026-11-23 (FULLRUN-REPORT 'Decisions (operator, 2026-11-23)'): the skill prose names no run-state write (update-step, --restore) and carries no unit history; P5 spec",
+    "date": "2026-11-24",
+    "source": "P5/F7"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/skills/changelog/references/rerunning-a-release.md",
+    "field": "sha256",
+    "before": "98b45355e24b49bceb319c25c4a81d15fad1ccce25700d9258284034a01f26ad",
+    "after": "4912bb79223acc1fa77e1e66d4889ba1a9b8db3d07ade90dbdda38b212679311",
+    "approver": "pilot BRIEF section 5 P5 (F7) with the operator decision F7 of 2026-11-23 (FULLRUN-REPORT 'Decisions (operator, 2026-11-23)'): the skill prose names no run-state write (update-step, --restore) and carries no unit history; P5 spec",
+    "date": "2026-11-24",
+    "source": "P5/F7"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/driver_cli.py",
+    "field": "sha256",
+    "before": "d4b031541cd0e0f543be445716020244cd31181f63cc4dc830fb2974cba6e007",
+    "after": "bd57a9ec0b3fb843808949406eb7c915cf3034ff12a7a4f0a0bc657606d3ea7e",
+    "approver": "pilot BRIEF section 5 P5 and the P4 review carry-over (spec 'Carried over from P4'): the tag push and its F1a/F1b/F4 decision are release.py push-tag, one line in SKILL.md; the CLI driver replays the push-tags step through it (FINDINGS D39, D40; stop 3 confirms)",
+    "date": "2026-11-24",
+    "source": "P5"
   }
 ]

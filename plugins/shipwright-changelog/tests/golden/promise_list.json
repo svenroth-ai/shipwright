@@ -458,7 +458,7 @@
         "heading_path": [
           "C. Detect Invocation Mode"
         ],
-        "content_hash": "09762568e64de13a345f55aaf789c2e56e222e80a7b5a372f2de3daffce751b9"
+        "content_hash": "07384c54ff80a73eb7679ee3d498e8df43b4e441fbbb8bd386318b996d813da9"
       },
       "class": "ask",
       "check": {
@@ -515,7 +515,7 @@
         "heading_path": [
           "Step 7: Create PR (Optional)"
         ],
-        "content_hash": "226b0495e243e8248ffd63ed15031cc751fbfde6f58aaf2e61e7785aa07837a2"
+        "content_hash": "bf5b2a6da55c8af94b7da8f9e5b197dbe1d7c138f973831da4a7940982c6e830"
       },
       "class": "mechanic",
       "check": null,
