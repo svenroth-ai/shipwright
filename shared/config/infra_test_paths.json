@@ -1,9 +1,17 @@
 [
   "plugins/shipwright-changelog/tests/golden/test_trace_freeze.py",
+  "shared/scripts/tools/tests/test_backfill_engine_units.py",
+  "shared/tests/test_condense_release_notes.py",
+  "shared/tests/test_external_review_codex_leg.py",
+  "shared/tests/test_external_review_gpt_leg_provider.py",
+  "shared/tests/test_external_review_openai_param.py",
   "shared/tests/test_gh_stub.py",
+  "shared/tests/test_glm_review_routing.py",
   "shared/tests/test_golden_driver_freeze.py",
   "shared/tests/test_golden_trace.py",
+  "shared/tests/test_llm_review.py",
   "shared/tests/test_promise_hash.py",
   "shared/tests/test_promise_hash_hardening.py",
-  "shared/tests/test_release_scratch.py"
+  "shared/tests/test_release_scratch.py",
+  "shared/tests/test_review_assistant_ui_plan.py"
 ]
