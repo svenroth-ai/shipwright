@@ -80,7 +80,7 @@ def test_verify_local_imports_only_the_standard_library() -> None:
 
     foreign = imported - sys.stdlib_module_names - {"__future__"}
     assert not foreign, (
-        f"scripts/verify_local.py imports {sorted(foreign)}. The three checkers must be "
+        f"scripts/verify_local.py imports {sorted(foreign)}. The mirrored checkers must be "
         f"driven as subprocesses, never imported (ADR-045)."
     )
 
@@ -228,7 +228,7 @@ def test_the_subprocess_runner_reports_the_child_exit_code_and_output() -> None:
 
 
 def test_the_subprocess_runner_round_trips_non_ascii_child_output() -> None:
-    """All three checkers emit non-ASCII (the surface verifiers print arrows, the
+    """All the mirrored checkers emit non-ASCII (the surface verifiers print arrows, the
     CI-gate guard prints em-dashes), and only two reconfigure their own stdio. A child
     writing to a PIPE encodes with the locale codec, so on a Windows cp1252 host those
     characters arrive as bytes a UTF-8 decode renders U+FFFD — mojibake in exactly the

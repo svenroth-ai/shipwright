@@ -155,7 +155,7 @@ Older workflow tools (state machines, BPMN, job schedulers) have the same shape,
 
 ## P6 (2026-11-24): the ratchet
 
-1. **Steps and effort.** One checker (about 190 lines), its registry, 18 in-process tests, one `(gate)` step in `ci.yml` and in `verify_local.LOCAL_GATES`, four doc edits and one baseline number.
+1. **Steps and effort.** One checker (300 lines), its registry, 69 in-process tests in two files, one `(gate)` step in `ci.yml` and in `verify_local.LOCAL_GATES`, four doc edits and one baseline number.
 2. **Code or AI decisions.** All code: what counts as a shell block, a chain or a new command is decided by the checker; nothing is left to a reviewer's reading of the prose.
 3. **Recurring patterns.** A gate over a frozen file keeps its allowances in its own registry (FINDINGS D45). The drift test needed no change because the gate step name is the join key.
 4. **Pitfalls.** A quote-aware scan is needed for chains (`"a | b"` inside a flag value is data), and `2>&1` must not read as `&`. The CRLF docs need a line-ending-preserving edit.

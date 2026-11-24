@@ -14,8 +14,8 @@ reads ``shared/config/converted_skills.json`` and checks the registered skills o
 
 A chain or a multi-command block passes only when the registry names that exact block in ``escapes`` (one
 escape excuses one block). ``escape_budget`` must equal the number of escapes, so it only falls unless the
-registry itself is edited (a reviewed diff, never a prose edit). Known misses: inline-code commands,
-``references/``, flags after the first flag (``--admin``, ``--force``) and redirections are not ratcheted.
+registry itself is edited (a reviewed diff, never a prose edit). Known misses (hand-crafted evasions, not
+accident protection; a P12 hardening follow-up): FINDINGS D55, e.g. inline code, references/, all after a first flag.
 
     uv run shared/scripts/tools/check_prompt_mechanics.py --project-root .
 

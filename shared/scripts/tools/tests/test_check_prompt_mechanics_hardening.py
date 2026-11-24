@@ -142,5 +142,7 @@ def test_the_real_registry_is_pinned() -> None:
     ]
     assert entry["substitutions"] == ["$(pwd)"]
     (escape,) = entry["escapes"]
-    assert [c.split(" aggregate ")[1].split(" --version ")[0] for c in escape["commands"]] == ['--project-root "$(pwd)"'] * 2
-    assert escape["commands"][0].endswith("--dry-run") and not escape["commands"][1].endswith("--dry-run")
+    assert escape["commands"] == [
+        'uv run "{plugin_root}/scripts/release.py" aggregate --project-root "$(pwd)" --version "{version}" --dry-run',
+        'uv run "{plugin_root}/scripts/release.py" aggregate --project-root "$(pwd)" --version "{version}"',
+    ]

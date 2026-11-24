@@ -33,7 +33,7 @@
 - **Prompt-Mechanics Ratchet** — `check_prompt_mechanics.py`: for converted skills only, fails on a fenced shell
   block that chains or holds several commands and on a command the registry does not list. Registry
   `escapes` must equal `escape_budget`; a stale one fails, so the cap only falls unless the registry itself is
-  edited (a reviewed diff). A CI `(gate)` + `verify_local`.
+  edited (a reviewed diff). Catches accidents, not crafted evasions (FINDINGS D55). A CI `(gate)` + `verify_local`.
 - **Suppression-Baseline** — `shipwright_inline_suppressions.json`. The
   anti-ratchet for inline `# nosemgrep` suppressions: per rule a frozen
   `max_sites` + a `rationale_ref` naming a recorded decision. Exceeding
