@@ -69,29 +69,162 @@
     },
     "code": {
       "review_type": "code",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_push.py",
+          "line": 55,
+          "finding": "The trunk push compared only the end trees, not the guard's rule (ancestry, no merge commits, event-only commits). An amended release commit, a revert pair or a rebased history could publish a tag naming a commit not on the trunk. (Fixed in 08cb0c15e: one shared stdlib-only rule release_descent.py used by the hook and push-tag; real-git test over eight history shapes through both.)",
+          "suggestion": "One shared rule.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_verify.py",
+          "line": 91,
+          "finding": "base_branch was never written; the base fell back to origin/HEAD while the prose opens the PR with --base main. (Fixed: record-event records main; test with origin/HEAD different.)",
+          "suggestion": "Record the base.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_push.py",
+          "line": 63,
+          "finding": "A squash or rebase merge never makes the release commit an ancestor: waiting_for_merge forever. (Fixed: merged PR without the release commit is refused as merged_without_release_commit; closed PR as pr_closed_unmerged; guided squash tag repair stays a P8a follow-up.)",
+          "suggestion": "Ask gh pr view.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_push.py",
+          "line": 62,
+          "finding": "mode vs autonomy disagreed on when the tag waits. (Fixed: one key, mode; deviation from operator F1b for pipeline+guided recorded as D44 for stop 3.)",
+          "suggestion": "One key.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_verify.py",
+          "line": 96,
+          "finding": "'no release commit recorded' was reported when only git failed. (Fixed.)",
+          "suggestion": "Only when commit is falsy.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "plugins/shipwright-changelog/scripts/checks/verify_release_tag.py",
+          "line": 34,
+          "finding": "Subprocess-only coverage of the changed lines. (Fixed: in-process test.)",
+          "suggestion": "In-process test.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "plugins/shipwright-changelog/scripts/hooks/release_guard.py",
+          "line": 38,
+          "finding": "Pre-existing: release_guard.TRUNKS has master, release_event.TRUNKS does not. (Recorded, not built.)",
+          "suggestion": "Triage card.",
+          "source": "code-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-11-24T02:06:21.010048+00:00",
-      "disposition": "the orchestrator runs the independent opus cascade for this campaign unit (brief of the runner); the runner did not spawn the code reviewer",
-      "recorded_by": "none",
+      "completed_at": "2026-11-24T03:40:39.334146+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "8f29a107493b48a5ef6c0b279540a916ad10ff79",
+      "reviewer_notes": "Independent opus code-review on 08697d110 (FAIL, one high), fixed in 08cb0c15e. The re-review (doubt-reviewer, pass 2) found no remaining correctness high apart from a red shared paths-guard test for release_descent.py, which the orchestrator confirmed on the tracked tree and which round 3 (8f29a1074) fixed; the full shared/tests root was rerun green on the tracked tree. Round 3 changes are small and got no further review pass."
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "reversibility",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_push.py",
+          "line": null,
+          "finding": "Claim under doubt: a refused trunk push publishes nothing — git push without --atomic updated the tag even when the branch was refused",
+          "suggestion": "--atomic in the literal trunk line. (Fixed, test compares the prose line with the printed argv.)",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_verify.py",
+          "line": null,
+          "finding": "Claim under doubt: push-tag never blocks a legitimate release — squash or rebase merge left waiting_for_merge forever",
+          "suggestion": "Check the PR state. (Fixed: merged_without_release_commit / pr_closed_unmerged.)",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "hidden coupling",
+          "file": "shared/tests/test_shipwright_paths_guard.py",
+          "line": null,
+          "finding": "Claim under doubt: the shared paths guard stays green after the rule moved to release_descent.py — the new file holds the events literal and had no allowlist entry",
+          "suggestion": "A reasoned entry. (Confirmed red by the orchestrator, fixed in 8f29a1074, shared/tests green on the tracked tree.)",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_verify.py",
+          "line": null,
+          "finding": "Claim under doubt: one wait key (mode) carries out operator decision F1b — a driven guided run now pushes the tag with the PR open",
+          "suggestion": "Recorded as D44, deviation open for operator stop 3, with the reason that a driven run has no post-merge tag step.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "reversibility",
+          "file": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
+          "line": null,
+          "finding": "Claim under doubt: the prose line equals the printed argv for every trunk — prose hard-coded main while push-tag prints develop",
+          "suggestion": "{trunk} placeholder, test for main and develop. (Fixed.)",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "reversibility",
+          "file": "plugins/shipwright-changelog/tests/golden/approved_deltas.json",
+          "line": null,
+          "finding": "Claim under doubt: golden deltas are genuinely authorised — approver text claimed a stop-3 approval for moving the push into the CLI",
+          "suggestion": "Option B built; approver text now cites BRIEF L42, programme P4 and the orchestrator decision, recorded for stop 3. (Fixed.)",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling",
+          "file": "plugins/shipwright-changelog/tests/golden/driver_cli.py",
+          "line": null,
+          "finding": "Claim under doubt: QUERY_KEYS change leaves close-phase replay log unchanged — shared key set trimmed close-phase's logged git calls",
+          "suggestion": "Separate PUSH_KEYS. (Fixed.)",
+          "source": "doubt-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-11-24T02:06:21.188433+00:00",
-      "disposition": "the orchestrator runs the independent opus cascade for this campaign unit (brief of the runner); the runner did not spawn the doubt reviewer",
-      "recorded_by": "none",
+      "completed_at": "2026-11-24T03:40:39.496591+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "8f29a107493b48a5ef6c0b279540a916ad10ff79"
     },
     "external_code": {
       "review_type": "external_code",
@@ -184,16 +317,18 @@
     },
     "spec": {
       "review_type": "spec",
-      "status": "not_run",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-11-24T02:06:20.837157+00:00",
-      "disposition": "the orchestrator runs the independent opus cascade for this campaign unit (brief of the runner); the runner did not spawn the spec reviewer",
-      "recorded_by": "none",
+      "completed_at": "2026-11-24T03:40:39.222867+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "8f29a107493b48a5ef6c0b279540a916ad10ff79"
     },
     "plan_internal": {
       "review_type": "plan_internal",
