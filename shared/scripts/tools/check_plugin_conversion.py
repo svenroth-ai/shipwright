@@ -22,21 +22,50 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
+import signal
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
+from types import SimpleNamespace
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import junit_promises as jp  # noqa: E402
 
 REGISTRY = Path(__file__).resolve().parents[2] / "config" / "plugin_conversion.json"
 CITED = re.compile(r"\{(plugin_root|shared_root)\}/(scripts/[\w./-]+)")
+FENCE = re.compile(r"^```[^\n]*\n(.*?)^```", re.M | re.S)
+ENTRY_KEYS = ("plugin", "skill", "references", "cli", "subcommands", "promise_list", "export", "sentinel", "seeded",
+              "a_items", "b_items")
+A_KEYS, B_KEYS = ("id", "scope", "forbidden", "why"), ("id", "file", "pattern", "why")
 
 
 class ConversionError(Exception):
-    """The registry or a registered file cannot be read (exit 2)."""
+    """The registry, a registered file or the bundle build cannot be read (exit 2)."""
+
+
+def kill_tree(proc) -> None:
+    """End the process and everything it started (``taskkill /T`` on Windows, the process group elsewhere)."""
+    if os.name == "nt":
+        subprocess.run(["taskkill", "/T", "/F", "/PID", str(proc.pid)], capture_output=True, check=False)
+    else:
+        os.killpg(proc.pid, signal.SIGKILL)
+    proc.kill()
+
+
+def run_tree(cmd: list[str], cwd=None, timeout: int = 120, popen=subprocess.Popen, kill=kill_tree):
+    """Run ``cmd`` in its own process group; on timeout kill the whole tree. Output is decoded as utf-8, errors replaced."""
+    group = {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP} if os.name == "nt" else {"start_new_session": True}
+    proc = popen(cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, **group)
+    try:
+        out, err = proc.communicate(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        kill(proc)
+        proc.communicate()
+        raise
+    return SimpleNamespace(returncode=proc.returncode, stdout=out.decode("utf-8", "replace"), stderr=err.decode("utf-8", "replace"))
 
 
 def read(root: Path, rel: str) -> str:
@@ -49,9 +78,16 @@ def read(root: Path, rel: str) -> str:
 def load_entry(plugin: str, registry: Path = REGISTRY) -> dict:
     try:
         data = json.loads(registry.read_text(encoding="utf-8"))
-        return next(e for e in data["plugins"] if e["plugin"] == plugin)
+        entry = next(e for e in data["plugins"] if e["plugin"] == plugin)
     except (OSError, ValueError, KeyError, StopIteration) as exc:
         raise ConversionError(f"{registry}: no readable entry for {plugin!r} ({exc!r})") from exc
+    missing = [k for k in ENTRY_KEYS if k not in entry]
+    missing += [f"a_items[{i}].{k}" for i, item in enumerate(entry.get("a_items", [])) for k in A_KEYS if k not in item]
+    missing += [f"b_items[{i}].{k}" for i, item in enumerate(entry.get("b_items", [])) for k in B_KEYS if k not in item]
+    missing += [f"sentinel.{k}" for k in ("file", "name") if k not in entry.get("sentinel", {})]
+    if missing:
+        raise ConversionError(f"{registry}: the entry for {plugin!r} lacks {', '.join(missing)}")
+    return entry
 
 
 def _prose(root: Path, entry: dict, scope: str) -> dict[str, str]:
@@ -86,9 +122,10 @@ def check_code(root: Path, entry: dict) -> list[str]:
     cli_name = Path(entry["cli"]).name
     if not (root / entry["cli"]).is_file():
         problems.append(f"CLI: {entry['cli']} does not exist")
-    for sub in entry["subcommands"]:
-        if not re.search(rf"{re.escape(cli_name)}\"?\s+{re.escape(sub)}\b", skill):
-            problems.append(f"CLI: SKILL.md never calls `{cli_name} {sub}`")
+    blocks = "\n".join(FENCE.findall(skill.replace("\r\n", "\n")))
+    for sub in entry["subcommands"]:  # a call is a command line of a fenced block, not a mention in running text
+        if not re.search(rf"^\s*uv run \S*{re.escape(cli_name)}\"?\s+{re.escape(sub)}(\s|$)", blocks, re.M):
+            problems.append(f"CLI: SKILL.md never calls `{cli_name} {sub}` in a fenced block")
     return problems
 
 
@@ -111,14 +148,20 @@ def check_report(root: Path, entry: dict, junit: Path) -> list[str]:
             + jp.named_problems("seeded regression", entry["seeded"], cases))
 
 
-def check_bundle(root: Path, entry: dict, build=None, run=subprocess.run) -> list[str]:
+def check_bundle(root: Path, entry: dict, build=None, run=run_tree) -> list[str]:
     """Build the Codex bundle from this tree; the CLI and everything the prose cites must be in it and the CLI must start."""
     if build is None:
-        from build_codex_plugin import build_bundle as build
+        try:
+            from build_codex_plugin import build_bundle as build
+        except ImportError as exc:
+            raise ConversionError(f"bundle: build_codex_plugin cannot be imported ({exc})") from exc
     skill_name = Path(entry["skill"]).parent.name
     with tempfile.TemporaryDirectory(prefix="plugin-conversion-") as tmp:
         bundle = Path(tmp) / "bundle"
-        build(project_root=root, out_dir=bundle)
+        try:
+            build(project_root=root, out_dir=bundle)
+        except Exception as exc:  # the builder raises whatever its inputs make it raise: any failure is "cannot check"
+            raise ConversionError(f"bundle: the Codex bundle cannot be built ({type(exc).__name__}: {exc})") from exc
         origin = bundle / "origin" / entry["plugin"]
         cli = origin / "scripts" / Path(entry["cli"]).name
         problems = [] if cli.is_file() else [f"bundle: origin/{entry['plugin']}/scripts/{cli.name} is missing"]
@@ -130,19 +173,23 @@ def check_bundle(root: Path, entry: dict, build=None, run=subprocess.run) -> lis
                 problems.append(f"bundle: SKILL.md cites {{{which}}}/{rel}, which the bundle does not hold")
         if not problems:
             try:
-                done = run([sys.executable, str(cli), "--help"], capture_output=True, text=True, timeout=120)
+                done = run([sys.executable, str(cli), "--help"], timeout=120)
             except subprocess.TimeoutExpired:
                 return [f"bundle: `{cli.name} --help` did not answer within 120 s"]
+            except OSError as exc:
+                raise ConversionError(f"bundle: `{cli.name} --help` cannot be started ({exc})") from exc
             if done.returncode != 0:
                 problems.append(f"bundle: `{cli.name} --help` exits {done.returncode}: {(done.stderr or '').strip()[-200:]}")
     return problems
 
 
-def check_verify_local(root: Path, run=subprocess.run) -> list[str]:
+def check_verify_local(root: Path, run=run_tree) -> list[str]:
     try:
-        done = run(["uv", "run", "scripts/verify_local.py"], cwd=root, capture_output=True, text=True, timeout=1800)
+        done = run(["uv", "run", "scripts/verify_local.py"], cwd=root, timeout=1800)
     except subprocess.TimeoutExpired:
         return ["verify_local: did not finish within 1800 s"]
+    except OSError as exc:
+        raise ConversionError(f"verify_local: cannot be started ({exc})") from exc
     return [] if done.returncode == 0 else [f"verify_local: exits {done.returncode}: {(done.stdout or '')[-300:]}"]
 
 
@@ -164,20 +211,31 @@ def main(argv: list[str] | None = None) -> int:
             target = root / entry["export"]
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text(jp.dump(trace), encoding="utf-8", newline="\n")
+        ran = ["static"]
         problems = check_prose(root, entry) + check_code(root, entry) + check_export(root, entry)
         if args.junit:
             problems += check_report(root, entry, Path(args.junit))
+            ran.append("junit")
         if args.bundle:
             problems += check_bundle(root, entry)
+            ran.append("bundle")
         if args.verify_local:
             problems += check_verify_local(root)
+            ran.append("verify_local")
     except (ConversionError, ValueError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
     for problem in problems:
         print(problem)
-    print(f"{args.plugin}: {'converted' if not problems else str(len(problems)) + ' finding(s)'}")
+    print(f"{args.plugin}: {verdict(problems, ran)}")
     return 1 if problems else 0
+
+
+def verdict(problems: list[str], ran: list[str]) -> str:
+    """``converted`` only when the report was read too: static checks alone prove the tree, not that its tests ran."""
+    if problems:
+        return f"{len(problems)} finding(s) ({', '.join(ran)})"
+    return f"converted ({', '.join(ran)})" if "junit" in ran else f"static checks clean ({', '.join(ran)}; no --junit: the promise tests were not checked)"
 
 
 if __name__ == "__main__":

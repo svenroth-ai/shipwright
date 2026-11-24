@@ -3,15 +3,20 @@
 ``test_promises_meta.py`` proves only that the test a promise names *exists*. A promise test that is skipped,
 deselected or never collected still reads ``passing`` there. This reader closes that hole from the run's own report:
 
-* ``passing_problems``: every promise whose status is ``passing`` has a test that ran and passed in the report, and a
-  promise marked ``failing`` has one that did not;
+* ``passing_problems``: a ``passing`` promise needs its main check AND every ``more_checks`` test to have run and
+  passed, and must name a test check at all; a ``failing`` promise needs at least one of them not to pass;
 * ``named_problems``: a list of test ids (the freeze sentinel, the seeded regressions) all ran and passed;
-* ``export_trace``: the promise list in the shared AC shape of ``shipwright-skill-check``'s ``trace.json``, statuses
-  re-read from the report when one is given.
+* ``export_trace``: the promise list in the shared AC shape of ``shipwright-skill-check``'s ``trace.json``.
 
 A node id ``path/to/test_x.py::name`` matches a ``<testcase classname="tests.sub.test_x" name="name">`` (or
 ``name[param]``) when the module path ends with the class name; the report's rootdir decides how many leading
-directories the class name carries, so the match is by suffix. Stdlib only, no Shipwright import.
+directories the class name carries, so the match is by suffix, and two different modules ending the same way read
+``ambiguous``. Stdlib only, no Shipwright import.
+
+Limits, on purpose: (1) a report is not bound to a commit, so a stale report passes: the operator produces it at the
+tree under test; (2) ``Class::name`` node ids (a test inside a class) are not matched and read ``missing``: the
+promise tests are module-level functions; (3) re-labelling a non-passing promise (``gap``, ``not-run``) is not
+checked here: only a review of the promise list guards that.
 """
 
 from __future__ import annotations
@@ -55,22 +60,28 @@ def outcome_of(node_id: str, cases: list[tuple[str, str, str]]) -> str:
     return SKIPPED if SKIPPED in found else PASSED
 
 
-def _test_id(promise: dict) -> str:
-    check = promise.get("check") or {}
-    return check.get("id", "") if check.get("kind") == "test" else ""
+def _test_ids(promise: dict) -> list[str]:
+    """The ids of every test check of a promise: the main check first, then ``more_checks``."""
+    checks = [promise.get("check"), *(promise.get("more_checks") or [])]
+    return [c["id"] for c in checks if c and c.get("kind") == "test" and c.get("id")]
 
 
 def passing_problems(promises: list[dict], cases: list[tuple[str, str, str]]) -> list[str]:
     problems = []
     for promise in promises:
-        node, status = _test_id(promise), promise.get("status")
-        if not node or status not in ("passing", "failing"):
+        status = promise.get("status")
+        if status not in ("passing", "failing"):
             continue
-        outcome = outcome_of(node, cases)
-        if status == "passing" and outcome != PASSED:
-            problems.append(f"{promise['id']}: reads passing, but its test {outcome} in the report ({node})")
-        if status == "failing" and outcome == PASSED:
-            problems.append(f"{promise['id']}: reads failing, but its test passed in the report ({node})")
+        nodes = _test_ids(promise)
+        if status == "passing" and not nodes:
+            problems.append(f"{promise['id']}: reads passing, but names no test check")
+            continue
+        outcomes = [(node, outcome_of(node, cases)) for node in nodes]
+        if status == "passing":
+            problems += [f"{promise['id']}: reads passing, but its test {outcome} in the report ({node})"
+                         for node, outcome in outcomes if outcome != PASSED]
+        elif outcomes and all(outcome == PASSED for _, outcome in outcomes):
+            problems.append(f"{promise['id']}: reads failing, but its test passed in the report ({outcomes[0][0]})")
     return problems
 
 
@@ -79,16 +90,10 @@ def named_problems(label: str, node_ids: list[str], cases: list[tuple[str, str, 
             for node in node_ids if outcome_of(node, cases) != PASSED]
 
 
-def export_trace(promise_list: dict, cases: list[tuple[str, str, str]] | None = None) -> dict:
-    """The promise list as ``trace.json``; with a report, a ``passing`` or ``failing`` status is the report's verdict."""
-    out = {"subject": promise_list["subject"], "schema": promise_list["schema"], "promises": []}
-    for promise in promise_list["promises"]:
-        item = dict(promise)
-        node = _test_id(promise)
-        if cases is not None and node and promise.get("status") in ("passing", "failing"):
-            item["status"] = {PASSED: "passing", FAILED: "failing"}.get(outcome_of(node, cases), "not-run")
-        out["promises"].append(item)
-    return out
+def export_trace(promise_list: dict) -> dict:
+    """The promise list as ``trace.json``: the same promises, the same statuses."""
+    return {"subject": promise_list["subject"], "schema": promise_list["schema"],
+            "promises": [dict(promise) for promise in promise_list["promises"]]}
 
 
 def dump(trace: dict) -> str:

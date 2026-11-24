@@ -85,14 +85,36 @@ def test_a_report_that_is_not_junit_or_is_empty_is_refused(tmp_path):
         jp.load_cases(empty)
 
 
-def test_the_export_copies_the_list_and_takes_statuses_from_a_report_when_given(tmp_path):
+def test_the_export_copies_the_list_unchanged():
     promise_list = {"subject": "s", "schema": 1, "promises": PROMISES}
-    assert jp.export_trace(promise_list)["promises"] == PROMISES
-    skipped = jp.export_trace(promise_list, write(tmp_path, case("test_ac01", "<skipped/>")))
-    assert [p["status"] for p in skipped["promises"]] == ["not-run", "gap", "not-run"]
-    failed = jp.export_trace(promise_list, write(tmp_path, case("test_ac01", "<failure/>")))
-    assert failed["promises"][0]["status"] == "failing" and PROMISES[0]["status"] == "passing"  # the input is not mutated
+    exported = jp.export_trace(promise_list)
+    assert exported["promises"] == PROMISES and exported["promises"][0] is not PROMISES[0]
     assert jp.dump({"a": 1}).endswith("}\n")
+
+
+MORE = [{"id": "AC03", "status": "passing", "check": {"kind": "test", "id": NODE},
+         "more_checks": [{"kind": "test", "id": NODE.replace("test_ac01", "test_ac03b")}]}]
+
+
+def test_a_passing_promise_needs_every_more_checks_test_to_pass(tmp_path):
+    both = write(tmp_path, case("test_ac01"), case("test_ac03b"))
+    assert jp.passing_problems(MORE, both) == []
+    skipped = write(tmp_path, case("test_ac01"), case("test_ac03b", "<skipped/>"))
+    found = jp.passing_problems(MORE, skipped)
+    assert len(found) == 1 and "its test skipped" in found[0] and "test_ac03b" in found[0]
+    assert "missing" in jp.passing_problems(MORE, write(tmp_path, case("test_ac01")))[0]
+
+
+def test_a_failing_promise_needs_one_test_not_to_pass(tmp_path):
+    failing = [{**MORE[0], "status": "failing"}]
+    assert jp.passing_problems(failing, write(tmp_path, case("test_ac01"), case("test_ac03b", "<failure/>"))) == []
+    assert "reads failing" in jp.passing_problems(failing, write(tmp_path, case("test_ac01"), case("test_ac03b")))[0]
+
+
+@pytest.mark.parametrize("check", [None, {"kind": "test"}, {"kind": "test", "id": ""}, {"kind": "scenario", "id": "x"}])
+def test_a_passing_promise_that_names_no_test_check_is_reported(tmp_path, check):
+    found = jp.passing_problems([{"id": "AC05", "status": "passing", "check": check}], write(tmp_path, case("test_ac01")))
+    assert found == ["AC05: reads passing, but names no test check"]
 
 
 def test_two_modules_that_end_the_same_way_are_ambiguous_not_a_pass(tmp_path):

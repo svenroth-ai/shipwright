@@ -21,14 +21,16 @@
         "plugins/shipwright-changelog/tests/golden/test_seeded_regressions_cli.py::test_pending_entries_that_the_cli_aggregation_does_not_delete_are_caught"
       ],
       "a_items": [
-        {"id": "A1", "scope": "skill", "forbidden": "setup-changelog\\.py|^\\s*(?:uv run|python)\\b.*get_phase_context\\.py", "why": "mode, banner and setup run inside `release.py prepare`, not as prose commands"},
-        {"id": "A2", "scope": "skill", "forbidden": "\\*\\*(?:Autonomous|Guided) mode\\*\\*", "why": "gate answers come from `prepare` (`gates`), the prose keeps no per-mode branches for them"},
-        {"id": "A3", "scope": "skill", "forbidden": "docs/migrations|Do you have to do anything", "why": "the upgrade-notes check is code (`release_upgrade_notes`); SKILL.md carries only the status it reads"},
-        {"id": "A4", "scope": "skill", "forbidden": "--fail-if-empty", "why": "`aggregate` owns the flags; the 'never combine' rule is gone by construction"},
+        {"id": "A1", "scope": "prose", "forbidden": "setup-changelog\\.py|^\\s*(?:uv run|python)\\b.*get_phase_context\\.py", "why": "mode, banner and setup run inside `release.py prepare`, not as prose commands"},
+        {"id": "A2", "scope": "prose", "forbidden": "\\*\\*(?:Autonomous|Guided) mode\\*\\*", "why": "gate answers come from `prepare` (`gates`), the prose keeps no per-mode branches for them"},
+        {"id": "A3", "scope": "skill", "forbidden": "docs/migrations|Do you have to do anything", "why": "the upgrade-notes check is code (`release_upgrade_notes`); SKILL.md carries only the status it reads (skill scope: release-workflow.md explains the upgrade-notes rule for readers, which is not a mechanic)"},
+        {"id": "A4", "scope": "prose", "forbidden": "--fail-if-empty", "why": "`aggregate` owns the flags; the 'never combine' rule is gone by construction"},
         {"id": "A5", "scope": "prose", "forbidden": "update-step", "why": "`close-phase` decides; no prose line calls `orchestrator.py update-step` (F7)"},
-        {"id": "A6", "scope": "skill", "forbidden": "--release-date[ =][\"{0-9]|export SHIPWRIGHT_RUN_ID", "why": "the release date and run id are stored once by `prepare`; the model passes and exports neither"},
-        {"id": "A9", "scope": "skill", "forbidden": "Commits: \\{N\\}|categorized", "why": "the closing summary is printed by `close-phase`, not filled in by the model"},
-        {"id": "A10", "scope": "skill", "forbidden": "^\\s*(?:git (?:commit|tag|add|rm)\\b|uv run .*(?:aggregate_changelog|aggregate_decisions|sync_release_manifests|refresh_compliance_docs|fold_events_for_release|record_event|append_phase_history)\\.py)", "why": "commit, tag, sync and event steps are `release.py` subcommands (A10, A11)"}
+        {"id": "A6", "scope": "prose", "forbidden": "--release-date[ =][\"{0-9]|export SHIPWRIGHT_RUN_ID", "why": "the release date and run id are stored once by `prepare`; the model passes and exports neither"},
+        {"id": "A9", "scope": "skill", "forbidden": "Commits: \\{N\\}|categorized", "why": "the closing summary is printed by `close-phase`, not filled in by the model (skill scope: conventional-commits.md uses the word \"categorized\" for commit types)"},
+        {"id": "A10","scope": "prose", "forbidden": "^\\s*git (?:commit|tag|add|rm)\\b", "why": "commit and tag are `release.py commit-and-tag`, not git lines in the prose"},
+        {"id": "A10b","scope": "skill", "forbidden": "^\\s*uv run .*(?:aggregate_changelog|aggregate_decisions|sync_release_manifests|refresh_compliance_docs|fold_events_for_release|record_event|append_phase_history)\\.py", "why": "sync, aggregate and event steps are `release.py` subcommands (skill scope: manifest-sync.md documents the sync script a person may run by hand)"},
+        {"id": "A11", "scope": "skill", "forbidden": "^\\s*git push\\b.*--tags", "why": "the tag push is `release.py push-tag`, which pushes the one release tag"}
       ],
       "b_items": [
         {"id": "A2+", "file": "plugins/shipwright-changelog/scripts/lib/release_prepare.py", "pattern": "[\"']gates[\"']", "why": "prepare returns the gate answers"},
