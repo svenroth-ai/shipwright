@@ -217,6 +217,7 @@ def test_release_notes_prompt_file_exists_with_required_markers():
         assert marker in text, f"prompt file is missing the {marker!r} section marker"
 
 
+@pytest.mark.covers_none("tooling")
 def test_fallback_model_is_gpt_6_2_sol_when_config_has_no_model(tmp_path: Path, monkeypatch):
     """With no configured model the hardcoded fallback must be the live GPT-6.2 Sol slug."""
     fake_response = MagicMock()
