@@ -1,0 +1,1 @@
+check_prompt_mechanics.py and shared/config/converted_skills.json: a CI and verify_local gate that stops chained or multi-command shell blocks and new shell commands creeping back into a converted skill's SKILL.md (changelog is the first); the SKILL.md bloat entry is lowered to its thin size

@@ -6,8 +6,8 @@ for this token instead of testing that a file exists at this path; see below.
 
     uv run scripts/verify_local.py
 
-`ci.yml`'s required job runs three bespoke guards that nothing runs locally: the
-CI-gate guard, and the two surface verifiers. They fail for real — 2 of 22 CI failures
+`ci.yml`'s required job runs four bespoke guards that nothing runs locally: the
+CI-gate guard, the two surface verifiers and the converted-skill prompt-mechanics gate. They fail for real — 2 of 22 CI failures
 sampled over 3.4 days were `Sweep delivery surface (gate)`. The cost of learning that
 from CI is not the runtime; it is that the failure lands *after* the iterate reports
 done, so the PR hangs and someone re-enters the next day to diagnose, fix and re-push.
@@ -65,7 +65,7 @@ _ROOT = Path(__file__).resolve().parent.parent
 _TIMEOUT_SECONDS = 1800
 
 #: ``(command, root) -> (exit_code, combined output)``. Injected by the tests so they can
-#: assert the aggregation contract without paying for three real gates.
+#: assert the aggregation contract without paying for four real gates.
 Runner = Callable[[list[str], Path], "tuple[int, str]"]
 
 
@@ -96,6 +96,8 @@ LOCAL_GATES = (
          ("--project-root", ".")),
     Gate("Contract surface (gate)", "scripts/verify_contract_surface.py"),
     Gate("Sweep delivery surface (gate)", "scripts/verify_sweep_delivery_surface.py"),
+    Gate("Converted-skill prompt mechanics (gate)", "shared/scripts/tools/check_prompt_mechanics.py",
+         ("--project-root", ".")),
 )
 
 #: NOT mirrored, with the reason. Recorded rather than dropped so this tool cannot

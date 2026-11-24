@@ -71,7 +71,7 @@ uv run scripts/verify_local.py        # The CI merge guards that run nowhere els
 ```
 
 **Run `verify_local.py` before pushing.** It mirrors `ci.yml`'s required job —
-the CI-gate guard plus two surface verifiers that no other local step runs —
+the CI-gate guard, two surface verifiers and the prompt-mechanics gate that no other local step runs —
 so skipping it means learning about a break from a red CI run *after* the
 iterate reports done. It vets your **working tree**; CI vets the **commit**
 you push. **F0 and F11 both run it for you** inside an iterate (F0 early,

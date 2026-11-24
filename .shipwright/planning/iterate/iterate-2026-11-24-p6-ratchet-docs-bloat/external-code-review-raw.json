@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "**Findings**\n\n- Category: spec | Severity: medium | File: diff (`.shipwright/agent_docs/` \u2014 absent)\n  The spec's doc obligations require the architecture doc under `.shipwright/agent_docs/` to be updated \"via its producer\" in the same diff. No change to any `.shipwright/agent_docs/` file appears in the diff. If the producer regenerates it from `ci.yml`/`verify_local.py` automatically, confirm that; otherwise the ratchet is undocumented in the architecture layer and AC \"Guide, glossary and architecture docs updated\" is only two-thirds done.\n  Suggestion: run the architecture-doc producer and include its output, or state in the PR that the producer derives the content and no delta was needed.\n\n- Category: spec | Severity: medium | File: `shipwright_bloat_baseline.json:184-186`\n  The entry lowers `current` 443\u2192263 but keeps `limit: 400` and `state: \"exception\"` with `ADR-348`. With current below limit the exception is moot, and leaving `limit` at 400 lets the file grow back 137 lines before the hook fires \u2014 the opposite of a ratchet. The spec says \"the bloat entry lowered to the measured size\"; the *limit*, not just the recorded current, is the enforcement number.\n  Suggestion: lower `limit` to (or near) 263 and clear the exception state/ADR reference (via the recorded ADR process), so growth beyond the measured size is what fails.\n\n- Category: edge-case | Severity: low | File: `shared/scripts/tools/check_prompt_mechanics.py:132-140` (`substitutions`)\n  The single-quote toggle ignores quoting context: a command like `--note \"it's here; rm -rf $(x)\"` flips `single` at the apostrophe inside double quotes, so a real `$(...)` substitution after it goes undetected. Same class of issue exists in `chain_operators` only for quotes it tracks correctly \u2014 here it's a real detection gap in the security-relevant direction (missed finding, not false positive).\n  Suggestion: track both quote characters with nesting (like `chain_operators` does) instead of a bare boolean toggle.\n\n- Category: edge-case | Severity: low | File: `shared/scripts/tools/check_prompt_mechanics.py:71-73` (`_FENCE`) and `fenced_blocks`\n  The closing-fence test `lines[i].strip().startswith(fence)` means a body line beginning with the same fence characters (e.g. a ``` ```bash ``` block whose body contains a nested fence for documentation) terminates the block early, so subsequent lines are treated as prose and unchecked. An attacker/careless author can hide mechanics after a nested fence.\n  Suggestion: require the closing line to be fence characters plus nothing but an optional info string, or at minimum that the closing fence be at least as long and the line contain no other content.\n\n- Category: test | Severity: low | File: `shared/scripts/tools/tests/test_check_prompt_mechanics.py:168-173`\n  `test_the_real_registry_passes_the_real_thin_skill` asserts `check_registry(...) == []`, which is good, but nothing pins the *contents* of the real registry's `commands` list against the spec's C5 requirement \u2014 if the registry later lists every plausible command \"to keep CI green,\" the test still passes while the ratchet is hollow. Also the seeded-chain test seeds `git fetch` which is conveniently not registered; a regression that silently whitelists `git` would pass both tests.\n  Suggestion: add one assertion that the registry's `commands` are only `release.py` subcommands plus the two `gh` verbs, so registry widening shows up in a reviewable test diff.\n\n- Category: edge-case | Severity: low | File: `shared/scripts/tools/check_prompt_mechanics.py:96-99` (`is_shell_block` / `_SHELL_STARTS`)\n  `\"python\"` in `_SHELL_STARTS` has no trailing space, so any unlabelled block starting with e.g. `python-anything` is treated as shell. Also blocks whose first command isn't in the prefix list (e.g. `make`, `just`, `./run.sh`) escape inspection entirely, letting mechanics creep back via an unrecognised tool. The prefix list is an allowlist of *detection*, which is the wrong direction for a ratchet.\n  Suggestion: either check all unlabelled blocks, or add a finding when an unlabelled block looks executable but matches no known non-shell language.\n\nEverything else checks out: the gate runs in `ci.yml` and `verify_local.py` with identical invocation (`--project-root .`), the counts in `docs/hooks-and-pipeline.md` (6 tabulated + 3 = 9, 4 mirrored + 5 = 9) are internally consistent, the `verify_local` count test is updated, no frozen file is touched, and the escape-budget/stale-escape logic correctly makes the registry a one-way ratchet. The tests are behavioral (single seeded regression per test, exit codes via `main`), not just smoke calls.\n\nOverall: the checker and its wiring are sound and well-tested; the missing architecture doc and the un-lowered `limit` on the bloat entry should be addressed before merge.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "- Category: bug\n- Severity: medium\n- File: shared/scripts/tools/check_prompt_mechanics.py:131\n- Finding: Substitution detection treats apostrophes inside double quotes as shell single-quote delimiters. An allowed command followed by `--note \"don't $(touch /tmp/x)\"` passes: the apostrophe disables substitution scanning, although the shell executes `touch`.\n- Suggestion: Track double-quote and escape state alongside single quotes. Add a regression test for a command substitution following an apostrophe inside a double-quoted argument.\n\n- Category: spec\n- Severity: medium\n- File: shared/scripts/tools/check_prompt_mechanics.py:97\n- Finding: Unlabelled shell blocks are identified only by their first nonblank line and a small command-prefix list. Adding a comment before an otherwise detected command\u2014for example, an unlabelled block containing `# publish` followed by `git push origin main`\u2014makes the entire block bypass checking. This leaves C5 partially implemented.\n- Suggestion: Ignore leading comments when identifying shell blocks and cover this case with a test. Define detection for other unlabelled shell commands so the prefix list does not silently exempt them.\n\n- Category: spec\n- Severity: medium\n- File: docs/guide.md:2211\n- Finding: The documentation update omits the required architecture document under `.shipwright/agent_docs/`. The acceptance criterion explicitly requires guide, glossary **and architecture** updates; the supplied diff updates only the first two.\n- Suggestion: Update the architecture document through its designated producer to describe the registry, checker, and enforcement surfaces.\n\nOverall assessment: ship-with-fixes. The gate and local integration are present, but detection bypasses and the missing architecture update need correction before shipping.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-11-24-p6-ratchet-docs-bloat",
+    "at": "2026-11-24T05:15:31.777706+00:00"
+  },
+  "verdicts": {
+    "glm": "revise",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

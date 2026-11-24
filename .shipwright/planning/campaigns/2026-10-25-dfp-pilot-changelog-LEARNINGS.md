@@ -152,3 +152,12 @@ Older workflow tools (state machines, BPMN, job schedulers) have the same shape,
 4. **Pitfalls.** The first version of `push-tag` demanded a merged PR in every mode and broke S13: a driven run never merges its PR and the frozen trace pushes the tag with the PR open (`mode` decides, not `autonomy`). After `gh pr merge --delete-branch` HEAD is the trunk, so the branch kind must come from the run state `record-event` kept, never from `git rev-parse HEAD` at push time. A "history" sentence in a reference ("since unit P4 ...") is a delta per file in the frozen prose: batch them.
 5. **Tools.** `golden_trace.file_sha256` computes the `after` of a delta (CRLF read as LF); a second delta with the same `before` and a new `after` keeps the earlier reviewed entry and still satisfies the check.
 6. **Doable by a stranger?** Yes, given the P4 notes and D39-D41: the one real decision (keep the push in the CLI or keep it literal) is written down for stop 3.
+
+## P6 (2026-11-24): the ratchet
+
+1. **Steps and effort.** One checker (300 lines), its registry, 69 in-process tests in two files, one `(gate)` step in `ci.yml` and in `verify_local.LOCAL_GATES`, four doc edits and one baseline number.
+2. **Code or AI decisions.** All code: what counts as a shell block, a chain or a new command is decided by the checker; nothing is left to a reviewer's reading of the prose.
+3. **Recurring patterns.** A gate over a frozen file keeps its allowances in its own registry (FINDINGS D45). The drift test needed no change because the gate step name is the join key.
+4. **Pitfalls.** A quote-aware scan is needed for chains (`"a | b"` inside a flag value is data), and `2>&1` must not read as `&`. The CRLF docs need a line-ending-preserving edit.
+5. **Tools.** `diff_risk_recheck.py` exits 3 on any `ci.yml` edit, however small; plan for the ack before the unit starts.
+6. **Doable by a stranger?** Yes; D45 and D48 are the two things an operator has to decide.
