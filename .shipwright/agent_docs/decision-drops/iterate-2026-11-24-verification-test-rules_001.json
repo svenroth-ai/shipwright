@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-24-verification-test-rules",
+  "date": "2026-11-24",
+  "section": "Iterate — change: verification test rules",
+  "title": "Flaky-test NEVER rule plus property and differential test guidance",
+  "context": "The claude.dev verification article shows flaky tests teach agents to retry instead of fix, and that property and differential tests keep agents honest where hand-picked examples share the author's blind spots.",
+  "decision": "Add a NEVER rule against hiding flaky tests (skip, fixed sleeps, more retries), register it, mirror it in guide 7.5, and add a shipwright-test reference for property-based and differential tests.",
+  "consequences": "Agents must root-cause flakes or delete the test with a record; runner retries that report flaky stay allowed. Property tests are guidance only, no new gate.",
+  "rationale": "Smallest change that closes the gap; judgement-only register entry because a mechanical check would flag legitimate bounded waits.",
+  "rejected": "A hook that bans sleeps or retries: it would also flag legitimate waits and runner-level retries.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

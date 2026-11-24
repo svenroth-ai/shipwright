@@ -1754,6 +1754,7 @@ The **constitution** (`shared/constitution.md`) defines behavioral boundaries fo
 - `--no-verify` to bypass pre-commit hooks.
 - `DROP DATABASE`.
 - Skip or weaken tests to make them pass.
+- Hide a flaky test by skipping it, adding fixed sleeps, or adding or raising retries until it goes green -- find the root cause (waiting for an explicit condition with a timeout is a fix; a runner retry that reports the test as flaky stays visible and is allowed). Only after the 3-attempt debugging limit, delete the test, record what was tried and what it covered (commit body or ADR), and replace it with a deterministic test of the same behaviour where possible.
 - Add features beyond spec (YAGNI).
 - Hardcode secrets in source code.
 - Commit `.env` files.

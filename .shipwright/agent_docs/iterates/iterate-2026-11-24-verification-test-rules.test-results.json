@@ -1,0 +1,6 @@
+{"iterate_latest":{"run_id":"iterate-2026-11-24-verification-test-rules","date":"2026-11-24","unit":{"status":"passed","passed":452,"skipped":5,"total":457},"integration":{"status":"not_run","passed":0,"skipped":0,"total":0},"pgtap":{"status":"not_run","passed":0,"skipped":0,"total":0},"e2e":{"status":"not_run","passed":0,"skipped":0,"total":0},"design_fidelity":{"status":"not_run","passed":0,"total":0},"smoke":{"status":"not_run"},"degraded":[],
+"test_completeness":{"status":"complete","behaviors":[
+{"behavior":"every constitution rule is declared in the enforcement register (new flaky NEVER rule)","disposition":"tested","evidence":"shared/tests/test_constitution_register.py passed"},
+{"behavior":"generated register doc is current","disposition":"tested","evidence":"test_generated_doc_is_current_and_beside_its_source passed"},
+{"behavior":"new property/differential reference and its links are prompt guidance, not executable","disposition":"untestable","reason_code":"requires-manual-visual-judgment","reason":"prose guidance; judged by spec and code reviewers"}],
+"counts":{"testable":2,"tested":2,"untestable":1,"untested_testable":0},"enumeration_basis":{"acs":3,"covered_acs":3}}}}

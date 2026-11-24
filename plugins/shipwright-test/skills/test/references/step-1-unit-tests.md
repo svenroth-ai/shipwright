@@ -26,3 +26,7 @@ up to 3 retries) without requiring the explicit --fix flag.
 4. Attempt targeted fix based on hypothesis
 5. Re-run tests
 6. After 3 retries (or 2 with same root cause): report remaining failures with diagnosis
+
+**Flaky test?** Never hide it with a skip, fixed sleeps or more retries — wait for an explicit condition with a timeout, or find the root cause (constitution NEVER).
+
+**Parsers, serializers, hashes, idempotent helpers?** See [property-and-differential-tests](property-and-differential-tests.md).
