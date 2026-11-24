@@ -113,7 +113,7 @@ def test_a_record_for_a_different_commit_blocks(repo):
     (repo / "a.txt").write_text("changed\n", encoding="utf-8")
     git(repo, "commit", "-am", "later work")
     out = run_hook("git push origin main", repo)
-    assert blocked(out) and "not HEAD" in out["permissionDecisionReason"]
+    assert blocked(out) and "but HEAD is" in out["permissionDecisionReason"] and "does not exist" not in out["permissionDecisionReason"]
 
 
 def test_a_record_of_another_version_blocks(repo):

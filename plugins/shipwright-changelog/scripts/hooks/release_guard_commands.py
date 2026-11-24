@@ -19,6 +19,9 @@ import shlex
 from dataclasses import dataclass, field
 
 _HEREDOC = re.compile(r"<<-?[ \t]*(['\"]?)([A-Za-z_]\w*)\1[^\n]*\n.*?\n[ \t]*\2[ \t]*(?=\n|$)", re.DOTALL)
+_HERESTRING = re.compile(r"@([\"'])[ \t]*\r?\n.*?\r?\n[ \t]*\1@", re.DOTALL)  # PowerShell @"..."@ / @'...'@
+_PROTECT = {c: chr(0xE000 + i) for i, c in enumerate(";|&()<>\n")}  # separators inside quotes are data
+_RESTORE = {v: k for k, v in _PROTECT.items()}
 _ASSIGNMENT = re.compile(r"[A-Za-z_]\w*=")
 _SEPARATORS = {"&&", "||", ";", ";;", "|", "|&", "&", "(", ")"}
 _SKIPPED = {"env", "command", "exec", "time", "nohup", "sudo", "nice", "if", "then", "else", "elif", "do", "while", "until",
@@ -28,6 +31,7 @@ _GIT_VALUE_OPTIONS = {"-c", "--git-dir", "--work-tree", "--namespace", "--exec-p
 _GH_VALUE_OPTIONS = {"-R", "--repo", "--hostname", "-b", "--body", "-F", "--body-file", "-t", "--subject", "--match-head-commit",
                      "--author-email"}
 _CD = {"cd", "pushd", "set-location", "sl"}
+_POP = {"popd", "pop-location"}
 
 
 @dataclass
@@ -41,15 +45,37 @@ class Action:
     refs: list[str] = field(default_factory=list)  # destination names (a plain name, or ``HEAD``); empty = the current branch
     target: str = ""  # gh pr merge: the PR number, URL or branch it names; empty = the current branch's PR
     foreign: bool = False  # gh -R / --repo: another repository, not this checkout
+    cwd_unknown: bool = False  # a popd / Pop-Location / ``cd $var`` earlier in the line: the directory cannot be known
 
 
 def _unquote(token: str) -> str:
     return token[1:-1] if len(token) >= 2 and token[0] == token[-1] and token[0] in "\"'" else token
 
 
+def _protect_quoted(text: str) -> str:
+    """Hide the separator characters that sit inside a quoted span, also one that starts mid-token (``--message="a; b"``)."""
+    out, quote, i = [], "", 0
+    while i < len(text):
+        ch = text[i]
+        if quote:
+            if ch == "\\" and quote == '"' and i + 1 < len(text):
+                out.append(ch + text[i + 1])
+                i += 2
+                continue
+            if ch == quote:
+                quote = ""
+            out.append(_PROTECT.get(ch, ch) if quote else ch)
+        else:
+            quote = ch if ch in "\"'" else ""
+            out.append(ch)
+        i += 1
+    return "".join(out)
+
+
 def segments(command: str) -> list[list[str]]:
     """The command split into simple commands, each a list of unquoted tokens. A lexing error yields no segments (fail open)."""
-    text = _HEREDOC.sub(" ", command.replace("\r", "").replace("\\\n", " ")).replace("\n", " ; ")
+    text = _HERESTRING.sub(" ", _HEREDOC.sub(" ", command.replace("\r", "").replace("\\\n", " ")))
+    text = _protect_quoted(text).replace("\n", " ; ")
     try:
         lexer = shlex.shlex(text, posix=False, punctuation_chars=True)
         lexer.whitespace_split, lexer.commenters = True, ""
@@ -69,7 +95,7 @@ def segments(command: str) -> list[list[str]]:
                 seg = seg[: i - 1] if i and seg[i - 1].isdigit() else seg[:i]
                 break
         if seg:
-            result.append([_unquote(t) for t in seg])
+            result.append([_unquote(t).translate(str.maketrans(_RESTORE)) for t in seg])
     return result
 
 
@@ -144,17 +170,23 @@ def _gh(args: list[str]) -> Action | None:
 
 def find_actions(command: str) -> list[Action]:
     """Every outward release action the command line contains (empty for an ordinary command). A ``cd``/``pushd``/``Set-Location``
-    in an earlier segment aims the later ones: it is carried as a leading ``c_paths`` entry."""
-    found, moved = [], []
+    in an earlier segment aims the later ones: it is carried as a leading ``c_paths`` entry. ``popd``/``Pop-Location`` and a
+    ``$``-built target make the directory unknown (``cwd_unknown``)."""
+    found, moved, unknown = [], [], False
     for seg in segments(command):
         program, args = _program(seg)
+        if program in _POP:
+            unknown = True
+            continue
         if program in _CD:
             target = next((a for a in args if not a.startswith("-")), "")
-            if target:
+            if "$" in target or "`" in target:
+                unknown = True
+            elif target:
                 moved.append(target)
             continue
         action = _git(args) if program == "git" else _gh(args) if program == "gh" else None
         if action:
-            action.c_paths = [*moved, *action.c_paths]
+            action.c_paths, action.cwd_unknown = [*moved, *action.c_paths], unknown
             found.append(action)
     return found

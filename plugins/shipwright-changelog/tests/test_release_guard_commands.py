@@ -61,6 +61,10 @@ def test_gh_release_create_is_found(command):
     "gh pr create --title x", "gh pr view 12", "gh release list", "gh release view v1", "git log --grep push",
     "rg 'git push' docs", "git fetch origin main", "git tag -a v1 -m x", "# git push origin main", "ls && pwd",
     "git commit -m \"$(cat <<'EOF'\nfix: x\n\ngit push origin main\nEOF\n)\"", "cat <<EOF\ngit push origin main\nEOF",
+    'git commit --message="wip; git push --tags origin main"',
+    '$m = @"' + chr(10) + 'git push --tags origin main' + chr(10) + '"@' + chr(10) + 'git commit -m $m',
+    'gh issue create --body="x' + chr(10) + 'gh pr merge 42' + chr(10) + 'y"',
+    "git commit --message='a && gh release create v1'",
     "", "   ", "git push 'unbalanced",
 ])
 def test_everything_else_is_not_an_action(command):

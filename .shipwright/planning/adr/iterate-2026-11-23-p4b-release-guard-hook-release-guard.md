@@ -51,6 +51,15 @@ External (glm, openai): both `approve`; internal `architecture-internal-reviewer
 | test name claims fails-on-old | glm low | rejected-with-reason: the block tests fail without the hook; the inert test is the false-block test |
 | LEARNINGS append | glm low | accepted-and-fixed: appended in this diff |
 
+## Fix round (independent opus reviews, high/medium findings)
+
+| Finding | Disposition |
+|---|---|
+| tag push after `gh pr merge` denied: HEAD is the merge commit (high) | accepted-and-fixed: a tag-only push and `gh release create` are judged by the tag's commit; trunk push and `gh pr merge` keep HEAD; no-ff and squash tests |
+| quoted text mid-token and PowerShell here-strings read as commands (medium) | accepted-and-fixed: separators inside quotes are protected, here-strings blanked |
+| rename/empty commit counted as event-only; merge before record-event; UTF-8 stdin; state check before push classification; popd/`$` cd targets (low) | accepted-and-fixed, each with a test that fails on the first version |
+| per-worktree state, declined prepare, tag M vs C, uv start cost, `gh pr merge N` from another branch (low) | rejected-with-reason: recorded as D38 for stop 3 and as known misses in the registry row |
+
 ## Confidence Calibration
 
 Boundary: producer `release_runstate.save` / `release_commit.write_state` to the hook (file round trip) probed with the real producers in `test_release_guard.py` and the integration case; consumer-side shapes probed: torn JSON, non-dict, wrong version, foreign project root, stale age. Probes run: 6 families, 2 found bugs (the PowerShell matcher, the revert history), both fixed and re-probed with no further finding. Not probed: a real Claude Code process delivering the payload (the payload shape `tool_name`, `tool_input.command`, `cwd` is the documented one and is used by the iterate hooks).
