@@ -114,29 +114,126 @@
     },
     "code": {
       "review_type": "code",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "shared/scripts/tools/check_prompt_mechanics.py",
+          "line": 107,
+          "finding": "Pass 1: a backslash-escaped quote hid a chain operator (one tokenizer disagreement). Fixed in 94ba949ae: one scan() for operators and substitutions, tests for \\' and \\\".",
+          "suggestion": "fixed",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/check_prompt_mechanics.py",
+          "line": 68,
+          "finding": "Pass 1: fence closer, process substitution, allowlist of shell labels, budget slack, registry validation by assert, one escape excusing many blocks, registry not pinned. All fixed in 94ba949ae with tests (69 tests in two files).",
+          "suggestion": "fixed",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/check_prompt_mechanics.py",
+          "line": 141,
+          "finding": "Pass 2: ANSI-C quoting, escaped trailing backslash or backslash in a comment as continuation, and fence-closer indentation/blockquote are hand-crafted evasions, not accident protection. Recorded as known misses (FINDINGS D59, docstring, guide, glossary) for a P12 hardening unit; the checker is at its 300-line cap.",
+          "suggestion": "recorded, follow-up",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/tests/test_check_prompt_mechanics_hardening.py",
+          "line": 145,
+          "finding": "Pass 2: escape only partly pinned. Fixed in c09c8f07c (exact two strings).",
+          "suggestion": "fixed",
+          "source": "code-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-11-24T05:09:23.029539+00:00",
-      "disposition": "orchestrator runs the opus cascade (campaign instruction for unit P6)",
-      "recorded_by": "none",
+      "completed_at": "2026-11-24T07:36:15.082594+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "c09c8f07cf2f5f26b90c52664fe350c82edb4605",
+      "reviewer_notes": "Independent opus code-review, two passes. Pass 1 on da9f9aa3d: REVISE (one high). Pass 2 on 94ba949ae: all pass-1 findings verified closed; remaining mediums are deliberate-evasion cases, recorded. Real thin changelog SKILL.md still passes. Round 3 (c09c8f07c) changed docs, test wording and one test assertion only; no logic change."
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "shared/scripts/tools/check_prompt_mechanics.py",
+          "line": null,
+          "finding": "Claim under doubt: the gate catches mechanics creeping back into a converted SKILL.md — unscanned fence labels, blockquote fences, unlabelled blocks starting with cd/rm/curl. Fixed in 94ba949ae (fail closed).",
+          "suggestion": "fixed",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "shared/scripts/tools/check_prompt_mechanics.py",
+          "line": null,
+          "finding": "Claim under doubt: a new flag on a known command is free — everything after the first flag is unratcheted (--admin, --force, redirections). Recorded D55 with exact wording.",
+          "suggestion": "recorded",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling",
+          "file": "scripts/verify_local.py",
+          "line": null,
+          "finding": "Claim under doubt: gate counts and docs are consistent — verify_local docstring, CLAUDE.md, AGENTS.md, two test strings stale. Fixed in 94ba949ae and c09c8f07c.",
+          "suggestion": "fixed",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling",
+          "file": "shared/glossary.md",
+          "line": null,
+          "finding": "Claim under doubt: glossary compression lost nothing — Phase task qualifier dropped. Restored.",
+          "suggestion": "fixed",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "reversibility",
+          "file": "shared/config/converted_skills.json",
+          "line": null,
+          "finding": "Claim under doubt: the cap only falls — the registry can be widened in the same diff. Recorded (D52, D53, D55), registry pinned in a test, docs qualified.",
+          "suggestion": "recorded",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "reversibility",
+          "file": "shared/scripts/tools/check_prompt_mechanics.py",
+          "line": null,
+          "finding": "Claim under doubt: 300-line checker and 540-line glossary pass the bloat caps — both caps are inclusive; net zero glossary lines.",
+          "suggestion": "nothing needed",
+          "source": "doubt-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-11-24T05:09:23.174495+00:00",
-      "disposition": "orchestrator runs the opus cascade (campaign instruction for unit P6)",
-      "recorded_by": "none",
+      "completed_at": "2026-11-24T07:36:15.236676+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "c09c8f07cf2f5f26b90c52664fe350c82edb4605"
     },
     "external_code": {
       "review_type": "external_code",
@@ -238,16 +335,18 @@
     },
     "spec": {
       "review_type": "spec",
-      "status": "not_run",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-11-24T05:09:22.873985+00:00",
-      "disposition": "orchestrator runs the opus cascade (campaign instruction for unit P6)",
-      "recorded_by": "none",
+      "completed_at": "2026-11-24T07:36:14.959869+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "c09c8f07cf2f5f26b90c52664fe350c82edb4605"
     },
     "plan_internal": {
       "review_type": "plan_internal",
