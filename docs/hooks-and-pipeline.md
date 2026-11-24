@@ -4767,8 +4767,8 @@ and GitHub counts a skipped required check as passing, so the step
 `success` (failure, cancelled, skipped) into a failure. `always()` rather than
 `!cancelled()` is deliberate: a manually cancelled or superseded run still ends with a red
 `Python (lint + test)` instead of a skipped one, at the price of a short red gather job on
-runs nobody will read. Besides lint, it runs eight guards — five
-tabulated here in full (three of those five mirrored locally, the other two not),
+runs nobody will read. Besides lint, it runs nine guards — six
+tabulated here in full (four of those six mirrored locally, the other two not),
 plus three more (also deliberately unmirrored) described just below the table:
 
 | Step | Script | What it proves |
@@ -4776,14 +4776,15 @@ plus three more (also deliberately unmirrored) described just below the table:
 | `Run CI-gate guard` | `shared/scripts/tools/check_ci_gate_coverage.py` | no test dir is unreferenced by CI, no quality gate has gone loose (`\|\| true` / `continue-on-error`) outside the documented `LOOSE_GATE_ALLOWLIST`, and `security.yml`'s critical gate still fails closed |
 | `Contract surface (gate)` | `scripts/verify_contract_surface.py` | the bytes `grade.py --format json` and `analyze_codebase.py` actually emit still match the cross-repo contract this repo publishes |
 | `Sweep delivery surface (gate)` | `scripts/verify_sweep_delivery_surface.py` | an operator's triage dismiss survives the outbox sweep to origin instead of being quarantined away |
+| `Converted-skill prompt mechanics (gate)` | `shared/scripts/tools/check_prompt_mechanics.py` | a skill registered in `shared/config/converted_skills.json` has not taken mechanics back into its `SKILL.md`: no chained or multi-command fenced shell block (beyond the registry's capped `escapes`) and no shell command the registry does not list (second-pass C5) |
 | `Coverage data set (gate)` | `shared/scripts/tools/check_ci_coverage_data_set.py` | every `.cov-data/.coverage.*` file the test tiers produce (`shared`, `integration`, one per plugin that has `scripts/`) arrived in the gather job — the tiers are measured in the parallel test jobs and travel by artifact, and without this step a lost file would leave that tier's changed lines unmeasured while `Diff coverage (gate)` is skipped or passes |
 | `Verify test-root JUnit coverage (gate)` | `shared/scripts/tools/ci_junit_plan.py verify` | every one of the 18 test roots the earlier `Plan test-root JUnit outputs` step discovered actually produced its planned `--junit-xml` — a silently-dropped root would otherwise read as false structural drift (or a masked platform-selection difference) in the manifest-drift step that follows it |
 
-The first three are mirrored locally by `scripts/verify_local.py`, so a push
+The first four are mirrored locally by `scripts/verify_local.py`, so a push
 does not have to learn about them from a red CI run:
 
 ```bash
-uv run scripts/verify_local.py     # runs the three above, before you push
+uv run scripts/verify_local.py     # runs the four above, before you push
 ```
 
 It drives each gate as a **subprocess**, with the command `ci.yml` uses verbatim
@@ -4793,7 +4794,7 @@ importing it would bind `lib` for the whole interpreter and resolve differently
 under the plugin-vs-shared root split (ADR-045): green locally, red in CI. A
 lazy import only defers *which* `lib` binds; it does not make it safe.
 
-Five of `ci.yml`'s eight guards are deliberately **not** mirrored, each recorded
+Five of `ci.yml`'s nine guards are deliberately **not** mirrored, each recorded
 with its reason in `CI_ONLY_GATES`: `Coverage data set (gate)` checks the artifacts
 the parallel test jobs handed over, which only exist in CI, `Repair-PR safety (gate)` materialises its
 checker from the PR's *base* revision precisely so a branch cannot vouch for

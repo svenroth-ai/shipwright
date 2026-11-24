@@ -496,6 +496,11 @@ jobs:
         # Also referenced by nothing until now.
         run: uv run scripts/verify_sweep_delivery_surface.py
 
+      - name: Converted-skill prompt mechanics (gate)
+        # A skill listed in shared/config/converted_skills.json keeps its mechanics in code: no chained or
+        # multi-command shell block and no new shell command in its SKILL.md (programme P12, second-pass C5).
+        run: uv run shared/scripts/tools/check_prompt_mechanics.py --project-root .
+
       - name: Verify test-root JUnit coverage (gate)
         # AC4: every root planned above must actually have produced its
         # --junit-xml — a silently-dropped root would either read as false

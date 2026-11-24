@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "1. **Should this mechanism exist?** Partially \u2014 the ratchet is worth having, but not as a new standing gate; a test in the existing skill test root does the same job with almost no standing cost.\n\n2. **The smallest thing that would do.** Option 3: one pytest in the existing changelog test root (which CI already runs and `verify_local.py` already mirrors) that parses the live `SKILL.md`, fails on any shell block or any command not on a small allowlist defined as a constant in that test. The converted-skills registry collapses to a module-level list; the new CI `(gate)` step, the `ci.yml` edit and its supply-chain escalation, and the `test_verify_local_ci_drift.py` drift test all disappear \u2014 pytest is already a required job, so the check runs everywhere the existing tests run, at zero new surface.\n\n3. **What it costs to keep.** As proposed: a registry file, a checker tool, a CI gate step, a drift test keeping verify_local and ci.yml in sync, and a documented term in three docs \u2014 five artifacts that every future change touching prose, CI, or the skill must reason about. As a test: one file, already governed by the existing test conventions.\n\n4. **What it forecloses.** As proposed it forecloses cheap prose edits: every future sanctioned prose exception now needs a registry entry, possibly a delta, and a review at stop 3. As a test it forecloses nothing; an edit to the allowlist is one line in one file.\n\nFindings:\n\n- Category: simpler-alternative\n- Severity: medium\n- Finding: The prose is already frozen by golden locks \u2014 any edit needs an approved delta reviewed at stop 3. The proposed mechanism is therefore a second standing gate layered on an existing one, built to catch a rare event (an approved-delta edit that reintroduces mechanics) that is already human-reviewed. A third redundant layer (a permanent CI gate, a registry, a drift test) is disproportionate.\n- Suggestion: Take option 3: a single test in the existing skill test root that fails on shell blocks or off-allowlist commands in converted prose, with the converted-skill list and allowlist as constants in the test. Drop `converted_skills.json`, the `ci.yml` gate step (and its supply-chain escalation), and `test_verify_local_ci_drift.py`. The doc obligations shrink to a glossary line.\n\n- Category: proportionality\n- Severity: low\n- Finding: The new gate step in `ci.yml` triggers the CI supply-chain acknowledgement path, guaranteeing an `escalated` return and an operator re-run \u2014 a standing human-in-the-loop cost bought for a check pytest already provides for free.\n- Suggestion: Not running the check via a new CI step removes the escalation entirely; the check rides the existing pytest invocation.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Should it exist?** A regression check is justified, but a registry and separate CI/local gate are disproportionate for the single converted skill described.\n\n2. **Smallest thing that would do:** Choose option 3: add a prose-scanning test to the existing changelog test root, permitting its current command surface and rejecting added commands or mechanics. Run it through the existing test machinery; introduce a shared registry only when more converted skills demonstrate that need.\n\n3. **What it costs to keep:** Someone must maintain the scanner and its permitted command surface as the skill evolves. The proposed design additionally requires maintaining registry exceptions, gate wiring, local/CI parity and their documentation.\n\n4. **What it forecloses:** The proposed shared gate makes future skill conversions and legitimate command changes depend on a central exception policy. No additional foreclosure identified for the test-only alternative.\n\n5. **Findings**\n\nCategory: simpler-alternative\nSeverity: medium\nFinding: A new registry and mirrored gate establish a cross-project policy mechanism for one skill whose prose changes already require explicit golden-lock approval. The brief establishes a useful regression assertion, but no need for a separate execution path or reusable exception system.\nSuggestion: Put the scanner assertion and narrowly defined permitted commands in the existing skill test root. Use its existing test execution and retain the golden-lock approval process; defer the registry, escape-block system and separate gate until multiple conversions require them.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "architecture",
+  "capture": {
+    "run_id": "iterate-2026-11-24-p6-ratchet-docs-bloat",
+    "at": "2026-11-24T05:07:57.920933+00:00"
+  },
+  "verdicts": {
+    "glm": "revise",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}
