@@ -1,0 +1,1 @@
+- **iterate-2026-11-23-p4b-release-guard-hook** (2026-11-24): Convention — changelog PreToolUse hook release_guard.py denies tag/trunk push, release-PR merge and gh release create while a release is in progress and release_state.json does not name HEAD; fail-open, cooperative net. → decision_log (ADR via Run-ID: iterate-2026-11-23-p4b-release-guard-hook)

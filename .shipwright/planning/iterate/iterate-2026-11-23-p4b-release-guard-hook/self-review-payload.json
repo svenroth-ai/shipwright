@@ -1,0 +1,9 @@
+{"items": [
+ {"name": "Spec Compliance", "verdict": "pass", "note": "PreToolUse hook registered, inert unless a release is in progress, blocks tag/trunk push, gh pr merge and gh release create without the record for HEAD; tested fails-on-old/passes-on-new."},
+ {"name": "Error Handling", "verdict": "pass", "note": "Any parse or git-locate error allows; only an unreachable origin keeps a deny, deliberately; garbled payload and corrupt state tests."},
+ {"name": "Security Basics", "verdict": "pass", "note": "No shell is spawned from command text; git runs with prompts off; guard is cooperative, documented as such; env text in the command cannot lift it."},
+ {"name": "Test Quality", "verdict": "pass", "note": "Real git and the real producers write the state; parser table; Windows paths; false-block, stale, other-root, event-commit and revert cases."},
+ {"name": "Performance Basics", "verdict": "pass", "note": "No git call until a command is an outward candidate; network lookup only on a would-be deny with 8 s timeout."},
+ {"name": "Naming & Structure", "verdict": "pass", "note": "Parser and decision split into two files under 300 lines; registry rows updated for the two shared guards."},
+ {"name": "Affected Boundaries", "verdict": "pass", "note": "Consumer of release_run.json and release_state.json; round-trip test uses release_runstate.save and release_commit.write_state, plus integration case."}
+]}
