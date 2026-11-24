@@ -1,0 +1,1 @@
+Goal: Add a flaky-test NEVER rule to the constitution and property-based/differential test guidance to shipwright-test | Reason: The claude.dev verification article shows agents verify better with property and differential tests, and flaky tests teach agents to retry instead of fix | Reference: claude.dev blog how-the-claude-code-team-thinks-about-verification

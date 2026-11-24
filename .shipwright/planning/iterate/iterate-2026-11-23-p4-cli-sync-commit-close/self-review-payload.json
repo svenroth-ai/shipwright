@@ -1,0 +1,8 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"Four subcommands, fix list 1-6 (item 3 effective-policy sub-point rebutted), F1a/F1b/F4/F6/F10/F7, A9/B1/B4 built; inventory.json left as planned (coverage.py frozen)."},
+{"name":"Error Handling","verdict":"pass","note":"Every chain stops at the first failing tool and names its reason; close-phase fails closed without run state or release commit."},
+{"name":"Security Basics","verdict":"pass","note":"argv lists, no shell; --from and --phase-task-id validated; SHA-256 for run ids."},
+{"name":"Test Quality","verdict":"pass","note":"L1 injected-runner tests, real git and gh stub decision tests on both drivers, seeded regression through the CLI driver; 460+ tests green."},
+{"name":"Performance Basics","verdict":"pass","note":"No loops over unbounded input; one git/uv call per step."},
+{"name":"Naming & Structure","verdict":"pass","note":"One lib module per subcommand, each under 300 lines; new tests in new files."},
+{"name":"Affected Boundaries","verdict":"pass","note":"release_run.json, release_state.json, phase_history and the golden traces round-trip through real git in test_p4_decisions.py."}]}

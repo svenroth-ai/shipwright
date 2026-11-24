@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-23-dfp-pilot-p2op-lock",
+  "date": "2026-11-23",
+  "section": "Iterate - change: changelog pilot stop-2 lock",
+  "title": "Freeze the changelog pilot at stop 2 with a reusable lock writer",
+  "context": "Stop 2 of the changelog pilot needs today's behaviour frozen before extraction (P3-P8): golden traces, promise tests and the skill prose. No lock writer existed and the coverage checks read the live prose.",
+  "decision": "Add shared/testkit/golden_lock.py (plugin as parameter) writing golden.lock.json and promise.lock.json byte-stable; pin the changelog prose as .pin copies read by P8b and the replay checks; retag the freeze test covers_none tooling; lock with approved_deltas [].",
+  "consequences": "Later units change frozen files only through approved deltas; adds or removals are re-pins reviewed against the writer's entries list; the unfrozen pytest config and live prose stay operator decisions (FINDINGS).",
+  "rationale": "The full-run baseline (43 runs, 0 model errors) found no trace change; one generic writer lets the next pilot reuse the freeze step; .pin copies keep the bloat gate and prose scanners from reading them as live skill text.",
+  "rejected": "Keeping the copies named SKILL.md (a new unbaselined runtime-prompt crossing); importing the freeze test to read REQUIRED (not plugin-generic); a new test file for the lock check (not in the infrastructure catalog at the merge-base).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

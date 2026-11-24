@@ -1,0 +1,150 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-23-campaign-done-status-sync",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-23T14:49:51.652828+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-23T15:18:11.137890+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "architecture",
+          "file": "docs/hooks-and-pipeline.md",
+          "line": 457,
+          "finding": "Docs said F6 ships the campaign board in the PR; with the main-tree fallback a gitignored campaign's status.json is never staged. Fixed in hooks-and-pipeline.md, F5b.md and F6.md.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/campaign_status_io.py",
+          "line": 106,
+          "finding": "Lost-update window between concurrent sibling finalizes on the main-tree file; accepted as best-effort and documented in code and F5b.md.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/campaign_status_io.py",
+          "line": 107,
+          "finding": "Event log choice implicit; comment added (events from worktree log, baseline from main status.json).",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_campaign_status_main_fallback.py",
+          "line": 41,
+          "finding": "Missing tests for never-downgrade baseline, worktree-local campaign, invalid slug; added.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-23T15:18:05.453909+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "5fe0de5fd5e0e62f5816cfa50a60c2d9adcae782"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-23T15:18:10.858874+00:00",
+      "disposition": "small diff (~70 lines), no risk flags; conditional pass per iteration-reviews.md",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "diff-below-threshold"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-23T15:18:11.010261+00:00",
+      "disposition": "small diff (~70 lines), no risk flags; conditional pass per iteration-reviews.md",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "diff-below-threshold"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-23T14:50:40.017603+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "5fe0de5fd5e0e62f5816cfa50a60c2d9adcae782"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-23T15:18:11.137890+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-23T15:18:11.137890+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}

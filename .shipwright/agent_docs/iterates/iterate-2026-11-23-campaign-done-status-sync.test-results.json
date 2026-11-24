@@ -1,0 +1,87 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-23-campaign-done-status-sync",
+    "date": "2026-11-23",
+    "unit": {
+      "status": "passed",
+      "passed": 26857,
+      "skipped": 112,
+      "total": 26969
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "skipped",
+      "passed": 0,
+      "skipped": 0,
+      "total": 0
+    },
+    "design_fidelity": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "smoke": {
+      "status": "skipped"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "finalize writes campaign status.json into the main tree when the worktree lacks the gitignored campaign",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_campaign_status_main_fallback.py::test_writes_status_into_main_tree_when_worktree_lacks_campaign PASSED"
+        },
+        {
+          "behavior": "unknown campaign / invalid slug still skip without touching main",
+          "disposition": "tested",
+          "evidence": "test_unknown_campaign_still_skips, test_invalid_slug_skips_before_touching_main PASSED"
+        },
+        {
+          "behavior": "main baseline never downgraded",
+          "disposition": "tested",
+          "evidence": "test_main_baseline_never_downgraded PASSED"
+        },
+        {
+          "behavior": "worktree-local (tracked) campaign leaves main untouched",
+          "disposition": "tested",
+          "evidence": "test_worktree_local_campaign_does_not_touch_main PASSED"
+        },
+        {
+          "behavior": "real git worktree + real main-root resolver + real projection compose: board lands complete in the main tree",
+          "category": "integration",
+          "disposition": "tested",
+          "evidence": "test_campaign_status_main_fallback.py::test_integration_real_git_worktree_projects_into_main_tree PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 5,
+        "tested": 5,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 5,
+        "covered_acs": 5
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-11-23-campaign-done-status-sync",
+    "commit": "051428d9e15fedb27fc944c929482783658aa866",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

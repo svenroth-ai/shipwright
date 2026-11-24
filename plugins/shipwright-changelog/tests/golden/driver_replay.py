@@ -19,12 +19,13 @@ import json
 import os
 import shutil
 import subprocess
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Sequence
 
 import golden_trace as gt
 
-from .replay_commands import CITES, CLOSE_PHASE, COMMIT_AND_TAG, EVENT_MAIN, EVENT_PR, PLUGIN, SHARED, fill
+from .replay_commands import CITES, COMMIT_AND_TAG, EVENT_MAIN, EVENT_PR, PLUGIN, SHARED, fill
 
 STEPS = frozenset({"prepare", "aggregate", "preview", "fold-events", "sync", "evidence", "commit-and-tag",
                    "open-pr", "record-event", "merge-pr", "push-tags", "release-page", "close-phase"})
@@ -217,8 +218,14 @@ class ReplayDriver:
         """Autonomous and unattended only (SKILL.md:349-351)."""
         return self._result("merge-pr", self._gh("merge-pr", scratch, "pr", "merge", "--merge", "--delete-branch"))
 
-    def step_push_tags(self, scratch: Any) -> gt.StepResult:
-        return self._result("push-tags", self._run("push-tags", scratch, ["git", "push", "--tags", "origin", "main"]))
+    def step_push_tags(self, scratch: Any, version: str | None = None) -> gt.StepResult:
+        """F1a (operator 2026-11-23): from a feature branch only the tag goes out, never a local trunk; on the trunk
+        the trunk and exactly this tag go out in one push (``--tags`` would also push the orphan tags of refused releases)."""
+        if self.on_feature_branch(scratch):
+            argv = ["git", "push", "origin", f"refs/tags/v{version or self.state['version']}"]
+        else:
+            argv = ["git", "push", "origin", "main", f"refs/tags/v{version or self.state['version']}"]
+        return self._result("push-tags", self._run("push-tags", scratch, argv))
 
     def step_release_page(self, scratch: Any, version: str) -> gt.StepResult:
         done = self._run("release-page", scratch, _uv(SHARED / "scripts/tools/publish_release_notes.py", "--project-root",
@@ -229,7 +236,22 @@ class ReplayDriver:
 
     # ---- the phase-complete block ------------------------------------------------------------
     def step_close_phase(self, scratch: Any, version: str, session_id: str = "replay-session") -> gt.StepResult:
-        """SKILL.md:380-414, one shell as the prose has it (``SHIPWRIGHT_RUN_ID`` is set in line 386, used in line 404)."""
-        script = fill(CLOSE_PHASE, version=version, shared=SHARED.as_posix(), plugin=PLUGIN.as_posix(), session=session_id)
-        done = self._bash("close-phase", scratch, script)
+        """F10 (operator 2026-11-23): nothing the release writes is committed and the tree is clean afterwards. A dispatched
+        (pipeline) run keeps the three canon records its gate reads (dashboard, handover with the canon marker, ``phase_history``);
+        a hand-invoked one writes none and puts the derived snapshots back to ``HEAD``. ``update-step`` is gone (F7: the check
+        runs in Step 6). The frozen prose copy ``CLOSE_PHASE`` stays as the pin of what the prose said."""
+        tools, done = SHARED / "scripts/tools", None
+        if self.state.get("mode") == "pipeline":
+            run_id = scratch.env.get("SHIPWRIGHT_RUN_ID") or f"changelog-v{version}-{datetime.now(timezone.utc):%Y%m%d-%H%M%S}"
+            for argv in (_uv(tools / "update_build_dashboard.py", "--project-root", str(scratch.repo), "--phase", "changelog", "--session-id", session_id),
+                         _uv(tools / "generate_session_handoff.py", "--project-root", str(scratch.repo), "--canon-marker", "--phase", "changelog",
+                             "--reason", f"release v{version}"),
+                         _uv(tools / "append_phase_history.py", "--project-root", str(scratch.repo), "--phase", "changelog", "--run-id", run_id,
+                             "--entry-json", json.dumps({"version": f"v{version}", "outcome": "tagged"}, separators=(",", ":")))):
+                done = self._run("close-phase", scratch, argv)
+                if done.returncode != 0:
+                    break
+        else:
+            done = self._run("close-phase", scratch, _uv(PLUGIN / "scripts/checks/restore_derived.py", "--shared-root", str(SHARED),
+                                                         "--project-root", str(scratch.repo)))
         return self._result("close-phase", done, version=version)

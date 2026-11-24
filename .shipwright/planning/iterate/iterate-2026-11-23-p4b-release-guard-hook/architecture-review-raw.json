@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "1. **Yes\u2014option A is proportionate because releases have already bypassed the existing checks, and a release-scoped guard can prevent those observed failures.**\n\n2. **Smallest thing:** One hook that uses the existing release-in-progress marker and P4 record, checks the specified outward commands against HEAD, and otherwise stays inert and fails open. Option C centralizes publishing but still permits the observed manual bypass; stricter prose does not remove it.\n\n3. **What it costs to keep:** The changelog plugin must maintain command matching and compatibility with the release marker and record lifecycle. Fail-open behavior means this remains a preventive aid, not a guaranteed publishing boundary.\n\n4. **What it forecloses:** During an active release, alternative release workflows must produce the existing P4 verification record before using the guarded commands. Changes to publishing commands also require maintaining the matcher.\n\n5. **Findings**\n\nNo findings.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "1. **The question, answered.** Yes \u2014 a fail-open PreToolUse guard on outward release commands is a standing mechanism worth having; the full-run evidence shows models actually ran these commands out of order, and prose (B) demonstrably didn't stop them.\n\n2. **The smallest thing that would do.** Exactly option A as scoped: one PreToolUse `Bash` hook with a narrow matcher over the four outward commands, inert unless `release_state.json`-style state says a release is in progress, reading files P4 already writes. No new state, no new service, no scheduled anything \u2014 this is the minimal shape. Option C (a `release.py publish` subcommand) would be a close second, but it doesn't stop the model from typing `git push` by hand, which is precisely the observed failure, so it doesn't substitute for the hook.\n\n3. **What it costs to keep.** The command matcher must track every form the models actually use (`git push --tags origin main`, `git push origin HEAD`, bare variants, `gh pr merge` flags). This is the one ongoing obligation: a new push incantation the matcher misses silently reopens the hole, and nothing will notice. The registry row in `docs/hooks-and-pipeline.md` plus the false-block test are the right mitigations and are already in scope.\n\n4. **What it forecloses.** Minor: option C remains available later and composes with the hook, so nothing material is foreclosed. The hook does add a second enforcement point (code in `release.py` plus this gate) that future changes to the release flow must keep in agreement.\n\n5. **Findings**\n\n- Category: proportionality\n- Severity: low\n- Finding: The guard duplicates enforcement that `release.py` already does step-by-step; the hook's entire value is the case where the model bypasses the tool, which the full-run report confirms actually happened. That makes it proportionate, but only if it stays this narrow \u2014 any temptation to widen it (blocking all pushes, checking more files) should be resisted.\n- Suggestion: Keep the matcher to the four commands and the \"in-progress + record-for-HEAD-missing\" condition exactly as scoped; do not grow it.\n\n- Category: ownership\n- Severity: medium\n- Finding: A fail-open matcher that drifts out of date fails silently \u2014 the hook keeps \"working\" while blocking nothing, and no test run on ordinary work will catch it. The current test list covers the forms from the full-run report, which is a snapshot, not a guarantee.\n- Suggestion: Add a note in the hooks registry row (already in scope) stating the matcher is only as good as the last observed command census, and treat new push forms seen in future release reports as a matcher update obligation.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "architecture",
+  "capture": {
+    "run_id": "iterate-2026-11-23-p4b-release-guard-hook",
+    "at": "2026-11-23T23:08:44.643573+00:00"
+  },
+  "verdicts": {
+    "openai": "approve",
+    "glm": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}

@@ -1,0 +1,9 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"Each Done-when item of brief E1b is tested: expired park + open reminder in one shape, omissions, ended snooze, same-day pair, triage only via read_all_items, shape pinned and documented."},
+{"name":"Error Handling","verdict":"pass","note":"Bad --on refused (exit 2); triage read failure returns reminders plus triageError; corrupt store lines counted; unreadable store exits 4."},
+{"name":"Security Basics","verdict":"pass","note":"All output text redacted (secret shapes, URL credentials, PEM blocks, password=); control characters flattened in single-line fields; lone surrogates replaced."},
+{"name":"Test Quality","verdict":"pass","note":"18 tests incl. real git worktree and a source scan; secret fixtures built from fragments."},
+{"name":"Performance Basics","verdict":"pass","note":"One linear fold plus one triage read; no cap, no loops over history."},
+{"name":"Naming & Structure","verdict":"pass","note":"reminder_due.py 150 lines, cli 215, store untouched."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Producer due --json to WebUI consumer pinned by shape test; triage fields read through the real read_all_items in the tests."},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"scan_test_hygiene run at F0."}]}

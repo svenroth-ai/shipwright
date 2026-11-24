@@ -58,7 +58,7 @@
 | `ask-after-3-failed-fixes` | prompt-only (judgement) | - |  |
 | `ask-plain-language` | prompt-only (judgement) | - |  |
 
-## never (16)
+## never (17)
 
 | id | enforcement | mechanism | note |
 |---|---|---|---|
@@ -68,6 +68,7 @@
 | `never-no-verify` | prompt-only (mechanisable) | - | The pre-commit hook exists, but nothing stops bypassing it. |
 | `never-drop-database` | hook | `plugins/shipwright-build/scripts/hooks/validate_command.sh` | Reads Bash commands only; the statement inside a .sql file run by a tool is not seen. |
 | `never-skip-or-weaken-tests` | prompt-only (judgement) | - |  |
+| `never-paper-over-flaky-tests` | prompt-only (judgement) | - | Whether a retry or sleep hides a root cause needs judgement; a mechanical check would flag legitimate waits. |
 | `never-yagni` | prompt-only (judgement) | - |  |
 | `never-hardcode-secrets` | hook | `shared/scripts/hooks/check_secrets.sh` | PostToolUse on Write/Edit (file already written); skips fixtures; pattern-based; fails open without Python. |
 | `never-commit-env` | prompt-only (mechanisable) | - |  |

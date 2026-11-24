@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: bug\n- Severity: high\n- File: plugins/shipwright-changelog/scripts/lib/release_push.py:46\n- Finding: The trunk safety check examines `HEAD`, but the push sends the stored `refs/heads/{branch}`. If the checkout has changed since `record-event`, these can identify different commits: `HEAD` can pass the check while the stored trunk contains unrelated changes that will be published.\n- Suggestion: Resolve and validate the actual trunk ref being pushed against the recorded release commit. Also verify that the current branch matches the recorded branch, or explicitly support pushing from another checkout state.\n\n- Category: bug\n- Severity: medium\n- File: plugins/shipwright-changelog/scripts/lib/release_push.py:47\n- Finding: `startswith(EVENT_PATHS)` treats `shipwright_events.jsonl` as a prefix, allowing unrelated paths such as `shipwright_events.jsonl.py` through the event-only check. Such a committed file would be published despite the stated restriction.\n- Suggestion: Match `shipwright_events.jsonl` exactly and use a prefix match only for `.shipwright/events/drops/`. Add a test showing that a filename with the event filename as its prefix is refused.\n\n- Category: bug\n- Severity: high\n- File: plugins/shipwright-changelog/scripts/lib/release_push.py:57\n- Finding: The command never verifies that the tag being pushed still resolves to the recorded release commit. If the local tag is moved after `commit-and-tag`, both the merge check and trunk check can pass while an unrelated commit is published as the release. Verification during `close-phase` happens after publication.\n- Suggestion: Before pushing, resolve `refs/tags/v{version}^{commit}` and require it to equal the recorded release commit. Cover a moved tag with a real Git test that verifies nothing reaches the remote.\n\nThe extracted verifier preserves the previous behavior, but the new push command needs fixes before shipping because its checks do not reliably validate the refs it publishes. Repository inspection was blocked by the execution policy, so this assessment is based on the supplied diff; tests were not run.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "## Findings\n\n- Category: bug\n  Severity: medium\n  File: `plugins/shipwright-changelog/scripts/lib/release_push.py:52-56` (`if not on_trunk and state.get(\"mode\") == \"standalone\":`)\n  Finding: The F1b gate (\"in guided mode no tag before the PR is merged\", per the operator decision and `docs/hooks-and-pipeline.md`) keys on `mode == \"standalone\"` only and never reads `autonomy`. A driven **pipeline** run with `autonomy: guided` skips the `on_base` check entirely and pushes the tag while its PR is still open \u2014 exactly the state F1b forbids. The test suite has no case for `pipeline` + `guided`, so this hole is untested (the \"driven run never merges its PR\" test uses the default autonomous autonomy).\n  Suggestion: Apply the base-branch gate when `state.get(\"mode\") == \"standalone\"` **or** autonomy is guided (or equivalently: skip it only when the run itself merges the PR, mirroring `_pr_check`'s `AUTONOMOUS` logic), and add a `pipeline`+`guided` test asserting `waiting_for_merge`.\n\n- Category: edge-case\n  Severity: low\n  File: `plugins/shipwright-changelog/scripts/lib/release_push.py:47` (`record[\"commit\"]`)\n  Finding: After the `record.get(\"version\") != version` guard, `record[\"commit\"]` is accessed directly (twice: the diff and the `on_base` call). A `release_state.json` that names this version but lacks `commit` (truncated/partial write) raises `KeyError` instead of refusing with a JSON reason.\n  Suggestion: Use `record.get(\"commit\")` and refuse with `release_not_committed` when it is missing.\n\n- Category: spec\n  Severity: medium\n  File: whole diff (PR-level, verified against the test files touched)\n  Finding: The spec requires \"every pin from P0.3 (30 tests in 13 files) moved or replaced in this diff, mapped one by one in the PR.\" The diff touches only **one** existing pin file (`test_skill_event_ships_in_release_pr.py`) plus the new `test_release_p5.py`. If any of the other pin tests assert prose that this rewrite changed (e.g. lines quoting `git push origin \"v{version}\"`, the `update-step` mention, or the release-workflow/compliance-evidence headings), they will fail; if none do, the \"mapped one by one\" obligation must at least be discharged in the PR body \u2014 nothing in the diff evidences the mapping.\n  Suggestion: Confirm the changelog test root is green and include the old-test \u2192 new-test table in the PR; if any pin in the other 12 files referenced changed prose, that file must appear in this diff.\n\n- Category: spec\n  Severity: low\n  File: whole diff\n  Finding: Two spec obligations are not visible in the diff: (a) the written decision \"whether the live prose leaves `REQUIRED` of `test_trace_freeze.py`\" with its reason (no `test_trace_freeze.py` or FINDINGS edit is shown, so presumably \"stays\" \u2014 but the reason must be recorded in the PR/FINDINGS), and (b) the required append to `LEARNINGS.md` (\u00a78). Repo rules put docs in the same diff.\n  Suggestion: Add the FINDINGS entry (decision + reason) and the LEARNINGS append to this change, or point to them if the runner attaches them outside the diff.\n\n- Category: test\n  Severity: low\n  File: `plugins/shipwright-changelog/tests/golden/driver_cli.py:32` (`QUERY_KEYS` extension)\n  Finding: `verify-base`/`verify-remote-url`/`verify-fetch`/`verify-merged` also run inside `close-phase` (via `_pr_check` \u2192 `on_base`). If `QUERY_KEYS` is applied anywhere beyond `step_push_tags` (e.g. in `_chain`), those keys would be stripped from the frozen `close-phase` traces \u2014 a moved trace, which the spec declares a STRICT-STOP. From the visible diff it is filtered only in `step_push_tags`, but this is exactly the kind of silent trace drift the freeze is meant to catch.\n  Suggestion: Confirm `golden_lock.py --check` and the trace-comparison tests pass on the merged tree, and that the `close-phase` traces are byte-identical to the frozen ones.\n\nPositive notes: the `push_tag` logic is otherwise sound (trunk names validated against `TRUNKS` before entering argv, refspecs rather than raw branch names, `--end-of-options` used, event-only HEAD diff rule carried over, `waiting_for_merge` vs `merge_state_unknown` distinguished); the public `check_release_tag` wrapper plus the boundary test and the `cc\\._` source scan properly close the P4 private-import carry-over; the F7 prose tests fail on the old prose by construction (they scan for `update-step`/`--restore`/writer names across SKILL.md and all references, excluding the runtime prompt as required). Approved deltas are present for every changed frozen prose file with `source: P5/F7` as specified.\n\nOverall: the implementation is coherent and well-tested for the mainline paths, but the F1b guided-pipeline hole is a real spec violation and the pin-mapping/decision-record obligations are not evidenced in the diff. Ship-with-fixes.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-11-24-p5-thin-skill-md",
+    "at": "2026-11-24T02:06:05.968163+00:00"
+  },
+  "verdicts": {
+    "openai": "revise",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

@@ -400,7 +400,7 @@
         "heading_path": [
           "Step 3: Determine Version Bump"
         ],
-        "content_hash": "cbbb5630e9f5f1f6f9d7e42c963bd971ae0cdb95d8845f594a5960de18dabd9e"
+        "content_hash": "5427ddfaeafb0601f92c7828f3df615b408efc265a1c94ecc4f447d9324b515c"
       },
       "class": "ask",
       "check": {
@@ -429,7 +429,7 @@
         "heading_path": [
           "Step 5: Preview and Confirm"
         ],
-        "content_hash": "a5895c275a5da6ab1e064fd3ac5546ddf322c01a3ae7fc7117f4b05d7f0f05fe"
+        "content_hash": "30203998348aee563e201cf200a8ca3991d96e0d37786e0a62acaabdc2fff1f2"
       },
       "class": "ask",
       "check": {
@@ -458,7 +458,7 @@
         "heading_path": [
           "C. Detect Invocation Mode"
         ],
-        "content_hash": "28f78a7fad76e327ad65ebf2a5385686318858289c2dff5d88d28dcc62131458"
+        "content_hash": "07384c54ff80a73eb7679ee3d498e8df43b4e441fbbb8bd386318b996d813da9"
       },
       "class": "ask",
       "check": {
@@ -483,7 +483,7 @@
         "heading_path": [
           "Upgrade-notes check"
         ],
-        "content_hash": "9366fdcc30945c863dc35f1367242b74003d499ca708f056d541d0c5a0382f0d"
+        "content_hash": "d7fdffed4a146d8fa5ff0782ac6177625d4a73487c58eb51d1fdf6ad85c555fc"
       },
       "class": "mechanic",
       "check": null,
@@ -499,7 +499,7 @@
         "heading_path": [
           "Step 5.3: Fold Old Event Files"
         ],
-        "content_hash": "aebdef7b61f5bd0b8cc8b0e43353f81d86bf9365a6a512b4e08d3fafddc18684"
+        "content_hash": "68e9e53a130ea94aac0813619c729ca90e467978f2cb8956b3bc3b46ee1bde0b"
       },
       "class": "mechanic",
       "check": null,
@@ -515,7 +515,7 @@
         "heading_path": [
           "Step 7: Create PR (Optional)"
         ],
-        "content_hash": "a5142cd0353386cb04bab24071bce651fab28cce0a57b80d696a556880b29948"
+        "content_hash": "a731d4f6ec9516a047a21cb0aef18639b3650a8268acfb177697867a7e444945"
       },
       "class": "mechanic",
       "check": null,

@@ -1,0 +1,85 @@
+{
+  "run_id": "iterate-2026-11-23-p4b-release-guard-hook",
+  "date": "2026-11-23T23:43:47.189436Z",
+  "event_at": "2026-11-23T21:19:30.626841+00:00",
+  "type": "change",
+  "complexity": "large",
+  "complexity_override": "operator-accepted-large",
+  "prior_source": "keyword",
+  "branch": "iterate/campaign-dfp-pilot-changelog-p3-p8--P4b",
+  "spec": ".shipwright/planning/iterate/campaigns/dfp-pilot-changelog-p3-p8/sub-iterates/P4b-release-guard-hook.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-11-23-p4b-release-guard-hook",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "outward release action without a record for HEAD while a release is in progress is denied",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "test_release_guard.py::test_blocks_every_outward_action_without_a_record PASSED; integration-tests/test_changelog_release_guard_hook.py PASSED"
+      },
+      {
+        "behavior": "record for HEAD (or HEAD after event-only commits) allows",
+        "disposition": "tested",
+        "evidence": "test_release_guard.py::test_allows_with_the_record_for_head, ::test_head_after_the_event_commit_is_still_the_release PASSED"
+      },
+      {
+        "behavior": "an ordinary push is never blocked, also mid-release",
+        "disposition": "tested",
+        "evidence": "test_release_guard.py::test_an_ordinary_command_is_never_blocked_even_mid_release, ::test_head_on_a_feature_branch_is_not_a_trunk_push PASSED"
+      },
+      {
+        "behavior": "a record for a different commit, other version, or change-and-revert history blocks",
+        "disposition": "tested",
+        "evidence": "test_release_guard.py::test_a_record_for_a_different_commit_blocks; test_release_guard_review_fixes.py::test_a_change_and_its_revert_is_not_an_event_commit PASSED"
+      },
+      {
+        "behavior": "inert when no release, release older than 48 h, tag on origin, other project root",
+        "disposition": "tested",
+        "evidence": "test_release_guard.py::test_inert_once_the_tag_is_on_origin, ::test_an_abandoned_release_older_than_48_hours_is_inert PASSED"
+      },
+      {
+        "behavior": "command forms (FULLRUN-REPORT, Windows -C paths, PowerShell, cd, --repo, quoted text, heredoc)",
+        "disposition": "tested",
+        "evidence": "test_release_guard_commands.py (49 cases) and test_release_guard_review_fixes.py PASSED"
+      },
+      {
+        "behavior": "fail-open on garbled payload, corrupt state, missing cwd, off switch",
+        "disposition": "tested",
+        "evidence": "test_release_guard.py::test_garbled_payloads_fail_open, ::test_a_corrupt_run_state_or_a_missing_cwd_fails_open PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 7,
+      "tested": 7,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 6,
+      "covered_acs": 6
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run pytest integration-tests/test_changelog_release_guard_hook.py -q",
+    "exit_code": 0,
+    "tests_run": 2,
+    "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\campaign-dfp-pilot-changelog-p3-p8--P4b\\.shipwright\\runs\\iterate-2026-11-23-p4b-release-guard-hook\\surface_verification.log",
+    "timestamp": "2026-11-23T23:17:12.899Z",
+    "attempts": 1
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": [
+    "cross_component",
+    "touches_auth",
+    "touches_build",
+    "touches_io_boundary",
+    "touches_rls"
+  ]
+}

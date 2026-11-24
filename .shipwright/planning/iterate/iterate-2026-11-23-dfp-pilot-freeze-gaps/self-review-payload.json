@@ -1,0 +1,8 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"goal 1: the changelog pyproject.toml (the configfile pytest reports for the golden root) and the live SKILL.md with its ten references are in REQUIRED, the lock re-pinned (95 to 107 files, approved_deltas []); goal 2 recorded as a P7 item with the reason; goal 3: F1b, F7, F10 decisions in FULLRUN, BRIEF P4/P5 and FINDINGS, the old F10 default replaced"},
+{"name":"Error Handling","verdict":"pass","note":"no product code; the new config test fails loudly when pytest runs without an ini file or under one not in REQUIRED"},
+{"name":"Security Basics","verdict":"pass","note":"test support and docs only; no secrets, network or new commands"},
+{"name":"Test Quality","verdict":"pass","note":"three new tooling tests (live prose set frozen, the session ini file frozen, an edit of SKILL.md, a reference or the pyproject fails unless a delta names it) each with its own covers_none mark; real-tree probes on event-fold.md and pyproject.toml failed the freeze and were restored"},
+{"name":"Performance Basics","verdict":"pass","note":"twelve more files hashed per freeze check; the freeze test file runs in about 5 s"},
+{"name":"Naming & Structure","verdict":"pass","note":"test_trace_freeze.py stays under 300 lines; ruff clean; LIVE_PROSE constant mirrors the pinned_prose test"},
+{"name":"Affected Boundaries","verdict":"pass","note":"producer golden_lock.py (reads REQUIRED from the freeze test source) -> consumers tree_problems and golden_lock --check: round-tripped on the real tree (--check ok, 20 freeze tests green); the root pyproject proven not to apply (rootdir/configfile from the plugin, also when started from the repo root)"}]}

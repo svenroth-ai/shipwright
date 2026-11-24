@@ -1671,6 +1671,19 @@ _Where the work detail lives_ at the end of this document.
 - (E) [AC06] Given the store holds a line that cannot be read, when reminders are
   listed, then every readable reminder is still shown and the damage is
   reported as a count, never read as if nothing were there.
+- (E) [AC07] Given reminders and parked triage entries, when the operator or the
+  WebUI asks what is due on a day, then one list returns the open reminders and
+  the ended snoozes due on or before that day, together with the parked entries whose revisit
+  day has come, in the same item shape, and leaves out done reminders,
+  unfinished snoozes and parks that have not expired.
+- (E) [AC08] Given a due answer that leaves the machine by mail, when it carries
+  text from a parked triage entry, then that text has its secret-shaped parts
+  masked, line breaks and other control characters are removed from
+  single-line fields, and no odd character in the stored text can break the answer.
+- (E) [AC09] Given another program reads the due answer, when its shape is
+  asked for, then it is versioned and fixed — the same fields on every item,
+  empty where there is no value — and the repository states who reads it, so a
+  change to it is made knowingly.
 
 ## Provenance
 

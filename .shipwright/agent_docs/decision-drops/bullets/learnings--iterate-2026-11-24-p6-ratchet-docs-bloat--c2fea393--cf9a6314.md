@@ -1,0 +1,1 @@
+- (2026-11-24) iterate — a gate over a frozen file cannot ask that file for an escape marker; keep escapes in the gate's own registry and cap them (check_prompt_mechanics). [→ iterate-2026-11-24-p6-ratchet-docs-bloat]

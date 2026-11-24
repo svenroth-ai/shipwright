@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-23-dfp-pilot-brief-p8-split",
+  "date": "2026-11-23",
+  "section": "Iterate - docs: changelog pilot brief P8 split",
+  "title": "Changelog pilot P8 runs as two units, P8a and P8b",
+  "context": "The P3-P8 campaign draft splits P8 because P8 was sized large and a large unit cannot run as a campaign unit; the brief still showed one P8 and called the section 3a decisions open.",
+  "decision": "The brief shows P8a (Q1-Q4, FR-01.09 amendment, F3, F5) and P8b (Q5-Q10, Q6 amendment, F9, F8), P7-op after P8b, section 3a confirmed by the operator, and notes the stop-3 harness lives outside the repo.",
+  "consequences": "Brief and campaign draft agree on unit ids and order. P7 must decide where the stop-3 harness lives before stop 3.",
+  "rationale": "The brief is what an autonomous run reads; it must match the campaign it drives.",
+  "rejected": "Keeping one large P8 (cannot run as a campaign unit).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

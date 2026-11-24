@@ -638,6 +638,14 @@
           "note": ""
         },
         {
+          "id": "never-paper-over-flaky-tests",
+          "tier": "never",
+          "text_hash": "93ee0adc08f3",
+          "enforcement": "prompt-only (judgement)",
+          "mechanism": [],
+          "note": "Whether a retry or sleep hides a root cause needs judgement; a mechanical check would flag legitimate waits."
+        },
+        {
           "id": "never-yagni",
           "tier": "never",
           "text_hash": "a774acdc3d17",

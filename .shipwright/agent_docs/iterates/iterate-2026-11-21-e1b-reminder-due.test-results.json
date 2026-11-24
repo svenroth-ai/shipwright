@@ -1,0 +1,108 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-21-e1b-reminder-due",
+    "date": "2026-11-21",
+    "unit": {
+      "status": "passed",
+      "passed": 15213,
+      "skipped": 59,
+      "total": 15272
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "an expired park and an open reminder come back in one list with the identical item shape",
+          "disposition": "tested",
+          "evidence": "test_reminder_due.py::test_expired_park_and_open_reminder_share_one_list_and_shape PASSED"
+        },
+        {
+          "behavior": "an unexpired park, a done reminder and an unfinished snooze are omitted",
+          "disposition": "tested",
+          "evidence": "test_reminder_due.py::test_omits_unexpired_park_done_and_unfinished_snooze PASSED"
+        },
+        {
+          "behavior": "an ended snooze is included with due = snoozed_until on every later day",
+          "disposition": "tested",
+          "evidence": "test_reminder_due.py::test_ended_snooze_is_due_with_snoozed_until_as_due PASSED"
+        },
+        {
+          "behavior": "a reminder and a park due the same UTC day appear together; overdue stays",
+          "disposition": "tested",
+          "evidence": "test_reminder_due.py::test_same_day_reminder_and_park_appear_together_and_past_due_stays PASSED"
+        },
+        {
+          "behavior": "triage is read only through read_all_items; due is read-only",
+          "disposition": "tested",
+          "evidence": "test_reminder_due.py::test_nothing_in_the_due_path_opens_triage_directly + test_due_is_read_only PASSED"
+        },
+        {
+          "behavior": "triage text is redacted at output; control characters flattened; odd text cannot break --json",
+          "disposition": "tested",
+          "evidence": "test_reminder_due.py::test_triage_text_is_redacted_at_output_time + test_control_characters_are_flattened_and_blocks_redacted + test_odd_text_cannot_break_json_output PASSED"
+        },
+        {
+          "behavior": "an unreadable triage side still returns reminders and says so; a damaged store is counted",
+          "disposition": "tested",
+          "evidence": "test_reminder_due.py::test_unreadable_triage_still_returns_reminders_and_says_so + test_damaged_store_is_counted_not_read_as_absence PASSED"
+        },
+        {
+          "behavior": "from a real git worktree the reminders come from the main store",
+          "disposition": "tested",
+          "evidence": "test_reminder_due.py::test_from_a_real_worktree_reminders_come_from_the_main_store PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "the contract shape is pinned and the consumer is named",
+          "disposition": "tested",
+          "evidence": "test_reminder_due_contract.py (3 tests) PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 9,
+        "tested": 9,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 3,
+        "covered_acs": 3
+      }
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run pytest shared/tests/test_reminder_due.py shared/tests/test_reminder_due_contract.py -q",
+      "exit_code": 0,
+      "tests_run": 24
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-24-r5b-merge-lane",
+    "commit": "032d1ebbf0ef9c99eb98f240c8f1110e981a32a5",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

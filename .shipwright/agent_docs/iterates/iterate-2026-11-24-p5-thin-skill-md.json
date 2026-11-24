@@ -1,0 +1,84 @@
+{
+  "run_id": "iterate-2026-11-24-p5-thin-skill-md",
+  "date": "2026-11-24T03:38:06.561005Z",
+  "event_at": "2026-11-24T02:16:53.782869+00:00",
+  "type": "change",
+  "complexity": "large",
+  "complexity_override": "operator-accepted-large",
+  "prior_source": "keyword",
+  "branch": "iterate/campaign-dfp-pilot-changelog-p3-p8--P5",
+  "spec": ".shipwright/planning/iterate/campaigns/dfp-pilot-changelog-p3-p8/sub-iterates/P5-thin-skill-md.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-11-24-p5-thin-skill-md",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "no skill prose line names update-step, --restore or a run-state writer",
+        "disposition": "tested",
+        "evidence": "test_release_p5_prose.py::test_f7_no_prose_line_writes_run_state_in_any_mode PASSED (fails on the old prose)"
+      },
+      {
+        "behavior": "the phase close is one close-phase call; Step 4 carries no aggregator fences or history",
+        "disposition": "tested",
+        "evidence": "test_release_p5_prose.py::test_f7_the_phase_close_is_one_close_phase_call_and_the_prose_has_no_history_or_aggregator_fences PASSED"
+      },
+      {
+        "behavior": "push-tag decides and never pushes: feature branch tag-only line, trunk --atomic line equal to the SKILL.md line, one wait key over all (mode, autonomy) pairs, squash merge refused, base_branch recorded",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "test_release_p5.py PASSED (26 tests); golden/test_driver_cli.py replays every scenario through the CLI driver PASSED"
+      },
+      {
+        "behavior": "the trunk check is the hook's own rule on real git: same commit, event commits, amended, revert pair, merge, empty, rebased, unrelated",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "test_release_push_rule.py PASSED (hook and push-tag agree on every shape)"
+      },
+      {
+        "behavior": "push-tag refuses: not committed, event not recorded, no mode, foreign branch, moved tag, other branch, moved trunk, unreadable merge state",
+        "disposition": "tested",
+        "evidence": "test_release_p5.py refusal tests PASSED"
+      },
+      {
+        "behavior": "the tag check script runs in-process through the public shared entry",
+        "disposition": "tested",
+        "evidence": "test_release_p5_prose.py::test_the_tag_check_script_main_uses_the_public_entry_in_process, shared/tests/test_check_release_tag.py PASSED"
+      },
+      {
+        "behavior": "frozen traces unchanged, every changed frozen file has an approved delta",
+        "disposition": "tested",
+        "evidence": "golden/test_trace_freeze.py PASSED; golden_lock.py --check exit 0"
+      }
+    ],
+    "counts": {
+      "testable": 7,
+      "tested": 7,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 1,
+      "covered_acs": 1
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run --project plugins/shipwright-changelog pytest plugins/shipwright-changelog/tests/test_release_p5.py plugins/shipwright-changelog/tests/test_release_p5_prose.py plugins/shipwright-changelog/tests/test_release_push_rule.py -q -p no:cacheprovider --junitxml=C:/Users/SvenRoth/AppData/Local/Temp/claude/ba2c9fcfeaaf0c50/08554cbf-2ff7-4caf-83ba-e1a3834635ba/scratchpad/junit_p5c.xml",
+    "exit_code": 0,
+    "tests_run": 45,
+    "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\campaign-dfp-pilot-changelog-p3-p8--P5\\.shipwright\\runs\\iterate-2026-11-24-p5-thin-skill-md\\surface_verification.log",
+    "timestamp": "2026-11-24T03:38:06.091Z",
+    "attempts": 1
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": [
+    "touches_auth",
+    "touches_build",
+    "touches_rls"
+  ]
+}

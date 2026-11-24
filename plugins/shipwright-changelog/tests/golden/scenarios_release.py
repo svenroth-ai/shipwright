@@ -91,9 +91,10 @@ def _check_s1(run: Run) -> None:
     null = s.run([sys.executable, str(PLUGIN / "scripts" / "lib" / "git_utils.py"), "parse-commits", "--since", "null",
                   "--format", "json"])
     assert json.loads(null.stdout or "[]") == []
-    # D2 (recorded, not endorsed): the tag is on the remote while the PR is open
-    assert "refs/tags/v0.1.0" in s.git("ls-remote", "--tags", s.origin.as_posix())
-    assert run.step("release-page").output["status"] == "ok"
+    # F1b (operator 2026-11-23, was D2): a guided release leaves the PR open and the tag on this machine; nothing is out
+    assert "refs/tags/v0.1.0" not in s.git("ls-remote", "--tags", s.origin.as_posix())
+    assert {"push-tags", "release-page"}.isdisjoint(r.step for r in run.results) and s.gh_state()["releases"] == {}
+    oracle.check_ac11_not_published(s.gh_state(), tag_on_remote=False, pr_open=prs[0]["state"] == "open")  # AC11 holds
 
 
 def _s1t(make_project, layout: str) -> Run:

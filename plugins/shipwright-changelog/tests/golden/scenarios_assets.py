@@ -110,10 +110,10 @@ def _check_s11b(run: Run) -> None:
 
 
 def _page_run(make_project, mode: str = "ok", skip: tuple[str, ...] = ()) -> Run:
-    s = ss.ready_release(make_project)
+    s = ss.ready_release(make_project, autonomy="autonomous")  # F1b: a guided release pushes no tag before the merge, so no page
     s.env["SHIPWRIGHT_TEST_CONDENSE_FIXTURE_MODEL"] = mode
     driver = ReplayDriver()
-    return Run(s, driver, release_flow(driver, s, skip=skip), {})
+    return Run(s, driver, release_flow(driver, s, "autonomous", skip=skip), {})
 
 
 def _s12a(make_project, layout: str) -> Run:

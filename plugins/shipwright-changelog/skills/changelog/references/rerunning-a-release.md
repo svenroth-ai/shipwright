@@ -1,15 +1,22 @@
 # Re-running a release
 
 Referenced from SKILL.md Step 4. Covers what happens when
-`aggregate_changelog.py` is run for a version that is already in
+`release.py aggregate` is run for a version that is already in
 `CHANGELOG.md` — the normal consequence of a release that stopped partway.
+
+## The short version
+
+Re-running a release is safe. An interruption after the changelog was written leaves the drops pending; the same version again **replaces** that
+section, but only when what is on record is still what the drops say, else it **stops with a non-zero exit** and names the disagreement (reconcile
+by hand, not a transient error). `changelog_updated` means *bytes were written*, not *the run succeeded*: a converging re-run reports
+`"section_action": "unchanged"` and is a **success**. The `--release-date` rule: `release.py aggregate` reads the stored date, so a re-run keeps it.
 
 ## Why a re-run happens at all
 
 The aggregator writes `CHANGELOG.md` **before** it deletes the drop files it
 consumed. There is no way to make those two steps one atomic act, so an
 interruption in that window is a real state: the section is written *and* every
-drop is still pending. The operator's instinct — run it again — used to insert
+drop is still pending. The operator's instinct — run it again — would insert
 a second `## [x.y.z]`.
 
 ## What a re-run does
@@ -41,10 +48,10 @@ is a prompt to reconcile the two by hand, not a transient error to retry.
 
 ## Dates
 
-`--release-date` defaults to today, and the comparison deliberately ignores the
-date so a release resumed the next morning still converges. A replace adopts
-the newly rendered heading, so pass `--release-date` explicitly when the
-original date matters.
+`release.py aggregate` passes the date `prepare` stored (`release.date`; today only when no run state exists), so a release
+resumed the next morning renders the same heading. The aggregator itself defaults `--release-date` to today, and its comparison
+deliberately ignores the date so a resumed release still converges. A replace adopts the newly rendered heading, so pass
+`--release-date` explicitly when a date other than the stored one matters.
 
 A heading carrying more than a version and a date —
 `## [1.2.0] - 2026-04-23 [YANKED]` — is refused rather than silently rewritten,

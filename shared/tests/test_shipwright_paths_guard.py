@@ -59,6 +59,9 @@ PREFIX_RULE_ALLOWED = {
 #: Names that must stay literal. Degraded-import fallbacks cannot depend on the resolver (they run
 #: exactly when shared/scripts/lib is missing); persisted-provenance regexes (test_results_backfill_check, 11.9 6b) contain spaces, so the prose rule skips them.
 LITERAL_ALLOWED = {
+    "plugins/shipwright-changelog/scripts/lib/release_event.py": "the changelog plugin has a lib package of its own and cannot import the shared resolver; the name is a pathspec for git (P4)",
+    "plugins/shipwright-changelog/scripts/hooks/release_descent.py": "stdlib-only rule loaded by the uv --no-project release guard hook, which cannot import the shared resolver; the name is a git path filter (P5)",
+    "plugins/shipwright-changelog/scripts/lib/release_verify.py": "same: the plugin cannot import the shared resolver; the name is a search path (P4)",
     "shared/scripts/hooks/track_tool_calls.py": "degraded-import fallback: must not depend on shared lib (R1 item, BRIEF 4.7.1)",
     "shared/scripts/hooks/check_required_checks_hook.py": "degraded-import fallback: must not depend on shared lib (R1 item, BRIEF 4.7.1)",
     "plugins/shipwright-iterate/scripts/hooks/iterate_worktree_gate.py": "fail-open fallback when the resolver cannot be imported",

@@ -1,0 +1,416 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-21-e1b-reminder-due",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-21T20:02:28.897869+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "The `--on D` rule says \"midnight UTC aware for triage,\" but the plan doesn't state whether `--on` accepts dates only (`2026-11-21`) or datetimes, nor how it's parsed/validated. Ambiguous or locale-sensitive date parsing (e.g., `D-M-Y` vs `M-D-Y`) will produce silently wrong answers.",
+          "suggestion": "Pin the accepted format (ISO-8601 date, UTC) in the plan and reject anything else with a clear CLI error. Add a test for an unparseable `--on` value.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "The snooze rule (`snoozed_until <= D` with `due = snoozed_until`) has an implicit question: after the snooze threshold, does the item's effective due date revert to the original `due` on subsequent days, or stay `snoozed_until` forever? The plan reads as \"snoozed_until permanently replaces due,\" which may be intended, but \"snoozed until Friday, then due Monday next week\" is a plausible alternative semantic. This is a cross-repo contract decision being made implicitly.",
+          "suggestion": "Confirm the intended semantics against the BRIEF's `Done when:` list explicitly and record it in the contract note; add a test for `D` far past `snoozed_until`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "\"Corrupt lines\" are surfaced as a count (`corruptLines`) but the plan doesn't say whether a corrupt triage.jsonl line causes a hard error or is skipped-then-counted. Given the contract explicitly carries the field, presumably counted — but the reminder-fold side needs the same policy stated.",
+          "suggestion": "State one policy: corrupt lines are skipped, counted per source, and never fail `due`. Ensure `--json` output can't be broken by corrupt input (the plan does say lone surrogates/non-text never break `--json`, which is good — just extend that guarantee explicitly to corrupt lines).",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk |",
+          "file": null,
+          "line": null,
+          "finding": "redact_urls` is being added to `lib/reminder_secrets.py`, implying reminder text can contain URLs with embedded secrets. Redaction here is a display/leak-prevention concern, but the plan is silent on whether redaction is applied to stored reminders or only at `due` output time. If reminders are stored unredacted and triage.jsonl contains URLs, `--json` output must redact consistently with the same function or the guarantee is partial.",
+          "suggestion": "Clarify redaction applies at output time only (read-only change, consistent with \"no code opens triage.jsonl\" except via `triage.read_all_items`) and that both reminder text and triage text pass through the same redaction function. Add a test with a URL containing a token in both sources.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency |",
+          "file": null,
+          "line": null,
+          "finding": "The triage link shape (`{label, kind, ref}` with label `\"Triage <id>\"`) is a cross-repo contract element. If the triage repo's item ids are opaque or can contain characters that collide with other link labels, downstream consumers parsing `label` strings may break. Also, if the triage repo later changes id format, this label format is pinned in `contractVersion:1`.",
+          "suggestion": "Confirm the id format with the triage repo before freezing it in version 1; consumers should rely on `ref`, not parse `label`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach |",
+          "file": null,
+          "line": null,
+          "finding": "on D` sets \"midnight UTC aware\" for the triage read, but reminder folding (`due <= D`) appears to compare against the date itself. Mixed comparisons between an aware-datetime boundary and date-valued `due` fields are a classic off-by-one source, especially across DST-irrelevant-but-leap-day-relevant inputs.",
+          "suggestion": "Normalize once: convert `D` to a single boundary value and compare both sources against it with one helper, tested at boundary (`due == D`) and one tick past.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "Empty-state behavior is unspecified: what does `due` print when there are zero due items, or when triage.jsonl is absent entirely? The JSON envelope should still be well-formed (`items: []`), and human output should not print an error.",
+          "suggestion": "Add explicit empty-result tests for both `--json` and text output, and for missing triage file (distinct from corrupt).",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency ·",
+          "file": null,
+          "line": null,
+          "finding": "The plan does not derive acceptance criteria from E1b’s authoritative `Done when:` list. Adding AC07–AC09 alone does not establish coverage of the shared rules or sections 5–6.",
+          "suggestion": "Map each authoritative requirement to its implementation or test before proceeding, including the cross-repo contract note explicitly included in scope.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach ·",
+          "file": null,
+          "line": null,
+          "finding": "The versioned contract remains underspecified: “fixed 10-field item” does not identify fields, types, nullability, ordering, or how `corruptLines` combines diagnostics from both sources. Independent consumers could implement incompatible interpretations of version 1.",
+          "suggestion": "Record the exact schema and deterministic ordering in the contract note, with a representative mixed-source fixture enforced by the contract tests.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "Corrupt-line reporting is planned, but source-level failure behavior is unspecified. An unreadable reminder or triage store could either abort the command or produce an apparently complete but partial answer.",
+          "suggestion": "Define missing-store versus unreadable-store behavior and CLI exit status. Test these alongside malformed records, ensuring partial results cannot silently masquerade as a complete successful answer.  The overall design is coherent: reuse the triage reader, fold reminder state, and expose one read-only result. Resolve the acceptance mapping, contract definition, and source-failure behavior before implementation.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-21T20:02:25.357383+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] # Review: E1b — Combined `due` Answer\n\n## Findings\n\n**Category: edge-case | Severity: medium**\n**Finding:** The `--on D` rule says \"midnight UTC aware for triage,\" but the plan doesn't state whether `--on` accepts dates only (`2026-11-21`) or datetimes, nor how it's parsed/validated. Ambiguous or locale-sensitive date parsing (e.g., `D-M-Y` vs `M-D-Y`) will produce silently wrong answers.\n**Suggestion:** Pin the accepted format (ISO-8601 date, UTC) in the plan and reject anything else with a clear CLI error. Add a test for an unparseable `--on` value.\n\n**Category: edge-case | Severity: medium**\n**Finding:** The snooze rule (`snoozed_until <= D` with `due = snoozed_until`) has an implicit question: after the snooze threshold, does the item's effective due date revert to the original `due` on subsequent days, or stay `snoozed_until` forever? The plan reads as \"snoozed_until permanently replaces due,\" which may be intended, but \"snoozed until Friday, then due Monday next week\" is a plausible alternative semantic. This is a cross-repo contract decision being made implicitly.\n**Suggestion:** Confirm the intended semantics against the BRIEF's `Done when:` list explicitly and record it in the contract note; add a test for `D` far past `snoozed_until`.\n\n**Category: edge-case | Severity: low**\n**Finding:** \"Corrupt lines\" are surfaced as a count (`corruptLines`) but the plan doesn't say whether a corrupt triage.jsonl line causes a hard error or is skipped-then-counted. Given the contract explicitly carries the field, presumably counted — but the reminder-fold side needs the same policy stated.\n**Suggestion:** State one policy: corrupt lines are skipped, counted per source, and never fail `due`. Ensure `--json` output can't be broken by corrupt input (the plan does say lone surrogates/non-text never break `--json`, which is good — just extend that guarantee explicitly to corrupt lines).\n\n**Category: risk | Severity: medium**\n**Finding:** `redact_urls` is being ad […truncated]\n\n[openai] Review limited to the supplied mini-plan: filesystem access was blocked, so I could not verify the authoritative brief or existing implementation.\n\n1. **Category:** dependency · **Severity:** medium  \n   **Finding:** The plan does not derive acceptance criteria from E1b’s authoritative `Done when:` list. Adding AC07–AC09 alone does not establish coverage of the shared rules or sections 5–6.  \n   **Suggestion:** Map each authoritative requirement to its implementation or test before proceeding, including the cross-repo contract note explicitly included in scope.\n\n2. **Category:** approach · **Severity:** medium  \n   **Finding:** The versioned contract remains underspecified: “fixed 10-field item” does not identify fields, types, nullability, ordering, or how `corruptLines` combines diagnostics from both sources. Independent consumers could implement incompatible interpretations of version 1.  \n   **Suggestion:** Record the exact schema and deterministic ordering in the contract note, with a representative mixed-source fixture enforced by the contract tests.\n\n3. **Category:** edge-case · **Severity:** medium  \n   **Finding:** Corrupt-line reporting is planned, but source-level failure behavior is unspecified. An unreadable reminder or triage store could either abort the command or produce an apparently complete but partial answer.  \n   **Suggestion:** Define missing-store versus unreadable-store behavior and CLI exit status. Test these alongside malformed records, ensuring partial results cannot silently masquerade as a complete successful answer.\n\nThe overall design is coherent: reuse the triage reader, fold reminder state, and expose one read-only result. Resolve the acceptance mapping, contract definition, and source-failure behavior before implementation.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": "shared/scripts/lib/reminder_secrets.py",
+          "line": null,
+          "finding": "Prefixed secret names (client_secret, db_password) were not redacted at output. FIXED: output-time patterns accept a word prefix; tests added. Write-side pattern left as in E1a (accepted).",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/tests/test_reminder_due.py",
+          "line": null,
+          "finding": "No test pinned the UTC day boundary. FIXED: monkeypatched now_utc at UTC-5 and 23:59:59 UTC.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": "shared/scripts/lib/reminder_due.py",
+          "line": null,
+          "finding": "Unicode line separators and bidi controls survived. FIXED.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": "shared/scripts/lib/reminder_due.py",
+          "line": null,
+          "finding": "triageError could carry a local path. FIXED: exception type only.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/tests/test_reminder_due.py",
+          "line": null,
+          "finding": "ITEM_FIELDS/LINK_FIELDS unused by the end-to-end test. FIXED: asserted against the real output.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_reminder_due.py",
+          "line": null,
+          "finding": "worktree test fragile with gpgsign and no returncode check. FIXED.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/reminder_due.py",
+          "line": null,
+          "finding": "One malformed triage item drops all parks (reported via triageError). Accepted, optional.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-21T20:29:05.703976+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "b33d7d86dd42b01972e7a29e5c3b0526e18d3752"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "worktree and main answer consistently",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "reminderStore is the store that was read",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "triage text cannot leak a secret",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "nothing breaks --json",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "reminderCorruptLines means damage",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "read-only via read_all_items",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-21T20:29:05.889066+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "b33d7d86dd42b01972e7a29e5c3b0526e18d3752"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "bug |",
+          "file": "shared/scripts/lib/reminder_due.py:84 (`_triage_item`)",
+          "line": null,
+          "finding": "\"due\": item.get(\"revisitAt\")` — the triage item's `due` is passed through raw without `_clean`. If `revisitAt` is a non-string (e.g. a dict/number from a hand-edited triage line) or contains a lone surrogate, it leaks into `--json` uncleaned, and a lone surrogate there would break UTF-8 encoding of the whole output — exactly the failure mode `test_odd_text_cannot_break_json_output` claims is impossible. Also the sort key `i[\"due\"] or \"\"` mixes a possibly non-string value with strings in tuple comparison, which can raise `TypeError` on mixed types.",
+          "suggestion": "apply `_clean(item.get(\"revisitAt\"))` and normalize the sort key with `str(...)` or `_clean`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug |",
+          "file": "shared/scripts/lib/reminder_due.py:66 (`_reminder_item`)",
+          "line": null,
+          "finding": "\"id\": _clean(rem.get(\"id\"))` — `_clean` redacts and flattens the id. For a triage id, `redact_urls`/`redact` could mangle a legitimate id if it happens to match a secret shape; worse, the identity contract says identity is `(kind, id)`, but `_clean(None)` returns `None`, and a `None` id from a damaged reminder line collides with every other `None`-id reminder in the consumer's dedup. The ADR says identity is (kind, id) — masked ids undermine that.",
+          "suggestion": "validate ids at read time; skip/count (not emit) items whose id is not a usable string, rather than emitting a redacted/None id.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "bug |",
+          "file": "shared/scripts/lib/reminder_secrets.py:40-53 (`redact_urls`)",
+          "line": null,
+          "finding": "_PLAIN_SECRET = re.compile(r\"(?i)\\b(password|passwd|secret)(\\s[=:]\\s)\\S+\")` — the sub replaces only up to the first whitespace via `\\S+`, so `password=hunter2 leaked-token` leaves the token intact — fine — but the bigger issue: `redact_urls` applies `redact`'s reuse of the write-time patterns at output time over text that was already accepted. More concretely, `_URL_SECRET_PARAM` sub uses `m.group(0)[0] + m.group(0)[1:].split(\"=\", 1)[0] + \"=[REDACTED]\"` — if the match starts after `?`/`&`, `group(0)[0]` preserves only the first char of the param name prefix; for a match like `?api_key=abc` it depends on the unseen `_URL_SECRET_PARAM` regex, but the manual string surgery on `group(0)` is fragile and untested for the param case (the test only covers userinfo and `password=`).",
+          "suggestion": "rewrite with a capture-group regex (`(?P<name>[?&]\\w+)=(?P<val>\\S+)`) and replace via `m.group('name') + \"=[REDACTED]\"`; add a test for the query-param case.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug |",
+          "file": "shared/scripts/tools/reminder_cli.py:130 (`cmd_due`)",
+          "line": null,
+          "finding": "parse_day(args.on, \"--on\")` is called unconditionally when `args.on` is falsy-checked inside the ternary — fine — but the docstring contract says malformed `--on` is \"refused with exit 2\"; the test asserts `main(...) == 2`, which only holds if `parse_day` raises something `main` maps to exit 2. That mapping isn't in the diff; if `parse_day` raises an uncaught exception the CLI crashes with a traceback instead of exit 2. Verify `main` catches `ReminderError`/ValueError for the due path (the existing `add` path presumably does, but `due` was never wired through that handler before).",
+          "suggestion": "confirm the shared error handler covers `due`; add a test that the error goes to stderr without a traceback.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec |",
+          "file": "shared/scripts/lib/reminder_due.py:137-147 (`build_due`)",
+          "line": null,
+          "finding": "The docstring/ADR states an unreadable store \"fails the command (exit 4)\" — but `read_folded(store)` is called with no try/except here, and `cmd_due` doesn't catch anything either; an OS-level read error inside `read_folded` propagates as an unhandled exception (traceback, exit 1), not the documented exit 4. The test suite only covers a corrupt line (damaged count), never an unreadable store file (e.g. permission denied), so this documented behavior is untested and likely not implemented.",
+          "suggestion": "catch the lock-timeout/OS errors in `cmd_due` (or `build_due`) and exit 4, with a test using a directory-as-file or chmod-0 store.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test |",
+          "file": "shared/tests/test_reminder_due.py:33 (`_due` helper)",
+          "line": null,
+          "finding": "_due` always passes `--on DAY` where `DAY = \"2099-01-10\"` and the reminders/parks are created with that same literal, plus `NOW` frozen at 2026. But `test_default_day_is_today_utc_and_text_output_names_the_root` is the only test of the no-`--on` default path, and it asserts only the empty case. The AC's \"due on or before that day\" boundary for the default (today) path — including whether `read_all_items`' `now` stamp actually lands at current-moment rather than midnight — is only exercised with an explicit `--on`. A bug in the default-now stamp (e.g. passing `utc_date(now_utc())` instead of `now_utc()`, changing triage's same-day semantics) would pass all tests.",
+          "suggestion": "add a test with a park whose revisitAt is today (no `--on`) asserting it appears.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case |",
+          "file": "shared/scripts/lib/reminder_due.py:128-136 (`_due_reminders`)",
+          "line": null,
+          "finding": "A reminder whose `due` fails `parse_revisit_date` (bad hand-edited date) is silently dropped with no count — inconsistent with the corrupt-line policy (\"skipped, counted\") and with the triage side where `revisitDue` derivation handles it. The consumer sees \"nothing due\" while a reminder with an unparseable due date is invisible. The docstring never states this.",
+          "suggestion": "either count skipped-due-reminder lines in a diagnostic or document the drop; add a test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": "shared/scripts/lib/reminder_due.py:107-116 (`_triage_item` mapping)",
+          "line": null,
+          "finding": "open` carries triage `detail` (multiline, uncapped, explicitly noted \"no length limit\"). A hostile/very large triage detail makes `due --json` emit an unbounded blob into a mail path. Stated in the ADR as \"Not probed\" — a known, accepted gap, but combined with redaction-only-fragment fixtures, a 10 MB detail would be redacted then emitted whole.",
+          "suggestion": "cap `open`/`why` at output (or document the WebUI's responsibility to truncate) since the producer knows it's mailed.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test |",
+          "file": "shared/tests/test_reminder_due.py:117-122 (`test_triage_text_is_redacted_at_output_time`)",
+          "line": null,
+          "finding": "The secret fixtures are built by concatenation (`\"gh\" + \"p_\" + ...`) to dodge the write-time scanner, good — but the assertion only checks the specific fragments don't appear. If `redact` masks only the exact `ghp_` prefix shape but a slightly different token format (e.g. `sk-`, `AKIA`, bearer) slips through, the test passes. The unit-level `test_control_characters_are_flattened_and_blocks_redacted` covers PEM and `password=` but not other token families.",
+          "suggestion": "add direct unit tests on `redact_urls` for the token shapes the write-time check refuses (github, AWS, generic `token=`), since output redaction is the last line before mail.  Overall: the implementation is coherent and the review trail is unusually honest (including the accepted URL-password leak), but the unvalidated `revisitAt` pass-through, the untested/likely-unimplemented exit-4 unreadable-store behavior, and the silent drop of unparseable reminder due dates are concrete gaps against the change's own stated contract. Ship-with-fixes.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-21T20:29:06.421951+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] - Category: bug | Severity: medium\n- File: shared/scripts/lib/reminder_due.py:84 (`_triage_item`)\n- Finding: `\"due\": item.get(\"revisitAt\")` — the triage item's `due` is passed through raw without `_clean`. If `revisitAt` is a non-string (e.g. a dict/number from a hand-edited triage line) or contains a lone surrogate, it leaks into `--json` uncleaned, and a lone surrogate there would break UTF-8 encoding of the whole output — exactly the failure mode `test_odd_text_cannot_break_json_output` claims is impossible. Also the sort key `i[\"due\"] or \"\"` mixes a possibly non-string value with strings in tuple comparison, which can raise `TypeError` on mixed types.\n- Suggestion: apply `_clean(item.get(\"revisitAt\"))` and normalize the sort key with `str(...)` or `_clean`.\n\n- Category: bug | Severity: medium\n- File: shared/scripts/lib/reminder_due.py:66 (`_reminder_item`)\n- Finding: `\"id\": _clean(rem.get(\"id\"))` — `_clean` redacts and flattens the id. For a triage id, `redact_urls`/`redact` could mangle a legitimate id if it happens to match a secret shape; worse, the identity contract says identity is `(kind, id)`, but `_clean(None)` returns `None`, and a `None` id from a damaged reminder line collides with every other `None`-id reminder in the consumer's dedup. The ADR says identity is (kind, id) — masked ids undermine that.\n- Suggestion: validate ids at read time; skip/count (not emit) items whose id is not a usable string, rather than emitting a redacted/None id.\n\n- Category: bug | Severity: high\n- File: shared/scripts/lib/reminder_secrets.py:40-53 (`redact_urls`)\n- Finding: `_PLAIN_SECRET = re.compile(r\"(?i)\\b(password|passwd|secret)(\\s*[=:]\\s*)\\S+\")` — the sub replaces only up to the first whitespace via `\\S+`, so `password=hunter2 leaked-token` leaves the token intact — fine — but the bigger issue: `redact_urls` applies `redact`'s *reuse* of the write-time patterns at output time over text that was already accepted. More concretely, `_URL_SECRET_PARAM` sub u […truncated]\n\n[openai] <no review returned: codex exec exited 1: Error: turn/start: turn/start failed: Input exceeds the maximum length of 1048576 characters. (code -32602), data: {\"input_error_code\":\"input_too_large\",\"max_chars\":1048576,\"actual_chars\":4075880}>",
+      "verdicts": {
+        "openai": "unavailable",
+        "glm": "revise"
+      },
+      "partial_legs": [
+        "openai"
+      ]
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-21T20:15:37.348177+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "b33d7d86dd42b01972e7a29e5c3b0526e18d3752"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-21T20:02:25.551603+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-21T20:02:25.707785+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

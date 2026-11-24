@@ -78,8 +78,8 @@ def store_path(project_root: Path | str, *, for_write: bool = False) -> Path:
     if root is None:
         if for_write and _inside_git_checkout(project_root):
             raise ReminderError(
-                "Could not find the main repository (git did not answer); the reminder "
-                "was not saved. Check that git works and try again."
+                "Could not find the main repository (git did not answer); nothing "
+                "was read or saved. Check that git works and try again."
             )
         root = Path(project_root)
     return Path(root) / REMINDERS_FILE

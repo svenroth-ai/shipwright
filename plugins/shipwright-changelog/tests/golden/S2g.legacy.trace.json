@@ -335,7 +335,7 @@
   },
   "origin": {
     "branches": {
-      "main": "docs: changelog history@7#b979a171",
+      "main": "chore: project scaffolding@4#ed53eaf0",
       "release/next": "chore(release): record changelog event for v1.3.0@11#f15f34e3"
     },
     "tags": {
@@ -347,11 +347,6 @@
       "v1.2.0": {
         "message": "Release v1.2.0",
         "target": "docs: changelog history@7#b979a171",
-        "type": "tag"
-      },
-      "v1.3.0": {
-        "message": "Release v1.3.0",
-        "target": "chore(release): v1.3.0@10#8d58d286",
         "type": "tag"
       }
     }
@@ -479,21 +474,6 @@
         "status": "ok"
       },
       "step": "record-event"
-    },
-    {
-      "exit_code": 0,
-      "fields": {
-        "status": "ok"
-      },
-      "step": "push-tags"
-    },
-    {
-      "exit_code": 0,
-      "fields": {
-        "reason": "",
-        "status": "ok"
-      },
-      "step": "release-page"
     }
   ],
   "stub": {
@@ -528,48 +508,6 @@
           "main"
         ],
         "exit": 0
-      },
-      {
-        "argv": [
-          "--version"
-        ],
-        "exit": 0
-      },
-      {
-        "argv": [
-          "auth",
-          "status",
-          "--hostname",
-          "github.com"
-        ],
-        "exit": 0
-      },
-      {
-        "argv": [
-          "release",
-          "view",
-          "v1.3.0",
-          "--repo",
-          "acme-fixture/widgets",
-          "--json",
-          "url"
-        ],
-        "exit": 1
-      },
-      {
-        "argv": [
-          "release",
-          "create",
-          "v1.3.0",
-          "--notes-file",
-          "<repo>/.shipwright/runtime/release_notes_v1.3.0.md",
-          "--title",
-          "v1.3.0",
-          "--verify-tag",
-          "--repo",
-          "acme-fixture/widgets"
-        ],
-        "exit": 0
       }
     ],
     "prs": [
@@ -582,11 +520,6 @@
         "title": "<masked:judgement>"
       }
     ],
-    "releases": {
-      "v1.3.0": {
-        "notes": "<masked:judgement>",
-        "title": "v1.3.0"
-      }
-    }
+    "releases": {}
   }
 }

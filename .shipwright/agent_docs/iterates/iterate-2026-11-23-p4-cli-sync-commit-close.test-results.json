@@ -1,0 +1,124 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-23-p4-cli-sync-commit-close",
+    "date": "2026-11-23",
+    "unit": {
+      "status": "passed",
+      "passed": 462,
+      "skipped": 0,
+      "total": 462
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 18,
+      "total": 18
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run pytest plugins/shipwright-changelog/tests/golden/test_p4_decisions.py plugins/shipwright-changelog/tests/golden/test_seeded_regressions_cli.py -q -p no:cacheprovider",
+      "exit_code": 0,
+      "tests_run": 18,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\campaign-dfp-pilot-changelog-p3-p8--P4-a1\\.shipwright\\runs\\iterate-2026-11-23-p4-cli-sync-commit-close\\surface_verification.log",
+      "timestamp": "2026-11-23T21:18:34.666Z",
+      "attempts": 1
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "sync runs fold, manifest sync and evidence refresh and keeps both pathspecs",
+          "disposition": "tested",
+          "evidence": "tests/test_release_p4_cli.py sync tests PASSED"
+        },
+        {
+          "behavior": "commit-and-tag commits by explicit pathspec, verifies the committed HEAD and tags only when every step exited 0",
+          "disposition": "tested",
+          "evidence": "tests/test_release_p4_cli.py commit tests PASSED"
+        },
+        {
+          "behavior": "a re-run after a failed audit verifies and tags the existing release commit; no sync means no commit",
+          "disposition": "tested",
+          "evidence": "tests/test_release_p4_review_fixes.py PASSED"
+        },
+        {
+          "behavior": "F7: a changelog or tag that disagrees is refused and the tag removed; B1 release_state.json names the release commit",
+          "disposition": "tested",
+          "evidence": "tests/golden/test_p4_decisions.py::test_f7 and ::test_b1 PASSED"
+        },
+        {
+          "behavior": "record-event commits only event paths, pushes the head on a feature branch only, stops at the first failing tool and needs a PR url off the trunk",
+          "disposition": "tested",
+          "evidence": "tests/test_release_event_real_git.py and tests/test_release_p4_review_fixes.py PASSED"
+        },
+        {
+          "behavior": "F1a, F1b, F4, F6 stop and push rules through both drivers on real git and the gh stub",
+          "disposition": "tested",
+          "evidence": "tests/golden/test_p4_decisions.py PASSED (replay and cli parametrization)",
+          "category": "integration"
+        },
+        {
+          "behavior": "F10: a hand-invoked close leaves a clean tree and writes no dashboard, handover or phase_history; a driven close keeps them",
+          "disposition": "tested",
+          "evidence": "tests/golden/test_p4_decisions.py::test_f10 and tests/test_release_p4_cli.py PASSED"
+        },
+        {
+          "behavior": "B4 verify and A9 summary: pass on a complete release, fail when the remote tag is gone, fail closed without run state",
+          "disposition": "tested",
+          "evidence": "tests/golden/test_p4_decisions.py::test_b4 and tests/test_release_p4_review_fixes.py PASSED"
+        },
+        {
+          "behavior": "P3 fix list: sha256 run ids, deferred upgrade drops, orphan-safe orchestrator path, root-keyed run state, validated inputs",
+          "disposition": "tested",
+          "evidence": "tests/test_release_p3_fixes.py PASSED"
+        },
+        {
+          "behavior": "every scenario and promise test through the CLI driver equals its frozen trace and the freeze holds with approved deltas",
+          "disposition": "tested",
+          "evidence": "tests/golden full run PASSED; golden_lock.py --check exit 0",
+          "category": "integration"
+        },
+        {
+          "behavior": "seeded regression: drops kept after aggregation is caught through the CLI driver",
+          "disposition": "tested",
+          "evidence": "tests/golden/test_seeded_regressions_cli.py PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 11,
+        "tested": 11,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 15,
+        "covered_acs": 15
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-24-r5b-merge-lane",
+    "commit": "032d1ebbf0ef9c99eb98f240c8f1110e981a32a5",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

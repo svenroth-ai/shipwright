@@ -22,13 +22,18 @@
   `shared/scripts/lib/bloat_baseline.py`.
 - **Ratchet** — When a baseline-allowlisted file's measured LOC
   exceeds the `current` value recorded in the allowlist. Means
-  "the file got bigger since we last froze it" — the trend Shipwright
-  is wired to prevent.
+  "the file got bigger since we last froze it" — what Shipwright prevents.
 - **Anti-Ratchet** — The hard rule that ratchets must not land. The
   pre-commit hook (this iterate, A.defense), the Stop hook
   (A.foundation), and the Group H detective audit (A.review) all
   enforce it at different gates. **Two exist**, on different subjects —
   the bloat one above (files, LOC) and the Suppression-Baseline below.
+- **Converted skill** — A skill whose mechanics moved into one CLI, leaving a thin `SKILL.md` of judgement,
+  questions and one command per outward call. Listed in `shared/config/converted_skills.json`.
+- **Prompt-Mechanics Ratchet** — `check_prompt_mechanics.py`: for converted skills only, fails on a fenced shell
+  block that chains or holds several commands and on a command the registry does not list. Registry
+  `escapes` must equal `escape_budget`; a stale one fails, so the cap only falls unless the registry itself is
+  edited (a reviewed diff). Catches accidents, not crafted evasions (FINDINGS D55). A CI `(gate)` + `verify_local`.
 - **Suppression-Baseline** — `shipwright_inline_suppressions.json`. The
   anti-ratchet for inline `# nosemgrep` suppressions: per rule a frozen
   `max_sites` + a `rationale_ref` naming a recorded decision. Exceeding
@@ -64,8 +69,7 @@
 - **Producer** — The single code path authorised to write a given
   artifact. Every artifact Shipwright tracks has exactly one Producer
   to prevent format drift. Example: `shared/scripts/lib/bloat_baseline.py`
-  is the sole Producer for the bloat baseline; everything else is a
-  Consumer.
+  is the sole Producer for the bloat baseline; the rest are Consumers.
 - **Consumer** — A reader of a Producer's artifact. Consumers MAY
   parse and act on the artifact but MUST NOT write it.
 - **Canon-Gate** — The phase-quality gate inside the Stop-hook chain
@@ -86,8 +90,7 @@
   `run_config.phase_tasks[]`. **Not the same as a Phase** (the entry above, which
   is the kind of work): a Phase is `build`; a phase task is *this* build, with
   its own status, mutated **only** through `phase_task_lifecycle`. It is the
-  **authoritative** per-phase status — anything else showing phase state is a
-  view of it.
+  **authoritative** per-phase status; anything else showing phase state is a view of it.
 - **Dev-server state** — `<project>/shipwright_dev_server.json`, the record of
   which local preview processes this project has running. **Per project
   directory**, which is what makes reuse safe: a foreign process answering on the
@@ -269,8 +272,7 @@
 - **Requirement impact** — what a change did to the requirements: `add`,
   `modify`, `remove`, or `none` **with a one-line reason**. Recorded on the work
   event, and a feature or change that records neither an affected requirement nor
-  a justified `none` is **rejected at the moment it is recorded** — not caught
-  later by an audit.
+  a justified `none` is **rejected when recorded**, not caught by an audit.
 - **Requirement Elicitation (grilling)** — The shared method project/adopt/iterate
   use to pull out a complete requirement: one question at a time, facts looked up,
   terms challenged, edges stress-tested, done only when the Coverage Checklist is
@@ -299,8 +301,7 @@
   (`.shipwright/designs/screens/NN-name.html`), opens in a browser, no
   build/server/install.
 - **Flow (user flow)** — A multi-screen mockup showing the path across screens for
-  one journey (`.shipwright/designs/flows/*.html`) — the route, not isolated
-  screens.
+  one journey (`.shipwright/designs/flows/*.html`), not isolated screens.
 - **Chrome (definition)** — Shared page furniture (nav/header/footer/branding)
   defined once (`chrome-definition.md`) so screens match and one change updates all.
 - **Visual Guidelines / Design Tokens** — Colours, typography and spacing the
@@ -400,8 +401,7 @@
   findings, never a tool's native output.
 - **Normalized finding** — the single shape every check emits (`id`, `severity`,
   `type`, `rule`, `source`, …) so four different tools merge into one report.
-  The prompt-injection scanner emits it too, which is why it merges
-  transparently.
+  The prompt-injection scanner emits it too, so it merges transparently.
 - **Degraded leg** — a scanner that *was invoked* but produced no parseable
   output (fatal, timeout, truncated report, missing binary). Recorded on a
   separate control-plane channel from the findings, with a reason from a closed

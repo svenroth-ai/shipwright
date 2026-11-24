@@ -1,0 +1,125 @@
+{
+  "promises": {
+    "plugins/shipwright-changelog/tests/golden/test_promise_aggregate.py::test_ac02_entries_are_grouped_by_the_kind_of_change_and_read_as_bullets": {
+      "acs": [
+        "FR-01.09/AC02"
+      ],
+      "hash": "95a0804c0bb546476730fcaebf2bd7a4bccf19c3d1b1bb95bbac9c928c1a4944"
+    },
+    "plugins/shipwright-changelog/tests/golden/test_promise_aggregate.py::test_ac03_commits_but_nothing_recorded_is_refused_and_writes_nothing": {
+      "acs": [
+        "FR-01.09/AC03"
+      ],
+      "hash": "2008dd0f106b9b948221d83f83d0c6e37b89821f1877bbac9ec316c124805843"
+    },
+    "plugins/shipwright-changelog/tests/golden/test_promise_aggregate.py::test_ac03_nothing_since_the_last_release_says_so_and_stops": {
+      "acs": [
+        "FR-01.09/AC03"
+      ],
+      "hash": "1f03714322b28a2abf02b47515c0b0a5581fc3f82f85c028fb654b6361fc0214"
+    },
+    "plugins/shipwright-changelog/tests/golden/test_promise_aggregate.py::test_ac05_decision_numbers_are_given_once_at_release_in_one_continuing_run": {
+      "acs": [
+        "FR-01.09/AC05"
+      ],
+      "hash": "adee71c200be408c4c7bbbe4cac4657dd3404dfc86212c6633a93642ac6d155f"
+    },
+    "plugins/shipwright-changelog/tests/golden/test_promise_aggregate.py::test_ac06_the_new_section_goes_above_the_latest_release_and_older_text_stays": {
+      "acs": [
+        "FR-01.09/AC06"
+      ],
+      "hash": "99a1d1f11079e02305b4a38646abb3e7d5c1fa46bf6c64db7edd26c37f372e61"
+    },
+    "plugins/shipwright-changelog/tests/golden/test_promise_aggregate.py::test_ac07_two_sections_for_one_version_stop_the_write_and_change_nothing": {
+      "acs": [
+        "FR-01.09/AC07"
+      ],
+      "hash": "b94aebedd23c9939c22579f681a727de2e5ae912abd82cbe6a854df7f519b0ab"
+    },
+    "plugins/shipwright-changelog/tests/golden/test_promise_aggregate.py::test_ac07_writing_a_version_again_replaces_its_section_and_it_appears_once": {
+      "acs": [
+        "FR-01.09/AC07"
+      ],
+      "hash": "097a7eda46e69a5892fb6f0df3ab036dc29292c0fad33ecd556ffdf261cbf5ca"
+    },
+    "plugins/shipwright-changelog/tests/golden/test_promise_aggregate.py::test_ac08_a_section_that_disagrees_with_the_pending_entries_stops_the_write_and_says_so": {
+      "acs": [
+        "FR-01.09/AC08"
+      ],
+      "hash": "543f0dd17b07e4a43801244fc4de8024b944564786d7d8ee124c2d37ad00c02c"
+    },
+    "plugins/shipwright-changelog/tests/golden/test_promise_aggregate.py::test_ac08_a_withdrawn_marking_is_never_erased_and_the_refusal_names_it": {
+      "acs": [
+        "FR-01.09/AC08"
+      ],
+      "hash": "8aed5a2ad1b37eec5a0b5fbb73fa95d53f2112368dde42fc002568eb0201aca1"
+    },
+    "plugins/shipwright-changelog/tests/golden/test_promise_aggregate.py::test_ac09_entries_written_the_old_way_are_named_back_not_folded_and_not_lost": {
+      "acs": [
+        "FR-01.09/AC09"
+      ],
+      "hash": "f75ab33f0f9a1ec6f275f9a07e6b3f36eda4c52745204ea3246d8569023c56bc"
+    },
+    "plugins/shipwright-changelog/tests/golden/test_promise_aggregate.py::test_ac10_the_aggregation_dry_run_shows_the_release_text_and_changes_nothing_on_disk": {
+      "acs": [
+        "FR-01.09/AC10"
+      ],
+      "hash": "decf4a9b61f7ac2234095a97fe4ef320cf5fdd6a2d494803f6f4a68c1f26c47e"
+    },
+    "plugins/shipwright-changelog/tests/golden/test_promise_aggregate.py::test_ac11_preparing_the_release_text_publishes_nothing_aggregation_half": {
+      "acs": [
+        "FR-01.09/AC11"
+      ],
+      "hash": "0d3c89482a155050079f28c162a77dac410e8ca0e78a345d5427974e3cd5963d"
+    },
+    "plugins/shipwright-changelog/tests/golden/test_promise_release.py::test_ac01_a_release_run_leaves_a_readable_note_a_version_tag_and_an_open_request": {
+      "acs": [
+        "FR-01.09/AC01"
+      ],
+      "hash": "f2a9db6c002c5ba8318dddcb481939cf4d10e174564ec8e0dbb0569d58b088e9"
+    },
+    "plugins/shipwright-changelog/tests/golden/test_promise_release.py::test_ac04_the_proposed_version_follows_the_break_feature_fix_rule": {
+      "acs": [
+        "FR-01.09/AC04"
+      ],
+      "hash": "1c0670fd8858a4002eb5d3d2d6ea781b345cebec1816aed0a838612f6aad9097"
+    },
+    "plugins/shipwright-changelog/tests/golden/test_promise_release.py::test_ac12_every_declared_manifest_carries_the_version_in_the_release_commit_before_the_tag": {
+      "acs": [
+        "FR-01.09/AC12"
+      ],
+      "hash": "9988d5932cd5ca731357d0491e75c8fcea0d510d47edbe1464ac46e5532160ca"
+    },
+    "plugins/shipwright-changelog/tests/golden/test_promise_release.py::test_ac13_a_version_written_in_several_places_of_one_manifest_is_written_in_all_together": {
+      "acs": [
+        "FR-01.09/AC13"
+      ],
+      "hash": "da7fc2f4dfd5092e90f506faecfaa991d6e9a814f9674a7bf15cae48eacd90e5"
+    },
+    "plugins/shipwright-changelog/tests/golden/test_promise_release.py::test_ac14_a_summary_that_fails_the_shape_check_is_never_published": {
+      "acs": [
+        "FR-01.09/AC14"
+      ],
+      "hash": "c05afb32e37df06543b0d95a40cda33961dc73f5eba161efbd803371b37c2574"
+    },
+    "plugins/shipwright-changelog/tests/golden/test_promise_release.py::test_ac14_the_release_page_has_a_checked_summary_and_title_and_link_built_from_facts": {
+      "acs": [
+        "FR-01.09/AC14"
+      ],
+      "hash": "c0d56ca43c05c795399ba0efdc67a1b232a36a6cffeb3c48281dc240fbbca3ae"
+    },
+    "plugins/shipwright-changelog/tests/golden/test_promise_release.py::test_ac15_a_release_page_that_cannot_be_created_does_not_undo_the_release_and_is_reported": {
+      "acs": [
+        "FR-01.09/AC15"
+      ],
+      "hash": "e4af5dadd1cd866ce5723daaaac46f0ffabe99d0e12f25c8454ec4199e5f55f6"
+    },
+    "plugins/shipwright-changelog/tests/golden/test_promise_release.py::test_ac15_an_earlier_version_gets_no_page_retroactively": {
+      "acs": [
+        "FR-01.09/AC15"
+      ],
+      "hash": "023263ab4f40ae0de1763af868783ae9ce1059760d63596b1ff2b712e487fde8"
+    }
+  },
+  "version": 1
+}

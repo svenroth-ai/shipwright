@@ -129,10 +129,10 @@ def _check_s16e(run: Run) -> None:
     assert run.step("commit-and-tag").exit_code == 0 and "v1.3.0" in _tags(s)  # made here ...
     event = run.step("record-event")
     assert event.exit_code != 0 and "pre-receive: pushes are closed" in run.commands("record-event-pr")[0]["stderr"]  # the kind of refusal
-    assert run.step("push-tags").exit_code != 0 and "v1.3.0" not in _remote_tags(s)  # ... and nowhere else
-    assert run.step("release-page").output["status"] == "failed"  # no tag on the host: no page
+    # F6 (operator 2026-11-23): the `&&` chain of SKILL.md:341 stops the release at the rejected push: no tag push, no page
+    assert [r.step for r in run.results][-1] == "record-event" and "v1.3.0" not in _remote_tags(s)  # ... and nowhere else
+    assert s.gh_state()["releases"] == {} and not {"push-tags", "release-page"} & {r.step for r in run.results}
     assert s.git("log", "-1", "--format=%s") == "chore(release): record changelog event for v1.3.0"  # the event is local only
-    oracle.check_ac15_page_failed(s.gh_state()["releases"], "1.3.0", "v1.3.0" in _tags(s), "failed")  # AC15: reported, nothing undone
     oracle.check_ac01(ss.notes_of(s), True, request_open=bool(s.gh_state()["prs"]), outcome="prepared")  # a request exists, nothing is out there
 
 
@@ -149,11 +149,10 @@ def _check_s16f(run: Run) -> None:
     s = run.scratch
     pr = run.step("open-pr")
     assert pr.exit_code == 127 and pr.output["status"] == "failed"  # the program could not be started (the OS words its message)
-    assert run.step("release-page").output["reason"] == "gh_not_found"  # the page step names the same cause
-    assert s.gh_state()["prs"] == [] and "v1.3.0" in _tags(s)  # the release is made, the request is not
-    assert run.step("push-tags").exit_code == 0 and run.step("release-page").output["status"] != "ok"  # the page is best-effort
+    # F4 (operator 2026-11-23): a request that cannot be opened stops the release before anything is pushed or published
+    assert [r.step for r in run.results][-1] == "open-pr" and not {"push-tags", "release-page"} & {r.step for r in run.results}
+    assert s.gh_state()["prs"] == [] and "v1.3.0" in _tags(s) and "v1.3.0" not in _remote_tags(s)  # the tag stays on this machine
     oracle.check_ac01(ss.notes_of(s), True, request_open=False, outcome="no_request")  # AC01: two of three, said so by the exit code
-    oracle.check_ac15_page_failed(s.gh_state()["releases"], "1.3.0", True, run.step("release-page").output["status"])
 
 
 SCENARIOS = {
@@ -161,6 +160,6 @@ SCENARIOS = {
     "S16b": Scenario("S16b", ("legacy",), _s16b, _check_s16b, acs=(f"{A}AC01",)),
     "S16c": Scenario("S16c", ("legacy",), _s16c, _check_s16c, acs=(f"{A}AC01",)),
     "S16d": Scenario("S16d", ("legacy",), _s16d, _check_s16d, acs=(f"{A}AC01",)),
-    "S16e": Scenario("S16e", ("legacy",), _s16e, _check_s16e, acs=(f"{A}AC01", f"{A}AC15")),
-    "S16f": Scenario("S16f", ("legacy",), _s16f, _check_s16f, acs=(f"{A}AC01", f"{A}AC15")),
+    "S16e": Scenario("S16e", ("legacy",), _s16e, _check_s16e, acs=(f"{A}AC01",)),
+    "S16f": Scenario("S16f", ("legacy",), _s16f, _check_s16f, acs=(f"{A}AC01",)),
 }

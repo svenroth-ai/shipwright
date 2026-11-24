@@ -1,0 +1,95 @@
+{
+  "run_id": "iterate-2026-11-23-p3-cli-prepare-aggregate",
+  "date": "2026-11-23T17:14:23.076769Z",
+  "event_at": "2026-11-23T17:14:00.550455+00:00",
+  "type": "change",
+  "complexity": "large",
+  "prior_source": "keyword",
+  "branch": "iterate/campaign-dfp-pilot-changelog-p3-p8--P3",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-11-23-p3-cli-prepare-aggregate",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "prepare returns the banner, mode, setup facts, commits and version in one call",
+        "disposition": "tested",
+        "evidence": "tests/test_release_cli.py::test_prepare_runs_the_prose_steps_in_order_and_returns_what_the_model_used_to_work_out PASSED",
+        "category": "integration"
+      },
+      {
+        "behavior": "gates come from the gate catalog (a catalog edit changes the answer)",
+        "disposition": "tested",
+        "evidence": "tests/test_release_gates_and_notes.py::test_a_catalog_edit_changes_the_answer_and_no_prose_does PASSED"
+      },
+      {
+        "behavior": "upgrade-notes drop is written by code, the no-change sentence is returned",
+        "disposition": "tested",
+        "evidence": "tests/test_release_gates_and_notes.py::test_a_page_with_an_action_gets_its_drop_written_by_code_with_its_own_words_and_the_link PASSED"
+      },
+      {
+        "behavior": "release date and run id stored by prepare are read by aggregate in a separate process",
+        "disposition": "tested",
+        "evidence": "tests/test_release_paths_and_boundary.py cross-process test PASSED"
+      },
+      {
+        "behavior": "aggregate owns --dry-run and --fail-if-empty rules and the decision numbering",
+        "disposition": "tested",
+        "evidence": "tests/test_release_cli.py::test_the_real_run_always_passes_fail_if_empty_then_numbers_the_decisions_and_stores_the_state PASSED"
+      },
+      {
+        "behavior": "stale or abandoned run state starts a fresh date; errors stop with a named reason",
+        "disposition": "tested",
+        "evidence": "tests/test_release_cli.py run-state and stop-reason tests PASSED"
+      },
+      {
+        "behavior": "orchestrator path resolves in checkout, mirror, installed and Codex layouts",
+        "disposition": "tested",
+        "evidence": "tests/test_release_paths_and_boundary.py layout tests PASSED"
+      },
+      {
+        "behavior": "every scenario and promise test through the CLI driver equals the frozen trace",
+        "disposition": "tested",
+        "evidence": "tests/golden/test_driver_cli.py PASSED (43 scenario cases, 20 promise cases)"
+      },
+      {
+        "behavior": "integration: prepare->aggregate through real tools and a real git repository",
+        "disposition": "tested",
+        "evidence": "tests/golden/test_driver_cli.py scenario cases PASSED",
+        "category": "integration"
+      }
+    ],
+    "counts": {
+      "testable": 9,
+      "tested": 9,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 15,
+      "covered_acs": 15
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run pytest plugins/shipwright-changelog/tests/test_release_cli.py plugins/shipwright-changelog/tests/test_release_gates_and_notes.py plugins/shipwright-changelog/tests/test_release_paths_and_boundary.py -q -p no:cacheprovider --rootdir plugins/shipwright-changelog",
+    "exit_code": 0,
+    "tests_run": 66,
+    "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\campaign-dfp-pilot-changelog-p3-p8--P3\\.shipwright\\runs\\iterate-2026-11-23-p3-cli-prepare-aggregate\\surface_verification.log",
+    "timestamp": "2026-11-23T17:13:52.871Z"
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": [
+    "touches_auth",
+    "touches_build",
+    "touches_migrations",
+    "touches_rls",
+    "touches_shared_infra"
+  ],
+  "complexity_override": "operator-accepted-large"
+}

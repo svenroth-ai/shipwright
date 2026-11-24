@@ -1,0 +1,441 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-23-p4b-release-guard-hook",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-23T23:16:49.081550+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 12,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The fallback `git ls-remote --tags origin` makes the hook's decision depend on a network call inside a synchronous PreToolUse hook. Network failure mid-release is treated as \"release is over, allow\" — the exact moment the guard is meant to work. Also adds latency to every denied/checked push.",
+          "suggestion": "On ls-remote transport error, deny (fail-closed) rather than allow, or at minimum distinguish \"tag found\" from \"could not reach remote\". Distinguish this from a non-existent-remote/unknown-ref error if you want to allow there.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Fail-open on any exception (`Any exception: allow`) silently disables the guard. A regression in the lexer/decision code (e.g., an unhandled payload shape from a future Claude Code version) means the \"prevent before\" net F1a/F1b/F4 is gone with no signal.",
+          "suggestion": "At minimum log the exception to a hook-side diagnostics path so the failure is discoverable; the tests should cover the specific garbled-payload shapes you've enumerated rather than relying on the catch-all.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Command substitution is not handled: `$(git push origin main)` or backtick forms slip through the lexer (`shlex` + splitting on `&& || ; | &`). Similarly a push hidden in `sh -c \"git push --tags\"` or `make push` is invisible. This is inherent to Bash-matcher hooks, but the full-run report showed models improvise command forms.",
+          "suggestion": "Accept the limitation, but note it in the registry row and LEARNINGS so the campaign doesn't over-trust the hook as the sole net (it explicitly sits under F1a/F1b/F4 code paths, which is the right layering).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The 48-hour staleness window means a genuinely long-running release (paused >48h, then resumed) is silently allowed through. Combined with ls-remote fallback this creates two independent \"allow\" paths that don't cross-check each other.",
+          "suggestion": "Cheap improvement: if the state file exists but is stale AND the record for HEAD is missing, still require the ls-remote check before allowing (i.e., staleness downgrades \"deny\" to \"check remote\", never to unconditional allow).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Trunk detection by fixed names (main/master/develop) plus \"no refspec or HEAD on a trunk branch\" will miss trunk-adjacent branches (e.g., `release/`, `hotfix/`) that the skill's release flow may actually push. If the skill's own flow pushes a release branch, the guard blocks the skill's own recovery commands (e.g., finishing a partially-completed release).",
+          "suggestion": "Confirm against the skill's actual post-P4 commands that the release flow's own pushes are always preceded by a valid record for HEAD; add a test for \"skill resumes release and its push is allowed once the record exists\".",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The mini-plan's Files list and test list look complete (hooks.json entry, two scripts, three test files, registry row, LEARNINGS/FINDINGS), but it doesn't mention the doc obligation trigger: the deny output is a user-visible message, so per the spec's own rule (\"guide only if a user-visible message is introduced\") the diff may owe a guide mention, not just the registry row.",
+          "suggestion": "Decide up front whether the deny JSON's `reason` text counts as user-visible under the repo's convention; if yes, add the guide touch to the file list now rather than discovering it in review.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The lexer/decision split with an `Action` dataclass is the right amount of structure for the matching complexity required (heredocs, redirects, `-C`, Windows paths) — this is not over-produced. Keep `release_guard_commands.py` genuinely pure so the parser table tests stay git-free.",
+          "suggestion": "No change; affirming the design shape.  Overall: the approach is sound, well-scoped, and correctly layered under the code-side nets; the main substantive change needed is the fail-open/fail-closed behavior around the ls-remote fallback and the exception catch-all, both addressable without redesign.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach |",
+          "file": null,
+          "line": null,
+          "finding": "The plan accepts a record for an ancestor of HEAD when intervening commits contain only events. The specification explicitly requires a record for current HEAD and says a record for a different commit must block.",
+          "suggestion": "Require exact HEAD equality. If P4’s event commits make that impossible, STRICT-STOP for an operator decision on the producer/consumer contract before implementing the exception.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "security |",
+          "file": null,
+          "line": null,
+          "finding": "An `ls-remote` error allows the action. A network outage, authentication failure, or missing `origin` therefore bypasses the guard precisely when an active release has no valid record. The blanket “any exception: allow” creates the same bypass for internal failures.",
+          "suggestion": "Once an active release and protected action are established, deny if record validation cannot complete. Keep malformed tool input and inactive releases separate from errors validating an active release.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach |",
+          "file": null,
+          "line": null,
+          "finding": "The 48-hour expiry, remote-tag completion check, and environment-variable bypass introduce exemptions absent from the supplied specification. An interrupted release can remain incomplete beyond 48 hours, and a published tag does not establish that subsequent merge or release-page actions have the required record.",
+          "suggestion": "Use the existing producer’s documented release lifecycle to determine activity. Remove these exemptions unless the referenced operator decisions explicitly authorize them; otherwise STRICT-STOP. Removing the remote lookup also avoids network latency on protected tool calls.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "Hard-coding `main`, `master`, and `develop` does not identify the repository’s actual trunk. The matcher can miss a custom trunk or a push such as `git push origin HEAD:refs/heads/<trunk>`, while treating an unrelated `develop` branch as protected.",
+          "suggestion": "Resolve trunk using the project’s established configuration and classify refspec destinations, including explicit `HEAD:<trunk>` forms. Add focused tests for custom trunk names and source-to-destination refspecs.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency |",
+          "file": null,
+          "line": null,
+          "finding": "The plan does not establish that command execution context and state lookup stay aligned. `git -C` changes the target repository, while `gh --repo` can target another project; resolving state solely from the hook’s cwd can validate the wrong release or falsely block another project.",
+          "suggestion": "Resolve the action’s target before locating release state, following existing repository conventions. Test `-C` from outside the project and explicit GitHub repository selection. If cross-repository targeting has no defined policy, obtain the required operator decision.  The hook is a suitable mechanism, but the proposed decision logic weakens the explicit HEAD requirement and introduces unsupported ways to bypass an active release guard. This assessment uses the supplied specification and mini-plan; local file inspection was blocked by execution policy.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-23T23:10:36.053352+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Review findings\n\n- **Category: edge-case — Severity: medium**\n  **Finding:** The fallback `git ls-remote --tags origin` makes the hook's decision depend on a network call inside a synchronous PreToolUse hook. Network failure mid-release is treated as \"release is over, allow\" — the exact moment the guard is meant to work. Also adds latency to every denied/checked push.\n  **Suggestion:** On ls-remote *transport* error, deny (fail-closed) rather than allow, or at minimum distinguish \"tag found\" from \"could not reach remote\". Distinguish this from a non-existent-remote/unknown-ref error if you want to allow there.\n\n- **Category: edge-case — Severity: medium**\n  **Finding:** Fail-open on any exception (`Any exception: allow`) silently disables the guard. A regression in the lexer/decision code (e.g., an unhandled payload shape from a future Claude Code version) means the \"prevent before\" net F1a/F1b/F4 is gone with no signal.\n  **Suggestion:** At minimum log the exception to a hook-side diagnostics path so the failure is discoverable; the tests should cover the specific garbled-payload shapes you've enumerated rather than relying on the catch-all.\n\n- **Category: edge-case — Severity: low**\n  **Finding:** Command substitution is not handled: `$(git push origin main)` or backtick forms slip through the lexer (`shlex` + splitting on `&& || ; | &`). Similarly a push hidden in `sh -c \"git push --tags\"` or `make push` is invisible. This is inherent to Bash-matcher hooks, but the full-run report showed models improvise command forms.\n  **Suggestion:** Accept the limitation, but note it in the registry row and LEARNINGS so the campaign doesn't over-trust the hook as the sole net (it explicitly sits under F1a/F1b/F4 code paths, which is the right layering).\n\n- **Category: edge-case — Severity: low**\n  **Finding:** The 48-hour staleness window means a genuinely long-running release (paused >48h, then resumed) is silently allowed through. Combined with ls-remote fal […truncated]\n\n[openai] 1. **Category: approach | Severity: high**  \n   **Finding:** The plan accepts a record for an ancestor of HEAD when intervening commits contain only events. The specification explicitly requires a record for current HEAD and says a record for a different commit must block.  \n   **Suggestion:** Require exact HEAD equality. If P4’s event commits make that impossible, STRICT-STOP for an operator decision on the producer/consumer contract before implementing the exception.\n\n2. **Category: security | Severity: high**  \n   **Finding:** An `ls-remote` error allows the action. A network outage, authentication failure, or missing `origin` therefore bypasses the guard precisely when an active release has no valid record. The blanket “any exception: allow” creates the same bypass for internal failures.  \n   **Suggestion:** Once an active release and protected action are established, deny if record validation cannot complete. Keep malformed tool input and inactive releases separate from errors validating an active release.\n\n3. **Category: approach | Severity: high**  \n   **Finding:** The 48-hour expiry, remote-tag completion check, and environment-variable bypass introduce exemptions absent from the supplied specification. An interrupted release can remain incomplete beyond 48 hours, and a published tag does not establish that subsequent merge or release-page actions have the required record.  \n   **Suggestion:** Use the existing producer’s documented release lifecycle to determine activity. Remove these exemptions unless the referenced operator decisions explicitly authorize them; otherwise STRICT-STOP. Removing the remote lookup also avoids network latency on protected tool calls.\n\n4. **Category: edge-case | Severity: medium**  \n   **Finding:** Hard-coding `main`, `master`, and `develop` does not identify the repository’s actual trunk. The matcher can miss a custom trunk or a push such as `git push origin HEAD:refs/heads/<trunk>`, while treating an unrelated `dev […truncated]",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/scripts/hooks/release_guard.py",
+          "line": 175,
+          "finding": "The hook denied the tag push that SKILL.md Step 7 prescribes after gh pr merge --delete-branch, because HEAD is then on main at the merge commit. (Fixed in 049058c4c: a tag-only push and gh release create are judged by the tag's commit; real-git tests for no-ff, squash and a moved tag; re-verified by the second review.)",
+          "suggestion": "Judge refs/tags/v<version>^{commit}.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/scripts/hooks/release_guard_commands.py",
+          "line": 303,
+          "finding": "A quote in the middle of a token (--message=\"a; git push --tags\") and PowerShell here-strings were lexed as commands: false positives during a release. (Fixed, three cases tested.)",
+          "suggestion": "Protect quoted spans before lexing.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/scripts/hooks/release_guard.py",
+          "line": 208,
+          "finding": "gh pr merge by number or URL is judged against local HEAD, not the PR head. (Recorded as known miss, D38.)",
+          "suggestion": "Document the limit.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/scripts/hooks/release_guard.py",
+          "line": 183,
+          "finding": "git log followed renames and an empty commit passed the event-only rule. (Fixed: --no-renames, per-commit blocks, tests.)",
+          "suggestion": "--no-renames.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/scripts/hooks/release_guard_commands.py",
+          "line": 403,
+          "finding": "popd and variable cd targets were not handled. (Fixed: treated as unknown and the command passes.)",
+          "suggestion": "Mark unknown.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "plugins/shipwright-changelog/scripts/hooks/release_guard.py",
+          "line": 38,
+          "finding": "Trunk tuple differs from release_event.TRUNKS. (Fixed: a subset test pins them.)",
+          "suggestion": "Test.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "performance",
+          "file": "plugins/shipwright-changelog/scripts/hooks/release_guard.py",
+          "line": 203,
+          "finding": "git ran for every push before the run state was checked. (Fixed: run state first, test asserts it.)",
+          "suggestion": "Check first.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/scripts/hooks/release_guard.py",
+          "line": 78,
+          "finding": "Round 2: git push --tags with no refspec on main is judged by HEAD, not the tag; the deny reason is wrong, the deny is conservative. (Recorded, not built.)",
+          "suggestion": "Treat tags-only as tag push.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/scripts/hooks/release_guard.py",
+          "line": 87,
+          "finding": "Round 2: gh release create without --verify-tag can create the remote tag at another commit; same gap as before. (Recorded, not built.)",
+          "suggestion": "Known miss.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/scripts/hooks/release_guard_commands.py",
+          "line": 183,
+          "finding": "Round 2: cwd_unknown never resets; cd - and bare cd are not unknown; backslash escape inside PowerShell double quotes. All fail open. (Recorded, not built.)",
+          "suggestion": "Known misses.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-24T00:22:45.387004+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "049058c4cdac002ac20adf2e9f1d8fc9875612ae",
+      "reviewer_notes": "Independent opus code-review, two passes: d16c605ff (FAIL, one high) and the fix round 049058c4c (PASS, no medium or high; tests not run by the reviewer, the orchestrator relies on the runner's full-root runs). Architecture rules: no violations."
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "concurrency & ordering",
+          "file": "plugins/shipwright-changelog/scripts/hooks/release_guard.py",
+          "line": null,
+          "finding": "Claim under doubt: the hook never blocks the prescribed release flow — after gh pr merge --delete-branch HEAD is the merge commit on main, so the prescribed tag push was denied",
+          "suggestion": "Judge the tag's commit for a tag push. (Fixed in 049058c4c with real-git tests.)",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-changelog/scripts/hooks/release_guard.py",
+          "line": null,
+          "finding": "Claim under doubt: in-progress releases are held — the run state is per worktree; another checkout is not guarded",
+          "suggestion": "Recorded as a known miss (D38).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "reversibility",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_prepare.py",
+          "line": null,
+          "finding": "Claim under doubt: inert outside a release — a declined prepare leaves the state for 48 h",
+          "suggestion": "Recorded (D38), SHIPWRIGHT_RELEASE_GUARD=off lifts it.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-changelog/scripts/hooks/release_guard.py",
+          "line": null,
+          "finding": "Claim under doubt: before record-event every merge counts — gh pr merge 42 was allowed when branch and pr_url unknown",
+          "suggestion": "Fixed with a test.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-changelog/scripts/hooks/release_guard.py",
+          "line": null,
+          "finding": "Claim under doubt: payload is read faithfully — stdin decoded with the locale code page",
+          "suggestion": "Fixed: UTF-8 bytes, non-ASCII cwd test.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling",
+          "file": "shared/scripts/lib/events_references.py",
+          "line": null,
+          "finding": "Claim under doubt: the shared registry edits are harmless — tag M vs C, third hand-kept copy of the event paths",
+          "suggestion": "Recorded (D37, D38).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "blast radius",
+          "file": "plugins/shipwright-changelog/hooks/hooks.json",
+          "line": null,
+          "finding": "Claim under doubt: a Bash|PowerShell hook is free — uv run startup on every shell call",
+          "suggestion": "Accepted and recorded (D38).",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-24T00:22:45.521600+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "049058c4cdac002ac20adf2e9f1d8fc9875612ae"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "plugins/shipwright-changelog/tests/test_release_guard.py:97-101` (`test_old_behaviour_nothing_blocks_without_the_hook`)",
+          "line": null,
+          "finding": "The test named for the \"fails-on-old\" AC is really the false-block test: it runs the new hook with no release state. It only \"fails on old\" incidentally (the script wouldn't exist pre-change, so `subprocess.run` errors). The AC is technically met, but the docstring claims it demonstrates today's behaviour while it actually exercises the new inert path.",
+          "suggestion": "Rename it as the false-block/inert test and add one comment line noting the fails-on-old half is structural (the script itself is new), or assert on the hook being absent from pre-change `hooks.json` in the integration test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "plugins/shipwright-changelog/scripts/hooks/release_guard.py:~60` (`_is_tag_push`, `_TAG_LIKE`)",
+          "line": null,
+          "finding": "A branch named version-like (`git push origin 2.0-hotfix`, matching `v?\\d+\\.\\d+([-+.\\w])`) is treated as a tag push, so an ordinary feature-branch push is denied mid-release — violating \"ordinary pushes are never blocked\". `_TAG_LIKE` also matches `v1.2.3+metadata` shapes that are legal branch names.",
+          "suggestion": "Require the `v` prefix (the release tag format used by the plugin) or fall through to the `show-ref` check only, so a bare `2.0`-shaped ref that is a branch is not assumed to be a tag.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "spec",
+          "file": "(whole diff)",
+          "line": null,
+          "finding": "The spec obliges appending what the unit taught to `.shipwright/planning/campaigns/2026-10-25-dfp-pilot-changelog-LEARNINGS.md` in the same unit; nothing in the diff touches it. This may land in a separate doc commit outside the shown diff, but if not it is a spec miss.",
+          "suggestion": "Confirm the LEARNINGS append is part of the unit's changes; if it was omitted, add it.  Non-issues verified: parser correctness (heredoc blanking, non-POSIX lexing for Windows `-C` paths, quoted `-m` text as data, refspec destination reduction, `HEAD:main` → trunk, `git push` with no refspec → current branch); inert conditions (48h age, tag-on-origin, project-root containment); fail-open paths and the one deliberate fail-closed remote check; `--mirror` implying tags; garbled-payload tests; the `hooks.json` registration shape and the `cross_component` integration case composing the real CLI outputs (`release_runstate.save`, `release_commit.write_state`) with the hook's reads; the doc registry row. Command forms from FULLRUN-REPORT (`git push --tags origin main`, `git push origin HEAD`, `gh pr merge`) are all covered. No frozen file is touched, so no golden delta is required.  The implementation is careful and the tests exercise real git state rather than mocks; the findings above are refinements, not blockers.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": "plugins/shipwright-changelog/scripts/hooks/release_guard_commands.py",
+          "line": 135,
+          "finding": "Shell directory changes are ignored. For `cd /release-repo && git push --tags origin main`, the hook checks the payload’s original directory instead of `/release-repo`. If the original directory has no active release, the push passes despite a missing release record in the target repository. The parser test includes this command shape but only checks that a push is found.",
+          "suggestion": "Track directory changes across shell segments, or resolve each action’s effective directory before checking release state. Add a behavioral test starting outside the release repository.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-changelog/scripts/hooks/release_guard_commands.py",
+          "line": 98,
+          "finding": "The parser always treats the first positional argument as the remote, including when `--repo` already supplies it. On a feature branch, `git push --repo origin main` therefore produces no refspecs and is allowed, although Git pushes the local `main` branch.",
+          "suggestion": "Track whether `--repo` supplied the repository and treat all remaining positional arguments as refspecs in that case. Cover both `--repo origin` and `--repo=origin`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "plugins/shipwright-changelog/scripts/hooks/release_guard.py",
+          "line": 122,
+          "finding": "The event-only exception checks the aggregate tree difference, rather than the intervening commits. A code-changing commit followed by its revert produces an empty difference, so a stale release record is accepted even though HEAD descended through non-event commits. This exceeds the stated exception for the `record-event` commit.",
+          "suggestion": "Inspect the changed paths of each intervening commit and enforce the permitted event-commit sequence. Add a change-then-revert test that must remain blocked.  Overall assessment: ship-with-fixes. The guard has concrete matching gaps that allow required release actions through; repository checks and the required planning files could not be inspected because command execution was blocked by the environment.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-23T23:16:45.162982+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] **Findings**\n\n- Category: test\n- Severity: low\n- File: `plugins/shipwright-changelog/tests/test_release_guard.py:97-101` (`test_old_behaviour_nothing_blocks_without_the_hook`)\n- Finding: The test named for the \"fails-on-old\" AC is really the false-block test: it runs the *new* hook with no release state. It only \"fails on old\" incidentally (the script wouldn't exist pre-change, so `subprocess.run` errors). The AC is technically met, but the docstring claims it demonstrates today's behaviour while it actually exercises the new inert path.\n- Suggestion: Rename it as the false-block/inert test and add one comment line noting the fails-on-old half is structural (the script itself is new), or assert on the hook being absent from pre-change `hooks.json` in the integration test.\n\n- Category: edge-case\n- Severity: low\n- File: `plugins/shipwright-changelog/scripts/hooks/release_guard.py:~60` (`_is_tag_push`, `_TAG_LIKE`)\n- Finding: A branch named version-like (`git push origin 2.0-hotfix`, matching `v?\\d+\\.\\d+([-+.\\w]*)`) is treated as a tag push, so an ordinary feature-branch push is denied mid-release — violating \"ordinary pushes are never blocked\". `_TAG_LIKE` also matches `v1.2.3+metadata` shapes that are legal branch names.\n- Suggestion: Require the `v` prefix (the release tag format used by the plugin) or fall through to the `show-ref` check only, so a bare `2.0`-shaped ref that is a branch is not assumed to be a tag.\n\n- Category: spec\n- Severity: low\n- File: (whole diff)\n- Finding: The spec obliges appending what the unit taught to `.shipwright/planning/campaigns/2026-10-25-dfp-pilot-changelog-LEARNINGS.md` in the same unit; nothing in the diff touches it. This may land in a separate doc commit outside the shown diff, but if not it is a spec miss.\n- Suggestion: Confirm the LEARNINGS append is part of the unit's changes; if it was omitted, add it.\n\n**Non-issues verified**: parser correctness (heredoc blanking, non-POSIX lexing for Windows `-C` paths, quote […truncated]\n\n[openai] - Category: bug\n- Severity: high\n- File: plugins/shipwright-changelog/scripts/hooks/release_guard_commands.py:135\n- Finding: Shell directory changes are ignored. For `cd /release-repo && git push --tags origin main`, the hook checks the payload’s original directory instead of `/release-repo`. If the original directory has no active release, the push passes despite a missing release record in the target repository. The parser test includes this command shape but only checks that a push is found.\n- Suggestion: Track directory changes across shell segments, or resolve each action’s effective directory before checking release state. Add a behavioral test starting outside the release repository.\n\n- Category: bug\n- Severity: medium\n- File: plugins/shipwright-changelog/scripts/hooks/release_guard_commands.py:98\n- Finding: The parser always treats the first positional argument as the remote, including when `--repo` already supplies it. On a feature branch, `git push --repo origin main` therefore produces no refspecs and is allowed, although Git pushes the local `main` branch.\n- Suggestion: Track whether `--repo` supplied the repository and treat all remaining positional arguments as refspecs in that case. Cover both `--repo origin` and `--repo=origin`.\n\n- Category: spec\n- Severity: medium\n- File: plugins/shipwright-changelog/scripts/hooks/release_guard.py:122\n- Finding: The event-only exception checks the aggregate tree difference, rather than the intervening commits. A code-changing commit followed by its revert produces an empty difference, so a stale release record is accepted even though HEAD descended through non-event commits. This exceeds the stated exception for the `record-event` commit.\n- Suggestion: Inspect the changed paths of each intervening commit and enforce the permitted event-commit sequence. Add a change-then-revert test that must remain blocked.\n\nOverall assessment: ship-with-fixes. The guard has concrete matching gaps that allow required re […truncated]",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-24T00:22:45.242879+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "049058c4cdac002ac20adf2e9f1d8fc9875612ae"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-23T23:16:44.996049+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-23T23:10:35.895986+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

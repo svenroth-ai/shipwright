@@ -1,0 +1,1 @@
+{"stage": "spec-compliance", "verdict": "PASS", "spec_citations": [], "summary": "PASS. All five mini-plan deliverables are in the diff, they match its wording, and none is missing. No scope creep. Placement note: the hooks-doc paragraph sits under the shipwright-changelog section next to the existing testkit/P2p paragraph, accepted as the testkit section."}

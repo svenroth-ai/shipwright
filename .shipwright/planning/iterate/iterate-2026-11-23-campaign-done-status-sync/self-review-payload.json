@@ -1,0 +1,10 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"finalize_campaign_status now falls back to the main tree when the gitignored campaign dir is absent in the worktree; nothing else changed."},
+{"name":"Error Handling","verdict":"pass","note":"Fallback stays inside the existing best-effort try/except; unknown campaign still skips."},
+{"name":"Security Basics","verdict":"pass","note":"Slug is still validated as one clean segment before any path join; symlink guard kept."},
+{"name":"Test Quality","verdict":"pass","note":"Two outcome tests: status.json lands complete in main tree, nothing leaks into worktree; unknown campaign skips."},
+{"name":"Performance Basics","verdict":"pass","note":"One extra git rev-parse only on the previously-skipped path."},
+{"name":"Naming & Structure","verdict":"pass","note":"Small diff, file well under 300 lines, follows existing module style."},
+{"name":"Affected Boundaries","verdict":"n/a","note":"No serialized format changed; same status.json producer."},
+{"name":"YAGNI","verdict":"pass","note":"No archive flag or WebUI change in this diff; proposed as follow-up."}
+]}

@@ -456,22 +456,6 @@
         "status": "failed"
       },
       "step": "record-event"
-    },
-    {
-      "exit_code": 1,
-      "fields": {
-        "reason": "exit_1",
-        "status": "failed"
-      },
-      "step": "push-tags"
-    },
-    {
-      "exit_code": 0,
-      "fields": {
-        "reason": "gh-stub",
-        "status": "failed"
-      },
-      "step": "release-page"
     }
   ],
   "stub": {
@@ -506,48 +490,6 @@
           "main"
         ],
         "exit": 0
-      },
-      {
-        "argv": [
-          "--version"
-        ],
-        "exit": 0
-      },
-      {
-        "argv": [
-          "auth",
-          "status",
-          "--hostname",
-          "github.com"
-        ],
-        "exit": 0
-      },
-      {
-        "argv": [
-          "release",
-          "view",
-          "v1.3.0",
-          "--repo",
-          "acme-fixture/widgets",
-          "--json",
-          "url"
-        ],
-        "exit": 1
-      },
-      {
-        "argv": [
-          "release",
-          "create",
-          "v1.3.0",
-          "--notes-file",
-          "<repo>/.shipwright/runtime/release_notes_v1.3.0.md",
-          "--title",
-          "v1.3.0",
-          "--verify-tag",
-          "--repo",
-          "acme-fixture/widgets"
-        ],
-        "exit": 1
       }
     ],
     "prs": [

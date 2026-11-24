@@ -1,0 +1,98 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-24-p6-ratchet-docs-bloat",
+    "date": "2026-11-24",
+    "unit": {
+      "status": "passed",
+      "passed": 18184,
+      "skipped": 93,
+      "total": 18277
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 689,
+      "skipped": 0,
+      "total": 689
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run shared/scripts/tools/check_prompt_mechanics.py --project-root .",
+      "exit_code": 0,
+      "tests_run": 1,
+      "evidence_path": ".shipwright/runs/iterate-2026-11-24-p6-ratchet-docs-bloat/surface_verification.json",
+      "timestamp": "2026-11-24T05:05:41Z"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "a fenced shell block that chains commands (&&, |, ;, &) or holds several commands is refused; operators inside quotes and 2>&1 are not chains",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_check_prompt_mechanics.py::test_an_and_chain_in_a_block_is_refused, test_a_pipe_is_refused_and_a_pipe_inside_quotes_is_not, test_a_redirect_is_not_a_chain, test_two_commands_in_one_block_are_refused PASSED"
+        },
+        {
+          "behavior": "C5: a shell command whose key is not in the registered list is refused; a new flag on a known command is not; unlabelled shell-looking fences are checked",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_check_prompt_mechanics.py::test_a_new_shell_command_is_refused, test_a_known_command_with_a_new_flag_is_not_new, test_an_unlabelled_block_that_looks_like_shell_is_checked PASSED"
+        },
+        {
+          "behavior": "an exact registry escape passes, a stale or changed escape is a finding, the escape budget caps the count",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_check_prompt_mechanics.py::test_an_exact_escape_passes_and_a_stale_one_is_a_finding, test_the_escape_budget_is_a_cap PASSED"
+        },
+        {
+          "behavior": "the real registry passes the real thin SKILL.md and refuses it with a chain seeded (fails on the old behaviour: no check existed)",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "shared/scripts/tools/tests/test_check_prompt_mechanics.py::test_the_real_registry_passes_the_real_thin_skill, test_the_real_skill_with_a_seeded_chain_is_refused PASSED"
+        },
+        {
+          "behavior": "exit codes 0/1/2, JSON output, missing skill and malformed registry reported without a crash, CRLF prose read like LF",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_check_prompt_mechanics.py::test_main_exit_codes_and_output, test_a_missing_skill_is_an_error, test_a_malformed_registry_is_an_error, test_crlf_prose_is_read_like_lf PASSED"
+        },
+        {
+          "behavior": "verify_local.LOCAL_GATES and ci.yml stay in step with the new (gate) step",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_verify_local_ci_drift.py (12) + shared/tests/test_verify_local.py (11) + shared/tests/test_checks_that_gate.py PASSED; scripts/verify_local.py PASS all 4 mirrored gates"
+        }
+      ],
+      "counts": {
+        "testable": 6,
+        "tested": 6,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 0,
+        "covered_acs": 0
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-24-r5b-merge-lane",
+    "commit": "032d1ebbf0ef9c99eb98f240c8f1110e981a32a5",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

@@ -1,0 +1,9 @@
+{"items":[
+{"name":"scope","verdict":"pass","note":"one catalog entry; no test or skill text touched"},
+{"name":"correctness","verdict":"pass","note":"entry is an exact repo-relative path to an existing file, sorted, no duplicate"},
+{"name":"tests","verdict":"pass","note":"catalog meta tests (2) pass: every entry parses and is a real file, no duplicates"},
+{"name":"error-paths","verdict":"n/a","note":"data entry only"},
+{"name":"security","verdict":"pass","note":"no secrets, no runtime code"},
+{"name":"docs","verdict":"pass","note":"rule already documented by the test-tag gate change"},
+{"name":"boundaries","verdict":"pass","note":"the gate reads the catalog at the merge-base, so the retag follows after this merges"},
+{"name":"simplicity","verdict":"pass","note":"one line"}]}

@@ -273,6 +273,20 @@ def run_changelog_checks(
     return results
 
 
+def check_release_tag(project_root: Path, version: str) -> dict:
+    """The release code's own tag check (``plugins/shipwright-changelog/scripts/checks/verify_release_tag.py``): the tag ``v<version>``
+    exists and the CHANGELOG's top released version is this one. Gating answers in ``checks``; the latest-tag comparison is only
+    ``advisory`` (it would refuse a final over its own ``-rc`` tag and a backport). Public so no caller reaches a ``_`` helper."""
+    top = _extract_latest_version_from_changelog(project_root)
+    tag_ok, tag_detail = _git_tag_exists(project_root, f"v{version}")
+    gating = {"tag_exists": CheckResult("release tag exists", tag_ok, tag_detail),
+              "changelog_names_release": CheckResult("CHANGELOG top version is this release", top == f"v{version}", f"top={top} release=v{version}")}
+    checks = {name: {"ok": r.ok is True, "detail": r.detail} for name, r in gating.items()}
+    latest = check_changelog_version_matches_tag(project_root)
+    return {"ok": all(v["ok"] for v in checks.values()), "checks": checks,
+            "advisory": {"changelog_matches_latest_tag": {"ok": latest.ok is True, "detail": latest.detail}}}
+
+
 def run_all_checks(project_root: Path, run_id: str = "") -> list[CheckResult]:
     return run_changelog_checks(project_root, run_id=run_id)
 
@@ -282,6 +296,7 @@ __all__ = [
     "check_changelog_version_matches_tag",
     "check_git_tag_exists",
     "check_manifest_version_matches_tag",
+    "check_release_tag",
     "run_all_checks",
     "run_changelog_checks",
 ]
