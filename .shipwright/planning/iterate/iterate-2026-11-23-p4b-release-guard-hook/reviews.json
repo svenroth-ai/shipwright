@@ -141,29 +141,189 @@
     },
     "code": {
       "review_type": "code",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/scripts/hooks/release_guard.py",
+          "line": 175,
+          "finding": "The hook denied the tag push that SKILL.md Step 7 prescribes after gh pr merge --delete-branch, because HEAD is then on main at the merge commit. (Fixed in 049058c4c: a tag-only push and gh release create are judged by the tag's commit; real-git tests for no-ff, squash and a moved tag; re-verified by the second review.)",
+          "suggestion": "Judge refs/tags/v<version>^{commit}.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/scripts/hooks/release_guard_commands.py",
+          "line": 303,
+          "finding": "A quote in the middle of a token (--message=\"a; git push --tags\") and PowerShell here-strings were lexed as commands: false positives during a release. (Fixed, three cases tested.)",
+          "suggestion": "Protect quoted spans before lexing.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/scripts/hooks/release_guard.py",
+          "line": 208,
+          "finding": "gh pr merge by number or URL is judged against local HEAD, not the PR head. (Recorded as known miss, D38.)",
+          "suggestion": "Document the limit.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/scripts/hooks/release_guard.py",
+          "line": 183,
+          "finding": "git log followed renames and an empty commit passed the event-only rule. (Fixed: --no-renames, per-commit blocks, tests.)",
+          "suggestion": "--no-renames.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/scripts/hooks/release_guard_commands.py",
+          "line": 403,
+          "finding": "popd and variable cd targets were not handled. (Fixed: treated as unknown and the command passes.)",
+          "suggestion": "Mark unknown.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "plugins/shipwright-changelog/scripts/hooks/release_guard.py",
+          "line": 38,
+          "finding": "Trunk tuple differs from release_event.TRUNKS. (Fixed: a subset test pins them.)",
+          "suggestion": "Test.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "performance",
+          "file": "plugins/shipwright-changelog/scripts/hooks/release_guard.py",
+          "line": 203,
+          "finding": "git ran for every push before the run state was checked. (Fixed: run state first, test asserts it.)",
+          "suggestion": "Check first.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/scripts/hooks/release_guard.py",
+          "line": 78,
+          "finding": "Round 2: git push --tags with no refspec on main is judged by HEAD, not the tag; the deny reason is wrong, the deny is conservative. (Recorded, not built.)",
+          "suggestion": "Treat tags-only as tag push.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/scripts/hooks/release_guard.py",
+          "line": 87,
+          "finding": "Round 2: gh release create without --verify-tag can create the remote tag at another commit; same gap as before. (Recorded, not built.)",
+          "suggestion": "Known miss.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/scripts/hooks/release_guard_commands.py",
+          "line": 183,
+          "finding": "Round 2: cwd_unknown never resets; cd - and bare cd are not unknown; backslash escape inside PowerShell double quotes. All fail open. (Recorded, not built.)",
+          "suggestion": "Known misses.",
+          "source": "code-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-11-23T23:16:45.509686+00:00",
-      "disposition": "campaign unit P4b: the orchestrator re-runs the spec/code/doubt cascade independently on the final tree (operator lesson 1 of this campaign); the runner does not attest it",
-      "recorded_by": "none",
+      "completed_at": "2026-11-24T00:22:45.387004+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "049058c4cdac002ac20adf2e9f1d8fc9875612ae",
+      "reviewer_notes": "Independent opus code-review, two passes: d16c605ff (FAIL, one high) and the fix round 049058c4c (PASS, no medium or high; tests not run by the reviewer, the orchestrator relies on the runner's full-root runs). Architecture rules: no violations."
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "concurrency & ordering",
+          "file": "plugins/shipwright-changelog/scripts/hooks/release_guard.py",
+          "line": null,
+          "finding": "Claim under doubt: the hook never blocks the prescribed release flow — after gh pr merge --delete-branch HEAD is the merge commit on main, so the prescribed tag push was denied",
+          "suggestion": "Judge the tag's commit for a tag push. (Fixed in 049058c4c with real-git tests.)",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-changelog/scripts/hooks/release_guard.py",
+          "line": null,
+          "finding": "Claim under doubt: in-progress releases are held — the run state is per worktree; another checkout is not guarded",
+          "suggestion": "Recorded as a known miss (D38).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "reversibility",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_prepare.py",
+          "line": null,
+          "finding": "Claim under doubt: inert outside a release — a declined prepare leaves the state for 48 h",
+          "suggestion": "Recorded (D38), SHIPWRIGHT_RELEASE_GUARD=off lifts it.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-changelog/scripts/hooks/release_guard.py",
+          "line": null,
+          "finding": "Claim under doubt: before record-event every merge counts — gh pr merge 42 was allowed when branch and pr_url unknown",
+          "suggestion": "Fixed with a test.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-changelog/scripts/hooks/release_guard.py",
+          "line": null,
+          "finding": "Claim under doubt: payload is read faithfully — stdin decoded with the locale code page",
+          "suggestion": "Fixed: UTF-8 bytes, non-ASCII cwd test.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling",
+          "file": "shared/scripts/lib/events_references.py",
+          "line": null,
+          "finding": "Claim under doubt: the shared registry edits are harmless — tag M vs C, third hand-kept copy of the event paths",
+          "suggestion": "Recorded (D37, D38).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "blast radius",
+          "file": "plugins/shipwright-changelog/hooks/hooks.json",
+          "line": null,
+          "finding": "Claim under doubt: a Bash|PowerShell hook is free — uv run startup on every shell call",
+          "suggestion": "Accepted and recorded (D38).",
+          "source": "doubt-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-11-23T23:16:45.670879+00:00",
-      "disposition": "campaign unit P4b: the orchestrator re-runs the spec/code/doubt cascade independently on the final tree (operator lesson 1 of this campaign); the runner does not attest it",
-      "recorded_by": "none",
+      "completed_at": "2026-11-24T00:22:45.521600+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "049058c4cdac002ac20adf2e9f1d8fc9875612ae"
     },
     "external_code": {
       "review_type": "external_code",
@@ -238,16 +398,18 @@
     },
     "spec": {
       "review_type": "spec",
-      "status": "not_run",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-11-23T23:16:45.353682+00:00",
-      "disposition": "campaign unit P4b: the orchestrator re-runs the spec/code/doubt cascade independently on the final tree (operator lesson 1 of this campaign); the runner does not attest it",
-      "recorded_by": "none",
+      "completed_at": "2026-11-24T00:22:45.242879+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "049058c4cdac002ac20adf2e9f1d8fc9875612ae"
     },
     "plan_internal": {
       "review_type": "plan_internal",
