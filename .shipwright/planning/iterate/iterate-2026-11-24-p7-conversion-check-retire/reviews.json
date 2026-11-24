@@ -141,29 +141,126 @@
     },
     "code": {
       "review_type": "code",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "shared/scripts/tools/junit_promises.py",
+          "line": 58,
+          "finding": "Pass 1: the junit check ignored more_checks, so four passing promises (AC03, AC07, AC08, AC14) could pass with a skipped second test. Fixed in 2a18b4a54 with tests.",
+          "suggestion": "fixed",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/check_plugin_conversion.py",
+          "line": 141,
+          "finding": "Pass 1: verify_local timeout did not kill the process tree on Windows; locale decoding; errors escaped as tracebacks; A-items read SKILL.md only; static-only run printed 'converted'. Fixed in 2a18b4a54 (process group kill, utf-8 replace, exit 2, prose scope, verdict lists the checks that ran).",
+          "suggestion": "fixed",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "architecture",
+          "file": "shared/config/plugin_conversion.json",
+          "line": 12,
+          "finding": "Pass 1: export not next to its source. Reasoned and deferred to the next re-pin (D62).",
+          "suggestion": "recorded",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/check_plugin_conversion.py",
+          "line": 66,
+          "finding": "Pass 2: the post-kill drain has no timeout and can still wait on Windows; killpg race; invalid regex and unknown scope not exit 2; D70 A11 reason wrong. Recorded as D71 for the follow-up; the conversion check is operator-run, not a CI gate.",
+          "suggestion": "recorded, follow-up",
+          "source": "code-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-11-24T21:21:57.038018+00:00",
-      "disposition": "the orchestrator runs the independent opus cascade for this campaign (operator instruction for unit P7); the runner did not spawn the code-reviewer",
-      "recorded_by": "none",
+      "completed_at": "2026-11-24T23:29:35.488915+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "2a18b4a54d6ec859025d3460f2fb520399f5696e",
+      "reviewer_notes": "Independent opus code-review, two passes. Pass 1 on 547063874: REVISE (one high). Pass 2 on 2a18b4a54: PASS, no high; all pass-1 findings closed, residuals recorded in D71. Reference sweep for the deleted inventory and coverage files was clean."
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "shared/scripts/tools/check_plugin_conversion.py",
+          "line": null,
+          "finding": "Claim under doubt: the conversion check cannot give a false 'converted' — a run without --junit printed 'converted'. Fixed: the verdict lists the checks that ran, and a static-only run says 'static checks clean'.",
+          "suggestion": "fixed",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "shared/config/plugin_conversion.json",
+          "line": null,
+          "finding": "Claim under doubt: every A-item is proven gone from the live prose — most A-items read SKILL.md only, so references/ could carry mechanics. Fixed: six items read references too, four stay SKILL.md-only with reasons (D70).",
+          "suggestion": "fixed",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling",
+          "file": "plugins/shipwright-changelog/tests/golden/golden.lock.json",
+          "line": null,
+          "finding": "Claim under doubt: the re-pin blessed only reviewed P3-P6 changes — every changed lock sha equals the latest approved delta; no unapproved edit. Side effect: S12a.trace equals S2a.legacy.trace after P4. Recorded D69 for stop 3.",
+          "suggestion": "recorded",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling",
+          "file": ".shipwright/planning/campaigns/2026-10-25-dfp-pilot-changelog-FINDINGS.md",
+          "line": null,
+          "finding": "Claim under doubt: D68 matches the tree — it did not. Rewritten, AC record superseded.",
+          "suggestion": "fixed",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": ".shipwright/planning/campaigns/2026-10-25-dfp-pilot-changelog-SAVING-REPORT.md",
+          "line": null,
+          "finding": "Claim under doubt: saving report numbers are traceable — shared-root deltas included unrelated main growth. Qualified in the report.",
+          "suggestion": "fixed",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "shared/scripts/tools/junit_promises.py",
+          "line": null,
+          "finding": "Claim under doubt: status re-labelling is guarded — a promise moved out of passing is not checked by the junit reader; guarded only by review. Documented in the docstring and D64.",
+          "suggestion": "recorded",
+          "source": "doubt-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-11-24T21:21:57.273849+00:00",
-      "disposition": "the orchestrator runs the independent opus cascade for this campaign (operator instruction for unit P7); Stage 3 follows the delegated Stage 2",
-      "recorded_by": "none",
+      "completed_at": "2026-11-24T23:29:35.643976+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "2a18b4a54d6ec859025d3460f2fb520399f5696e"
     },
     "external_code": {
       "review_type": "external_code",
@@ -283,16 +380,18 @@
     },
     "spec": {
       "review_type": "spec",
-      "status": "not_run",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-11-24T21:21:56.653026+00:00",
-      "disposition": "the orchestrator runs the independent opus cascade for this campaign (operator instruction for unit P7); the runner did not spawn the Stage-1 spec-reviewer",
-      "recorded_by": "none",
+      "completed_at": "2026-11-24T23:29:35.362205+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "2a18b4a54d6ec859025d3460f2fb520399f5696e"
     },
     "plan_internal": {
       "review_type": "plan_internal",
