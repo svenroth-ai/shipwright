@@ -21,7 +21,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "hooks"))
+sys.path.append(str(Path(__file__).resolve().parents[1] / "hooks"))  # appended: never shadow a module of the caller
 import release_descent  # noqa: E402  (stdlib-only, shared with the release guard hook)
 
 from . import release_commit, release_event, release_runstate, release_verify  # noqa: E402
@@ -74,20 +74,23 @@ def push_tag(rec: Recorder, plugin_root: Path, *, version: str) -> tuple[int, di
             if reached is None:
                 return refuse("merge_state_unknown", base=base, detail=detail)
             if not reached:
-                if _merged(rec, state):  # waiting would never end: ancestry cannot prove a squash or rebase merge
+                pr_state = _pr_state(rec, state)
+                if pr_state == "MERGED":  # waiting would never end: ancestry cannot prove a squash or rebase merge
                     return refuse("merged_without_release_commit", base=base, detail=SQUASHED.format(base=base))
+                if pr_state == "CLOSED":  # closed without a merge: it will not get merged by waiting
+                    return refuse("pr_closed_unmerged", base=base, detail="the PR was closed without being merged; nothing is pushed")
                 return answer("waiting_for_merge", 1, reason="waiting_for_merge", base=base, detail="the PR is not merged yet; run this again after the merge")
     return answer("ok", 0, argv=argv, line=" ".join(argv))
 
 
-def _merged(rec: Recorder, state: dict[str, Any]) -> bool:
-    """``gh pr view`` says the release PR is MERGED (any way). Unknown, an unreadable answer or no PR URL is not merged."""
+def _pr_state(rec: Recorder, state: dict[str, Any]) -> str:
+    """``gh pr view``: the release PR's state (``MERGED`` in any way, ``CLOSED``, ``OPEN``). Unknown, unreadable or no PR URL is ``""``."""
     url = state.get("pr_url")
     if not url:
-        return False
+        return ""
     done = rec.run("push-pr-view", ["gh", "pr", "view", url, "--json", "state,mergeCommit"])
     try:
         found = json.loads(done.stdout)
     except ValueError:
-        return False
-    return done.exit == 0 and isinstance(found, dict) and found.get("state") == "MERGED"
+        return ""
+    return str(found.get("state") or "") if done.exit == 0 and isinstance(found, dict) else ""

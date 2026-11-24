@@ -221,9 +221,9 @@ page (the next two blocks). Neither is done before the merge, so a failed releas
 uv run "{plugin_root}/scripts/release.py" push-tag --project-root "$(pwd)" --version "{version}"
 ```
 `status: "ok"` gives the one `line` to run: from a feature branch `git push origin "refs/tags/v{version}"` (only the tag, never a local trunk,
-never `--tags`), on main `git push --atomic origin main "refs/tags/v{version}"` (the trunk and exactly this tag, together or not at all).
+never `--tags`), on the trunk `git push --atomic origin {trunk} "refs/tags/v{version}"` (`{trunk}` is the branch you are on, `main` or `develop`: run the printed line; the trunk and exactly this tag, together or not at all).
 Run that line as printed. `status: "waiting_for_merge"` (exit 1) means a hand-invoked release's PR is not merged yet: run `push-tag` again after the merge.
-`status: "refused"` stops the release and names the `reason` (`merged_without_release_commit`: the PR was merged without the release commit, so
+`reason: "merge_state_unknown"` is retryable (origin could not be asked: run `push-tag` again). `status: "refused"` otherwise stops the release and names the `reason` (`merged_without_release_commit`: the PR was merged without the release commit, so
 the tag would name a commit that is not on the trunk; do not run it again, report it). A refused push stops the release.
 
 **Create GitHub Release (best-effort, never blocks this phase):** condenses

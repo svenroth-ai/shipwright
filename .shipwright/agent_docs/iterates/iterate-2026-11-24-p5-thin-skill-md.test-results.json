@@ -4,9 +4,9 @@
     "date": "2026-11-24",
     "unit": {
       "status": "passed",
-      "passed": 16609,
+      "passed": 16612,
       "skipped": 63,
-      "total": 16672
+      "total": 16675
     },
     "integration": {
       "status": "passed",
@@ -81,11 +81,11 @@
     },
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run --project plugins/shipwright-changelog pytest plugins/shipwright-changelog/tests/test_release_p5.py plugins/shipwright-changelog/tests/test_release_p5_prose.py plugins/shipwright-changelog/tests/test_release_push_rule.py -q -p no:cacheprovider --junitxml=C:/Users/SvenRoth/AppData/Local/Temp/claude/ba2c9fcfeaaf0c50/08554cbf-2ff7-4caf-83ba-e1a3834635ba/scratchpad/junit_p5b.xml",
+      "runner": "uv run --project plugins/shipwright-changelog pytest plugins/shipwright-changelog/tests/test_release_p5.py plugins/shipwright-changelog/tests/test_release_p5_prose.py plugins/shipwright-changelog/tests/test_release_push_rule.py -q -p no:cacheprovider --junitxml=C:/Users/SvenRoth/AppData/Local/Temp/claude/ba2c9fcfeaaf0c50/08554cbf-2ff7-4caf-83ba-e1a3834635ba/scratchpad/junit_p5c.xml",
       "exit_code": 0,
-      "tests_run": 42,
+      "tests_run": 45,
       "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\campaign-dfp-pilot-changelog-p3-p8--P5\\.shipwright\\runs\\iterate-2026-11-24-p5-thin-skill-md\\surface_verification.log",
-      "timestamp": "2026-11-24T03:15:23.605Z",
+      "timestamp": "2026-11-24T03:38:06.091Z",
       "attempts": 1
     }
   },

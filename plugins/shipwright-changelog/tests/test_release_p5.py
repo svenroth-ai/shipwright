@@ -28,6 +28,7 @@ sys.path.insert(0, str(HOOKS))
 OK = {"push-tag-commit": {"stdout": HEAD + "\n"}, "push-head": {"stdout": "main\n"}, "push-tip": {"stdout": HEAD + "\n"}}
 MERGED = {**OK, "verify-base": {"stdout": "origin/develop\n"}, "verify-remote-url": {"stdout": "bare\n"}}
 PR = "https://example.test/pr/1"
+EVENT_LINE = "shipwright_events.jsonl" + chr(10)
 
 
 def committed(tmp_path: Path) -> None:
@@ -67,6 +68,26 @@ def test_the_trunk_gets_the_atomic_line_for_the_recorded_trunk(tmp_path, plugin_
     assert [a for k, a in fake.calls if k == "push-git"][0][:3] == ["git", "merge-base", "--is-ancestor"]  # the hook's rule, in the hook's order
 
 
+def test_a_closed_unmerged_pr_is_refused_with_its_own_reason(tmp_path, plugin_root):
+    feature(tmp_path)
+    fake = Fake(**MERGED, **{"verify-merged": {"exit": 1}, "push-pr-view": {"stdout": json.dumps({"state": "CLOSED", "mergeCommit": None})}})
+    code, out = ask(tmp_path, plugin_root, fake)
+    assert code == 1 and out["reason"] == "pr_closed_unmerged" and "line" not in out
+
+
+@pytest.mark.parametrize("trunk", ["main", "develop"])
+def test_the_skill_trunk_line_names_the_trunk_you_are_on(tmp_path, plugin_root, trunk):
+    skill = " ".join((SKILL_DIR / "SKILL.md").read_text(encoding="utf-8").split())
+    template = 'git push --atomic origin {trunk} "refs/tags/v{version}"'
+    assert template in skill
+    committed(tmp_path)
+    seed(tmp_path, mode="standalone", branch=trunk, on_trunk=True)
+    fake = Fake(**{**OK, "push-head": {"stdout": trunk + "\n"}, "push-tip": {"stdout": "b" * 40 + "\n"},
+                   "push-git": lambda argv: {"stdout": "\x01\n" + EVENT_LINE} if argv[1] == "log" else {}})
+    line = ask(tmp_path, plugin_root, fake)[1]["line"]
+    assert line == template.replace("{trunk}", trunk).replace("{version}", VERSION).replace('"', "")
+
+
 def test_the_skill_carries_the_literal_lines_push_tag_prints(tmp_path, plugin_root):
     """The prose line and the printed argv are the same push, including --atomic on the trunk."""
     skill = " ".join((SKILL_DIR / "SKILL.md").read_text(encoding="utf-8").split())
@@ -75,8 +96,8 @@ def test_the_skill_carries_the_literal_lines_push_tag_prints(tmp_path, plugin_ro
     fake = Fake(**{**OK, "push-tip": {"stdout": "b" * 40 + "\n"}, "push-git": lambda argv: {"stdout": "\x01\nshipwright_events.jsonl\n"} if argv[1] == "log" else {}})
     trunk = ask(tmp_path, plugin_root, fake)[1]["line"]
     assert trunk == f"git push --atomic origin main refs/tags/v{VERSION}"
-    assert 'git push --atomic origin main "refs/tags/v{version}"' in skill and 'git push origin "refs/tags/v{version}"' in skill
-    assert "--atomic" in trunk and "git push" not in skill.replace('git push --atomic origin main "refs/tags/v{version}"', "").replace('git push origin "refs/tags/v{version}"', "")
+    assert 'git push --atomic origin {trunk} "refs/tags/v{version}"' in skill and 'git push origin "refs/tags/v{version}"' in skill
+    assert "--atomic" in trunk and "git push" not in skill.replace('git push --atomic origin {trunk} "refs/tags/v{version}"', "").replace('git push origin "refs/tags/v{version}"', "")
 
 
 # ---- F1b, one key ------------------------------------------------------------------------------------------
