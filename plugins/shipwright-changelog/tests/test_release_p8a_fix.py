@@ -10,17 +10,22 @@ from __future__ import annotations
 
 import base64
 import json
+import subprocess
 import sys
+from pathlib import Path
 
 import pytest
 
-import release
-from lib import release_cancel, release_event, release_push, release_runstate
-from lib.release_runner import Recorder, subprocess_runner
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts" / "hooks"))
+import release_guard  # noqa: E402
 
-from .test_release_cli import SETUP, Fake, ok_runner, run_prepare
-from .test_release_p4_cli import VERSION, event_fake, seed
-from .test_release_p5 import OK, committed
+import release  # noqa: E402
+from lib import release_cancel, release_event, release_push, release_runstate  # noqa: E402
+from lib.release_runner import Recorder, subprocess_runner  # noqa: E402
+
+from .test_release_cli import SETUP, Fake, ok_runner, run_prepare  # noqa: E402
+from .test_release_p4_cli import VERSION, event_fake, seed  # noqa: E402
+from .test_release_p5 import OK, committed  # noqa: E402
 
 pytestmark = pytest.mark.covers("FR-01.09/AC01")
 
@@ -93,7 +98,11 @@ def test_the_lookup_asks_origin_by_name_and_no_url_reaches_the_json(tmp_path):
         assert "trunk-url" not in fake.keys() and not any("get-url" in a for _, a in fake.calls)
         assert fake.argv("trunk") == ["git", "-c", "credential.interactive=never", "ls-remote", "--symref", "origin", "HEAD"]
         assert "s3cret" not in json.dumps(rec.as_json()) and "host.example" not in json.dumps(rec.as_json())
-        assert fake.opts["trunk"] == {"env": {"GIT_TERMINAL_PROMPT": "0"}, "timeout": 30}
+        assert fake.opts["trunk"] == {"env": {"GIT_TERMINAL_PROMPT": "0", "GCM_INTERACTIVE": "never",
+                                              "GIT_SSH_COMMAND": "ssh -o BatchMode=yes"}, "timeout": 30}
+        assert release_event.LOOKUP_ENV is release_guard._NO_PROMPT  # fix round 2: one env, shared with the hook
+
+
 
 
 def test_a_lookup_that_times_out_falls_back_like_one_that_fails(tmp_path):
@@ -107,6 +116,8 @@ def test_the_runner_adds_env_to_the_environment_and_stops_at_the_timeout(tmp_pat
     assert subprocess_runner("k", show, tmp_path, env={"SHIPWRIGHT_P8A_ADD": "added"}).stdout.split() == ["kept", "added"]
     slow = subprocess_runner("k", [sys.executable, "-c", "import time; time.sleep(20)"], tmp_path, timeout=0.5)
     assert (slow.exit, slow.stderr) == (124, "timed out after 0.5 s")
+    reads = subprocess_runner("k", [sys.executable, "-c", "import sys; print(repr(sys.stdin.read()))"], tmp_path, timeout=10)
+    assert reads.stdout.strip() == "''"  # stdin is closed: a prompt meets end-of-input, never a person
 
 
 # ---- item 5: Cancel puts the edited drop back, in code -----------------------------------------------------------
@@ -147,6 +158,8 @@ def test_cancel_puts_back_an_edited_and_a_deleted_drop_byte_for_byte_and_never_d
     (lambda root: seed(root, drops_before={}) or (root / "CHANGELOG.md").write_text(f"## [{VERSION}] - 2026-11-25\n", encoding="utf-8"),
      "release_written"),
     (lambda root: seed(root, drops_before={"../outside.md": "eA=="}), "no_drop_snapshot"),
+    (lambda root: seed(root, drops_before={r"CHANGELOG-unreleased.d\..\..\outside.md": "eA=="}), "no_drop_snapshot"),
+    (lambda root: seed(root, drops_before={"CHANGELOG-unreleased.d/C:/outside.md": "eA=="}), "no_drop_snapshot"),
     (lambda root: seed(root), "no_drop_snapshot"),
 ])
 def test_cancel_refuses_what_it_cannot_put_back(tmp_path, setup, reason):
@@ -161,3 +174,42 @@ def test_cancel_after_the_tag_exists_is_refused_and_the_cli_routes_it(tmp_path, 
     assert (code, out["reason"]) == (1, "release_written")
     assert release.main(["cancel", "--project-root", str(tmp_path), "--version", VERSION], runner=Fake(**{"tag-check": {"exit": 1}})) == 0
     assert json.loads(capsys.readouterr().out)["status"] == "ok"
+
+
+# ---- fix round 2: no write through a symlink, and a re-run prepare snapshots anew ---------------------------------
+
+@pytest.mark.parametrize("link", ["file", "dir", "junction"])
+def test_cancel_never_writes_through_a_symlinked_drop(tmp_path, link):
+    root, outside = tmp_path / "repo", tmp_path / "outside"
+    (root / "CHANGELOG-unreleased.d").mkdir(parents=True)
+    outside.mkdir()
+    (outside / "a.md").write_bytes(b"theirs")
+    seed(root, drops_before={"CHANGELOG-unreleased.d/Added/a.md": base64.b64encode(b"mine").decode("ascii")})
+    try:
+        if link == "file":
+            (root / "CHANGELOG-unreleased.d" / "Added").mkdir()
+            (root / "CHANGELOG-unreleased.d" / "Added" / "a.md").symlink_to(outside / "a.md")
+        elif link == "junction":  # Windows: no symlink right needed, and is_symlink() is False for it (the resolve check holds)
+            if sys.platform != "win32":
+                pytest.skip("a directory junction is Windows only")
+            subprocess.run(["cmd", "/c", "mklink", "/J", str(root / "CHANGELOG-unreleased.d" / "Added"), str(outside)],
+                           check=True, capture_output=True)
+        else:
+            (root / "CHANGELOG-unreleased.d" / "Added").symlink_to(outside, target_is_directory=True)
+    except OSError:
+        pytest.skip("symlinks cannot be created here")
+    code, out = _cancel(root)
+    assert (code, out["reason"], out["detail"]) == (1, "unsafe_drop_path", "CHANGELOG-unreleased.d/Added/a.md")
+    assert (outside / "a.md").read_bytes() == b"theirs"
+
+
+def test_a_re_run_prepare_takes_the_drop_snapshot_anew(tmp_path, plugin_root):
+    _drops(tmp_path, a=b"at the first prepare")
+    run_prepare(tmp_path, plugin_root, ok_runner())
+    release_runstate.patch(tmp_path, "1.3.0", drops_before={"CHANGELOG-unreleased.d/Added/a.md": "c3RhbGU="})  # stale
+    _drops(tmp_path, a=b"changed between the two prepares")
+    run_prepare(tmp_path, plugin_root, ok_runner())  # the same release: the run state is reused
+    _drops(tmp_path, a=b"an Edit at the preview")
+    code, out = release_cancel.cancel(Recorder(Fake(**{"tag-check": {"exit": 1}}), tmp_path), tmp_path, version="1.3.0")
+    assert code == 0 and out["restored"] == ["CHANGELOG-unreleased.d/Added/a.md"]
+    assert (tmp_path / "CHANGELOG-unreleased.d" / "Added" / "a.md").read_bytes() == b"changed between the two prepares"

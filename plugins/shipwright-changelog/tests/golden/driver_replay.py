@@ -208,7 +208,8 @@ class ReplayDriver:
     def trunk(self, scratch: Any) -> str:
         """F5 (operator 2026-11-25, P8a; D24): the default branch is asked of the remote by name (``prepare`` returns it as ``trunk``),
         else the local ``origin/HEAD``, else ``main``. Asked once per run, as ``release_event.trunk`` asks it: a question, not a logged step.
-        (A scratch's fetch URL is a fake host its environment refuses, so there the answer is the local ``origin/HEAD`` or the fallback.)"""
+        (A scratch's fetch URL is a fake host its environment refuses, so there the answer is the local ``origin/HEAD`` or the fallback.)
+        Deliberately without the code's branch-name check and no-prompt env: a scratch names only plain branches and never prompts."""
         if "trunk" not in self.state:
             head = scratch.run(["git", "-c", "credential.interactive=never", "ls-remote", "--symref", "origin", "HEAD"])
             words = ((head.stdout.splitlines() or [""])[0] if head.returncode == 0 else "").split()

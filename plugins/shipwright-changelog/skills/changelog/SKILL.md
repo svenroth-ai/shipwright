@@ -131,8 +131,8 @@ AskUserQuestion:
 
 - **Accept:** run the real call below (it writes `CHANGELOG.md`, consumes the drops and numbers the ADRs).
 - **Edit:** change the pending entry's drop file under `CHANGELOG-unreleased.d/` (never `CHANGELOG.md`), run Step 4's preview again, ask again.
-- **Cancel:** run `cancel` (second block) and end the release: it puts back any drop file an Edit changed (`restored`). The run record
-  stays, so the release guard blocks a push of the trunk or a tag for this release for 48 hours or until `SHIPWRIGHT_RELEASE_GUARD=off`.
+- **Cancel:** run `cancel` (second block) and end the release: it puts back any drop file an Edit changed (`restored`); tell the operator every
+  path in `left` (a drop file new since `prepare`: kept, never deleted). The run record stays, so the release guard blocks a push of the trunk or a tag for this release for 48 hours or until `SHIPWRIGHT_RELEASE_GUARD=off`.
 
 ```bash
 uv run "{plugin_root}/scripts/release.py" aggregate --project-root "$(pwd)" --version "{version}"
@@ -179,7 +179,7 @@ version is this release; a mismatch removes the tag again. It writes
 
 ## Step 7: Create PR (Optional)
 
-**Only if on a feature branch:** `prepare` returned `on_trunk: false` (not the default branch `trunk`, not `main`, not `develop`).
+**Only if on a feature branch:** prepare returned `on_trunk: false`.
 
 Push the branch first (the host opens a PR only for a branch it has; `--no-follow-tags` keeps the tag here even with `push.followTags`):
 ```bash

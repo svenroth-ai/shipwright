@@ -3,10 +3,10 @@
     "scenario": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
     "field": "sha256",
     "before": "db12fe9f66618e0a1a15cbd180f07bd4a1de1178fb75e6104f01c070fb526a46",
-    "after": "51680f52c91fa6441198942048f1c0bf0e7ab3d56bb3880209055f2234bedb6e",
-    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); BRIEF D12/F2: the preview is the dry run, asked before the real aggregate writes (FINDINGS D74); BRIEF D7/F3: the push-branch step right before gh pr create (FINDINGS D75); BRIEF D24/F5: the default branch from the remote as trunk and PR base (FINDINGS D76); P8a fix round (orchestrator review): on_trunk from prepare, additive trunks, release.py cancel, {branch} in the push-tag line, duplicates of references cut instead of a re-flow (FINDINGS D84, D85, D87)",
+    "after": "46d3af98c5ee4f61b2ca846388ecfec759e10af84865be1c37b8d8ba8bbe668b",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); BRIEF D12/F2: the preview is the dry run, asked before the real aggregate writes (FINDINGS D74); BRIEF D7/F3: the push-branch step right before gh pr create (FINDINGS D75); BRIEF D24/F5: the default branch from the remote as trunk and PR base (FINDINGS D76); P8a fix round (orchestrator review): on_trunk from prepare, additive trunks, release.py cancel, {branch} in the push-tag line, duplicates of references cut instead of a re-flow (FINDINGS D84, D85, D87); P8a fix round 2 (Opus re-review): Cancel reports every left path, Step 7 names only on_trunk: false (FINDINGS D91)",
     "date": "2026-11-25",
-    "source": "F2/F3/F5/D84/D85/D87"
+    "source": "F2/F3/F5/D84/D85/D87/D91"
   },
   {
     "scenario": "plugins/shipwright-changelog/skills/changelog/references/first-actions.md",
@@ -291,10 +291,10 @@
     "scenario": "plugins/shipwright-changelog/tests/golden/driver_replay.py",
     "field": "sha256",
     "before": "00d59409c7a1c1ba3948d2ed62c360fd506dbadb1c13ade03732fdc3a72a3f6e",
-    "after": "aa4bf95293e09e7359b80d64e7265ff5ece3c003c64208b11ad274cc959e00f1",
-    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); BRIEF D7/F3: the push-branch step right before gh pr create (FINDINGS D75); BRIEF D24/F5: the default branch from the remote as trunk and PR base (FINDINGS D76); P8a fix round (orchestrator review): additive trunks and the lookup by remote name (FINDINGS D85, D86), Cancel puts the edited drop back (D84)",
+    "after": "a70ebcf01b32c1ee3de2586e69b9ee7f6c045883f0b8d415211fbec6da40b3c0",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); BRIEF D7/F3: the push-branch step right before gh pr create (FINDINGS D75); BRIEF D24/F5: the default branch from the remote as trunk and PR base (FINDINGS D76); P8a fix round (orchestrator review): additive trunks and the lookup by remote name (FINDINGS D85, D86), Cancel puts the edited drop back (D84); P8a fix round 2 (Opus re-review): a comment that the lookup's missing branch-name check and no-prompt env are deliberate (FINDINGS D90)",
     "date": "2026-11-25",
-    "source": "F3/F5/D84/D85/D86"
+    "source": "F3/F5/D84/D85/D86/D90"
   },
   {
     "scenario": "plugins/shipwright-changelog/tests/golden/replay_commands.py",

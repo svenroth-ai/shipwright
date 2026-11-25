@@ -1,9 +1,9 @@
 """``release.py cancel``: Cancel at the Step 5 preview, in code (P8a fix round, finding D84).
 
 Since F2 the preview writes nothing, so a Cancel straight after it has nothing to undo. An Edit does change a drop file
-under ``CHANGELOG-unreleased.d/``; a Cancel after it must put that file back as it was when the release started, and the
-prose cannot do that reliably (it would have to remember the old text). ``prepare`` keeps the bytes of every drop file
-in the run state (``drops_before``); ``cancel`` writes back each one that changed or went missing, byte for byte. A drop
+under ``CHANGELOG-unreleased.d/``; a Cancel after it must put that file back as it was at the last ``prepare``, and the
+prose cannot do that reliably (it would have to remember the old text). Every ``prepare`` keeps the bytes of every drop
+file in the run state (``drops_before``, taken anew on a re-run); ``cancel`` writes back each one that changed or went missing, byte for byte. A drop
 file that did not exist at ``prepare`` is never deleted (it may be someone's work): it is listed in ``left``. The real
 ``aggregate`` consumes the drops, so once it has run (the version's section is in ``CHANGELOG.md``, or the tag exists) a
 cancel is refused: putting consumed drops back would release them twice. The run record itself stays, as it does after
@@ -41,11 +41,24 @@ def snapshot(project_root: Path) -> dict[str, str]:
 
 
 def _safe(rel: Any) -> bool:
-    """A path the state names may only point into the drops directory."""
-    if not isinstance(rel, str):
+    """A path the state names may only point into the drops directory: posix form only (a backslash or a drive colon is a
+    second path syntax on Windows, so neither is accepted), relative, no ``..``."""
+    if not isinstance(rel, str) or "\\" in rel or ":" in rel:
         return False
     parts = PurePosixPath(rel).parts
     return len(parts) > 1 and parts[0] == DROPS and ".." not in parts and not PurePosixPath(rel).is_absolute()
+
+
+def _writable(root: Path, rel: str) -> bool:
+    """Checked before every write: no symlink at the target or on the way to it from the drops directory (that directory
+    included), and the resolved target still lies inside the resolved drops directory."""
+    drops, path = root / DROPS, root / rel
+    if any(p.is_symlink() for p in (path, *path.parents) if p == drops or drops in p.parents):
+        return False
+    try:
+        return path.resolve().is_relative_to(drops.resolve())
+    except (OSError, RuntimeError):
+        return False
 
 
 def cancel(rec: Recorder, plugin_root: Path, *, version: str) -> tuple[int, dict[str, Any]]:
@@ -64,6 +77,8 @@ def cancel(rec: Recorder, plugin_root: Path, *, version: str) -> tuple[int, dict
     for rel, data in sorted(before.items()):
         if now.get(rel) == data:
             continue
+        if not _writable(root, rel):
+            return 1, {**out, "status": "failed", "reason": "unsafe_drop_path", "detail": rel, "commands": rec.as_json()}
         try:
             content = base64.b64decode(data, validate=True)
             path = root / rel

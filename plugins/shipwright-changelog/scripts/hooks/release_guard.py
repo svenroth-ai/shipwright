@@ -44,7 +44,7 @@ _SHA = re.compile(r"[0-9a-f]{40}([0-9a-f]{24})?")
 _TAG_LIKE = re.compile(r"v\d+\.\d+(\.\d+)?([-+.\w]*)")  # the release tag shape; a bare `2.0-hotfix` may be a branch
 
 
-_NO_PROMPT = {"GIT_TERMINAL_PROMPT": "0", "GCM_INTERACTIVE": "never", "GIT_SSH_COMMAND": "ssh -o BatchMode=yes"}  # never wait on a login
+_NO_PROMPT = release_descent.NO_PROMPT  # never wait on a login (shared with the CLI's default-branch lookup)
 
 
 def _git(cwd: Path, *args: str, timeout: int = 10) -> subprocess.CompletedProcess:

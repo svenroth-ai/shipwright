@@ -80,3 +80,14 @@ that hangs (D82(3)); a credential-bearing push URL (D82(4)).
   `git push origin HEAD --no-follow-tags`.
 - Approved deltas name the fix per trace (D88). S14d and S18c run through both drivers and compare the two traces
   (`test_p8a_fix_scenarios.py`): a new frozen trace would need a re-pin of the golden lock.
+
+## Fix round 2 (Opus re-review of 965cdfd98: code PASS with two medium, doubt three medium)
+
+- Cancel hardening: a key with `\` or `:` is refused (`no_drop_snapshot`); before every write the target and each parent up
+  to `CHANGELOG-unreleased.d/` must not be a symlink and the resolved path must lie inside the resolved drops directory
+  (`unsafe_drop_path`). Every `prepare` takes the drop snapshot anew (no `setdefault`).
+- Lookup env: the release guard's no-prompt env, shared as `release_descent.NO_PROMPT`; the runner closes stdin. The Windows
+  grandchild-timeout hang is recorded (FINDINGS D90), no process-tree kill.
+- Cancel is a bug fix under F2/D84, not a new feature (FINDINGS D91): Edit changes drops because the preview writes nothing;
+  `release_written`, `no_drop_snapshot` and `left` are part of that fix. SKILL.md Step 5 tells the operator every `left` path.
+- The release guard hook's static trunk list (FINDINGS D89) predates P8a and is left for stop 3.

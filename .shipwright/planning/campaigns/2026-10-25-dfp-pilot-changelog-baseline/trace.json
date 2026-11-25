@@ -428,7 +428,7 @@
         "heading_path": [
           "Step 5: Preview and Confirm"
         ],
-        "content_hash": "a540077506010286f09502556b3e2ffc4b783553e126c8d1d0ace37f30af12a1"
+        "content_hash": "0866036f01b63d046fb4408faccff46613d84f1bcfbc1e5ef65b96eca33e276e"
       },
       "class": "ask",
       "check": {
@@ -514,7 +514,7 @@
         "heading_path": [
           "Step 7: Create PR (Optional)"
         ],
-        "content_hash": "6cb9f65f4ea76ae01b29a326849713a43c13f05ed4348174fdd58a9f6f70a9a7"
+        "content_hash": "6a17345405eb328ebf2899bd599bd8264d5d84ac98ca7b3f1a15f059ee95d1e7"
       },
       "class": "mechanic",
       "check": null,

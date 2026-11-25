@@ -35,10 +35,11 @@ DEFAULT_TIMEOUT = 600
 def subprocess_runner(key: str, argv: Sequence[str], cwd: Path, *, env: Mapping[str, str] | None = None,
                       timeout: float = DEFAULT_TIMEOUT) -> CmdResult:
     """Run ``argv`` in ``cwd``; a program that is not installed is a result (exit 127), never a crash. ``env`` is added to
-    this process's environment (never replaces it); a run past ``timeout`` seconds is exit 124."""
+    this process's environment (never replaces it); a run past ``timeout`` seconds is exit 124. No command reads stdin: a
+    prompt that would wait for a person gets end-of-input instead."""
     try:
-        done = subprocess.run(list(argv), cwd=str(cwd), capture_output=True, text=True, encoding="utf-8",
-                              errors="replace", timeout=timeout, env={**os.environ, **env} if env else None)
+        done = subprocess.run(list(argv), cwd=str(cwd), capture_output=True, text=True, encoding="utf-8", errors="replace",
+                              timeout=timeout, env={**os.environ, **env} if env else None, stdin=subprocess.DEVNULL)
     except FileNotFoundError as exc:
         return CmdResult(key, tuple(argv), 127, "", f"{type(exc).__name__}: {exc}")
     except subprocess.TimeoutExpired:

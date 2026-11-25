@@ -104,7 +104,7 @@ def prepare(rec: Recorder, plugin_root: Path, *, phase_task_id: str | None = Non
         return _stop(rec, 1, "upgrade_note_drop_failed" if notes["status"] == "action_drop_failed" else "upgrade_notes_query_failed",
                      **facts, upgrade_notes=notes)
     state.setdefault("tree_before", release_runstate.tree_snapshot(root))  # the baseline close-phase's clean-tree check compares against
-    state.setdefault("drops_before", release_cancel.snapshot(root))  # what Cancel puts back (D84); `cancel` drops it, so the next release snapshots anew
+    state["drops_before"] = release_cancel.snapshot(root)  # what Cancel puts back (D84): taken anew on every prepare, so a re-run keeps the drops as they are now
     base, source = release_event.trunk(rec)  # F5: the default branch, from the remote
     state.update(mode=mode, autonomy=autonomy, commits=len(_json_list(parsed.stdout)), trunk=base, trunk_source=source)  # facts the later steps read (the close summary, the verify)
     on_trunk = facts["branch"] in release_event.trunks(state)  # Step 7 branches on this: no head push and no PR on a trunk

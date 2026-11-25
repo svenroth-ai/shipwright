@@ -11,18 +11,22 @@ default branch ``prepare`` stored, ``main`` or ``develop``; F5, ``trunks``) and 
 from __future__ import annotations
 
 import re
+import sys
 from pathlib import Path
 from typing import Any
 
-from . import release_paths, release_runstate
-from .release_runner import Recorder, uv_script
+sys.path.append(str(Path(__file__).resolve().parents[1] / "hooks"))  # appended: never shadow a module of the caller
+import release_descent  # noqa: E402  (stdlib-only, shared with the release guard hook)
+
+from . import release_paths, release_runstate  # noqa: E402
+from .release_runner import Recorder, uv_script  # noqa: E402
 
 DEVELOP = "develop"  # the second trunk SKILL.md has always named next to the default branch
 ALWAYS = ("main", DEVELOP)  # the trunks the prose named before F5 ("not main/develop"): F5 adds the remote's default, never removes one
 UNKNOWN_EXTRA = ("master",)  # when the remote could not be asked, the other common default branch counts as a trunk too
 _BRANCH = re.compile(r"[A-Za-z0-9][A-Za-z0-9._/-]{0,99}")  # a branch name that is safe in a push line and a --base value
 LOOKUP = ["git", "-c", "credential.interactive=never", "ls-remote", "--symref", "origin", "HEAD"]  # the remote by NAME: no URL in argv
-LOOKUP_ENV = {"GIT_TERMINAL_PROMPT": "0"}  # never a credential prompt that waits for a person
+LOOKUP_ENV = release_descent.NO_PROMPT  # the release guard hook's env: never a login prompt that waits for a person
 LOOKUP_TIMEOUT = 30  # seconds; a lookup that hangs falls back like one that fails
 
 
