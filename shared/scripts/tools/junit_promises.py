@@ -27,12 +27,25 @@ from pathlib import Path
 
 PASSED, FAILED, SKIPPED, MISSING, AMBIGUOUS = "passed", "failed", "skipped", "missing", "ambiguous"
 
+#: A report larger than this is refused, never parsed.
+_MAX_XML_BYTES = 8 * 1024 * 1024
+
 
 def load_cases(junit_path: Path) -> list[tuple[str, str, str]]:
-    """``(classname, name, outcome)`` of every testcase; ``ValueError`` when the file is not a JUnit report."""
+    """``(classname, name, outcome)`` of every testcase; ``ValueError`` when the file is not a JUnit report.
+
+    A DOCTYPE or ENTITY declaration is refused before parsing (the only door to entity expansion; pytest's JUnit file
+    never has one), so no XML-hardening dependency is needed - same shape as ``suite_failed_only._parse``.
+    """
     try:
-        root = ET.parse(junit_path).getroot()
-    except (ET.ParseError, OSError) as exc:
+        data = Path(junit_path).read_bytes()
+        if len(data) > _MAX_XML_BYTES:
+            raise ValueError(f"{junit_path}: not a readable JUnit report (larger than {_MAX_XML_BYTES} bytes)")
+        text = data.decode("utf-8")  # strict, so the DTD check and the parser see the same characters
+        if "<!DOCTYPE" in text or "<!ENTITY" in text:
+            raise ValueError(f"{junit_path}: not a readable JUnit report (carries a DTD)")
+        root = ET.fromstring(text)
+    except (ET.ParseError, OSError, UnicodeDecodeError) as exc:
         raise ValueError(f"{junit_path}: not a readable JUnit report ({exc})") from exc
     cases = []
     for case in root.iter("testcase"):

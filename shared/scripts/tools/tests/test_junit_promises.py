@@ -90,6 +90,37 @@ def test_a_report_that_is_not_junit_or_is_empty_is_refused(tmp_path):
         jp.load_cases(empty)
 
 
+@pytest.mark.parametrize("prolog", ['<!DOCTYPE t [<!ENTITY a "x">]>', '<!ENTITY a "x">'])
+def test_a_report_carrying_a_dtd_is_refused_before_parsing(tmp_path, prolog):
+    # a DTD is the only door to entity expansion ("billion laughs"); a pytest JUnit file never carries one
+    bad = tmp_path / "dtd.xml"
+    bad.write_text(f"{prolog}<testsuites><testsuite>{case('test_ac01')}</testsuite></testsuites>", encoding="utf-8")
+    with pytest.raises(ValueError, match="DTD"):
+        jp.load_cases(bad)
+
+
+def test_a_report_shaped_like_real_pytest_output_still_parses(tmp_path):
+    real = tmp_path / "real.xml"
+    real.write_text('<?xml version="1.0" encoding="utf-8"?>'
+                    f"<testsuites><testsuite>{case('test_ac01')}</testsuite></testsuites>", encoding="utf-8")
+    assert jp.load_cases(real) == [(CLS, "test_ac01", jp.PASSED)]
+
+
+def test_a_report_that_is_not_utf8_is_refused(tmp_path):
+    bad = tmp_path / "latin.xml"
+    bad.write_bytes(b"\xff<testsuites/>")
+    with pytest.raises(ValueError, match="not a readable JUnit report"):
+        jp.load_cases(bad)
+
+
+def test_an_oversized_report_is_refused(tmp_path, monkeypatch):
+    monkeypatch.setattr(jp, "_MAX_XML_BYTES", 10)
+    big = tmp_path / "big.xml"
+    big.write_text(f"<testsuites><testsuite>{case('test_ac01')}</testsuite></testsuites>", encoding="utf-8")
+    with pytest.raises(ValueError, match="larger than"):
+        jp.load_cases(big)
+
+
 def test_the_export_copies_the_list_unchanged():
     promise_list = {"subject": "s", "schema": 1, "promises": PROMISES}
     exported = jp.export_trace(promise_list)

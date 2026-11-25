@@ -1,0 +1,1 @@
+The JUnit reader behind the plugin-conversion promise check now refuses a report that carries a DTD or entity declaration, or exceeds 8 MB, before parsing it, closing an XML entity-expansion path (Semgrep use-defused-xml-parse).
