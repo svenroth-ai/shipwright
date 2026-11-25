@@ -97,7 +97,7 @@ def test_the_skill_carries_the_literal_lines_push_tag_prints(tmp_path, plugin_ro
     trunk = ask(tmp_path, plugin_root, fake)[1]["line"]
     assert trunk == f"git push --atomic origin main refs/tags/v{VERSION}"
     assert 'git push --atomic origin {trunk} "refs/tags/v{version}"' in skill and 'git push origin "refs/tags/v{version}"' in skill
-    assert "--atomic" in trunk and "git push" not in skill.replace('git push --atomic origin {trunk} "refs/tags/v{version}"', "").replace('git push origin "refs/tags/v{version}"', "")
+    assert "--atomic" in trunk and "git push" not in skill.replace('git push --atomic origin {trunk} "refs/tags/v{version}"', "").replace('git push origin "refs/tags/v{version}"', "").replace("git push origin HEAD", "")
 
 
 # ---- F1b, one key ------------------------------------------------------------------------------------------
@@ -159,7 +159,7 @@ def test_the_merge_check_reads_the_base_the_pr_was_opened_against_not_origin_hea
 def test_record_event_keeps_the_base_of_the_pr_and_none_on_the_trunk(tmp_path, plugin_root):
     from .test_release_p4_cli import event_fake
     release_event.record_event(rec(tmp_path, event_fake("release/x")), plugin_root, version=VERSION, pr_url=PR)
-    assert release_runstate.stored(tmp_path, VERSION)["base_branch"] == release_event.PR_BASE == "main"
+    assert release_runstate.stored(tmp_path, VERSION)["base_branch"] == "main"  # no trunk stored and the fake remote names none: main (F5 fallback)
     release_event.record_event(rec(tmp_path, event_fake("develop")), plugin_root, version=VERSION)
     assert release_runstate.stored(tmp_path, VERSION)["base_branch"] is None
 

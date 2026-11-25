@@ -1,1 +1,326 @@
-[]
+[
+  {
+    "scenario": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
+    "field": "sha256",
+    "before": "db12fe9f66618e0a1a15cbd180f07bd4a1de1178fb75e6104f01c070fb526a46",
+    "after": "c91e2b11f26378e68a4815624760299240ffdd924aeaffbada48fd08c966cbed",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); BRIEF D12/F2 (preview dry run before the write; Edit/Cancel), D7/F3 (git push origin HEAD --no-follow-tags before gh pr create), D24/F5 (--base the trunk prepare returned)",
+    "date": "2026-11-25",
+    "source": "F2/F3/F5"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/skills/changelog/references/first-actions.md",
+    "field": "sha256",
+    "before": "cdefa7e209858b4397d4d2e817a18f31cb150767fd0901c26a38b160c48de9f9",
+    "after": "29edd4417f47dc3c80aeb85403b0230f0c510dde26b4320386166fc53b1b19dd",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); BRIEF D8/Q2 contradiction: the merge rule stated as SKILL.md Step 7 and release_verify state it (FINDINGS D73)",
+    "date": "2026-11-25",
+    "source": "D8"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/S1.drops.trace.json",
+    "field": "sha256",
+    "before": "ad41b3d01ec9231f0af5150014e0573e1dd5b08dff68a0b6b37eb4e07eda12b5",
+    "after": "a5ab540012890c4fc39c450f8875b27c67863ec05337014adbb7fe80f04fbea2",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: BRIEF D7/F3 push-branch step, D12/F2 preview before the real aggregate, D24/F5 trunk from the remote (S14a/S14c), S16e/S18a/S18b scenario changes",
+    "date": "2026-11-25",
+    "source": "F2/F3/F5"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/S1.legacy.trace.json",
+    "field": "sha256",
+    "before": "e8df268978573c4e15f33ddc83a6d29fc9ca0cdee9565236acb3090196089c2f",
+    "after": "7e7c1ed9a060565e3f88f6f77e14f6ea44ea023db4f303a8c357ef51668c54a8",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: BRIEF D7/F3 push-branch step, D12/F2 preview before the real aggregate, D24/F5 trunk from the remote (S14a/S14c), S16e/S18a/S18b scenario changes",
+    "date": "2026-11-25",
+    "source": "F2/F3/F5"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/S11a.trace.json",
+    "field": "sha256",
+    "before": "4fa681b37f89d7c49e8b6c0d07e368966ccf02e75350c1ba9c55224b02db1b83",
+    "after": "3419bff0b643ff6f302a05358e20f69f970bb973ca6e59ba8f2937ac7e2048e7",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: BRIEF D7/F3 push-branch step, D12/F2 preview before the real aggregate, D24/F5 trunk from the remote (S14a/S14c), S16e/S18a/S18b scenario changes",
+    "date": "2026-11-25",
+    "source": "F2/F3/F5"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/S11b.trace.json",
+    "field": "sha256",
+    "before": "7bddaf6772dbb7912b45135f6dc9b9d86181abd6df3f30e48d17b12281adc0b8",
+    "after": "a0449bf53864cda323c6b7a902c87548f4f9db705ddb717e68eb52501b63f058",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: BRIEF D7/F3 push-branch step, D12/F2 preview before the real aggregate, D24/F5 trunk from the remote (S14a/S14c), S16e/S18a/S18b scenario changes",
+    "date": "2026-11-25",
+    "source": "F2/F3/F5"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/S12a.trace.json",
+    "field": "sha256",
+    "before": "ed325e7f0e4fe636ce1d1c44321f0075848d94d2dfb47c4e7b3124c761b29fa2",
+    "after": "fe7c8eaf5da4204229cce7b331ad18b34b278d8f2fb0cf76278cfee0b364ae40",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: BRIEF D7/F3 push-branch step, D12/F2 preview before the real aggregate, D24/F5 trunk from the remote (S14a/S14c), S16e/S18a/S18b scenario changes",
+    "date": "2026-11-25",
+    "source": "F2/F3/F5"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/S12b.trace.json",
+    "field": "sha256",
+    "before": "1f2966aa00a10e1a8422e6a843c609fe01fbeaad38e5665304b5eac72d1fd508",
+    "after": "765b5f58370353e36675c4c05da2e9d60165c5e7a3ba043690ca847ed987400f",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: BRIEF D7/F3 push-branch step, D12/F2 preview before the real aggregate, D24/F5 trunk from the remote (S14a/S14c), S16e/S18a/S18b scenario changes",
+    "date": "2026-11-25",
+    "source": "F2/F3/F5"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/S12c.trace.json",
+    "field": "sha256",
+    "before": "8ad222ca653ed86040835bbe27b5f80a934ecb29b776ea4f471078ffb73a0bcc",
+    "after": "23b0e4bb231d8edb4aa00f299833d194be766a481bf659f4f7f0a94628c0ef2e",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: BRIEF D7/F3 push-branch step, D12/F2 preview before the real aggregate, D24/F5 trunk from the remote (S14a/S14c), S16e/S18a/S18b scenario changes",
+    "date": "2026-11-25",
+    "source": "F2/F3/F5"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/S13.trace.json",
+    "field": "sha256",
+    "before": "2d3daf361e26785343c2d6d0cf754568584f52387403ca38899ef063a7832c9c",
+    "after": "29c68c91dac68c039b9f258835540a204aefe777691ba2b9032347963853a5e7",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: BRIEF D7/F3 push-branch step, D12/F2 preview before the real aggregate, D24/F5 trunk from the remote (S14a/S14c), S16e/S18a/S18b scenario changes",
+    "date": "2026-11-25",
+    "source": "F2/F3/F5"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/S14a.trace.json",
+    "field": "sha256",
+    "before": "2054a37cb72906130573c991d20902550b7cd386add2f2de632d79c25e981192",
+    "after": "a4656f5b5b4ab2c4f28defb2e2d5eb9e2d286f8b58decafd7e90f566c0f674e5",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: BRIEF D7/F3 push-branch step, D12/F2 preview before the real aggregate, D24/F5 trunk from the remote (S14a/S14c), S16e/S18a/S18b scenario changes",
+    "date": "2026-11-25",
+    "source": "F2/F3/F5"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/S14b.trace.json",
+    "field": "sha256",
+    "before": "9a9ca79a0491ca3915091dfd7433b3eb42a326dc0f7f572eee1a9e832317ee73",
+    "after": "c4a7d7b99419fe56491ed66a50b91f9e81761f59a9102176600aab399ec89954",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: BRIEF D7/F3 push-branch step, D12/F2 preview before the real aggregate, D24/F5 trunk from the remote (S14a/S14c), S16e/S18a/S18b scenario changes",
+    "date": "2026-11-25",
+    "source": "F2/F3/F5"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/S14c.trace.json",
+    "field": "sha256",
+    "before": "505ccf4d50945a5728fff7d36c7c89211d63f7b3d739450ec99d673c8fd8afe0",
+    "after": "8c1d538e5da82569e7da50c4b9c2ebf624f0988d30188f86e8de13d045885e7f",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: BRIEF D7/F3 push-branch step, D12/F2 preview before the real aggregate, D24/F5 trunk from the remote (S14a/S14c), S16e/S18a/S18b scenario changes",
+    "date": "2026-11-25",
+    "source": "F2/F3/F5"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/S15.trace.json",
+    "field": "sha256",
+    "before": "d3852c1a17b3af51a9ca6ac5f0d2d8cc09c836df6f5cc3e13eb609d16e4f826a",
+    "after": "e24d6e380316cb482bf8b8e0c02998b3b0c6fa37073b51fcb192b47f8a491fb4",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: BRIEF D7/F3 push-branch step, D12/F2 preview before the real aggregate, D24/F5 trunk from the remote (S14a/S14c), S16e/S18a/S18b scenario changes",
+    "date": "2026-11-25",
+    "source": "F2/F3/F5"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/S16a.trace.json",
+    "field": "sha256",
+    "before": "d160737798ffb301b626d87384648e1e36c891d87b372fcdbc04d5c794ffa744",
+    "after": "c132beec9cf37b6a23183488eb70eedaf6cb62e0e14178ee8a71f73437f02bdc",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: BRIEF D7/F3 push-branch step, D12/F2 preview before the real aggregate, D24/F5 trunk from the remote (S14a/S14c), S16e/S18a/S18b scenario changes",
+    "date": "2026-11-25",
+    "source": "F2/F3/F5"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/S16b.trace.json",
+    "field": "sha256",
+    "before": "51e0caf6b650dc3725604760b6240740f7a4de47dd0680a766a2eacf067cceb0",
+    "after": "69f2c5e0b0ab39865e44047ab262fdc60de4baee2b4eaa29cddfe5c49ceb4bbd",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: BRIEF D7/F3 push-branch step, D12/F2 preview before the real aggregate, D24/F5 trunk from the remote (S14a/S14c), S16e/S18a/S18b scenario changes",
+    "date": "2026-11-25",
+    "source": "F2/F3/F5"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/S16c.trace.json",
+    "field": "sha256",
+    "before": "010170491fddbea3f0f77789f87da6b9d54e6891c46e4bec3fb348235fbf4b26",
+    "after": "a4bcc7583cc4b8e80bea80bfb249113fe77f67acef79607402f9d978a2cf2b60",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: BRIEF D7/F3 push-branch step, D12/F2 preview before the real aggregate, D24/F5 trunk from the remote (S14a/S14c), S16e/S18a/S18b scenario changes",
+    "date": "2026-11-25",
+    "source": "F2/F3/F5"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/S16d.trace.json",
+    "field": "sha256",
+    "before": "37e466887d3e1e177966e38f2d00024d28f2ad5ff68fff8ee16d9f3447109c59",
+    "after": "6b83839d6e7213680912859aa8e48fa352e4bd0c60f5d4436d7365dc17906f3a",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: BRIEF D7/F3 push-branch step, D12/F2 preview before the real aggregate, D24/F5 trunk from the remote (S14a/S14c), S16e/S18a/S18b scenario changes",
+    "date": "2026-11-25",
+    "source": "F2/F3/F5"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/S16e.trace.json",
+    "field": "sha256",
+    "before": "66acf89a3b193bb8271f6edd8530e60fd5925620ff2b785c320a948096b55620",
+    "after": "bd6091198cfa814c7faaf5847357c15efef5e720032531b373ca0a8fb16b3a10",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: BRIEF D7/F3 push-branch step, D12/F2 preview before the real aggregate, D24/F5 trunk from the remote (S14a/S14c), S16e/S18a/S18b scenario changes",
+    "date": "2026-11-25",
+    "source": "F2/F3/F5"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/S16f.trace.json",
+    "field": "sha256",
+    "before": "57e590bd1d9270e8f03f53abc0a62bcbd8115cd27a47debbfbd8020f33c0751f",
+    "after": "41cb375ca271daded092957f89ba86ebeec737562809ac13cb06678c17c1da26",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: BRIEF D7/F3 push-branch step, D12/F2 preview before the real aggregate, D24/F5 trunk from the remote (S14a/S14c), S16e/S18a/S18b scenario changes",
+    "date": "2026-11-25",
+    "source": "F2/F3/F5"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/S18a.trace.json",
+    "field": "sha256",
+    "before": "286570ee3d91b4d889668a6cd16abbc3633dea4b4b013597000c97c112853b96",
+    "after": "888025288d3ae1387356e3d6a8a120704df3c5fb7362f8ec4a78637d481dbe47",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: BRIEF D7/F3 push-branch step, D12/F2 preview before the real aggregate, D24/F5 trunk from the remote (S14a/S14c), S16e/S18a/S18b scenario changes",
+    "date": "2026-11-25",
+    "source": "F2/F3/F5"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/S18b.trace.json",
+    "field": "sha256",
+    "before": "a274a91078e385069ee567807b08a546a359437ee3d9ed9da8dd74160cc4081f",
+    "after": "fe58103cff0e01f16a1fe5e320df1241fbc0b03a0957e6798615aaf71af592c8",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: BRIEF D7/F3 push-branch step, D12/F2 preview before the real aggregate, D24/F5 trunk from the remote (S14a/S14c), S16e/S18a/S18b scenario changes",
+    "date": "2026-11-25",
+    "source": "F2/F3/F5"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/S1d.trace.json",
+    "field": "sha256",
+    "before": "78d11128e60ae9a082aba4f281b6d771bac4c4acbf36adc40345b7a64b1bc071",
+    "after": "c3a40d17369ad6abaed369901083ad4a86add72b887e7d7d73cd91b6495cb42e",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: BRIEF D7/F3 push-branch step, D12/F2 preview before the real aggregate, D24/F5 trunk from the remote (S14a/S14c), S16e/S18a/S18b scenario changes",
+    "date": "2026-11-25",
+    "source": "F2/F3/F5"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/S1t.trace.json",
+    "field": "sha256",
+    "before": "7b0742cb62800f307c0c27fe6e54f6a2dafa99764f8f35e028b84b9dd8523a98",
+    "after": "2d805ed3605d6c7d1a43114b2d2c5baf3b139b842026c6fde49e1d3e5c5bf177",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: BRIEF D7/F3 push-branch step, D12/F2 preview before the real aggregate, D24/F5 trunk from the remote (S14a/S14c), S16e/S18a/S18b scenario changes",
+    "date": "2026-11-25",
+    "source": "F2/F3/F5"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/S2a.legacy.trace.json",
+    "field": "sha256",
+    "before": "ed325e7f0e4fe636ce1d1c44321f0075848d94d2dfb47c4e7b3124c761b29fa2",
+    "after": "fe7c8eaf5da4204229cce7b331ad18b34b278d8f2fb0cf76278cfee0b364ae40",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: BRIEF D7/F3 push-branch step, D12/F2 preview before the real aggregate, D24/F5 trunk from the remote (S14a/S14c), S16e/S18a/S18b scenario changes",
+    "date": "2026-11-25",
+    "source": "F2/F3/F5"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/S2g.drops.trace.json",
+    "field": "sha256",
+    "before": "ac7231a49c0d7a53e01b3009ffdefdea660170ff10a9a6f24b52f6bb221d86b1",
+    "after": "709c9b4dc1464b725db8238e96e89afed44d818b07c18367ed38fa99f8c9e809",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: BRIEF D7/F3 push-branch step, D12/F2 preview before the real aggregate, D24/F5 trunk from the remote (S14a/S14c), S16e/S18a/S18b scenario changes",
+    "date": "2026-11-25",
+    "source": "F2/F3/F5"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/S2g.legacy.trace.json",
+    "field": "sha256",
+    "before": "698651add6ecd0a7404de1edb09c3e843d804981ebbf89fc76fffe6fce4619e5",
+    "after": "436c780a7dafa25b7da9c1da21eee13fbb3fcd1fcde7f7723284fb3bddf37ffc",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: BRIEF D7/F3 push-branch step, D12/F2 preview before the real aggregate, D24/F5 trunk from the remote (S14a/S14c), S16e/S18a/S18b scenario changes",
+    "date": "2026-11-25",
+    "source": "F2/F3/F5"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/S2u.legacy.trace.json",
+    "field": "sha256",
+    "before": "639b8ab3e1d88600280dc360cb5330733478cd78995783d3a07fca3dbf07f297",
+    "after": "c7e9bd77463ccdb3bcbf0abfc9c6f3b9af9bc16080b01fa1edab540a70933310",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: BRIEF D7/F3 push-branch step, D12/F2 preview before the real aggregate, D24/F5 trunk from the remote (S14a/S14c), S16e/S18a/S18b scenario changes",
+    "date": "2026-11-25",
+    "source": "F2/F3/F5"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/S5b.trace.json",
+    "field": "sha256",
+    "before": "e757dfd5bbf4bb7546baae16406ff5985bfc6ced00725425173a9db5052b53b9",
+    "after": "c10b9676fd9cc15cf3677d29564b00ed4967dace6bc7738c23fd6aa3f4175086",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: BRIEF D7/F3 push-branch step, D12/F2 preview before the real aggregate, D24/F5 trunk from the remote (S14a/S14c), S16e/S18a/S18b scenario changes",
+    "date": "2026-11-25",
+    "source": "F2/F3/F5"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/conftest.py",
+    "field": "sha256",
+    "before": "6d384e87c3e91dadc196966c9e4e30c868763ff03c364aa2942e9b177748a816",
+    "after": "40fd5d89e85eede907aabd16609713b1b52084ab1e45fb25117f72e403d9671a",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); BRIEF D7/F3: the push-branch step in the plan; D12/F2 preview comments",
+    "date": "2026-11-25",
+    "source": "F3"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/driver_replay.py",
+    "field": "sha256",
+    "before": "00d59409c7a1c1ba3948d2ed62c360fd506dbadb1c13ade03732fdc3a72a3f6e",
+    "after": "74b92a82c5c11332c3aa8c2b41bc2c2ce54e103d9c8ff396e376ffce8eff7725",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); BRIEF D7/F3 push-branch step and D24/F5 the remote's default branch as trunk and PR base",
+    "date": "2026-11-25",
+    "source": "F3/F5"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/replay_commands.py",
+    "field": "sha256",
+    "before": "3fb8fbd7c6d06c48920dae086fac2727927d8f4b4c57d40ea5c19ac83ed370c2",
+    "after": "b4ed2431a9ea7b2f5a48685533e9c8676720b5f1bd22ea2b1c0d8300792bb60e",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); BRIEF D7/F3: CITES entry for the push-branch step (pinned prose not re-pinned, FINDINGS D78)",
+    "date": "2026-11-25",
+    "source": "F3"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/scenario_core.py",
+    "field": "sha256",
+    "before": "555af2a4a105d6fb1455ce9d03a25fe2217a3a91414eeb873e73f0e564678cc8",
+    "after": "5b4ccac655cef76d815b64fe646f50835bdbad83843d3aaed7fd90cce9cf9ed5",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); BRIEF D12/F2 dry run, question, then the real aggregate; D7/F3 push-branch before open-pr; D24/F5 feature-branch test via the trunk",
+    "date": "2026-11-25",
+    "source": "F2/F3/F5"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/scenarios_branches.py",
+    "field": "sha256",
+    "before": "0d2318ff79c48614ebdacce6170aa94c1fc21e172bac78dddf1ad07ac6b26931",
+    "after": "190277afbf7437371da316bae610bf93da54ad2b969789b1dfac66fd47902a6a",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); BRIEF D7/F3 and D24/F5: S14a PR against the remote default branch after the branch push, S14c master is the trunk",
+    "date": "2026-11-25",
+    "source": "F3/F5"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/scenarios_modes.py",
+    "field": "sha256",
+    "before": "e85afa3a691b07a326fbb8a769d58e722e405c2b14520461fce4f0141c61d5aa",
+    "after": "1264684157b8ca19f7ec7513562102c94825ae2a13ecfba8d4291fdd24a6ac35",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); BRIEF D12/F2: S18a Cancel leaves the tree byte-identical, S18b Edit changes the drop and repeats the dry run (AC10)",
+    "date": "2026-11-25",
+    "source": "F2"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/scenarios_refusals.py",
+    "field": "sha256",
+    "before": "f3ea039691b5d0e1138f362a85e15470703cfeed7bf510732bf5694531a405c7",
+    "after": "a32202d869c20757a5ef983d02e0ff184b9a1f2d8a22fb40b2fc1a32a6b3bbe5",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); BRIEF D7/F3: S16e closes the remote before the event push, since the branch is now pushed earlier",
+    "date": "2026-11-25",
+    "source": "F3"
+  }
+]

@@ -114,7 +114,9 @@ def test_a_non_ascii_cwd_and_payload_are_read_as_utf8(tmp_path, repo):
 def test_the_hooks_trunks_cover_the_release_clis():
     sys.path.insert(0, str(HOOK.parent))
     import release_guard  # noqa: PLC0415
-    assert set(release_event.TRUNKS) <= set(release_guard.TRUNKS)  # the hook also guards `master`, which record-event does not name
+    # P8a (F5): record-event takes the trunk from the remote; the hook keeps its fixed list (FINDINGS D79), which
+    # covers the fallback and the second trunk the CLI names
+    assert {"main", release_event.DEVELOP} <= set(release_guard.TRUNKS)
 
 
 def test_a_tag_push_check_is_made_after_the_state_check(repo, monkeypatch):

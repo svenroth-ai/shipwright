@@ -1,0 +1,1 @@
+/shipwright-changelog now previews the release without writing anything and writes CHANGELOG.md only after you accept; Cancel leaves your files and the pending entries exactly as they were, and Edit changes the pending entry and previews again

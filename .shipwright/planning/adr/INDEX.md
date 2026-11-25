@@ -227,3 +227,4 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [The one due answer for reminders and parked triage entries](iterate-2026-11-21-e1b-reminder-due-reminder-due.md)
 - [P4: release CLI part 2 (sync, commit-and-tag, record-event, close-phase)](iterate-2026-11-23-p4-cli-sync-commit-close-release-cli-part-2.md)
 - [Release guard hook (P4b, second pass B2)](iterate-2026-11-23-p4b-release-guard-hook-release-guard.md)
+- [ADR (run iterate-2026-11-25-p8a-decisions-q1-q4): release preview before write, branch push before PR, default branch from the remote](iterate-2026-11-25-p8a-decisions-q1-q4-release-fixes.md)

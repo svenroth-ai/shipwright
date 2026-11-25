@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "## Findings\n\n**Category: approach \u2014 Severity: high**\nThe mini-plan contradicts its own binding spec. The change specification mandates Q1\u2013Q4 (with FR-01.09 amendment, AC record entries, promise test AC11, doc obligations, and findings D2/D19 closure), and explicitly says \"Anything that needs an operator answer is a STRICT-STOP: do not guess.\" The mini-plan instead asserts a 2026-11-25 operator scope decision that drops Q1, Q2's behaviour change, and Q3. A mini-plan cannot silently supersede the spec; the scope change must be traceable to an operator answer recorded where the process expects it (the spec says only \"a decision changed at stop 1 changes this unit\").\n**Suggestion:** Either produce the documented operator decision (with its date and channel) and amend the spec/AC record accordingly before implementation, or reinstate Q1\u2013Q3. As written, this unit will fail its own acceptance criteria checkboxes and the AC-coverage ratchet, and findings D2 and D19 stay open contrary to the doc obligations.\n\n**Category: risk \u2014 Severity: high**\nDropping Q1 leaves the carried-over PR #1100 bug live: the guided squash/rebase merge leaves the local tag on a pre-merge commit not on main. The spec's \"Carried over from P4\" section explicitly assigns the post-merge tag step (Q1) to this unit. Deferring it means every guided release continues to produce a broken tag, and Q2's auto-merge (also dropped) would have made the orphan-tag case the common case, not the rare one.\n**Suggestion:** If the scope reduction is real, the deferral must be recorded as an open finding (re-open or keep-open D2/D7) with a tracked follow-up unit \u2014 the mini-plan currently makes them vanish.\n\n**Category: risk \u2014 Severity: medium**\nRemoving the prompt-mechanics registry's only escape (budget 1 \u2192 0) is a behavioural tightening beyond the F2 fix. If any existing golden trace or legitimate flow relied on that escape (e.g., an out-of-sequence question in a non-preview scenario), traces change in ways not covered by the declared deltas.\n**Suggestion:** Confirm by regenerating the full trace set before writing deltas; any trace change not attributable to F2/F3/F5 needs its own source entry or the escape removal is split out.\n\n**Category: dependency \u2014 Severity: medium**\nThe plan assumes `release.py aggregate --dry-run` exists and is side-effect-free. The spec's Q4 wording (\"preview shows the dry-run result without writing anything\") implies it must be verified, not assumed. If `--dry-run` currently writes partial state (drops, run-config), Cancel will not leave the tree byte-identical.\n**Suggestion:** Add an explicit test that `--dry-run` writes nothing (tree hash before/after), and verify the upgrade-note deferral actually covers the preview question path.\n\n**Category: edge-case \u2014 Severity: low**\n`trunk()` fallback chain: `git ls-remote --symref` output parsing has a real edge \u2014 some forges return `refs/remotes/`-style or no symref for detached-HEAD defaults. The `origin/HEAD` fallback covers clones, but the push-URL variant (`ls-remote` against the URL, not `origin`) will not have a configured `origin/HEAD` if the second lookup also uses the URL. Also `develop` as \"second trunk\" interacting with the trunk check in `record-event` deserves one test (a release on a develop-based branch should not be refused).\n**Suggestion:** Pin the exact `--symref` output format in a test with a fake remote; add a develop-branch release case.\n\n**Category: approach \u2014 Severity: low**\nThe rejected alternative (re-pinning pinned prose so CITES line numbers track live prose) was correctly rejected, but the chosen path means every prose edit in SKILL.md and first-actions.md must update the pinned copy's cited line numbers by hand. That's error-prone and the freeze checker won't catch wrong line numbers, only wrong hashes.\n**Suggestion:** Where prose edits move lines, have the test suite assert the cited line still contains the quoted text (a cheap content assertion in `test_release_p8a.py`'s prose cases).\n\n## Overall assessment\nThe four changes that remain (F2, F3, F5, Q2-prose-only) are well-scoped and the test plan is solid, but the plan as written contradicts its binding specification on Q1/Q2-behaviour/Q3 and leaves two assigned bugs unfixed and two findings unclosed. The scope reduction must be validated as a genuine recorded operator decision with the spec amended, or the dropped items reinstated.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Category: dependency | Severity: high**  \n   **Finding:** The mini-plan cites a newer operator decision dropping Q1\u2013Q3, but leaves the original acceptance criteria, FR amendment obligations, and required AC record unresolved. It also labels the prose-only D8 fix \u201cQ2\u201d despite explicitly dropping Q2\u2019s behaviour change. This makes the intended completion criteria ambiguous.  \n   **Suggestion:** Before implementation, reconcile the authoritative scope and acceptance criteria with the recorded operator decision. Identify which FR/AC amendments remain required and distinguish D8\u2019s contradiction fix from the deferred Q2 behaviour.\n\n2. **Category: edge-case | Severity: high**  \n   **Finding:** \u201cEdit changes the pending drop file\u201d conflicts with a preview that writes nothing and Cancel leaving drops byte-identical. Deferring the upgrade-note drop covers one write path, but does not explain how Edit followed by Cancel avoids leaving changes.  \n   **Suggestion:** Keep proposed edits in memory until Accept and pass them into the dry run. Test Preview \u2192 Edit \u2192 Preview \u2192 Cancel, including the upgrade-note path, against byte-for-byte filesystem snapshots.\n\n3. **Category: risk | Severity: high**  \n   **Finding:** Default-branch discovery silently falls back to `main` on lookup failure or an \u201cunsafe\u201d branch name. In a `master` repository, a transient remote failure could therefore select the wrong PR base and trunk check. Looking up the push URL while falling back to `origin/HEAD` also risks mixing different repositories.  \n   **Suggestion:** Resolve the default branch against the repository receiving the PR, persist that choice, and use it consistently. Stop with an actionable error when no reliable branch can be established; validate legitimate Git branch names without silently substituting `main`.\n\n4. **Category: dependency | Severity: medium**  \n   **Finding:** Rejecting a pinned-prose update leaves an explicit deliverable unmet. The supplied freeze rules allow changed existing `.pin` files through approved deltas; they do not require a full re-pin merely because their contents change.  \n   **Suggestion:** Update the affected pinned copies and citation references together, recording each required delta. If preserving the stop-2 copy is part of the revised operator decision, explicitly amend that obligation before proceeding.\n\n5. **Category: risk | Severity: medium**  \n   **Finding:** Prose-order assertions and matching replay/CLI traces do not establish the runtime guarantees behind F2 and F3. Both drivers could encode the same incorrect sequence, and a literal push block does not prove execution stops when pushing fails.  \n   **Suggestion:** Add focused execution tests proving that preview/Cancel performs no writes, Edit recalculates the preview, and a failed push prevents PR creation. Use a temporary Git remote to verify that the release head exists remotely before the PR command runs.\n\nThe narrower bug-fix approach is reasonable, but its scope contract needs reconciliation, and preview editing and branch-resolution failures need concrete handling before implementation.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-11-25-p8a-decisions-q1-q4",
+    "at": "2026-11-25T16:42:19.302198+00:00"
+  },
+  "verdicts": {
+    "glm": "revise",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

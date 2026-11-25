@@ -319,17 +319,6 @@
     {
       "exit_code": 0,
       "fields": {
-        "changelog_updated": true,
-        "legacy_bullets": 0,
-        "section_action": "inserted",
-        "status": "ok",
-        "version": "1.3.0"
-      },
-      "step": "aggregate"
-    },
-    {
-      "exit_code": 0,
-      "fields": {
         "status": "edit"
       },
       "step": "preview"
@@ -339,7 +328,7 @@
       "fields": {
         "changelog_updated": false,
         "legacy_bullets": 0,
-        "section_action": "none",
+        "section_action": "inserted",
         "status": "ok",
         "version": "1.3.0"
       },
@@ -351,6 +340,17 @@
         "status": "accept"
       },
       "step": "preview"
+    },
+    {
+      "exit_code": 0,
+      "fields": {
+        "changelog_updated": true,
+        "legacy_bullets": 0,
+        "section_action": "inserted",
+        "status": "ok",
+        "version": "1.3.0"
+      },
+      "step": "aggregate"
     }
   ],
   "stub": {

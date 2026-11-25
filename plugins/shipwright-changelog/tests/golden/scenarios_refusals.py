@@ -114,14 +114,18 @@ def _check_s16d(run: Run) -> None:
     _nothing_released(run)
 
 
-def _s16e(make_project, layout: str) -> Run:  # the remote rejects every push from now on
-    def reject(s: Any) -> dict:
+def _s16e(make_project, layout: str) -> Run:  # the remote rejects every push from the event push on
+    def reject() -> None:
         hook = s.origin / "hooks" / "pre-receive"
         hook.parent.mkdir(exist_ok=True)
         hook.write_bytes(b'#!/bin/sh\necho "pre-receive: pushes are closed" >&2\nexit 1\n')
         hook.chmod(hook.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-        return {}
-    return _flow(make_project, reject)
+
+    # P8a (F3): the branch is pushed before the PR now, so the remote closes after that push and before the event push,
+    # the one this scenario is about (F6)
+    s = ss.ready_release(make_project)
+    driver = ReplayDriver()
+    return Run(s, driver, release_flow(driver, s, before={"record-event": reject}), {})
 
 
 def _check_s16e(run: Run) -> None:

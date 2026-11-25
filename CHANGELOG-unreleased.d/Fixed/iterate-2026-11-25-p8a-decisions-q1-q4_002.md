@@ -1,0 +1,1 @@
+/shipwright-changelog pushes the release branch before it opens the pull request, and opens it against the default branch your remote reports (master or any other name) instead of assuming main; neither push sends the release tag early

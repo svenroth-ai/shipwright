@@ -125,7 +125,7 @@ def test_a_good_registry_validates_and_a_non_object_does_not() -> None:
 def test_the_real_registry_is_pinned() -> None:
     """Widening the registry (a command, a substitution, an escape, the budget) is a test edit, seen in review."""
     registry = cpm.load_registry(cpm.DEFAULT_REGISTRY)
-    assert registry["escape_budget"] == 1
+    assert registry["escape_budget"] == 0  # P8a (F2): the preview and the real aggregate call are two blocks now, the one escape went
     (entry,) = registry["skills"]
     assert entry["path"] == "plugins/shipwright-changelog/skills/changelog/SKILL.md"
     assert entry["commands"] == [
@@ -133,6 +133,7 @@ def test_the_real_registry_is_pinned() -> None:
         "uv run {plugin_root}/scripts/release.py aggregate",
         "uv run {plugin_root}/scripts/release.py sync",
         "uv run {plugin_root}/scripts/release.py commit-and-tag",
+        "git push origin HEAD",  # P8a (F3, D7): the branch is pushed right before the PR is opened, one literal outward line
         "gh pr create",
         "uv run {plugin_root}/scripts/release.py record-event",
         "gh pr merge",
@@ -141,8 +142,4 @@ def test_the_real_registry_is_pinned() -> None:
         "uv run {plugin_root}/scripts/release.py close-phase",
     ]
     assert entry["substitutions"] == ["$(pwd)"]
-    (escape,) = entry["escapes"]
-    assert escape["commands"] == [
-        'uv run "{plugin_root}/scripts/release.py" aggregate --project-root "$(pwd)" --version "{version}" --dry-run',
-        'uv run "{plugin_root}/scripts/release.py" aggregate --project-root "$(pwd)" --version "{version}"',
-    ]
+    assert entry["escapes"] == []

@@ -2,10 +2,9 @@
 
 S14 runs the whole release (guided, the one configuration that can finish today: ``scenario_support.ready_release``)
 from a branch the remote has never seen, from ``main`` and from a repository whose default branch is ``master``.
-They record, not endorse: D7 (the request is opened before the head is pushed, and ``git push --tags origin main``
-pushes whatever local ``main`` holds) and D24 (new: SKILL.md:327 knows ``main`` and ``develop`` only, so on a
-``master`` repository the skill opens a request against a ``main`` that does not exist and pushes a ``main`` that
-does not exist).
+Since P8a (operator 2026-11-25) they assert the fixes, not the findings: F3 for D7 (the head is pushed right before the
+request is opened, so the host accepts it) and F5 for D24 (the default branch is read from the remote: on a ``master``
+repository the release is cut on ``master`` as the trunk, with no request, and ``master`` and the tag reach the remote).
 """
 
 from __future__ import annotations
@@ -40,17 +39,19 @@ def _s14a(make_project, layout: str) -> Run:
 
 def _check_s14a(run: Run) -> None:
     s = run.scratch
-    pr = run.step("open-pr")
-    # D7: `gh pr create` (SKILL.md:333) runs before `git push origin HEAD` (:349), so the host refuses the request
-    assert pr.exit_code != 0 and "is not on the remote" in run.commands("open-pr")[0]["stderr"], run.commands("open-pr")[0]
-    assert s.gh_state()["prs"] == []
-    # F4 (operator 2026-11-23): no request, no release. The flow stops here: the head was never pushed, no event was
-    # recorded and the tag exists on this machine only
-    assert [r.step for r in run.results][-1] == "open-pr" and not _on_origin(s, "refs/heads/release/fresh")
-    assert not _on_origin(s, "refs/tags/v1.3.0") and _tag_made(s) and run.commands("record-event-pr") == []
+    steps = [r.step for r in run.results]
+    # F3 (D7): the branch the remote has never seen is pushed first, then the request opens against the default branch
+    assert steps.index("push-branch") + 1 == steps.index("open-pr") and run.step("push-branch").exit_code == 0
+    assert run.step("open-pr").exit_code == 0 and _on_origin(s, "refs/heads/release/fresh")
+    (pr,) = s.gh_state()["prs"]
+    assert (pr["head"], pr["base"], pr["state"]) == ("release/fresh", "main", "open")
+    # F1b: a guided release then waits for the merge: the event is recorded and pushed, the tag stays on this machine
+    assert steps[-1] == "record-event" and run.step("record-event").exit_code == 0
+    assert not _on_origin(s, "refs/tags/v1.3.0") and _tag_made(s)
     oracle.check_tag_on_release_commit(s.git("log", "-1", "--format=%s", "v1.3.0"), "1.3.0")
-    oracle.check_ac01(ss.notes_of(s), _tag_made(s), request_open=False, outcome="no_request")  # AC01: no request was opened
-    oracle.check_ac11_not_published(s.gh_state(), tag_on_remote=_on_origin(s, "refs/tags/v1.3.0"), pr_open=any(p["state"] == "open" for p in s.gh_state()["prs"]))  # AC11: no request, so no breach
+    is_open = any(p["state"] == "open" for p in s.gh_state()["prs"])
+    oracle.check_ac01(ss.notes_of(s), _tag_made(s), request_open=is_open, outcome="prepared")  # AC01: note, tag, an open request
+    oracle.check_ac11_not_published(s.gh_state(), tag_on_remote=_on_origin(s, "refs/tags/v1.3.0"), pr_open=is_open)  # AC11: nothing out yet
 
 
 def _s14b(make_project, layout: str) -> Run:
@@ -73,13 +74,14 @@ def _s14c(make_project, layout: str) -> Run:
 
 def _check_s14c(run: Run) -> None:
     s = run.scratch
-    assert s.git("rev-parse", "--abbrev-ref", "HEAD") == "master" and run.commands("open-pr")  # D24: master is a "feature branch"
-    pr = run.step("open-pr")
-    assert pr.exit_code != 0 and "base branch 'main' is not on the remote" in run.commands("open-pr")[0]["stderr"]
-    # F4 (operator 2026-11-23): the refused request stops the release; nothing is pushed and the tag stays on this machine
-    assert [r.step for r in run.results][-1] == "open-pr" and not _on_origin(s, "refs/tags/v1.3.0")
-    oracle.check_ac01(ss.notes_of(s), _tag_made(s), request_open=False, outcome="no_request")  # AC01: tag only on this machine
-    oracle.check_ac11_not_published(s.gh_state(), tag_on_remote=_on_origin(s, "refs/tags/v1.3.0"), pr_open=any(p["state"] == "open" for p in s.gh_state()["prs"]))
+    # F5 (D24): `master` is the remote's default branch, so it is the trunk: no request, the release completes on it
+    assert s.git("rev-parse", "--abbrev-ref", "HEAD") == "master" and all(r.exit_code == 0 for r in run.results)
+    assert not run.commands("open-pr") and not run.commands("push-branch") and run.gh_calls("pr") == [] and run.commands("record-event-main")
+    assert s.git("rev-parse", "master") == s.git("--git-dir", s.origin.as_posix(), "rev-parse", "master")  # the release reached the remote
+    assert _on_origin(s, "refs/tags/v1.3.0") and not _on_origin(s, "refs/heads/main")
+    oracle.check_tag_on_release_commit(s.git("log", "-1", "--format=%s", "v1.3.0"), "1.3.0")
+    oracle.check_ac01(ss.notes_of(s), _tag_made(s), request_open=False, outcome="no_request")  # AC01: on the trunk there is no request
+    oracle.check_ac11_not_published(s.gh_state(), tag_on_remote=_on_origin(s, "refs/tags/v1.3.0"), pr_open=False)
 
 
 def _s15(make_project, layout: str) -> Run:

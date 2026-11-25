@@ -15,7 +15,7 @@ from typing import Any
 
 from pathlib import Path
 
-from . import release_gates, release_paths, release_runstate, release_upgrade_notes
+from . import release_event, release_gates, release_paths, release_runstate, release_upgrade_notes
 from .release_runner import Recorder, uv_script
 
 BANNER = """\
@@ -97,20 +97,22 @@ def prepare(rec: Recorder, plugin_root: Path, *, phase_task_id: str | None = Non
                                      released=release_upgrade_notes.released(root, chosen))
     autonomy = _autonomy(shared, root)
     gates = release_gates.answers(rows, mode=mode, autonomy=autonomy)
-    asks = gates["version"] == "ask" or (bool(context.get("requires_out_of_sequence_warning")) and gates["out_of_sequence"] == "ask")
+    asks = gates["version"] == "ask" or gates["preview"] == "ask" or (  # F2: a preview that can still be cancelled writes nothing yet
+        bool(context.get("requires_out_of_sequence_warning")) and gates["out_of_sequence"] == "ask")
     notes = release_upgrade_notes.check(rec, shared, last_tag, chosen, write=not asks)  # a question that can still end the release is open: write nothing yet (D-P3 review 1)
     if notes["status"] in ("action_drop_failed", "query_failed"):
         return _stop(rec, 1, "upgrade_note_drop_failed" if notes["status"] == "action_drop_failed" else "upgrade_notes_query_failed",
                      **facts, upgrade_notes=notes)
     state.setdefault("tree_before", release_runstate.tree_snapshot(root))  # the baseline close-phase's clean-tree check compares against
-    state.update(mode=mode, autonomy=autonomy, commits=len(_json_list(parsed.stdout)))  # facts the later steps read (the close summary, the verify)
+    base = release_event.trunk(rec)  # F5: the default branch, from the remote
+    state.update(mode=mode, autonomy=autonomy, commits=len(_json_list(parsed.stdout)), trunk=base)  # facts the later steps read (the close summary, the verify)
     state["upgrade_pending"] = notes.get("pending", [])  # `aggregate` files them once the questions are answered
     release_runstate.save(root, state)
     notices = [BANNER] + ([STANDALONE_NOTICE] if mode == "standalone" else []) + (
         [f"Notice: {last_tag} has no GitHub Release — see release-workflow.md"] if info.get("previous_tag_has_release") is False else [])
     return 0, {
         "status": "ok", "version": chosen, "suggested": info.get("suggested_version"), "version_reason": info.get("version_reason"),
-        **facts, "gates": gates,
+        **facts, "trunk": base, "gates": gates,
         "out_of_sequence_warning": bool(context.get("requires_out_of_sequence_warning")),
         "active_phases": context.get("active_phases") or [], "skill_artifacts_to_read": context.get("skill_artifacts_to_read") or [],
         "release": {"date": state["release_date"], "run_id": state["run_id"], "reused": state["reused"], "state_file": str(release_runstate.state_path(root))},

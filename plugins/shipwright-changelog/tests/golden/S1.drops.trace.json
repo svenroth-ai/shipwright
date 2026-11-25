@@ -294,6 +294,13 @@
     {
       "exit_code": 0,
       "fields": {
+        "status": "accept"
+      },
+      "step": "preview"
+    },
+    {
+      "exit_code": 0,
+      "fields": {
         "changelog_updated": true,
         "legacy_bullets": 0,
         "section_action": "inserted",
@@ -301,13 +308,6 @@
         "version": "0.1.0"
       },
       "step": "aggregate"
-    },
-    {
-      "exit_code": 0,
-      "fields": {
-        "status": "accept"
-      },
-      "step": "preview"
     },
     {
       "exit_code": 0,

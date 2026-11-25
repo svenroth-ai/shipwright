@@ -25,12 +25,13 @@ import release_scratch  # noqa: E402
 # commit-and-tag, record-event, close-phase), through ``golden_trace.CompositeDriver``.
 STEPS = (
     "prepare",         # A-D, Step 0-3: banner, mode, setup script, history, commit types, version
-    "aggregate",       # Step 4: render the section from the drops, number the ADRs
-    "preview",         # Step 5: preview, accept, cancel or edit
+    "aggregate",       # Step 4 (the dry run) and Step 5 (the real run after Accept, P8a F2): render the section, number the ADRs
+    "preview",         # Step 5: the dry run's result, accept, cancel or edit
     "fold-events",     # Step 5.3
     "sync",            # Step 5.4: published package manifests
     "evidence",        # Step 5.5: the compliance evidence documents
     "commit-and-tag",  # Step 6
+    "push-branch",     # Step 7: the head is pushed right before the PR is opened (P8a F3, D7)
     "open-pr",         # Step 7: the release pull request
     "record-event",    # Step 7: the changelog event, before the merge
     "merge-pr",        # Step 7: autonomous and unattended only

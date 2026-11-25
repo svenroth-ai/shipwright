@@ -261,6 +261,13 @@
       "step": "aggregate"
     },
     {
+      "exit_code": 0,
+      "fields": {
+        "status": "accept"
+      },
+      "step": "preview"
+    },
+    {
       "exit_code": 1,
       "fields": {
         "changelog_updated": null,

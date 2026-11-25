@@ -1,7 +1,7 @@
 {
   "_comment": "Registry of converted skills for shared/scripts/tools/check_prompt_mechanics.py (programme P12). A skill listed here has its mechanics in code; its SKILL.md may hold only the registered commands, one per fenced shell block. 'commands' are command keys (the words before the first flag); a command not listed is a new shell command (C5). 'escapes' name a block that may hold several commands, by its exact normalised command lines; each needs a reason, a stale one is a finding, and the count may never exceed 'escape_budget' - lower the budget when an escape goes, never raise it. Adding a skill here is the last step of its conversion.",
   "schema_version": 1,
-  "escape_budget": 1,
+  "escape_budget": 0,
   "skills": [
     {
       "path": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
@@ -10,6 +10,7 @@
         "uv run {plugin_root}/scripts/release.py aggregate",
         "uv run {plugin_root}/scripts/release.py sync",
         "uv run {plugin_root}/scripts/release.py commit-and-tag",
+        "git push origin HEAD",
         "gh pr create",
         "uv run {plugin_root}/scripts/release.py record-event",
         "gh pr merge",
@@ -18,15 +19,7 @@
         "uv run {plugin_root}/scripts/release.py close-phase"
       ],
       "substitutions": ["$(pwd)"],
-      "escapes": [
-        {
-          "reason": "Step 4 shows the preview call and the real call of the same command side by side; one is the dry run of the other, no mechanic is decided in the prose.",
-          "commands": [
-            "uv run \"{plugin_root}/scripts/release.py\" aggregate --project-root \"$(pwd)\" --version \"{version}\" --dry-run",
-            "uv run \"{plugin_root}/scripts/release.py\" aggregate --project-root \"$(pwd)\" --version \"{version}\""
-          ]
-        }
-      ]
+      "escapes": []
     }
   ]
 }
