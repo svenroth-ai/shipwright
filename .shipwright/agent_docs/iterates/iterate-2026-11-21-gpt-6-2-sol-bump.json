@@ -1,0 +1,61 @@
+{
+  "run_id": "iterate-2026-11-21-gpt-6-2-sol-bump",
+  "date": "2026-11-21T23:26:05.450838Z",
+  "event_at": "2026-11-21T20:49:44.618303+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "keyword",
+  "branch": "iterate/gpt-6-2-sol-bump",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-11-21-gpt-6-2-sol-bump",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "openai reviewer identity resolves to gpt-6.2-sol on openrouter/direct/codex routes",
+        "disposition": "tested",
+        "evidence": "test_glm_review_routing.py + test_llm_review.py + test_external_review_gpt_leg_provider.py PASSED; F0.5 probe_bindings exit 0 (3 asserts)"
+      },
+      {
+        "behavior": "codex transport default + model resolution use gpt-6.2-sol",
+        "disposition": "tested",
+        "evidence": "test_codex_review_model_resolution.py, test_external_review_codex_leg.py PASSED"
+      },
+      {
+        "behavior": "condense_release_notes fallback model is gpt-6.2-sol on both routes",
+        "disposition": "tested",
+        "evidence": "test_condense_release_notes.py::test_fallback_model_is_gpt_6_2_sol_when_config_has_no_model PASSED"
+      },
+      {
+        "behavior": "slug exists on the real providers",
+        "disposition": "tested",
+        "evidence": "OpenRouter /api/v1/models lists openai/gpt-6.2-sol; codex exec -m gpt-6.2-sol answered OK (2026-11-21)"
+      }
+    ],
+    "counts": {
+      "testable": 4,
+      "tested": 4,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 4,
+      "covered_acs": 4
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run python .shipwright/runs/iterate-2026-11-21-gpt-6-2-sol-bump/probe_bindings.py",
+    "exit_code": 0,
+    "tests_run": 3,
+    "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\gpt-6-2-sol-bump\\.shipwright\\runs\\iterate-2026-11-21-gpt-6-2-sol-bump\\surface_verification.log",
+    "timestamp": "2026-11-21T20:49:15.201Z",
+    "attempts": 1
+  },
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}

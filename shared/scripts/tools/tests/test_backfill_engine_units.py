@@ -21,6 +21,8 @@ from backfill_scan import TestRecord as _TestRecord  # noqa: E402
 from backfill_signals import Candidate  # noqa: E402
 from backfill_write import apply_writes, is_contained  # noqa: E402
 
+pytestmark = pytest.mark.covers_none("tooling")  # a test of the external-review tooling (model identity/routing): proves no product requirement (infrastructure class, shared/config/infra_test_paths.json)
+
 
 # --------------------------------------------------------------------------- #
 # backfill_llm — redaction, parsing, adjudicator wiring                       #
@@ -80,7 +82,7 @@ def _routing_config():
     return {
         "models": {
             "openrouter_glm": "z-ai/glm-5.3",
-            "openrouter_chatgpt": "openai/gpt-6.1-sol",
+            "openrouter_chatgpt": "openai/gpt-6.2-sol",
         },
         "glm_routing": {
             "provider_allowlist": [
@@ -133,7 +135,7 @@ def test_openrouter_adjudicate_consensus_via_fake_openai(monkeypatch):
         },
         "reasoning": {"effort": "low"},
     }
-    assert calls[1]["model"] == "openai/gpt-6.1-sol"
+    assert calls[1]["model"] == "openai/gpt-6.2-sol"
     assert calls[1]["extra_body"] == {}
 
 

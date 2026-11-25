@@ -15,6 +15,9 @@ from external_review_default_legs import (  # noqa: E402
     codex_settings,
 )
 from external_review_routing import ReviewModelPolicyError, resolve_reviewer_model  # noqa: E402
+import pytest
+
+pytestmark = pytest.mark.covers_none("tooling")  # a test of the external-review tooling (model identity/routing): proves no product requirement (infrastructure class, shared/config/infra_test_paths.json)
 
 
 def test_gpt_leg_provider_defaults_to_api_when_unset():
@@ -49,8 +52,8 @@ def test_gpt_leg_provider_falls_back_to_api_on_an_unhashable_value():
 
 
 def test_codex_binding_accepts_the_locked_model():
-    config = {"models": {"codex": "gpt-6.1-sol"}}
-    assert resolve_reviewer_model(config, "openai", "codex") == "gpt-6.1-sol"
+    config = {"models": {"codex": "gpt-6.2-sol"}}
+    assert resolve_reviewer_model(config, "openai", "codex") == "gpt-6.2-sol"
 
 
 def test_codex_binding_rejects_a_different_configured_model():
@@ -73,6 +76,6 @@ def test_codex_binding_shares_the_openai_identity_and_model_with_the_api_routes(
     """Same reviewer ('openai'), same model string, across all three routes —
     a mixed pass (e.g. codex answers this run, openrouter answered last run)
     must not read as two different reviewers."""
-    config = {"models": {"chatgpt": "gpt-6.1-sol", "openrouter_chatgpt": "openai/gpt-6.1-sol", "codex": "gpt-6.1-sol"}}
-    assert resolve_reviewer_model(config, "openai", "direct") == "gpt-6.1-sol"
-    assert resolve_reviewer_model(config, "openai", "codex") == "gpt-6.1-sol"
+    config = {"models": {"chatgpt": "gpt-6.2-sol", "openrouter_chatgpt": "openai/gpt-6.2-sol", "codex": "gpt-6.2-sol"}}
+    assert resolve_reviewer_model(config, "openai", "direct") == "gpt-6.2-sol"
+    assert resolve_reviewer_model(config, "openai", "codex") == "gpt-6.2-sol"

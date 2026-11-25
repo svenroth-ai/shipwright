@@ -14,7 +14,7 @@ these instructions, never sniffed from an env var:
 **Codextender does NOT dispatch through `review_via_codex.py`.** The Agent
 tool works there, and `codex exec` would buy no independence: its default
 review model (`CODEX_REVIEW_MODEL`, `codex_review_transport.py`) is
-`gpt-6.1-sol`, the same family Codextender's proxy already maps subagents to.
+`gpt-6.2-sol`, the same family Codextender's proxy already maps subagents to.
 (Observed: Codextender sessions spawned 70+ spec/code/doubt-reviewer
 subagents on `sol` and never ran `review_via_codex.py`; the old wording of
 this doc described a path sessions did not take.) `CODEXTENDER_ACTIVE` still
@@ -67,7 +67,7 @@ uv run "{shared_root}/scripts/tools/review_via_codex.py" \
   [--claims-file "{role spec only, from the build step above: the printed `path`, only when the
     build printed `claims` above 0; otherwise omit — the reply then carries `ac_verdicts: null`}"] \
   [--codex-model "{a per-run override for the Codex reviewer model, e.g.
-    gpt-6.1-sol — optional; unset defers to this role's session env var,
+    gpt-6.2-sol — optional; unset defers to this role's session env var,
     then shipwright_model_config.json's codex_review/codex_plan_review key,
     then the hardcoded default}"]
 ```
