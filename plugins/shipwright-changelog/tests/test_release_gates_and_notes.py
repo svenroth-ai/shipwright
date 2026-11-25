@@ -71,7 +71,7 @@ class Git:
     def __init__(self, listing: str, write_drops: bool = True):
         self.listing, self.drops, self.write_drops = listing.replace(chr(10), chr(0)), [], write_drops  # `git -z`: NUL-separated
 
-    def __call__(self, key, argv, cwd):
+    def __call__(self, key, argv, cwd, **_opts):
         if key == "migration-pages":
             return CmdResult(key, tuple(argv), 0, self.listing)
         self.drops.append(list(argv))
@@ -235,7 +235,7 @@ def _aggregate(tmp_path, **kw):
     from lib.release_runner import CmdResult as R
     calls = []
 
-    def fake(key, argv, cwd):
+    def fake(key, argv, cwd, **_opts):
         calls.append(key)
         return R(key, tuple(argv), 1 if key == "tag-check" else 0, '{"version": "1.3.0"}' if key.startswith("aggregate") else "")
     out = release_aggregate.aggregate(Recorder(fake, tmp_path), Path(SHARED).parent / "plugins" / "shipwright-changelog", version="1.3.0", **kw)

@@ -50,7 +50,7 @@ def push_tag(rec: Recorder, plugin_root: Path, *, version: str) -> tuple[int, di
     if state.get("mode") not in ("pipeline", "standalone"):  # a rebuilt or damaged state must not read as a driven run (close-phase refuses it too)
         return refuse("run_state_missing")
     on_trunk = bool(state.get("on_trunk"))
-    if on_trunk and branch not in release_event.TRUNKS:  # read from disk: never put an unchecked name into a push line
+    if on_trunk and branch not in release_event.trunks(state):  # read from disk: never put an unchecked name into a push line
         return refuse("branch_not_a_trunk")
     out.update(branch=branch, on_trunk=on_trunk)
     named = rec.run("push-tag-commit", ["git", "rev-parse", "--verify", "-q", f"refs/tags/{tag}^{{commit}}"]).stdout.strip()

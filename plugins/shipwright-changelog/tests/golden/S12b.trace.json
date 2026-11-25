@@ -408,6 +408,13 @@
       "fields": {
         "status": "ok"
       },
+      "step": "push-branch"
+    },
+    {
+      "exit_code": 0,
+      "fields": {
+        "status": "ok"
+      },
       "step": "open-pr"
     },
     {

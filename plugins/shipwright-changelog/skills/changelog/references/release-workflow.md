@@ -37,7 +37,9 @@ would ship one release late. Since the second pass (A3) the CODE does it, inside
    the page's own words and links the page (`Existing projects: <the answer> (see
    docs/migrations/<page>.md)`), through `write_changelog_drop.py`, once per page and never
    after the version's section is already in `CHANGELOG.md` (a re-run must not add a drop the section lacks).
-   `upgrade_notes.status` is then `action_drop_written`.
+   `upgrade_notes.status` is then `action_drop_written`. While a question (`gates`) is still open nothing is written yet:
+   the status is `action_drop_deferred`, `upgrade_notes.pending` has the text, the Step 4 preview names it in
+   `upgrade_notes_pending` and the real `aggregate` (after Step 5) files the drop(s). Step 3 applies to them the same way.
 3. **The model's part:** read each such drop, shorten or sharpen it where the page's line is too long or
    misleads, and keep it factual, not alarming (the release-notes condenser may file an item under
    `Breaking Changes` when the reader must act to keep working, otherwise it stays under `Changed`). If a page says

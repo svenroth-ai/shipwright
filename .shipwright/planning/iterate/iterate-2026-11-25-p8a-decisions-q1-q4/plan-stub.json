@@ -1,0 +1,4 @@
+{"run_id": "iterate-2026-11-25-p8a-decisions-q1-q4",
+ "goal": "Fix the /shipwright-changelog release contradictions and bugs D7, D8, D12, D24: preview before write, branch push before the PR, the remote's default branch, one merge rule.",
+ "reason": "Operator re-scope of campaign unit P8a on 2026-11-25: port the release behaviour one to one, only deterministic, fix bugs and contradictions, defer new behaviour (FINDINGS D72).",
+ "ref": "campaign dfp-pilot-changelog-p3-p8 unit P8a; FINDINGS D72-D82; .shipwright/planning/adr/iterate-2026-11-25-p8a-decisions-q1-q4-release-fixes.md"}

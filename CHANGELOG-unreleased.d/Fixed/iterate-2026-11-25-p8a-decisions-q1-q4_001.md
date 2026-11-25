@@ -1,0 +1,1 @@
+/shipwright-changelog now previews the release without writing anything and writes CHANGELOG.md only after you accept; Edit changes the pending entry and previews again, and Cancel leaves your files and the pending entries exactly as they were (an entry you edited is put back by the new `release.py cancel`)

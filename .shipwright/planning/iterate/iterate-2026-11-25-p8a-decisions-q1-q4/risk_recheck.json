@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-25-p8a-decisions-q1-q4",
+  "risk_recheck": {
+    "changed_file_count": 52,
+    "diff_loc": 1303,
+    "risk_flags": [
+      "touches_auth",
+      "touches_build",
+      "touches_rls"
+    ],
+    "diff_risk_flags": [],
+    "complexity_floor": "trivial",
+    "stage1_complexity": "large",
+    "declared_complexity": "medium",
+    "effective_complexity": "large",
+    "upgraded": false,
+    "plan_review_required": true,
+    "ci_ack_recorded": false,
+    "escalate": {
+      "required": false,
+      "reason_code": null,
+      "paths": []
+    }
+  }
+}

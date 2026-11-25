@@ -35,6 +35,7 @@ CITES: dict[str, list[tuple[int, str]]] = {
     "commit-and-tag": [(303, "BULLET_DOCS"), (304, "git add CHANGELOG.md"), (305, "decision_log_index.md"),
                        (306, "git add -A"), (307, "git commit -m"), (311, "refresh_compliance_docs.py"),
                        (313, "sync_release_manifests.py"), (317, "git tag -a")],
+    "push-branch": [(346, "git push origin HEAD")],  # P8a F3: the same push, now right before the PR (stop-2 prose ran it after)
     "open-pr": [(330, "gh pr create")],
     "record-event-pr": [(343, "record_event.py"), (344, "stage_event_drops.py"), (345, "git add shipwright_events.jsonl"),
                         (346, "git push origin HEAD")],

@@ -15,7 +15,7 @@ from typing import Any, Callable, Mapping, Sequence
 import golden_trace as gt
 
 from . import oracle
-from .driver_replay import MAIN_BRANCHES, ReplayDriver
+from .driver_replay import ReplayDriver
 
 # What a step may say besides golden_trace.OUTPUT_WHITELIST: the facts the first half of the scenarios assert.
 WHITELIST = (*gt.OUTPUT_WHITELIST, "mode", "last_tag", "branch", "commits_since_tag", "previous_tag_has_release",
@@ -84,17 +84,19 @@ def release_flow(driver: ReplayDriver, scratch: Any, autonomy: str = "guided", *
         return result
 
     step("aggregate", version=version, dry_run=True)  # SKILL.md:164 "Use --dry-run first"
+    if autonomy == "guided" and not pipeline:  # F2 (operator 2026-11-25, P8a; D12): the question comes after the dry run, before any write
+        step("preview")  # SKILL.md:240; autonomous and unattended skip it (:237)
     if step("aggregate", version=version).exit_code:
         return results
-    if autonomy == "guided" and not pipeline:
-        step("preview")  # SKILL.md:240; autonomous and unattended skip it (:237)
     step("fold-events")
     if step("sync", version=version).output["status"] != "ok" or step("evidence", version=version).output["status"] != "ok":
         return results
     if step("commit-and-tag", version=version).exit_code:
         return results
     waits = False  # F1b: a guided release leaves its PR open, so nothing is pushed or published until the PR is merged
-    if scratch.git("rev-parse", "--abbrev-ref", "HEAD") not in MAIN_BRANCHES:
+    if driver.on_feature_branch(scratch):  # F5 (P8a; D24): a feature branch is any branch but the remote's default branch and develop
+        if step("push-branch").exit_code:  # F3 (P8a; D7): the head is on the remote before the PR is opened
+            return results
         if step("open-pr", version=version).exit_code:  # F4: no PR, no release: the tag stays local
             return results
         if step("record-event", version=version).exit_code:  # F6: a rejected push stops here (SKILL.md:341, the `&&` chain)

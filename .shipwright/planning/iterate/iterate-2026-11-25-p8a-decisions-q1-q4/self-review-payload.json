@@ -1,0 +1,10 @@
+{"items": [
+  {"name": "Spec Compliance", "verdict": "pass", "note": "Builds exactly the operator re-scope of 2026-11-25 (F2, F3, F5, the D8 contradiction); dropped items recorded as D72/D82."},
+  {"name": "Error Handling", "verdict": "pass", "note": "trunk() falls back to origin/HEAD then main on any failed or unsafe answer; a failed branch push stops the release before the PR."},
+  {"name": "Security Basics", "verdict": "pass", "note": "Remote-supplied branch name validated by regex and passed as argv after --end-of-options; head pushes use --no-follow-tags so no tag leaves before the merge."},
+  {"name": "Test Quality", "verdict": "pass", "note": "17 in-process L1 cases plus 4 real-git L2 cases, each failing on the old behaviour; 42 traces regenerated and both drivers agree."},
+  {"name": "Performance Basics", "verdict": "pass", "note": "One extra ls-remote per prepare; no timeout tightening (recorded as D82(3) follow-up, same as the closing verify's fetch)."},
+  {"name": "Naming & Structure", "verdict": "pass", "note": "All edited files stay under 300 lines; check_prompt_mechanics.py untouched; registry widened by one key, escape budget lowered to 0."},
+  {"name": "Affected Boundaries", "verdict": "pass", "note": "Run-state file gains a trunk field: producer prepare, consumers record-event, push-tag, verify; round-trip probed in test_release_p8a (prepare stores, record-event/verify read)."},
+  {"name": "Docs", "verdict": "pass", "note": "guide.md ch. 4.8, Appendix B and the ratchet paragraph; hooks-and-pipeline.md release CLI and run-state rows updated."}
+]}

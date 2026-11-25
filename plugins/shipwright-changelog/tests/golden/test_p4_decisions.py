@@ -111,8 +111,11 @@ def test_f4_a_failed_tag_push_stops_the_release_and_no_page_follows(make_project
 @DRIVERS
 def test_f6_the_flow_stops_after_a_rejected_push_as_the_and_chain_of_skill_341_says(make_project, driver_class):
     s = ss.ready_release(make_project)
-    _close_hook(s, b'#!/bin/sh\necho "pre-receive: pushes are closed" >&2\nexit 1\n')
-    results = release_flow(driver_class(), s, "guided")
+
+    def close() -> None:  # P8a (F3): the branch is pushed before the PR now; the remote closes before the event push
+        _close_hook(s, b'#!/bin/sh\necho "pre-receive: pushes are closed" >&2\nexit 1\n')
+
+    results = release_flow(driver_class(), s, "guided", before={"record-event": close})
     assert _steps(results)[-1] == "record-event" and results[-1].exit_code != 0  # the old replay went on to push the tag and make a page
     assert {"push-tags", "release-page"}.isdisjoint(_steps(results)) and _remote_tags(s) == [
         t for t in _remote_tags(s) if "v1.3.0" not in t]

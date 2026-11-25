@@ -1,0 +1,69 @@
+{
+  "unattended": true,
+  "resolved_items": [
+    {
+      "kind": "restore",
+      "restores_ac": "FR-01.09.AC10",
+      "decided_by": "code",
+      "confirmed": false
+    },
+    {
+      "kind": "restore",
+      "restores_ac": "FR-01.09.AC01",
+      "decided_by": "code",
+      "confirmed": false
+    }
+  ],
+  "ac_decisions": [
+    {
+      "ac": "FR-01.09.AC10",
+      "mode": "auto",
+      "answer": "auto",
+      "kind": "restore",
+      "answered_via": "none",
+      "decided_by": "code",
+      "confirmed": false
+    },
+    {
+      "ac": "FR-01.09.AC01",
+      "mode": "auto",
+      "answer": "auto",
+      "kind": "restore",
+      "answered_via": "none",
+      "decided_by": "code",
+      "confirmed": false
+    }
+  ],
+  "counts": {
+    "total": 2,
+    "auto": 0,
+    "asked": 0,
+    "exempt": 0,
+    "restore": 2,
+    "unchanged": 0,
+    "answered_inline": 0,
+    "unconfirmed": 0,
+    "exempt_share": 0.0,
+    "restore_share": 1.0
+  },
+  "status": "ok",
+  "ac_mode": {
+    "mode": "auto",
+    "source": "--ac-mode"
+  },
+  "run_id": "iterate-2026-11-25-p8a-decisions-q1-q4",
+  "bind_id": "dfp-pilot-changelog-p3-p8--P8a@2026-11-23T11:31:16.576992+00:00",
+  "exemption_check": "tested against the current diff (51 file(s), 45 not observable)",
+  "surface": {
+    "observable": true,
+    "files": [
+      "plugins/shipwright-changelog/scripts/lib/release_event.py",
+      "plugins/shipwright-changelog/scripts/lib/release_prepare.py",
+      "plugins/shipwright-changelog/scripts/lib/release_push.py",
+      "plugins/shipwright-changelog/skills/changelog/SKILL.md",
+      "plugins/shipwright-changelog/skills/changelog/references/first-actions.md",
+      "shared/config/converted_skills.json"
+    ],
+    "ignored": 45
+  }
+}

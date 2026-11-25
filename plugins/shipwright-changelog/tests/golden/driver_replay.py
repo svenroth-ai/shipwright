@@ -28,8 +28,8 @@ import golden_trace as gt
 from .replay_commands import CITES, COMMIT_AND_TAG, EVENT_MAIN, EVENT_PR, PLUGIN, SHARED, fill
 
 STEPS = frozenset({"prepare", "aggregate", "preview", "fold-events", "sync", "evidence", "commit-and-tag",
-                   "open-pr", "record-event", "merge-pr", "push-tags", "release-page", "close-phase"})
-MAIN_BRANCHES = ("main", "develop")  # SKILL.md:327 "Only if on a feature branch (not main/develop)"
+                   "push-branch", "open-pr", "record-event", "merge-pr", "push-tags", "release-page", "close-phase"})
+DEVELOP = "develop"  # SKILL.md:327 "Only if on a feature branch (not main/develop)"; P8a F5 adds the remote's default branch to both
 
 
 def find_bash() -> str | None:
@@ -128,6 +128,8 @@ class ReplayDriver:
         if context.get("requires_out_of_sequence_warning"):  # SKILL.md:63-66: warn and ask (a question, no command)
             fields["out_of_sequence"] = "asked"
         self.state["version"] = chosen
+        drops = scratch.repo / "CHANGELOG-unreleased.d"  # what a Cancel puts back (see step_preview)
+        self.state["drops_before"] = {p: p.read_bytes() for p in drops.rglob("*") if p.is_file()} if drops.is_dir() else {}
         return gt.StepResult("prepare", 0, {"status": "ok", "version": chosen, "suggested": info.get("suggested_version"),
                                             "version_reason": info.get("version_reason"), **fields})
 
@@ -163,7 +165,13 @@ class ReplayDriver:
 
     # ---- Step 5 ----------------------------------------------------------------------------
     def step_preview(self, scratch: Any, choice: str = "accept") -> gt.StepResult:
-        """Guided mode asks (SKILL.md:243-249); the replay records the operator's answer and runs nothing."""
+        """Guided mode asks (SKILL.md:243-249); the replay records the operator's answer and runs nothing. On Cancel it does what
+        the P8a prose asked of the model by hand: put back a drop file an Edit changed, from the bytes it saw at ``prepare``. The CLI
+        driver runs ``release.py cancel`` for it (D84), and the two traces must agree."""
+        if choice == "cancel":
+            for path, data in self.state.get("drops_before", {}).items():
+                if not path.is_file() or path.read_bytes() != data:
+                    path.write_bytes(data)
         return gt.StepResult("preview", 0, {"status": choice})
 
     def step_fold_events(self, scratch: Any) -> gt.StepResult:
@@ -197,13 +205,40 @@ class ReplayDriver:
         return self._result("commit-and-tag", done, version=version)
 
     # ---- Step 7 ----------------------------------------------------------------------------
+    def trunk(self, scratch: Any) -> str:
+        """F5 (operator 2026-11-25, P8a; D24): the default branch is asked of the remote by name (``prepare`` returns it as ``trunk``),
+        else the local ``origin/HEAD``, else ``main``. Asked once per run, as ``release_event.trunk`` asks it: a question, not a logged step.
+        (A scratch's fetch URL is a fake host its environment refuses, so there the answer is the local ``origin/HEAD`` or the fallback.)
+        Deliberately without the code's branch-name check and no-prompt env: a scratch names only plain branches and never prompts."""
+        if "trunk" not in self.state:
+            head = scratch.run(["git", "-c", "credential.interactive=never", "ls-remote", "--symref", "origin", "HEAD"])
+            words = ((head.stdout.splitlines() or [""])[0] if head.returncode == 0 else "").split()
+            found, source = (words[1].removeprefix("refs/heads/"), "remote") if len(words) > 1 and words[0] == "ref:" else ("", "")
+            if not found:
+                local = scratch.run(["git", "symbolic-ref", "--short", "-q", "refs/remotes/origin/HEAD"])
+                found, source = (local.stdout.strip().removeprefix("origin/"), "local") if local.returncode == 0 else ("main", "fallback")
+            self.state.update(trunk=found or "main", trunk_source=source if found else "fallback")
+        return self.state["trunk"]
+
+    def trunks(self, scratch: Any) -> tuple[str, ...]:
+        """P8a fix round (D85): additive. The default branch, then ``main`` and ``develop`` always (the prose's "not main/develop"),
+        and ``master`` when the default branch could not be asked."""
+        base = self.trunk(scratch)
+        extra = ("master",) if self.state["trunk_source"] == "fallback" else ()
+        return tuple(dict.fromkeys((base, "main", DEVELOP, *extra)))
+
     def on_feature_branch(self, scratch: Any) -> bool:
-        return scratch.git("rev-parse", "--abbrev-ref", "HEAD") not in MAIN_BRANCHES
+        return scratch.git("rev-parse", "--abbrev-ref", "HEAD") not in self.trunks(scratch)
+
+    def step_push_branch(self, scratch: Any) -> gt.StepResult:
+        """F3 (operator 2026-11-25, P8a; D7): the head goes to the remote right before ``gh pr create``, which opens a PR only
+        for a branch the host has (the stop-2 prose opened the PR first and the host refused it, S14a)."""
+        return self._result("push-branch", self._run("push-branch", scratch, ["git", "push", "origin", "HEAD", "--no-follow-tags"]))
 
     def step_open_pr(self, scratch: Any, version: str) -> gt.StepResult:
         # SKILL.md:332: inside bash double quotes the "\n" stays two characters (D15); {entry} is the aggregated section
         body = "## Changelog\\n\\n" + self.state["section"]
-        done = self._gh("open-pr", scratch, "pr", "create", "--title", f"Release v{version}", "--body", body, "--base", "main")
+        done = self._gh("open-pr", scratch, "pr", "create", "--title", f"Release v{version}", "--body", body, "--base", self.trunk(scratch))  # F5: the remote's default branch
         self.state["pr_url"] = done.stdout.strip() if done.returncode == 0 else ""
         return self._result("open-pr", done)
 
@@ -224,7 +259,7 @@ class ReplayDriver:
         if self.on_feature_branch(scratch):
             argv = ["git", "push", "origin", f"refs/tags/v{version or self.state['version']}"]
         else:
-            argv = ["git", "push", "origin", "main", f"refs/tags/v{version or self.state['version']}"]
+            argv = ["git", "push", "origin", scratch.git("rev-parse", "--abbrev-ref", "HEAD"), f"refs/tags/v{version or self.state['version']}"]  # F5: the trunk the release is on
         return self._result("push-tags", self._run("push-tags", scratch, argv))
 
     def step_release_page(self, scratch: Any, version: str) -> gt.StepResult:

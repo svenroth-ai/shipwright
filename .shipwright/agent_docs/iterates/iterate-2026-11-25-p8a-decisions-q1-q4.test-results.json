@@ -1,0 +1,146 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-25-p8a-decisions-q1-q4",
+    "date": "2026-11-25",
+    "unit": {
+      "status": "passed",
+      "passed": 26712,
+      "skipped": 112,
+      "total": 26824
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 689,
+      "skipped": 0,
+      "total": 689
+    },
+    "pgtap": {
+      "status": "not_run",
+      "passed": 0,
+      "skipped": 0,
+      "total": 0
+    },
+    "e2e": {
+      "status": "not_run",
+      "passed": 0,
+      "skipped": 0,
+      "total": 0
+    },
+    "design_fidelity": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run --project plugins/shipwright-changelog pytest --rootdir plugins/shipwright-changelog -c plugins/shipwright-changelog/pyproject.toml -p no:cacheprovider -q plugins/shipwright-changelog/tests/golden/test_p8a_push_before_pr.py plugins/shipwright-changelog/tests/golden/test_scenarios_branches.py plugins/shipwright-changelog/tests/golden/test_scenarios_modes.py",
+      "exit_code": 0,
+      "tests_run": 14,
+      "evidence_path": ".shipwright/runs/iterate-2026-11-25-p8a-decisions-q1-q4/surface_verification.json",
+      "timestamp": "2026-11-25T17:27:10.062Z"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "prepare stores and returns the remote's default branch as trunk",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-changelog/tests/test_release_p8a.py::test_prepare_stores_and_returns_the_trunk PASSED"
+        },
+        {
+          "behavior": "trunk lookup: ls-remote, origin/HEAD fallback, main fallback, unsafe name refused",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-changelog/tests/test_release_p8a.py::test_the_trunk_is_the_remotes_default_branch PASSED"
+        },
+        {
+          "behavior": "record-event treats the remote's default branch as the trunk and records it as the PR base",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-changelog/tests/test_release_p8a.py::test_record_event_keeps_the_default_branch_as_the_prs_base PASSED"
+        },
+        {
+          "behavior": "push-tag accepts a master trunk and refuses a non-trunk",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-changelog/tests/test_release_p8a.py::test_push_tag_on_a_master_trunk_gets_the_atomic_line_for_master PASSED"
+        },
+        {
+          "behavior": "closing verify uses the stored trunk",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-changelog/tests/test_release_p8a.py::test_the_closing_verify_checks_the_stored_trunk_without_asking_again PASSED"
+        },
+        {
+          "behavior": "head pushes never carry the release tag (--no-follow-tags)",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-changelog/tests/test_release_p8a.py::test_neither_head_push_carries_the_release_tag PASSED"
+        },
+        {
+          "behavior": "a preview question defers the upgrade-note drop",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-changelog/tests/test_release_p8a.py::test_a_preview_question_alone_defers_the_upgrade_note PASSED"
+        },
+        {
+          "behavior": "SKILL.md asks after the dry run and writes only after Accept",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-changelog/tests/test_release_p8a.py::test_the_skill_asks_after_the_dry_run_and_writes_only_after_accept PASSED"
+        },
+        {
+          "behavior": "Cancel leaves the tree and drops byte-identical (S18a, real git)",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-changelog/tests/golden/test_scenarios_modes.py (S18a) PASSED"
+        },
+        {
+          "behavior": "Edit changes the drop and repeats the dry run (S18b, real git)",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-changelog/tests/golden/test_scenarios_modes.py (S18b) PASSED"
+        },
+        {
+          "behavior": "the branch is on origin before gh pr create; a rejected push stops before the PR",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-changelog/tests/golden/test_p8a_push_before_pr.py PASSED"
+        },
+        {
+          "behavior": "a master remote is the trunk case end to end (S14c) and the PR base is the default branch (S14a)",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-changelog/tests/golden/test_scenarios_branches.py PASSED"
+        },
+        {
+          "behavior": "SKILL.md and first-actions.md state the same merge rule",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-changelog/tests/test_release_p8a.py::test_skill_and_first_actions_state_the_same_merge_rule PASSED"
+        },
+        {
+          "behavior": "replay and CLI drivers produce the frozen traces",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-changelog/tests/golden/test_driver_cli.py PASSED",
+          "category": "integration"
+        }
+      ],
+      "counts": {
+        "testable": 14,
+        "tested": 14,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 2,
+        "covered_acs": 2
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-11-25-p8a-decisions-q1-q4",
+    "commit": "a0ab342efe0209d8a7ff1b82d6746716a0bb0dce",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

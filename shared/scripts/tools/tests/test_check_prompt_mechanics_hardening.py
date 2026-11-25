@@ -125,14 +125,16 @@ def test_a_good_registry_validates_and_a_non_object_does_not() -> None:
 def test_the_real_registry_is_pinned() -> None:
     """Widening the registry (a command, a substitution, an escape, the budget) is a test edit, seen in review."""
     registry = cpm.load_registry(cpm.DEFAULT_REGISTRY)
-    assert registry["escape_budget"] == 1
+    assert registry["escape_budget"] == 0  # P8a (F2): the preview and the real aggregate call are two blocks now, the one escape went
     (entry,) = registry["skills"]
     assert entry["path"] == "plugins/shipwright-changelog/skills/changelog/SKILL.md"
     assert entry["commands"] == [
         "uv run {plugin_root}/scripts/release.py prepare",
         "uv run {plugin_root}/scripts/release.py aggregate",
+        "uv run {plugin_root}/scripts/release.py cancel",  # P8a fix round (D84): Cancel puts back the drop files an Edit changed
         "uv run {plugin_root}/scripts/release.py sync",
         "uv run {plugin_root}/scripts/release.py commit-and-tag",
+        "git push origin HEAD",  # P8a (F3, D7): the branch is pushed right before the PR is opened, one literal outward line
         "gh pr create",
         "uv run {plugin_root}/scripts/release.py record-event",
         "gh pr merge",
@@ -141,8 +143,15 @@ def test_the_real_registry_is_pinned() -> None:
         "uv run {plugin_root}/scripts/release.py close-phase",
     ]
     assert entry["substitutions"] == ["$(pwd)"]
-    (escape,) = entry["escapes"]
-    assert escape["commands"] == [
-        'uv run "{plugin_root}/scripts/release.py" aggregate --project-root "$(pwd)" --version "{version}" --dry-run',
-        'uv run "{plugin_root}/scripts/release.py" aggregate --project-root "$(pwd)" --version "{version}"',
-    ]
+    assert entry["escapes"] == []
+
+
+def test_every_head_push_block_of_the_changelog_skill_is_exactly_the_no_follow_tags_line() -> None:
+    """P8a fix round: the registry keys a command by the words before its first flag, so `git push origin HEAD --tags` would pass
+    the gate as the same command. The changelog's head push must never carry the release tag before the merge."""
+    registry = cpm.load_registry(cpm.DEFAULT_REGISTRY)
+    (entry,) = registry["skills"]
+    text = (cpm.DEFAULT_REGISTRY.parents[2] / entry["path"]).read_text(encoding="utf-8")
+    pushes = [c for _, lang, body in cpm.fenced_blocks(text) if cpm.is_shell_block(lang, body)
+              for c in cpm.logical_commands(body) if cpm.command_key(c) == "git push origin HEAD"]
+    assert pushes == ["git push origin HEAD --no-follow-tags"], pushes

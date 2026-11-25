@@ -1,0 +1,450 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-25-p8a-decisions-q1-q4",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-25T16:48:19.710212+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Either produce the documented operator decision (with its date and channel) and amend the spec/AC record accordingly before implementation, or reinstate Q1–Q3. As written, this unit will fail its own acceptance criteria checkboxes and the AC-coverage ratchet, and findings D2 and D19 stay open contrary to the doc obligations.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "If the scope reduction is real, the deferral must be recorded as an open finding (re-open or keep-open D2/D7) with a tracked follow-up unit — the mini-plan currently makes them vanish.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Confirm by regenerating the full trace set before writing deltas; any trace change not attributable to F2/F3/F5 needs its own source entry or the escape removal is split out.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "Add an explicit test that `--dry-run` writes nothing (tree hash before/after), and verify the upgrade-note deferral actually covers the preview question path.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Pin the exact `--symref` output format in a test with a fake remote; add a develop-branch release case.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Where prose edits move lines, have the test suite assert the cited line still contains the quoted text (a cheap content assertion in `test_release_p8a.py`'s prose cases).",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "dependency |",
+          "file": null,
+          "line": null,
+          "finding": "The mini-plan cites a newer operator decision dropping Q1–Q3, but leaves the original acceptance criteria, FR amendment obligations, and required AC record unresolved. It also labels the prose-only D8 fix “Q2” despite explicitly dropping Q2’s behaviour change. This makes the intended completion criteria ambiguous.",
+          "suggestion": "Before implementation, reconcile the authoritative scope and acceptance criteria with the recorded operator decision. Identify which FR/AC amendments remain required and distinguish D8’s contradiction fix from the deferred Q2 behaviour.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "“Edit changes the pending drop file” conflicts with a preview that writes nothing and Cancel leaving drops byte-identical. Deferring the upgrade-note drop covers one write path, but does not explain how Edit followed by Cancel avoids leaving changes.",
+          "suggestion": "Keep proposed edits in memory until Accept and pass them into the dry run. Test Preview → Edit → Preview → Cancel, including the upgrade-note path, against byte-for-byte filesystem snapshots.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "risk |",
+          "file": null,
+          "line": null,
+          "finding": "Default-branch discovery silently falls back to `main` on lookup failure or an “unsafe” branch name. In a `master` repository, a transient remote failure could therefore select the wrong PR base and trunk check. Looking up the push URL while falling back to `origin/HEAD` also risks mixing different repositories.",
+          "suggestion": "Resolve the default branch against the repository receiving the PR, persist that choice, and use it consistently. Stop with an actionable error when no reliable branch can be established; validate legitimate Git branch names without silently substituting `main`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency |",
+          "file": null,
+          "line": null,
+          "finding": "Rejecting a pinned-prose update leaves an explicit deliverable unmet. The supplied freeze rules allow changed existing `.pin` files through approved deltas; they do not require a full re-pin merely because their contents change.",
+          "suggestion": "Update the affected pinned copies and citation references together, recording each required delta. If preserving the stop-2 copy is part of the revised operator decision, explicitly amend that obligation before proceeding.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk |",
+          "file": null,
+          "line": null,
+          "finding": "Prose-order assertions and matching replay/CLI traces do not establish the runtime guarantees behind F2 and F3. Both drivers could encode the same incorrect sequence, and a literal push block does not prove execution stops when pushing fails.",
+          "suggestion": "Add focused execution tests proving that preview/Cancel performs no writes, Edit recalculates the preview, and a failed push prevents PR creation. Use a temporary Git remote to verify that the release head exists remotely before the PR command runs.  The narrower bug-fix approach is reasonable, but its scope contract needs reconciliation, and preview editing and branch-resolution failures need concrete handling before implementation.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-25T16:46:44.722979+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n**Category: approach — Severity: high**\nThe mini-plan contradicts its own binding spec. The change specification mandates Q1–Q4 (with FR-01.09 amendment, AC record entries, promise test AC11, doc obligations, and findings D2/D19 closure), and explicitly says \"Anything that needs an operator answer is a STRICT-STOP: do not guess.\" The mini-plan instead asserts a 2026-11-25 operator scope decision that drops Q1, Q2's behaviour change, and Q3. A mini-plan cannot silently supersede the spec; the scope change must be traceable to an operator answer recorded where the process expects it (the spec says only \"a decision changed at stop 1 changes this unit\").\n**Suggestion:** Either produce the documented operator decision (with its date and channel) and amend the spec/AC record accordingly before implementation, or reinstate Q1–Q3. As written, this unit will fail its own acceptance criteria checkboxes and the AC-coverage ratchet, and findings D2 and D19 stay open contrary to the doc obligations.\n\n**Category: risk — Severity: high**\nDropping Q1 leaves the carried-over PR #1100 bug live: the guided squash/rebase merge leaves the local tag on a pre-merge commit not on main. The spec's \"Carried over from P4\" section explicitly assigns the post-merge tag step (Q1) to this unit. Deferring it means every guided release continues to produce a broken tag, and Q2's auto-merge (also dropped) would have made the orphan-tag case the common case, not the rare one.\n**Suggestion:** If the scope reduction is real, the deferral must be recorded as an open finding (re-open or keep-open D2/D7) with a tracked follow-up unit — the mini-plan currently makes them vanish.\n\n**Category: risk — Severity: medium**\nRemoving the prompt-mechanics registry's only escape (budget 1 → 0) is a behavioural tightening beyond the F2 fix. If any existing golden trace or legitimate flow relied on that escape (e.g., an out-of-sequence question in a non-preview scenario), traces change in way […truncated]\n\n[openai] 1. **Category: dependency | Severity: high**  \n   **Finding:** The mini-plan cites a newer operator decision dropping Q1–Q3, but leaves the original acceptance criteria, FR amendment obligations, and required AC record unresolved. It also labels the prose-only D8 fix “Q2” despite explicitly dropping Q2’s behaviour change. This makes the intended completion criteria ambiguous.  \n   **Suggestion:** Before implementation, reconcile the authoritative scope and acceptance criteria with the recorded operator decision. Identify which FR/AC amendments remain required and distinguish D8’s contradiction fix from the deferred Q2 behaviour.\n\n2. **Category: edge-case | Severity: high**  \n   **Finding:** “Edit changes the pending drop file” conflicts with a preview that writes nothing and Cancel leaving drops byte-identical. Deferring the upgrade-note drop covers one write path, but does not explain how Edit followed by Cancel avoids leaving changes.  \n   **Suggestion:** Keep proposed edits in memory until Accept and pass them into the dry run. Test Preview → Edit → Preview → Cancel, including the upgrade-note path, against byte-for-byte filesystem snapshots.\n\n3. **Category: risk | Severity: high**  \n   **Finding:** Default-branch discovery silently falls back to `main` on lookup failure or an “unsafe” branch name. In a `master` repository, a transient remote failure could therefore select the wrong PR base and trunk check. Looking up the push URL while falling back to `origin/HEAD` also risks mixing different repositories.  \n   **Suggestion:** Resolve the default branch against the repository receiving the PR, persist that choice, and use it consistently. Stop with an actionable error when no reliable branch can be established; validate legitimate Git branch names without silently substituting `main`.\n\n4. **Category: dependency | Severity: medium**  \n   **Finding:** Rejecting a pinned-prose update leaves an explicit deliverable unmet. The supplied freeze rules allow […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_event.py",
+          "line": 1,
+          "finding": "Pass 1 on 0b901acf3: trunks() replaced main/develop with the remote default only, so a release on main with another default was treated as a feature branch. Fixed in 965cdfd98 (additive trunks, on_trunk from prepare), tests S14d and L1.",
+          "suggestion": "fixed",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_event.py",
+          "line": 1,
+          "finding": "Pass 1: lookup leaked the remote URL into argv/JSON, could prompt for credentials, no timeout; Edit-then-Cancel restore lived in prose; long-line reflow to meet the bloat cap; push-tag paragraph missing {branch}; push line not pinned; delta sources not per trace. All fixed in 965cdfd98.",
+          "suggestion": "fixed",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_cancel.py",
+          "line": 48,
+          "finding": "Pass 2 on 965cdfd98: Windows backslash and drive-letter keys passed the posix-only path check. Fixed in c1f7da48f (reject backslash and colon, resolved-path containment, symlink refusal, tests).",
+          "suggestion": "fixed",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_prepare.py",
+          "line": 107,
+          "finding": "Pass 2: drops_before kept via setdefault on a reused run state, so cancel could revert later edits. Fixed in c1f7da48f (fresh snapshot every prepare, test fails on old code).",
+          "suggestion": "fixed",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/tests/golden/driver_replay.py",
+          "line": 213,
+          "finding": "Pass 2: replay lookup lacks the code's name check and no-prompt env. Documented as deliberate in c1f7da48f.",
+          "suggestion": "recorded",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
+          "line": 182,
+          "finding": "Pass 2: prose repeated the trunk rule. Replaced by a pointer to on_trunk from prepare in c1f7da48f.",
+          "suggestion": "fixed",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-25T21:47:37.495788+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "c1f7da48fa0019cbbc79b611aa90f97816d759eb",
+      "reviewer_notes": "Independent opus code review, two passes. Pass 1 on 0b901acf3: REVISE (one high). Pass 2 on 965cdfd98: PASS, two mediums, closed in c1f7da48f (closed fix list, verified by the orchestrator against the diff)."
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_event.py",
+          "line": null,
+          "finding": "Claim under doubt: a release on a trunk never pushes a head branch or PR — Pass 1: with a non-main remote default, main stopped counting as a trunk. Fixed in 965cdfd98; pass 2 found no remaining input.",
+          "suggestion": "fixed",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_cancel.py",
+          "line": null,
+          "finding": "Claim under doubt: cancel writes only inside CHANGELOG-unreleased.d — Pass 2: Windows backslash keys and symlinks bypassed the check. Fixed in c1f7da48f.",
+          "suggestion": "fixed",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "reversibility",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_prepare.py",
+          "line": null,
+          "finding": "Claim under doubt: cancel restores the drops as they were at the release start — Pass 2: a stale snapshot on a reused run state could revert pulled work. Fixed in c1f7da48f (fresh snapshot).",
+          "suggestion": "fixed",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_runner.py",
+          "line": null,
+          "finding": "Claim under doubt: the lookup cannot hang or prompt — Pass 2: SSH/askpass prompts, inherited stdin, Windows grandchild keeps the pipe after timeout. No-prompt env shared with the hook and stdin DEVNULL in c1f7da48f; Windows grandchild hang recorded D90 for stop 3.",
+          "suggestion": "fixed / recorded D90",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling",
+          "file": "plugins/shipwright-changelog/scripts/hooks/release_guard.py",
+          "line": null,
+          "finding": "Claim under doubt: trunk set decided in one place — The release_guard hook keeps a fixed main/master/develop list; predates P8a. Recorded D89 for stop 3, hook unchanged under the one-to-one rule.",
+          "suggestion": "recorded D89",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
+          "line": null,
+          "finding": "Claim under doubt: after Cancel the tree is as before — Files new since prepare are kept in left and were not surfaced. SKILL Step 5 now reports every left path (c1f7da48f).",
+          "suggestion": "fixed",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "golden tests",
+          "file": "plugins/shipwright-changelog/tests/golden/test_p8a_fix_scenarios.py",
+          "line": null,
+          "finding": "Claim under doubt: CLI-vs-replay equality proves the new behaviour — Equality is partly circular; the oracle checks and the unit tests (remote/local/fallback/timeout/scrub) carry the proof. S14d/S18c not frozen; re-pin left for stop 3.",
+          "suggestion": "rebutted / recorded",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "operator rule",
+          "file": "plugins/shipwright-changelog/scripts/release.py",
+          "line": null,
+          "finding": "Claim under doubt: release.py cancel is a port, not a new feature — Cancel restoring drops is the bug fix F2 requires (Edit now edits drops); its safeguards are part of that fix. Recorded D91, ADR fix-round 2, guide Appendix B.",
+          "suggestion": "recorded D91",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-25T21:47:37.636339+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "c1f7da48fa0019cbbc79b611aa90f97816d759eb"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": null,
+          "line": null,
+          "finding": "The unit spec still requires Q1 (tag after merge), Q3 (refuse concurrent hand-run), an FR-01.09 amendment, and a `--promise-only --repin` for changed promise tests. The diff implements none of these, and D82(1) admits the spec file was never amended. The re-scope is an operator decision in a chat, recorded only in FINDINGS.",
+          "suggestion": "Have the orchestrator amend or annotate the P8a spec file before stop 3, so the AC record (`changed`/`unchanged` per §3a) is auditable against a written spec rather than a FINDINGS paragraph.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": null,
+          "line": null,
+          "finding": "The promise list changed, but the diff contains no `promise.lock.json` delta and no `--promise-only --repin` output, which the freeze rules require when a promise test moves. If `promise.lock.json` pins `promise_list.json`, `golden_lock.py --check` should fail; if it doesn't, the spec's promise-lock step silently doesn't apply.",
+          "suggestion": "Run `golden_lock.py --promise-only --repin` (or show that the lock does not cover these entries) and add the before/after delta; name the promise tests in the PR as the spec asks.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": null,
+          "line": null,
+          "finding": "The replay driver's trunk lookup neither uses `--end-of-options` nor the `_BRANCH` sanitisation that `release_event.trunk()` applies. A default branch name starting with `-` (or any name failing the regex) is accepted in the replay driver and fed into `--base`, so the replay and the real CLI disagree on the exact input F5 is about.",
+          "suggestion": "Reuse `release_event`'s parsing/regex (or duplicate `--end-of-options` + `_BRANCH.fullmatch`) in `ReplayDriver.trunk`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "prepare` now always runs two remote git calls (`remote get-url --push`, `ls-remote --symref`) with the runner's default 600 s timeout and without `GIT_TERMINAL_PROMPT=0`; an unreachable or credential-prompting remote stalls every `prepare` and every `record-event` on a pre-F5 run state. D82(3) records this as \"open\", but it is a new production stall path introduced by this unit (the closing verify's fetch at least runs only at the end).",
+          "suggestion": "Set `GIT_TERMINAL_PROMPT=0` and a short timeout on these two calls now; a `--no-network` fallback or hard failure can stay a follow-up.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": null,
+          "line": null,
+          "finding": "release_flow` runs the preview step and then the real `aggregate` unconditionally; a `cancel` outcome from the preview step would still write. The Cancel-leaves-no-trace behaviour is proven only by the bespoke S18a flow, so the shared flow used by ~30 other guided scenarios would not catch a regression where Cancel no longer stops the write.",
+          "suggestion": "In `release_flow`, return early when the preview result's choice is `cancel` (mirroring SKILL Step 5), so every guided scenario exercises the branch.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": null,
+          "line": null,
+          "finding": "The PR base is asserted as the literal `\"main\"` rather than read from the remote/trunk the scenario just established; the test claims to prove F5 but would pass if the base were hard-coded back to `main` in a repo whose default is `main`. Only S14c (a `master` repo) actually proves the dynamic base, and it has no PR at all.",
+          "suggestion": "Assert `pr[\"base\"] == driver.trunk(scratch)` (or add a `master`-default repo with a feature-branch release asserting `base == \"master\"`).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "_BRANCH` accepts names containing `..`, a trailing `/` or `.lock`, and a trailing `.` — git rejects these as branch names but they pass the guard and land in a push line / `--base`.",
+          "suggestion": "Tighten the regex (reject `..`, `.lock` suffix, trailing `.` and `/`), or keep as-is and note it; low real-world risk since the value comes from the remote.  Positives worth noting: `--no-follow-tags` on both head pushes closes a real tag-leak hole (D81); `on_base` now prefers the stored `trunk` over re-asking `origin/HEAD`, fixing the carried-over P4 review item; the escape-budget drop to 0 is correctly pinned in the hardening test; the approved_deltas list covers every changed frozen file I can see.  Overall: ship-with-fixes — the behaviour changes themselves are sound and well tested; the promise-lock handling, the replay/CLI trunk-parsing divergence, and the unsanitised network lookup in `prepare` should be settled (or explicitly waived in FINDINGS) before stop 3.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": ".shipwright/planning/campaigns/2026-10-25-dfp-pilot-changelog-FINDINGS.md",
+          "line": 204,
+          "finding": "The implementation explicitly drops Q1, the auto-merge requirement of Q2, and Q3. It also leaves FR-01.09 unchanged. These are mandatory acceptance criteria in the supplied specification; recording a different scope in FINDINGS does not reconcile that conflict.",
+          "suggestion": "Obtain and incorporate an authoritative amended specification before accepting the reduced scope, or implement the missing requirements and their behavioral tests.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
+          "line": 145,
+          "finding": "Edit modifies the pending drop directly, but a subsequent Cancel simply ends the release. The edited bytes remain, contradicting the promise that Cancel leaves the tree and drops byte-identical. S18b tests Edit → Accept only, so this failure passes the new tests.",
+          "suggestion": "Preserve original drop contents and restore them on Cancel, or stage edits outside the working tree until Accept. Add an Edit → Cancel test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
+          "line": 145,
+          "finding": "Edit requires a drop file, but `prepare` now deliberately defers upgrade-note drops while preview confirmation is pending. The preview can therefore contain an upgrade note with no file to edit, and the real aggregation creates and renders it only after acceptance. FINDINGS D82 acknowledges this unresolved path.",
+          "suggestion": "Support editing the pending upgrade-note representation before acceptance and ensure the repeated dry run renders that edited text without creating repository files.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "test",
+          "file": "plugins/shipwright-changelog/tests/golden/approved_deltas.json",
+          "line": 22,
+          "finding": "The diff approves new hashes for numerous regenerated traces, beginning with `S1.drops.trace.json`, but includes no corresponding trace-file changes. With the supplied diff, the approved `after` hashes cannot match those files, so the golden check cannot validate the declared regeneration.",
+          "suggestion": "Include every regenerated trace in the change and run `golden_lock.py --check` against the resulting tree. Also update the pinned prose copy as the specification requires.  Overall assessment: block pending reconciliation of the scope change and fixes to preview cancellation and golden artifacts. Repository inspection was blocked by execution policy, so this assessment is based on the supplied diff.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-25T16:48:06.079458+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Review\n\nThe change is internally coherent and the operator re-scope (F2/F3/F5 + the D8 prose contradiction, documented as D72) is honoured. Findings:\n\n- Category: spec — Severity: medium — `.shipwright/.../FINDINGS.md` (D72/D82)\n  Finding: The unit spec still requires Q1 (tag after merge), Q3 (refuse concurrent hand-run), an FR-01.09 amendment, and a `--promise-only --repin` for changed promise tests. The diff implements none of these, and D82(1) admits the spec file was never amended. The re-scope is an operator decision in a chat, recorded only in FINDINGS.\n  Suggestion: Have the orchestrator amend or annotate the P8a spec file before stop 3, so the AC record (`changed`/`unchanged` per §3a) is auditable against a written spec rather than a FINDINGS paragraph.\n\n- Category: spec — Severity: medium — `plugins/shipwright-changelog/tests/golden/promise_list.json:429,515` (Step 5 / Step 7 `content_hash` changes)\n  Finding: The promise list changed, but the diff contains no `promise.lock.json` delta and no `--promise-only --repin` output, which the freeze rules require when a promise test moves. If `promise.lock.json` pins `promise_list.json`, `golden_lock.py --check` should fail; if it doesn't, the spec's promise-lock step silently doesn't apply.\n  Suggestion: Run `golden_lock.py --promise-only --repin` (or show that the lock does not cover these entries) and add the before/after delta; name the promise tests in the PR as the spec asks.\n\n- Category: bug — Severity: medium — `plugins/shipwright-changelog/tests/golden/driver_replay.py:205-210` (`trunk`)\n  Finding: The replay driver's trunk lookup neither uses `--end-of-options` nor the `_BRANCH` sanitisation that `release_event.trunk()` applies. A default branch name starting with `-` (or any name failing the regex) is accepted in the replay driver and fed into `--base`, so the replay and the real CLI disagree on the exact input F5 is about.\n  Suggestion: Reuse `release_event`'s parsing/regex (or duplicate […truncated]\n\n[openai] - Category: spec\n- Severity: high\n- File: .shipwright/planning/campaigns/2026-10-25-dfp-pilot-changelog-FINDINGS.md:204\n- Finding: The implementation explicitly drops Q1, the auto-merge requirement of Q2, and Q3. It also leaves FR-01.09 unchanged. These are mandatory acceptance criteria in the supplied specification; recording a different scope in FINDINGS does not reconcile that conflict.\n- Suggestion: Obtain and incorporate an authoritative amended specification before accepting the reduced scope, or implement the missing requirements and their behavioral tests.\n\n- Category: bug\n- Severity: medium\n- File: plugins/shipwright-changelog/skills/changelog/SKILL.md:145\n- Finding: Edit modifies the pending drop directly, but a subsequent Cancel simply ends the release. The edited bytes remain, contradicting the promise that Cancel leaves the tree and drops byte-identical. S18b tests Edit → Accept only, so this failure passes the new tests.\n- Suggestion: Preserve original drop contents and restore them on Cancel, or stage edits outside the working tree until Accept. Add an Edit → Cancel test.\n\n- Category: bug\n- Severity: medium\n- File: plugins/shipwright-changelog/skills/changelog/SKILL.md:145\n- Finding: Edit requires a drop file, but `prepare` now deliberately defers upgrade-note drops while preview confirmation is pending. The preview can therefore contain an upgrade note with no file to edit, and the real aggregation creates and renders it only after acceptance. FINDINGS D82 acknowledges this unresolved path.\n- Suggestion: Support editing the pending upgrade-note representation before acceptance and ensure the repeated dry run renders that edited text without creating repository files.\n\n- Category: test\n- Severity: high\n- File: plugins/shipwright-changelog/tests/golden/approved_deltas.json:22\n- Finding: The diff approves new hashes for numerous regenerated traces, beginning with `S1.drops.trace.json`, but includes no corresponding trace-file changes. With  […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-25T21:47:48.432540+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "c1f7da48fa0019cbbc79b611aa90f97816d759eb"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-25T16:46:44.947219+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-25T16:46:45.111837+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    }
+  }
+}

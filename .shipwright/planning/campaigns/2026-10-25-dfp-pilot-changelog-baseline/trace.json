@@ -428,7 +428,7 @@
         "heading_path": [
           "Step 5: Preview and Confirm"
         ],
-        "content_hash": "30203998348aee563e201cf200a8ca3991d96e0d37786e0a62acaabdc2fff1f2"
+        "content_hash": "0866036f01b63d046fb4408faccff46613d84f1bcfbc1e5ef65b96eca33e276e"
       },
       "class": "ask",
       "check": {
@@ -482,7 +482,7 @@
         "heading_path": [
           "Upgrade-notes check"
         ],
-        "content_hash": "d7fdffed4a146d8fa5ff0782ac6177625d4a73487c58eb51d1fdf6ad85c555fc"
+        "content_hash": "d07a084a6265adf8bfac134175e22833998151dc6467d009a2b2ba3cc2f977f0"
       },
       "class": "mechanic",
       "check": null,
@@ -514,7 +514,7 @@
         "heading_path": [
           "Step 7: Create PR (Optional)"
         ],
-        "content_hash": "a731d4f6ec9516a047a21cb0aef18639b3650a8268acfb177697867a7e444945"
+        "content_hash": "6a17345405eb328ebf2899bd599bd8264d5d84ac98ca7b3f1a15f059ee95d1e7"
       },
       "class": "mechanic",
       "check": null,

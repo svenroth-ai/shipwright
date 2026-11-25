@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "1. **The question, answered in one sentence.** No new standing mechanism \u2014 the brief itself says so, and it holds: every change (preview ordering, push-before-PR, remote default branch, Q1 tag-after-merge, Q2 auto-merge arming, Q3 refusal+override) is a behaviour change to the existing release CLI, skill prose, and trace suite.\n\n2. **The smallest thing that would do** \u2014 exactly what is proposed: per-decision commits on the existing pipeline with tests, plus the already-standing golden-freeze discipline for the resulting trace/prose diffs. The only thing I would check is not smaller than the proposal: Q3's refusal could be implemented as a check inside the existing release step rather than anything with its own state \u2014 a \"is an automatic run live\" query plus a fail-fast with override flag, no lock file or coordination mechanism. That is the shape to hold to.\n\n3. **What it costs to keep** \u2014 no new obligation beyond what already exists (the freeze review at stop 3, the pinned-prose sync). The ongoing cost is conceptual: Q1+Q2 together mean a tag/release-page is created after an auto-merge that completes later, which is an asynchronous ordering every future change to the release flow must reason about. The brief already flags the open design point; that is the right thing to settle, because leaving it implicit is what would actually cost.\n\n4. **What it forecloses** \u2014 Q2 arming auto-merge on every automatic run makes a future \"some automatic runs shouldn't arm\" policy a behaviour change rather than a config tweak; trivial, but worth naming.\n\n5. **Findings**\n\n- Category: existence\n- Severity: low\n- Finding: Q3's cross-run check (\"a hand-run during a live automatic run is refused\") is the one item that could quietly grow into a standing mechanism (run registry, locks, coordination state) if implemented naively.\n- Suggestion: state in the plan that Q3 is implemented as a stateless check inside the existing release step (query for a running run at invocation time, refuse, `--override` flag with reason), with no new persisted state; STRICT-STOP if that turns out not to be possible.\n\nNo other findings.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Should it exist?** Yes: changing the existing release machinery is proportionate to these release-ordering and preview problems; no new standing mechanism is justified.\n\n2. **Smallest thing that would do:** Adjust the existing CLI and skill sequence: preview before writing, push before PR creation, resolve and reuse the remote default branch, apply the merge rule consistently, and create tags/releases through the existing post-merge execution path. Use existing run state for Q3\u2019s refusal and reasoned override.\n\n3. **What it costs to keep:** Maintain the release sequence, run-state checks, and agreement between executable behavior, skill instructions, and frozen expectations. A separate watcher or scheduled finalizer would add an obligation this brief does not justify.\n\n4. **What it forecloses:** Tagging and publishing before merge, immediate automatic merging, and overlapping manual releases without an explicit override. These restrictions match the stated decisions.\n\n5. **Findings**\n\nNo findings.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "architecture",
+  "capture": {
+    "run_id": "iterate-2026-11-25-p8a-decisions-q1-q4",
+    "at": "2026-11-25T16:42:43.139702+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "approve"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}

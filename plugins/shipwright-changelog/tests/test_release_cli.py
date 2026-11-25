@@ -28,10 +28,11 @@ class Fake:
     """A runner that answers by key; ``answers[key]`` is a ``CmdResult`` field dict or a callable ``argv -> dict``."""
 
     def __init__(self, **answers):
-        self.answers, self.calls = answers, []
+        self.answers, self.calls, self.opts = answers, [], {}
 
-    def __call__(self, key, argv, cwd):
+    def __call__(self, key, argv, cwd, **opts):  # opts: the env= / timeout= a caller set (the last call of a key wins)
         self.calls.append((key, list(argv)))
+        self.opts[key] = opts
         answer = self.answers.get(key, {})
         fields = answer(argv) if callable(answer) else answer
         return CmdResult(key, tuple(argv), fields.get("exit", 0), fields.get("stdout", ""), fields.get("stderr", ""))

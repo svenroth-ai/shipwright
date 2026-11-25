@@ -134,7 +134,7 @@ def test_record_event_on_a_feature_branch_commits_only_the_event_paths_and_pushe
     assert code == 0 and out["on_trunk"] is False and out["pushed"] is True and out["committed"] == ["shipwright_events.jsonl"]
     assert fake.argv("event-record")[-8:] == ["--type", "phase_completed", "--phase", "changelog", "--run-id", f"release-v{VERSION}",
                                               "--detail", f"v{VERSION} — https://example.test/pr/1"]
-    assert fake.argv("event-commit")[-2:] == ["--", "shipwright_events.jsonl"] and fake.argv("event-push") == ["git", "push", "origin", "HEAD"]
+    assert fake.argv("event-commit")[-2:] == ["--", "shipwright_events.jsonl"] and fake.argv("event-push") == ["git", "push", "origin", "HEAD", "--no-follow-tags"]
     assert release_runstate.stored(tmp_path, VERSION)["pr_url"] == "https://example.test/pr/1"
 
 

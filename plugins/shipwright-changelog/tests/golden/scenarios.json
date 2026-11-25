@@ -31,17 +31,17 @@
       "id": "preview-guided",
       "seeds": ["S2g", "S18a", "S18b"],
       "title": "Entry preview, guided run",
-      "setup": "Standalone run, autonomy guided. Step 4 has just written the 1.3.0 section into CHANGELOG.md from two pending entries (the file is already written, today's order).",
+      "setup": "Standalone run, autonomy guided. Step 4 has just previewed the 1.3.0 section from two pending entries (a dry run: nothing is written yet, P8a F2).",
       "ask": "The entry is generated. What happens next?",
-      "expected": {"decision": "ask", "note": "Step 5, guided: present the full entry and ask Accept / Edit / Cancel (gate changelog.entry-preview). Edit re-previews. Go on to Step 5.3 only after Accept."}
+      "expected": {"decision": "ask", "note": "Step 5, guided: present the full entry and ask Accept / Edit / Cancel (gate changelog.entry-preview). Accept runs the real aggregate; Edit changes the pending drop and re-previews; Cancel ends the release with nothing written. Go on to Step 5.3 only after Accept."}
     },
     {
       "id": "preview-autonomous",
       "seeds": ["S2a"],
       "title": "Entry preview, autonomous run",
-      "setup": "Standalone run, autonomy autonomous. Step 4 has just written the 1.3.0 section into CHANGELOG.md.",
+      "setup": "Standalone run, autonomy autonomous. Step 4 has just previewed the 1.3.0 section (a dry run, nothing written yet).",
       "ask": "The entry is generated. What happens next?",
-      "expected": {"decision": "proceed", "note": "Step 5, autonomous: skip the preview confirmation and continue with Step 5.3, then 5.4, 5.5 and Step 6, in that order."}
+      "expected": {"decision": "proceed", "note": "Step 5, autonomous: skip the preview confirmation, run the real aggregate and continue with Step 5.3, then 5.4, 5.5 and Step 6, in that order."}
     },
     {
       "id": "preview-unattended",

@@ -78,14 +78,14 @@ def test_a_closed_unmerged_pr_is_refused_with_its_own_reason(tmp_path, plugin_ro
 @pytest.mark.parametrize("trunk", ["main", "develop"])
 def test_the_skill_trunk_line_names_the_trunk_you_are_on(tmp_path, plugin_root, trunk):
     skill = " ".join((SKILL_DIR / "SKILL.md").read_text(encoding="utf-8").split())
-    template = 'git push --atomic origin {trunk} "refs/tags/v{version}"'
+    template = 'git push --atomic origin {branch} "refs/tags/v{version}"'
     assert template in skill
     committed(tmp_path)
     seed(tmp_path, mode="standalone", branch=trunk, on_trunk=True)
     fake = Fake(**{**OK, "push-head": {"stdout": trunk + "\n"}, "push-tip": {"stdout": "b" * 40 + "\n"},
                    "push-git": lambda argv: {"stdout": "\x01\n" + EVENT_LINE} if argv[1] == "log" else {}})
     line = ask(tmp_path, plugin_root, fake)[1]["line"]
-    assert line == template.replace("{trunk}", trunk).replace("{version}", VERSION).replace('"', "")
+    assert line == template.replace("{branch}", trunk).replace("{version}", VERSION).replace('"', "")
 
 
 def test_the_skill_carries_the_literal_lines_push_tag_prints(tmp_path, plugin_root):
@@ -96,8 +96,8 @@ def test_the_skill_carries_the_literal_lines_push_tag_prints(tmp_path, plugin_ro
     fake = Fake(**{**OK, "push-tip": {"stdout": "b" * 40 + "\n"}, "push-git": lambda argv: {"stdout": "\x01\nshipwright_events.jsonl\n"} if argv[1] == "log" else {}})
     trunk = ask(tmp_path, plugin_root, fake)[1]["line"]
     assert trunk == f"git push --atomic origin main refs/tags/v{VERSION}"
-    assert 'git push --atomic origin {trunk} "refs/tags/v{version}"' in skill and 'git push origin "refs/tags/v{version}"' in skill
-    assert "--atomic" in trunk and "git push" not in skill.replace('git push --atomic origin {trunk} "refs/tags/v{version}"', "").replace('git push origin "refs/tags/v{version}"', "")
+    assert 'git push --atomic origin {branch} "refs/tags/v{version}"' in skill and 'git push origin "refs/tags/v{version}"' in skill
+    assert "--atomic" in trunk and "git push" not in skill.replace('git push --atomic origin {branch} "refs/tags/v{version}"', "").replace('git push origin "refs/tags/v{version}"', "").replace("git push origin HEAD", "")
 
 
 # ---- F1b, one key ------------------------------------------------------------------------------------------
@@ -159,7 +159,7 @@ def test_the_merge_check_reads_the_base_the_pr_was_opened_against_not_origin_hea
 def test_record_event_keeps_the_base_of_the_pr_and_none_on_the_trunk(tmp_path, plugin_root):
     from .test_release_p4_cli import event_fake
     release_event.record_event(rec(tmp_path, event_fake("release/x")), plugin_root, version=VERSION, pr_url=PR)
-    assert release_runstate.stored(tmp_path, VERSION)["base_branch"] == release_event.PR_BASE == "main"
+    assert release_runstate.stored(tmp_path, VERSION)["base_branch"] == "main"  # no trunk stored and the fake remote names none: main (F5 fallback)
     release_event.record_event(rec(tmp_path, event_fake("develop")), plugin_root, version=VERSION)
     assert release_runstate.stored(tmp_path, VERSION)["base_branch"] is None
 

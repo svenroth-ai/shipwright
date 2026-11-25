@@ -26,7 +26,7 @@ class Tools:
     def __init__(self, fail: bool = False, noop: bool = False) -> None:
         self.fail, self.noop = fail, noop
 
-    def __call__(self, key, argv, cwd):
+    def __call__(self, key, argv, cwd, **opts):
         if key == "event-record":
             if self.fail:
                 return CmdResult(key, tuple(argv), 1, "", "record_event failed")
@@ -36,7 +36,7 @@ class Tools:
             return CmdResult(key, tuple(argv), 0)
         if key == "event-stage":  # legacy layout: the real tool is a no-op that exits 0
             return CmdResult(key, tuple(argv), 0)
-        return subprocess_runner(key, argv, cwd)
+        return subprocess_runner(key, argv, cwd, **opts)
 
 
 def git(cwd: Path, *args: str) -> str:

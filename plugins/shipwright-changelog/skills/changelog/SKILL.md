@@ -31,6 +31,7 @@ The JSON on stdout is the answer:
 - `status` is `ok`, or `stop` with a `reason`: `mode_error` (see C), `setup_refused`, `gate_catalog_unavailable`, or
   `no_unreleased_changes` ("No unreleased changes"), or another reason it names (`parse_commits_failed`, `no_version`, `upgrade_notes_query_failed`, `upgrade_note_drop_failed`). Report a stop and end the release.
 - `mode`, `last_tag`, `branch`, `commits_since_tag`, `commits` (Steps 1-2), `version`, `suggested`, `version_reason` (Step 3).
+  `trunk` (the remote's default branch, the PR base; `trunk_source`: `remote`, `local` or `fallback`) and `on_trunk` (Step 7).
   `previous_tag_has_release` is advisory, never a gate; its notice is already in `notices`.
 - `gates`: what each question does (`version`, `preview`, `out_of_sequence`), `auto` or `ask`. **Do what `gates` says.** The
   rule behind it lives in the gate catalog, not here; the contract: [first-actions](references/first-actions.md).
@@ -84,22 +85,15 @@ A custom version is the `{version}` of every later call: run `prepare` again wit
 ## Step 4: Generate Changelog Entry
 
 The upgrade-notes check already ran inside `prepare`, in every mode, before any aggregator call, so a drop it adds is picked up by
-this release ([release-workflow.md](references/release-workflow.md)). Read `upgrade_notes.status`: `action_drop_written` means a
-migration page asks projects to act and a drop under `CHANGELOG-unreleased.d/Changed/` now says so; read it, fix the wording if
-it misleads. `action_drop_deferred` means the same page was found while a question (`gates`) was still open, so nothing was written yet:
-the real `aggregate` files the drop(s) (`upgrade_notes.pending` has the text, and the preview names it in `upgrade_notes_pending`) and
-the preview's `decisions_preview` names the ADR numbers it will give. In both cases, where the page names a companion release that must come first, name its minimum version and confirm it is
-published before the release PR is merged. Any other status: say `upgrade_notes.sentence` in the Step 5 preview, or in the
-closing summary when the mode skips the preview.
+this release. Read `upgrade_notes.status` and do what [release-workflow.md](references/release-workflow.md) says for it (Upgrade-notes check).
 
-Preview first, then run for real. One call each; `aggregate` owns the flags and the release date:
+Preview first: this call writes nothing (no `CHANGELOG.md` change, no drop consumed, no ADR numbered); `aggregate` owns the flags and the release date:
 
 ```bash
 uv run "{plugin_root}/scripts/release.py" aggregate --project-root "$(pwd)" --version "{version}" --dry-run
-uv run "{plugin_root}/scripts/release.py" aggregate --project-root "$(pwd)" --version "{version}"
 ```
 
-The command owns the aggregator's flags (an empty release is refused only by the real run): add none by hand.
+The real run comes only after Step 5. The command owns the aggregator's flags (an empty release is refused only by the real run): add none by hand.
 
 A legacy bullet under `## [Unreleased]` (pre-refactor iterates wrote straight to `CHANGELOG.md`) is NOT migrated: the
 aggregator prints a **loud stderr WARNING naming each bullet's own text** (also in `legacy_unreleased_bullet_texts`), and the
@@ -120,17 +114,12 @@ cherry-pick from an unrelated branch), hand each one to the real run as `--fallb
 `append_changelog_entry.py` writes them BEFORE the aggregator runs); they land in the legacy `[Unreleased]` block and surface as a
 warning at aggregation time.
 
-See [changelog-format.md](references/changelog-format.md) for output
-format details.
-
 ---
 
 ## Step 5: Preview and Confirm
 
-**Goal:** Show the generated changelog entry to the user.
-
-Do what `gates.preview` says. `auto`: skip preview confirmation and continue with `sync` (Steps 5.3 to 5.5), then Step 6, in that order. `ask`:
-Present the full entry and ask:
+Do what `gates.preview` says. `auto`: no question; run the real call below, then `sync` (Steps 5.3 to 5.5), then Step 6, in that order. `ask`:
+present the preview's full entry (`section_written`, with `decisions_preview`, `upgrade_notes_pending` and `fallback_pending`) and ask:
 ```
 AskUserQuestion:
   question: "Review the changelog entry. Proceed?"
@@ -140,7 +129,18 @@ AskUserQuestion:
     - Cancel
 ```
 
-If edit: apply changes and re-preview.
+- **Accept:** run the real call below (it writes `CHANGELOG.md`, consumes the drops and numbers the ADRs).
+- **Edit:** change the pending entry's drop file under `CHANGELOG-unreleased.d/` (never `CHANGELOG.md`), run Step 4's preview again, ask again.
+- **Cancel:** run `cancel` (second block) and end the release: it puts back any drop file an Edit changed (`restored`); tell the operator every
+  path in `left` (a drop file new since `prepare`: kept, never deleted). The run record stays, so the release guard blocks a push of the trunk or a tag for this release for 48 hours or until `SHIPWRIGHT_RELEASE_GUARD=off`.
+
+```bash
+uv run "{plugin_root}/scripts/release.py" aggregate --project-root "$(pwd)" --version "{version}"
+```
+
+```bash
+uv run "{plugin_root}/scripts/release.py" cancel --project-root "$(pwd)" --version "{version}"
+```
 
 ---
 
@@ -179,31 +179,32 @@ version is this release; a mismatch removes the tag again. It writes
 
 ## Step 7: Create PR (Optional)
 
-**Only if on a feature branch** (not main/develop).
+**Only if on a feature branch:** prepare returned `on_trunk: false`.
+
+Push the branch first (the host opens a PR only for a branch it has; `--no-follow-tags` keeps the tag here even with `push.followTags`):
+```bash
+git push origin HEAD --no-follow-tags
+```
+A failed push stops the release here: the tag stays on this machine; report it.
 
 ```bash
 gh pr create \
   --title "Release v{version}" \
   --body "## Changelog\n\n{entry}" \
-  --base main
+  --base "{trunk}"
 ```
 
-**A failed `gh pr create` stops the release here:** nothing is pushed and the tag stays on this machine; report it.
-
-> **Parallel iterates:** rebase-per-PR is expected, tagging is single-writer,
-> and `CHANGELOG.md [Unreleased]` is the one merge hotspot. Detail:
-> [release-workflow.md](references/release-workflow.md); full conventions live
-> in `/shipwright-iterate` B1a.
+**A failed `gh pr create` stops the release here:** the tag stays on this machine; report it.
 
 **Record the changelog event — BEFORE the merge, so it ships in the release PR** (an append after the merge strands uncommitted in the main
-checkout: webui v0.28.0, monorepo v0.34.0). On a feature branch it commits only the event paths and pushes the head; on main it commits and
-never pushes (main is pushed once, with the tag). A non-zero exit (a rejected push too) **stops the release**: the tag stays local.
+checkout: webui v0.28.0, monorepo v0.34.0). On a feature branch it commits only the event paths and pushes the head; on the trunk it commits and
+never pushes (the trunk is pushed once, with the tag). A non-zero exit (a rejected push too) **stops the release**: the tag stays local.
 
 ```bash
 uv run "{plugin_root}/scripts/release.py" record-event --project-root "$(pwd)" --version "{version}" --pr-url "{PR_URL}"
 ```
 
-Omit `--pr-url` on main.
+Omit `--pr-url` on the trunk.
 
 **A hand-invoked release with autonomy `autonomous` or `unattended`:** after recording the event, merge immediately; a failed merge stops the release:
 ```bash
@@ -221,14 +222,12 @@ page (the next two blocks). Neither is done before the merge, so a failed releas
 uv run "{plugin_root}/scripts/release.py" push-tag --project-root "$(pwd)" --version "{version}"
 ```
 `status: "ok"` gives the one `line` to run: from a feature branch `git push origin "refs/tags/v{version}"` (only the tag, never a local trunk,
-never `--tags`), on the trunk `git push --atomic origin {trunk} "refs/tags/v{version}"` (`{trunk}` is the branch you are on, `main` or `develop`: run the printed line; the trunk and exactly this tag, together or not at all).
+never `--tags`), on the trunk `git push --atomic origin {branch} "refs/tags/v{version}"` (`{branch}` is the branch you are on, a trunk: run the printed line; the trunk and exactly this tag, together or not at all).
 Run that line as printed. `status: "waiting_for_merge"` (exit 1) means a hand-invoked release's PR is not merged yet: run `push-tag` again after the merge.
 `reason: "merge_state_unknown"` is retryable (origin could not be asked: run `push-tag` again). `status: "refused"` otherwise stops the release and names the `reason` (`merged_without_release_commit`: the PR was merged without the release commit, so
 the tag would name a commit that is not on the trunk; do not run it again, report it). A refused push stops the release.
 
-**Create GitHub Release (best-effort, never blocks this phase):** condenses
-the just-released `CHANGELOG.md` section into a short, human-readable body
-and publishes it. Rationale, the LLM/mechanical split, and every reported
+**Create GitHub Release (best-effort, never blocks this phase):** what it publishes, the LLM/mechanical split and every reported
 outcome: [release-workflow.md](references/release-workflow.md).
 ```bash
 uv run "{shared_root}/scripts/tools/publish_release_notes.py" \

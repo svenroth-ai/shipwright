@@ -94,7 +94,7 @@ def _pr_check(rec: Recorder, state: dict[str, Any], commit: str | None) -> dict[
 def on_base(rec: Recorder, state: dict[str, Any], commit: str | None) -> tuple[bool | None, str, str]:
     """``(reached, base, detail)``: is the release commit on the PR's base branch on origin? ``None`` = cannot tell (no commit, no
     fetch, or git could not answer: unknown is not "not merged"). Only FETCH_HEAD moves, never a ref or the tree."""
-    base = state.get("base_branch") or rec.run("verify-base", ["git", "symbolic-ref", "--short", "-q", "refs/remotes/origin/HEAD"]).stdout.strip().removeprefix("origin/") or "main"
+    base = state.get("base_branch") or state.get("trunk") or rec.run("verify-base", ["git", "symbolic-ref", "--short", "-q", "refs/remotes/origin/HEAD"]).stdout.strip().removeprefix("origin/") or "main"
     url = rec.run("verify-remote-url", ["git", "remote", "get-url", "--push", "origin"]).stdout.strip() or "origin"  # where a push goes, like the tag check
     fetched = rec.run("verify-fetch", ["git", "fetch", "--quiet", "--end-of-options", url, base])
     ancestry = rec.run("verify-merged", ["git", "merge-base", "--is-ancestor", commit or "", "FETCH_HEAD"]) if commit and fetched.exit == 0 else None

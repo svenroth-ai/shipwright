@@ -5,7 +5,7 @@ between them, and every commit between them touches at least one path and only t
 the event drops). An amended release commit, a change and its revert, a merge commit and an empty commit are therefore not the release.
 
 The caller supplies ``git(*args) -> (exit_code, stdout)`` so the hook (``git -C <root>``, own timeouts) and the CLI (its recorded runner,
-which the tests replace) run the same questions. Loaded by ``release_guard.py`` from its own directory and by ``lib/release_push.py`` by path.
+which the tests replace) run the same questions. Loaded by ``release_guard.py`` from its own directory and by ``lib/release_push.py`` and ``lib/release_event.py`` by path.
 """
 
 from __future__ import annotations
@@ -15,6 +15,8 @@ from typing import Callable
 EVENT_FILE = "shipwright_events.jsonl"
 EVENT_DROPS = ".shipwright/events/drops/"  # what record-event commits
 Git = Callable[..., "tuple[int, str]"]
+# The env of a git call that may ask the remote, also shared (the hook and the CLI's default-branch lookup): never wait on a login.
+NO_PROMPT = {"GIT_TERMINAL_PROMPT": "0", "GCM_INTERACTIVE": "never", "GIT_SSH_COMMAND": "ssh -o BatchMode=yes"}
 
 
 def event_only(paths: list[str]) -> bool:

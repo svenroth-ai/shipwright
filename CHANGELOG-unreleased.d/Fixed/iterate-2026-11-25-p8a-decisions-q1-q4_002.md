@@ -1,0 +1,1 @@
+/shipwright-changelog pushes the release branch before it opens the pull request, and opens it against the default branch your remote reports (master or any other name) instead of assuming main (main and develop still count as release branches with no pull request); neither push sends the release tag early, and asking the remote never waits for a password prompt

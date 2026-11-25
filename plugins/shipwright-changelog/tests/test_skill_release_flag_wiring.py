@@ -52,5 +52,9 @@ def test_the_skill_sends_the_model_through_the_one_command_that_owns_the_flags()
     """was test_step_4_instructs_never_combining_...: the prose names no aggregator flag, only the CLI call, so the two cannot be combined by hand."""
     text = SKILL_PATH.read_text(encoding="utf-8")
     block = text[text.index("## Step 4: Generate Changelog Entry"):text.index("\n## Step 5")]
-    assert block.count('release.py" aggregate') == 2 and "--dry-run" in block
+    step5 = text[text.index("## Step 5: Preview and Confirm"):text.index("\n## Step 5.3")]
+    # P8a (F2): Step 4 is the preview only; the real call comes after the answer, in Step 5
+    assert block.count('release.py" aggregate') == 1 and "--dry-run" in block
+    real = step5.split('release.py" aggregate')
+    assert len(real) == 2 and "--dry-run" not in real[1].split("```")[0]
     assert "--fail-if-empty" not in block and "aggregate_changelog.py" not in block

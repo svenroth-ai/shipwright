@@ -40,7 +40,9 @@ def test_a_rerun_after_a_failed_audit_verifies_and_tags_the_release_commit_that_
 def test_record_event_on_a_feature_branch_without_a_pr_url_records_and_pushes_nothing(tmp_path, plugin_root):
     fake = event_fake("release/v1.3.0")
     code, out = release_event.record_event(rec(tmp_path, fake), plugin_root, version=VERSION, pr_url="")
-    assert code == 1 and out["reason"] == "pr_url_missing" and fake.keys() == ["branch"]
+    keys = fake.keys()
+    assert code == 1 and out["reason"] == "pr_url_missing" and keys[0] == "branch"
+    assert set(keys) <= {"branch", "trunk-url", "trunk", "trunk-local"}  # P8a (F5): only reads, which branch is the trunk
 
 
 def test_close_phase_fails_when_a_hand_invoked_release_leaves_the_tree_dirty(tmp_path, plugin_root):

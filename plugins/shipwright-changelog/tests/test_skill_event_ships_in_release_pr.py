@@ -41,8 +41,9 @@ def test_event_is_recorded_once_per_flow():
 @pytest.mark.covers("FR-01.09/AC01")
 def test_on_main_case_records_before_tag_push_without_its_own_push():
     step = _step_7()
-    assert step.index("Omit `--pr-url` on main") < step.index('release.py" push-tag')
-    assert "git push origin HEAD" not in step  # the head push is inside `record-event`, on a feature branch only
+    assert step.index("Omit `--pr-url` on the trunk") < step.index('release.py" push-tag')
+    # P8a (F3): the one literal head push is the feature-branch push right before `gh pr create`; the event's is in `record-event`
+    assert step.count("git push origin HEAD") == 1 and step.index("git push origin HEAD") < step.index("gh pr create")
 
 
 @pytest.mark.covers("FR-01.09/AC11")
@@ -53,4 +54,4 @@ def test_a_guided_release_pushes_only_the_tag_and_only_after_the_merge():
     flat = " ".join(step.split())
     assert 'release.py" push-tag' in flat and "never a local trunk" in flat and '`status: "waiting_for_merge"`' in flat
     assert 'git push origin "refs/tags/v{version}"' in flat and "never `--tags`" in flat  # the push is a literal line; the decision before it is `push-tag`
-    assert "git push origin HEAD" not in step and "git push --tags" not in step
+    assert step.count("git push origin HEAD") == 1 and "git push --tags" not in step  # the branch push before the PR (P8a F3)
