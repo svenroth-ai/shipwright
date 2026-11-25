@@ -1264,13 +1264,6 @@
       "adr": null
     },
     {
-      "path": "shared/scripts/tools/tests/test_check_skill_inventory.py",
-      "limit": 300,
-      "current": 301,
-      "state": "grandfathered",
-      "adr": null
-    },
-    {
       "path": "shared/scripts/tools/tests/test_codex_completion_oracle.py",
       "limit": 300,
       "current": 387,

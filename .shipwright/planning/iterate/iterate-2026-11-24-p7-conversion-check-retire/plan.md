@@ -1,0 +1,5 @@
+Goal: A conversion check for a converted plugin (prose A-items gone, B-items present, Codex bundle resolves the CLI), a JUnit reader that holds each passing promise against the run's own report, the inventory and coverage checks retired with a reviewed re-pin, the trace.json export, the saving report, FINDINGS and LEARNINGS closed
+Reason: Campaign dfp-pilot-changelog-p3-p8 unit P7 (programme Tz): prove the changelog conversion complete and close the two open freeze holes
+Reference: .shipwright/planning/iterate/campaigns/dfp-pilot-changelog-p3-p8/sub-iterates/P7-conversion-check-retire.md
+AC item: {"ac": "FR-01.09.AC01", "confirmed": false, "decided_by": "code", "files": ["shared/config/plugin_conversion.json", "shared/glossary.md", "shared/scripts/tools/check_plugin_conversion.py", "shared/scripts/tools/check_skill_inventory.py", "shared/scripts/tools/junit_promises.py"], "kind": "unchanged"}
+AC decisions: [{"ac": "FR-01.09.AC01", "mode": "auto", "answer": "auto", "kind": "unchanged", "answered_via": "none", "decided_by": "code", "confirmed": false}]

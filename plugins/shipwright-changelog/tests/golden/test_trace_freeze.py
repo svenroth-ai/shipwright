@@ -45,7 +45,7 @@ REQUIRED = (HARNESS, "shared/testkit/gh_stub.py", "shared/testkit/release_scratc
             "plugins/shipwright-changelog/tests/golden/scenarios_branches.py",
             "plugins/shipwright-changelog/tests/golden/scenarios_refusals.py",
             "plugins/shipwright-changelog/tests/golden/scenarios_modes.py",
-            "plugins/shipwright-changelog/tests/golden/coverage.py",
+            "plugins/shipwright-changelog/tests/golden/scenario_index.py",
             "plugins/shipwright-changelog/tests/golden/replay_commands.py",
             # P4 (fix list item 2): the CLI driver (prepare/aggregate since P3, steps 5.4-7 in P4) and the test that runs every scenario through it
             "plugins/shipwright-changelog/tests/golden/driver_cli.py",
@@ -58,7 +58,7 @@ REQUIRED = (HARNESS, "shared/testkit/gh_stub.py", "shared/testkit/release_scratc
             "plugins/shipwright-changelog/tests/golden/test_scenarios_branches.py",
             "plugins/shipwright-changelog/tests/golden/test_scenarios_refusals.py",
             "plugins/shipwright-changelog/tests/golden/test_scenarios_modes.py",
-            "plugins/shipwright-changelog/tests/golden/test_coverage_checks.py",
+            "plugins/shipwright-changelog/tests/golden/test_scenario_index.py",
             "plugins/shipwright-changelog/tests/golden/test_seeded_regressions.py",
             "plugins/shipwright-changelog/tests/golden/test_replay_driver.py",
             # P2p: the promise tests and the checks over the promise list and the judgement scenarios, and the lock's hashing

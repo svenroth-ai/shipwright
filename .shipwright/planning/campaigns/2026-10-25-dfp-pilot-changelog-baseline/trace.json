@@ -1,0 +1,526 @@
+{
+  "subject": "shipwright-changelog",
+  "schema": 1,
+  "promises": [
+    {
+      "id": "FR-01.09/AC01",
+      "sentence": "After a release run there is a readable note, a version tag, and an open request to deliver it.",
+      "source": {
+        "file": ".shipwright/planning/01-adopted/spec.md",
+        "heading_path": [
+          "FR-01.09 — Release notes and changelog",
+          "AC01"
+        ],
+        "content_hash": "b6ecfae322da6a5ea68c53aefb65eba7d7c4d170045c3b26407b0f69a40a4635"
+      },
+      "class": "outward command",
+      "check": {
+        "kind": "test",
+        "id": "plugins/shipwright-changelog/tests/golden/test_promise_release.py::test_ac01_a_release_run_leaves_a_readable_note_a_version_tag_and_an_open_request"
+      },
+      "status": "passing",
+      "decision": "Keep as a promise: green on the unchanged skill; the conversion must keep it green through the CLI driver.",
+      "oracle": "test",
+      "note": "Counted green with the head branch already pushed; on a branch the remote has never seen the request is refused today (D7, scenario S14a)."
+    },
+    {
+      "id": "FR-01.09/AC01/request",
+      "sentence": "The delivery request exists: it is open in the stub's state after the release run.",
+      "source": {
+        "file": ".shipwright/planning/01-adopted/spec.md",
+        "heading_path": [
+          "FR-01.09 — Release notes and changelog",
+          "AC01"
+        ],
+        "content_hash": "b6ecfae322da6a5ea68c53aefb65eba7d7c4d170045c3b26407b0f69a40a4635"
+      },
+      "class": "outward command",
+      "check": {
+        "kind": "test",
+        "id": "plugins/shipwright-changelog/tests/golden/test_promise_release.py::test_ac01_a_release_run_leaves_a_readable_note_a_version_tag_and_an_open_request"
+      },
+      "status": "passing",
+      "decision": "Seen only through the stub's state, so the replay is the only oracle: oracle trace.",
+      "oracle": "trace"
+    },
+    {
+      "id": "FR-01.09/AC02",
+      "sentence": "Entries are grouped by the kind of change, as readable bullets rather than raw commit lines.",
+      "source": {
+        "file": ".shipwright/planning/01-adopted/spec.md",
+        "heading_path": [
+          "FR-01.09 — Release notes and changelog",
+          "AC02"
+        ],
+        "content_hash": "04bf03ea3b7cb57fc6cb74c7066a6aaaa2d74d0d19c675117c9642cc893eb6f2"
+      },
+      "class": "mechanic",
+      "check": {
+        "kind": "test",
+        "id": "plugins/shipwright-changelog/tests/golden/test_promise_aggregate.py::test_ac02_entries_are_grouped_by_the_kind_of_change_and_read_as_bullets"
+      },
+      "status": "passing",
+      "decision": "Keep as a promise: green on the unchanged skill; the conversion must keep it green through the CLI driver.",
+      "oracle": "test",
+      "note": "The existing covers test for AC02 is not on the skill's path (finding D13); this test is."
+    },
+    {
+      "id": "FR-01.09/AC03",
+      "sentence": "When nothing has been recorded since the last release, the release says so and stops.",
+      "source": {
+        "file": ".shipwright/planning/01-adopted/spec.md",
+        "heading_path": [
+          "FR-01.09 — Release notes and changelog",
+          "AC03"
+        ],
+        "content_hash": "10268395e03c58d4c00687413f9427f311ee511fb48726d9d0b1d13b62f78d9f"
+      },
+      "class": "mechanic",
+      "check": {
+        "kind": "test",
+        "id": "plugins/shipwright-changelog/tests/golden/test_promise_aggregate.py::test_ac03_nothing_since_the_last_release_says_so_and_stops"
+      },
+      "status": "passing",
+      "decision": "Keep as a promise: green on the unchanged skill; the conversion must keep it green through the CLI driver.",
+      "oracle": "test",
+      "more_checks": [
+        {
+          "kind": "test",
+          "id": "plugins/shipwright-changelog/tests/golden/test_promise_aggregate.py::test_ac03_commits_but_nothing_recorded_is_refused_and_writes_nothing"
+        }
+      ],
+      "note": "Two different stops with two different messages today (finding D17); both are pinned."
+    },
+    {
+      "id": "FR-01.09/AC04",
+      "sentence": "The next version follows the rule: a break raises the first number (the second before 1.0), a new capability the second, else the third; no release yet starts at 0.1.0.",
+      "source": {
+        "file": ".shipwright/planning/01-adopted/spec.md",
+        "heading_path": [
+          "FR-01.09 — Release notes and changelog",
+          "AC04"
+        ],
+        "content_hash": "ce6612d3e5563eaf84d9ec3acc6b12573e3179bf626f1c566ef717ea492cb713"
+      },
+      "class": "mechanic",
+      "check": {
+        "kind": "test",
+        "id": "plugins/shipwright-changelog/tests/golden/test_promise_release.py::test_ac04_the_proposed_version_follows_the_break_feature_fix_rule"
+      },
+      "status": "passing",
+      "decision": "Keep as a promise: green on the unchanged skill; the conversion must keep it green through the CLI driver.",
+      "oracle": "test",
+      "note": "Covers the header break (the exclamation mark), the BREAKING CHANGE and BREAKING-CHANGE footers, a feature, a fix and a chore-only history (a patch today). A break recorded only in a pending note is missed today (finding D5); that is not part of the promise."
+    },
+    {
+      "id": "FR-01.09/AC05",
+      "sentence": "Decision numbers are given once, at release, in one continuing run.",
+      "source": {
+        "file": ".shipwright/planning/01-adopted/spec.md",
+        "heading_path": [
+          "FR-01.09 — Release notes and changelog",
+          "AC05"
+        ],
+        "content_hash": "6c767c9352c673b5e667cdc6833b52b574077112246b4f601cf5b3d558e393d9"
+      },
+      "class": "mechanic",
+      "check": {
+        "kind": "test",
+        "id": "plugins/shipwright-changelog/tests/golden/test_promise_aggregate.py::test_ac05_decision_numbers_are_given_once_at_release_in_one_continuing_run"
+      },
+      "status": "passing",
+      "decision": "Keep as a promise: green on the unchanged skill; the conversion must keep it green through the CLI driver.",
+      "oracle": "test"
+    },
+    {
+      "id": "FR-01.09/AC06",
+      "sentence": "The new section goes above the latest released one; the title and older entries stay.",
+      "source": {
+        "file": ".shipwright/planning/01-adopted/spec.md",
+        "heading_path": [
+          "FR-01.09 — Release notes and changelog",
+          "AC06"
+        ],
+        "content_hash": "cdc4d9a91f53221ab5569da518ab476dc4e0ec84c26cfe64fdd58a4ea04881e1"
+      },
+      "class": "mechanic",
+      "check": {
+        "kind": "test",
+        "id": "plugins/shipwright-changelog/tests/golden/test_promise_aggregate.py::test_ac06_the_new_section_goes_above_the_latest_release_and_older_text_stays"
+      },
+      "status": "passing",
+      "decision": "Keep as a promise: green on the unchanged skill; the conversion must keep it green through the CLI driver.",
+      "oracle": "test"
+    },
+    {
+      "id": "FR-01.09/AC07",
+      "sentence": "Writing a version again replaces its section; two sections for one version stop the write.",
+      "source": {
+        "file": ".shipwright/planning/01-adopted/spec.md",
+        "heading_path": [
+          "FR-01.09 — Release notes and changelog",
+          "AC07"
+        ],
+        "content_hash": "3724be676630f53f19a8251bfef5a2215d31ce2c6c332b6e6749ccc3d0142b42"
+      },
+      "class": "mechanic",
+      "check": {
+        "kind": "test",
+        "id": "plugins/shipwright-changelog/tests/golden/test_promise_aggregate.py::test_ac07_writing_a_version_again_replaces_its_section_and_it_appears_once"
+      },
+      "status": "passing",
+      "decision": "Keep as a promise: green on the unchanged skill; the conversion must keep it green through the CLI driver.",
+      "oracle": "test",
+      "more_checks": [
+        {
+          "kind": "test",
+          "id": "plugins/shipwright-changelog/tests/golden/test_promise_aggregate.py::test_ac07_two_sections_for_one_version_stop_the_write_and_change_nothing"
+        }
+      ]
+    },
+    {
+      "id": "FR-01.09/AC08",
+      "sentence": "A section that no longer matches the pending entries, or is marked withdrawn, stops the write and says which; nothing changes.",
+      "source": {
+        "file": ".shipwright/planning/01-adopted/spec.md",
+        "heading_path": [
+          "FR-01.09 — Release notes and changelog",
+          "AC08"
+        ],
+        "content_hash": "3fce8033c56cfd254417a373de782dc5ac1bda799ed844f25d39e24c7e4f2a48"
+      },
+      "class": "mechanic",
+      "check": {
+        "kind": "test",
+        "id": "plugins/shipwright-changelog/tests/golden/test_promise_aggregate.py::test_ac08_a_section_that_disagrees_with_the_pending_entries_stops_the_write_and_says_so"
+      },
+      "status": "passing",
+      "decision": "Keep as a promise: green on the unchanged skill; the conversion must keep it green through the CLI driver.",
+      "oracle": "test",
+      "more_checks": [
+        {
+          "kind": "test",
+          "id": "plugins/shipwright-changelog/tests/golden/test_promise_aggregate.py::test_ac08_a_withdrawn_marking_is_never_erased_and_the_refusal_names_it"
+        }
+      ],
+      "note": "Reconciling a refused re-run stays an operator action, never a model decision."
+    },
+    {
+      "id": "FR-01.09/AC09",
+      "sentence": "Entries written the old way are named back to the operator, not folded in silently.",
+      "source": {
+        "file": ".shipwright/planning/01-adopted/spec.md",
+        "heading_path": [
+          "FR-01.09 — Release notes and changelog",
+          "AC09"
+        ],
+        "content_hash": "a3c38a4d8eedaae389e9eb181320b5b837b45680a3f352e6951b2446d9ae459f"
+      },
+      "class": "mechanic",
+      "check": {
+        "kind": "test",
+        "id": "plugins/shipwright-changelog/tests/golden/test_promise_aggregate.py::test_ac09_entries_written_the_old_way_are_named_back_not_folded_and_not_lost"
+      },
+      "status": "passing",
+      "decision": "Keep as a promise: green on the unchanged skill; the conversion must keep it green through the CLI driver.",
+      "oracle": "test"
+    },
+    {
+      "id": "FR-01.09/AC10",
+      "sentence": "The release text can be previewed with the aggregation's dry run without anything changing on disk.",
+      "source": {
+        "file": ".shipwright/planning/01-adopted/spec.md",
+        "heading_path": [
+          "FR-01.09 — Release notes and changelog",
+          "AC10"
+        ],
+        "content_hash": "ad4a5199b78d20ed70f12b4995525310ba391d09ce8c3a70fcf91a3a55273061"
+      },
+      "class": "mechanic",
+      "check": {
+        "kind": "test",
+        "id": "plugins/shipwright-changelog/tests/golden/test_promise_aggregate.py::test_ac10_the_aggregation_dry_run_shows_the_release_text_and_changes_nothing_on_disk"
+      },
+      "status": "passing",
+      "decision": "Keep as a promise: green on the unchanged skill; the conversion must keep it green through the CLI driver.",
+      "oracle": "test",
+      "note": "Narrowed to the aggregation's dry run. The whole-release preview of Step 5 is a person's choice (accept, edit, cancel) that the driver does not observe, so no test claims it. Green when no migration page changed; otherwise the upgrade-notes check writes a pending entry before any preview (finding D12)."
+    },
+    {
+      "id": "FR-01.09/AC11",
+      "sentence": "Preparing a release publishes nothing until the delivery request is merged.",
+      "source": {
+        "file": ".shipwright/planning/01-adopted/spec.md",
+        "heading_path": [
+          "FR-01.09 — Release notes and changelog",
+          "AC11"
+        ],
+        "content_hash": "121bad9a3fe657acf325cc00a4bb2d21616b0fda196e72ef0079772f91c0255e"
+      },
+      "class": "outward command",
+      "check": null,
+      "status": "gap",
+      "decision": "Not one promise for all modes today: guided and driven runs push the tag and the release page before the merge (finding D2) and autonomous merges first. The operator decides at stop 2 which behaviour is today's; until then no test claims it.",
+      "oracle": "none",
+      "note": "Not obviously covered as a whole; the aggregation half has its own entry below."
+    },
+    {
+      "id": "FR-01.09/AC11/aggregation",
+      "sentence": "The step that writes the release text publishes nothing: no tag, no release page, no request leaves the machine.",
+      "source": {
+        "file": ".shipwright/planning/01-adopted/spec.md",
+        "heading_path": [
+          "FR-01.09 — Release notes and changelog",
+          "AC11"
+        ],
+        "content_hash": "121bad9a3fe657acf325cc00a4bb2d21616b0fda196e72ef0079772f91c0255e"
+      },
+      "class": "mechanic",
+      "check": {
+        "kind": "test",
+        "id": "plugins/shipwright-changelog/tests/golden/test_promise_aggregate.py::test_ac11_preparing_the_release_text_publishes_nothing_aggregation_half"
+      },
+      "status": "passing",
+      "decision": "Keep as a promise: green on the unchanged skill; the conversion must keep it green through the CLI driver. Only the aggregation half of AC11.",
+      "oracle": "test",
+      "note": "A trivially held invariant: the step that writes the release text has no outward command, so this can only fail if one is added. It says nothing about the whole of AC11 (the gap above)."
+    },
+    {
+      "id": "FR-01.09/AC12",
+      "sentence": "The version is written into every declared manifest in the release commit and checked before the tag; a stale manifest stops the release.",
+      "source": {
+        "file": ".shipwright/planning/01-adopted/spec.md",
+        "heading_path": [
+          "FR-01.09 — Release notes and changelog",
+          "AC12"
+        ],
+        "content_hash": "37638c29bdd22e555f0747daa06be1c3e24c4d89a31dc9b8f690c489f6651c6f"
+      },
+      "class": "mechanic",
+      "check": {
+        "kind": "test",
+        "id": "plugins/shipwright-changelog/tests/golden/test_promise_release.py::test_ac12_every_declared_manifest_carries_the_version_in_the_release_commit_before_the_tag"
+      },
+      "status": "passing",
+      "decision": "Keep as a promise: green on the unchanged skill; the conversion must keep it green through the CLI driver.",
+      "oracle": "test"
+    },
+    {
+      "id": "FR-01.09/AC13",
+      "sentence": "Every place a manifest names the version is written together.",
+      "source": {
+        "file": ".shipwright/planning/01-adopted/spec.md",
+        "heading_path": [
+          "FR-01.09 — Release notes and changelog",
+          "AC13"
+        ],
+        "content_hash": "e223290b747fee66ffea267404b5085d04efe1e4df27a3234b93fc749eaeed5a"
+      },
+      "class": "mechanic",
+      "check": {
+        "kind": "test",
+        "id": "plugins/shipwright-changelog/tests/golden/test_promise_release.py::test_ac13_a_version_written_in_several_places_of_one_manifest_is_written_in_all_together"
+      },
+      "status": "passing",
+      "decision": "Keep as a promise: green on the unchanged skill; the conversion must keep it green through the CLI driver.",
+      "oracle": "test"
+    },
+    {
+      "id": "FR-01.09/AC14",
+      "sentence": "The release page has a checked summary, and its title and link are built from facts; an unchecked summary is never published.",
+      "source": {
+        "file": ".shipwright/planning/01-adopted/spec.md",
+        "heading_path": [
+          "FR-01.09 — Release notes and changelog",
+          "AC14"
+        ],
+        "content_hash": "4a3c718cdb45c2240438a5d39854abf06e232205182e2009fdda0080a0922bb7"
+      },
+      "class": "outward command",
+      "check": {
+        "kind": "test",
+        "id": "plugins/shipwright-changelog/tests/golden/test_promise_release.py::test_ac14_the_release_page_has_a_checked_summary_and_title_and_link_built_from_facts"
+      },
+      "status": "passing",
+      "decision": "Keep as a promise: green on the unchanged skill; the conversion must keep it green through the CLI driver.",
+      "oracle": "test",
+      "more_checks": [
+        {
+          "kind": "test",
+          "id": "plugins/shipwright-changelog/tests/golden/test_promise_release.py::test_ac14_a_summary_that_fails_the_shape_check_is_never_published"
+        }
+      ]
+    },
+    {
+      "id": "FR-01.09/AC15",
+      "sentence": "A release page that cannot be created does not undo the release and is reported; an earlier version gets no page.",
+      "source": {
+        "file": ".shipwright/planning/01-adopted/spec.md",
+        "heading_path": [
+          "FR-01.09 — Release notes and changelog",
+          "AC15"
+        ],
+        "content_hash": "0fc67637409046d247bb81d97adb79c59ffda46f725927c3ed09d12c840cc274"
+      },
+      "class": "outward command",
+      "check": {
+        "kind": "test",
+        "id": "plugins/shipwright-changelog/tests/golden/test_promise_release.py::test_ac15_a_release_page_that_cannot_be_created_does_not_undo_the_release_and_is_reported"
+      },
+      "status": "passing",
+      "decision": "Keep as a promise: green on the unchanged skill; the conversion must keep it green through the CLI driver.",
+      "oracle": "test"
+    },
+    {
+      "id": "FR-01.09/AC15/no-backfill",
+      "sentence": "An earlier version gets no release page retroactively.",
+      "source": {
+        "file": ".shipwright/planning/01-adopted/spec.md",
+        "heading_path": [
+          "FR-01.09 — Release notes and changelog",
+          "AC15"
+        ],
+        "content_hash": "0fc67637409046d247bb81d97adb79c59ffda46f725927c3ed09d12c840cc274"
+      },
+      "class": "outward command",
+      "check": {
+        "kind": "test",
+        "id": "plugins/shipwright-changelog/tests/golden/test_promise_release.py::test_ac15_an_earlier_version_gets_no_page_retroactively"
+      },
+      "status": "passing",
+      "decision": "Seen only through the stub's argv log, so the replay is the only oracle: oracle trace.",
+      "oracle": "trace"
+    },
+    {
+      "id": "JUDGE/version-suggestion",
+      "sentence": "In a guided run the suggested version is shown and the operator may accept it or type another; in autonomous and unattended runs it is accepted without a question.",
+      "source": {
+        "file": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
+        "heading_path": [
+          "Step 3: Determine Version Bump"
+        ],
+        "content_hash": "5427ddfaeafb0601f92c7828f3df615b408efc265a1c94ecc4f447d9324b515c"
+      },
+      "class": "ask",
+      "check": {
+        "kind": "scenario",
+        "id": "version-guided"
+      },
+      "status": "not-run",
+      "decision": "Written for the real-model runs of stop 2 and stop 3; compare with scenarios.json.",
+      "oracle": "scenario",
+      "more_checks": [
+        {
+          "kind": "scenario",
+          "id": "version-autonomous"
+        },
+        {
+          "kind": "scenario",
+          "id": "version-unattended"
+        }
+      ]
+    },
+    {
+      "id": "JUDGE/entry-preview",
+      "sentence": "In a guided run the whole entry is shown and the operator accepts, edits or cancels; autonomous and unattended runs skip the preview.",
+      "source": {
+        "file": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
+        "heading_path": [
+          "Step 5: Preview and Confirm"
+        ],
+        "content_hash": "30203998348aee563e201cf200a8ca3991d96e0d37786e0a62acaabdc2fff1f2"
+      },
+      "class": "ask",
+      "check": {
+        "kind": "scenario",
+        "id": "preview-guided"
+      },
+      "status": "not-run",
+      "decision": "Written for the real-model runs of stop 2 and stop 3; compare with scenarios.json.",
+      "oracle": "scenario",
+      "more_checks": [
+        {
+          "kind": "scenario",
+          "id": "preview-autonomous"
+        },
+        {
+          "kind": "scenario",
+          "id": "preview-unattended"
+        }
+      ]
+    },
+    {
+      "id": "JUDGE/out-of-sequence",
+      "sentence": "When a driven run is live, a hand-started release warns about the collision and asks before going on.",
+      "source": {
+        "file": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
+        "heading_path": [
+          "C. Detect Invocation Mode"
+        ],
+        "content_hash": "07384c54ff80a73eb7679ee3d498e8df43b4e441fbbb8bd386318b996d813da9"
+      },
+      "class": "ask",
+      "check": {
+        "kind": "scenario",
+        "id": "out-of-sequence-guided"
+      },
+      "status": "not-run",
+      "decision": "The prose and the gate rules disagree (finding D19): stop 2 decides what is today's behaviour. The scenarios record the prose.",
+      "oracle": "scenario",
+      "more_checks": [
+        {
+          "kind": "scenario",
+          "id": "out-of-sequence-unattended"
+        }
+      ]
+    },
+    {
+      "id": "PROPOSED/upgrade-notes-check",
+      "sentence": "A release tells existing projects what to do after upgrading when a migration page changed.",
+      "source": {
+        "file": "plugins/shipwright-changelog/skills/changelog/references/release-workflow.md",
+        "heading_path": [
+          "Upgrade-notes check"
+        ],
+        "content_hash": "d7fdffed4a146d8fa5ff0782ac6177625d4a73487c58eb51d1fdf6ad85c555fc"
+      },
+      "class": "mechanic",
+      "check": null,
+      "status": "proposed",
+      "decision": "No requirement names it (finding D20); the operator decides whether it becomes a written promise (P8, question 6). Never counted as proof.",
+      "oracle": "none"
+    },
+    {
+      "id": "PROPOSED/event-fold",
+      "sentence": "Old per-run event files are folded into the archive before the release is staged, and a failure never blocks the release.",
+      "source": {
+        "file": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
+        "heading_path": [
+          "Step 5.3: Fold Old Event Files"
+        ],
+        "content_hash": "68e9e53a130ea94aac0813619c729ca90e467978f2cb8956b3bc3b46ee1bde0b"
+      },
+      "class": "mechanic",
+      "check": null,
+      "status": "proposed",
+      "decision": "Same as above (finding D20, P8 question 6).",
+      "oracle": "none"
+    },
+    {
+      "id": "PROPOSED/release-event-and-history",
+      "sentence": "The release is recorded as a phase event and in the project's phase history.",
+      "source": {
+        "file": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
+        "heading_path": [
+          "Step 7: Create PR (Optional)"
+        ],
+        "content_hash": "a731d4f6ec9516a047a21cb0aef18639b3650a8268acfb177697867a7e444945"
+      },
+      "class": "mechanic",
+      "check": null,
+      "status": "proposed",
+      "decision": "Same as above (finding D20, P8 question 6); the scenarios already record it in their traces.",
+      "oracle": "none"
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "1. The checks should exist, but the proposed operator-run registry is more permanent machinery than this single conversion warrants.\n\n2. Put the JUnit promise-status and freeze-sentinel checks into the existing verification path, consuming that run\u2019s results. Prove the conversion through focused tests in the existing suite; use a one-time conversion audit for campaign-specific retirement checks. Keep the skill-check export as a generated artifact. This is a smaller version of option 2, without a separate registry or operator procedure.\n\n3. The ongoing obligation is maintaining the promise-to-test mapping and JUnit checks. The proposal additionally requires maintaining prose/code patterns and remembering to run a separate checker; no automatic trigger or accountable owner is identified.\n\n4. A permanent registry of forbidden prose and required code patterns makes future prose rewrites and equivalent implementation changes harder by requiring coordinated registry updates.\n\n5. Findings:\n\nCategory: proportionality\nSeverity: medium\nFinding: A registry for converted plugins creates an enduring configuration contract to certify one stated conversion; the brief establishes no recurring need that warrants this abstraction.\nSuggestion: Use focused tests for durable behavior and a one-time audit for conversion completion, without introducing a per-plugin registry.\n\nCategory: ownership\nSeverity: medium\nFinding: An operator-run check cannot reliably establish that promises and the freeze sentinel ran in subsequent verification runs; its protection depends on someone remembering an additional procedure.\nSuggestion: Invoke the small JUnit reader from the existing verification path and check the results produced by that invocation.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "1. **Answer:** Partly \u2014 the deletions and the junit-based `passing` verification should exist, but the registry-driven operator-run checker is more standing machinery than a one-time conversion needs, and as an operator-run script it is exactly the kind of thing that silently stops being run.\n\n2. **The smallest thing that would do:** (a) put the junit reader inside the existing changelog test suite \u2014 a session-scoped fixture/conftest in the plugin's test root that reads the run's junit and asserts `passing` agrees with reality and that the sentinel freeze test ran and passed; that turns the two real holes into ordinary failing tests with no new invocation habit. (b) The A-items-gone/B-items-present checks as a handful of plain pytest tests (forbidden prose patterns, required files) \u2014 no registry file, no new tool entry point. (c) Keep the `baseline/trace.json` export and the deletions exactly as proposed; those reduce standing mechanisms. If the team wants the registry shape anyway, at minimum add \"retire `check_plugin_conversion.py` after the conversion is signed off at stop 3\" to the plan \u2014 it verifies an event, not a state.\n\n3. **What it costs to keep:** a registry file that must track every future prose/code pattern change in the plugin, a junit reader that only produces signal when an operator remembers to run it, and a JSON export that another tool now consumes and whose shape is a compatibility surface.\n\n4. **What it forecloses:** modest \u2014 the registry makes future prose refactors of the plugin carry a second place to update, and the export's shape pins `skill-check` to this file.\n\n5. **Findings:**\n\n- Category: ownership\n- Severity: high\n- Finding: An operator-run checker is a mechanism that needs a human to notice it needs running; it will be green once at stop 3 and never run again, so the `passing`/junit hole it closes stays closed only in the run it happened to gate.\n- Suggestion: Wire the junit assertions into the changelog plugin's existing pytest root (conftest/session fixture reading the run's junit), so the check fails the suite it protects automatically; the seeded-regression and sentinel assertions land there too.\n\n- Category: proportionality\n- Severity: medium\n- Finding: A registry file plus a generic conversion-checker tool is a permanent, explainable artifact built to verify a one-time conversion.\n- Suggestion: Replace with a small number of ordinary pytest tests asserting forbidden/required patterns for this one plugin; if the registry form is kept for reuse, add explicit retirement of `check_plugin_conversion.py` after stop-3 sign-off, since its purpose (proving this conversion) ends there.\n\n- Category: simpler-alternative\n- Severity: low\n- Finding: The `passing` gap is acknowledged to be a defect in an existing test (`test_promises_meta.py` checks existence only); fixing the existing test to read junit is strictly smaller than a parallel reader.\n- Suggestion: Extend `test_promises_meta.py` rather than adding a standalone reader, unless the junit must come from a separate CI run the suite cannot see.\n\nThe deletions (inventory checker, data files) and the freeze re-pin are the right move and are the best part of this change: they remove standing mechanisms.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "architecture",
+  "capture": {
+    "run_id": "iterate-2026-11-24-p7-conversion-check-retire",
+    "at": "2026-11-24T21:19:46.932574+00:00"
+  },
+  "verdicts": {
+    "openai": "revise",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

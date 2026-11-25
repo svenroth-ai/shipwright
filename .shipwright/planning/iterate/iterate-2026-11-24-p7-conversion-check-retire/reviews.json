@@ -1,0 +1,423 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-24-p7-conversion-check-retire",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-24T21:21:55.753908+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 12,
+      "findings": [
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Drop the migration from this unit or raise it as a separate, explicitly approved unit. If something from `coverage.py` genuinely must survive, put it in a new non-frozen module and note it in FINDINGS for P8a/P8b.  2. Category: dependency — Severity: medium Where does the junit XML come from? The `passing`-vs-junit check and the freeze sentinel are only as good as the run that produces the JUnit report. The mini-plan names `junit_promises.py` but not the invocation contract: which pytest run, with what junit flags, run when, by whom (hook, CI, operator command). Spec says the runner passes `--ac-mode auto`, and the ci.yml wiring is explicitly deferred for a human ack — meaning for now the check runs only where someone remembers to run it. If it's a docs-only invocation, the sentinel is decorative in practice.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Pin the exact command in the checker's `--help` and in `docs/hooks-and-pipeline.md`, and record the unwired-CI state as a finding so P8x or the operator closes it.  3. Category: edge-case — Severity: medium The mini-plan's `junit_promises.py` bundle includes \"Codex bundle resolves release.py and starts\". Starting the CLI is beyond the spec (which only requires the bundle to resolve `release.py`) and introduces nondeterminism (environment, subprocess timeouts, exit-code interpretation) into a checker that is otherwise pure tree-inspection. Likewise \"optional verify_local\" inside the checker contradicts the test requirement \"verify_local.py green\" as a hard gate.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Keep the checker static: resolution check in `check_plugin_conversion.py`; leave execution/`verify_local` to the existing verify step, not \"optional\" inside the tool.  4. Category: risk — Severity: medium The re-pin empties `approved_deltas.json`, folding the prior deltas. The spec itself mandates this, but note the audit-trail effect: the 26 (spec) / 33 (mini-plan — these numbers disagree, evidence the plan was written from a different snapshot) previously approved changes become invisible to `--check`. Preserve the pre-re-pin delta list in the PR description or the FINDINGS closure so stop-3 (P7-op) review has something to read, and reconcile the 26-vs-33 count before claiming which F-numbers are closed.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Snapshot `approved_deltas.json` before emptying it into the PR body; reconcile the delta count with the FULLRUN report.  5. Category: approach — Severity: low \"No orphan test removed (no per-test approval list; operator decision)\" pre-decides the outcome of what the spec defines as a STRICT-STOP that requires listing the candidates for the operator. Skipping removal is the safe default, but the candidate list still must be produced and surfaced.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Enumerate the orphan candidates in the PR/FINDINGS so the operator can issue per-test approvals for P8b or a follow-up.  6. Category: edge-case — Severity: low JUnit parsing edge cases: `pytest.mark.skip` at collection vs runtime, deselection via `-k`/`--deselect`, `xfail(strict)` and parameterised tests (`test_foo[param]` vs the promise name in `promise_list.json`). Name matching must handle parameterisation or it will silently pass/fail wrongly. Spec only names \"skipped or deselected\"; define behaviour for xfail explicitly in the tool and test it.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Add seeded tests for deselected, skipped, and parameterised promise tests.  Security: No specific concerns — the checker reads repo files and a local junit XML; keep XML parsing on `xml.etree` with `resolve_entities=False` (defusedparser not needed for a trusted local file) and avoid `shell=True` in any Codex-bundle invocation.  Overall: The core mechanism (conversion checker, junit-based passing check, freeze sentinel, re-pin) matches the spec, but the plan smuggles in an unauthorised migration into a frozen live file, over-produces the checker into runtime execution, and pre-answers a STRICT-STOP — those need to come out before this is built.  SHIPWRIGHT_VERDICT: revise",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "dependency |",
+          "file": null,
+          "line": null,
+          "finding": "Step 6 treats missing orphan approvals as permission to continue without removing orphans. The specification explicitly makes a missing per-test approval list a STRICT-STOP. “Operator decision” is insufficient without a recorded decision authorizing this deferral.",
+          "suggestion": "Locate and cite that decision, or stop and present the orphan candidates for approval before proceeding.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach |",
+          "file": null,
+          "line": null,
+          "finding": "The JUnit reader has no defined execution point. A standalone reader does not close the freeze hole unless the required validation run invokes it and fails when its checks fail. Avoiding CI edits leaves this acceptance criterion unresolved.",
+          "suggestion": "Specify the authorized runner or verification integration, its report path, and failure propagation. If integration requires human acknowledgment, resolve that prerequisite first and update the required documentation.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "The plan does not establish that JUnit evidence belongs to the current, complete changelog run. A stale report, ambiguous test names, duplicate outcomes, or partial report could incorrectly satisfy a `passing` promise or the freeze sentinel. In-process tests alone do not demonstrate runtime deselection behavior.",
+          "suggestion": "Produce a fresh report for the single changelog pytest root, match exact test identities, and fail on missing, skipped, failed, errored, or ambiguous required results. Add subprocess integration tests demonstrating skipped and deselected promises, an absent sentinel, and rejection of stale evidence.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "risk |",
+          "file": null,
+          "line": null,
+          "finding": "The re-pin review is inconsistent: step 4 references 26 earlier deltas, while the risks mention 33. Reviewing earlier deltas also does not replace reviewing the actual added, removed, and changed entries. Re-pinning can silently bless unrelated frozen changes.",
+          "suggestion": "Reconcile the counts and enumerate the expected re-pin entries before execution, including changes to `REQUIRED` and `scenario_index.py`. Compare actual entries against that list, verify all 43 traces and the promise lock remain unchanged, and STRICT-STOP on any trace change.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency |",
+          "file": null,
+          "line": null,
+          "finding": "The `baseline/trace.json` contract is explicitly unverified, yet this export is a required deliverable for `skill-check`. The saving report also lacks an explicit dependency on P0’s measurement method and baseline.",
+          "suggestion": "Read the mapping’s shared shape before implementing the export, validate it against the consumer, and identify P0’s measurement inputs and method so the saving comparison is reproducible.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach |",
+          "file": null,
+          "line": null,
+          "finding": "The new registry adds a second description of the conversion requirements without explaining why it is needed. A checker that trusts an editable registry can pass after a required item is accidentally removed from that registry.",
+          "suggestion": "Prefer explicit checks for this bounded pilot. If the registry serves an established consumer, retain it but test its required contents independently and identify the authoritative source for each A/B check.  The approach is broadly suitable, but the approval prerequisite, mandatory gate integration, and re-pin controls need concrete resolution before implementation. Referenced repository documents were unavailable for inspection, so this review is based on the supplied specification and mini-plan.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-24T21:21:55.991025+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Review findings\n\n**1. Category: approach — Severity: high**\nThe mini-plan's step (3) migrates the \"P8c, spec reader and the orphan-trace guard\" into `scenario_index.py`, which is in the frozen `REQUIRED` set. The spec scopes this unit to *deleting* the coverage checks; it does not authorise a functional migration into a live frozen file that is part of the live skill's runtime surface. This is scope creep with real regression risk (the migration touches the very module the plugin depends on), and it's decided inside the mini-plan rather than sourced from the BRIEF or an operator answer — the spec explicitly says anything needing an operator answer is a STRICT-STOP.\n*Suggestion:* Drop the migration from this unit or raise it as a separate, explicitly approved unit. If something from `coverage.py` genuinely must survive, put it in a new non-frozen module and note it in FINDINGS for P8a/P8b.\n\n**2. Category: dependency — Severity: medium**\nWhere does the junit XML come from? The `passing`-vs-junit check and the freeze sentinel are only as good as the run that produces the JUnit report. The mini-plan names `junit_promises.py` but not the invocation contract: which pytest run, with what junit flags, run when, by whom (hook, CI, operator command). Spec says the runner passes `--ac-mode auto`, and the ci.yml wiring is explicitly deferred for a human ack — meaning for now the check runs only where someone remembers to run it. If it's a docs-only invocation, the sentinel is decorative in practice.\n*Suggestion:* Pin the exact command in the checker's `--help` and in `docs/hooks-and-pipeline.md`, and record the unwired-CI state as a finding so P8x or the operator closes it.\n\n**3. Category: edge-case — Severity: medium**\nThe mini-plan's `junit_promises.py` bundle includes \"Codex bundle resolves release.py **and starts**\". Starting the CLI is beyond the spec (which only requires the bundle to *resolve* `release.py`) and introduces nondeterminism (environment, subp […truncated]\n\n[openai] 1. **Category: dependency | Severity: high**  \n   **Finding:** Step 6 treats missing orphan approvals as permission to continue without removing orphans. The specification explicitly makes a missing per-test approval list a STRICT-STOP. “Operator decision” is insufficient without a recorded decision authorizing this deferral.  \n   **Suggestion:** Locate and cite that decision, or stop and present the orphan candidates for approval before proceeding.\n\n2. **Category: approach | Severity: high**  \n   **Finding:** The JUnit reader has no defined execution point. A standalone reader does not close the freeze hole unless the required validation run invokes it and fails when its checks fail. Avoiding CI edits leaves this acceptance criterion unresolved.  \n   **Suggestion:** Specify the authorized runner or verification integration, its report path, and failure propagation. If integration requires human acknowledgment, resolve that prerequisite first and update the required documentation.\n\n3. **Category: edge-case | Severity: high**  \n   **Finding:** The plan does not establish that JUnit evidence belongs to the current, complete changelog run. A stale report, ambiguous test names, duplicate outcomes, or partial report could incorrectly satisfy a `passing` promise or the freeze sentinel. In-process tests alone do not demonstrate runtime deselection behavior.  \n   **Suggestion:** Produce a fresh report for the single changelog pytest root, match exact test identities, and fail on missing, skipped, failed, errored, or ambiguous required results. Add subprocess integration tests demonstrating skipped and deselected promises, an absent sentinel, and rejection of stale evidence.\n\n4. **Category: risk | Severity: high**  \n   **Finding:** The re-pin review is inconsistent: step 4 references 26 earlier deltas, while the risks mention 33. Reviewing earlier deltas also does not replace reviewing the actual added, removed, and changed entries. Re-pinning can silently bless […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "shared/scripts/tools/junit_promises.py",
+          "line": 58,
+          "finding": "Pass 1: the junit check ignored more_checks, so four passing promises (AC03, AC07, AC08, AC14) could pass with a skipped second test. Fixed in 2a18b4a54 with tests.",
+          "suggestion": "fixed",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/check_plugin_conversion.py",
+          "line": 141,
+          "finding": "Pass 1: verify_local timeout did not kill the process tree on Windows; locale decoding; errors escaped as tracebacks; A-items read SKILL.md only; static-only run printed 'converted'. Fixed in 2a18b4a54 (process group kill, utf-8 replace, exit 2, prose scope, verdict lists the checks that ran).",
+          "suggestion": "fixed",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "architecture",
+          "file": "shared/config/plugin_conversion.json",
+          "line": 12,
+          "finding": "Pass 1: export not next to its source. Reasoned and deferred to the next re-pin (D62).",
+          "suggestion": "recorded",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/check_plugin_conversion.py",
+          "line": 66,
+          "finding": "Pass 2: the post-kill drain has no timeout and can still wait on Windows; killpg race; invalid regex and unknown scope not exit 2; D70 A11 reason wrong. Recorded as D71 for the follow-up; the conversion check is operator-run, not a CI gate.",
+          "suggestion": "recorded, follow-up",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-24T23:29:35.488915+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "2a18b4a54d6ec859025d3460f2fb520399f5696e",
+      "reviewer_notes": "Independent opus code-review, two passes. Pass 1 on 547063874: REVISE (one high). Pass 2 on 2a18b4a54: PASS, no high; all pass-1 findings closed, residuals recorded in D71. Reference sweep for the deleted inventory and coverage files was clean."
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "shared/scripts/tools/check_plugin_conversion.py",
+          "line": null,
+          "finding": "Claim under doubt: the conversion check cannot give a false 'converted' — a run without --junit printed 'converted'. Fixed: the verdict lists the checks that ran, and a static-only run says 'static checks clean'.",
+          "suggestion": "fixed",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "shared/config/plugin_conversion.json",
+          "line": null,
+          "finding": "Claim under doubt: every A-item is proven gone from the live prose — most A-items read SKILL.md only, so references/ could carry mechanics. Fixed: six items read references too, four stay SKILL.md-only with reasons (D70).",
+          "suggestion": "fixed",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling",
+          "file": "plugins/shipwright-changelog/tests/golden/golden.lock.json",
+          "line": null,
+          "finding": "Claim under doubt: the re-pin blessed only reviewed P3-P6 changes — every changed lock sha equals the latest approved delta; no unapproved edit. Side effect: S12a.trace equals S2a.legacy.trace after P4. Recorded D69 for stop 3.",
+          "suggestion": "recorded",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling",
+          "file": ".shipwright/planning/campaigns/2026-10-25-dfp-pilot-changelog-FINDINGS.md",
+          "line": null,
+          "finding": "Claim under doubt: D68 matches the tree — it did not. Rewritten, AC record superseded.",
+          "suggestion": "fixed",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": ".shipwright/planning/campaigns/2026-10-25-dfp-pilot-changelog-SAVING-REPORT.md",
+          "line": null,
+          "finding": "Claim under doubt: saving report numbers are traceable — shared-root deltas included unrelated main growth. Qualified in the report.",
+          "suggestion": "fixed",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "shared/scripts/tools/junit_promises.py",
+          "line": null,
+          "finding": "Claim under doubt: status re-labelling is guarded — a promise moved out of passing is not checked by the junit reader; guarded only by review. Documented in the docstring and D64.",
+          "suggestion": "recorded",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-24T23:29:35.643976+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "2a18b4a54d6ec859025d3460f2fb520399f5696e"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "diff (absent) — `shared/scripts/tools/check_plugin_conversion.py` (`check_export`, and test `test_the_real_changelog_tree_is_converted`)",
+          "line": null,
+          "finding": "The spec requires writing `baseline/trace.json` \"in the shared shape as an export\", but no such file appears in the diff. `check_export` reads `entry[\"export\"]` (`.shipwright/planning/campaigns/2026-10-25-dfp-pilot-changelog-baseline/trace.json`) via `read()`, which raises `ConversionError` on a missing file — so `test_the_real_changelog_tree_is_converted` (and the operator run without `--write-export`) fails/exit-2 on the merged tree unless the export is committed in this same change.",
+          "suggestion": "Commit the generated `trace.json` in this diff (generated with `--write-export`), or make a missing export a normal finding with a pointer to `--write-export`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "diff (absent) — inventory data files",
+          "line": null,
+          "finding": "The exact scope says to delete `inventory.json`, `truth_table.json` and `subprocess_map.json` under `.shipwright/planning/campaigns/2026-10-25-dfp-pilot-changelog-inventory/`. None of those deletions is in the diff; only the tool and its test are retired. Also not visible: the saving report, the FINDINGS and LEARNINGS updates, and the reviewed `golden.lock.json` re-pin (REQUIRED changed — `coverage.py`/`test_coverage_checks.py` removed, `scenario_index.py`/`test_scenario_index.py` added — so `golden.lock.json` must be rewritten and `approved_deltas.json` emptied; the deltas file is emptied but the lock re-pin itself is not shown, and `--check` will fail without it).",
+          "suggestion": "If the diff is truncated, confirm these land in the same change; otherwise this is a partial implementation of three acceptance criteria (data files, reports, re-pin).",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/tools/check_plugin_conversion.py` ~line 118 (`run([...], timeout=120)`) and ~line 124 (`check_verify_local`, `timeout=1800`)",
+          "line": null,
+          "finding": "subprocess.run(..., timeout=...)` raises `subprocess.TimeoutExpired`, which is not caught by `main`'s `except (ConversionError, ValueError)` — a hanging CLI or verify run produces a traceback and exit code 1 from the interpreter (not 1/2 from the tool), and the temp bundle cleanup still runs but the operator gets no finding line.",
+          "suggestion": "Wrap the `run` calls in `try/except subprocess.TimeoutExpired` and emit a finding (or a ConversionError) with the timeout value.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "shared/scripts/tools/check_plugin_conversion.py` — `check_export",
+          "line": null,
+          "finding": "A missing or unreadable export raises `ConversionError` → exit 2 (\"cannot be read\"), conflating \"the registry is broken\" with \"the export is stale/absent\", and the error text never mentions `--write-export` even though that's the documented remedy. Also `check_export` re-serializes the promise list and compares strings; any benign formatting difference in the committed file (e.g. no trailing newline) turns into exit 2 instead of a \"differs\" finding.",
+          "suggestion": "Catch the missing-export case and return the normal `[\"export: ... differs ... (re-run with --write-export)\"]` finding instead of exit 2.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/junit_promises.py` — `passing_problems` / `_test_id",
+          "line": null,
+          "finding": "A promise marked `passing` whose `check` is absent or not `kind == \"test\"` is silently skipped, so the spec's \"every `passing` status agrees with the real result\" holds only for test-backed promises; an entry whose check kind is `scenario`/`trace` with status `passing` passes the report check unexamined. At minimum the count of examined promises should be surfaced, or a `passing` status with no test check should be a finding in this checker.",
+          "suggestion": "In `check_report`, add a finding for any promise with status `passing`/`failing` that `_test_id` cannot resolve to a test node.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "plugins/shipwright-changelog/tests/golden/test_scenario_index.py` — `pytestmark = pytest.mark.covers_none(\"tooling\")",
+          "line": null,
+          "finding": "The old P8c tests were tagged `covers(\"FR-01.09/AC01\")`; the replacement uses a `covers_none` mark. If that marker/infra class (`shared/config/infra_test_paths.json`, per the comment) is not already minted for this path, pytest will error on an unknown mark or the repo's tag-gate will fail — and the repo rule says tests are \"tagged with FR/AC minted by the producers\".",
+          "suggestion": "Confirm `covers_none`/`tooling` is a minted, registered class covering this file before merge; otherwise tag as the producers did.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/config/plugin_conversion.json` — `seeded` list",
+          "line": null,
+          "finding": "The registry names `test_seeded_regressions_cli.py::...` as a fourth seeded test, while the docs paragraph and the old coverage prose describe three seeded regressions in `test_seeded_regressions.py`. If that CLI test file/name doesn't exist (or is renamed), every `--junit` run of the checker reports a \"seeded regression: ... missing\" finding that no test in this diff would have caught (the seeded ids are only exercised through `--junit`, which the test suite never runs against the real report).",
+          "suggestion": "Verify the four node ids against the actual test files; consider a registry-consistency unit test asserting each `seedd` node id exists in the repo.  Overall assessment: The checker, junit reader and their tests are well-built and genuinely adversarial (the seeded-fault tests would catch a broken checker), but the diff as shown is missing committed artifacts the spec and its own tests depend on — the `trace.json` export, the inventory data-file deletions, the `golden.lock.json` re-pin, and the reports — so it cannot be green as merged. Ship-with-fixes.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "plugins/shipwright-changelog/tests/golden/test_trace_freeze.py",
+          "line": 48,
+          "finding": "The frozen file set replaces `coverage.py` and `test_coverage_checks.py` with two new files, but the diff contains no updated `golden.lock.json`. It also empties all approved deltas while changing frozen `test_promises_meta.py`. The existing lock therefore cannot validate this tree, so the required freeze check will fail.",
+          "suggestion": "Perform the required full `--repin`, include the updated lock, and review its printed entries against the authorized removals, additions and changes. Verify that the 43 traces and promise lock remain unchanged.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "shared/config/plugin_conversion.json",
+          "line": 13,
+          "finding": "The registry requires `baseline/trace.json`, and every checker invocation unconditionally reads it, but the supplied diff does not create that export. The saving report, FINDINGS/LEARNINGS closure and AC `unchanged` record are also absent. These are explicit P7 deliverables; adding an optional export-writing command does not fulfill them.",
+          "suggestion": "Commit the generated export and required campaign reports and records, including which F1–F14 findings are closed or deferred and the approval mapping for any removed orphans.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/tools/check_skill_inventory.py",
+          "line": 1,
+          "finding": "The inventory tool and its tests are deleted, but the diff does not delete the campaign’s `inventory.json`, `truth_table.json` or `subprocess_map.json`. The specified retirement is incomplete.",
+          "suggestion": "Delete all three campaign-owned data files in the same change.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/junit_promises.py",
+          "line": 46,
+          "finding": "A parametrized promise is considered passed whenever any matching parameter appears and all reported parameters pass. If a run deselects a failing parameter while retaining a passing parameter, the report still produces `PASSED`, despite the requirement that runtime deselection must not leave a promise accepted as `passing`. The current tests cover a reported skipped parameter but not an omitted parameter.",
+          "suggestion": "Record the expected collected parameter node IDs and require results for all of them, or explicitly reject partial parametrized runs using collection evidence. Add a test where one expected parameter is absent from the report.  Overall assessment: ship-with-fixes. The checker and JUnit reader address the core task, but the freeze update and required retirement/report artifacts are incomplete in the supplied diff. Workspace inspection was blocked by execution policy, so this assessment is limited to that diff.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-24T21:38:13.906880+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] **Findings**\n\n- Category: spec — Severity: high\n  File: diff (absent) — `shared/scripts/tools/check_plugin_conversion.py` (`check_export`, and test `test_the_real_changelog_tree_is_converted`)\n  Finding: The spec requires writing `baseline/trace.json` \"in the shared shape as an export\", but no such file appears in the diff. `check_export` reads `entry[\"export\"]` (`.shipwright/planning/campaigns/2026-10-25-dfp-pilot-changelog-baseline/trace.json`) via `read()`, which raises `ConversionError` on a missing file — so `test_the_real_changelog_tree_is_converted` (and the operator run without `--write-export`) fails/exit-2 on the merged tree unless the export is committed in this same change.\n  Suggestion: Commit the generated `trace.json` in this diff (generated with `--write-export`), or make a missing export a normal finding with a pointer to `--write-export`.\n\n- Category: spec — Severity: high\n  File: diff (absent) — inventory data files\n  Finding: The exact scope says to delete `inventory.json`, `truth_table.json` and `subprocess_map.json` under `.shipwright/planning/campaigns/2026-10-25-dfp-pilot-changelog-inventory/`. None of those deletions is in the diff; only the tool and its test are retired. Also not visible: the saving report, the FINDINGS and LEARNINGS updates, and the reviewed `golden.lock.json` re-pin (REQUIRED changed — `coverage.py`/`test_coverage_checks.py` removed, `scenario_index.py`/`test_scenario_index.py` added — so `golden.lock.json` must be rewritten and `approved_deltas.json` emptied; the deltas file is emptied but the lock re-pin itself is not shown, and `--check` will fail without it).\n  Suggestion: If the diff is truncated, confirm these land in the same change; otherwise this is a partial implementation of three acceptance criteria (data files, reports, re-pin).\n\n- Category: bug — Severity: medium\n  File: `shared/scripts/tools/check_plugin_conversion.py` ~line 118 (`run([...], timeout=120)`) and ~line 124 (`check_verify_local`, ` […truncated]\n\n[openai] - Category: spec\n- Severity: high\n- File: plugins/shipwright-changelog/tests/golden/test_trace_freeze.py:48\n- Finding: The frozen file set replaces `coverage.py` and `test_coverage_checks.py` with two new files, but the diff contains no updated `golden.lock.json`. It also empties all approved deltas while changing frozen `test_promises_meta.py`. The existing lock therefore cannot validate this tree, so the required freeze check will fail.\n- Suggestion: Perform the required full `--repin`, include the updated lock, and review its printed entries against the authorized removals, additions and changes. Verify that the 43 traces and promise lock remain unchanged.\n\n- Category: spec\n- Severity: high\n- File: shared/config/plugin_conversion.json:13\n- Finding: The registry requires `baseline/trace.json`, and every checker invocation unconditionally reads it, but the supplied diff does not create that export. The saving report, FINDINGS/LEARNINGS closure and AC `unchanged` record are also absent. These are explicit P7 deliverables; adding an optional export-writing command does not fulfill them.\n- Suggestion: Commit the generated export and required campaign reports and records, including which F1–F14 findings are closed or deferred and the approval mapping for any removed orphans.\n\n- Category: spec\n- Severity: medium\n- File: shared/scripts/tools/check_skill_inventory.py:1\n- Finding: The inventory tool and its tests are deleted, but the diff does not delete the campaign’s `inventory.json`, `truth_table.json` or `subprocess_map.json`. The specified retirement is incomplete.\n- Suggestion: Delete all three campaign-owned data files in the same change.\n\n- Category: edge-case\n- Severity: medium\n- File: shared/scripts/tools/junit_promises.py:46\n- Finding: A parametrized promise is considered passed whenever any matching parameter appears and all reported parameters pass. If a run deselects a failing parameter while retaining a passing parameter, the report still produc […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-24T23:29:35.362205+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "2a18b4a54d6ec859025d3460f2fb520399f5696e"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-24T21:21:56.227114+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-24T21:21:56.435108+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    }
+  }
+}

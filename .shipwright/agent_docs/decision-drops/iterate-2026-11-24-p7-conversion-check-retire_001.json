@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-24-p7-conversion-check-retire",
+  "date": "2026-11-24",
+  "section": "Iterate - change: conversion check and retirement of the pilot scaffolding",
+  "title": "Operator-run conversion check plus JUnit reader; inventory and coverage checks retired",
+  "context": "The changelog conversion (P3-P6) had no end check, and a promise marked passing only proved its test exists, not that it ran.",
+  "decision": "Add check_plugin_conversion.py with a registry and a JUnit reader; retire the inventory and P8a/P8b coverage checks; keep P8c in a frozen scenario_index.py; re-pin the golden lock.",
+  "consequences": "Operator and stop-3 tool, not a CI gate (ci.yml untouched, no ack needed); no orphan removed; test time rose with the golden harness.",
+  "rationale": "A report-based check closes the skipped/deselected hole without editing the trust boundary; P8c is the only AC-without-oracle check and stays.",
+  "rejected": "Wiring the check into ci.yml (trust-boundary edit); deleting P8c with its siblings; removing orphan candidates without a per-test approval.",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ""
+}
