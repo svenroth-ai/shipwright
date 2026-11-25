@@ -36,7 +36,8 @@ def case(name: str, extra: str = "", cls: str = CLS) -> str:
 
 
 def test_a_passing_test_in_the_report_agrees(tmp_path):
-    assert jp.passing_problems(PROMISES, write(tmp_path, case("test_ac01"))) == []
+    report1 = write(tmp_path, case("test_ac01"))
+    assert jp.passing_problems(PROMISES, report1) == []
 
 
 @pytest.mark.parametrize("cases, word", [
@@ -60,16 +61,20 @@ def test_parametrized_variants_match_by_suffix(tmp_path):
 
 def test_a_failing_entry_whose_test_passes_is_caught(tmp_path):
     promises = [{"id": "AC09", "status": "failing", "check": {"kind": "test", "id": NODE}}]
-    assert "reads failing, but its test passed" in jp.passing_problems(promises, write(tmp_path, case("test_ac01")))[0]
+    report2 = write(tmp_path, case("test_ac01"))
+    assert "reads failing, but its test passed" in jp.passing_problems(promises, report2)[0]
 
 
 def test_the_freeze_sentinel_must_have_run_and_passed(tmp_path):
     other = case("test_x", cls="tests.golden.other")
-    assert "did not run and pass" in jp.named_problems("sentinel", [SENTINEL], write(tmp_path, other))[0]
+    report3 = write(tmp_path, other)
+    assert "did not run and pass" in jp.named_problems("sentinel", [SENTINEL], report3)[0]
     skipped = case("test_the_real_tree_respects_the_freeze", "<skipped/>", cls="tests.golden.test_trace_freeze")
-    assert "skipped" in jp.named_problems("sentinel", [SENTINEL], write(tmp_path, skipped))[0]
+    report4 = write(tmp_path, skipped)
+    assert "skipped" in jp.named_problems("sentinel", [SENTINEL], report4)[0]
     passed = case("test_the_real_tree_respects_the_freeze", cls="tests.golden.test_trace_freeze")
-    assert jp.named_problems("sentinel", [SENTINEL], write(tmp_path, passed)) == []
+    report5 = write(tmp_path, passed)
+    assert jp.named_problems("sentinel", [SENTINEL], report5) == []
 
 
 def test_a_report_that_is_not_junit_or_is_empty_is_refused(tmp_path):
@@ -102,13 +107,16 @@ def test_a_passing_promise_needs_every_more_checks_test_to_pass(tmp_path):
     skipped = write(tmp_path, case("test_ac01"), case("test_ac03b", "<skipped/>"))
     found = jp.passing_problems(MORE, skipped)
     assert len(found) == 1 and "its test skipped" in found[0] and "test_ac03b" in found[0]
-    assert "missing" in jp.passing_problems(MORE, write(tmp_path, case("test_ac01")))[0]
+    report6 = write(tmp_path, case("test_ac01"))
+    assert "missing" in jp.passing_problems(MORE, report6)[0]
 
 
 def test_a_failing_promise_needs_one_test_not_to_pass(tmp_path):
     failing = [{**MORE[0], "status": "failing"}]
-    assert jp.passing_problems(failing, write(tmp_path, case("test_ac01"), case("test_ac03b", "<failure/>"))) == []
-    assert "reads failing" in jp.passing_problems(failing, write(tmp_path, case("test_ac01"), case("test_ac03b")))[0]
+    report7 = write(tmp_path, case("test_ac01"), case("test_ac03b", "<failure/>"))
+    assert jp.passing_problems(failing, report7) == []
+    report8 = write(tmp_path, case("test_ac01"), case("test_ac03b"))
+    assert "reads failing" in jp.passing_problems(failing, report8)[0]
 
 
 @pytest.mark.parametrize("check", [None, {"kind": "test"}, {"kind": "test", "id": ""}, {"kind": "scenario", "id": "x"}])
