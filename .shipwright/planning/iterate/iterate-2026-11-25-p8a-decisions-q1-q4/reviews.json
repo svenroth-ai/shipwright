@@ -132,29 +132,162 @@
     },
     "code": {
       "review_type": "code",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_event.py",
+          "line": 1,
+          "finding": "Pass 1 on 0b901acf3: trunks() replaced main/develop with the remote default only, so a release on main with another default was treated as a feature branch. Fixed in 965cdfd98 (additive trunks, on_trunk from prepare), tests S14d and L1.",
+          "suggestion": "fixed",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_event.py",
+          "line": 1,
+          "finding": "Pass 1: lookup leaked the remote URL into argv/JSON, could prompt for credentials, no timeout; Edit-then-Cancel restore lived in prose; long-line reflow to meet the bloat cap; push-tag paragraph missing {branch}; push line not pinned; delta sources not per trace. All fixed in 965cdfd98.",
+          "suggestion": "fixed",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_cancel.py",
+          "line": 48,
+          "finding": "Pass 2 on 965cdfd98: Windows backslash and drive-letter keys passed the posix-only path check. Fixed in c1f7da48f (reject backslash and colon, resolved-path containment, symlink refusal, tests).",
+          "suggestion": "fixed",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_prepare.py",
+          "line": 107,
+          "finding": "Pass 2: drops_before kept via setdefault on a reused run state, so cancel could revert later edits. Fixed in c1f7da48f (fresh snapshot every prepare, test fails on old code).",
+          "suggestion": "fixed",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/tests/golden/driver_replay.py",
+          "line": 213,
+          "finding": "Pass 2: replay lookup lacks the code's name check and no-prompt env. Documented as deliberate in c1f7da48f.",
+          "suggestion": "recorded",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
+          "line": 182,
+          "finding": "Pass 2: prose repeated the trunk rule. Replaced by a pointer to on_trunk from prepare in c1f7da48f.",
+          "suggestion": "fixed",
+          "source": "code-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-11-25T16:46:45.639728+00:00",
-      "disposition": "operator brief for this campaign: the orchestrator runs the opus spec/code/doubt cascade on this unit (3f-bis); the runner records the rows as delegated",
-      "recorded_by": "none",
+      "completed_at": "2026-11-25T21:47:37.495788+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "c1f7da48fa0019cbbc79b611aa90f97816d759eb",
+      "reviewer_notes": "Independent opus code review, two passes. Pass 1 on 0b901acf3: REVISE (one high). Pass 2 on 965cdfd98: PASS, two mediums, closed in c1f7da48f (closed fix list, verified by the orchestrator against the diff)."
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_event.py",
+          "line": null,
+          "finding": "Claim under doubt: a release on a trunk never pushes a head branch or PR — Pass 1: with a non-main remote default, main stopped counting as a trunk. Fixed in 965cdfd98; pass 2 found no remaining input.",
+          "suggestion": "fixed",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_cancel.py",
+          "line": null,
+          "finding": "Claim under doubt: cancel writes only inside CHANGELOG-unreleased.d — Pass 2: Windows backslash keys and symlinks bypassed the check. Fixed in c1f7da48f.",
+          "suggestion": "fixed",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "reversibility",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_prepare.py",
+          "line": null,
+          "finding": "Claim under doubt: cancel restores the drops as they were at the release start — Pass 2: a stale snapshot on a reused run state could revert pulled work. Fixed in c1f7da48f (fresh snapshot).",
+          "suggestion": "fixed",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_runner.py",
+          "line": null,
+          "finding": "Claim under doubt: the lookup cannot hang or prompt — Pass 2: SSH/askpass prompts, inherited stdin, Windows grandchild keeps the pipe after timeout. No-prompt env shared with the hook and stdin DEVNULL in c1f7da48f; Windows grandchild hang recorded D90 for stop 3.",
+          "suggestion": "fixed / recorded D90",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling",
+          "file": "plugins/shipwright-changelog/scripts/hooks/release_guard.py",
+          "line": null,
+          "finding": "Claim under doubt: trunk set decided in one place — The release_guard hook keeps a fixed main/master/develop list; predates P8a. Recorded D89 for stop 3, hook unchanged under the one-to-one rule.",
+          "suggestion": "recorded D89",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
+          "line": null,
+          "finding": "Claim under doubt: after Cancel the tree is as before — Files new since prepare are kept in left and were not surfaced. SKILL Step 5 now reports every left path (c1f7da48f).",
+          "suggestion": "fixed",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "golden tests",
+          "file": "plugins/shipwright-changelog/tests/golden/test_p8a_fix_scenarios.py",
+          "line": null,
+          "finding": "Claim under doubt: CLI-vs-replay equality proves the new behaviour — Equality is partly circular; the oracle checks and the unit tests (remote/local/fallback/timeout/scrub) carry the proof. S14d/S18c not frozen; re-pin left for stop 3.",
+          "suggestion": "rebutted / recorded",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "operator rule",
+          "file": "plugins/shipwright-changelog/scripts/release.py",
+          "line": null,
+          "finding": "Claim under doubt: release.py cancel is a port, not a new feature — Cancel restoring drops is the bug fix F2 requires (Edit now edits drops); its safeguards are part of that fix. Recorded D91, ADR fix-round 2, guide Appendix B.",
+          "suggestion": "recorded D91",
+          "source": "doubt-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-11-25T16:46:45.797574+00:00",
-      "disposition": "Stage 3 runs only behind a Stage 2 pass, and the orchestrator runs the cascade for this campaign unit (operator brief)",
-      "recorded_by": "none",
+      "completed_at": "2026-11-25T21:47:37.636339+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "c1f7da48fa0019cbbc79b611aa90f97816d759eb"
     },
     "external_code": {
       "review_type": "external_code",
@@ -274,16 +407,18 @@
     },
     "spec": {
       "review_type": "spec",
-      "status": "not_run",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-11-25T16:46:45.307227+00:00",
-      "disposition": "operator brief for this campaign: the orchestrator runs the opus spec/code/doubt cascade on this unit (3f-bis); the runner records the rows as delegated",
-      "recorded_by": "none",
+      "completed_at": "2026-11-25T21:47:48.432540+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "c1f7da48fa0019cbbc79b611aa90f97816d759eb"
     },
     "plan_internal": {
       "review_type": "plan_internal",
