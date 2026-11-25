@@ -428,7 +428,7 @@
         "heading_path": [
           "Step 5: Preview and Confirm"
         ],
-        "content_hash": "2cf9be0fcf998b4d9c9c3d422738026c654d86c87d35eaa58c447ece8bf49807"
+        "content_hash": "a540077506010286f09502556b3e2ffc4b783553e126c8d1d0ace37f30af12a1"
       },
       "class": "ask",
       "check": {
@@ -482,7 +482,7 @@
         "heading_path": [
           "Upgrade-notes check"
         ],
-        "content_hash": "d7fdffed4a146d8fa5ff0782ac6177625d4a73487c58eb51d1fdf6ad85c555fc"
+        "content_hash": "d07a084a6265adf8bfac134175e22833998151dc6467d009a2b2ba3cc2f977f0"
       },
       "class": "mechanic",
       "check": null,
@@ -498,7 +498,7 @@
         "heading_path": [
           "Step 5.3: Fold Old Event Files"
         ],
-        "content_hash": "967904cacfef8fc82975c151b9e2b3dbebd746fb16e799ee6ea60615f6d4cc2e"
+        "content_hash": "68e9e53a130ea94aac0813619c729ca90e467978f2cb8956b3bc3b46ee1bde0b"
       },
       "class": "mechanic",
       "check": null,
@@ -514,7 +514,7 @@
         "heading_path": [
           "Step 7: Create PR (Optional)"
         ],
-        "content_hash": "41436a8cbb33a4941f54002d5c410b841dd4e96d0860121ed41554695db2a8de"
+        "content_hash": "6cb9f65f4ea76ae01b29a326849713a43c13f05ed4348174fdd58a9f6f70a9a7"
       },
       "class": "mechanic",
       "check": null,

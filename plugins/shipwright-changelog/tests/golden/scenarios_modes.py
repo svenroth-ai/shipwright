@@ -1,4 +1,4 @@
-"""S13, S17a/b, S18a/b, S19: a dispatched run, the two ways the mode check speaks, the preview, and ``--from``.
+"""S13, S17a/b, S18a/b/c, S19: a dispatched run, the two ways the mode check speaks, the preview, and ``--from``.
 
 S13 drives the REAL orchestrator (``write-config``, ``single-session-next`` and ``-apply``) through the phases before
 the changelog, runs the release the way a dispatched phase-runner would (token handed in, the phase-complete block at
@@ -6,6 +6,8 @@ the end) and hands the result to ``single-session-apply`` with the phase gate on
 behaviour: D2 (a driven run leaves the request open AND has pushed the tag) and D9 (``--from`` is advertised and implemented
 nowhere). S18a/b no longer record D12: since P8a (F2, operator 2026-11-25) the preview is the dry run and the real aggregation
 runs only after Accept, so Cancel leaves the tree and the drops byte-identical and Edit changes the drop and repeats the dry run.
+S18c (P8a fix round, D84; ``_s18(True, "cancel")``): an Edit then Cancel; ``release.py cancel`` puts the edited drop back, so the tree is as
+before. It is run by ``test_p8a_fix_scenarios.py`` through both drivers, not registered here: a new frozen trace would need a lock re-pin.
 """
 
 from __future__ import annotations
@@ -85,8 +87,9 @@ def _check_s17b(run: Run) -> None:
     assert context["requires_out_of_sequence_warning"] is True and context["active_phases"] == ["project"]
 
 
-def _s18(edit: bool):
-    """F2 (operator 2026-11-25, P8a; D12): the preview is the dry run, asked BEFORE the real aggregation writes anything."""
+def _s18(edit: bool, then: str = "accept"):
+    """F2 (operator 2026-11-25, P8a; D12): the preview is the dry run, asked BEFORE the real aggregation writes anything.
+    ``then``: what the operator answers after an Edit (S18b Accept, S18c Cancel: ``release.py cancel`` puts the drop back, D84)."""
     def run(make_project, layout: str) -> Run:
         s = ss.ready_release(make_project)
         driver = ReplayDriver()
@@ -104,21 +107,24 @@ def _s18(edit: bool):
             ctx["edited"] = ss.digest(s)
             results.append(driver.run_step("aggregate", s, version=version, dry_run=True))
             ctx["repreviewed"] = ss.digest(s)
-            results.append(driver.run_step("preview", s, choice="accept"))
-            results.append(driver.run_step("aggregate", s, version=version))  # Accept: the one real write
+            results.append(driver.run_step("preview", s, choice=then))
+            if then == "accept":
+                results.append(driver.run_step("aggregate", s, version=version))  # Accept: the one real write
         return Run(s, driver, results, ctx)
     return run
 
 
-def _check_s18(edit: bool):
+def _check_s18(edit: bool, then: str = "accept"):
     def check(run: Run) -> None:
         s, ctx = run.scratch, run.ctx
         shown = run.commands("aggregate-dry")[0]["stdout"]
         oracle.check_ac10_unchanged(ctx["before"], ctx["previewed"], shown, ["A new capability readers can use"])  # AC10: shown, nothing written
         assert not [t for t in s.git("tag").split() if t == "v1.3.0"] and s.git("log", "-1", "--format=%s") == "fix: a defect"
-        if not edit:  # Cancel: the tree and the pending drops are byte-identical to before the release started
-            assert [r.step for r in run.results][-1] == "preview" and run.step("preview").output["status"] == "cancel"
-            assert ss.digest(s) == ctx["before"] and run.commands("aggregate") == []
+        if not edit or then == "cancel":  # Cancel: the tree and the pending drops are byte-identical to before the release started
+            assert [r.step for r in run.results][-1] == "preview" and run.step("preview", -1).output["status"] == "cancel"
+            assert ss.digest(s) == ctx["before"] and run.commands("aggregate") == [] and run.step("preview", -1).exit_code == 0
+            if edit:  # S18c: the Edit really changed the drop, and the second preview showed it, before Cancel put it back
+                assert ctx["edited"] != ctx["before"] and "A new capability, reworded" in run.commands("aggregate-dry")[1]["stdout"]
             return
         assert [run.step("preview", n).output["status"] for n in (0, 1)] == ["edit", "accept"]
         assert ctx["repreviewed"] == ctx["edited"] and "A new capability, reworded" in run.commands("aggregate-dry")[1]["stdout"]

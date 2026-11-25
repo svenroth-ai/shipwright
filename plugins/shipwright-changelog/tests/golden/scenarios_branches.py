@@ -1,10 +1,12 @@
-"""S14a/b/c and S15: where the release is made from, and what Step 6 may commit.
+"""S14a/b/c/d and S15: where the release is made from, and what Step 6 may commit.
 
 S14 runs the whole release (guided, the one configuration that can finish today: ``scenario_support.ready_release``)
 from a branch the remote has never seen, from ``main`` and from a repository whose default branch is ``master``.
 Since P8a (operator 2026-11-25) they assert the fixes, not the findings: F3 for D7 (the head is pushed right before the
 request is opened, so the host accepts it) and F5 for D24 (the default branch is read from the remote: on a ``master``
 repository the release is cut on ``master`` as the trunk, with no request, and ``master`` and the tag reach the remote).
+``_s14d`` (P8a fix round, D85): the default branch is ``develop`` and the release is cut on ``main``, which stays a trunk. It is run by
+``test_p8a_fix_scenarios.py`` through both drivers, not registered here: a new frozen trace would need a re-pin of the golden lock.
 """
 
 from __future__ import annotations
@@ -69,7 +71,8 @@ def _check_s14b(run: Run) -> None:
 
 
 def _s14c(make_project, layout: str) -> Run:
-    return _flow(make_project, branch=None, default_branch="master")
+    # a clone knows its remote's default branch as origin/HEAD; the scratch's fetch URL is a fake host, so it is set here
+    return _flow(make_project, branch=None, default_branch="master", setup=lambda s: s.git("remote", "set-head", "origin", "master"))
 
 
 def _check_s14c(run: Run) -> None:
@@ -81,6 +84,31 @@ def _check_s14c(run: Run) -> None:
     assert _on_origin(s, "refs/tags/v1.3.0") and not _on_origin(s, "refs/heads/main")
     oracle.check_tag_on_release_commit(s.git("log", "-1", "--format=%s", "v1.3.0"), "1.3.0")
     oracle.check_ac01(ss.notes_of(s), _tag_made(s), request_open=False, outcome="no_request")  # AC01: on the trunk there is no request
+    oracle.check_ac11_not_published(s.gh_state(), tag_on_remote=_on_origin(s, "refs/tags/v1.3.0"), pr_open=False)
+
+
+def _develop_default(s: Any) -> None:
+    """The remote's default branch is ``develop`` (pushed, HEAD of the bare remote and the local origin/HEAD); work stays on ``main``."""
+    s.git("branch", "develop")
+    s.git("push", "-q", "origin", "develop")
+    s.run(["git", "--git-dir", s.origin.as_posix(), "symbolic-ref", "HEAD", "refs/heads/develop"], check=True)
+    s.git("remote", "set-head", "origin", "develop")
+
+
+def _s14d(make_project, layout: str) -> Run:
+    return _flow(make_project, branch=None, setup=_develop_default)
+
+
+def _check_s14d(run: Run) -> None:
+    s = run.scratch
+    # P8a fix round (D85): the trunks are additive. `develop` is the default branch, and `main` stays a trunk: no head push, no request
+    assert s.git("rev-parse", "--abbrev-ref", "HEAD") == "main" and run.driver.trunk(s) == "develop"
+    assert all(r.exit_code == 0 for r in run.results) and not run.commands("push-branch") and not run.commands("open-pr")
+    assert run.gh_calls("pr") == [] and run.commands("record-event-main")
+    assert s.git("rev-parse", "main") == s.git("--git-dir", s.origin.as_posix(), "rev-parse", "main")  # main went out with the tag
+    assert _on_origin(s, "refs/tags/v1.3.0") and s.git("rev-parse", "develop") != s.git("rev-parse", "main")
+    oracle.check_tag_on_release_commit(s.git("log", "-1", "--format=%s", "v1.3.0"), "1.3.0")
+    oracle.check_ac01(ss.notes_of(s), _tag_made(s), request_open=False, outcome="no_request")  # AC01: on a trunk there is no request
     oracle.check_ac11_not_published(s.gh_state(), tag_on_remote=_on_origin(s, "refs/tags/v1.3.0"), pr_open=False)
 
 

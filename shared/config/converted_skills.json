@@ -8,6 +8,7 @@
       "commands": [
         "uv run {plugin_root}/scripts/release.py prepare",
         "uv run {plugin_root}/scripts/release.py aggregate",
+        "uv run {plugin_root}/scripts/release.py cancel",
         "uv run {plugin_root}/scripts/release.py sync",
         "uv run {plugin_root}/scripts/release.py commit-and-tag",
         "git push origin HEAD",

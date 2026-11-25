@@ -4,6 +4,7 @@
     uv run release.py prepare   [--project-root .] [--phase-task-id ID] [--version X.Y.Z] [--from vX]
     uv run release.py aggregate [--project-root .] --version X.Y.Z [--dry-run] [--release-date YYYY-MM-DD]
                                 [--fallback-entry "Category:text"]...
+    uv run release.py cancel         [--project-root .] --version X.Y.Z       (Step 5 Cancel: puts back the drop files an Edit changed)
     uv run release.py sync           [--project-root .] --version X.Y.Z       (event fold, manifests, compliance evidence)
     uv run release.py commit-and-tag [--project-root .] --version X.Y.Z       (Step 6; writes .shipwright/runtime/release_state.json)
     uv run release.py record-event   [--project-root .] --version X.Y.Z [--pr-url URL]
@@ -26,7 +27,7 @@ from pathlib import Path
 PLUGIN_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from lib import release_aggregate, release_close, release_commit, release_event, release_prepare, release_push, release_sync  # noqa: E402
+from lib import release_aggregate, release_cancel, release_close, release_commit, release_event, release_prepare, release_push, release_sync  # noqa: E402
 from lib.release_runner import Recorder, subprocess_runner  # noqa: E402
 
 
@@ -57,7 +58,7 @@ def _task_id(text: str) -> str:
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="release.py", description="Release steps of /shipwright-changelog")
     sub = parser.add_subparsers(dest="command", required=True)
-    for name in ("prepare", "aggregate", "sync", "commit-and-tag", "record-event", "push-tag", "close-phase"):
+    for name in ("prepare", "aggregate", "cancel", "sync", "commit-and-tag", "record-event", "push-tag", "close-phase"):
         p = sub.add_parser(name)
         p.add_argument("--project-root", default=".")
         p.add_argument("--version", required=name != "prepare", type=_version, help="X.Y.Z, no leading v")
@@ -90,6 +91,8 @@ def main(argv: list[str] | None = None, runner=subprocess_runner) -> int:
     if args.command == "prepare":
         code, payload = release_prepare.prepare(rec, PLUGIN_ROOT, phase_task_id=args.phase_task_id, version=args.version,
                                                 from_version=args.from_version)
+    elif args.command == "cancel":
+        code, payload = release_cancel.cancel(rec, PLUGIN_ROOT, version=args.version)
     elif args.command == "sync":
         code, payload = release_sync.sync(rec, PLUGIN_ROOT, version=args.version)
     elif args.command == "commit-and-tag":

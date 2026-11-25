@@ -65,3 +65,18 @@ whose HEAD answer is an unsafe name (`-x;rm`): falls back to `main`; (3) no push
 `record-event` asks the remote. Probe (1) found the closing verify still asked `origin/HEAD` (fixed: reads `trunk`);
 probes (2)-(5) found nothing; two consecutive clean probes after the fix, asymptote reached. Not probed: a remote
 that hangs (D82(3)); a credential-bearing push URL (D82(4)).
+
+## Fix round (orchestrator review: spec PASS, code REVISE, doubt one HIGH)
+
+- Trunks additive (doubt HIGH, FINDINGS D85): default branch, then `main` and `develop` always, `master` while the default is
+  unknown. `prepare` returns `trunk`, `trunk_source`, `on_trunk`; Step 7 branches on `on_trunk`. S14d: `develop` default,
+  release on `main` = trunk release, no head push, no PR.
+- Lookup (D86): `git -c credential.interactive=never ls-remote --symref origin HEAD`, `GIT_TERMINAL_PROMPT=0`, 30 s; no
+  `get-url`, the recorded output cut to the one line read. Closes D82(3) and D82(4) for the lookup.
+- Cancel in code (D84): `prepare` keeps the drop bytes, `release.py cancel` writes back what an Edit changed (never deletes a
+  new file; refused after the real `aggregate`). S18c: Edit then Cancel, tree digest equals the one before.
+- SKILL.md cap (D83 corrected, D87): the re-flow of seven paragraphs is undone; text a reference already holds is cut
+  instead (262 lines). The push-tag sentence names `{branch}`. Hardening test: the head push block is exactly
+  `git push origin HEAD --no-follow-tags`.
+- Approved deltas name the fix per trace (D88). S14d and S18c run through both drivers and compare the two traces
+  (`test_p8a_fix_scenarios.py`): a new frozen trace would need a re-pin of the golden lock.

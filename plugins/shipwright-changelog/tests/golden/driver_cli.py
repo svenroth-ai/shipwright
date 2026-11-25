@@ -100,6 +100,14 @@ class CliDriver(ReplayDriver):
         return gt.StepResult("aggregate", code, fields)
 
 
+    # ---- Step 5 --------------------------------------------------------------------------------------
+    def step_preview(self, scratch: Any, choice: str = "accept") -> gt.StepResult:
+        """Cancel is ``release.py cancel`` (P8a fix round, D84): it puts back the drop files an Edit changed. Accept and Edit run nothing."""
+        if choice != "cancel":
+            return super().step_preview(scratch, choice)
+        code, out = self._release(scratch, "cancel", "--version", self.state["version"])
+        return gt.StepResult("preview", code, {"status": choice if code == 0 and out.get("status") == "ok" else "failed"})
+
     # ---- Steps 5.3 to 5.5 (one ``sync`` call; the three steps read its payload) ----------------------
     def _sync(self, scratch: Any, version: str) -> tuple[int, dict[str, Any]]:
         if self.state.get("sync_for") != version:

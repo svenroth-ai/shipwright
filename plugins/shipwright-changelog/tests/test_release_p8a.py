@@ -42,27 +42,27 @@ def _symref(branch: str) -> dict:
 # ---- F5 (D24): the default branch comes from the remote ------------------------------------------------------
 
 @pytest.mark.parametrize(("answers", "want"), [
-    ({"trunk-url": {"stdout": "bare\n"}, "trunk": _symref("master")}, "master"),
-    ({"trunk-url": {"stdout": "bare\n"}, "trunk": {"exit": 128}, "trunk-local": {"stdout": "origin/trunk\n"}}, "trunk"),
-    ({"trunk-url": {"stdout": ""}, "trunk-local": {"exit": 1}}, "main"),
-    ({"trunk-url": {"stdout": "bare\n"}, "trunk": _symref("-x;rm")}, "main"),  # never an unsafe name in a push line or --base
+    ({"trunk": _symref("master")}, ("master", "remote")),
+    ({"trunk": {"exit": 128}, "trunk-local": {"stdout": "origin/trunk\n"}}, ("trunk", "local")),
+    ({"trunk": {"exit": 128}, "trunk-local": {"exit": 1}}, ("main", "fallback")),
+    ({"trunk": _symref("-x;rm"), "trunk-local": {"exit": 1}}, ("main", "fallback")),  # never an unsafe name in a push line or --base
 ])
 def test_the_trunk_is_the_remotes_default_branch(tmp_path, answers, want):
     fake = Fake(**answers)
     found = release_event.trunk(Recorder(fake, tmp_path))
     assert found == want
-    if answers["trunk-url"]["stdout"]:
-        assert fake.argv("trunk")[-3:] == ["--end-of-options", "bare", "HEAD"]
+    assert fake.argv("trunk") == ["git", "-c", "credential.interactive=never", "ls-remote", "--symref", "origin", "HEAD"]
 
 
 def test_prepare_stores_and_returns_the_trunk(tmp_path, plugin_root):
-    code, out = run_prepare(tmp_path, plugin_root, ok_runner(**{"trunk-url": {"stdout": "bare\n"}, "trunk": _symref("master")}))
+    code, out = run_prepare(tmp_path, plugin_root, ok_runner(trunk=_symref("master")))
     stored = release_runstate.stored(tmp_path, VERSION)
-    assert code == 0 and out["trunk"] == "master" and stored["trunk"] == "master"
+    assert code == 0 and (out["trunk"], out["trunk_source"], out["on_trunk"]) == ("master", "remote", False)
+    assert (stored["trunk"], stored["trunk_source"]) == ("master", "remote")
 
 
 def test_record_event_on_the_remotes_default_branch_is_the_trunk_case(tmp_path, plugin_root):
-    seed(tmp_path, trunk="master")
+    seed(tmp_path, trunk="master", trunk_source="remote")
     fake = event_fake("master")
     code, out = release_event.record_event(Recorder(fake, tmp_path), plugin_root, version=VERSION)
     assert code == 0 and out["on_trunk"] is True and "event-push" not in fake.keys()  # the trunk is pushed once, with the tag
@@ -70,30 +70,30 @@ def test_record_event_on_the_remotes_default_branch_is_the_trunk_case(tmp_path, 
 
 
 def test_record_event_keeps_the_default_branch_as_the_prs_base(tmp_path, plugin_root):
-    seed(tmp_path, trunk="master")
+    seed(tmp_path, trunk="master", trunk_source="remote")
     code, out = release_event.record_event(Recorder(event_fake("release/x"), tmp_path), plugin_root, version=VERSION, pr_url=PR)
     stored = release_runstate.stored(tmp_path, VERSION)
     assert code == 0 and out["on_trunk"] is False and (stored["base_branch"], stored["trunk"]) == ("master", "master")
 
 
 def test_record_event_asks_the_remote_when_the_run_state_has_no_trunk(tmp_path, plugin_root):
-    fake = event_fake("release/x", **{"trunk-url": {"stdout": "bare\n"}, "trunk": _symref("trunk")})
+    fake = event_fake("release/x", trunk=_symref("trunk"))
     release_event.record_event(Recorder(fake, tmp_path), plugin_root, version=VERSION, pr_url=PR)
     assert release_runstate.stored(tmp_path, VERSION)["base_branch"] == "trunk"
 
 
 def test_push_tag_on_a_master_trunk_gets_the_atomic_line_for_master(tmp_path, plugin_root):
     committed(tmp_path)
-    seed(tmp_path, mode="standalone", branch="master", on_trunk=True, trunk="master")
+    seed(tmp_path, mode="standalone", branch="master", on_trunk=True, trunk="master", trunk_source="remote")
     fake = Fake(**{**OK, "push-head": {"stdout": "master\n"}})
     code, out = release_push.push_tag(Recorder(fake, tmp_path), plugin_root, version=VERSION)
     assert code == 0 and out["argv"] == ["git", "push", "--atomic", "origin", "master", f"refs/tags/v{VERSION}"]
 
 
-def test_push_tag_still_refuses_a_branch_that_is_not_the_stored_trunk(tmp_path, plugin_root):
+def test_push_tag_still_refuses_a_branch_that_is_no_trunk(tmp_path, plugin_root):
     committed(tmp_path)
-    seed(tmp_path, mode="standalone", branch="main", on_trunk=True, trunk="master")
-    code, out = release_push.push_tag(Recorder(Fake(**OK), tmp_path), plugin_root, version=VERSION)
+    seed(tmp_path, mode="standalone", branch="release/x", on_trunk=True, trunk="master", trunk_source="remote")
+    code, out = release_push.push_tag(Recorder(Fake(**{**OK, "push-head": {"stdout": "release/x\n"}}), tmp_path), plugin_root, version=VERSION)
     assert code == 1 and out["reason"] == "branch_not_a_trunk"
 
 
@@ -123,8 +123,8 @@ def test_the_skill_asks_after_the_dry_run_and_writes_only_after_accept():
     real = skill.index('aggregate --project-root "$(pwd)" --version "{version}"\n```')
     assert dry < question < real < skill.index("## Step 5.3")
     step5 = skill[skill.index("## Step 5: Preview and Confirm"):skill.index("## Step 5.3")]
-    assert "**Cancel:**" in step5 and "Nothing was written" in step5
-    assert "**Edit:**" in step5 and "drop file" in step5 and "preview call of Step 4 again" in step5
+    assert "**Cancel:**" in step5 and 'release.py" cancel --project-root "$(pwd)" --version "{version}"' in step5
+    assert "**Edit:**" in step5 and "drop file" in step5 and "run Step 4's preview again" in step5
 
 
 # ---- F3 (D7): the branch is pushed right before the PR is opened ------------------------------------------------

@@ -74,8 +74,8 @@ def test_record_event_through_release_main_commits_and_pushes_on_real_git(repo, 
     git(work, "checkout", "-b", "release/v1.2.3")
     stub = Tools()
 
-    def runner(key, argv, cwd):  # the two event tools are stubs, everything else (git, argv building, state) is the real thing
-        return stub(key, argv, cwd)
+    def runner(key, argv, cwd, **opts):  # the two event tools are stubs, everything else (git, argv building, state) is the real thing
+        return stub(key, argv, cwd, **opts)
 
     code = release.main(["record-event", "--project-root", str(work), "--version", "1.2.3", "--pr-url", "https://example.test/pr/1"], runner=runner)
     out = json.loads(capsys.readouterr().out)
