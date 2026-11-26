@@ -80,10 +80,12 @@ non-zero exit with the reason on stderr.
   the highest release tag reachable from HEAD (`git tag --merged HEAD`; pre-release tags are not compared;
   `version_not_above_last_tag`, Q8), so once `v{version}` is tagged the release is finished, not re-run. A tag on
   another branch does not count: a backport on a maintenance branch (`1.4.1` while `v2.0.0` exists elsewhere) passes.
-- **Hand-written entries.** A release moves the hand-written `[Unreleased]` bullets into its section (Q5). If it stopped
-  after writing the section but before consuming the drops, a re-run renders only the drops, so the section on record
-  says more than they do: that is the refusal above. Reconcile by hand. A re-run of a version whose section is already
-  written moves nothing: a bullet written by hand after that release stays in `[Unreleased]` for the next one.
+- **Hand-written entries.** A release moves the hand-written `[Unreleased]` bullets into its section (Q5). A re-run
+  after an interruption converges only when the first run moved no hand-written entry. If it moved some and stopped after writing the section
+  but before consuming the drops, the re-run refuses by design: it renders only the drops, so the section on record says
+  more than they do (the refusal above). Reconcile by hand. A re-run of a version whose section is already written moves
+  nothing: a bullet written by hand after that release stays in `[Unreleased]` for the next one. An entry that reaches
+  column 0 after its bullet line (a lazy continuation, a column-0 fence) is never moved: it stays and is named.
 - **Leftover cherry-pick drops.** The cherry-pick fallback writes its bullets as drops (run id `release-fallback`) before
   the aggregation. A run that stops after that and is not re-run leaves them in `CHANGELOG-unreleased.d/`; they ride into
   the next release, like any other drop. A re-run of a version whose section is already written does not add them again.

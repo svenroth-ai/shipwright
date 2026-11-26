@@ -92,3 +92,18 @@ Probes after the fix: the real-git backport (v2.0.0 on main, 1.4.1 on `1.x` pass
 after a finished release with a new hand-written bullet (converges, the file unchanged; the argv check fails when the
 fix is reverted); `take()` over a lazy continuation, a column-0 fence, an unclosed fence, U+2028 and CRLF. After the last
 change the whole changelog root (756 passed) and F0 ran green.
+
+## Fix round 2
+
+The opus re-review of 99bfa3013: REVISE, one high. Closed list, one commit on top:
+
+| Item | Fix | Record |
+|---|---|---|
+| Column-0 lines moved into the release section cut it short for every `section_end` reader (high) | such an entry is not moved: it stays whole in `[Unreleased]` and is named (the aggregator's warning uses `take()`'s list under `--move-unreleased`); `section_end` unchanged | D108; end-to-end test over `section_text` and `extract_changelog_section.py` |
+| Lazy check only stopped at dash bullets (low) | stops at the shared `_LIST_ITEM_RE` | D108; test |
+| `_tidy` read headings inside fences (low) | fence lines are never headings | D108; test |
+| Re-run wording (medium) | converges only when no hand-written entry was moved; else refuses by design, reconciled by hand; no code change | D108 |
+
+Probes: the end-to-end run on real git (normal, lazy, column-0 fence entries and a later category: the two column-0
+entries stay and are named, both readers return the moved entry and the later category); both low fixes fail their test
+when reverted.

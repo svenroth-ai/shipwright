@@ -1,8 +1,9 @@
-"""P8b fix round 1: ``changelog_unreleased.take`` never splits a hand-written entry (FR-01.09 AC09).
+"""P8b fix rounds 1 and 2: ``changelog_unreleased.take`` never splits a hand-written entry (FR-01.09 AC09).
 
-A lazy continuation (a plain column-0 line right after the bullet) and a fenced block that opens inside the bullet go
-with it; nothing inside a fence is read as a bullet; an entry whose end cannot be told stays whole in ``[Unreleased]``
-and is named; lines split on ``\\n`` only, so a U+2028 inside a bullet is text, not a line break.
+Indented continuation lines and an indented fence move with the bullet; an entry that reaches column 0 after its bullet
+line (a lazy continuation, a column-0 fence) stays whole in ``[Unreleased]`` and is named, because the shared section end
+stops at such a line (round 2); nothing inside a fence is read as a bullet or a heading; an entry whose end cannot be
+told stays whole and is named; lines split on ``\\n`` only, so a U+2028 inside a bullet is text, not a line break.
 """
 
 from __future__ import annotations
@@ -29,17 +30,36 @@ def _wrap(body: str) -> str:
     return "# Changelog\n\n## [Unreleased]\n\n### Fixed\n\n" + body + "\n" + HISTORY
 
 
-def test_a_lazy_continuation_at_column_0_moves_with_its_bullet():
+def test_a_lazy_continuation_at_column_0_keeps_its_entry_whole_in_unreleased_and_named():
     new, moved, left = cu.take(_wrap("- First line\nwrapped lazily at column 0\n- Next\n"), _CATEGORY_ORDER)
-    assert moved == {"Fixed": ["First line\nwrapped lazily at column 0", "Next"]} and left == []
-    assert "lazily" not in new.split("## [1.2.0]")[0]
+    assert moved == {"Fixed": ["Next"]} and left == ["First line"]
+    assert "- First line\nwrapped lazily at column 0\n" in new.split("## [1.2.0]")[0]
 
 
-def test_a_column_0_fence_right_after_a_bullet_moves_whole_and_its_lines_are_never_bullets():
+def test_a_column_0_fence_keeps_its_entry_whole_and_its_lines_are_never_bullets():
     body = f"- Fixed the parser\n{FENCE}\n- not a bullet\n### not a heading\n{FENCE}\n- Next\n"
     new, moved, left = cu.take(_wrap(body), _CATEGORY_ORDER)
-    assert moved == {"Fixed": [f"Fixed the parser\n{FENCE}\n- not a bullet\n### not a heading\n{FENCE}", "Next"]}
-    assert left == [] and "not a bullet" not in new
+    assert moved == {"Fixed": ["Next"]} and left == ["Fixed the parser"]
+    assert f"- Fixed the parser\n{FENCE}\n- not a bullet\n### not a heading\n{FENCE}\n" in new
+
+
+def test_an_indented_fence_moves_with_its_bullet():
+    body = f"- Fixed the parser\n  {FENCE}\n  - not a bullet\n  {FENCE}\n- Next\n"
+    new, moved, left = cu.take(_wrap(body), _CATEGORY_ORDER)
+    assert moved == {"Fixed": [f"Fixed the parser\n  {FENCE}\n  - not a bullet\n  {FENCE}", "Next"]} and left == []
+
+
+def test_a_column_0_star_or_numbered_item_is_no_lazy_continuation():
+    new, moved, left = cu.take(_wrap("- Dash entry\n* star item\n1. numbered item\n"), _CATEGORY_ORDER)
+    assert moved == {"Fixed": ["Dash entry"]} and "* star item\n1. numbered item\n" in new
+
+
+def test_tidy_never_drops_a_heading_looking_line_inside_a_fence():
+    text = ("# Changelog\n\n## [Unreleased]\n\n### Fixed\n\n- Moves\n\n### Other\n\n"
+            f"{FENCE}\n### Added\n\n### Removed\n{FENCE}\n\n" + HISTORY)
+    new, moved, _left = cu.take(text, _CATEGORY_ORDER)
+    assert moved == {"Fixed": ["Moves"]}
+    assert f"### Other\n\n{FENCE}\n### Added\n\n### Removed\n{FENCE}\n" in new
 
 
 def test_an_entry_with_a_fence_that_never_closes_stays_whole_and_is_named():

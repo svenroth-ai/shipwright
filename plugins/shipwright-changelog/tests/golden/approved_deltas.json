@@ -363,10 +363,10 @@
     "scenario": "plugins/shipwright-changelog/skills/changelog/references/rerunning-a-release.md",
     "field": "sha256",
     "before": "b079b6b9d31547e1888ff9ad82d5487ecf983cd203e048d1b55c52c603089e20",
-    "after": "7dbc7070fbbeccc77a150c628d3b3a28fbf09a11d6fd5edfdb072dc354ba616d",
-    "approver": "operator decision 2026-11-25 (chat): P8b re-scope of unit P8b (Q5, Q6, Q7, Q8, Q10, F8, F9; Q9 out); Q5: hand-written [Unreleased] entries move into the release, marked in the preview (FINDINGS D92); Q7/F11: --from removed, nothing built; passing it is a usage error (FINDINGS D94); Q8: a leading v is cut, a non-SemVer version or one not above the last tag is refused (FINDINGS D95); fix round 1 (orchestrator decision under the one-to-one rule, D100): Q8 compares with the last release tag on this branch, reachable from HEAD; pre-release tags are not compared; fix round 1: a re-run of a finished section moves nothing (D105); leftover release-fallback drops ride into the next release",
+    "after": "15682f3e73322de9c4934199cd83da40e5d5f65eb231f0bd5bc62dd345c60196",
+    "approver": "operator decision 2026-11-25 (chat): P8b re-scope of unit P8b (Q5, Q6, Q7, Q8, Q10, F8, F9; Q9 out); Q5: hand-written [Unreleased] entries move into the release, marked in the preview (FINDINGS D92); Q7/F11: --from removed, nothing built; passing it is a usage error (FINDINGS D94); Q8: a leading v is cut, a non-SemVer version or one not above the last tag is refused (FINDINGS D95); fix round 1 (orchestrator decision under the one-to-one rule, D100): Q8 compares with the last release tag on this branch, reachable from HEAD; pre-release tags are not compared; fix round 1: a re-run of a finished section moves nothing (D105); leftover release-fallback drops ride into the next release; fix round 2: a re-run after an interruption converges only when no hand-written entry was moved, a column-0 entry is never moved (D108)",
     "date": "2026-11-25",
-    "source": "Q5/Q7/Q8/fix-round-1"
+    "source": "Q5/Q7/Q8/fix-round-1/fix-round-2"
   },
   {
     "scenario": "plugins/shipwright-changelog/tests/golden/S10.trace.json",

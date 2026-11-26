@@ -7,9 +7,12 @@ empty first release is refused, not tagged). The release date is the one ``prepa
 ADR drops (``aggregate_decisions.py``); bullets from a cherry-pick (``fallback_entries``) are written first, as drop
 files (F9: a legacy ``[Unreleased]`` bullet missed the release it was written for), and only on a real run (a preview
 writes nothing, AC10). Hand-written entries under ``## [Unreleased]`` move into the release (Q5,
-``--move-unreleased``); the preview marks them ``(hand-written)`` in ``section_preview``. The exit code is the
-aggregator's own: a refused re-run (AC08) is exit 1 with its stderr naming the disagreement, and stays an operator
-action, never a retry.
+``--move-unreleased``, passed only while this version's section is not yet written); the preview marks them
+``(hand-written)`` in ``section_preview``. A re-run after an interruption converges when the first run moved no
+hand-written entry (after a finished release it always does). When it moved some and was interrupted before the
+drops were consumed, the re-run refuses by design (the section on record says more than the drops; FINDINGS D92, D102)
+and the operator reconciles by hand. The exit code is the aggregator's own: a refused re-run (AC08) is exit 1 with its
+stderr naming the disagreement, and stays an operator action, never a retry.
 """
 
 from __future__ import annotations

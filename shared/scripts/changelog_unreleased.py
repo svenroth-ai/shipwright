@@ -16,7 +16,7 @@ from __future__ import annotations
 import re
 from typing import Sequence
 
-from changelog_sections import HEADING_RE, continues_section, unreleased_start
+from changelog_sections import _LIST_ITEM_RE, HEADING_RE, continues_section, unreleased_start
 
 HAND_WRITTEN_MARK = " (hand-written)"
 _HEADING = re.compile(r"^###\s+(.+?)\s*$")
@@ -30,9 +30,12 @@ def take(changelog: str, categories: Sequence[str]) -> tuple[str, dict[str, list
     category in document order (each the bullet's text without ``- ``, continuation lines kept), and the text of every
     bullet that stays. Without an ``[Unreleased]`` block, or with nothing to move, the text comes back unchanged.
 
-    An entry is never split (fix round 1): its indented lines, a lazy continuation (a plain column-0 line right after it)
-    and a fenced block that opens inside it all go with it, and nothing inside a fence is read as a bullet or a heading.
-    An entry whose end cannot be told (a fence that never closes) stays in ``[Unreleased]`` and is named in ``left``."""
+    An entry is never split (fix round 1): its indented lines and an indented fenced block move with it, and nothing
+    inside a fence is read as a bullet or a heading. An entry that reaches column 0 after its bullet line (a lazy
+    continuation, a column-0 fence, a column-0 line inside a fence) is NOT moved (fix round 2): the shared section end
+    (``changelog_sections.section_end``) stops at such a line, so in the release section it would cut off everything
+    after it. It stays whole in ``[Unreleased]`` and is named in ``left``, like an entry whose end cannot be told (a fence
+    that never closes; then the rest of the block stays too)."""
     lines = _split(changelog)
     start = unreleased_start(lines)
     if start is None:
@@ -61,10 +64,15 @@ def take(changelog: str, categories: Sequence[str]) -> tuple[str, dict[str, list
             keep.append(line)
             i += 1
             continue
+        if any(x.strip() and not x[:1].isspace() for x in lines[i + 1:last + 1]):  # reaches column 0: stays whole
+            keep.extend(lines[i:last + 1])
+            i = last + 1
+            continue
         block = [_TOP_BULLET.sub("", line, count=1).rstrip("\r\n")] + [x.rstrip("\r\n") for x in lines[i + 1:last + 1]]
         moved.setdefault(category, []).append("\n".join(block).strip())
         i = last + 1
-    left = [_ANY_BULLET.sub("", line).strip() for line in keep if _ANY_BULLET.match(line)]
+    fenced = _fenced(keep)
+    left = [_ANY_BULLET.sub("", line).strip() for n, line in enumerate(keep) if _ANY_BULLET.match(line) and not fenced[n]]
     if not moved:
         return changelog, {}, left
     return "".join(lines[:start + 1] + _tidy(keep) + lines[end:]), moved, left
@@ -105,7 +113,7 @@ def _entry_end(lines: list[str], i: int, end: int) -> int | None:
             if close is None:
                 return None
             last, k, blank = close, close + 1, False
-        elif indented or not (blank or _HEADING.match(line) or _ANY_BULLET.match(line) or line.startswith("#")):
+        elif indented or not (blank or _HEADING.match(line) or _LIST_ITEM_RE.match(line) or line.startswith("#")):
             last, k, blank = k, k + 1, False  # an indented line, or a lazy continuation right after the entry
         else:
             break
@@ -115,11 +123,12 @@ def _entry_end(lines: list[str], i: int, end: int) -> int | None:
 def _tidy(body: list[str]) -> list[str]:
     """The kept body without a ``### <heading>`` that lost all its content, framed by one blank line on each side."""
     out: list[str] = []
+    fenced = _fenced(body)
+    heads = [bool(_HEADING.match(x.rstrip("\r\n"))) and not fenced[n] for n, x in enumerate(body)]  # never inside a fence
     for n, line in enumerate(body):
-        if _HEADING.match(line.rstrip("\r\n")):
-            rest = body[n + 1:]
-            stop = next((k for k, x in enumerate(rest) if _HEADING.match(x.rstrip("\r\n"))), len(rest))
-            if not any(x.strip() for x in rest[:stop]):
+        if heads[n]:
+            stop = next((k for k in range(n + 1, len(body)) if heads[k]), len(body))
+            if not any(x.strip() for x in body[n + 1:stop]):
                 continue
         out.append(line)
     while out and not out[0].strip():
@@ -128,6 +137,16 @@ def _tidy(body: list[str]) -> list[str]:
         out.pop()
     eol = "\r\n" if any(x.endswith("\r\n") for x in body) else "\n"
     return [eol] + out + ([eol] if out else [])
+
+
+def _fenced(lines: list[str]) -> list[bool]:
+    """For each line: is it inside a fenced block or one of its fence lines."""
+    out, inside = [], False
+    for line in lines:
+        fence = bool(_FENCE.match(line))
+        out.append(inside or fence)
+        inside = inside != fence
+    return out
 
 
 def marked(moved: dict[str, list[str]]) -> dict[str, list[str]]:

@@ -278,7 +278,7 @@ def aggregate(
     with file_lock(lock_path, timeout_seconds=lock_timeout_seconds):
         by_category, processed = _snapshot_drop_files(project_root)
         original = changelog_path.read_text(encoding="utf-8") if changelog_path.exists() else "# Changelog\n\n"
-        remaining, moved, _ = changelog_unreleased.take(original, _CATEGORY_ORDER) if move_unreleased else (original, {}, [])
+        remaining, moved, left = changelog_unreleased.take(original, _CATEGORY_ORDER) if move_unreleased else (original, {}, None)
         drops_only = {c: list(b) for c, b in by_category.items()}
         for category, texts in moved.items():  # after the drops of the same category, in document order
             by_category.setdefault(category, []).extend(("unreleased", t) for t in texts)
@@ -337,7 +337,7 @@ def aggregate(
             }
 
         changelog_text = remaining
-        legacy_bullet_texts = _legacy_unreleased_bullets(changelog_text)
+        legacy_bullet_texts = _legacy_unreleased_bullets(changelog_text) if left is None else left  # Q5: take() names what stayed, past a column-0 line too
         if moved:
             named = "\n".join(f"  - {t.splitlines()[0]}" for texts in moved.values() for t in texts)
             print(f"[aggregate_changelog] {sum(map(len, moved.values()))} hand-written bullet(s) under [Unreleased] "
