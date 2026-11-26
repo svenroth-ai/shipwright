@@ -1,0 +1,289 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-26-dfp-stop3-release-fixes",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-26T22:34:33.202409+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-26T22:33:58.986633+00:00",
+      "disposition": "bug-fix unit dispatched by the campaign orchestrator from its reviewed stop-3 plan (PR #1111, FINDINGS D21-D25/F-S3-1); no planning step ran in this unit",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "delegated-to-orchestrator"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_commit.py",
+          "line": 129,
+          "finding": "D25 pre-check compared work-tree-top status paths with project-root pathspec: a project in a subfolder would always stop with unrelated_changes.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": "plugins/shipwright-changelog/scripts/hooks/release_guard.py",
+          "line": 84,
+          "finding": "git push origin HEAD:refs/tags/vX parsed as tag-only and allowed, creating a remote tag on an unverified commit.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_sync.py",
+          "line": 359,
+          "finding": "event window undocumented",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_commit.py",
+          "line": 129,
+          "finding": "re-run with leftover triage.jsonl now stops at pre-check",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/tests/golden/driver_replay.py",
+          "line": 474,
+          "finding": "replay parses status without -z",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/testkit/golden_trace.py",
+          "line": 132,
+          "finding": "two drops of one key in one commit would share a blob key",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-26T22:22:12.942584+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "transport": "agent"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": null,
+          "file": "plugins/shipwright-changelog/scripts/hooks/release_guard_commands.py",
+          "line": null,
+          "finding": "a push is judged by the tag only when only tags go",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
+          "line": null,
+          "finding": "SKILL.md: a change the release did not write stops it",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": "plugins/shipwright-changelog/scripts/lib/release_sync.py",
+          "line": null,
+          "finding": "legacy events window",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": "plugins/shipwright-changelog/scripts/lib/release_commit.py",
+          "line": null,
+          "finding": "stop message recovery advice",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": "docs/hooks-and-pipeline.md",
+          "line": null,
+          "finding": "doc HEAD:refs/tags judged by HEAD",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": "plugins/shipwright-changelog/scripts/hooks/release_guard.py",
+          "line": null,
+          "finding": "every trunk-moving push is seen",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-26T22:30:03.538102+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "transport": "agent"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "test ·",
+          "file": null,
+          "line": null,
+          "finding": "The replay driver's D25 stop returns `{\"status\": \"failed\", \"reason\": \"exit_1\"}` with no path list, while the CLI returns `reason: \"unrelated_changes\"` with `unrelated: [...]`. Replay/CLI parity therefore cannot catch a CLI regression that stops at the right time but names the wrong paths (or none), and if the frozen traces record the step's output payload, the two drivers' reasons differ for S15/S16c.",
+          "suggestion": "Make the replay emit `reason: \"unrelated_changes\"` and the named paths in its StepResult (or confirm the trace normalizer masks the reason), so the parity check pins the D25 message shape too.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "A file present in `event_files(before)` but deleted by the compliance call is not recorded (only new/changed files are), so its deletion surfaces later as `unrelated_changes` and stops the release even though it happened inside the release's window. Unlikely (nothing in the chain deletes event files), but it is a state the before/after comparison doesn't cover.",
+          "suggestion": "Also include paths present before and absent after (or document the miss alongside the existing window caveats).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "Any human edit to a file the directory pathspecs cover (an untracked hand-written file under `decision-drops/`/`adr/`) or to a named file (CHANGELOG.md, decision log) is silently committed with the release. This is recorded as open in the FINDINGS block, so it is a known, accepted limitation — noting it here only because it means D25 is only partially protective on those paths.",
+          "suggestion": "None needed now; the FINDINGS row already tracks it for a follow-up.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "stable_path` rewrites any filename matching `--<8hex>--<8hex>.jsonl` anywhere in trace text, so a legitimate non-event path that happens to match would be normalized away, masking a real trace difference (and the blob-key collision for two drops in one commit is already recorded as open).",
+          "suggestion": "Restrict the rewrite to paths under `.shipwright/events/drops/` (or accept, as recorded).  Overall assessment: the implementation matches the spec's root-cause analysis and acceptance criteria, tests are behavioral and cover error paths with real git; remaining findings are refinements to parity and documented edge cases. Ship-as-is.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "line — `plugins/shipwright-changelog/scripts/lib/release_commit.py",
+          "line": 144,
+          "finding": "If `git status` fails or times out, Step 6 treats the tree as clean and proceeds to staging and committing. A transient failure can therefore reproduce D25’s half-finished release when the later audit finds unrelated changes.",
+          "suggestion": "Return a failure with the status command’s diagnostic before any `git add`. Add a test that makes the status command fail and verifies that HEAD and the index are unchanged.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "line — `plugins/shipwright-changelog/scripts/lib/release_commit.py",
+          "line": 52,
+          "finding": "The pathspec lookup checks the index and untracked files but misses files that exist only in HEAD. If the last tracked decision drop is already staged for deletion, the directory disappears from the release pathspec. The pre-check then reports the deletion as unrelated even though the directory is explicitly part of the release.",
+          "suggestion": "Include HEAD paths when determining which pathspecs Git knows. Add a regression test for a staged deletion of the last file under a release directory.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "test",
+          "file": "line — `plugins/shipwright-changelog/tests/golden/scenarios_release.py",
+          "line": 66,
+          "finding": "The scenario now requires a successful drops release, but the supplied diff contains none of the regenerated golden traces claimed in the findings log. The frozen traces still encode the previous outcomes, including early failure for drops releases and a release commit before refusal in S15 and S16c. Golden comparisons against those traces will fail.",
+          "suggestion": "Include the regenerated traces for all eight affected scenarios and verify that both drivers match them.  Overall assessment — ship-with-fixes. The approach addresses the main release failures, but the pre-check must stop on a failed status command and recognize staged deletions on release paths. Include the updated golden traces before shipping.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-26T22:33:58.725166+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Review\n\nThe change is well-engineered: the guard fix (`named_tags` + rebuild logic), the pathspec existence filter (`_known_files` protecting both `git add -A` and `git commit --` from empty pathspecs), the `consumed_drops`/`events_pathspec` plumbing, and the D25 pre-commit stop all match the spec's stated fix, and the L1 tests use real git with meaningful assertions (HEAD unchanged, index unchanged, tag absent, deletion in the commit's name-status). I traced the trickier paths (tag refspec parsing incl. `HEAD:refs/tags/vX`, `:` refspecs, `--follow-tags`, combined atomic pushes; the `-z` porcelain rename parsing; the subfolder `--show-prefix` stripping; the stuck-drop D105 case) and they behave as the spec and tests claim.\n\nFindings:\n\n- Category: test · Severity: low · `driver_replay.py` (`step_commit_and_tag`)\n  Finding: The replay driver's D25 stop returns `{\"status\": \"failed\", \"reason\": \"exit_1\"}` with no path list, while the CLI returns `reason: \"unrelated_changes\"` with `unrelated: [...]`. Replay/CLI parity therefore cannot catch a CLI regression that stops at the right time but names the wrong paths (or none), and if the frozen traces record the step's output payload, the two drivers' reasons differ for S15/S16c.\n  Suggestion: Make the replay emit `reason: \"unrelated_changes\"` and the named paths in its StepResult (or confirm the trace normalizer masks the reason), so the parity check pins the D25 message shape too.\n\n- Category: edge-case · Severity: low · `release_sync.py` (`written_events`)\n  Finding: A file present in `event_files(before)` but *deleted* by the compliance call is not recorded (only new/changed files are), so its deletion surfaces later as `unrelated_changes` and stops the release even though it happened inside the release's window. Unlikely (nothing in the chain deletes event files), but it is a state the before/after comparison doesn't cover.\n  Suggestion: Also include paths present before and absent after (or document the m […truncated]\n\n[openai] - **Category:** spec  \n  **Severity:** high  \n  **File:line** — `plugins/shipwright-changelog/scripts/lib/release_commit.py:144`  \n  **Finding:** If `git status` fails or times out, Step 6 treats the tree as clean and proceeds to staging and committing. A transient failure can therefore reproduce D25’s half-finished release when the later audit finds unrelated changes.  \n  **Suggestion:** Return a failure with the status command’s diagnostic before any `git add`. Add a test that makes the status command fail and verifies that HEAD and the index are unchanged.\n\n- **Category:** bug  \n  **Severity:** medium  \n  **File:line** — `plugins/shipwright-changelog/scripts/lib/release_commit.py:52`  \n  **Finding:** The pathspec lookup checks the index and untracked files but misses files that exist only in HEAD. If the last tracked decision drop is already staged for deletion, the directory disappears from the release pathspec. The pre-check then reports the deletion as unrelated even though the directory is explicitly part of the release.  \n  **Suggestion:** Include HEAD paths when determining which pathspecs Git knows. Add a regression test for a staged deletion of the last file under a release directory.\n\n- **Category:** test  \n  **Severity:** high  \n  **File:line** — `plugins/shipwright-changelog/tests/golden/scenarios_release.py:66`  \n  **Finding:** The scenario now requires a successful drops release, but the supplied diff contains none of the regenerated golden traces claimed in the findings log. The frozen traces still encode the previous outcomes, including early failure for drops releases and a release commit before refusal in S15 and S16c. Golden comparisons against those traces will fail.  \n  **Suggestion:** Include the regenerated traces for all eight affected scenarios and verify that both drivers match them.\n\n**Overall assessment — ship-with-fixes.** The approach addresses the main release failures, but the pre-check must stop on a failed status comm […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-26T22:15:32.834755+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "transport": "agent"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-26T22:33:59.395452+00:00",
+      "disposition": "bug-fix unit dispatched by the campaign orchestrator from its reviewed stop-3 plan (PR #1111, FINDINGS D21-D25/F-S3-1); no planning step ran in this unit",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "delegated-to-orchestrator"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-26T22:33:59.554202+00:00",
+      "disposition": "bug-fix unit dispatched by the campaign orchestrator from its reviewed stop-3 plan (PR #1111, FINDINGS D21-D25/F-S3-1); no planning step ran in this unit",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "delegated-to-orchestrator"
+    }
+  }
+}

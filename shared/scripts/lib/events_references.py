@@ -144,6 +144,7 @@ REGISTRY: dict[str, tuple[str, ...]] = {
         "plugins/shipwright-adopt/scripts/lib/gitattributes_scaffolder.py",
         "plugins/shipwright-adopt/skills/adopt/references/step-e-artifact-generation.md",
         "plugins/shipwright-adopt/skills/adopt/references/step-h-validate-commit-handoff.md",
+        "plugins/shipwright-changelog/scripts/lib/release_sync.py",
         "plugins/shipwright-changelog/skills/changelog/references/compliance-evidence.md",
         "plugins/shipwright-compliance/scripts/audit/_group_d_promise.py",
         "plugins/shipwright-compliance/scripts/audit/group_f.py",

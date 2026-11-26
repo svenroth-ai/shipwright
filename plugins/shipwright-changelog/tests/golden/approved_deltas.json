@@ -3,10 +3,10 @@
     "scenario": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
     "field": "sha256",
     "before": "db12fe9f66618e0a1a15cbd180f07bd4a1de1178fb75e6104f01c070fb526a46",
-    "after": "e9dad413ecc4dd7de1262c148a1746a5242c400bd97494c9f2e170527ebef98c",
-    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); BRIEF D12/F2: the preview is the dry run, asked before the real aggregate writes (FINDINGS D74); BRIEF D7/F3: the push-branch step right before gh pr create (FINDINGS D75); BRIEF D24/F5: the default branch from the remote as trunk and PR base (FINDINGS D76); P8a fix round (orchestrator review): on_trunk from prepare, additive trunks, release.py cancel, {branch} in the push-tag line, duplicates of references cut instead of a re-flow (FINDINGS D84, D85, D87); P8a fix round 2 (Opus re-review): Cancel reports every left path, Step 7 names only on_trunk: false (FINDINGS D91); then operator decision 2026-11-25 (chat): P8b re-scope of unit P8b (Q5, Q6, Q7, Q8, Q10, F8, F9; Q9 out); Q5: hand-written [Unreleased] entries move into the release, marked in the preview (FINDINGS D92); Q7/F11: --from removed, nothing built; passing it is a usage error (FINDINGS D94); Q8: a leading v is cut, a non-SemVer version or one not above the last tag is refused (FINDINGS D95); Q10/F13: the PR body from a file via release.py pr-body and --body-file (FINDINGS D96); F9: the cherry-pick fallback writes a drop file (FINDINGS D98); fix round 1 (orchestrator decision under the one-to-one rule, D100): Q8 compares with the last release tag on this branch, reachable from HEAD; pre-release tags are not compared",
-    "date": "2026-11-25",
-    "source": "F2/F3/F5/D84/D85/D87/D91/Q5/Q7/Q8/Q10/F9/fix-round-1"
+    "after": "e2901537f208a4fb4fdc04c69491f00034e13b46c4feeed3dfd034d4b4800271",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); BRIEF D12/F2: the preview is the dry run, asked before the real aggregate writes (FINDINGS D74); BRIEF D7/F3: the push-branch step right before gh pr create (FINDINGS D75); BRIEF D24/F5: the default branch from the remote as trunk and PR base (FINDINGS D76); P8a fix round (orchestrator review): on_trunk from prepare, additive trunks, release.py cancel, {branch} in the push-tag line, duplicates of references cut instead of a re-flow (FINDINGS D84, D85, D87); P8a fix round 2 (Opus re-review): Cancel reports every left path, Step 7 names only on_trunk: false (FINDINGS D91); then operator decision 2026-11-25 (chat): P8b re-scope of unit P8b (Q5, Q6, Q7, Q8, Q10, F8, F9; Q9 out); Q5: hand-written [Unreleased] entries move into the release, marked in the preview (FINDINGS D92); Q7/F11: --from removed, nothing built; passing it is a usage error (FINDINGS D94); Q8: a leading v is cut, a non-SemVer version or one not above the last tag is refused (FINDINGS D95); Q10/F13: the PR body from a file via release.py pr-body and --body-file (FINDINGS D96); F9: the cherry-pick fallback writes a drop file (FINDINGS D98); fix round 1 (orchestrator decision under the one-to-one rule, D100): Q8 compares with the last release tag on this branch, reachable from HEAD; pre-release tags are not compared; then iterate-2026-11-26-dfp-stop3-release-fixes (stop-3 fix unit, operator rule P17a: bugs fixed with a test, behaviour one to one); operator decision 2026-11-26 (chat): Step 6 names the unrelated_changes stop and its paths (FINDINGS D25)",
+    "date": "2026-11-26",
+    "source": "F2/F3/F5/D84/D85/D87/D91/Q5/Q7/Q8/Q10/F9/fix-round-1/D25"
   },
   {
     "scenario": "plugins/shipwright-changelog/skills/changelog/references/first-actions.md",
@@ -30,10 +30,10 @@
     "scenario": "plugins/shipwright-changelog/tests/golden/S1.drops.trace.json",
     "field": "sha256",
     "before": "ad41b3d01ec9231f0af5150014e0573e1dd5b08dff68a0b6b37eb4e07eda12b5",
-    "after": "a5ab540012890c4fc39c450f8875b27c67863ec05337014adbb7fe80f04fbea2",
-    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: the preview step now comes after the dry run and before the real aggregate (Cancel: nothing written)",
-    "date": "2026-11-25",
-    "source": "F2"
+    "after": "4403ab1d9d32ea336687b5edc68d6dd1018879af38f87dc79f60dc4fe47586b2",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: the preview step now comes after the dry run and before the real aggregate (Cancel: nothing written); then iterate-2026-11-26-dfp-stop3-release-fixes (stop-3 fix unit, operator rule P17a: bugs fixed with a test, behaviour one to one); regenerated trace: Step 6 commits the grade_snapshot event Step 5.5 wrote, so the drops layout finishes (FINDINGS D23)",
+    "date": "2026-11-26",
+    "source": "F2/D23"
   },
   {
     "scenario": "plugins/shipwright-changelog/tests/golden/S1.legacy.trace.json",
@@ -129,10 +129,10 @@
     "scenario": "plugins/shipwright-changelog/tests/golden/S15.trace.json",
     "field": "sha256",
     "before": "d3852c1a17b3af51a9ca6ac5f0d2d8cc09c836df6f5cc3e13eb609d16e4f826a",
-    "after": "e24d6e380316cb482bf8b8e0c02998b3b0c6fa37073b51fcb192b47f8a491fb4",
-    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: the preview step now comes after the dry run and before the real aggregate (Cancel: nothing written)",
-    "date": "2026-11-25",
-    "source": "F2"
+    "after": "9aa7065ed64b5a8558f2835a699afc22777f91d233a91c01029fe579beb7b2c6",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: the preview step now comes after the dry run and before the real aggregate (Cancel: nothing written); then iterate-2026-11-26-dfp-stop3-release-fixes (stop-3 fix unit, operator rule P17a: bugs fixed with a test, behaviour one to one); operator decision 2026-11-26 (chat): regenerated trace: unrelated staged and unstaged changes stop Step 6 before the commit (FINDINGS D25)",
+    "date": "2026-11-26",
+    "source": "F2/D25"
   },
   {
     "scenario": "plugins/shipwright-changelog/tests/golden/S16a.trace.json",
@@ -156,10 +156,10 @@
     "scenario": "plugins/shipwright-changelog/tests/golden/S16c.trace.json",
     "field": "sha256",
     "before": "010170491fddbea3f0f77789f87da6b9d54e6891c46e4bec3fb348235fbf4b26",
-    "after": "a4bcc7583cc4b8e80bea80bfb249113fe77f67acef79607402f9d978a2cf2b60",
-    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: the preview step now comes after the dry run and before the real aggregate (Cancel: nothing written)",
-    "date": "2026-11-25",
-    "source": "F2"
+    "after": "71a62c63f3b3c6b3e3e3beb11069ca6d3a3e93ee347daaa584587505ece4fcc4",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: the preview step now comes after the dry run and before the real aggregate (Cancel: nothing written); then iterate-2026-11-26-dfp-stop3-release-fixes (stop-3 fix unit, operator rule P17a: bugs fixed with a test, behaviour one to one); operator decision 2026-11-26 (chat): regenerated trace: an untracked stray file stops Step 6 before the commit (FINDINGS D25)",
+    "date": "2026-11-26",
+    "source": "F2/D25"
   },
   {
     "scenario": "plugins/shipwright-changelog/tests/golden/S16d.trace.json",
@@ -210,19 +210,19 @@
     "scenario": "plugins/shipwright-changelog/tests/golden/S1d.trace.json",
     "field": "sha256",
     "before": "78d11128e60ae9a082aba4f281b6d771bac4c4acbf36adc40345b7a64b1bc071",
-    "after": "c3a40d17369ad6abaed369901083ad4a86add72b887e7d7d73cd91b6495cb42e",
-    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: the preview step now comes after the dry run and before the real aggregate (Cancel: nothing written)",
-    "date": "2026-11-25",
-    "source": "F2"
+    "after": "224d4b04a42b4444aefd3b6eb82014f23e071623b69716b678b1587821645006",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: the preview step now comes after the dry run and before the real aggregate (Cancel: nothing written); then iterate-2026-11-26-dfp-stop3-release-fixes (stop-3 fix unit, operator rule P17a: bugs fixed with a test, behaviour one to one); regenerated trace: a pathspec git does not know is left out, the release commit and tag are made (FINDINGS D21)",
+    "date": "2026-11-26",
+    "source": "F2/D21"
   },
   {
     "scenario": "plugins/shipwright-changelog/tests/golden/S1t.trace.json",
     "field": "sha256",
     "before": "7b0742cb62800f307c0c27fe6e54f6a2dafa99764f8f35e028b84b9dd8523a98",
-    "after": "2d805ed3605d6c7d1a43114b2d2c5baf3b139b842026c6fde49e1d3e5c5bf177",
-    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: the preview step now comes after the dry run and before the real aggregate (Cancel: nothing written)",
-    "date": "2026-11-25",
-    "source": "F2"
+    "after": "c1b55b72d161e52958526b7b9ea3630674717542431fa243dccf757eea390dea",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: the preview step now comes after the dry run and before the real aggregate (Cancel: nothing written); then iterate-2026-11-26-dfp-stop3-release-fixes (stop-3 fix unit, operator rule P17a: bugs fixed with a test, behaviour one to one); regenerated trace: the deletion of the consumed tracked drop is in the release commit, the release is tagged (FINDINGS D22)",
+    "date": "2026-11-26",
+    "source": "F2/D22"
   },
   {
     "scenario": "plugins/shipwright-changelog/tests/golden/S2a.legacy.trace.json",
@@ -237,10 +237,10 @@
     "scenario": "plugins/shipwright-changelog/tests/golden/S2g.drops.trace.json",
     "field": "sha256",
     "before": "ac7231a49c0d7a53e01b3009ffdefdea660170ff10a9a6f24b52f6bb221d86b1",
-    "after": "709c9b4dc1464b725db8238e96e89afed44d818b07c18367ed38fa99f8c9e809",
-    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: the preview step now comes after the dry run and before the real aggregate (Cancel: nothing written)",
-    "date": "2026-11-25",
-    "source": "F2"
+    "after": "ae688d118d190cea1ec3e6e8b4252c31d5032d5cafcaaa8d4bb7f3c6a9de9df0",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: the preview step now comes after the dry run and before the real aggregate (Cancel: nothing written); then iterate-2026-11-26-dfp-stop3-release-fixes (stop-3 fix unit, operator rule P17a: bugs fixed with a test, behaviour one to one); regenerated trace: Step 6 commits the grade_snapshot event Step 5.5 wrote, so the drops layout finishes (FINDINGS D23)",
+    "date": "2026-11-26",
+    "source": "F2/D23"
   },
   {
     "scenario": "plugins/shipwright-changelog/tests/golden/S2g.legacy.trace.json",
@@ -291,10 +291,10 @@
     "scenario": "plugins/shipwright-changelog/tests/golden/driver_replay.py",
     "field": "sha256",
     "before": "00d59409c7a1c1ba3948d2ed62c360fd506dbadb1c13ade03732fdc3a72a3f6e",
-    "after": "be334717b09ebac85bb1a8a40015aea3bdec5aecb713b31fa989acd0a2708969",
-    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); BRIEF D7/F3: the push-branch step right before gh pr create (FINDINGS D75); BRIEF D24/F5: the default branch from the remote as trunk and PR base (FINDINGS D76); P8a fix round (orchestrator review): additive trunks and the lookup by remote name (FINDINGS D85, D86), Cancel puts the edited drop back (D84); P8a fix round 2 (Opus re-review): a comment that the lookup's missing branch-name check and no-prompt env are deliberate (FINDINGS D90); then operator decision 2026-11-25 (chat): P8b re-scope of unit P8b (Q5, Q6, Q7, Q8, Q10, F8, F9; Q9 out); Q5: hand-written [Unreleased] entries move into the release, marked in the preview (FINDINGS D92); Q7/F11: --from removed, nothing built; passing it is a usage error (FINDINGS D94); Q10/F13: the PR body from a file via release.py pr-body and --body-file (FINDINGS D96); F9: the cherry-pick fallback writes a drop file (FINDINGS D98)",
-    "date": "2026-11-25",
-    "source": "F3/F5/D84/D85/D86/D90/Q5/Q7/Q10/F9"
+    "after": "0291702bd32cbdb812d1d542ee2e6f4c4bb9b6fbb04fe8bd1f83c7ac7c8376e4",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); BRIEF D7/F3: the push-branch step right before gh pr create (FINDINGS D75); BRIEF D24/F5: the default branch from the remote as trunk and PR base (FINDINGS D76); P8a fix round (orchestrator review): additive trunks and the lookup by remote name (FINDINGS D85, D86), Cancel puts the edited drop back (D84); P8a fix round 2 (Opus re-review): a comment that the lookup's missing branch-name check and no-prompt env are deliberate (FINDINGS D90); then operator decision 2026-11-25 (chat): P8b re-scope of unit P8b (Q5, Q6, Q7, Q8, Q10, F8, F9; Q9 out); Q5: hand-written [Unreleased] entries move into the release, marked in the preview (FINDINGS D92); Q7/F11: --from removed, nothing built; passing it is a usage error (FINDINGS D94); Q10/F13: the PR body from a file via release.py pr-body and --body-file (FINDINGS D96); F9: the cherry-pick fallback writes a drop file (FINDINGS D98); then iterate-2026-11-26-dfp-stop3-release-fixes (stop-3 fix unit, operator rule P17a: bugs fixed with a test, behaviour one to one); the replay restates the fixed Step 6 rule over the unchanged frozen chain: known paths only, consumed tracked drops, events Step 5.5 wrote, the pre-commit tree check (FINDINGS D21-D23, D25)",
+    "date": "2026-11-26",
+    "source": "F3/F5/D84/D85/D86/D90/Q5/Q7/Q10/F9/D21/D22/D23/D25/D21/D22/D23/D25/D21/D22/D23/D25"
   },
   {
     "scenario": "plugins/shipwright-changelog/tests/golden/replay_commands.py",
@@ -318,10 +318,10 @@
     "scenario": "plugins/shipwright-changelog/tests/golden/scenarios_branches.py",
     "field": "sha256",
     "before": "0d2318ff79c48614ebdacce6170aa94c1fc21e172bac78dddf1ad07ac6b26931",
-    "after": "a6e90f1dc758ccd88c1fd56c39380ffc3305405dd2612cd4af796bd01fe4d529",
-    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); BRIEF D7/F3: the push-branch step right before gh pr create (FINDINGS D75); BRIEF D24/F5: the default branch from the remote as trunk and PR base (FINDINGS D76): S14a/S14c; P8a fix round (orchestrator review): S14c sets origin/HEAD like a clone, the S14d builder (FINDINGS D85)",
-    "date": "2026-11-25",
-    "source": "F3/F5/D85"
+    "after": "199423f0483412984775200e8238b75aeaade3ae05a801ffe35163c3548084f9",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); BRIEF D7/F3: the push-branch step right before gh pr create (FINDINGS D75); BRIEF D24/F5: the default branch from the remote as trunk and PR base (FINDINGS D76): S14a/S14c; P8a fix round (orchestrator review): S14c sets origin/HEAD like a clone, the S14d builder (FINDINGS D85); then iterate-2026-11-26-dfp-stop3-release-fixes (stop-3 fix unit, operator rule P17a: bugs fixed with a test, behaviour one to one); operator decision 2026-11-26 (chat): S15 asserts the refusal before the commit (FINDINGS D25)",
+    "date": "2026-11-26",
+    "source": "F3/F5/D85/D25"
   },
   {
     "scenario": "plugins/shipwright-changelog/tests/golden/scenarios_modes.py",
@@ -336,10 +336,10 @@
     "scenario": "plugins/shipwright-changelog/tests/golden/scenarios_refusals.py",
     "field": "sha256",
     "before": "f3ea039691b5d0e1138f362a85e15470703cfeed7bf510732bf5694531a405c7",
-    "after": "a32202d869c20757a5ef983d02e0ff184b9a1f2d8a22fb40b2fc1a32a6b3bbe5",
-    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); BRIEF D7/F3: the push-branch step right before gh pr create (FINDINGS D75): S16e closes the remote before the event push, since the branch is now pushed earlier",
-    "date": "2026-11-25",
-    "source": "F3"
+    "after": "18ab89080d4b8aedf664e4e1c1aceabce74ad63dc14a3b36ebb33ddbd70732a6",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); BRIEF D7/F3: the push-branch step right before gh pr create (FINDINGS D75): S16e closes the remote before the event push, since the branch is now pushed earlier; then iterate-2026-11-26-dfp-stop3-release-fixes (stop-3 fix unit, operator rule P17a: bugs fixed with a test, behaviour one to one); operator decision 2026-11-26 (chat): S16c asserts the refusal before the commit (FINDINGS D25)",
+    "date": "2026-11-26",
+    "source": "F3/D25"
   },
   {
     "scenario": "plugins/shipwright-changelog/skills/changelog/references/changelog-format.md",
@@ -399,10 +399,10 @@
     "scenario": "plugins/shipwright-changelog/tests/golden/scenarios_release.py",
     "field": "sha256",
     "before": "d7faebb39ec565cae476151cfca949e52da0661d61fd948066fb0e5c98bc5c35",
-    "after": "3991f55f824539d23554832776015af75ac18b442517f44ed2ffb79f1a7110bf",
-    "approver": "operator decision 2026-11-25 (chat): P8b re-scope of unit P8b (Q5, Q6, Q7, Q8, Q10, F8, F9; Q9 out); Q10/F13: the PR body from a file via release.py pr-body and --body-file (FINDINGS D96)",
-    "date": "2026-11-25",
-    "source": "Q10"
+    "after": "f8474aa95c6eeafd4b779a92a83bfefa81a3b4e2716c3a6d60b45fa951dfbca1",
+    "approver": "operator decision 2026-11-25 (chat): P8b re-scope of unit P8b (Q5, Q6, Q7, Q8, Q10, F8, F9; Q9 out); Q10/F13: the PR body from a file via release.py pr-body and --body-file (FINDINGS D96); then iterate-2026-11-26-dfp-stop3-release-fixes (stop-3 fix unit, operator rule P17a: bugs fixed with a test, behaviour one to one); S1/S2 drops, S1d, S1t assert the fixed release instead of the pinned refusal (FINDINGS D21-D23)",
+    "date": "2026-11-26",
+    "source": "Q10/D21/D22/D23"
   },
   {
     "scenario": "plugins/shipwright-changelog/tests/golden/test_promises_meta.py",
@@ -430,5 +430,50 @@
     "approver": "operator decision 2026-11-25 (chat): P8b re-scope of unit P8b (Q5, Q6, Q7, Q8, Q10, F8, F9; Q9 out); Q7/F11: --from removed, nothing built; passing it is a usage error (FINDINGS D94)",
     "date": "2026-11-25",
     "source": "Q7"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/S2a.drops.trace.json",
+    "field": "sha256",
+    "before": "10cfd1321be5a5e6ba05a7645698818bcff1c73fd59004cc434cfd6786aa8082",
+    "after": "17eb806882e23416aadbb69ec54d2b13fe38c0118d015f71ace855d5e3ef58a7",
+    "approver": "iterate-2026-11-26-dfp-stop3-release-fixes (stop-3 fix unit, operator rule P17a: bugs fixed with a test, behaviour one to one); regenerated trace: Step 6 commits the grade_snapshot event Step 5.5 wrote, so the drops layout finishes (FINDINGS D23)",
+    "date": "2026-11-26",
+    "source": "D23"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/S2u.drops.trace.json",
+    "field": "sha256",
+    "before": "f103fda47cd40bb76da577047de90a577c90c7427de482a3c4ba4627dbf8b7b4",
+    "after": "f260f7122abde323b0a437b7de0eddae9016d0bb8da0245bcf64ccf261f4e3de",
+    "approver": "iterate-2026-11-26-dfp-stop3-release-fixes (stop-3 fix unit, operator rule P17a: bugs fixed with a test, behaviour one to one); regenerated trace: Step 6 commits the grade_snapshot event Step 5.5 wrote, so the drops layout finishes (FINDINGS D23)",
+    "date": "2026-11-26",
+    "source": "D23"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/scenario_support.py",
+    "field": "sha256",
+    "before": "873bc9fe4cab4fe794a689e6ce6f155e31fcdafcfc47352e329acfe74647d04a",
+    "after": "8dd681a8a5fe9f69ba450d4fb3bf2adcb2806f6d8686fe5154ca241bb3ce7ce1",
+    "approver": "iterate-2026-11-26-dfp-stop3-release-fixes (stop-3 fix unit, operator rule P17a: bugs fixed with a test, behaviour one to one); docstrings only: D21-D23 are fixed (FINDINGS D21-D23)",
+    "date": "2026-11-26",
+    "source": "D21/D22/D23"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/test_seeded_regressions.py",
+    "field": "sha256",
+    "before": "de3523f6f6218a876d2466c390f08bdbf57962ef4bf222d8898c8581b71eea91",
+    "after": "d90b06d8ff5694451796998563c4e7ee8c6b566824a3cba7dee83c6a10991c5f",
+    "approver": "iterate-2026-11-26-dfp-stop3-release-fixes (stop-3 fix unit, operator rule P17a: bugs fixed with a test, behaviour one to one); operator decision 2026-11-26 (chat): the no-pathspec seed switches the replay's pre-commit tree check off, else S15 stops before the commit (FINDINGS D25)",
+    "date": "2026-11-26",
+    "source": "D25"
+  },
+  {
+    "scenario": "shared/testkit/golden_trace.py",
+    "field": "sha256",
+    "before": "e7e664ac2c1f71b3cedd753ad6bc008f7dee89918e777e96e7757cbfbf42c293",
+    "after": "61e68debd1df93ed7fdae7fa93b1da961d18387253ec9d123ff0847230dbdb90",
+    "approver": "iterate-2026-11-26-dfp-stop3-release-fixes (stop-3 fix unit, operator rule P17a: bugs fixed with a test, behaviour one to one); the trace keeps an event drop file's key and replaces its worktree hash and random nonce (the release commit now carries a drop, FINDINGS D23)",
+    "date": "2026-11-26",
+    "source": "D23"
   }
 ]

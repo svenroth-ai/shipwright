@@ -167,11 +167,11 @@ It commits **by explicit pathspec** (never `.shipwright/compliance/`, which woul
 `decision-drops/` are directory pathspecs on purpose, see [compliance-evidence.md](references/compliance-evidence.md)), then runs the release
 audit (`--verify-commit --release-audit`) and the manifest `--verify-commit` against the committed `HEAD`, and only when every step exited 0
 makes the annotated tag `v{version}` on that commit. It then checks that the tag exists and names this release and that the CHANGELOG's top
-version is this release; a mismatch removes the tag again. It writes
-`.shipwright/runtime/release_state.json` (version, release commit, checks passed).
+version is this release; a mismatch removes the tag again. It writes `.shipwright/runtime/release_state.json` (version, release commit, checks passed).
 
-`status: "ok"` → continue. **Anything else — stop; no tag was made** (`reason` names the step; an audit that could not even start, such as
-`uv`/PyYAML unavailable, reads as environmental: re-run once the dependency resolves). Never edit the worktree between `sync` and this call.
+`status: "ok"` → continue. **Anything else — stop; no tag was made** (`reason` names the step; `unrelated_changes` lists in `unrelated` the
+changes outside the release's paths, found before anything is staged: tell the operator those paths; an audit that could not even start, such
+as `uv`/PyYAML unavailable, reads as environmental: re-run once the dependency resolves). Never edit the worktree between `sync` and this call.
 
 ---
 

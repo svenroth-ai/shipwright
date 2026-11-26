@@ -77,6 +77,8 @@ def aggregate(rec: Recorder, plugin_root: Path, *, version: str, dry_run: bool =
     if done.exit != 0:
         out["reason"] = "aggregator_refused"  # reconcile by hand: references/rerunning-a-release.md, never a retry
     elif not dry_run:
+        consumed = [p.replace("\\", "/") for p in info.get("processed_files") or []]  # D22: Step 6 commits the deletion of a tracked one
+        state["consumed_drops"] = sorted({*(state.get("consumed_drops") or []), *consumed})  # a converging re-run consumes nothing new
         release_runstate.save(root, state)
         decisions = rec.run("decisions", uv_script(tools / "aggregate_decisions.py", "--project-root", str(root)))
         out["decisions"] = {"exit": decisions.exit}

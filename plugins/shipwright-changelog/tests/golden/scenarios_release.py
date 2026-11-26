@@ -6,13 +6,13 @@ fresh-branch order is S14a (the next unit). What they record about today's behav
 
 * D2: the tag and the release page go out while the PR is still open (guided mode, and a driven run);
 * D15 (fixed in P8b, Q10): the PR body comes from a file, so its newlines are real;
-* D22: a TRACKED bullet drop is deleted by the aggregation but not committed by Step 6's pathspec, so the
-  release audit refuses the dirty tree and no tag is made (S1t);
-* D23: Step 5.5 records an event and Step 6's pathspec does not name it: under the ``drops`` layout (the shipped
-  default) it is an untracked file, under the ``legacy`` layout a tracked events file is modified; the same audit
-  refusal ends the release at Step 6 (no tag, no PR). The one configuration that runs to the release page is the
-  legacy layout with NO events file yet (a fresh repo: the event is not recorded at all), so S1 and S2 start there
-  and both layouts are recorded as they are.
+* D22 (fixed at stop 3): a TRACKED bullet drop deleted by the aggregation is committed by Step 6, so the release is
+  tagged and the tree ends clean (S1t; before, the audit refused the dirty tree and no tag was made);
+* D23 (fixed at stop 3): Step 5.5 records a ``grade_snapshot`` event (under the ``drops`` layout, the shipped default, an
+  untracked drop file); Step 6 commits it with the release, so the drops layout finishes too (before, the audit refused
+  the dirty tree at Step 6). S1 and S2 still start with NO events file (the legacy layout then records no event at
+  Step 5.5), so both layouts are recorded;
+* D21 (fixed at stop 3): a project with no tracked decision-drops/ or ADR folder gets its release commit (S1d).
 """
 
 from __future__ import annotations
@@ -42,20 +42,16 @@ def _s1(make_project, layout: str) -> Run:
     return Run(s, driver, release_flow(driver, s), ctx)
 
 
-def check_d23_refusal(run: Run) -> None:
-    """D23: the release stops at Step 6 under the drops layout; nothing was tagged, opened or pushed."""
-    s = run.scratch
-    assert [r.step for r in run.results][-1] == "commit-and-tag" and run.step("commit-and-tag").exit_code != 0
-    assert "release audit refuses a dirty working tree" in run.commands("commit-and-tag")[0]["stderr"]
-    assert f"v{run.step('prepare').output['version']}" not in s.git("tag").split() and s.gh_state()["prs"] == []
-    assert run.gh_calls("pr") == [] and run.gh_calls("release", "create") == []  # only setup's advisory `release view` ran
-    assert any(line.startswith("?? .shipwright/events/") for line in s.git("status", "--porcelain").splitlines())
-    note = oracle.sections((s.repo / "CHANGELOG.md").read_text(encoding="utf-8"))[0][1]
-    oracle.check_ac01(note, tag_made=False, request_open=False, outcome="stopped")  # AC01: no marking, no request
-    # D23, the writer: Step 5.5's compliance run records a `grade_snapshot` event (not a phase event) and leaves it untracked
-    status = s.git("status", "--porcelain", "-uall")
-    fresh = [p for p in (s.repo / ".shipwright" / "events" / "drops").glob("*.jsonl") if f"?? .shipwright/events/drops/{p.name}" in status]
-    assert fresh and all('"type":"grade_snapshot"' in p.read_text(encoding="utf-8") for p in fresh), fresh
+def check_d23_event_committed(run: Run) -> None:
+    """D23 (fixed at stop 3): under the drops layout Step 5.5's compliance run records a `grade_snapshot` event (not a phase
+    event) as a new drop file, and Step 6 commits it with the release: it is in the release commit, never left untracked."""
+    s, version = run.scratch, run.step("prepare").output["version"]
+    assert run.step("commit-and-tag").exit_code == 0 and f"v{version}" in s.git("tag").split()
+    committed = s.git("show", "--name-only", "--format=", f"v{version}").splitlines()
+    drops = [p for p in committed if p.startswith(".shipwright/events/drops/")]
+    assert drops and all('"type":"grade_snapshot"' in s.git("show", f"v{version}:{p}") for p in drops), committed
+    status = s.git("status", "--porcelain", "-uall").splitlines()
+    assert not any(line.startswith("?? .shipwright/events/") for line in status), status
 
 
 def _check_s1(run: Run) -> None:
@@ -67,7 +63,7 @@ def _check_s1(run: Run) -> None:
     oracle.check_ac02_grouped(section, {"Added": ["First feature of the product"], "Fixed": ["A first fix"]})
     oracle.check_drops_consumed([p.name for p in (s.repo / "CHANGELOG-unreleased.d").rglob("*.md")])  # Step 4: folded entries are gone
     if run.ctx["layout"] == "drops":
-        return check_d23_refusal(run)
+        check_d23_event_committed(run)
     assert all(r.exit_code == 0 for r in run.results), [(r.step, r.exit_code) for r in run.results]
     # AC01: a readable release note, a version marking and an open request - all three
     assert s.git("cat-file", "-t", "v0.1.0") == "tag"  # an annotated tag ...
@@ -108,16 +104,17 @@ def _s1t(make_project, layout: str) -> Run:
 
 
 def _check_s1t(run: Run) -> None:
+    """D22 (fixed at stop 3): the deletion of the consumed tracked drop is part of the release commit; the release is tagged."""
     s = run.scratch
-    done = run.step("commit-and-tag")
-    assert done.exit_code != 0 and done.output["status"] == "failed"
-    assert "release audit refuses a dirty working tree" in run.commands("commit-and-tag")[0]["stderr"]
-    assert s.git("tag") == "" and s.git("log", "-1", "--format=%s", "release/first").startswith("chore(release): v0.1.0")
-    dirty = s.run(["git", "status", "--porcelain"]).stdout.splitlines()
-    assert dirty == [" D CHANGELOG-unreleased.d/Added/iterate-2026-11-01-a_001.md"], dirty  # the deletion is not in the commit
-    assert [r.step for r in run.results][-1] == "commit-and-tag" and run.gh_calls("pr") == []  # the person stops here
-    oracle.check_ac01(oracle.sections((s.repo / "CHANGELOG.md").read_text(encoding="utf-8"))[0][1], tag_made=False,
-                      request_open=False, outcome="stopped")  # AC01: the note exists, nothing marks or requests it
+    assert run.step("commit-and-tag").exit_code == 0 and all(r.exit_code == 0 for r in run.results), [(r.step, r.exit_code) for r in run.results]
+    oracle.check_tag_on_release_commit(s.git("log", "-1", "--format=%s", "v0.1.0"), "0.1.0")
+    changed = s.git("show", "--name-status", "--format=", "v0.1.0").splitlines()
+    assert "D\tCHANGELOG-unreleased.d/Added/iterate-2026-11-01-a_001.md" in changed, changed  # the deletion is in the release commit
+    dirty = [line for line in s.git("status", "--porcelain").splitlines() if line != "?? .shipwright/triage.jsonl"]
+    assert dirty == [], dirty  # the advisory audit finding aside (S1), the tree ends clean
+    prs = s.gh_state()["prs"]
+    oracle.check_ac01(oracle.sections((s.repo / "CHANGELOG.md").read_text(encoding="utf-8"))[0][1], tag_made=True,
+                      request_open=[p["state"] for p in prs] == ["open"], outcome="prepared")  # AC01: note, marking and request
 
 
 def _s1d(make_project, layout: str) -> Run:
@@ -133,18 +130,20 @@ def _s1d(make_project, layout: str) -> Run:
 
 
 def _check_s1d(run: Run) -> None:
+    """D21 (fixed at stop 3): a pathspec that matches nothing is left out, so the release commit is made and tagged."""
     s = run.scratch
-    done = run.step("commit-and-tag")
-    assert [r.step for r in run.results][-1] == "commit-and-tag" and done.exit_code != 0
-    assert "did not match any files" in run.commands("commit-and-tag")[0]["stderr"]  # the whole commit aborts (SKILL.md:300 warns of it)
-    assert s.git("tag") == "" and s.git("log", "-1", "--format=%s") == "feat: first feature" and run.gh_calls("pr") == []
-    oracle.check_ac01(oracle.sections((s.repo / "CHANGELOG.md").read_text(encoding="utf-8"))[0][1], False, False, outcome="stopped")
+    assert run.step("commit-and-tag").exit_code == 0 and all(r.exit_code == 0 for r in run.results), [(r.step, r.exit_code) for r in run.results]
+    assert "did not match any files" not in "".join(c["stderr"] for c in run.commands("commit-and-tag"))
+    oracle.check_tag_on_release_commit(s.git("log", "-1", "--format=%s", "v0.1.0"), "0.1.0")
+    prs = s.gh_state()["prs"]
+    oracle.check_ac01(oracle.sections((s.repo / "CHANGELOG.md").read_text(encoding="utf-8"))[0][1], tag_made=True,
+                      request_open=[p["state"] for p in prs] == ["open"], outcome="prepared")
 
 
 def _s2(autonomy: str):
     def run(make_project, layout: str) -> Run:
         s = make_project(events_layout=layout)
-        ss.remove_events_file(s)  # D23: the one configuration that can finish today's Step 6
+        ss.remove_events_file(s)  # kept from stop 2 (then the one configuration that could finish Step 6, D23): the traces stay comparable
         ss.set_autonomy(s, autonomy)
         ss.write_changelog(s, HISTORY)
         ss.tag(s, "v1.2.0")
@@ -173,7 +172,7 @@ def _check_s2(autonomy: str):
         oracle.check_ac02_grouped(oracle.sections(after)[0][1], {"Added": ["A new capability readers can use"],
                                                                  "Fixed": ["A defect no longer happens"]})
         if run.ctx["layout"] == "drops":
-            return check_d23_refusal(run)
+            check_d23_event_committed(run)
         assert all(r.exit_code == 0 for r in run.results)
         names = [r.step for r in run.results]
         assert names.count("preview") == (1 if autonomy == "guided" else 0)

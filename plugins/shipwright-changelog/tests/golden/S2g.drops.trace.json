@@ -1,16 +1,21 @@
 {
   "all_commits": {
     "origin": [
+      "chore(release): record changelog event for v1.3.0@11#2430c749",
+      "chore(release): v1.3.0@10#65461ffd",
       "chore: autonomy guided@6#a2a61e53",
       "chore: initial project@1#53eb193e",
       "chore: no events file yet@5#015168f9",
       "chore: project scaffolding@4#ed53eaf0",
       "chore: record phase state@3#47098401",
       "docs: changelog history@7#b979a171",
+      "feat: new capability@8#62c58e31",
+      "fix: a defect@9#7570f42d",
       "release 0.1.0@2#2f90492d"
     ],
     "repo": [
-      "chore(release): v1.3.0@10#8d58d286",
+      "chore(release): record changelog event for v1.3.0@11#2430c749",
+      "chore(release): v1.3.0@10#65461ffd",
       "chore: autonomy guided@6#a2a61e53",
       "chore: initial project@1#53eb193e",
       "chore: no events file yet@5#015168f9",
@@ -267,6 +272,7 @@
         ".shipwright/compliance/test-evidence.md": "<masked:judgement>",
         ".shipwright/compliance/test-traceability.json": "<masked:judgement>",
         ".shipwright/compliance/traceability-matrix.md": "<masked:judgement>",
+        ".shipwright/events/drops/_main--<wt8>--<nonce>.jsonl": "<masked:judgement>",
         ".shipwright/planning/adr/INDEX.md": "# ADR Spec Folder — INDEX\n\n_Auto-generated — do not edit by hand. Each row's title comes from that\nADR file's own `#` heading, so change the heading, not this file._\n\n_Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project-root .`\n\n_No ADR specs yet. Add `.md` files under `.shipwright/planning/adr/<run_id_sanitized>-<slug>.md` and regenerate._\n",
         "CHANGELOG.md": "# Changelog\n\n## [1.3.0] - <date>\n\n### Added\n\n- A new capability readers can use\n\n### Fixed\n\n- A defect no longer happens\n\n## [1.2.0] - <date>\n\n### Added\n\n- Earlier feature\n"
       },
@@ -300,6 +306,10 @@
           "status": "A"
         },
         {
+          "path": ".shipwright/events/drops/_main--<wt8>--<nonce>.jsonl",
+          "status": "A"
+        },
+        {
           "path": ".shipwright/planning/adr/INDEX.md",
           "status": "A"
         },
@@ -310,6 +320,19 @@
       ],
       "parents": 1,
       "subject": "chore(release): v1.3.0"
+    },
+    {
+      "blobs": {
+        ".shipwright/events/drops/release-v1.3.0--<wt8>--<nonce>.jsonl": "<masked:judgement>"
+      },
+      "changes": [
+        {
+          "path": ".shipwright/events/drops/release-v1.3.0--<wt8>--<nonce>.jsonl",
+          "status": "A"
+        }
+      ],
+      "parents": 1,
+      "subject": "chore(release): record changelog event for v1.3.0"
     }
   ],
   "files": {
@@ -318,7 +341,7 @@
   "origin": {
     "branches": {
       "main": "chore: project scaffolding@4#ed53eaf0",
-      "release/next": "docs: changelog history@7#b979a171"
+      "release/next": "chore(release): record changelog event for v1.3.0@11#2430c749"
     },
     "tags": {
       "v0.1.0": {
@@ -336,7 +359,7 @@
   "refs": {
     "branches": {
       "main": "docs: changelog history@7#b979a171",
-      "release/next": "chore(release): v1.3.0@10#8d58d286"
+      "release/next": "chore(release): record changelog event for v1.3.0@11#2430c749"
     },
     "tags": {
       "v0.1.0": {
@@ -348,13 +371,16 @@
         "message": "Release v1.2.0",
         "target": "docs: changelog history@7#b979a171",
         "type": "tag"
+      },
+      "v1.3.0": {
+        "message": "Release v1.3.0",
+        "target": "chore(release): v1.3.0@10#65461ffd",
+        "type": "tag"
       }
     }
   },
   "schema": 1,
-  "status": [
-    "?? .shipwright/events/"
-  ],
+  "status": [],
   "steps": [
     {
       "exit_code": 0,
@@ -433,13 +459,33 @@
       "step": "evidence"
     },
     {
-      "exit_code": 1,
+      "exit_code": 0,
       "fields": {
-        "reason": "exit_1",
-        "status": "failed",
+        "status": "ok",
         "version": "1.3.0"
       },
       "step": "commit-and-tag"
+    },
+    {
+      "exit_code": 0,
+      "fields": {
+        "status": "ok"
+      },
+      "step": "push-branch"
+    },
+    {
+      "exit_code": 0,
+      "fields": {
+        "status": "ok"
+      },
+      "step": "open-pr"
+    },
+    {
+      "exit_code": 0,
+      "fields": {
+        "status": "ok"
+      },
+      "step": "record-event"
     }
   ],
   "stub": {
@@ -461,9 +507,31 @@
           "url"
         ],
         "exit": 1
+      },
+      {
+        "argv": [
+          "pr",
+          "create",
+          "--title",
+          "Release v1.3.0",
+          "--body-file",
+          "<masked:judgement>",
+          "--base",
+          "main"
+        ],
+        "exit": 0
       }
     ],
-    "prs": [],
+    "prs": [
+      {
+        "base": "main",
+        "body": "<masked:judgement>",
+        "head": "release/next",
+        "number": "1",
+        "state": "open",
+        "title": "<masked:judgement>"
+      }
+    ],
     "releases": {}
   }
 }

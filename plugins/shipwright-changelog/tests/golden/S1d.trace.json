@@ -1,11 +1,17 @@
 {
   "all_commits": {
     "origin": [
+      "chore(release): record changelog event for v0.1.0@7#f15f34e3",
+      "chore(release): v0.1.0@6#9efe937e",
       "chore: initial project@1#53eb193e",
       "chore: no events file yet@3#015168f9",
-      "chore: project scaffolding@2#ed53eaf0"
+      "chore: no tracked decision directories@4#82ac86ea",
+      "chore: project scaffolding@2#ed53eaf0",
+      "feat: first feature@5#c4454a61"
     ],
     "repo": [
+      "chore(release): record changelog event for v0.1.0@7#f15f34e3",
+      "chore(release): v0.1.0@6#9efe937e",
       "chore: initial project@1#53eb193e",
       "chore: no events file yet@3#015168f9",
       "chore: no tracked decision directories@4#82ac86ea",
@@ -188,6 +194,67 @@
       ],
       "parents": 1,
       "subject": "feat: first feature"
+    },
+    {
+      "blobs": {
+        ".shipwright/agent_docs/decision_log_index.md": "<masked:judgement>",
+        ".shipwright/compliance/change-history.md": "<masked:judgement>",
+        ".shipwright/compliance/dashboard.md": "<masked:judgement>",
+        ".shipwright/compliance/sbom.md": "<masked:judgement>",
+        ".shipwright/compliance/test-evidence.md": "<masked:judgement>",
+        ".shipwright/compliance/test-traceability.json": "<masked:judgement>",
+        ".shipwright/compliance/traceability-matrix.md": "<masked:judgement>",
+        "CHANGELOG.md": "# Changelog\n\n## [0.1.0] - <date>\n\n### Added\n\n- First feature of the product\n\n\n"
+      },
+      "changes": [
+        {
+          "path": ".shipwright/agent_docs/decision_log_index.md",
+          "status": "A"
+        },
+        {
+          "path": ".shipwright/compliance/change-history.md",
+          "status": "A"
+        },
+        {
+          "path": ".shipwright/compliance/dashboard.md",
+          "status": "A"
+        },
+        {
+          "path": ".shipwright/compliance/sbom.md",
+          "status": "A"
+        },
+        {
+          "path": ".shipwright/compliance/test-evidence.md",
+          "status": "A"
+        },
+        {
+          "path": ".shipwright/compliance/test-traceability.json",
+          "status": "A"
+        },
+        {
+          "path": ".shipwright/compliance/traceability-matrix.md",
+          "status": "A"
+        },
+        {
+          "path": "CHANGELOG.md",
+          "status": "A"
+        }
+      ],
+      "parents": 1,
+      "subject": "chore(release): v0.1.0"
+    },
+    {
+      "blobs": {
+        "shipwright_events.jsonl": "<masked:judgement>"
+      },
+      "changes": [
+        {
+          "path": "shipwright_events.jsonl",
+          "status": "A"
+        }
+      ],
+      "parents": 1,
+      "subject": "chore(release): record changelog event for v0.1.0"
     }
   ],
   "files": {
@@ -196,28 +263,25 @@
   "origin": {
     "branches": {
       "main": "chore: project scaffolding@2#ed53eaf0",
-      "release/first": "chore: no events file yet@3#015168f9"
+      "release/first": "chore(release): record changelog event for v0.1.0@7#f15f34e3"
     },
     "tags": {}
   },
   "refs": {
     "branches": {
       "main": "chore: no events file yet@3#015168f9",
-      "release/first": "feat: first feature@5#c4454a61"
+      "release/first": "chore(release): record changelog event for v0.1.0@7#f15f34e3"
     },
-    "tags": {}
+    "tags": {
+      "v0.1.0": {
+        "message": "Release v0.1.0",
+        "target": "chore(release): v0.1.0@6#9efe937e",
+        "type": "tag"
+      }
+    }
   },
   "schema": 1,
-  "status": [
-    "A  .shipwright/agent_docs/decision_log_index.md",
-    "A  .shipwright/compliance/change-history.md",
-    "A  .shipwright/compliance/dashboard.md",
-    "A  .shipwright/compliance/sbom.md",
-    "A  .shipwright/compliance/test-evidence.md",
-    "A  .shipwright/compliance/test-traceability.json",
-    "A  .shipwright/compliance/traceability-matrix.md",
-    "A  CHANGELOG.md"
-  ],
+  "status": [],
   "steps": [
     {
       "exit_code": 0,
@@ -296,18 +360,61 @@
       "step": "evidence"
     },
     {
-      "exit_code": 1,
+      "exit_code": 0,
       "fields": {
-        "reason": "exit_1",
-        "status": "failed",
+        "status": "ok",
         "version": "0.1.0"
       },
       "step": "commit-and-tag"
+    },
+    {
+      "exit_code": 0,
+      "fields": {
+        "status": "ok"
+      },
+      "step": "push-branch"
+    },
+    {
+      "exit_code": 0,
+      "fields": {
+        "status": "ok"
+      },
+      "step": "open-pr"
+    },
+    {
+      "exit_code": 0,
+      "fields": {
+        "status": "ok"
+      },
+      "step": "record-event"
     }
   ],
   "stub": {
-    "argv": [],
-    "prs": [],
+    "argv": [
+      {
+        "argv": [
+          "pr",
+          "create",
+          "--title",
+          "Release v0.1.0",
+          "--body-file",
+          "<masked:judgement>",
+          "--base",
+          "main"
+        ],
+        "exit": 0
+      }
+    ],
+    "prs": [
+      {
+        "base": "main",
+        "body": "<masked:judgement>",
+        "head": "release/first",
+        "number": "1",
+        "state": "open",
+        "title": "<masked:judgement>"
+      }
+    ],
     "releases": {}
   }
 }

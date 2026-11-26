@@ -123,15 +123,18 @@ def _s15(make_project, layout: str) -> Run:
 
 
 def _check_s15(run: Run) -> None:
+    """D25 (operator decision 2026-11-26): unrelated changes stop Step 6 BEFORE the commit; before, the commit was made and the
+    release audit then refused the dirty tree, leaving a half-finished release."""
     s = run.scratch
     done = run.step("commit-and-tag")
-    assert s.git("log", "-1", "--format=%s") == "chore(release): v1.3.0"  # the commit was made ...
-    changed = s.git("show", "--name-only", "--format=", "HEAD").splitlines()
-    oracle.check_release_commit_paths(changed, run.ctx["unrelated"])  # Step 6: by explicit pathspec, nothing else goes in
+    if s.git("log", "-1", "--format=%s").startswith("chore(release):"):  # a release commit was made after all: it still holds nothing else
+        oracle.check_release_commit_paths(s.git("show", "--name-only", "--format=", "HEAD").splitlines(), run.ctx["unrelated"])
+    assert [r.step for r in run.results][-1] == "commit-and-tag" and done.exit_code != 0
+    assert s.git("log", "-1", "--format=%s") == "docs: notes"  # no release commit was made
+    assert run.commands("commit-and-tag") == []  # the chain never ran: nothing was staged or committed by Step 6
     status = s.run(["git", "status", "--porcelain"]).stdout.splitlines()
     assert [ln for ln in status if "txt" in ln] == [" M notes.txt", "A  staged.txt"], status  # both are still the person's
-    # ... but the release audit refuses the tree that these two leave dirty: no tag, as in S1t (today's behaviour)
-    assert done.exit_code != 0 and "release audit refuses a dirty working tree" in run.commands("commit-and-tag")[0]["stderr"]
+    assert "CHANGELOG.md" not in s.git("diff", "--cached", "--name-only").splitlines()  # Step 6 staged nothing of the release
     assert not _tag_made(s) and run.gh_calls("pr") == []
 
 

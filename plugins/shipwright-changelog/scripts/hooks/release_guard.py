@@ -81,6 +81,8 @@ def _is_trunk_push(cwd: Path, action: Action) -> bool:
         return True
     if action.refs and "HEAD" not in action.refs:
         return False
+    if not action.refs and action.named_tags:  # only tags go (`refs/tags/v1`, `tag v1`, `--tags`): no branch, so not the trunk (F-S3-1)
+        return False
     branch = _git(cwd, "rev-parse", "--abbrev-ref", "HEAD").stdout.strip()  # no refspec / HEAD: the current branch goes
     return branch in TRUNKS
 

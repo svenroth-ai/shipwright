@@ -6,7 +6,12 @@ that the first half of the scenarios (S1-S9) need. Every command it runs cites i
 the citations against the live prose. It is FROZEN with the traces at the operator's stop 2.
 
 Order follows the prose; where a later unit fixed the prose (P8a: D7, D12, D24; P8b: D15, F9, Q5, Q7) the replay follows
-the fixed prose. A command that exits non-zero is a result, never an exception: the scenario records it.
+the fixed prose. Stop 3 (D21, D22, D23, D25) fixed Step 6 in the code only (``release.py commit-and-tag``); the replay restates
+that rule here, independently of the code, so both drivers still have to reach the same trace: the pathspec names only paths
+git knows, plus the tracked drops the aggregate consumed and the event files Step 5.5 wrote, and a tree with changes outside
+that pathspec stops Step 6 before anything is staged. The frozen chain (``replay_commands.COMMIT_AND_TAG``) stays the copy of
+the prose; :data:`STEP6_PATHS` names the three spans of it the driver fills with the computed paths. A command that exits
+non-zero is a result, never an exception: the scenario records it.
 
 ``gh`` is run through the seam prefix of the scratch environment (a bare ``gh`` on Windows would bypass the
 shim). The shell chains run under ``bash`` (Git Bash on Windows), as the model would run them.
@@ -14,6 +19,7 @@ shim). The shell chains run under ``bash`` (Git Bash on Windows), as the model w
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import shutil
@@ -29,6 +35,28 @@ from .replay_commands import CITES, COMMIT_AND_TAG, EVENT_MAIN, EVENT_PR, PLUGIN
 STEPS = frozenset({"prepare", "aggregate", "preview", "fold-events", "sync", "evidence", "commit-and-tag",
                    "push-branch", "open-pr", "record-event", "merge-pr", "push-tags", "release-page", "close-phase"})
 DEVELOP = "develop"  # SKILL.md:327 "Only if on a feature branch (not main/develop)"; P8a F5 adds the remote's default branch to both
+AGENT_DOCS = ".shipwright/agent_docs"
+DROP_DIRS = (f"{AGENT_DOCS}/decision-drops/", ".shipwright/planning/adr/")  # SKILL.md:306, the two directory pathspecs
+EVENT_HOMES = ("shipwright_events.jsonl", ".shipwright/events/drops")  # the event paths Step 7's blocks commit (SKILL.md:345)
+
+
+def _event_bytes(repo: Path) -> dict[str, str]:
+    files = [repo / EVENT_HOMES[0], *sorted((repo / EVENT_HOMES[1]).glob("*.jsonl"))]
+    return {p.relative_to(repo).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest() for p in files if p.is_file()}
+
+
+# Stop 3: the spans of the frozen Step 6 chain that name fixed paths, and the marker each becomes (filled per run). A seeded
+# chain without one of them (test_seeded_regressions) is left as the seed made it.
+STEP6_PATHS = (
+    ("git add .shipwright/agent_docs/decision_log.md .shipwright/agent_docs/decision_log_index.md $BULLET_DOCS", "@add_log@"),
+    ("git add -A .shipwright/agent_docs/decision-drops/ .shipwright/planning/adr/", "@add_swept@"),
+    ("CHANGELOG.md .shipwright/agent_docs/decision_log.md .shipwright/agent_docs/decision_log_index.md $BULLET_DOCS \\\n"
+     "  .shipwright/agent_docs/decision-drops/ .shipwright/planning/adr/ @evidence@ \\\n  @manifests@", "@paths@"),
+)
+
+
+def _under(spec: str, path: str) -> bool:
+    return path == spec.rstrip("/") or path.startswith(spec.rstrip("/") + "/")
 
 
 def find_bash() -> str | None:
@@ -151,6 +179,9 @@ class ReplayDriver:
         flag = ["--fail-if-empty"] if fail_if_empty else []
         done = self._run("aggregate", scratch, _uv(tool, "--project-root", str(scratch.repo), "--version", version, *date, *flag))
         result = self._aggregated("aggregate", done)
+        if done.returncode == 0:  # stop 3 (D22): the drops this run consumed; Step 6 commits a tracked one's deletion
+            consumed = [p.replace("\\", "/") for p in _json(done.stdout).get("processed_files") or []]
+            self.state["consumed"] = sorted({*self.state.get("consumed", []), *consumed})
         if done.returncode == 0:
             self._run("decisions", scratch, _uv(SHARED / "scripts/tools/aggregate_decisions.py", "--project-root", str(scratch.repo)))
         return result
@@ -190,17 +221,46 @@ class ReplayDriver:
                                                        "pathspec": self.state["manifests"]})
 
     def step_evidence(self, scratch: Any, version: str) -> gt.StepResult:
+        before = _event_bytes(scratch.repo)
         done = self._run("evidence", scratch, _uv(SHARED / "scripts/tools/refresh_compliance_docs.py", "--project-root",
                                                   str(scratch.repo), "--stage", "--release", f"v{version}"))
+        after = _event_bytes(scratch.repo)  # stop 3 (D23): the event files this call wrote (its `grade_snapshot`)
+        self.state["events"] = sorted({*self.state.get("events", []), *(p for p, h in after.items() if before.get(p) != h)})
         info = _json(done.stdout)
         self.state["evidence"] = info.get("evidence_pathspec", [])
         return gt.StepResult("evidence", done.returncode, {"status": info.get("status", "failed"),
                                                            "pathspec": self.state["evidence"]})
 
     # ---- Step 6 ----------------------------------------------------------------------------
+    def _release_pathspec(self, scratch: Any) -> tuple[list[str], list[str], list[str]]:
+        """Stop 3 (D21-D23): ``(log and docs, swept, all)``, each path kept only when git knows a file under it (tree or index)."""
+        docs = [f"{AGENT_DOCS}/{n}.md" for n in ("architecture", "conventions") if (scratch.repo / AGENT_DOCS / f"{n}.md").is_file()]
+        log = [f"{AGENT_DOCS}/decision_log.md", f"{AGENT_DOCS}/decision_log_index.md", *docs]
+        gone = [p for p in self.state.get("consumed", []) if not (scratch.repo / p).exists()]  # deleted by the aggregate
+        extra = [*DROP_DIRS, *gone, *self.state.get("events", [])]
+        wanted = list(dict.fromkeys(["CHANGELOG.md", *log, *extra, *self.state["evidence"], *self.state["manifests"]]))
+        known = scratch.run(["git", "ls-files", "--cached", "--others", "--exclude-standard", "--", *wanted]).stdout.splitlines()
+        known += scratch.run(["git", "ls-tree", "-r", "--name-only", "HEAD", "--", *wanted]).stdout.splitlines()  # a staged deletion
+        wanted = [spec for spec in wanted if any(_under(spec, path) for path in known)]
+        return [p for p in log if p in wanted], [p for p in extra if p in wanted], wanted
+
+    def _unrelated(self, scratch: Any, paths: Sequence[str]) -> list[str]:
+        """D25 (operator 2026-11-26): the changed paths (staged, unstaged, untracked) no release path covers."""
+        prefix = scratch.run(["git", "rev-parse", "--show-prefix"]).stdout.strip()  # status names paths from the work tree's top
+        changed = [line[3:] for line in scratch.run(["git", "status", "--porcelain", "-uall"]).stdout.splitlines() if len(line) > 3]
+        return [side for path in changed for side in path.split(" -> ")
+                if not side.startswith(prefix) or not any(_under(spec, side[len(prefix):]) for spec in paths)]
+
     def step_commit_and_tag(self, scratch: Any, version: str) -> gt.StepResult:
-        script = fill(COMMIT_AND_TAG, version=version, shared=SHARED.as_posix(),
-                      evidence=" ".join(self.state["evidence"]), manifests=" ".join(self.state["manifests"]))
+        log, swept, paths = self._release_pathspec(scratch)
+        if self._unrelated(scratch, paths):  # stop before anything is staged or committed
+            return gt.StepResult("commit-and-tag", 1, {"status": "failed", "version": version, "reason": "exit_1"})
+        chain = COMMIT_AND_TAG
+        for span, marker in STEP6_PATHS:
+            chain = chain.replace(span, marker)
+        script = fill(chain, version=version, shared=SHARED.as_posix(), evidence=" ".join(self.state["evidence"]),
+                      manifests=" ".join(self.state["manifests"]), add_log=f"git add -- {' '.join(log)}" if log else ":",
+                      add_swept=f"git add -A -- {' '.join(swept)}" if swept else ":", paths=" ".join(paths))
         done = self._bash("commit-and-tag", scratch, script)
         return self._result("commit-and-tag", done, version=version)
 

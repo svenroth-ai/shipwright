@@ -87,10 +87,13 @@ def _s16c(make_project, layout: str) -> Run:  # the release audit refuses: a fil
 
 
 def _check_s16c(run: Run) -> None:
+    """D25 (operator decision 2026-11-26): a file nobody committed stops Step 6 before the commit (before: the commit was made and
+    the release audit refused the dirty tree)."""
     s = run.scratch
     _stopped_at(run, "commit-and-tag")
-    assert "release audit refuses a dirty working tree" in run.commands("commit-and-tag")[0]["stderr"]  # the kind of refusal
-    assert s.git("log", "-1", "--format=%s") == "chore(release): v1.3.0"  # the commit was made; the chain stops before the tag
+    assert run.commands("commit-and-tag") == []  # the chain never ran
+    assert s.git("log", "-1", "--format=%s") == "fix: a defect"  # no release commit
+    assert "?? stray.txt" in s.git("status", "--porcelain").splitlines()  # the stray file is left as it was
     _nothing_released(run)
 
 
