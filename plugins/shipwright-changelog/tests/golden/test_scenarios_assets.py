@@ -9,7 +9,7 @@ from .scenarios_assets import SCENARIOS
 
 
 @pytest.mark.covers("FR-01.09/AC05")
-def test_s10_two_decision_drops_are_numbered_at_release_and_the_cherry_pick_fallback_is_named_back(make_project):
+def test_s10_two_decision_drops_are_numbered_at_release_and_the_cherry_pick_fallback_lands_in_the_release(make_project):
     verify(SCENARIOS["S10"], "drops", make_project)
 
 

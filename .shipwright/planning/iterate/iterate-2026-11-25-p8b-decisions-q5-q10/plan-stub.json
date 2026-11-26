@@ -1,0 +1,4 @@
+{"run_id": "iterate-2026-11-25-p8b-decisions-q5-q10",
+ "goal": "Build the /shipwright-changelog operator decisions Q5, Q6, Q7, Q8, Q10 and fixes F8, F9: hand-written Unreleased entries released, the D20 promises pinned, no --from, a SemVer version above the last tag, the PR body from a file, a clean index after a refused refresh, cherry-picks as drops.",
+ "reason": "Operator re-scope of campaign unit P8b on 2026-11-25: port the release behaviour one to one, only deterministic, fix bugs and contradictions, defer new behaviour (Q9 out).",
+ "ref": "campaign dfp-pilot-changelog-p3-p8 unit P8b; FINDINGS D92-D103; .shipwright/planning/adr/iterate-2026-11-25-p8b-decisions-q5-q10-release-decisions.md"}

@@ -1,0 +1,10 @@
+{"items": [
+  {"name": "Spec Compliance", "verdict": "pass", "note": "Builds exactly the operator re-scope of 2026-11-25 (Q5, Q6, Q7, Q8, Q10, F8, F9; Q9 out); the Q10 title/compare-link difference is recorded, not changed (FINDINGS D96)."},
+  {"name": "Error Handling", "verdict": "pass", "note": "Invalid versions are usage errors; prepare stops with version_not_above_last_tag; pr-body refuses a missing or doubled section; a refused refresh restores the index of the seven."},
+  {"name": "Security Basics", "verdict": "pass", "note": "The PR body no longer passes through shell quoting (--body-file, written inside .git); the version is regex-validated before it reaches any argv or tag."},
+  {"name": "Test Quality", "verdict": "pass", "note": "44 new L1 cases (plugin root and shared/tests), each failing on the old behaviour; 16 traces regenerated, replay and CLI drivers agree; stale pins of the old behaviour updated."},
+  {"name": "Performance Basics", "verdict": "pass", "note": "One extra ls-files and at most seven update-index calls on a refusal; the Unreleased reader is a single pass over CHANGELOG.md."},
+  {"name": "Naming & Structure", "verdict": "pass", "note": "New files 49-140 lines; aggregate_changelog.py 469 (baseline 472), SKILL.md 263 (cap 263) met by moving, not re-flowing; pr-body registered in both registries."},
+  {"name": "Affected Boundaries", "verdict": "pass", "note": "CHANGELOG.md [Unreleased] -> aggregator -> new section, the PR-body file -> gh, the drop writer -> aggregator, the git index -> refresh: each probed end to end on real files or real git."},
+  {"name": "Docs", "verdict": "pass", "note": "guide.md 4.8 and Appendix B, hooks-and-pipeline.md (aggregator and two artifact rows), three references, FINDINGS D92-D99, LEARNINGS."}
+]}

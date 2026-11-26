@@ -70,3 +70,14 @@ That is a **success** — the file was already exactly right and the drops were
 still consumed. Likewise `"section_action": "none"` means there was nothing
 pending. Neither is a reason to retry or escalate. A genuine failure is a
 non-zero exit with the reason on stderr.
+
+## What a re-run is not
+
+- **Not "start from version X".** There is no `--from` option: it was advertised and never built, and P8b (operator
+  decision Q7) removed the promise instead of building it. A release always starts from the last tag; a re-run is the
+  same version again, as above.
+- **Not a version at or below the last tag.** `prepare` refuses a version that is not higher than the last tag
+  (`version_not_above_last_tag`, Q8), so once `v{version}` is tagged the release is finished, not re-run.
+- **Hand-written entries.** A release moves the hand-written `[Unreleased]` bullets into its section (Q5). If it stopped
+  after writing the section but before consuming the drops, a re-run renders only the drops, so the section on record
+  says more than they do: that is the refusal above. Reconcile by hand.

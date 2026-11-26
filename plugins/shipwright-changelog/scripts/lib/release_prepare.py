@@ -15,7 +15,7 @@ from typing import Any
 
 from pathlib import Path
 
-from . import release_cancel, release_event, release_gates, release_paths, release_runstate, release_upgrade_notes
+from . import release_cancel, release_event, release_gates, release_paths, release_runstate, release_upgrade_notes, release_version
 from .release_runner import Recorder, uv_script
 
 BANNER = """\
@@ -24,7 +24,7 @@ SHIPWRIGHT-CHANGELOG: Release Management
 ================================================================================
 Analyzes git history, generates changelog, creates PR.
 
-Usage: /shipwright-changelog | /shipwright-changelog --from v0.1.0 | invoked by /shipwright-run (orchestrator)
+Usage: /shipwright-changelog | invoked by /shipwright-run (orchestrator)
 
 Steps: analyze commits -> categorize -> generate entry -> confirm -> sync
 manifests/evidence -> commit + tag -> publish GitHub Release -> optional PR
@@ -60,7 +60,7 @@ def _stop(rec: Recorder, code: int, reason: str, **fields: Any) -> tuple[int, di
 
 
 def prepare(rec: Recorder, plugin_root: Path, *, phase_task_id: str | None = None, version: str | None = None,
-            from_version: str | None = None, clock: release_runstate.Clock = release_runstate.utc_now) -> tuple[int, dict[str, Any]]:
+            clock: release_runstate.Clock = release_runstate.utc_now) -> tuple[int, dict[str, Any]]:
     shared = release_paths.shared_root(plugin_root)
     root = rec.cwd
     ctx_args = ["--phase-task-id", phase_task_id] if phase_task_id else []
@@ -70,10 +70,9 @@ def prepare(rec: Recorder, plugin_root: Path, *, phase_task_id: str | None = Non
     mode = context.get("mode", "")
     if ctx.exit != 0:  # `error`: a dispatch token that does not resolve. STOP, never continue as standalone
         return _stop(rec, ctx.exit, "mode_error", mode=mode)
-    setup = rec.run("setup", uv_script(plugin_root / "scripts/checks/setup-changelog.py", "--plugin-root", str(plugin_root),
-                                       *(["--from", from_version] if from_version else [])))
+    setup = rec.run("setup", uv_script(plugin_root / "scripts/checks/setup-changelog.py", "--plugin-root", str(plugin_root)))
     info = _json(setup.stdout)
-    if setup.exit != 0 and not info:  # the script refused its arguments (finding D9: `--from` is advertised, implemented nowhere)
+    if setup.exit != 0 and not info:  # the script refused to run (Q7/D9: the never-built `--from` is no longer offered)
         return _stop(rec, setup.exit, "setup_refused", mode=mode)
     facts = {"mode": mode, "last_tag": info.get("last_tag"), "branch": info.get("branch"),
              "commits_since_tag": info.get("commits_since_tag"), "previous_tag_has_release": info.get("previous_tag_has_release")}
@@ -92,6 +91,14 @@ def prepare(rec: Recorder, plugin_root: Path, *, phase_task_id: str | None = Non
     chosen = version or info.get("suggested_version")
     if not chosen:
         return _stop(rec, 2, "no_version", **facts)
+    try:
+        chosen = release_version.normalize(chosen)  # the CLI already did; a library caller or the setup script may not
+    except ValueError as bad:
+        return _stop(rec, 2, "invalid_version", **facts, message=str(bad))
+    if release_version.not_above(chosen, last_tag):  # Q8/D16: a release goes up, never sideways or down
+        return _stop(rec, 2, "version_not_above_last_tag", **facts, version=chosen,
+                     message=f"version {chosen} is not higher than the last tag {last_tag}: choose a higher SemVer version "
+                             "(a release that stopped after its tag is finished at Step 7, references/rerunning-a-release.md)")
     tag_exists = rec.run("tag-check", ["git", "rev-parse", "-q", "--verify", f"refs/tags/v{chosen}"]).exit == 0
     state = release_runstate.resolve(root, chosen, tag_exists=tag_exists, clock=clock, use_env_run_id=mode == "pipeline",
                                      released=release_upgrade_notes.released(root, chosen))
@@ -111,7 +118,9 @@ def prepare(rec: Recorder, plugin_root: Path, *, phase_task_id: str | None = Non
     state["upgrade_pending"] = notes.get("pending", [])  # `aggregate` files them once the questions are answered
     release_runstate.save(root, state)
     notices = [BANNER] + ([STANDALONE_NOTICE] if mode == "standalone" else []) + (
-        [f"Notice: {last_tag} has no GitHub Release — see release-workflow.md"] if info.get("previous_tag_has_release") is False else [])
+        [f"Notice: {last_tag} has no GitHub Release — see release-workflow.md"] if info.get("previous_tag_has_release") is False else []) + (
+        [f"Notice: the last tag {last_tag} is not a SemVer version, so {chosen} was not compared with it"]
+        if release_version.not_above(chosen, last_tag) is None else [])
     return 0, {
         "status": "ok", "version": chosen, "suggested": info.get("suggested_version"), "version_reason": info.get("version_reason"),
         **facts, "trunk": base, "trunk_source": source, "on_trunk": on_trunk, "gates": gates,

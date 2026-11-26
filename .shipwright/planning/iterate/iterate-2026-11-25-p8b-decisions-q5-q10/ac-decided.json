@@ -1,0 +1,93 @@
+{
+  "unattended": true,
+  "resolved_items": [
+    {
+      "kind": "restore",
+      "restores_ac": "FR-01.09.AC09",
+      "decided_by": "code",
+      "confirmed": false
+    },
+    {
+      "kind": "restore",
+      "restores_ac": "FR-01.09.AC04",
+      "decided_by": "code",
+      "confirmed": false
+    },
+    {
+      "kind": "restore",
+      "restores_ac": "FR-01.09.AC01",
+      "decided_by": "code",
+      "confirmed": false
+    }
+  ],
+  "ac_decisions": [
+    {
+      "ac": "FR-01.09.AC09",
+      "mode": "auto",
+      "answer": "auto",
+      "kind": "restore",
+      "answered_via": "none",
+      "decided_by": "code",
+      "confirmed": false
+    },
+    {
+      "ac": "FR-01.09.AC04",
+      "mode": "auto",
+      "answer": "auto",
+      "kind": "restore",
+      "answered_via": "none",
+      "decided_by": "code",
+      "confirmed": false
+    },
+    {
+      "ac": "FR-01.09.AC01",
+      "mode": "auto",
+      "answer": "auto",
+      "kind": "restore",
+      "answered_via": "none",
+      "decided_by": "code",
+      "confirmed": false
+    }
+  ],
+  "counts": {
+    "total": 3,
+    "auto": 0,
+    "asked": 0,
+    "exempt": 0,
+    "restore": 3,
+    "unchanged": 0,
+    "answered_inline": 0,
+    "unconfirmed": 0,
+    "exempt_share": 0.0,
+    "restore_share": 1.0
+  },
+  "status": "ok",
+  "ac_mode": {
+    "mode": "auto",
+    "source": "--ac-mode"
+  },
+  "run_id": "iterate-2026-11-25-p8b-decisions-q5-q10",
+  "bind_id": "dfp-pilot-changelog-p3-p8--P8b@2026-11-23T11:31:16.576992+00:00",
+  "exemption_check": "tested against the current diff (52 file(s), 37 not observable)",
+  "surface": {
+    "observable": true,
+    "files": [
+      "plugins/shipwright-changelog/scripts/lib/release_aggregate.py",
+      "plugins/shipwright-changelog/scripts/lib/release_pr_body.py",
+      "plugins/shipwright-changelog/scripts/lib/release_prepare.py",
+      "plugins/shipwright-changelog/scripts/lib/release_version.py",
+      "plugins/shipwright-changelog/scripts/release.py",
+      "plugins/shipwright-changelog/skills/changelog/SKILL.md",
+      "plugins/shipwright-changelog/skills/changelog/references/changelog-format.md",
+      "plugins/shipwright-changelog/skills/changelog/references/compliance-evidence.md",
+      "plugins/shipwright-changelog/skills/changelog/references/rerunning-a-release.md",
+      "shared/config/converted_skills.json",
+      "shared/config/plugin_conversion.json",
+      "shared/scripts/changelog_unreleased.py",
+      "shared/scripts/tools/aggregate_changelog.py",
+      "shared/scripts/tools/compliance_git.py",
+      "shared/scripts/tools/refresh_compliance_docs.py"
+    ],
+    "ignored": 37
+  }
+}

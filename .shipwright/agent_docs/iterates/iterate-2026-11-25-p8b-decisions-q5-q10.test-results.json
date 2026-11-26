@@ -1,0 +1,180 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-25-p8b-decisions-q5-q10",
+    "date": "2026-11-26",
+    "unit": {
+      "status": "passed",
+      "passed": 26800,
+      "skipped": 114,
+      "total": 26914
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 689,
+      "skipped": 0,
+      "total": 689
+    },
+    "pgtap": {
+      "status": "not_run",
+      "passed": 0,
+      "skipped": 0,
+      "total": 0
+    },
+    "e2e": {
+      "status": "not_run",
+      "passed": 0,
+      "skipped": 0,
+      "total": 0
+    },
+    "design_fidelity": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run --directory plugins/shipwright-changelog pytest -p no:cacheprovider tests/test_release_p8b.py tests/golden/test_driver_cli.py::test_a_scenario_through_the_cli_driver_equals_its_frozen_trace[S10-drops] tests/golden/test_driver_cli.py::test_a_scenario_through_the_cli_driver_equals_its_frozen_trace[S19-legacy] tests/golden/test_driver_cli.py::test_a_scenario_through_the_cli_driver_equals_its_frozen_trace[S1-legacy] tests/golden/test_driver_cli.py::test_a_scenario_through_the_cli_driver_equals_its_frozen_trace[S16b-legacy]",
+      "exit_code": 0,
+      "tests_run": 46,
+      "evidence_path": ".shipwright/runs/iterate-2026-11-25-p8b-decisions-q5-q10/surface_verification.json",
+      "timestamp": "2026-11-25T23:14:20.857Z"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "a typed leading v is cut off, so the tag is never vv",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-changelog/tests/test_release_p8b.py::test_a_leading_v_is_cut_off_so_the_tag_is_never_vv PASSED"
+        },
+        {
+          "behavior": "a version that is not SemVer (incl. non-ASCII digits, build metadata) is refused",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-changelog/tests/test_release_p8b.py::test_anything_that_is_not_a_semver_number_is_refused_with_a_clear_error PASSED"
+        },
+        {
+          "behavior": "prepare refuses a version not higher than the last tag",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-changelog/tests/test_release_p8b.py::test_prepare_refuses_a_version_that_is_not_higher_than_the_last_tag PASSED"
+        },
+        {
+          "behavior": "SemVer precedence, a tag's build metadata ignored",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-changelog/tests/test_release_p8b.py::test_a_tags_build_metadata_is_ignored_for_the_order PASSED"
+        },
+        {
+          "behavior": "prepare as a library normalises or stops with invalid_version",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-changelog/tests/test_release_p8b.py::test_prepare_as_a_library_never_raises_on_a_raw_version PASSED"
+        },
+        {
+          "behavior": "--from is offered nowhere and refused when passed",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-changelog/tests/test_release_p8b.py::test_from_is_offered_nowhere_and_passing_it_is_refused PASSED"
+        },
+        {
+          "behavior": "the PR body file has real newlines and exactly this version's section",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-changelog/tests/test_release_p8b.py::test_the_pr_body_file_has_real_newlines_and_this_versions_section PASSED"
+        },
+        {
+          "behavior": "a body with no or two sections is refused",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-changelog/tests/test_release_p8b.py::test_a_body_with_no_or_two_sections_is_refused_never_guessed PASSED"
+        },
+        {
+          "behavior": "the skill passes --body-file and keeps the title",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-changelog/tests/test_release_p8b.py::test_the_skill_passes_the_body_from_a_file_and_keeps_the_title PASSED"
+        },
+        {
+          "behavior": "a cherry-picked bullet is written as a drop before the aggregation",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-changelog/tests/test_release_p8b.py::test_f9_a_cherry_picked_bullet_is_written_as_a_drop_not_into_unreleased PASSED"
+        },
+        {
+          "behavior": "the cherry-pick lands in its release exactly once (S10, both drivers)",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-changelog/tests/golden/test_driver_cli.py::test_a_scenario_through_the_cli_driver_equals_its_frozen_trace[S10-drops] PASSED"
+        },
+        {
+          "behavior": "hand-written categorised bullets move with continuations, unheaded ones stay",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_changelog_unreleased.py::test_take_moves_categorised_bullets_with_their_continuations_and_keeps_the_rest PASSED"
+        },
+        {
+          "behavior": "the release takes hand-written entries after the drops and empties Unreleased",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_changelog_unreleased.py::test_the_release_takes_the_hand_written_entries_after_the_drops_and_empties_unreleased PASSED"
+        },
+        {
+          "behavior": "the dry run marks hand-written entries and writes nothing",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_changelog_unreleased.py::test_the_dry_run_marks_them_and_writes_nothing PASSED"
+        },
+        {
+          "behavior": "without the flag the aggregator is unchanged",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_changelog_unreleased.py::test_without_the_flag_the_aggregator_still_only_names_them PASSED"
+        },
+        {
+          "behavior": "a bullet with a blank line inside moves whole",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_changelog_unreleased.py::test_a_bullet_with_a_blank_line_inside_moves_whole PASSED"
+        },
+        {
+          "behavior": "an interrupted mixed release refuses on re-run and changes nothing",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_changelog_unreleased.py::test_an_interrupted_mixed_release_refuses_on_the_rerun_and_changes_nothing PASSED"
+        },
+        {
+          "behavior": "release.py aggregate passes --move-unreleased on both calls",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-changelog/tests/test_release_p8b.py::test_q5_both_aggregate_calls_move_the_hand_written_entries_and_only_the_preview_marks_them PASSED"
+        },
+        {
+          "behavior": "a refused refresh unstages what it staged and keeps the operator's staged entry",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_refresh_refusal_unstages.py::test_a_refused_refresh_unstages_what_it_staged_and_keeps_what_the_operator_staged PASSED"
+        },
+        {
+          "behavior": "an untracked copy survives and the staged output is unstaged",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_refresh_refusal_unstages.py::test_an_untracked_copy_the_run_found_survives_and_the_staged_output_is_unstaged PASSED"
+        },
+        {
+          "behavior": "the three D20 behaviours are passing promises with test pins",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-changelog/tests/golden/test_promises_meta.py::test_q6_the_three_d20_behaviours_are_written_promises_each_with_its_pin PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 21,
+        "tested": 21,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 3,
+        "covered_acs": 3
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-11-25-p8b-decisions-q5-q10",
+    "commit": "0afa0ed33679a9750edec11e360a7e9d2e87375f",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

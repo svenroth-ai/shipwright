@@ -3,10 +3,10 @@
     "scenario": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
     "field": "sha256",
     "before": "db12fe9f66618e0a1a15cbd180f07bd4a1de1178fb75e6104f01c070fb526a46",
-    "after": "46d3af98c5ee4f61b2ca846388ecfec759e10af84865be1c37b8d8ba8bbe668b",
-    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); BRIEF D12/F2: the preview is the dry run, asked before the real aggregate writes (FINDINGS D74); BRIEF D7/F3: the push-branch step right before gh pr create (FINDINGS D75); BRIEF D24/F5: the default branch from the remote as trunk and PR base (FINDINGS D76); P8a fix round (orchestrator review): on_trunk from prepare, additive trunks, release.py cancel, {branch} in the push-tag line, duplicates of references cut instead of a re-flow (FINDINGS D84, D85, D87); P8a fix round 2 (Opus re-review): Cancel reports every left path, Step 7 names only on_trunk: false (FINDINGS D91)",
+    "after": "200027cf17da3ae03318420b175a01657230d96666c0a0c7ebe422c593f1a313",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); BRIEF D12/F2: the preview is the dry run, asked before the real aggregate writes (FINDINGS D74); BRIEF D7/F3: the push-branch step right before gh pr create (FINDINGS D75); BRIEF D24/F5: the default branch from the remote as trunk and PR base (FINDINGS D76); P8a fix round (orchestrator review): on_trunk from prepare, additive trunks, release.py cancel, {branch} in the push-tag line, duplicates of references cut instead of a re-flow (FINDINGS D84, D85, D87); P8a fix round 2 (Opus re-review): Cancel reports every left path, Step 7 names only on_trunk: false (FINDINGS D91); then operator decision 2026-11-25 (chat): P8b re-scope of unit P8b (Q5, Q6, Q7, Q8, Q10, F8, F9; Q9 out); Q5: hand-written [Unreleased] entries move into the release, marked in the preview (FINDINGS D92); Q7/F11: --from removed, nothing built; passing it is a usage error (FINDINGS D94); Q8: a leading v is cut, a non-SemVer version or one not above the last tag is refused (FINDINGS D95); Q10/F13: the PR body from a file via release.py pr-body and --body-file (FINDINGS D96); F9: the cherry-pick fallback writes a drop file (FINDINGS D98)",
     "date": "2026-11-25",
-    "source": "F2/F3/F5/D84/D85/D87/D91"
+    "source": "F2/F3/F5/D84/D85/D87/D91/Q5/Q7/Q8/Q10/F9"
   },
   {
     "scenario": "plugins/shipwright-changelog/skills/changelog/references/first-actions.md",
@@ -39,19 +39,19 @@
     "scenario": "plugins/shipwright-changelog/tests/golden/S1.legacy.trace.json",
     "field": "sha256",
     "before": "e8df268978573c4e15f33ddc83a6d29fc9ca0cdee9565236acb3090196089c2f",
-    "after": "7e7c1ed9a060565e3f88f6f77e14f6ea44ea023db4f303a8c357ef51668c54a8",
-    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: the preview before the real aggregate, and the push-branch step before open-pr",
+    "after": "0c134a2cf45d3355534a07d9e4603565084edf0869614e53eb8c0bd8a86fefff",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: the preview before the real aggregate, and the push-branch step before open-pr; then operator decision 2026-11-25 (chat): P8b re-scope of unit P8b (Q5, Q6, Q7, Q8, Q10, F8, F9; Q9 out); Q10/F13: the PR body from a file via release.py pr-body and --body-file (FINDINGS D96)",
     "date": "2026-11-25",
-    "source": "F2/F3"
+    "source": "F2/F3/Q10"
   },
   {
     "scenario": "plugins/shipwright-changelog/tests/golden/S11a.trace.json",
     "field": "sha256",
     "before": "4fa681b37f89d7c49e8b6c0d07e368966ccf02e75350c1ba9c55224b02db1b83",
-    "after": "3419bff0b643ff6f302a05358e20f69f970bb973ca6e59ba8f2937ac7e2048e7",
-    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: the preview before the real aggregate, and the push-branch step before open-pr",
+    "after": "e8b5ae0c58ec7e140f3540b2c3be584130a3ff6e9258a23f2e5cabc93385e895",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: the preview before the real aggregate, and the push-branch step before open-pr; then operator decision 2026-11-25 (chat): P8b re-scope of unit P8b (Q5, Q6, Q7, Q8, Q10, F8, F9; Q9 out); Q10/F13: the PR body from a file via release.py pr-body and --body-file (FINDINGS D96)",
     "date": "2026-11-25",
-    "source": "F2/F3"
+    "source": "F2/F3/Q10"
   },
   {
     "scenario": "plugins/shipwright-changelog/tests/golden/S11b.trace.json",
@@ -66,46 +66,46 @@
     "scenario": "plugins/shipwright-changelog/tests/golden/S12a.trace.json",
     "field": "sha256",
     "before": "ed325e7f0e4fe636ce1d1c44321f0075848d94d2dfb47c4e7b3124c761b29fa2",
-    "after": "fe7c8eaf5da4204229cce7b331ad18b34b278d8f2fb0cf76278cfee0b364ae40",
-    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: the push-branch step right before open-pr",
+    "after": "8d1aa4581cd13fe53181c5e91453697b68412c99207cbbf7e9bd6a738fe0071b",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: the push-branch step right before open-pr; then operator decision 2026-11-25 (chat): P8b re-scope of unit P8b (Q5, Q6, Q7, Q8, Q10, F8, F9; Q9 out); Q10/F13: the PR body from a file via release.py pr-body and --body-file (FINDINGS D96)",
     "date": "2026-11-25",
-    "source": "F3"
+    "source": "F3/Q10"
   },
   {
     "scenario": "plugins/shipwright-changelog/tests/golden/S12b.trace.json",
     "field": "sha256",
     "before": "1f2966aa00a10e1a8422e6a843c609fe01fbeaad38e5665304b5eac72d1fd508",
-    "after": "765b5f58370353e36675c4c05da2e9d60165c5e7a3ba043690ca847ed987400f",
-    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: the push-branch step right before open-pr",
+    "after": "d7312fec64020dbff04f812fdd87a122af896a7af72faf9113ee734e1ca59b49",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: the push-branch step right before open-pr; then operator decision 2026-11-25 (chat): P8b re-scope of unit P8b (Q5, Q6, Q7, Q8, Q10, F8, F9; Q9 out); Q10/F13: the PR body from a file via release.py pr-body and --body-file (FINDINGS D96)",
     "date": "2026-11-25",
-    "source": "F3"
+    "source": "F3/Q10"
   },
   {
     "scenario": "plugins/shipwright-changelog/tests/golden/S12c.trace.json",
     "field": "sha256",
     "before": "8ad222ca653ed86040835bbe27b5f80a934ecb29b776ea4f471078ffb73a0bcc",
-    "after": "23b0e4bb231d8edb4aa00f299833d194be766a481bf659f4f7f0a94628c0ef2e",
-    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: the push-branch step right before open-pr",
+    "after": "3c0baaf005f37cbf3906394b05aaf7382df251771b67f3184d7d3175278432cd",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: the push-branch step right before open-pr; then operator decision 2026-11-25 (chat): P8b re-scope of unit P8b (Q5, Q6, Q7, Q8, Q10, F8, F9; Q9 out); Q10/F13: the PR body from a file via release.py pr-body and --body-file (FINDINGS D96)",
     "date": "2026-11-25",
-    "source": "F3"
+    "source": "F3/Q10"
   },
   {
     "scenario": "plugins/shipwright-changelog/tests/golden/S13.trace.json",
     "field": "sha256",
     "before": "2d3daf361e26785343c2d6d0cf754568584f52387403ca38899ef063a7832c9c",
-    "after": "29c68c91dac68c039b9f258835540a204aefe777691ba2b9032347963853a5e7",
-    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: the push-branch step right before open-pr",
+    "after": "d81756a51ceab530d579d1c0da6479d8eede5c08d015a3c93dc1a4fd3cf8c00b",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: the push-branch step right before open-pr; then operator decision 2026-11-25 (chat): P8b re-scope of unit P8b (Q5, Q6, Q7, Q8, Q10, F8, F9; Q9 out); Q10/F13: the PR body from a file via release.py pr-body and --body-file (FINDINGS D96)",
     "date": "2026-11-25",
-    "source": "F3"
+    "source": "F3/Q10"
   },
   {
     "scenario": "plugins/shipwright-changelog/tests/golden/S14a.trace.json",
     "field": "sha256",
     "before": "2054a37cb72906130573c991d20902550b7cd386add2f2de632d79c25e981192",
-    "after": "a4656f5b5b4ab2c4f28defb2e2d5eb9e2d286f8b58decafd7e90f566c0f674e5",
-    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: preview order, push-branch before open-pr, and the PR opened against the remote's default branch",
+    "after": "0b22cb0ad2cfdbcc4004bc6fd979c65113e5bfb8973383d1d66b46089516a9fd",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: preview order, push-branch before open-pr, and the PR opened against the remote's default branch; then operator decision 2026-11-25 (chat): P8b re-scope of unit P8b (Q5, Q6, Q7, Q8, Q10, F8, F9; Q9 out); Q10/F13: the PR body from a file via release.py pr-body and --body-file (FINDINGS D96)",
     "date": "2026-11-25",
-    "source": "F2/F3/F5"
+    "source": "F2/F3/F5/Q10"
   },
   {
     "scenario": "plugins/shipwright-changelog/tests/golden/S14b.trace.json",
@@ -147,10 +147,10 @@
     "scenario": "plugins/shipwright-changelog/tests/golden/S16b.trace.json",
     "field": "sha256",
     "before": "51e0caf6b650dc3725604760b6240740f7a4de47dd0680a766a2eacf067cceb0",
-    "after": "69f2c5e0b0ab39865e44047ab262fdc60de4baee2b4eaa29cddfe5c49ceb4bbd",
-    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: the preview step now comes after the dry run and before the real aggregate (Cancel: nothing written)",
+    "after": "5fd2b8fcdb54da5a0d6af8e9a4f2acc745109a4ff0ab031d463fdf425b5a696f",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: the preview step now comes after the dry run and before the real aggregate (Cancel: nothing written); then operator decision 2026-11-25 (chat): P8b re-scope of unit P8b (Q5, Q6, Q7, Q8, Q10, F8, F9; Q9 out); F8: a refused evidence refresh unstages what it staged (FINDINGS D97)",
     "date": "2026-11-25",
-    "source": "F2"
+    "source": "F2/F8"
   },
   {
     "scenario": "plugins/shipwright-changelog/tests/golden/S16c.trace.json",
@@ -174,10 +174,10 @@
     "scenario": "plugins/shipwright-changelog/tests/golden/S16e.trace.json",
     "field": "sha256",
     "before": "66acf89a3b193bb8271f6edd8530e60fd5925620ff2b785c320a948096b55620",
-    "after": "bd6091198cfa814c7faaf5847357c15efef5e720032531b373ca0a8fb16b3a10",
-    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: the preview before the real aggregate, and the push-branch step before open-pr",
+    "after": "26c798f2445537b63517aa778225abc4d702c686c14ec6055212af7872df22c3",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: the preview before the real aggregate, and the push-branch step before open-pr; then operator decision 2026-11-25 (chat): P8b re-scope of unit P8b (Q5, Q6, Q7, Q8, Q10, F8, F9; Q9 out); Q10/F13: the PR body from a file via release.py pr-body and --body-file (FINDINGS D96)",
     "date": "2026-11-25",
-    "source": "F2/F3"
+    "source": "F2/F3/Q10"
   },
   {
     "scenario": "plugins/shipwright-changelog/tests/golden/S16f.trace.json",
@@ -228,10 +228,10 @@
     "scenario": "plugins/shipwright-changelog/tests/golden/S2a.legacy.trace.json",
     "field": "sha256",
     "before": "ed325e7f0e4fe636ce1d1c44321f0075848d94d2dfb47c4e7b3124c761b29fa2",
-    "after": "fe7c8eaf5da4204229cce7b331ad18b34b278d8f2fb0cf76278cfee0b364ae40",
-    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: the push-branch step right before open-pr",
+    "after": "8d1aa4581cd13fe53181c5e91453697b68412c99207cbbf7e9bd6a738fe0071b",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: the push-branch step right before open-pr; then operator decision 2026-11-25 (chat): P8b re-scope of unit P8b (Q5, Q6, Q7, Q8, Q10, F8, F9; Q9 out); Q10/F13: the PR body from a file via release.py pr-body and --body-file (FINDINGS D96)",
     "date": "2026-11-25",
-    "source": "F3"
+    "source": "F3/Q10"
   },
   {
     "scenario": "plugins/shipwright-changelog/tests/golden/S2g.drops.trace.json",
@@ -246,19 +246,19 @@
     "scenario": "plugins/shipwright-changelog/tests/golden/S2g.legacy.trace.json",
     "field": "sha256",
     "before": "698651add6ecd0a7404de1edb09c3e843d804981ebbf89fc76fffe6fce4619e5",
-    "after": "436c780a7dafa25b7da9c1da21eee13fbb3fcd1fcde7f7723284fb3bddf37ffc",
-    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: the preview before the real aggregate, and the push-branch step before open-pr",
+    "after": "8664b53172e4e72afdd32ce6f3f561f228048cfbac9cb965f5a0d77616bc49c8",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: the preview before the real aggregate, and the push-branch step before open-pr; then operator decision 2026-11-25 (chat): P8b re-scope of unit P8b (Q5, Q6, Q7, Q8, Q10, F8, F9; Q9 out); Q10/F13: the PR body from a file via release.py pr-body and --body-file (FINDINGS D96)",
     "date": "2026-11-25",
-    "source": "F2/F3"
+    "source": "F2/F3/Q10"
   },
   {
     "scenario": "plugins/shipwright-changelog/tests/golden/S2u.legacy.trace.json",
     "field": "sha256",
     "before": "639b8ab3e1d88600280dc360cb5330733478cd78995783d3a07fca3dbf07f297",
-    "after": "c7e9bd77463ccdb3bcbf0abfc9c6f3b9af9bc16080b01fa1edab540a70933310",
-    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: the push-branch step right before open-pr",
+    "after": "95178f74e80486ec21b619ff7cefc1ab3002296532d05914ad2cc01498b3d267",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); regenerated trace: the push-branch step right before open-pr; then operator decision 2026-11-25 (chat): P8b re-scope of unit P8b (Q5, Q6, Q7, Q8, Q10, F8, F9; Q9 out); Q10/F13: the PR body from a file via release.py pr-body and --body-file (FINDINGS D96)",
     "date": "2026-11-25",
-    "source": "F3"
+    "source": "F3/Q10"
   },
   {
     "scenario": "plugins/shipwright-changelog/tests/golden/S5b.trace.json",
@@ -282,28 +282,28 @@
     "scenario": "plugins/shipwright-changelog/tests/golden/driver_cli.py",
     "field": "sha256",
     "before": "945939756fd881353a90d2b2b11545ad9ba76a2b58b70a2a4654229516c0909e",
-    "after": "b68407750afa17779c31b2df0957650801ef32fdced1e9368e55fa5e97c8db2c",
-    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); P8a fix round (orchestrator review): Cancel runs release.py cancel (FINDINGS D84)",
+    "after": "73210c5f3c14c7ba1594f6106ea971727e92200a21691ef9310c9a9572bff3e9",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); P8a fix round (orchestrator review): Cancel runs release.py cancel (FINDINGS D84); then operator decision 2026-11-25 (chat): P8b re-scope of unit P8b (Q5, Q6, Q7, Q8, Q10, F8, F9; Q9 out); Q10/F13: the PR body from a file via release.py pr-body and --body-file (FINDINGS D96)",
     "date": "2026-11-25",
-    "source": "D84"
+    "source": "D84/Q10"
   },
   {
     "scenario": "plugins/shipwright-changelog/tests/golden/driver_replay.py",
     "field": "sha256",
     "before": "00d59409c7a1c1ba3948d2ed62c360fd506dbadb1c13ade03732fdc3a72a3f6e",
-    "after": "a70ebcf01b32c1ee3de2586e69b9ee7f6c045883f0b8d415211fbec6da40b3c0",
-    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); BRIEF D7/F3: the push-branch step right before gh pr create (FINDINGS D75); BRIEF D24/F5: the default branch from the remote as trunk and PR base (FINDINGS D76); P8a fix round (orchestrator review): additive trunks and the lookup by remote name (FINDINGS D85, D86), Cancel puts the edited drop back (D84); P8a fix round 2 (Opus re-review): a comment that the lookup's missing branch-name check and no-prompt env are deliberate (FINDINGS D90)",
+    "after": "be334717b09ebac85bb1a8a40015aea3bdec5aecb713b31fa989acd0a2708969",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); BRIEF D7/F3: the push-branch step right before gh pr create (FINDINGS D75); BRIEF D24/F5: the default branch from the remote as trunk and PR base (FINDINGS D76); P8a fix round (orchestrator review): additive trunks and the lookup by remote name (FINDINGS D85, D86), Cancel puts the edited drop back (D84); P8a fix round 2 (Opus re-review): a comment that the lookup's missing branch-name check and no-prompt env are deliberate (FINDINGS D90); then operator decision 2026-11-25 (chat): P8b re-scope of unit P8b (Q5, Q6, Q7, Q8, Q10, F8, F9; Q9 out); Q5: hand-written [Unreleased] entries move into the release, marked in the preview (FINDINGS D92); Q7/F11: --from removed, nothing built; passing it is a usage error (FINDINGS D94); Q10/F13: the PR body from a file via release.py pr-body and --body-file (FINDINGS D96); F9: the cherry-pick fallback writes a drop file (FINDINGS D98)",
     "date": "2026-11-25",
-    "source": "F3/F5/D84/D85/D86/D90"
+    "source": "F3/F5/D84/D85/D86/D90/Q5/Q7/Q10/F9"
   },
   {
     "scenario": "plugins/shipwright-changelog/tests/golden/replay_commands.py",
     "field": "sha256",
     "before": "3fb8fbd7c6d06c48920dae086fac2727927d8f4b4c57d40ea5c19ac83ed370c2",
-    "after": "b4ed2431a9ea7b2f5a48685533e9c8676720b5f1bd22ea2b1c0d8300792bb60e",
-    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); BRIEF D7/F3: the push-branch step right before gh pr create (FINDINGS D75): the CITES entry (pinned prose not re-pinned, FINDINGS D78)",
+    "after": "448412821164020dbfb4949408e238a594095a582e4f0ebebf3233022e9f9619",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); BRIEF D7/F3: the push-branch step right before gh pr create (FINDINGS D75): the CITES entry (pinned prose not re-pinned, FINDINGS D78); then operator decision 2026-11-25 (chat): P8b re-scope of unit P8b (Q5, Q6, Q7, Q8, Q10, F8, F9; Q9 out); Q10/F13: the PR body from a file via release.py pr-body and --body-file (FINDINGS D96); F9: the cherry-pick fallback writes a drop file (FINDINGS D98)",
     "date": "2026-11-25",
-    "source": "F3"
+    "source": "F3/Q10/F9"
   },
   {
     "scenario": "plugins/shipwright-changelog/tests/golden/scenario_core.py",
@@ -327,10 +327,10 @@
     "scenario": "plugins/shipwright-changelog/tests/golden/scenarios_modes.py",
     "field": "sha256",
     "before": "e85afa3a691b07a326fbb8a769d58e722e405c2b14520461fce4f0141c61d5aa",
-    "after": "e619d77f1191a3c6a4d06500d59c1dbe3db6194189a577fafc7ed723410954ab",
-    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); BRIEF D12/F2: the preview is the dry run, asked before the real aggregate writes (FINDINGS D74): S18a/S18b; P8a fix round (orchestrator review): the S18c builder, Edit then Cancel (FINDINGS D84)",
+    "after": "69fc3b80deeb1803b0501fb69e1e7fa855181a3c8b6d14377d5ddfe8e4af59fc",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); BRIEF D12/F2: the preview is the dry run, asked before the real aggregate writes (FINDINGS D74): S18a/S18b; P8a fix round (orchestrator review): the S18c builder, Edit then Cancel (FINDINGS D84); then operator decision 2026-11-25 (chat): P8b re-scope of unit P8b (Q5, Q6, Q7, Q8, Q10, F8, F9; Q9 out); Q7/F11: --from removed, nothing built; passing it is a usage error (FINDINGS D94)",
     "date": "2026-11-25",
-    "source": "F2/D84"
+    "source": "F2/D84/Q7"
   },
   {
     "scenario": "plugins/shipwright-changelog/tests/golden/scenarios_refusals.py",
@@ -340,5 +340,95 @@
     "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); BRIEF D7/F3: the push-branch step right before gh pr create (FINDINGS D75): S16e closes the remote before the event push, since the branch is now pushed earlier",
     "date": "2026-11-25",
     "source": "F3"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/skills/changelog/references/changelog-format.md",
+    "field": "sha256",
+    "before": "dd4c5977b22e6d8dc80b55d7e2023344c957e7c1e8df2dbc49b9ce6f8303a81b",
+    "after": "e63bfcce5abf0d73308c527a736193f6175a189ce47106e14d4c3b876bc5a170",
+    "approver": "operator decision 2026-11-25 (chat): P8b re-scope of unit P8b (Q5, Q6, Q7, Q8, Q10, F8, F9; Q9 out); Q5: hand-written [Unreleased] entries move into the release, marked in the preview (FINDINGS D92)",
+    "date": "2026-11-25",
+    "source": "Q5"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/skills/changelog/references/compliance-evidence.md",
+    "field": "sha256",
+    "before": "5ad623d63d942e3c5f4b65ffee4957afa588b8625de6e88fce2fb610d23fa989",
+    "after": "eaf617435c3c9c72d3c5e5edd41e6e324de33254e7b1e54d16a8514bb54d9f18",
+    "approver": "operator decision 2026-11-25 (chat): P8b re-scope of unit P8b (Q5, Q6, Q7, Q8, Q10, F8, F9; Q9 out); F8: a refused evidence refresh unstages what it staged (FINDINGS D97)",
+    "date": "2026-11-25",
+    "source": "F8"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/skills/changelog/references/rerunning-a-release.md",
+    "field": "sha256",
+    "before": "b079b6b9d31547e1888ff9ad82d5487ecf983cd203e048d1b55c52c603089e20",
+    "after": "dcb94b83e7cda054e93e1a8563c951a91758a7a9f138eadb421562b653b5da74",
+    "approver": "operator decision 2026-11-25 (chat): P8b re-scope of unit P8b (Q5, Q6, Q7, Q8, Q10, F8, F9; Q9 out); Q5: hand-written [Unreleased] entries move into the release, marked in the preview (FINDINGS D92); Q7/F11: --from removed, nothing built; passing it is a usage error (FINDINGS D94); Q8: a leading v is cut, a non-SemVer version or one not above the last tag is refused (FINDINGS D95)",
+    "date": "2026-11-25",
+    "source": "Q5/Q7/Q8"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/S10.trace.json",
+    "field": "sha256",
+    "before": "5bc2c2c8a63db640eca463108d59cbd4c0de4af7e54e04d374f9895260732380",
+    "after": "2afd8b0ebc1e522d7c1c3285f821017a0084248be17a8abec94a6d5e7a1e29d8",
+    "approver": "operator decision 2026-11-25 (chat): P8b re-scope of unit P8b (Q5, Q6, Q7, Q8, Q10, F8, F9; Q9 out); F9: the cherry-pick fallback writes a drop file (FINDINGS D98)",
+    "date": "2026-11-25",
+    "source": "F9"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/S19.trace.json",
+    "field": "sha256",
+    "before": "d2880b6ffc3c825cf8c1c883da8b665d1302d6f77ac871bef42e8af0ecb97fc1",
+    "after": "9c886020b4240f4acf2ff6324978ab343a65927a1c8396fe58f89ba692d97b79",
+    "approver": "operator decision 2026-11-25 (chat): P8b re-scope of unit P8b (Q5, Q6, Q7, Q8, Q10, F8, F9; Q9 out); Q7/F11: --from removed, nothing built; passing it is a usage error (FINDINGS D94)",
+    "date": "2026-11-25",
+    "source": "Q7"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/scenarios_assets.py",
+    "field": "sha256",
+    "before": "9dcfe268b4d98f47159f38bd1c0470e0c90e4d090fba9501e0bbb55bf663d71a",
+    "after": "c89d23d94d5760c501d99d4699815613a1736a188ec8f224e34cbf5614fcd54b",
+    "approver": "operator decision 2026-11-25 (chat): P8b re-scope of unit P8b (Q5, Q6, Q7, Q8, Q10, F8, F9; Q9 out); F9: the cherry-pick fallback writes a drop file (FINDINGS D98)",
+    "date": "2026-11-25",
+    "source": "F9"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/scenarios_release.py",
+    "field": "sha256",
+    "before": "d7faebb39ec565cae476151cfca949e52da0661d61fd948066fb0e5c98bc5c35",
+    "after": "3991f55f824539d23554832776015af75ac18b442517f44ed2ffb79f1a7110bf",
+    "approver": "operator decision 2026-11-25 (chat): P8b re-scope of unit P8b (Q5, Q6, Q7, Q8, Q10, F8, F9; Q9 out); Q10/F13: the PR body from a file via release.py pr-body and --body-file (FINDINGS D96)",
+    "date": "2026-11-25",
+    "source": "Q10"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/test_promises_meta.py",
+    "field": "sha256",
+    "before": "3203238a990d261f6e3f172313324683682509914162d6495e68a8d37445a39a",
+    "after": "dbf6263d4086d43fe618f14aace8baa4b3f5817d2957e8f6006fb79891e66318",
+    "approver": "operator decision 2026-11-25 (chat): P8b re-scope of unit P8b (Q5, Q6, Q7, Q8, Q10, F8, F9; Q9 out); Q6: the three D20 behaviours become passing promises pinned by L1 tests, no AC (FINDINGS D93)",
+    "date": "2026-11-25",
+    "source": "Q6"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/test_scenarios_assets.py",
+    "field": "sha256",
+    "before": "f1a06ae6d48754af4a7ab3f308fd8d7fccda0395d20ea16264b5cc753892e628",
+    "after": "c8c5b988ddf9fff9db960fc9d919db121e6044c88cd8fb02235711ba06141448",
+    "approver": "operator decision 2026-11-25 (chat): P8b re-scope of unit P8b (Q5, Q6, Q7, Q8, Q10, F8, F9; Q9 out); F9: the cherry-pick fallback writes a drop file (FINDINGS D98)",
+    "date": "2026-11-25",
+    "source": "F9"
+  },
+  {
+    "scenario": "plugins/shipwright-changelog/tests/golden/test_scenarios_modes.py",
+    "field": "sha256",
+    "before": "2bd8ddbdffb586e98efc657512de0d18a8674070c0244f30ead7e78c98fc7a36",
+    "after": "a1a85af1f2e4bdac8ec7f598a9372706f997eb08d054ca92fef4e9578a0e24c8",
+    "approver": "operator decision 2026-11-25 (chat): P8b re-scope of unit P8b (Q5, Q6, Q7, Q8, Q10, F8, F9; Q9 out); Q7/F11: --from removed, nothing built; passing it is a usage error (FINDINGS D94)",
+    "date": "2026-11-25",
+    "source": "Q7"
   }
 ]

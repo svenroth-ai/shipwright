@@ -3,8 +3,8 @@
 S13 drives the REAL orchestrator (``write-config``, ``single-session-next`` and ``-apply``) through the phases before
 the changelog, runs the release the way a dispatched phase-runner would (token handed in, the phase-complete block at
 the end) and hands the result to ``single-session-apply`` with the phase gate on. They record, not endorse, today's
-behaviour: D2 (a driven run leaves the request open AND has pushed the tag) and D9 (``--from`` is advertised and implemented
-nowhere). S18a/b no longer record D12: since P8a (F2, operator 2026-11-25) the preview is the dry run and the real aggregation
+behaviour: D2 (a driven run leaves the request open AND has pushed the tag). S19 no longer records D9: since P8b (Q7, operator
+2026-11-25) ``--from`` is offered nowhere, and passing it anyway is refused as an unknown argument with nothing changed. S18a/b no longer record D12: since P8a (F2, operator 2026-11-25) the preview is the dry run and the real aggregation
 runs only after Accept, so Cancel leaves the tree and the drops byte-identical and Edit changes the drop and repeats the dry run.
 S18c (P8a fix round, D84; ``_s18(True, "cancel")``): an Edit then Cancel; ``release.py cancel`` puts the edited drop back, so the tree is as
 before. It is run by ``test_p8a_fix_scenarios.py`` through both drivers, not registered here: a new frozen trace would need a lock re-pin.
@@ -20,7 +20,7 @@ import minimal_valid_project as mvp
 from . import oracle
 from . import scenario_support as ss
 from .driver_replay import ReplayDriver
-from .replay_commands import SKILL
+from .replay_commands import PLUGIN
 from .scenario_core import Run, Scenario, release_flow
 
 A = "FR-01.09/"
@@ -143,10 +143,11 @@ def _s19(make_project, layout: str) -> Run:
 
 def _check_s19(run: Run) -> None:
     out = run.step("prepare").output
-    # D9: the banner advertises `--from v0.1.0` (SKILL.md:26); the setup script has no such argument and refuses it
-    assert "--from v0.1.0" in SKILL.read_text(encoding="utf-8").splitlines()[25]
-    assert (out["status"], out["reason"]) == ("stop", "setup_refused") and run.step("prepare").exit_code != 0
-    assert "unrecognized arguments: --from" in run.commands("setup")[0]["stderr"] and ss.digest(run.scratch) == run.ctx["before"]
+    # Q7 (D9): the live skill offers no `--from`; passed anyway, it is an unknown argument and nothing changes
+    assert "--from" not in (PLUGIN / "skills" / "changelog" / "SKILL.md").read_text(encoding="utf-8")
+    assert (out["status"], out["reason"]) == ("failed", "exit_2") and run.step("prepare").exit_code == 2
+    said = "".join(c["stderr"] for c in run.driver.log)
+    assert "unrecognized arguments: --from" in said and ss.digest(run.scratch) == run.ctx["before"]
 
 
 SCENARIOS = {

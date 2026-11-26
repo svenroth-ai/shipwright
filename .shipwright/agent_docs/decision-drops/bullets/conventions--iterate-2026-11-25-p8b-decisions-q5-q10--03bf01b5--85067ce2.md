@@ -1,0 +1,1 @@
+- **iterate-2026-11-25-p8b-decisions-q5-q10** (2026-11-26): Convention — A shared tool gains new behaviour for one caller behind an opt-in flag (aggregate_changelog.py --move-unreleased), so every other caller stays byte-identical. → decision_log (ADR via Run-ID: iterate-2026-11-25-p8b-decisions-q5-q10)

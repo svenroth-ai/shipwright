@@ -84,9 +84,9 @@ def test_a_token_that_does_not_resolve_stops_before_anything_else_runs(tmp_path,
 
 
 def test_a_refused_setup_argument_is_reported_and_writes_nothing(tmp_path, plugin_root):
-    fake = ok_runner(setup={"exit": 2, "stderr": "unrecognized arguments: --from v0.1.0"})
-    code, out = run_prepare(tmp_path, plugin_root, fake, from_version="v0.1.0")
-    assert (code, out["reason"]) == (2, "setup_refused") and "--from" in fake.argv("setup")
+    fake = ok_runner(setup={"exit": 2, "stderr": "unrecognized arguments: --since"})
+    code, out = run_prepare(tmp_path, plugin_root, fake)
+    assert (code, out["reason"]) == (2, "setup_refused") and "--from" not in fake.argv("setup")  # P8b Q7: no --from
     assert not release_runstate.state_path(tmp_path).exists()
 
 
@@ -248,7 +248,7 @@ def test_cherry_picked_bullets_are_written_before_the_aggregator_and_only_on_a_r
     keys = fake.keys()
     assert keys.index("fallback-append") < keys.index("aggregate")
     argv = fake.argv("fallback-append")
-    assert argv[argv.index("--category") + 1] == "Fixed" and argv[argv.index("--entry") + 1] == "A cherry-picked fix"
+    assert argv[argv.index("--category") + 1] == "Fixed" and argv[argv.index("--bullet") + 1] == "A cherry-picked fix"  # P8b F9: a drop file
     dry = Fake(**{"aggregate-dry": AGG_OK, "tag-check": {"exit": 1}})
     run_aggregate(tmp_path, plugin_root, dry, version="1.3.0", dry_run=True, fallback_entries=[("Fixed", "x")])
     assert "fallback-append" not in dry.keys()
@@ -296,6 +296,6 @@ def test_a_new_dispatch_names_its_own_run_and_bad_version_or_date_arguments_are_
     monkeypatch.setenv("SHIPWRIGHT_RUN_ID", "second-dispatch")
     _, out = run_prepare(tmp_path, plugin_root, ok_runner(context={"stdout": json.dumps({"mode": "pipeline"})}))
     assert out["release"]["run_id"] == "second-dispatch" and out["release"]["reused"] is True
-    for bad in (["--version", "v1.3.0"], ["--version", "1.3.0", "--release-date", "2026-1-5"]):
+    for bad in (["--version", "1.3"], ["--version", "1.3.0", "--release-date", "2026-1-5"]):  # P8b Q8: v1.3.0 is taken as 1.3.0
         with pytest.raises(SystemExit):
             release.main(["aggregate", "--project-root", str(tmp_path), *bad], runner=Fake())

@@ -60,7 +60,9 @@ folder — a release never mints an unpredictable new filename for it.
 `commit_pathspec` is the exact pathspec Step 6 must use.
 
 `status: "producer_failed" | "not_converged" | "content_floor"` — **stop and
-investigate; do not tag.** The tool has already restored the tree, so nothing
+investigate; do not tag.** The tool has already restored the tree and put the
+index of the seven back as it found it (`unstaged` names the paths; before P8b,
+F8, what the producers had staged stayed staged), so nothing
 untrusted is left lying around. Each refusal exists because a refresh that reports
 green while shipping frozen or emptied documents is worse than one that stays
 frozen:

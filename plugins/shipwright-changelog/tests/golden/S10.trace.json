@@ -244,7 +244,7 @@
     }
   ],
   "files": {
-    "CHANGELOG.md": "# Changelog\n\n## [Unreleased]\n\n\n### Fixed\n- A cherry-picked fix\n\n## [1.3.0] - <date>\n\n### Added\n\n- A new capability readers can use\n\n### Fixed\n\n- A defect no longer happens\n\n## [1.2.0] - <date>\n\n### Added\n\n- Earlier feature\n"
+    "CHANGELOG.md": "# Changelog\n\n## [1.3.0] - <date>\n\n### Added\n\n- A new capability readers can use\n\n### Fixed\n\n- A defect no longer happens\n- A cherry-picked fix\n\n## [1.2.0] - <date>\n\n### Added\n\n- Earlier feature\n"
   },
   "origin": {
     "branches": {
@@ -294,7 +294,7 @@
       "exit_code": 0,
       "fields": {
         "changelog_updated": true,
-        "legacy_bullets": 1,
+        "legacy_bullets": 0,
         "section_action": "inserted",
         "status": "ok",
         "version": "1.3.0"

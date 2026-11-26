@@ -135,6 +135,7 @@ def test_the_real_registry_is_pinned() -> None:
         "uv run {plugin_root}/scripts/release.py sync",
         "uv run {plugin_root}/scripts/release.py commit-and-tag",
         "git push origin HEAD",  # P8a (F3, D7): the branch is pushed right before the PR is opened, one literal outward line
+        "uv run {plugin_root}/scripts/release.py pr-body",  # P8b (Q10, D15): the PR body as a file for --body-file
         "gh pr create",
         "uv run {plugin_root}/scripts/release.py record-event",
         "gh pr merge",

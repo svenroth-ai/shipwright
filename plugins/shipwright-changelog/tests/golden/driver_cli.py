@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Sequence
 
 import golden_trace as gt
@@ -63,7 +64,7 @@ class CliDriver(ReplayDriver):
 
     # ---- Step C-3 --------------------------------------------------------------------------
     def step_prepare(self, scratch: Any, phase_task_id: str | None = None, version: str | None = None,
-                     from_version: str | None = None) -> gt.StepResult:
+                     from_version: str | None = None) -> gt.StepResult:  # Q7: `--from` is no option; passing it is refused (S19)
         args = ["prepare", *(["--phase-task-id", phase_task_id] if phase_task_id else []),
                 *(["--version", version] if version else []), *(["--from", from_version] if from_version else [])]
         code, out = self._release(scratch, *args)
@@ -164,6 +165,13 @@ class CliDriver(ReplayDriver):
         if code != 0:
             return self._plain("push-tags", code)
         return self._result("push-tags", self._run("push-tags", scratch, out["argv"]))
+
+    def step_open_pr(self, scratch: Any, version: str) -> gt.StepResult:
+        """Q10 (D15): ``release.py pr-body`` writes the body file; ``gh pr create --body-file`` stays the literal outward command."""
+        code, out = self._release(scratch, "pr-body", "--version", version)
+        if code != 0:
+            return self._plain("open-pr", code)
+        return self._open_pr(scratch, version, Path(out["body_file"]))
 
     def step_release_page(self, scratch: Any, version: str) -> gt.StepResult:
         result = super().step_release_page(scratch, version)

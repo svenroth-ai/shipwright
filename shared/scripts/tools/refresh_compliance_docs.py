@@ -44,6 +44,8 @@ from lib.events_sentinel import evidence_refusal  # noqa: E402
 from source_state import parse_banner_line, safe_commit, safe_run_id  # noqa: E402
 from tools.compliance_delivery import deliver_pr, preflight_pr  # noqa: E402
 from tools.compliance_git import (  # noqa: E402
+    index_entries,
+    restore_index,
     restore_to_head,
     staged_difference,
     write_back,
@@ -249,6 +251,7 @@ def main(argv: list[str] | None = None) -> int:
     # exception — would hand the operator a dirty index and a traceback, and the
     # NEXT run would then refuse preflight over changes they never made (Stage-2
     # code review, medium).
+    index_before = index_entries(root)  # F8: what the index held, so a refusal can unstage what this run staged
     try:
         produced, payload = produce(
             root, args.run_id, base_sha, release, allow_shrink=args.allow_shrink)
@@ -259,7 +262,8 @@ def main(argv: list[str] | None = None) -> int:
             # in, so nothing untrusted is left for the next `git add` to pick up.
             # Deliberately not `restore_to_head`: that resets to HEAD and would
             # discard an operator edit while cleaning up after a refusal that was
-            # not theirs (external code review, openai/medium).
+            # not theirs (external code review, openai/medium). F8: the index too.
+            produced["unstaged"], produced["unstage_failed"] = restore_index(root, index_before)
             print(json.dumps(produced, indent=2))
             return 1
 

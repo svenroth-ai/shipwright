@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-25-p8b-decisions-q5-q10",
+  "date": "2026-11-26",
+  "section": "Iterate — fix: changelog release decisions Q5, Q6, Q7, Q8, Q10, F8, F9",
+  "title": "Changelog release: hand-written entries released, SemVer boundary, PR body from a file, clean index after a refused refresh",
+  "context": "Campaign dfp-pilot-changelog-p3-p8 unit P8b under the operator re-scope of 2026-11-25: port the release 1:1, deterministic, fix bugs and contradictions only (FINDINGS D92-D103).",
+  "decision": "Hand-written [Unreleased] bullets under a category heading move into the release (--move-unreleased, preview marks them); a typed version loses one leading v and must be SemVer above the last tag; --from is removed; the PR body is written by release.py pr-body and passed with --body-file; a refused evidence refresh restores the index; cherry-picks become drop files.",
+  "consequences": "A hand-written-only release is no longer empty; an interrupted mixed release refuses on re-run; a backport below the highest tag is refused (operator question D100); the D20 behaviours are passing promises pinned by L1 tests.",
+  "rationale": "Each item is an operator decision or a bug the code already contradicted; unheaded bullets, non-SemVer tags and build metadata keep today's behaviour so nothing is guessed.",
+  "rejected": "Placing unheaded bullets in a guessed category; making --move-unreleased the default for every aggregator caller; adding a compare link or a new PR title; folding the body into an existing step with no PR context.",
+  "commit": "",
+  "architecture_impact": "convention",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-11-25-p8b-decisions-q5-q10-release-decisions.md"
+}

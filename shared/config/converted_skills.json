@@ -12,6 +12,7 @@
         "uv run {plugin_root}/scripts/release.py sync",
         "uv run {plugin_root}/scripts/release.py commit-and-tag",
         "git push origin HEAD",
+        "uv run {plugin_root}/scripts/release.py pr-body",
         "gh pr create",
         "uv run {plugin_root}/scripts/release.py record-event",
         "gh pr merge",

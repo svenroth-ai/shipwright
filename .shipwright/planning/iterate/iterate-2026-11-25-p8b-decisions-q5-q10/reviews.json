@@ -1,0 +1,179 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-25-p8b-decisions-q5-q10",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-25T23:05:12.703097+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter",
+      "completed_at": "2026-11-25T23:04:30.895879+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "unstructured",
+      "raw_excerpt": "[glm] ## Review findings\n\n- **Category: edge-case | Severity: medium** — Q5's ordering rule \"hand-written bullets move in after the drop bullets\" is an invented detail. The re-scope demands one-to-one porting of existing behaviour; if the source tool's ordering under each heading is ambiguous or different, this is a guess, which is a STRICT-STOP under the campaign rule. Suggestion: confirm the ordering against the ported source before implementing; if unspecified, ask the operator rather than picking \"after\".\n\n- **Category: edge-case | Severity: medium** — Q8's \"a non-SemVer last tag is noted, not compared\" silently disables the monotonicity check whenever any stray tag exists. Today's repos often carry non-release tags (`latest`, `nightly`, tags on other branches). If you skip the comparison for any non-SemVer tag, `v0.1.0` could be accepted after `v2.0.0`. Suggestion: pick the highest SemVer-parsable tag reachable via `trunks()` for the comparison, and note non-SemVer tags only if they are the *highest* tag; refuse rather than skip when the check cannot be made.\n\n- **Category: dependency | Severity: medium** — The mini-plan's golden section doesn't mention `promise.lock.json` / `test_promises_meta.py`. Q6 moves three entries from `proposed` to `passing`, which per spec freeze rule (3) requires `golden_lock.py --promise-only --repin`, a golden-lock delta for `promise.lock.json`, and the test named in the PR. `test_promises_meta.py` is in the frozen `REQUIRED` set, so loosening its gate (\"entry without an AC id pinned by a non-promise test\") also needs an approved delta with a source. Suggestion: spell out the promise-lock steps and the delta entry in the plan.\n\n- **Category: risk | Severity: medium** — F9's drop uses run id `release-fallback`. If the real release aggregation later writes a drop under the same release run id (or drop dedup keys on content/run id), the fallback drop and the real drop can collide or be deduped. Suggestion: verify the drop store […truncated]\n\n[openai] 1. **Category** approach · **Severity** medium  \n   **Finding (Q6)** Letting a non-promise test pin an entry without an AC ID changes the validator for the entire promise list. Making three entries `passing` through that rule does not establish that each test proves the behaviour its pin describes.  \n   **Suggestion** Keep the existing validation contract and give each D20 behaviour a dedicated promise assertion. Reuse the existing L1 setup and assertions where they prove the promise. Compare all three promises with FR-01.09 before deciding whether the producers need to amend it.\n\n2. **Category** edge-case · **Severity** high  \n   **Finding (Q8)** The plan accepts an explicit version when the selected last tag is non-SemVer. That can bypass the increasing-version check in a repository with both release tags and unrelated tags. The plan also leaves equal SemVer precedence untested.  \n   **Suggestion** Use the existing release-tag selection to identify the last comparable release. If that selection leaves an ambiguous baseline, apply STRICT-STOP. Test a mixed tag history and reject a build-metadata-only change on the same version, since it has equal SemVer precedence.\n\n3. **Category** risk · **Severity** high  \n   **Finding (Q5)** The plan tests extraction and wiring separately, but the golden change list omits S8. The tests as described could pass even if the normal release flow drops a continuation line, moves a bullet twice on retry, or mutates the changelog during preview.  \n   **Suggestion** Exercise preview and real aggregation on the same fixture with drops and a multiline hand-written entry. Assert that preview marks the entry and leaves the file unchanged, and that aggregation moves it exactly once and preserves its continuation. Regenerate S8 and review its Q5 delta, or explain why S8 is unaffected.\n\n4. **Category** edge-case · **Severity** medium  \n   **Finding (F9)** The fixed `release-fallback` run ID leaves the writer’s collision and retry b […truncated]",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-25T23:10:13.827537+00:00",
+      "disposition": "operator brief for campaign unit P8b: the internal cascade is delegated to the campaign orchestrator's 3f-bis (ADR-029, campaign mode only)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "delegated-to-orchestrator"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-25T23:10:13.952681+00:00",
+      "disposition": "Stage 3 cannot precede Stage 2; delegated with the cascade to the campaign orchestrator's 3f-bis (operator brief for P8b)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "delegated-to-orchestrator"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "plugins/shipwright-changelog/skills/changelog/references/bullet-folding.md (absent from the diff)",
+          "line": null,
+          "finding": "The unit spec names `bullet-folding.md` among the references expected to be touched (F9 changed the fallback from a legacy `[Unreleased]` append to a drop file, which is exactly bullet-folding territory), but the diff contains no edit and no `approved_deltas.json` entry for it. If that reference still describes the fallback via `append_changelog_entry.py`, the live prose is now wrong and the frozen copy silently stale.",
+          "suggestion": "Check the live `bullet-folding.md`; if it mentions the fallback or `append_changelog_entry.py`, update it and add the delta, or record in FINDINGS why it needed no touch.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec / regression",
+          "file": "plugins/shipwright-changelog/tests/golden/approved_deltas.json (S11b, S14b, S16c, S16f, S5b blocks shown as unchanged context)",
+          "line": null,
+          "finding": "driver_replay.step_aggregate` now always passes `--move-unreleased`, and every aggregate JSON payload gained `hand_written` / (dry-run) `section_preview` fields. Any trace whose scenario contains an aggregate or open-pr step should therefore have a changed hash, yet several trace scenarios adjacent in `approved_deltas.json` (S11b, S14b, S16c, S16f, S5b) show no updated `after` in this diff. Either those scenarios genuinely have no aggregate/PR steps, or `golden_lock.py --check` does not pass.",
+          "suggestion": "Run `uv run shared/testkit/golden_lock.py --plugin shipwright-changelog --check` and confirm exit 0; list which of the 43 traces contain an `aggregate`/`open-pr` key and reconcile against the delta entries.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_prepare.py:94 (`if release_version.not_above(chosen, last_tag)`)",
+          "line": null,
+          "finding": "not_above` calls `_key(version)`, which raises an uncaught `ValueError` when `chosen` is not bare SemVer. The CLI path is safe (`_version` normalises), but `prepare(version=...)` is a library entry point: a caller passing `\"v1.3.0\"` or a non-SemVer suggested version from a misbehaving setup script crashes with a traceback instead of the \"clear error, never a guess\" the decision requires.",
+          "suggestion": "Wrap the `not_above` call in `try/except ValueError` and route it to `_stop(..., \"invalid_version\", ...)`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_aggregate.py:26 (`FALLBACK_RUN_ID = \"release-fallback\"`)",
+          "line": null,
+          "finding": "Idempotency of the fallback drop rests on `write_changelog_drop.py` being idempotent per run id. `skip_fallbacks` only guards `already` (section rendered); if a run dies after the fallback drop is written but before the aggregation writes the section, a retry re-passes the same `--fallback-entry` and re-runs `write_changelog_drop` — with the same run-id and category but potentially a new sequence number, yielding a duplicate bullet in the release. The comment asserts idempotency but nothing in this diff tests it.",
+          "suggestion": "Add one test: write the fallback drop, then run `aggregate` again with the same `--fallback-entry` and assert the bullet appears once.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/changelog_unreleased.py:40 (`moved.setdefault(category, []).append(...)`)",
+          "line": null,
+          "finding": "No dedupe between hand-written `[Unreleased]` bullets and drop-file bullets: a hand-written bullet whose text equals an iterate drop's text is rendered twice in the release section. Low likelihood, but it is a new duplicate path the aggregator did not have.",
+          "suggestion": "Either dedupe moved texts against `by_category`'s drop bullets, or document the duplicate as accepted in FINDINGS.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "plugins/shipwright-changelog/tests/golden/scenarios_modes.py:_check_s19 (`run.step(\"prepare\")` called twice)",
+          "line": null,
+          "finding": "The check runs `prepare` a second time just to read `exit_code`; the second invocation re-runs setup/context against the same scratch. Harmless if idempotent, but it doubles the side effects the digest assertion covers and makes the trace record two prepare calls where the intent is one.",
+          "suggestion": "Capture `StepResult` once (`res = run.step(\"prepare\")`) and assert on `res.output` and `res.exit_code`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_pr_body.py:24 (`load_changelog_sections()`)",
+          "line": null,
+          "finding": "load_changelog_sections()` is called with no arguments while the changelog text is passed separately as `lines`. If that helper reads a changelog from a default path (its name suggests it loads, not just exposes predicates), the section boundaries could come from the wrong file; if it is a predicate factory, the call is wasted I/O at import-of-use. Worth one glance.",
+          "suggestion": "Confirm the helper takes no path and only returns section predicates; if it reads a file, pass `root` explicitly.",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-25T23:10:13.469878+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] ## Findings\n\n- Category: spec\n  Severity: medium\n  File: plugins/shipwright-changelog/skills/changelog/references/bullet-folding.md (absent from the diff)\n  Finding: The unit spec names `bullet-folding.md` among the references expected to be touched (F9 changed the fallback from a legacy `[Unreleased]` append to a drop file, which is exactly bullet-folding territory), but the diff contains no edit and no `approved_deltas.json` entry for it. If that reference still describes the fallback via `append_changelog_entry.py`, the live prose is now wrong and the frozen copy silently stale.\n  Suggestion: Check the live `bullet-folding.md`; if it mentions the fallback or `append_changelog_entry.py`, update it and add the delta, or record in FINDINGS why it needed no touch.\n\n- Category: spec / regression\n  Severity: medium\n  File: plugins/shipwright-changelog/tests/golden/approved_deltas.json (S11b, S14b, S16c, S16f, S5b blocks shown as unchanged context)\n  Finding: `driver_replay.step_aggregate` now *always* passes `--move-unreleased`, and every aggregate JSON payload gained `hand_written` / (dry-run) `section_preview` fields. Any trace whose scenario contains an aggregate or open-pr step should therefore have a changed hash, yet several trace scenarios adjacent in `approved_deltas.json` (S11b, S14b, S16c, S16f, S5b) show no updated `after` in this diff. Either those scenarios genuinely have no aggregate/PR steps, or `golden_lock.py --check` does not pass.\n  Suggestion: Run `uv run shared/testkit/golden_lock.py --plugin shipwright-changelog --check` and confirm exit 0; list which of the 43 traces contain an `aggregate`/`open-pr` key and reconcile against the delta entries.\n\n- Category: bug\n  Severity: medium\n  File: plugins/shipwright-changelog/scripts/lib/release_prepare.py:94 (`if release_version.not_above(chosen, last_tag)`)\n  Finding: `not_above` calls `_key(version)`, which raises an uncaught `ValueError` when `chosen` is not bare SemVer. The CLI path is saf […truncated]\n\n[openai] 1. **Category** spec · **Severity** high  \n   **File:line** [`shared/scripts/changelog_unreleased.py:44`](shared/scripts/changelog_unreleased.py#L44)  \n   **Finding** Q5 says hand-written Unreleased entries move into the release and are marked in the preview. The implementation leaves uncategorized entries behind and omits them from the preview. The operator’s re-scope gives no category rule for these entries and requires a strict stop when a decision is needed.  \n   **Suggestion** Obtain an operator decision on uncategorized entries, then test that the preview and the written release both follow it.\n\n2. **Category** spec · **Severity** high  \n   **File:line** [`plugins/shipwright-changelog/scripts/lib/release_version.py:49`](plugins/shipwright-changelog/scripts/lib/release_version.py#L49)  \n   **Finding** Q8’s precedence check is bypassed when the last tag contains valid SemVer build metadata. For example, `v2.0.0+build.5` is treated as incomparable, so `1.9.0` can pass. The input validator also accepts non-ASCII digits after the first core digit because Python’s `\\d` matches Unicode digits.  \n   **Suggestion** Parse valid SemVer tags with build metadata and ignore metadata when comparing precedence. Use ASCII digit classes and add tests for a lower candidate against a metadata-bearing tag and for non-ASCII input.\n\n3. **Category** bug · **Severity** high  \n   **File:line** [`shared/scripts/tools/compliance_git.py:141`](shared/scripts/tools/compliance_git.py#L141)  \n   **Finding** F8 can leave a newly staged evidence file in the index. If the path was absent from HEAD and the original index but had an untracked copy, refusal restores that copy to the working tree. `git rm --cached` then refuses to remove the staged producer output because it matches neither HEAD nor the restored copy. The helper silently drops the failed removal from its result.  \n   **Suggestion** Use an index-only removal that works independently of the working-tree contents, and repo […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-25T23:10:13.600312+00:00",
+      "disposition": "operator brief for campaign unit P8b: spec, code and doubt rows are recorded delegated-to-orchestrator; the campaign orchestrator's 3f-bis runs the cascade before the merge (ADR-029, campaign mode only)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "delegated-to-orchestrator"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-25T23:10:13.332039+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-25T23:03:53.476992+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}
