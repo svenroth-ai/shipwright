@@ -32,29 +32,135 @@
     },
     "code": {
       "review_type": "code",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_prepare.py",
+          "line": 98,
+          "finding": "Q8 compared against the highest tag in the whole repo, refusing backports. Fixed in 99bfa3013 (tags merged into HEAD).",
+          "suggestion": "fixed",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/changelog_unreleased.py",
+          "line": 31,
+          "finding": "take() used str.splitlines (U+2028 etc.). Fixed in 99bfa3013 (split on newline only), test added.",
+          "suggestion": "fixed",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/compliance_git.py",
+          "line": 122,
+          "finding": "index_entries collapsed conflict stages. Fixed in 99bfa3013 (stage 0 only, conflicted paths reported, real conflict test).",
+          "suggestion": "fixed",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-changelog/tests/test_release_p8b.py",
+          "line": 160,
+          "finding": "Precedence-dependent assert. Split into two tests in 99bfa3013.",
+          "suggestion": "fixed",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_pr_body.py",
+          "line": 48,
+          "finding": "Body file lifetime unnamed, dead CRLF replace. Fixed in 99bfa3013.",
+          "suggestion": "fixed",
+          "source": "code-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-11-25T23:10:13.827537+00:00",
-      "disposition": "operator brief for campaign unit P8b: the internal cascade is delegated to the campaign orchestrator's 3f-bis (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-11-26T04:11:43.898724+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "2d2aeb91522d1ddd4905f1369a90341f1fbe543e",
+      "reviewer_notes": "Independent opus code review on 9d7d741d1: PASS, no high. All findings closed in 99bfa3013. Round 2 (2d2aeb915) verified by the orchestrator against the diff: entries reaching column 0 stay in [Unreleased] and are named; section_end unchanged; end-to-end test reads the section back through pr-body and extract_changelog_section."
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_prepare.py",
+          "line": null,
+          "finding": "Claim under doubt: Q8 refuses only illegitimate releases — Pass 1: backports refused (whole-repo tag compare). Fixed in 99bfa3013; pass 2 found no failure on Q8.",
+          "suggestion": "fixed",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "data integrity",
+          "file": "shared/scripts/changelog_unreleased.py",
+          "line": null,
+          "finding": "Claim under doubt: Q5 moves a hand-written entry whole — Pass 1: lazy continuations and column-0 fences were split. Round 1 moved them whole, pass 2 then showed section_end truncates the release section after a column-0 line (HIGH). Fixed in 2d2aeb915: such entries stay whole in [Unreleased] and are named; end-to-end test through pr-body and extract_changelog_section.",
+          "suggestion": "fixed (D104, D108)",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "concurrency & ordering",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_aggregate.py",
+          "line": null,
+          "finding": "Claim under doubt: an aggregate re-run behaves as before Q5 — Pass 1: re-run after a finished release pulled in newer hand-written entries. Fixed in 99bfa3013 (--move-unreleased only while the section is unwritten). Interrupted run with moved entries refuses by design; worded precisely in 2d2aeb915. Warn-only unlink recorded D105.",
+          "suggestion": "fixed / recorded D105",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling",
+          "file": "shared/scripts/changelog_unreleased.py",
+          "line": null,
+          "finding": "Claim under doubt: lazy check and tidy are safe — Pass 2: non-dash list items glued as lazy text; _tidy dropped heading-like lines inside fences. Fixed in 2d2aeb915 with tests.",
+          "suggestion": "fixed",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "test evidence",
+          "file": "plugins/shipwright-changelog/tests/golden/driver_replay.py",
+          "line": null,
+          "finding": "Claim under doubt: goldens prove Q5 and Q10 — PR body masked in traces; no golden with a categorized hand-written bullet. L1 tests added; golden scenario recorded D107 for stop 3.",
+          "suggestion": "recorded D107",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "reversibility",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_aggregate.py",
+          "line": null,
+          "finding": "Claim under doubt: F9 never misplaces a cherry-picked bullet — Duplicate-text collapse and leftover release-fallback drops riding into the next release. Documented in the reference and D103.",
+          "suggestion": "recorded D103",
+          "source": "doubt-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-11-25T23:10:13.952681+00:00",
-      "disposition": "Stage 3 cannot precede Stage 2; delegated with the cascade to the campaign orchestrator's 3f-bis (operator brief for P8b)",
-      "recorded_by": "none",
+      "completed_at": "2026-11-26T04:11:44.038852+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "2d2aeb91522d1ddd4905f1369a90341f1fbe543e"
     },
     "external_code": {
       "review_type": "external_code",
@@ -138,16 +244,18 @@
     },
     "spec": {
       "review_type": "spec",
-      "status": "not_run",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-11-25T23:10:13.600312+00:00",
-      "disposition": "operator brief for campaign unit P8b: spec, code and doubt rows are recorded delegated-to-orchestrator; the campaign orchestrator's 3f-bis runs the cascade before the merge (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-11-26T04:11:53.397126+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "delegated-to-orchestrator"
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "2d2aeb91522d1ddd4905f1369a90341f1fbe543e"
     },
     "plan_internal": {
       "review_type": "plan_internal",
