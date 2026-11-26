@@ -11,12 +11,20 @@ What the code adds: the pathspecs come from the run state ``sync`` wrote (no cop
 check ``orchestrator.py update-step`` used to run (the tag exists and names this release, the CHANGELOG's top version is this
 release) now runs here on every release, and a mismatch removes the local tag again and fails; **B1** the record
 ``.shipwright/runtime/release_state.json`` (version, release commit, checks that passed) a later guard reads.
+
+Stop 3 (FINDINGS D21, D22, D23, D25): the pathspec names only paths that exist in the tree or the index (a project with no
+``decision-drops/`` or ``adr/`` folder no longer aborts the commit); it carries the deletions of the tracked drop files the
+aggregate consumed (``consumed_drops``, kept by ``aggregate``) and the event files Step 5.5 wrote (``events_pathspec``, kept by
+``sync``). Before anything is staged the tree is checked: a change outside what the release writes (a person's own work in
+progress, staged or not, or an untracked file) stops the release with ``unrelated_changes`` naming the paths, and no commit is
+made (operator decision 2026-11-26; before, the commit was made and the release audit then refused the dirty tree).
 """
 
 from __future__ import annotations
 
 import json
 import re
+import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -32,11 +40,82 @@ BULLET_DOCS = ("architecture", "conventions")
 SHA = re.compile(r"^[0-9a-f]{40}([0-9a-f]{24})?$")
 
 
+def _covers(spec: str, path: str) -> bool:
+    """``path`` is ``spec`` or lies under it (a directory pathspec ends in ``/``)."""
+    return path == spec.rstrip("/") or path.startswith(spec.rstrip("/") + "/")
+
+
+def _git_z(root: Path, argv: list[str]) -> list[str] | None:
+    try:
+        done = subprocess.run(["git", *argv], cwd=root, capture_output=True, text=True, encoding="utf-8", timeout=60)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return [p for p in done.stdout.split("\0") if p] if done.returncode == 0 else None
+
+
+def _known_files(root: Path, specs: list[str]) -> list[str] | None:
+    """Every file under ``specs`` that is in the index (a deleted tracked file included), in HEAD (a deletion already staged) or
+    untracked and not ignored; ``None`` when git cannot list the index (the pathspec is then kept as it is, as before)."""
+    listed = _git_z(root, ["ls-files", "-z", "--cached", "--others", "--exclude-standard", "--", *specs])
+    if listed is None:
+        return None
+    return [*listed, *(_git_z(root, ["ls-tree", "-r", "-z", "--name-only", "HEAD", "--", *specs]) or [])]  # no HEAD yet: none
+
+
+def release_paths_of(root: Path, state: dict[str, Any]) -> list[str]:
+    """The paths the release itself changed beyond the fixed ones, from the run state: the drop files ``aggregate`` consumed and
+    deleted (D22; a drop it could not delete is still on disk and is not the release's to commit) and the event files Step 5.5
+    wrote (``sync``, D23)."""
+    gone = [p for p in state.get("consumed_drops", []) if not (root / p).exists()]
+    return [*gone, *state.get("events_pathspec", [])]
+
+
 def commit_pathspec(root: Path, state: dict[str, Any]) -> tuple[list[str], list[str], list[str]]:
-    """``(log, docs, paths)``: the agent docs a project has (never architecture.md or conventions.md unconditionally) and the whole release pathspec."""
+    """``(log, docs, paths)``: the agent docs a project has (never architecture.md or conventions.md unconditionally) and the whole
+    release pathspec. A path that matches nothing in the tree or the index is left out (D21: one such pathspec makes git refuse
+    the whole commit)."""
     docs = [f"{AGENT_DOCS}/{name}.md" for name in BULLET_DOCS if (root / AGENT_DOCS / f"{name}.md").is_file()]
     log = [f"{AGENT_DOCS}/decision_log.md", f"{AGENT_DOCS}/decision_log_index.md"]
-    return log, docs, ["CHANGELOG.md", *log, *docs, *DROP_DIRS, *state.get("evidence_pathspec", []), *state.get("manifest_pathspec", [])]
+    wanted = list(dict.fromkeys(["CHANGELOG.md", *log, *docs, *DROP_DIRS, *state.get("evidence_pathspec", []),
+                                 *state.get("manifest_pathspec", []), *release_paths_of(root, state)]))
+    known = _known_files(root, wanted)
+    if known is not None:
+        wanted = [spec for spec in wanted if any(_covers(spec, path) for path in known)]
+    return [p for p in log if p in wanted], [p for p in docs if p in wanted], wanted
+
+
+def _status_paths(porcelain_z: str) -> list[str]:
+    """The paths of ``git status --porcelain -z`` (a rename or a copy names both sides)."""
+    out, fields, i = [], porcelain_z.split("\0"), 0
+    while i < len(fields):
+        entry = fields[i]
+        if len(entry) > 3:
+            out.append(entry[3:])
+            if "R" in entry[:2] or "C" in entry[:2]:
+                i += 1
+                if i < len(fields) and fields[i]:
+                    out.append(fields[i])
+        i += 1
+    return out
+
+
+def unrelated_changes(porcelain_z: str, paths: list[str], prefix: str = "") -> list[str]:
+    """The changed paths no release pathspec covers (D25): what the release would leave dirty for its own audit to refuse.
+    ``git status --porcelain`` names paths from the top of the work tree, the pathspec is relative to the project root: a
+    project in a subfolder passes its ``prefix`` (``git rev-parse --show-prefix``); a path outside it is never the release's."""
+    def own(path: str) -> str | None:
+        return path[len(prefix):] if path.startswith(prefix) else None
+    return sorted({p for p in _status_paths(porcelain_z) if own(p) is None or not any(_covers(spec, own(p)) for spec in paths)})
+
+
+def _show_prefix(root: Path) -> str:
+    """The project root's place inside the work tree (``""`` at its top, and when git cannot answer)."""
+    try:
+        done = subprocess.run(["git", "rev-parse", "--show-prefix"], cwd=root, capture_output=True, text=True, encoding="utf-8",
+                              timeout=30)
+    except (OSError, subprocess.SubprocessError):
+        return ""
+    return done.stdout.strip() if done.returncode == 0 else ""
 
 
 def _failed(rec: Recorder, reason: str, code: int, **fields: Any) -> tuple[int, dict[str, Any]]:
@@ -67,9 +146,21 @@ def commit_and_tag(rec: Recorder, plugin_root: Path, *, version: str,
     if "evidence_pathspec" not in state:  # `sync` did not run for this version (or its state is another root's): a commit now would miss the evidence
         return _failed(rec, "sync_not_run", 1)
     log, docs, paths = commit_pathspec(root, state)
+    tree = rec.run("tree-check", ["git", "status", "--porcelain", "-z", "-uall"])
+    if tree.exit != 0:  # git could not say what is in the tree: stop before anything is staged (external review, stop 3)
+        return _failed(rec, "tree_check_failed", tree.exit, message="git status failed; nothing was staged or committed")
+    unrelated = unrelated_changes(tree.stdout, paths, _show_prefix(root))
+    if unrelated:  # D25 (operator 2026-11-26): stop before anything is staged or committed, and name what is in the way
+        return _failed(rec, "unrelated_changes", 1, unrelated=unrelated,
+                       message="the working tree has changes that are not part of this release: " + ", ".join(unrelated)
+                               + "; stash or remove them, then run commit-and-tag again (nothing was staged or committed)")
     rec.run("git-add-changelog", ["git", "add", "CHANGELOG.md"])  # the three adds are outside the chain, as in the prose
-    rec.run("git-add-log", ["git", "add", *log, *docs])
-    rec.run("git-add-drops", ["git", "add", "-A", *DROP_DIRS])
+    if log or docs:
+        rec.run("git-add-log", ["git", "add", *log, *docs])
+    extra = set(DROP_DIRS) | set(release_paths_of(root, state))
+    sweep = [p for p in paths if p in extra]
+    if sweep:  # never an empty list: `git add -A` with no pathspec stages the whole tree
+        rec.run("git-add-drops", ["git", "add", "-A", "--", *sweep])
     subject = f"chore(release): v{version}"
     last = rec.run("last-subject", ["git", "log", "-1", "--format=%s"]).stdout.strip()
     pending = rec.run("pending", ["git", "status", "--porcelain", "--", *paths])

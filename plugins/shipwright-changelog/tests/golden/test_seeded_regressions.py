@@ -40,6 +40,7 @@ def test_a_release_commit_made_without_the_pathspec_is_caught(monkeypatch, make_
     seeded = re.sub(r" -- \\\n.*?@manifests@ \\\n", " \\\n", COMMIT_AND_TAG, flags=re.S)
     assert seeded != COMMIT_AND_TAG and "decision-drops/ .shipwright/planning/adr/ @evidence@" not in seeded
     monkeypatch.setattr(driver_replay, "COMMIT_AND_TAG", seeded)
+    monkeypatch.setattr(driver_replay.ReplayDriver, "_unrelated", lambda self, scratch, paths: [])  # stop 3 (D25): else S15 stops before the commit
     with pytest.raises(AssertionError, match="swept in unrelated paths"):
         trace_text(scenarios_branches.SCENARIOS["S15"], "legacy", make_project)
 

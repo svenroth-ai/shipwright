@@ -1,12 +1,17 @@
 {
   "all_commits": {
     "origin": [
+      "chore(release): record changelog event for v0.1.0@7#f15f34e3",
+      "chore(release): v0.1.0@6#23a228c3",
       "chore: initial project@1#53eb193e",
       "chore: no events file yet@3#015168f9",
-      "chore: project scaffolding@2#ed53eaf0"
+      "chore: project scaffolding@2#ed53eaf0",
+      "docs(changelog): drop iterate-2026-11-01-a Added@5#cf094448",
+      "feat: first feature@4#c4454a61"
     ],
     "repo": [
-      "chore(release): v0.1.0@6#ccdbe556",
+      "chore(release): record changelog event for v0.1.0@7#f15f34e3",
+      "chore(release): v0.1.0@6#23a228c3",
       "chore: initial project@1#53eb193e",
       "chore: no events file yet@3#015168f9",
       "chore: project scaffolding@2#ed53eaf0",
@@ -236,10 +241,27 @@
         {
           "path": "CHANGELOG.md",
           "status": "A"
+        },
+        {
+          "path": "CHANGELOG-unreleased.d/Added/iterate-2026-11-01-a_001.md",
+          "status": "D"
         }
       ],
       "parents": 1,
       "subject": "chore(release): v0.1.0"
+    },
+    {
+      "blobs": {
+        "shipwright_events.jsonl": "<masked:judgement>"
+      },
+      "changes": [
+        {
+          "path": "shipwright_events.jsonl",
+          "status": "A"
+        }
+      ],
+      "parents": 1,
+      "subject": "chore(release): record changelog event for v0.1.0"
     }
   ],
   "files": {
@@ -248,21 +270,25 @@
   "origin": {
     "branches": {
       "main": "chore: project scaffolding@2#ed53eaf0",
-      "release/first": "chore: no events file yet@3#015168f9"
+      "release/first": "chore(release): record changelog event for v0.1.0@7#f15f34e3"
     },
     "tags": {}
   },
   "refs": {
     "branches": {
       "main": "chore: no events file yet@3#015168f9",
-      "release/first": "chore(release): v0.1.0@6#ccdbe556"
+      "release/first": "chore(release): record changelog event for v0.1.0@7#f15f34e3"
     },
-    "tags": {}
+    "tags": {
+      "v0.1.0": {
+        "message": "Release v0.1.0",
+        "target": "chore(release): v0.1.0@6#23a228c3",
+        "type": "tag"
+      }
+    }
   },
   "schema": 1,
-  "status": [
-    " D CHANGELOG-unreleased.d/Added/iterate-<date>-a_001.md"
-  ],
+  "status": [],
   "steps": [
     {
       "exit_code": 0,
@@ -341,18 +367,61 @@
       "step": "evidence"
     },
     {
-      "exit_code": 1,
+      "exit_code": 0,
       "fields": {
-        "reason": "exit_1",
-        "status": "failed",
+        "status": "ok",
         "version": "0.1.0"
       },
       "step": "commit-and-tag"
+    },
+    {
+      "exit_code": 0,
+      "fields": {
+        "status": "ok"
+      },
+      "step": "push-branch"
+    },
+    {
+      "exit_code": 0,
+      "fields": {
+        "status": "ok"
+      },
+      "step": "open-pr"
+    },
+    {
+      "exit_code": 0,
+      "fields": {
+        "status": "ok"
+      },
+      "step": "record-event"
     }
   ],
   "stub": {
-    "argv": [],
-    "prs": [],
+    "argv": [
+      {
+        "argv": [
+          "pr",
+          "create",
+          "--title",
+          "Release v0.1.0",
+          "--body-file",
+          "<masked:judgement>",
+          "--base",
+          "main"
+        ],
+        "exit": 0
+      }
+    ],
+    "prs": [
+      {
+        "base": "main",
+        "body": "<masked:judgement>",
+        "head": "release/first",
+        "number": "1",
+        "state": "open",
+        "title": "<masked:judgement>"
+      }
+    ],
     "releases": {}
   }
 }

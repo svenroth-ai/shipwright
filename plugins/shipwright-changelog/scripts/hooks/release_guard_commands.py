@@ -42,6 +42,7 @@ class Action:
     c_paths: list[str] = field(default_factory=list)  # every ``git -C <path>``, in order
     all_refs: bool = False  # --all / --mirror: every branch goes, the trunk included
     tags: bool = False  # --tags / --follow-tags / --mirror / refs/tags/... / `tag <name>`
+    named_tags: bool = False  # a tag the command itself names as what goes (--tags, refs/tags/..., `tag <name>`); never --follow-tags
     refs: list[str] = field(default_factory=list)  # destination names (a plain name, or ``HEAD``); empty = the current branch
     target: str = ""  # gh pr merge: the PR number, URL or branch it names; empty = the current branch's PR
     foreign: bool = False  # gh -R / --repo: another repository, not this checkout
@@ -117,6 +118,7 @@ def _push(args: list[str], c_paths: list[str]) -> Action:
         arg = args[i]
         if arg in ("--tags", "--follow-tags"):
             act.tags = True
+            act.named_tags = act.named_tags or arg == "--tags"  # --follow-tags adds tags to what goes by default; --tags is what goes
         elif arg in ("--all", "--mirror"):
             act.all_refs, act.tags = True, act.tags or arg == "--mirror"
         elif arg in _PUSH_VALUE_OPTIONS:
@@ -127,15 +129,23 @@ def _push(args: list[str], c_paths: list[str]) -> Action:
         elif not arg.startswith("-") or arg == "-":
             positional.append(arg)
         i += 1
-    if not repo_given and len(positional) >= 2 and positional[1] == "tag":  # git push <remote> tag <name>
-        act.tags, positional = True, positional[:1]
-    for spec in positional if repo_given else positional[1:]:  # positional[0] is the remote unless --repo named it
-        dst = spec.lstrip("+")
-        dst = dst.split(":", 1)[1] if ":" in dst else dst
+    specs, rebuilt = iter(positional if repo_given else positional[1:]), False  # positional[0] is the remote unless --repo named it
+    for spec in specs:
+        if spec == "tag":  # `tag <name>` is refs/tags/<name>, anywhere among the refspecs (git push origin tag v1 main)
+            next(specs, None)
+            act.tags = act.named_tags = True
+            continue
+        src, sep, dst = spec.lstrip("+").rpartition(":")
         if dst.startswith("refs/tags/"):
-            act.tags = True
+            act.tags = act.named_tags = True
+            # tag-only (F-S3-1) only when every tag goes out as it is: `HEAD:refs/tags/v1` makes the remote tag from another
+            # commit, so such a push stays judged by HEAD as before (code review, stop 3)
+            rebuilt = rebuilt or (bool(sep) and src not in (dst, dst.removeprefix("refs/tags/")))
         elif dst:
             act.refs.append(dst.removeprefix("refs/heads/"))
+        else:  # `:` / `+:` pushes every matching branch, the trunk included: never tag-only (doubt review, stop 3)
+            rebuilt = True
+    act.named_tags = act.named_tags and not rebuilt
     return act
 
 

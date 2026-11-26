@@ -1,0 +1,117 @@
+{
+  "run_id": "iterate-2026-11-26-dfp-stop3-release-fixes",
+  "date": "2026-11-26T22:46:37.475780Z",
+  "event_at": "2026-11-26T01:02:45.539664+00:00",
+  "type": "bug",
+  "complexity": "medium",
+  "prior_source": "keyword",
+  "branch": "iterate/dfp-stop3-release-fixes",
+  "spec": ".shipwright/planning/iterate/2026-11-26-dfp-stop3-release-fixes.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-11-26-dfp-stop3-release-fixes",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "tag-only pushes (refs/tags/vX, vX, tag vX, --tags, tag:tag) after a merged release PR are judged by the tag and allowed (D109)",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-changelog/tests/test_release_guard_stop3.py::test_a_push_that_sends_only_the_tag_is_judged_by_the_tag_after_the_merge PASSED"
+      },
+      {
+        "behavior": "trunk, --follow-tags, combined, HEAD:refs/tags/vX and matching ':' pushes stay judged by HEAD and denied after the merge",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-changelog/tests/test_release_guard_stop3.py::test_a_push_that_sends_the_trunk_is_still_judged_by_head_after_the_merge PASSED"
+      },
+      {
+        "behavior": "a tag-only push of a tag moved off the verified commit is still denied",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-changelog/tests/test_release_guard_stop3.py::test_a_tag_only_push_of_a_tag_on_another_commit_is_still_denied PASSED"
+      },
+      {
+        "behavior": "the on-trunk atomic push on the release commit keeps working",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-changelog/tests/test_release_guard_stop3.py::test_the_combined_trunk_push_on_the_release_commit_is_allowed PASSED"
+      },
+      {
+        "behavior": "D21: a project without decision folders is committed and tagged; the pathspec names only paths git knows",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-changelog/tests/test_release_stop3_commit.py::test_d21_a_project_without_decision_folders_is_committed_and_tagged PASSED"
+      },
+      {
+        "behavior": "D21: a folder whose last file is staged for deletion stays in the pathspec",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-changelog/tests/test_release_stop3_commit.py::test_d21_a_staged_deletion_of_the_last_file_under_a_release_folder_is_committed PASSED"
+      },
+      {
+        "behavior": "D22: the deletion of a consumed tracked drop is in the release commit; a drop the aggregate could not delete is named",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-changelog/tests/test_release_stop3_commit.py::test_d22_the_deletion_of_a_consumed_tracked_drop_is_part_of_the_release_commit PASSED"
+      },
+      {
+        "behavior": "D22: aggregate keeps the drops it consumed in the run state (producer/consumer round trip)",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-changelog/tests/test_release_stop3_commit.py::test_d22_aggregate_keeps_the_drops_it_consumed PASSED"
+      },
+      {
+        "behavior": "D23: the grade_snapshot event Step 5.5 wrote is in the release commit (drops and legacy)",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-changelog/tests/test_release_stop3_commit.py::test_d23_the_event_step_5_5_wrote_is_part_of_the_release_commit PASSED"
+      },
+      {
+        "behavior": "D23: sync keeps the event files it wrote in the run state (producer/consumer round trip)",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-changelog/tests/test_release_stop3_commit.py::test_d23_sync_keeps_the_event_files_step_5_5_wrote PASSED"
+      },
+      {
+        "behavior": "D25: staged, unstaged or untracked unrelated changes stop Step 6 before anything is staged, naming the paths",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-changelog/tests/test_release_stop3_commit.py::test_d25_unrelated_changes_stop_the_release_before_anything_is_committed PASSED"
+      },
+      {
+        "behavior": "D25: a failed git status stops Step 6 with tree_check_failed before staging",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-changelog/tests/test_release_stop3_commit.py::test_d25_a_tree_check_git_cannot_answer_stops_before_anything_is_staged PASSED"
+      },
+      {
+        "behavior": "D25: a project in a subfolder of the work tree is released; changes outside it are named",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-changelog/tests/test_release_stop3_commit.py::test_d25_a_project_in_a_subfolder_of_the_work_tree_is_released PASSED"
+      },
+      {
+        "behavior": "golden scenarios S1/S2 drops, S1d, S1t, S15, S16c: replay and CLI drivers give the approved traces",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-changelog/tests/golden/test_driver_cli.py::test_a_scenario_through_the_cli_driver_equals_its_frozen_trace PASSED"
+      },
+      {
+        "behavior": "trace normalization: two runs committing an event drop give the same trace",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_golden_trace.py::test_two_runs_that_commit_an_event_drop_give_the_same_trace PASSED"
+      },
+      {
+        "behavior": "the release guard hook runs as Claude Code runs it (PreToolUse) end to end",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "integration-tests/test_changelog_release_guard_hook.py PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 16,
+      "tested": 16,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 1,
+      "covered_acs": 1
+    }
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": [
+    "touches_io_boundary",
+    "cross_component"
+  ]
+}

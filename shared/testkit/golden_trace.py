@@ -9,7 +9,8 @@ Standard library only (ADR-044). Three parts:
    ordered argv log of the stubbed external binary.
 2. **The normalizer contract** (:func:`normalize_text`): timestamps, dates, SHAs, UUIDs and
    absolute paths become placeholders; ids the scenario names (run ids, session ids) become
-   ``<name>``. **Judgement output is masked** (:data:`MASK`): the files matching
+   ``<name>``; an event drop file's name (``<key>--<wt8>--<nonce>.jsonl``: the writing worktree's hash and a
+   random nonce) keeps its key only (:func:`stable_path`). **Judgement output is masked** (:data:`MASK`): the files matching
    ``judgement_globs``, the ``notes`` of every stubbed release, the title and body of every stubbed PR
    and the ``--notes``/``--body``/``--body-file`` values of the argv log keep their path and existence
    but not their text, because a model wrote them. A ref target is ``"<subject>@<depth>"``
@@ -50,6 +51,12 @@ _STAMP = re.compile(r"\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\
 _COMPACT = re.compile(r"\b\d{8}-\d{6,12}\b")  # run ids like project-20261117-125101955883
 _AFTER_LABEL = re.compile(r"(<(?:repo|origin|root)>)([\\/][^\s\"'<>]*)")  # the rest of a path after its label
 _DATE = re.compile(r"\b\d{4}-\d{2}-\d{2}\b")
+_DROP_NAME = re.compile(r"(events/drops/[^/\s\"'<>]*?)--[0-9a-f]{8}--[0-9a-f]{8}\.jsonl\b")  # <key>--<wt8>--<nonce>.jsonl: both differ per run
+
+
+def stable_path(path: str) -> str:
+    """A path as a trace records it: an event drop file keeps its key, its worktree hash and nonce become placeholders."""
+    return _DROP_NAME.sub(r"\1--<wt8>--<nonce>.jsonl", path)
 
 
 def normalize_text(text: str, *, paths: Mapping[str, Path | str] | None = None,
@@ -66,7 +73,7 @@ def normalize_text(text: str, *, paths: Mapping[str, Path | str] | None = None,
     for literal, name in sorted((literals or {}).items(), key=lambda kv: -len(kv[0])):
         text = text.replace(literal, f"<{name}>")
     text = _COMPACT.sub("<stamp>", _STAMP.sub("<ts>", text))
-    text = _DATE.sub("<date>", text)
+    text = _DATE.sub("<date>", stable_path(text))
     return _UUID.sub("<uuid>", _SHA.sub("<sha>", text))
 
 
@@ -100,7 +107,7 @@ def describe(repo: Path, rev: str) -> str:
     subject = _git(repo, "log", "-1", "--format=%s", rev).strip()
     depth = _git(repo, "rev-list", "--first-parent", "--count", rev).strip()
     sha = _git(repo, "rev-parse", f"{rev}^{{commit}}").strip()
-    listing = "|".join(f"{status}:{path}" for status, path in _name_status(repo, sha))
+    listing = "|".join(f"{status}:{stable_path(path)}" for status, path in _name_status(repo, sha))
     return f"{subject}@{depth}#{hashlib.sha256(listing.encode('utf-8')).hexdigest()[:8]}"
 
 
@@ -121,8 +128,8 @@ def _commits(repo: Path, norm, masked) -> list[dict[str, Any]]:
         parents = _git(repo, "rev-list", "--parents", "-n", "1", sha).split()[1:]
         changes = _name_status(repo, sha)
         out.append({"subject": _git(repo, "log", "-1", "--format=%s", sha).strip(), "parents": len(parents),
-                    "changes": [{"status": s, "path": p} for s, p in changes],
-                    "blobs": {p: (MASK if masked(p) else _blob(repo, sha, p, norm)) for s, p in changes if s != "D"}})
+                    "changes": [{"status": s, "path": stable_path(p)} for s, p in changes],
+                    "blobs": {stable_path(p): (MASK if masked(p) else _blob(repo, sha, p, norm)) for s, p in changes if s != "D"}})
     return out
 
 

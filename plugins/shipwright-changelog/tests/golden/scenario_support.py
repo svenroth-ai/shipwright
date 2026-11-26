@@ -2,8 +2,8 @@
 
 The scratch of ``shared/testkit/release_scratch.py`` is the minimal valid project. A real project also has the
 canonical ``.gitignore`` block (so locks and runtime files stay out of ``git status``) and tracked
-``.shipwright/agent_docs/decision-drops/`` and ``.shipwright/planning/adr/`` directories, which Step 6's pathspec names: a pathspec that matches
-no file aborts the commit (finding D21). ``scaffold`` adds exactly that, once, as one commit.
+``.shipwright/agent_docs/decision-drops/`` and ``.shipwright/planning/adr/`` directories, which Step 6's pathspec names (until stop 3 a
+pathspec that matched no file aborted the commit, finding D21; S1d removes them). ``scaffold`` adds exactly that, once, as one commit.
 """
 
 from __future__ import annotations
@@ -76,8 +76,8 @@ def feature_branch(scratch: Any, name: str = "release/next") -> None:
 
 
 def write_drop(scratch: Any, category: str, bullet: str, run_id: str = "iterate-2026-11-01-a", *, tracked: bool = False) -> None:
-    """One bullet drop, written by the real tool (as iterate F4 does). Untracked by default: a drop that is
-    COMMITTED makes today's Step 6 refuse the release (finding D22, scenario S1t), so only that scenario tracks it."""
+    """One bullet drop, written by the real tool (as iterate F4 does). Untracked by default; a COMMITTED drop is scenario S1t
+    (finding D22: until stop 3 its deletion stayed out of the release commit and Step 6 refused the release)."""
     scratch.run([sys.executable, str(DROP_TOOL), "--project-root", str(scratch.repo), "--run-id", run_id,
                  "--category", category, "--bullet", bullet], check=True)
     if tracked:
@@ -116,8 +116,8 @@ def write_decision(scratch: Any, run_id: str, title: str) -> None:
 def ready_release(make_project: Any, *, autonomy: str | None = None, branch: str | None = "release/next", pushed: bool = True,
                   history: str = "# Changelog\n\n## [1.2.0] - 2026-01-15\n\n### Added\n\n- Earlier feature\n",
                   default_branch: str = "main", setup: Callable[[Any], None] | None = None, tagged: bool = True) -> Any:
-    """A project ready for a whole release on the one configuration that can finish it today (legacy events layout,
-    no events file yet: findings D21-D23): tagged ``v1.2.0``, a feature and a fix since, each with a pending bullet.
+    """A project ready for a whole release on the configuration stop 2 found could finish it (legacy events layout,
+    no events file yet: findings D21-D23, fixed at stop 3; kept so the traces stay comparable): tagged ``v1.2.0``, a feature and a fix since, each with a pending bullet.
     ``branch=None`` stays on the default branch; ``setup`` runs on the project first (a driven run, S13, S17)."""
     s = make_project(events_layout="legacy", default_branch=default_branch, tagged=tagged)
     if setup:

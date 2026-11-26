@@ -52,6 +52,20 @@ def test_two_scratches_in_different_directories_give_the_same_trace(tmp_path):
     assert gt.dumps(gt.collect(a, files=["CHANGELOG.md"])) == gt.dumps(gt.collect(b, files=["CHANGELOG.md"]))
 
 
+def test_two_runs_that_commit_an_event_drop_give_the_same_trace(tmp_path):
+    """An event drop's name carries the worktree hash and a random nonce (stop 3: the release commit now carries one, FINDINGS D23)."""
+    traces = []
+    for run, (wt8, nonce) in enumerate((("bef998da", "3419e11e"), ("94d0a278", "8842a30b"))):
+        s = rs.build_scratch(tmp_path / f"r{run}")
+        commit(s, f".shipwright/events/drops/_main--{wt8}--{nonce}.jsonl", '{"type":"grade_snapshot"}\n', "chore(release): v0.2.0")
+        traces.append(gt.dumps(gt.collect(s)))
+    assert traces[0] == traces[1] and "_main--<wt8>--<nonce>.jsonl" in traces[0]
+    assert gt.stable_path(".shipwright/events/drops/release-v1.3.0--94d0a278--3ea47b6d.jsonl") == \
+        ".shipwright/events/drops/release-v1.3.0--<wt8>--<nonce>.jsonl"
+    assert gt.stable_path("docs/a--0123abcd--0123abcd.md") == "docs/a--0123abcd--0123abcd.md"  # only an event drop name
+    assert gt.stable_path("logs/a--0123abcd--0123abcd.jsonl") == "logs/a--0123abcd--0123abcd.jsonl"  # and only under events/drops/
+
+
 def test_the_trace_records_commits_changed_content_refs_and_status(scratch):
     scratch.git("tag", "-a", "v0.2.0", "-m", "Release v0.2.0", "HEAD~1")
     commit(scratch, "docs/new.md", "hello 2026-11-17\n", "docs: add new")
