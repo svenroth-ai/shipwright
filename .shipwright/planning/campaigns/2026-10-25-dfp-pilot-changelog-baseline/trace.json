@@ -399,7 +399,7 @@
         "heading_path": [
           "Step 3: Determine Version Bump"
         ],
-        "content_hash": "5427ddfaeafb0601f92c7828f3df615b408efc265a1c94ecc4f447d9324b515c"
+        "content_hash": "a0675f7cae90d12409158a48aa4124177a0f641d15760b7be75aedf789d7bff3"
       },
       "class": "ask",
       "check": {
@@ -428,7 +428,7 @@
         "heading_path": [
           "Step 5: Preview and Confirm"
         ],
-        "content_hash": "0866036f01b63d046fb4408faccff46613d84f1bcfbc1e5ef65b96eca33e276e"
+        "content_hash": "14749b8e8ecca325504011fc7633b916d791467ecaf09307c20da7adf2b04872"
       },
       "class": "ask",
       "check": {
@@ -475,8 +475,8 @@
       ]
     },
     {
-      "id": "PROPOSED/upgrade-notes-check",
-      "sentence": "A release tells existing projects what to do after upgrading when a migration page changed.",
+      "id": "D20/upgrade-notes-check",
+      "sentence": "Before the release text is written, every migration page added or changed since the last tag whose \"Do you have to do anything?\" answer is not a plain no gets one upgrade-note drop in its own words, once per page; the pages are never edited.",
       "source": {
         "file": "plugins/shipwright-changelog/skills/changelog/references/release-workflow.md",
         "heading_path": [
@@ -485,14 +485,17 @@
         "content_hash": "d07a084a6265adf8bfac134175e22833998151dc6467d009a2b2ba3cc2f977f0"
       },
       "class": "mechanic",
-      "check": null,
-      "status": "proposed",
-      "decision": "No requirement names it (finding D20); the operator decides whether it becomes a written promise (P8, question 6). Never counted as proof.",
-      "oracle": "none"
+      "check": {
+        "kind": "test",
+        "id": "plugins/shipwright-changelog/tests/test_release_gates_and_notes.py::test_the_check_with_real_git_and_the_real_drop_writer"
+      },
+      "status": "passing",
+      "decision": "Operator decision Q6 (re-scope 2026-11-25): written down as a promise of what the code does today, with its pin; no AC is added and FR-01.09 is not amended (no AC contradicts it). The check is the L1 test of the CLI code that does it, not a driver-interface promise test (the replay never runs this step).",
+      "oracle": "test"
     },
     {
-      "id": "PROPOSED/event-fold",
-      "sentence": "Old per-run event files are folded into the archive before the release is staged, and a failure never blocks the release.",
+      "id": "D20/event-fold",
+      "sentence": "Old per-run event files are folded into the archive before the manifests and the evidence are synced, and a fold that fails never blocks the release.",
       "source": {
         "file": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
         "heading_path": [
@@ -501,26 +504,44 @@
         "content_hash": "68e9e53a130ea94aac0813619c729ca90e467978f2cb8956b3bc3b46ee1bde0b"
       },
       "class": "mechanic",
-      "check": null,
-      "status": "proposed",
-      "decision": "Same as above (finding D20, P8 question 6).",
-      "oracle": "none"
+      "check": {
+        "kind": "test",
+        "id": "plugins/shipwright-changelog/tests/test_release_p4_cli.py::test_sync_runs_the_fold_then_the_manifests_then_the_evidence_and_keeps_both_pathspecs"
+      },
+      "more_checks": [
+        {
+          "kind": "test",
+          "id": "plugins/shipwright-changelog/tests/test_release_p4_cli.py::test_a_fold_that_fails_never_blocks_the_release"
+        }
+      ],
+      "status": "passing",
+      "decision": "Operator decision Q6 (re-scope 2026-11-25): written down as a promise of what the code does today, with its pin; no AC is added and FR-01.09 is not amended (no AC contradicts it). The check is the L1 test of the CLI code that does it (an L1 pin, like the upgrade-notes check; the golden traces record the step too).",
+      "oracle": "test"
     },
     {
-      "id": "PROPOSED/release-event-and-history",
-      "sentence": "The release is recorded as a phase event and in the project's phase history.",
+      "id": "D20/release-event-and-history",
+      "sentence": "Every release records a changelog phase event and commits it before the merge (from a feature branch it is pushed with the head); a driven run also adds the phase_history entry its gate reads, a hand-invoked one writes none.",
       "source": {
         "file": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
         "heading_path": [
           "Step 7: Create PR (Optional)"
         ],
-        "content_hash": "6a17345405eb328ebf2899bd599bd8264d5d84ac98ca7b3f1a15f059ee95d1e7"
+        "content_hash": "168805a56040522132854de43958b9e625bf0aed26d7bfeef30f556fa230e91c"
       },
       "class": "mechanic",
-      "check": null,
-      "status": "proposed",
-      "decision": "Same as above (finding D20, P8 question 6); the scenarios already record it in their traces.",
-      "oracle": "none"
+      "check": {
+        "kind": "test",
+        "id": "plugins/shipwright-changelog/tests/test_release_event_real_git.py::test_pr_flow_commits_only_the_events_file_and_pushes_the_branch"
+      },
+      "more_checks": [
+        {
+          "kind": "test",
+          "id": "plugins/shipwright-changelog/tests/test_release_p4_cli.py::test_close_phase_in_a_driven_run_keeps_the_canon_records_with_the_canon_marker"
+        }
+      ],
+      "status": "passing",
+      "decision": "Operator decision Q6 (re-scope 2026-11-25): written down as a promise of what the code does today, with its pin; no AC is added and FR-01.09 is not amended (no AC contradicts it). The check is the L1 test of the CLI code that does it (an L1 pin, like the upgrade-notes check; the golden traces record the step too).",
+      "oracle": "test"
     }
   ]
 }

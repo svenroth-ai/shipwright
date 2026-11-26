@@ -18,21 +18,17 @@ Concurrency model:
   only touches the snapshot set). That bullet simply lands in the next
   release.
 
-Legacy coexistence:
-
-* ``CHANGELOG.md`` may still carry pre-refactor ``## [Unreleased]``
-  bullets. We do NOT parse / mutate those — brittle. Instead we emit a
-  release-time WARNING to stderr so the operator decides manually.
-* The aggregator does not touch ``[Unreleased]``; it inserts the new
-  version section immediately above whatever currently sits at the top
-  versioned heading.
+Hand-written ``## [Unreleased]`` bullets: with ``--move-unreleased`` (the
+release passes it, operator decision Q5) every bullet under a category heading
+moves into the new version (``changelog_unreleased.take``); the rest stays and
+is named back in a stderr WARNING, which is all a run without the flag does.
 
 CLI:
 
     uv run shared/scripts/tools/aggregate_changelog.py \\
         --project-root . \\
         --version 0.3.0 \\
-        [--dry-run]
+        [--dry-run] [--move-unreleased]
 """
 
 from __future__ import annotations
@@ -50,6 +46,7 @@ if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
 from changelog_sections import section_end, section_starts, unreleased_start  # noqa: E402
+import changelog_unreleased  # noqa: E402 — Q5: hand-written entries move into the release
 from changelog_splice import (  # noqa: E402 — ONE section SSoT (ADR-045)
     SectionConflict,
     apply_section,
@@ -116,7 +113,7 @@ def _detect_msys_mangled_bullets(
         for stem, content in bullets:
             first_line = content.lstrip().splitlines()[0] if content.strip() else ""
             if _MSYS_MANGLE_RE.match(first_line):
-                drop_relpath = (
+                drop_relpath = "CHANGELOG.md [Unreleased]" if stem == "unreleased" else (  # Q5: a hand-written entry
                     drops_root / category / f"{stem}.md"
                 ).relative_to(project_root)
                 findings.append(
@@ -247,6 +244,7 @@ def aggregate(
     strict: bool = False,
     fail_if_empty: bool = False,
     lock_timeout_seconds: float = 10.0,
+    move_unreleased: bool = False,
 ) -> dict[str, object]:
     """Run one aggregation pass.
 
@@ -264,16 +262,13 @@ def aggregate(
 
     ``fail_if_empty``: FR-01.09 criterion 3 — when True, raises
     ``AggregatorError`` instead of quietly reporting an empty section IF
-    this version has never been released before (no drops pending AND
-    ``version`` does not already head a section in ``CHANGELOG.md``). This
-    checks drop files ONLY — legacy ``[Unreleased]`` bullets are a
-    deliberately separate signal (see ``_legacy_unreleased_bullets``) and do
-    not by themselves make this refuse; folding them in would re-merge the
-    two split-brain halves the file-per-iterate refactor kept apart. A
-    CONVERGING re-run of an already-released version — where "nothing
-    pending" is the correct, idempotent outcome (`rerunning-a-release.md`)
-    — is unaffected: the existing-section check is what tells the two
-    states apart.
+    this version has never been released before (nothing pending AND
+    ``version`` does not already head a section in ``CHANGELOG.md``). A
+    CONVERGING re-run of an already-released version is unaffected.
+
+    ``move_unreleased`` (Q5): hand-written ``[Unreleased]`` bullets under a
+    category heading join the section (``hand_written_entries``; the dry
+    run's ``section_preview`` marks them); the rest stays and is named.
     """
     project_root = project_root.resolve()
     release_date = release_date or datetime.now(timezone.utc).strftime("%Y-%m-%d")
@@ -282,6 +277,11 @@ def aggregate(
     lock_path = project_root / CHANGELOG_LOCK_NAME
     with file_lock(lock_path, timeout_seconds=lock_timeout_seconds):
         by_category, processed = _snapshot_drop_files(project_root)
+        original = changelog_path.read_text(encoding="utf-8") if changelog_path.exists() else "# Changelog\n\n"
+        remaining, moved, left = changelog_unreleased.take(original, _CATEGORY_ORDER) if move_unreleased else (original, {}, None)
+        drops_only = {c: list(b) for c, b in by_category.items()}
+        for category, texts in moved.items():  # after the drops of the same category, in document order
+            by_category.setdefault(category, []).extend(("unreleased", t) for t in texts)
 
         # MSYS path-mangling linter — runs BEFORE rendering so strict
         # mode aborts without a half-written CHANGELOG.md.
@@ -318,16 +318,6 @@ def aggregate(
                     ).splitlines(keepends=True)
                     already_released = bool(section_starts(existing_lines, version))
                 if not already_released:
-                    # External code review (e4-checks-deploy-changelog): this
-                    # branch never inspects legacy `[Unreleased]` bullets —
-                    # only `by_category` (drop files) — so the message must
-                    # not claim it checked them. Whether legacy bullets exist
-                    # is intentionally a SEPARATE question from "is there a
-                    # pending drop-file release": the two are deliberately
-                    # not merged (see FR-01.09 #7's own ledger row) — the
-                    # file-per-iterate mechanism and hand-edited Unreleased
-                    # text are independent split-brain halves, not one
-                    # combined "is there anything pending" signal.
                     raise AggregatorError(
                         f"nothing to release for version {version}: no changelog "
                         "drops pending in CHANGELOG-unreleased.d/, and "
@@ -346,12 +336,12 @@ def aggregate(
                 "section_action": "none",
             }
 
-        changelog_text = (
-            changelog_path.read_text(encoding="utf-8")
-            if changelog_path.exists()
-            else "# Changelog\n\n"
-        )
-        legacy_bullet_texts = _legacy_unreleased_bullets(changelog_text)
+        changelog_text = remaining
+        legacy_bullet_texts = _legacy_unreleased_bullets(changelog_text) if left is None else left  # Q5: take() names what stayed, past a column-0 line too
+        if moved:
+            named = "\n".join(f"  - {t.splitlines()[0]}" for texts in moved.values() for t in texts)
+            print(f"[aggregate_changelog] {sum(map(len, moved.values()))} hand-written bullet(s) under [Unreleased] "
+                  f"move into version {version}:\n{named}", file=sys.stderr)
         if legacy_bullet_texts:
             named = "\n".join(f"  - {b}" for b in legacy_bullet_texts)
             print(
@@ -376,7 +366,7 @@ def aggregate(
         wrote = False
 
         if not dry_run:
-            if action != "unchanged":
+            if action != "unchanged" or new_text != original:  # Q5: the moved bullets leave [Unreleased] too
                 _atomic_write(changelog_path, new_text)
                 wrote = True
             for p in processed:
@@ -408,6 +398,10 @@ def aggregate(
             # nothing, and still consumes the drops.
             "changelog_updated": wrote,
             "section_action": action,
+            "hand_written_entries": [{"category": c, "text": t} for c, ts in moved.items() for t in ts],
+            **({"section_preview": _render_versioned_section(version, release_date, {
+                **drops_only, **{c: drops_only.get(c, []) + [("unreleased", t) for t in ts]
+                                 for c, ts in changelog_unreleased.marked(moved).items()}})} if dry_run else {}),
         }
 
 
@@ -444,6 +438,8 @@ def main(argv: list[str] | None = None) -> int:
             "release)."
         ),
     )
+    parser.add_argument("--move-unreleased", action="store_true",
+                        help="move hand-written [Unreleased] bullets under a category heading into the release (Q5)")
     parser.add_argument("--lock-timeout", type=float, default=10.0)
     args = parser.parse_args(argv)
 
@@ -456,6 +452,7 @@ def main(argv: list[str] | None = None) -> int:
             strict=args.strict,
             fail_if_empty=args.fail_if_empty,
             lock_timeout_seconds=args.lock_timeout,
+            move_unreleased=args.move_unreleased,
         )
     except LockTimeout as exc:
         print(f"ERROR: {exc}", file=sys.stderr)

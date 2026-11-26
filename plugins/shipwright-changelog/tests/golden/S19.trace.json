@@ -292,9 +292,8 @@
     {
       "exit_code": 2,
       "fields": {
-        "mode": "standalone",
-        "reason": "setup_refused",
-        "status": "stop"
+        "reason": "exit_2",
+        "status": "failed"
       },
       "step": "prepare"
     }

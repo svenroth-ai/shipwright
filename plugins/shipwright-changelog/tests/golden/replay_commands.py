@@ -28,7 +28,7 @@ CITES: dict[str, list[tuple[int, str]]] = {
     "aggregate-dry": [(171, "aggregate_changelog.py")],
     "aggregate": [(185, "aggregate_changelog.py")],
     "decisions": [(211, "aggregate_decisions.py")],
-    "fallback-append": [(224, "append_changelog_entry.py")],
+    "fallback-append": [(224, "append_changelog_entry.py")],  # P8b F9: the same fallback, now a drop file (write_changelog_drop.py)
     "fold-events": [(260, "fold_events_for_release.py")],
     "sync": [(273, "sync_release_manifests.py")],
     "evidence": [(288, "refresh_compliance_docs.py")],
@@ -36,7 +36,7 @@ CITES: dict[str, list[tuple[int, str]]] = {
                        (306, "git add -A"), (307, "git commit -m"), (311, "refresh_compliance_docs.py"),
                        (313, "sync_release_manifests.py"), (317, "git tag -a")],
     "push-branch": [(346, "git push origin HEAD")],  # P8a F3: the same push, now right before the PR (stop-2 prose ran it after)
-    "open-pr": [(330, "gh pr create")],
+    "open-pr": [(330, "gh pr create")],  # P8b Q10: the same PR, its body now from a file (`release.py pr-body`, `--body-file`)
     "record-event-pr": [(343, "record_event.py"), (344, "stage_event_drops.py"), (345, "git add shipwright_events.jsonl"),
                         (346, "git push origin HEAD")],
     "merge-pr": [(351, "gh pr merge")],

@@ -33,7 +33,7 @@ sys.path.insert(0, str(_SCRIPTS_DIR))
 from lib.compliance_refresh import REFRESH_SET  # noqa: E402
 from tools.compliance_refresh_produce import git  # noqa: E402
 
-__all__ = ["restore_to_head", "staged_difference", "write_back"]
+__all__ = ["index_entries", "restore_index", "restore_to_head", "staged_difference", "write_back"]
 
 
 def staged_difference(root: Path, rels: list[str]) -> list[str] | None:
@@ -111,6 +111,47 @@ def restore_to_head(root: Path) -> tuple[list[str], list[str]]:
         except OSError:
             unresolved.append(rel)
     return moved, unresolved
+
+
+def index_entries(root: Path, conflicted: list[str] | None = None) -> dict[str, str]:
+    """The stage-0 index entries of the seven, ``{path: "mode sha"}`` (a path not in the index is absent). A path with
+    a merge conflict (stage 1-3) is no entry here; it is named once in ``conflicted`` when the caller passes a list."""
+    listed = git(root, "ls-files", "-s", "-z", "--", *sorted(REFRESH_SET))
+    entries: dict[str, str] = {}
+    for item in (listed.stdout or "").split("\0"):
+        meta, _, rel = item.partition("\t")
+        if rel and len(meta.split()) == 3:
+            mode, sha, stage = meta.split()
+            if stage == "0":
+                entries[rel] = f"{mode} {sha}"
+            elif conflicted is not None and rel not in conflicted:
+                conflicted.append(rel)
+    return entries
+
+
+def restore_index(root: Path, before: dict[str, str]) -> tuple[list[str], list[str]]:
+    """Put the index entries of the seven back to ``before`` (F8: a refusal unstages what this run staged).
+
+    ``produce`` rewinds the WORKING TREE of a refusal, but the producers had already ``git add``-ed what they wrote, so the
+    index kept it (S16b: six paths staged after a ``content_floor``). Only the seven are touched, and only where the index
+    now differs from what this run found, so an entry the operator staged before the run stays as it was. Index-only
+    (``update-index``), so the working-tree bytes never decide whether it works. Returns ``(put_back, failed)``; a path
+    with a merge conflict is never touched (that would resolve the conflict) and is reported in ``failed``."""
+    conflicted: list[str] = []
+    now, put_back, failed = index_entries(root, conflicted), [], []
+    for rel in sorted(REFRESH_SET):
+        if rel in conflicted:
+            failed.append(rel)
+            continue
+        if now.get(rel) == before.get(rel):
+            continue
+        if rel in before:
+            mode, sha = before[rel].split()
+            done = git(root, "update-index", "--add", "--cacheinfo", f"{mode},{sha},{rel}")
+        else:
+            done = git(root, "update-index", "--force-remove", "--", rel)
+        (put_back if done.returncode == 0 else failed).append(rel)
+    return put_back, failed
 
 
 def write_back(root: Path, payload: dict[str, bytes]) -> None:

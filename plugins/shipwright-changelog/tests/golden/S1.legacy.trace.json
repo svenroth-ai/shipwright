@@ -400,7 +400,7 @@
           "create",
           "--title",
           "Release v0.1.0",
-          "--body",
+          "--body-file",
           "<masked:judgement>",
           "--base",
           "main"

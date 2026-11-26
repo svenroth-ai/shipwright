@@ -5,7 +5,7 @@ prose's ``gh pr create`` before ``git push origin HEAD`` (finding D7) is not wha
 fresh-branch order is S14a (the next unit). What they record about today's behaviour, not endorse:
 
 * D2: the tag and the release page go out while the PR is still open (guided mode, and a driven run);
-* D15: the PR body carries a literal ``\\n``;
+* D15 (fixed in P8b, Q10): the PR body comes from a file, so its newlines are real;
 * D22: a TRACKED bullet drop is deleted by the aggregation but not committed by Step 6's pathspec, so the
   release audit refuses the dirty tree and no tag is made (S1t);
 * D23: Step 5.5 records an event and Step 6's pathspec does not name it: under the ``drops`` layout (the shipped
@@ -75,8 +75,8 @@ def _check_s1(run: Run) -> None:
     prs = s.gh_state()["prs"]
     assert [(p["head"], p["base"], p["title"], p["state"]) for p in prs] == [("release/first", "main", "Release v0.1.0", "open")]
     oracle.check_ac01(section, tag_made=True, request_open=prs[0]["state"] == "open", outcome="prepared")
-    # D15: the body is the section behind a literal backslash-n pair, not a line break
-    assert prs[0]["body"].startswith("## Changelog\\n\\n## [0.1.0]")
+    # Q10 (D15, P8b): the body comes from a file: real line breaks, then this version's section
+    assert prs[0]["body"].startswith("## Changelog\n\n## [0.1.0]") and "\\n" not in prs[0]["body"]
     # D3 (regression guard): the events file is committed, the tree ends clean
     # the audit may file an advisory compliance finding (.shipwright/triage.jsonl, untracked) on one OS and not another (S2 pins
     # it); D3 is about the events file, so everything else must be committed

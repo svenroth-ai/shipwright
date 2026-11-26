@@ -34,5 +34,5 @@ def test_s18b_edit_at_the_preview_keeps_the_edit_and_the_consumed_drops(make_pro
 
 
 @pytest.mark.covers("FR-01.09/AC01")
-def test_s19_from_is_advertised_and_the_setup_script_refuses_it_d9(make_project):
+def test_s19_from_is_no_option_and_passing_it_is_refused_q7(make_project):
     verify(SCENARIOS["S19"], "legacy", make_project)

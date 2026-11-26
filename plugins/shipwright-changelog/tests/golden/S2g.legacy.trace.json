@@ -509,7 +509,7 @@
           "create",
           "--title",
           "Release v1.3.0",
-          "--body",
+          "--body-file",
           "<masked:judgement>",
           "--base",
           "main"

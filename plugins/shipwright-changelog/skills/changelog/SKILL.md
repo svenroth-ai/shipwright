@@ -25,11 +25,11 @@ uv run "{plugin_root}/scripts/release.py" prepare --project-root "$(pwd)" --phas
 ```
 
 Omit `--phase-task-id` if you were not handed one; add `--version "{X.Y.Z}"` only for a custom version an operator typed
-(Step 3) and `--from vX` only when the operator gave one. The banner and the notices (`notices`) go to stderr: show them.
+(Step 3). The banner and the notices (`notices`) go to stderr: show them.
 The JSON on stdout is the answer:
 
 - `status` is `ok`, or `stop` with a `reason`: `mode_error` (see C), `setup_refused`, `gate_catalog_unavailable`, or
-  `no_unreleased_changes` ("No unreleased changes"), or another reason it names (`parse_commits_failed`, `no_version`, `upgrade_notes_query_failed`, `upgrade_note_drop_failed`). Report a stop and end the release.
+  `no_unreleased_changes` ("No unreleased changes"), or another reason it names (`parse_commits_failed`, `no_version`, `version_not_above_last_tag`, `upgrade_notes_query_failed`, `upgrade_note_drop_failed`). Report a stop and end the release.
 - `mode`, `last_tag`, `branch`, `commits_since_tag`, `commits` (Steps 1-2), `version`, `suggested`, `version_reason` (Step 3).
   `trunk` (the remote's default branch, the PR base; `trunk_source`: `remote`, `local` or `fallback`) and `on_trunk` (Step 7).
   `previous_tag_has_release` is advisory, never a gate; its notice is already in `notices`.
@@ -66,8 +66,6 @@ state field inside `shipwright_run_config.json`; the rationale is in `shared/scr
 
 ## Step 3: Determine Version Bump
 
-**Goal:** Propose the next version from the commit types.
-
 Do NOT compute the bump yourself. `version` is the setup script's `suggested_version` used verbatim (`version_reason` says why);
 it comes from `git_utils.suggest_version_bump`, which applies FR-01.09 AC04 (a breaking change
 raises the first number, or the second before 1.0; a `feat` the second; anything
@@ -79,6 +77,7 @@ Suggested version: v{version} (based on: {version_reason})
 Accept or enter custom version:
 ```
 A custom version is the `{version}` of every later call: run `prepare` again with `--version "{X.Y.Z}"` first, so the stored date and run id belong to that version (a run state is keyed on the version).
+A leading `v` is cut off; a version that is no SemVer number (exit 2) or not above the last release tag on this branch (`version_not_above_last_tag`; pre-release tags are not compared) is refused: ask again.
 
 ---
 
@@ -95,9 +94,9 @@ uv run "{plugin_root}/scripts/release.py" aggregate --project-root "$(pwd)" --ve
 
 The real run comes only after Step 5. The command owns the aggregator's flags (an empty release is refused only by the real run): add none by hand.
 
-A legacy bullet under `## [Unreleased]` (pre-refactor iterates wrote straight to `CHANGELOG.md`) is NOT migrated: the
-aggregator prints a **loud stderr WARNING naming each bullet's own text** (also in `legacy_unreleased_bullet_texts`), and the
-operator chooses whether to fold it into the new version by hand or accept the split-brain.
+A hand-written bullet under `## [Unreleased]` moves into the release, in the category of the `### Added` ... `### Security` heading
+it sits under (`hand_written`; the preview marks it `(hand-written)`). One under no such heading stays: a **stderr WARNING names its
+text** (`legacy_unreleased_bullet_texts`); fold it in by hand or leave it.
 
 Re-running a release is safe: [rerunning-a-release.md](references/rerunning-a-release.md) has the state table, the `--release-date` rule and why a disagreement stops with a non-zero exit. `section_action: "unchanged"` is a success.
 
@@ -110,16 +109,15 @@ assigns the sequential `ADR-NNN`, so two parallel iterates can never claim the s
 after the snapshot survive into the next release. Pending bullet drops fold first: `references/bullet-folding.md`.
 
 Fallback for non-iterate commits: if this release includes bullets that weren't produced through iterate F4 (rare — e.g. a
-cherry-pick from an unrelated branch), hand each one to the real run as `--fallback-entry "<Category>:<text>"` (repeatable;
-`append_changelog_entry.py` writes them BEFORE the aggregator runs); they land in the legacy `[Unreleased]` block and surface as a
-warning at aggregation time.
+cherry-pick from an unrelated branch), hand each one to the real run as `--fallback-entry "<Category>:<text>"` (repeatable); it is
+written as a drop file before the aggregator runs, so it lands in this release.
 
 ---
 
 ## Step 5: Preview and Confirm
 
 Do what `gates.preview` says. `auto`: no question; run the real call below, then `sync` (Steps 5.3 to 5.5), then Step 6, in that order. `ask`:
-present the preview's full entry (`section_written`, with `decisions_preview`, `upgrade_notes_pending` and `fallback_pending`) and ask:
+present the preview's full entry (`section_preview`, with `decisions_preview`, `upgrade_notes_pending` and `fallback_pending`) and ask:
 ```
 AskUserQuestion:
   question: "Review the changelog entry. Proceed?"
@@ -181,16 +179,19 @@ version is this release; a mismatch removes the tag again. It writes
 
 **Only if on a feature branch:** prepare returned `on_trunk: false`.
 
-Push the branch first (the host opens a PR only for a branch it has; `--no-follow-tags` keeps the tag here even with `push.followTags`):
+Write the PR body (`## Changelog` and this version's section) to a file; pass its `body_file` on (a refusal stops the release):
+```bash
+uv run "{plugin_root}/scripts/release.py" pr-body --project-root "$(pwd)" --version "{version}"
+```
+Push the branch (the host opens a PR only for a branch it has; `--no-follow-tags` keeps the tag here even with `push.followTags`):
 ```bash
 git push origin HEAD --no-follow-tags
 ```
 A failed push stops the release here: the tag stays on this machine; report it.
-
 ```bash
 gh pr create \
   --title "Release v{version}" \
-  --body "## Changelog\n\n{entry}" \
+  --body-file "{body_file}" \
   --base "{trunk}"
 ```
 

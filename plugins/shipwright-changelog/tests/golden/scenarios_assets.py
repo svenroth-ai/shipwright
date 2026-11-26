@@ -39,11 +39,10 @@ def _check_s10(run: Run) -> None:
     assert run.ctx["drops"] == 2
     oracle.check_ac05_numbered(run.ctx["log_before"], run.ctx["log_after"], run.ctx["drops"], left)  # AC05
     assert "First parallel decision" in run.ctx["log_after"] and "Second parallel decision" in run.ctx["log_after"]
-    # the cherry-pick fallback: written first by append_changelog_entry.py, it lands in [Unreleased] and is named back
+    # F9 (P8b): the cherry-pick fallback is written first as a drop file, so it lands in this release, not in [Unreleased]
     assert run.commands("fallback-append")[0]["exit"] == 0
-    stderr = run.commands("aggregate")[-1]["stderr"]
     text = (s.repo / "CHANGELOG.md").read_text(encoding="utf-8")
-    oracle.check_ac09_named(stderr, ["A cherry-picked fix"], text, "1.3.0")
+    assert "A cherry-picked fix" in oracle.groups(dict(oracle.sections(text))["1.3.0"]).get("Fixed", []) and text.count("A cherry-picked fix") == 1
 
 
 def _manifests(s: Any, old: str = "1.2.0") -> dict[str, str]:
@@ -153,7 +152,7 @@ def _check_s12c(run: Run) -> None:
 
 
 SCENARIOS = {
-    "S10": Scenario("S10", ("drops",), _s10, _check_s10, acs=(f"{A}AC05", f"{A}AC09")),
+    "S10": Scenario("S10", ("drops",), _s10, _check_s10, acs=(f"{A}AC05",)),
     "S11a": Scenario("S11a", ("legacy",), _s11a, _check_s11a, acs=(f"{A}AC12", f"{A}AC13")),
     "S11b": Scenario("S11b", ("legacy",), _s11b, _check_s11b, acs=(f"{A}AC12",)),
     "S12a": Scenario("S12a", ("legacy",), _s12a, _check_s12a, acs=(f"{A}AC14", f"{A}AC15")),

@@ -82,10 +82,10 @@ def test_a_malformed_from_or_task_id_is_refused_before_any_tool_runs(tmp_path, f
     assert stop.value.code == 2 and fake.calls == []
 
 
-def test_a_well_formed_from_and_task_id_pass(tmp_path):
+def test_a_well_formed_task_id_passes(tmp_path):  # P8b Q7: --from is no option any more (test_release_p8b.py)
     fake = ok_runner()
-    release.main(["prepare", "--project-root", str(tmp_path), "--from", "v0.1.0", "--phase-task-id", "pt-1.a:b"], runner=fake)
-    assert "--from" in fake.argv("setup") and "pt-1.a:b" in fake.argv("context")
+    release.main(["prepare", "--project-root", str(tmp_path), "--phase-task-id", "pt-1.a:b"], runner=fake)
+    assert "pt-1.a:b" in fake.argv("context")
 
 
 def _cache(tmp_path: Path, own: str, run_versions: dict[str, bool]) -> Path:

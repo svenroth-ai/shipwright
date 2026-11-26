@@ -4,9 +4,15 @@ The flag rules of the prose live here and nowhere else: the preview (``dry_run``
 ``--fail-if-empty`` (it would turn "nothing pending" into a failure); the real run always passes ``--fail-if-empty`` (an
 empty first release is refused, not tagged). The release date is the one ``prepare`` stored (A6; an explicit
 ``release_date`` overrides it), so a re-run after an interruption renders the same heading. A real run then numbers the
-ADR drops (``aggregate_decisions.py``); bullets from a cherry-pick (``fallback_entries``) are written first, as the
-prose said, and only on a real run (a preview writes nothing, AC10). The exit code is the aggregator's own: a refused
-re-run (AC08) is exit 1 with its stderr naming the disagreement, and stays an operator action, never a retry.
+ADR drops (``aggregate_decisions.py``); bullets from a cherry-pick (``fallback_entries``) are written first, as drop
+files (F9: a legacy ``[Unreleased]`` bullet missed the release it was written for), and only on a real run (a preview
+writes nothing, AC10). Hand-written entries under ``## [Unreleased]`` move into the release (Q5,
+``--move-unreleased``, passed only while this version's section is not yet written); the preview marks them
+``(hand-written)`` in ``section_preview``. A re-run after an interruption converges when the first run moved no
+hand-written entry (after a finished release it always does). When it moved some and was interrupted before the
+drops were consumed, the re-run refuses by design (the section on record says more than the drops; FINDINGS D92, D102)
+and the operator reconciles by hand. The exit code is the aggregator's own: a refused re-run (AC08) is exit 1 with its
+stderr naming the disagreement, and stays an operator action, never a retry.
 """
 
 from __future__ import annotations
@@ -17,6 +23,8 @@ from typing import Any, Sequence
 
 from . import release_paths, release_runstate, release_upgrade_notes
 from .release_runner import Recorder, uv_script
+
+FALLBACK_RUN_ID = "release-fallback"  # fixed, so a cherry-picked bullet sorts after the iterate drops of its category on every run
 
 
 def _json(text: str) -> dict[str, Any]:
@@ -38,9 +46,9 @@ def aggregate(rec: Recorder, plugin_root: Path, *, version: str, dry_run: bool =
     tools = shared / "scripts/tools"
     pending = [f"{category}: {entry}" for category, entry in fallback_entries]  # a preview names them; it writes nothing
     skip_fallbacks = dry_run or already  # a rendered section means an earlier run already took them: a re-run must not append twice (D31)
-    fallbacks = [] if skip_fallbacks else [rec.run("fallback-append", uv_script(
-        tools / "append_changelog_entry.py", "--project-root", str(root), "--category", category, "--entry", entry))
-        for category, entry in fallback_entries]
+    fallbacks = [] if skip_fallbacks else [rec.run("fallback-append", uv_script(  # one drop per bullet, idempotent per run id
+        tools / "write_changelog_drop.py", "--project-root", str(root), "--run-id", FALLBACK_RUN_ID,
+        "--category", category, "--bullet", entry)) for category, entry in fallback_entries]
     if any(r.exit != 0 for r in fallbacks):  # a lost cherry-picked bullet must stop the release, not vanish
         return 1, {"status": "failed", "reason": "fallback_entry_failed", "dry_run": dry_run, "fallback_entries": [r.exit for r in fallbacks],
                    "commands": rec.as_json()}
@@ -53,7 +61,7 @@ def aggregate(rec: Recorder, plugin_root: Path, *, version: str, dry_run: bool =
     flags = ["--dry-run"] if dry_run else ["--fail-if-empty"]
     done = rec.run("aggregate-dry" if dry_run else "aggregate", uv_script(
         tools / "aggregate_changelog.py", "--project-root", str(root), "--version", version,
-        "--release-date", state["release_date"], *flags))
+        "--release-date", state["release_date"], *([] if already else ["--move-unreleased"]), *flags))  # a finished section never takes newer hand-written entries (fix round 1)
     info = _json(done.stdout)
     out: dict[str, Any] = {
         "status": "ok" if done.exit == 0 else "failed", "version": info.get("version"), "dry_run": dry_run,
@@ -61,6 +69,8 @@ def aggregate(rec: Recorder, plugin_root: Path, *, version: str, dry_run: bool =
         "legacy_unreleased_bullets": info.get("legacy_unreleased_bullets"),
         "legacy_unreleased_bullet_texts": info.get("legacy_unreleased_bullet_texts") or [],
         "section_written": info.get("section_written", ""),
+        "hand_written": info.get("hand_written_entries") or [],
+        **({"section_preview": info.get("section_preview", "")} if dry_run else {}),
         "release": {"date": state["release_date"], "run_id": state["run_id"], "state_file": str(release_runstate.state_path(root))},
         "fallback_entries": [r.exit for r in fallbacks],
         "fallback_pending": pending if dry_run else [], "upgrade_notes_pending": [p["note"] for p in pending_notes] if dry_run else [], "fallback_skipped": "release_written" if already and pending and not dry_run else None}

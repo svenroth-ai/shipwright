@@ -187,3 +187,12 @@ Older workflow tools (state machines, BPMN, job schedulers) have the same shape,
 4. **Pitfalls.** A heredoc turned a `"\n"` literal into a real line break again (SyntaxError at collection); the editor tools avoid it. The golden regen rewrites every trace whose flow changed, so compare the diff per trace kind (added `push-branch`, moved `preview`) before writing the deltas.
 5. **Tools.** `SHIPWRIGHT_GOLDEN_REGEN=1` over the scenario files, then `test_driver_cli.py` to prove the CLI driver produces the same traces.
 6. **Doable by a stranger?** The code and the traces: yes. Deciding what counts as a "contradiction" versus "new behaviour": no, that needed the operator's re-scope.
+
+## P8b (2026-11-25): the remaining decisions as code, the D20 promises
+
+1. **Steps and effort.** Four new code files (version check, PR body, `[Unreleased]` reader; about 220 lines), changes to the aggregator, the refresh tool and three release libs, the prose of Steps 3 to 7, three references, the guide, the frozen harness files, 16 regenerated traces, three new test files.
+2. **Code or AI decisions.** All code: the version check, the body, the move of hand-written bullets, the index restore. The model only shows the preview (now with the hand-written marks) and runs `gh pr create` with the file it is given.
+3. **Recurring patterns.** "Keep what it does today" settles most borderline cases (build metadata, a non-SemVer tag, an unheaded bullet): refuse or keep what was refused or kept, and write the consequence in FINDINGS. A promise with no AC still needs a test; the meta test had to learn that an entry id is not always an AC id.
+4. **Pitfalls.** A trace whose only change is CRLF must be put back before writing deltas; comparing the first 32 characters of `md5sum` over CR-stripped content works where `cmp <(...)` did not. A quoted heredoc with many backticks still broke the shell; write the text with the editor tool and append it. The `SKILL.md` cap (263) again meant cutting a duplicated line, not re-flowing.
+5. **Tools.** `SHIPWRIGHT_GOLDEN_REGEN=1` for the touched scenarios, then the whole root once in the background.
+6. **Doable by a stranger?** The code: yes. Whether a compare link or a new AC belongs in scope: no, those are the operator's (D93, D96).

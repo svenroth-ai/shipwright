@@ -146,11 +146,16 @@ def test_every_ac_of_the_requirement_has_an_entry_and_the_replay_only_parts_are_
 
 @pytest.mark.covers("FR-01.09/AC01")
 def test_every_promise_test_is_bound_by_an_entry_and_carries_that_entrys_covers_tag():
-    bound = {}
+    bound, pins = {}, []
     for e in _entries():
+        ac = re.match(r"FR-\d{2}\.\d{2}/AC\d{2,}", e["id"])
         for c in _checks(e):
-            if c["kind"] == "test":
-                bound[c["id"]] = re.match(r"FR-\d{2}\.\d{2}/AC\d{2,}", e["id"]).group(0)
+            if c["kind"] == "test" and ac:
+                bound[c["id"]] = ac.group(0)
+            elif c["kind"] == "test":  # P8b Q6: a promise with no AC is pinned by an L1 test of the code, never by a promise test
+                pins.append(c["id"])
+    promise_paths = {p.relative_to(REPO_ROOT).as_posix() for p in _promise_files()}
+    assert pins and not [p for p in pins if p.partition("::")[0] in promise_paths], pins
     found = {}
     for path in _promise_files():
         source = path.read_text(encoding="utf-8")
@@ -159,6 +164,16 @@ def test_every_promise_test_is_bound_by_an_entry_and_carries_that_entrys_covers_
     assert set(found) == set(bound), sorted(set(found) ^ set(bound))
     for check, ids in found.items():
         assert ids == [bound[check]], f"{check} is tagged {ids}, its entry says {bound[check]}"
+
+
+@pytest.mark.covers("FR-01.09/AC01")
+def test_q6_the_three_d20_behaviours_are_written_promises_each_with_its_pin():
+    """P8b, operator decision Q6 (D20): no behaviour is left as a proposal; each of the three is passing with a test check."""
+    entries = {e["id"]: e for e in _entries()}
+    assert not [i for i, e in entries.items() if e["status"] == "proposed"]
+    for name in ("upgrade-notes-check", "event-fold", "release-event-and-history"):
+        e = entries[f"D20/{name}"]
+        assert (e["status"], e["oracle"], e["check"]["kind"]) == ("passing", "test", "test"), name
 
 
 @pytest.mark.covers("FR-01.09/AC01")

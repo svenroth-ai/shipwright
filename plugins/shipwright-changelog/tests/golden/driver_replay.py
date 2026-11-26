@@ -5,9 +5,8 @@ that the first half of the scenarios (S1-S9) need. Every command it runs cites i
 (``replay_commands.CITES``); ``ReplayDriver.log`` records each command with its key, so a test can check
 the citations against the live prose. It is FROZEN with the traces at the operator's stop 2.
 
-Order follows the prose, including the places where the prose is wrong (findings D7, D15): ``gh pr create``
-runs before the head is pushed, the PR body keeps its literal ``\\n`` and an undefined ``{entry}`` is the
-aggregated section. A command that exits non-zero is a result, never an exception: the scenario records it.
+Order follows the prose; where a later unit fixed the prose (P8a: D7, D12, D24; P8b: D15, F9, Q5, Q7) the replay follows
+the fixed prose. A command that exits non-zero is a result, never an exception: the scenario records it.
 
 ``gh`` is run through the seam prefix of the scratch environment (a bare ``gh`` on Windows would bypass the
 shim). The shell chains run under ``bash`` (Git Bash on Windows), as the model would run them.
@@ -107,8 +106,8 @@ class ReplayDriver:
         setup = self._run("setup", scratch, _uv(PLUGIN / "scripts/checks/setup-changelog.py", "--plugin-root", str(PLUGIN),
                                                 *(["--from", from_version] if from_version else [])))
         info = _json(setup.stdout)
-        if setup.returncode != 0 and not info:  # the script refused its arguments: there is no setup output to read
-            return gt.StepResult("prepare", setup.returncode, {"status": "stop", "reason": "setup_refused", "mode": mode})
+        if setup.returncode != 0 and not info:  # Q7: `--from` is no longer offered, so it is an unknown argument (as the CLI's own parser)
+            return gt.StepResult("prepare", setup.returncode, {"status": "failed", "reason": f"exit_{setup.returncode}"})
         self.state.update(last_tag=info.get("last_tag"), branch=info.get("branch", ""), mode=mode)
         fields = {"mode": mode, "last_tag": info.get("last_tag"), "branch": info.get("branch"),
                   "commits_since_tag": info.get("commits_since_tag"),
@@ -137,12 +136,13 @@ class ReplayDriver:
     def step_aggregate(self, scratch: Any, version: str, dry_run: bool = False, release_date: str | None = None,
                        fail_if_empty: bool = True, fallback_bullets: Sequence[tuple[str, str]] = ()) -> gt.StepResult:
         """The changelog section from the drops, then the decision drops. ``dry_run`` is the preview call only.
-        ``fallback_bullets`` are written first by ``append_changelog_entry.py`` (SKILL.md:222-226: bullets that did
-        not come through iterate F4, e.g. a cherry-pick)."""
+        ``fallback_bullets`` (bullets that did not come through iterate F4, e.g. a cherry-pick) are written first as drop files
+        (F9: the legacy ``[Unreleased]`` bullet of ``append_changelog_entry.py`` missed its release). Hand-written ``[Unreleased]``
+        entries move into the release (Q5: ``--move-unreleased``, as ``release.py aggregate`` passes it)."""
         for category, entry in fallback_bullets:
-            self._run("fallback-append", scratch, _uv(SHARED / "scripts/tools/append_changelog_entry.py", "--project-root",
-                                                      str(scratch.repo), "--category", category, "--entry", entry))
-        date = ["--release-date", release_date] if release_date else []
+            self._run("fallback-append", scratch, _uv(SHARED / "scripts/tools/write_changelog_drop.py", "--project-root", str(scratch.repo),
+                                                      "--run-id", "release-fallback", "--category", category, "--bullet", entry))
+        date = ["--release-date", release_date, "--move-unreleased"] if release_date else ["--move-unreleased"]
         tool = SHARED / "scripts/tools/aggregate_changelog.py"
         if dry_run:
             done = self._run("aggregate-dry", scratch, _uv(tool, "--project-root", str(scratch.repo), "--version", version,
@@ -236,9 +236,13 @@ class ReplayDriver:
         return self._result("push-branch", self._run("push-branch", scratch, ["git", "push", "origin", "HEAD", "--no-follow-tags"]))
 
     def step_open_pr(self, scratch: Any, version: str) -> gt.StepResult:
-        # SKILL.md:332: inside bash double quotes the "\n" stays two characters (D15); {entry} is the aggregated section
-        body = "## Changelog\\n\\n" + self.state["section"]
-        done = self._gh("open-pr", scratch, "pr", "create", "--title", f"Release v{version}", "--body", body, "--base", self.trunk(scratch))  # F5: the remote's default branch
+        # Q10 (D15): the body comes from a file, so its newlines are real; {entry} is this version's section (the text stays the prose's)
+        body = scratch.repo / ".git" / "replay_pr_body.md"
+        body.write_text("## Changelog\n\n" + self.state["section"].strip("\n") + "\n", encoding="utf-8", newline="\n")
+        return self._open_pr(scratch, version, body)
+
+    def _open_pr(self, scratch: Any, version: str, body: Path) -> gt.StepResult:
+        done = self._gh("open-pr", scratch, "pr", "create", "--title", f"Release v{version}", "--body-file", str(body), "--base", self.trunk(scratch))  # F5: the remote's default branch
         self.state["pr_url"] = done.stdout.strip() if done.returncode == 0 else ""
         return self._result("open-pr", done)
 

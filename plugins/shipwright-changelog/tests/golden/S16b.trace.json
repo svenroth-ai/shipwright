@@ -298,12 +298,6 @@
   },
   "schema": 1,
   "status": [
-    "AD .shipwright/compliance/change-history.md",
-    "AD .shipwright/compliance/dashboard.md",
-    "MM .shipwright/compliance/sbom.md",
-    "AD .shipwright/compliance/test-evidence.md",
-    "AD .shipwright/compliance/test-traceability.json",
-    "AD .shipwright/compliance/traceability-matrix.md",
     " M CHANGELOG.md",
     "?? .shipwright/agent_docs/decision_log_index.md",
     "?? .shipwright/planning/adr/INDEX.md"
