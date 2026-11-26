@@ -34,7 +34,7 @@ accepted, the restore compares with the index the run found (`test_a_refused_ref
 | Finding | Severity | Disposition |
 |---|---|---|
 | Q8: a non-SemVer or metadata-bearing last tag skips the comparison (glm, openai) | high/medium | accepted-and-fixed for build metadata (D101); a tag that is no SemVer at all keeps today's behaviour with a notice (D95) |
-| Q8: backports are now refused (opus plan reviewer) | medium | recorded for the operator: D100 (built as decided, "the last tag" is the tag `prepare` already uses) |
+| Q8: backports are now refused (opus plan reviewer) | medium | resolved in fix round 1 (D100): the compare uses the highest release tag reachable from HEAD, so a backport passes as before P8b |
 | Q5: the interrupted mixed release refuses instead of converging (opus, openai) | medium/high | accepted and pinned by a test (D102); converging is new behaviour |
 | Q5: "after the drops" ordering is invented (glm) | medium | rejected-with-reason: before Q5 the entries were not released at all, so there is no order to port; recorded (D92) |
 | Q5: preview and real run on one fixture, continuation lines, S8 (openai) | high | accepted: `test_changelog_unreleased.py` runs both on one fixture; the full trace regen left S8 unchanged (its bullets are unheaded) |
@@ -72,3 +72,23 @@ operator-staged path and an untracked copy of a new path: found the `git rm --ca
 (5) the PR body on a real repo: real newlines, nothing in `git status`; (6) both drivers over S10: found the order
 difference of the fallback bullet (fixed with the fixed run id), re-run clean. Asymptote reached: two consecutive clean
 probes after the last fix. Not probed: a `gh` run against a real host (the scratch records argv only).
+
+## Fix round 1
+
+The opus reviews of 9d7d741d1: spec REJECT (Q8 refused backports), code PASS, doubt one high and two medium. Closed list,
+all done in one commit on top:
+
+| Item | Fix | Record |
+|---|---|---|
+| Q8 refuses a backport (high) | the compare takes the highest release tag from `git tag --merged HEAD` (`tags-merged`); setup's `last_tag` keeps its other uses | D100, D95; real-git test |
+| `take()` can split an entry (medium) | fences tracked, lazy column-0 continuation kept, an unclosed fence leaves the entry whole and named, lines split on `
+` only | D104 |
+| A re-run of a finished section pulls newer hand-written entries (medium) | `--move-unreleased` only while the section is not written; the warn-only unlink is recorded, not changed | D105 |
+| Golden coverage (low) | PR body through the CLI pinned; the cannot-compare notice tested with `v01.2.0`; no new frozen trace | D106, D107 |
+| Docs (low) | leftover fallback drops ride into the next release; duplicate-text collapse; Q8 wording narrowed | D103(5), reference, guide, SKILL |
+| Code review (low) | precedence-dependent assert split; dead CRLF replace dropped, body-file lifetime named; `index_entries` stage 0 only, conflicts reported | D106 |
+
+Probes after the fix: the real-git backport (v2.0.0 on main, 1.4.1 on `1.x` passes, 1.4.0 and 1.3.9 refused); a re-run
+after a finished release with a new hand-written bullet (converges, the file unchanged; the argv check fails when the
+fix is reverted); `take()` over a lazy continuation, a column-0 fence, an unclosed fence, U+2028 and CRLF. After the last
+change the whole changelog root (756 passed) and F0 ran green.

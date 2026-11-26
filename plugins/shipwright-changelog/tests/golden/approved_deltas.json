@@ -3,10 +3,10 @@
     "scenario": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
     "field": "sha256",
     "before": "db12fe9f66618e0a1a15cbd180f07bd4a1de1178fb75e6104f01c070fb526a46",
-    "after": "200027cf17da3ae03318420b175a01657230d96666c0a0c7ebe422c593f1a313",
-    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); BRIEF D12/F2: the preview is the dry run, asked before the real aggregate writes (FINDINGS D74); BRIEF D7/F3: the push-branch step right before gh pr create (FINDINGS D75); BRIEF D24/F5: the default branch from the remote as trunk and PR base (FINDINGS D76); P8a fix round (orchestrator review): on_trunk from prepare, additive trunks, release.py cancel, {branch} in the push-tag line, duplicates of references cut instead of a re-flow (FINDINGS D84, D85, D87); P8a fix round 2 (Opus re-review): Cancel reports every left path, Step 7 names only on_trunk: false (FINDINGS D91); then operator decision 2026-11-25 (chat): P8b re-scope of unit P8b (Q5, Q6, Q7, Q8, Q10, F8, F9; Q9 out); Q5: hand-written [Unreleased] entries move into the release, marked in the preview (FINDINGS D92); Q7/F11: --from removed, nothing built; passing it is a usage error (FINDINGS D94); Q8: a leading v is cut, a non-SemVer version or one not above the last tag is refused (FINDINGS D95); Q10/F13: the PR body from a file via release.py pr-body and --body-file (FINDINGS D96); F9: the cherry-pick fallback writes a drop file (FINDINGS D98)",
+    "after": "e9dad413ecc4dd7de1262c148a1746a5242c400bd97494c9f2e170527ebef98c",
+    "approver": "operator decision 2026-11-25 (chat): P8 re-scope (FINDINGS D72); BRIEF D12/F2: the preview is the dry run, asked before the real aggregate writes (FINDINGS D74); BRIEF D7/F3: the push-branch step right before gh pr create (FINDINGS D75); BRIEF D24/F5: the default branch from the remote as trunk and PR base (FINDINGS D76); P8a fix round (orchestrator review): on_trunk from prepare, additive trunks, release.py cancel, {branch} in the push-tag line, duplicates of references cut instead of a re-flow (FINDINGS D84, D85, D87); P8a fix round 2 (Opus re-review): Cancel reports every left path, Step 7 names only on_trunk: false (FINDINGS D91); then operator decision 2026-11-25 (chat): P8b re-scope of unit P8b (Q5, Q6, Q7, Q8, Q10, F8, F9; Q9 out); Q5: hand-written [Unreleased] entries move into the release, marked in the preview (FINDINGS D92); Q7/F11: --from removed, nothing built; passing it is a usage error (FINDINGS D94); Q8: a leading v is cut, a non-SemVer version or one not above the last tag is refused (FINDINGS D95); Q10/F13: the PR body from a file via release.py pr-body and --body-file (FINDINGS D96); F9: the cherry-pick fallback writes a drop file (FINDINGS D98); fix round 1 (orchestrator decision under the one-to-one rule, D100): Q8 compares with the last release tag on this branch, reachable from HEAD; pre-release tags are not compared",
     "date": "2026-11-25",
-    "source": "F2/F3/F5/D84/D85/D87/D91/Q5/Q7/Q8/Q10/F9"
+    "source": "F2/F3/F5/D84/D85/D87/D91/Q5/Q7/Q8/Q10/F9/fix-round-1"
   },
   {
     "scenario": "plugins/shipwright-changelog/skills/changelog/references/first-actions.md",
@@ -363,10 +363,10 @@
     "scenario": "plugins/shipwright-changelog/skills/changelog/references/rerunning-a-release.md",
     "field": "sha256",
     "before": "b079b6b9d31547e1888ff9ad82d5487ecf983cd203e048d1b55c52c603089e20",
-    "after": "dcb94b83e7cda054e93e1a8563c951a91758a7a9f138eadb421562b653b5da74",
-    "approver": "operator decision 2026-11-25 (chat): P8b re-scope of unit P8b (Q5, Q6, Q7, Q8, Q10, F8, F9; Q9 out); Q5: hand-written [Unreleased] entries move into the release, marked in the preview (FINDINGS D92); Q7/F11: --from removed, nothing built; passing it is a usage error (FINDINGS D94); Q8: a leading v is cut, a non-SemVer version or one not above the last tag is refused (FINDINGS D95)",
+    "after": "7dbc7070fbbeccc77a150c628d3b3a28fbf09a11d6fd5edfdb072dc354ba616d",
+    "approver": "operator decision 2026-11-25 (chat): P8b re-scope of unit P8b (Q5, Q6, Q7, Q8, Q10, F8, F9; Q9 out); Q5: hand-written [Unreleased] entries move into the release, marked in the preview (FINDINGS D92); Q7/F11: --from removed, nothing built; passing it is a usage error (FINDINGS D94); Q8: a leading v is cut, a non-SemVer version or one not above the last tag is refused (FINDINGS D95); fix round 1 (orchestrator decision under the one-to-one rule, D100): Q8 compares with the last release tag on this branch, reachable from HEAD; pre-release tags are not compared; fix round 1: a re-run of a finished section moves nothing (D105); leftover release-fallback drops ride into the next release",
     "date": "2026-11-25",
-    "source": "Q5/Q7/Q8"
+    "source": "Q5/Q7/Q8/fix-round-1"
   },
   {
     "scenario": "plugins/shipwright-changelog/tests/golden/S10.trace.json",

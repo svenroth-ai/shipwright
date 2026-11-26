@@ -66,10 +66,11 @@ def test_prepare_refuses_a_version_that_is_not_higher_than_the_last_tag(tmp_path
 def test_prepare_takes_a_higher_version_and_notes_a_last_tag_it_cannot_compare(tmp_path, plugin_root):
     code, out = run_prepare(tmp_path, plugin_root, ok_runner(), version="1.4.0")
     assert (code, out["version"]) == (0, "1.4.0")
-    odd = ok_runner(setup={"stdout": json.dumps({**SETUP, "last_tag": "release-2024"})})
+    # v01.2.0 has the release-tag shape git_utils and `git tag --merged HEAD` both emit, but is no SemVer number
+    odd = ok_runner(setup={"stdout": json.dumps({**SETUP, "last_tag": "v01.2.0"})}, **{"tags-merged": {"stdout": "v01.2.0\n"}})
     (tmp_path / "odd").mkdir()
     code, out = run_prepare(tmp_path / "odd", plugin_root, odd, version="1.4.0")
-    assert code == 0 and any("not a SemVer version" in n for n in out["notices"])
+    assert code == 0 and any("v01.2.0 are no SemVer version" in n for n in out["notices"])
 
 
 # ---- Q7 (D9): no `--from` anywhere -----------------------------------------------------------------------------
@@ -154,7 +155,11 @@ def test_non_ascii_digits_are_refused(typed):
         release_version.normalize(typed)
 
 
-@pytest.mark.parametrize("version", ["v1.4.0", "1.4"])
-def test_prepare_as_a_library_never_raises_on_a_raw_version(tmp_path, plugin_root, version):
-    code, out = run_prepare(tmp_path, plugin_root, ok_runner(), version=version)
-    assert (code, out.get("version")) == (0, "1.4.0") if version == "v1.4.0" else (code, out["reason"]) == (2, "invalid_version")
+def test_prepare_as_a_library_takes_a_raw_v_version(tmp_path, plugin_root):
+    code, out = run_prepare(tmp_path, plugin_root, ok_runner(), version="v1.4.0")
+    assert (code, out.get("version")) == (0, "1.4.0")
+
+
+def test_prepare_as_a_library_refuses_a_raw_non_semver_version_without_raising(tmp_path, plugin_root):
+    code, out = run_prepare(tmp_path, plugin_root, ok_runner(), version="1.4")
+    assert (code, out["reason"]) == (2, "invalid_version")

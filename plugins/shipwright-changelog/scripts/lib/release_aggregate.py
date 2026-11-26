@@ -58,7 +58,7 @@ def aggregate(rec: Recorder, plugin_root: Path, *, version: str, dry_run: bool =
     flags = ["--dry-run"] if dry_run else ["--fail-if-empty"]
     done = rec.run("aggregate-dry" if dry_run else "aggregate", uv_script(
         tools / "aggregate_changelog.py", "--project-root", str(root), "--version", version,
-        "--release-date", state["release_date"], "--move-unreleased", *flags))
+        "--release-date", state["release_date"], *([] if already else ["--move-unreleased"]), *flags))  # a finished section never takes newer hand-written entries (fix round 1)
     info = _json(done.stdout)
     out: dict[str, Any] = {
         "status": "ok" if done.exit == 0 else "failed", "version": info.get("version"), "dry_run": dry_run,

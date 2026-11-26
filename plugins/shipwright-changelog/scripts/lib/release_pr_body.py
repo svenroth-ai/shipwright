@@ -24,7 +24,7 @@ def section_text(changelog: str, version: str) -> tuple[str | None, int]:
     from ._shared_sections import load_changelog_sections  # on use: importing the CLI loads no non-release lib module
 
     sections = load_changelog_sections()
-    lines = changelog.replace("\r\n", "\n").splitlines(keepends=True)
+    lines = changelog.splitlines(keepends=True)  # read_text already turned CRLF into LF
     starts = sections.section_starts(lines, version)
     if len(starts) != 1:
         return None, len(starts)
@@ -36,6 +36,9 @@ def body_for(section: str) -> str:
 
 
 def pr_body(rec: Recorder, *, version: str) -> tuple[int, dict[str, Any]]:
+    """Write the body next to the run state (``<git dir>/shipwright/release_pr_body.md``; outside a repository
+    ``.shipwright/runtime/``). It lives until the next ``pr-body`` call overwrites it: nothing deletes it, and inside
+    the git dir it is never part of a commit."""
     root = rec.cwd
     try:
         changelog = (root / "CHANGELOG.md").read_text(encoding="utf-8")

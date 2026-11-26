@@ -6,6 +6,11 @@ part, no leading zeros) is refused with a clear error; nothing is guessed. Build
 CLI refused it before. ``not_above`` says whether a version is not higher than the last tag, in SemVer precedence; a last
 tag that is no SemVer number cannot be compared and returns ``None`` (the caller reports that, it never guesses an order);
 a tag's build metadata is ignored for the order, as SemVer says. Digits are ASCII only (``re.ASCII``).
+
+Which tag is "the last tag" (fix round 1, D100): :func:`last_release_tag` takes the highest RELEASE tag reachable from
+HEAD (``git tag --merged HEAD``, the release-tag shape ``git_utils`` uses, so pre-release tags are not compared). A tag on
+another line of history does not count, so a backport on a maintenance branch (``1.4.1`` while ``v2.0.0`` exists on
+another branch) passes exactly as before P8b; ``verify_release_tag.py`` accepts it too.
 """
 
 from __future__ import annotations
@@ -15,6 +20,7 @@ import re
 _NUM = r"(?:0|[1-9]\d*)"
 _PRE_ID = r"(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*)"
 SEMVER = re.compile(rf"({_NUM})\.({_NUM})\.({_NUM})(?:-({_PRE_ID}(?:\.{_PRE_ID})*))?", re.ASCII)
+_RELEASE_TAG = re.compile(r"v?\d+\.\d+\.\d+", re.ASCII)  # git_utils.SEMVER_TAG_PATTERN: release tags, no pre-release
 _BUILD = re.compile(r"\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*\Z", re.ASCII)  # only ever stripped from a TAG, never accepted as input
 
 
@@ -50,3 +56,22 @@ def not_above(version: str, last_tag: str | None) -> bool | None:
     except ValueError:
         return None
     return _key(current) <= _key(last)
+
+
+def last_release_tag(tags: list[str]) -> tuple[str | None, list[str]]:
+    """``(highest, odd)``: the highest release tag among ``tags`` (the lines of ``git tag --merged HEAD``) and the
+    release-shaped tags that are no SemVer number (``v01.2.0``) and so cannot be compared."""
+    best: tuple[tuple, str] | None = None
+    odd: list[str] = []
+    for raw in tags:
+        tag = raw.strip()
+        if not _RELEASE_TAG.fullmatch(tag):
+            continue
+        try:
+            key = _key(normalize(tag))
+        except ValueError:
+            odd.append(tag)
+            continue
+        if best is None or key > best[0]:
+            best = (key, tag)
+    return (best[1] if best else None), odd

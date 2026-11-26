@@ -47,7 +47,8 @@ class Fake:
 def ok_runner(**over) -> Fake:
     base = {"context": {"stdout": json.dumps({"mode": "standalone", "requires_out_of_sequence_warning": False})},
             "setup": {"stdout": json.dumps(SETUP)}, "gates": {"stdout": json.dumps({"gates": ROWS})},
-            "parse-commits": {"stdout": "[]"}, "tag-check": {"exit": 1}, "migration-pages": {"stdout": ""}}
+            "parse-commits": {"stdout": "[]"}, "tags-merged": {"stdout": "v1.2.0\nv1.2.0-rc.1\n"}, "tag-check": {"exit": 1},
+            "migration-pages": {"stdout": ""}}
     return Fake(**{**base, **over})
 
 
@@ -60,7 +61,8 @@ def test_prepare_runs_the_prose_steps_in_order_and_returns_what_the_model_used_t
     fake = ok_runner()
     code, out = run_prepare(tmp_path, plugin_root, fake)
     assert code == 0 and out["status"] == "ok"
-    assert fake.keys()[:5] == ["context", "setup", "gates", "parse-commits", "tag-check"]
+    assert fake.keys()[:6] == ["context", "setup", "gates", "parse-commits", "tags-merged", "tag-check"]
+    assert fake.argv("tags-merged") == ["git", "tag", "--merged", "HEAD"]
     assert fake.argv("parse-commits")[-4:] == ["--since", "v1.2.0", "--format", "json"]
     assert (out["version"], out["suggested"], out["version_reason"], out["mode"]) == ("1.3.0", "1.3.0", "new feature(s)", "standalone")
     assert out["notices"][0].startswith("====") and any("pipeline state will not be updated" in n for n in out["notices"])

@@ -16,52 +16,100 @@ from __future__ import annotations
 import re
 from typing import Sequence
 
-from changelog_sections import section_end, unreleased_start
+from changelog_sections import HEADING_RE, continues_section, unreleased_start
 
 HAND_WRITTEN_MARK = " (hand-written)"
 _HEADING = re.compile(r"^###\s+(.+?)\s*$")
 _TOP_BULLET = re.compile(r"^-\s+")
 _ANY_BULLET = re.compile(r"^\s*-\s+")  # what the aggregator always named back: every dash bullet, at any depth
+_FENCE = re.compile(r"^\s*(```|~~~)")
 
 
 def take(changelog: str, categories: Sequence[str]) -> tuple[str, dict[str, list[str]], list[str]]:
     """``(new_text, moved, left)``: the changelog with the moved bullets gone from ``[Unreleased]``, the moved entries by
     category in document order (each the bullet's text without ``- ``, continuation lines kept), and the text of every
-    bullet that stays. Without an ``[Unreleased]`` block, or with nothing to move, the text comes back unchanged."""
-    lines = changelog.splitlines(keepends=True)
+    bullet that stays. Without an ``[Unreleased]`` block, or with nothing to move, the text comes back unchanged.
+
+    An entry is never split (fix round 1): its indented lines, a lazy continuation (a plain column-0 line right after it)
+    and a fenced block that opens inside it all go with it, and nothing inside a fence is read as a bullet or a heading.
+    An entry whose end cannot be told (a fence that never closes) stays in ``[Unreleased]`` and is named in ``left``."""
+    lines = _split(changelog)
     start = unreleased_start(lines)
     if start is None:
         return changelog, {}, []
-    end = section_end(lines, start)
+    end = _block_end(lines, start)
     moved: dict[str, list[str]] = {}
     keep: list[str] = []
     category: str | None = None
+    in_fence = False
     i = start + 1
     while i < end:
         line = lines[i]
+        if in_fence or _FENCE.match(line):  # a fence outside any entry is kept whole, its lines read as text
+            in_fence = (not in_fence) if _FENCE.match(line) else in_fence
+            keep.append(line)
+            i += 1
+            continue
         heading = _HEADING.match(line.rstrip("\r\n"))
         if heading:
             category = heading.group(1) if heading.group(1) in categories else None
-        if category and _TOP_BULLET.match(line):
-            block = [_TOP_BULLET.sub("", line, count=1).rstrip("\r\n")]
-            while (nxt := _continuation(lines, i + 1, end)) is not None:  # indented lines, across blank ones inside the bullet
-                block.extend(x.rstrip("\r\n") for x in lines[i + 1:nxt + 1])
-                i = nxt
-            moved.setdefault(category, []).append("\n".join(block).strip())
-        else:
+        last = _entry_end(lines, i, end) if category and _TOP_BULLET.match(line) else None
+        if last is None:
+            if category and _TOP_BULLET.match(line):  # ambiguous: the whole rest stays, nothing is moved by half
+                keep.extend(lines[i:end])
+                break
             keep.append(line)
-        i += 1
+            i += 1
+            continue
+        block = [_TOP_BULLET.sub("", line, count=1).rstrip("\r\n")] + [x.rstrip("\r\n") for x in lines[i + 1:last + 1]]
+        moved.setdefault(category, []).append("\n".join(block).strip())
+        i = last + 1
     left = [_ANY_BULLET.sub("", line).strip() for line in keep if _ANY_BULLET.match(line)]
     if not moved:
         return changelog, {}, left
     return "".join(lines[:start + 1] + _tidy(keep) + lines[end:]), moved, left
 
 
-def _continuation(lines: list[str], i: int, end: int) -> int | None:
-    """The index of the next indented line of the same bullet, when only blank lines lie between; else None."""
-    while i < end and not lines[i].strip():
-        i += 1
-    return i if i < end and lines[i][:1].isspace() else None
+def _split(text: str) -> list[str]:
+    """Lines split on ``\\n`` only, each keeping its ending (``str.splitlines`` also breaks on U+2028 and friends)."""
+    parts = text.split("\n")
+    return [part + "\n" for part in parts[:-1]] + ([parts[-1]] if parts[-1] else [])
+
+
+def _block_end(lines: list[str], start: int) -> int:
+    """One past the last line of the ``[Unreleased]`` block: ``changelog_sections.section_end``, except that a fenced
+    block and a lazy continuation (a plain column-0 line right after a non-blank one) belong to it. The next ``##``
+    heading always ends it, so an unclosed fence can never take a released section with it."""
+    k, in_fence, prev_text = start + 1, False, False
+    while k < len(lines) and not HEADING_RE.match(lines[k]):
+        line = lines[k]
+        if in_fence or _FENCE.match(line):
+            in_fence = in_fence != bool(_FENCE.match(line))
+        elif not (continues_section(line) or prev_text):
+            break
+        prev_text, k = bool(line.strip()), k + 1
+    return k
+
+
+def _entry_end(lines: list[str], i: int, end: int) -> int | None:
+    """The index of the last line of the entry whose bullet is ``lines[i]``; None when that cannot be told."""
+    last, k, blank = i, i + 1, False
+    while k < end:
+        line = lines[k]
+        if not line.strip():
+            blank, k = True, k + 1
+            continue
+        indented = line[:1].isspace()
+        if _FENCE.match(line) and (indented or not blank):  # a fence that opens inside the entry belongs to it
+            close = next((m for m in range(k + 1, end) if _FENCE.match(lines[m])), None)
+            if close is None:
+                return None
+            last, k, blank = close, close + 1, False
+        elif indented or not (blank or _HEADING.match(line) or _ANY_BULLET.match(line) or line.startswith("#")):
+            last, k, blank = k, k + 1, False  # an indented line, or a lazy continuation right after the entry
+        else:
+            break
+    return last
 
 
 def _tidy(body: list[str]) -> list[str]:

@@ -113,15 +113,19 @@ def restore_to_head(root: Path) -> tuple[list[str], list[str]]:
     return moved, unresolved
 
 
-def index_entries(root: Path) -> dict[str, str]:
-    """The index entries of the seven, ``{path: "mode sha"}`` (a path not in the index is absent)."""
+def index_entries(root: Path, conflicted: list[str] | None = None) -> dict[str, str]:
+    """The stage-0 index entries of the seven, ``{path: "mode sha"}`` (a path not in the index is absent). A path with
+    a merge conflict (stage 1-3) is no entry here; it is named once in ``conflicted`` when the caller passes a list."""
     listed = git(root, "ls-files", "-s", "-z", "--", *sorted(REFRESH_SET))
     entries: dict[str, str] = {}
     for item in (listed.stdout or "").split("\0"):
         meta, _, rel = item.partition("\t")
         if rel and len(meta.split()) == 3:
-            mode, sha, _stage = meta.split()
-            entries[rel] = f"{mode} {sha}"
+            mode, sha, stage = meta.split()
+            if stage == "0":
+                entries[rel] = f"{mode} {sha}"
+            elif conflicted is not None and rel not in conflicted:
+                conflicted.append(rel)
     return entries
 
 
@@ -131,9 +135,14 @@ def restore_index(root: Path, before: dict[str, str]) -> tuple[list[str], list[s
     ``produce`` rewinds the WORKING TREE of a refusal, but the producers had already ``git add``-ed what they wrote, so the
     index kept it (S16b: six paths staged after a ``content_floor``). Only the seven are touched, and only where the index
     now differs from what this run found, so an entry the operator staged before the run stays as it was. Index-only
-    (``update-index``), so the working-tree bytes never decide whether it works. Returns ``(put_back, failed)``."""
-    now, put_back, failed = index_entries(root), [], []
+    (``update-index``), so the working-tree bytes never decide whether it works. Returns ``(put_back, failed)``; a path
+    with a merge conflict is never touched (that would resolve the conflict) and is reported in ``failed``."""
+    conflicted: list[str] = []
+    now, put_back, failed = index_entries(root, conflicted), [], []
     for rel in sorted(REFRESH_SET):
+        if rel in conflicted:
+            failed.append(rel)
+            continue
         if now.get(rel) == before.get(rel):
             continue
         if rel in before:

@@ -77,7 +77,7 @@ Suggested version: v{version} (based on: {version_reason})
 Accept or enter custom version:
 ```
 A custom version is the `{version}` of every later call: run `prepare` again with `--version "{X.Y.Z}"` first, so the stored date and run id belong to that version (a run state is keyed on the version).
-A leading `v` is cut off; a version that is no SemVer number (exit 2) or not higher than the last tag (`version_not_above_last_tag`) is refused: ask again.
+A leading `v` is cut off; a version that is no SemVer number (exit 2) or not above the last release tag on this branch (`version_not_above_last_tag`; pre-release tags are not compared) is refused: ask again.
 
 ---
 

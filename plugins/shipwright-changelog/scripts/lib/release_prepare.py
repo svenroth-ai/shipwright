@@ -95,9 +95,11 @@ def prepare(rec: Recorder, plugin_root: Path, *, phase_task_id: str | None = Non
         chosen = release_version.normalize(chosen)  # the CLI already did; a library caller or the setup script may not
     except ValueError as bad:
         return _stop(rec, 2, "invalid_version", **facts, message=str(bad))
-    if release_version.not_above(chosen, last_tag):  # Q8/D16: a release goes up, never sideways or down
-        return _stop(rec, 2, "version_not_above_last_tag", **facts, version=chosen,
-                     message=f"version {chosen} is not higher than the last tag {last_tag}: choose a higher SemVer version "
+    merged = rec.run("tags-merged", ["git", "tag", "--merged", "HEAD"])  # D100: only this branch's history counts
+    on_branch, odd = release_version.last_release_tag(merged.stdout.split("\n")) if merged.exit == 0 else (None, [])
+    if release_version.not_above(chosen, on_branch):  # Q8/D16: a release goes up, never sideways or down
+        return _stop(rec, 2, "version_not_above_last_tag", **facts, version=chosen, release_tag=on_branch,
+                     message=f"version {chosen} is not higher than the last release tag on this branch, {on_branch}: choose a higher SemVer version "
                              "(a release that stopped after its tag is finished at Step 7, references/rerunning-a-release.md)")
     tag_exists = rec.run("tag-check", ["git", "rev-parse", "-q", "--verify", f"refs/tags/v{chosen}"]).exit == 0
     state = release_runstate.resolve(root, chosen, tag_exists=tag_exists, clock=clock, use_env_run_id=mode == "pipeline",
@@ -119,8 +121,8 @@ def prepare(rec: Recorder, plugin_root: Path, *, phase_task_id: str | None = Non
     release_runstate.save(root, state)
     notices = [BANNER] + ([STANDALONE_NOTICE] if mode == "standalone" else []) + (
         [f"Notice: {last_tag} has no GitHub Release — see release-workflow.md"] if info.get("previous_tag_has_release") is False else []) + (
-        [f"Notice: the last tag {last_tag} is not a SemVer version, so {chosen} was not compared with it"]
-        if release_version.not_above(chosen, last_tag) is None else [])
+        [f"Notice: the tag(s) {', '.join(odd)} are no SemVer version, so {chosen} was not compared with them"] if odd else []) + (
+        ["Notice: the tags reachable from HEAD could not be listed, so the version was not compared"] if merged.exit != 0 else [])
     return 0, {
         "status": "ok", "version": chosen, "suggested": info.get("suggested_version"), "version_reason": info.get("version_reason"),
         **facts, "trunk": base, "trunk_source": source, "on_trunk": on_trunk, "gates": gates,

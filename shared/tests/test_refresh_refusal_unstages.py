@@ -10,6 +10,7 @@ operator had staged before the run stays exactly as it was.
 from __future__ import annotations
 
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -90,3 +91,19 @@ def test_an_untracked_copy_the_run_found_survives_and_the_staged_output_is_unsta
     payload = json.loads(capsys.readouterr().out)
     assert NEW in payload["unstaged"] and payload["unstage_failed"] == []
     assert _staged(root) == [] and (root / NEW).read_text(encoding="utf-8") == "operator's own untracked copy\n"
+
+
+def test_a_conflicted_path_is_no_entry_is_reported_and_is_never_touched(repo):
+    """Fix round 1 (code review): ``index_entries`` takes stage 0 only; a path with a merge conflict (stages 1-3) is
+    reported, and ``restore_index`` leaves it as it is (writing a stage-0 entry would resolve the conflict)."""
+    before = gitmod.index_entries(repo)
+    blob = git(repo, "hash-object", "-w", "--", DASHBOARD).stdout.strip()
+    git(repo, "update-index", "--force-remove", "--", DASHBOARD)
+    for stage in (1, 2, 3):
+        subprocess.run(["git", "-C", str(repo), "update-index", "--index-info"], input=f"100644 {blob} {stage}\t{DASHBOARD}\n".encode(),
+                       check=True, capture_output=True)  # bytes: text mode on Windows would send "\r\n" into the path
+    conflicted: list[str] = []
+    assert DASHBOARD not in gitmod.index_entries(repo, conflicted) and conflicted == [DASHBOARD]
+    staged = git(repo, "ls-files", "-s", "--", DASHBOARD).stdout
+    assert gitmod.restore_index(repo, before) == ([], [DASHBOARD])
+    assert git(repo, "ls-files", "-s", "--", DASHBOARD).stdout == staged and len(staged.splitlines()) == 3
