@@ -2,42 +2,24 @@
 
 Campaign ``root-files-into-config`` (BRIEF
 ``.shipwright/planning/campaigns/2026-11-14-root-files-into-shipwright-dir-BRIEF.md``,
-sections 4.5-4.7 and 11.7.3). Before this module the names of the root
-``shipwright_*`` files were literals scattered over ~350 non-test files; moving
-them was therefore unreviewable. R0b centralises them here and changes NOTHING
-else: every resolver call returns the CURRENT root name, byte for byte. R1 teaches
-the readers a second location, R3 flips the writers, R4 removes the fallback -
-each of those is an edit in THIS file plus its guard test, not a repo-wide hunt.
+sections 4.5-4.7, 11.7.3, 12, 14). R0b centralised the root ``shipwright_*`` names here
+with NO behaviour change: every call returns the CURRENT root name, byte for byte. R1 teaches
+the readers a second location, R3 flips the writers, R4 removes the fallback. Not every step is
+an edit here alone: frozen module constants and ``root / rel(...)`` joins elsewhere must first
+route through :func:`path` / :func:`all_known_rels` (R1b, BRIEF 12.1).
 
-**Import contract.** Stdlib only and no intra-package import, so it loads under any
-name: plugin code appends ``shared/scripts/lib`` to ``sys.path`` and does
-``import shipwright_paths`` (the ``file_lock`` / ``atomic_write`` precedent -
-every plugin has its own ``lib`` package, ADR-045), shared code may use
-``lib.shipwright_paths`` or the relative form. Two module objects are harmless:
-the registry is immutable data.
+**Import contract.** Stdlib only, no intra-package import, so it loads under any name: plugins
+append ``shared/scripts/lib`` to ``sys.path`` and ``import shipwright_paths`` (their own ``lib``
+package must not be shadowed, ADR-045); shared code uses ``lib.shipwright_paths`` or the relative
+form. All those names resolve to ONE module object (:func:`_unify`, end of file), so layout state
+added by R1 is never split. A hand loader that execs under an alias name must re-read
+``sys.modules`` afterwards; the shared object's ``__name__`` is whichever alias loaded it first.
 
-**What the API answers** (``root`` is always the project root the caller already
-holds; the resolver never walks the filesystem):
-
-- :func:`rel` / :func:`name` - the repo-relative POSIX path of a file today.
-- :func:`path` - ``root / rel``.
-- :func:`main_path` - the same, resolved at the MAIN repo root (class 8: a worktree
-  reads the main tree's ``shipwright_model_config.json``); the caller supplies the
-  main root, so this module stays git-free.
-- :func:`rel_at` - repo-relative POSIX path **at a given commit**, for the
-  historical readers that run ``git show <rev>:<path>`` / ``cat-file`` / ``ls-tree``
-  or compare ``git status --porcelain`` output (BRIEF 11.9 items 1 and 6). Before the
-  flip it is the root name for every commit; R1 teaches it the flip commit, and those
-  readers keep the legacy path for pre-flip commits forever (R4 never removes it).
-- :func:`legacy_rel` - always the pre-flip root name: for persisted provenance
-  strings and ``git show`` of a base that predates the move.
-- :func:`lock_for` - the advisory lock file for a data file, or ``None``. Only
-  ``run_config`` and ``ac_registry`` carry a data-file lock today; ``sync_config``
-  is written under the EVENTS lock (BRIEF 11.9 item 4). No caller builds a lock path
-  itself. R1 turns this into the fixed-order dual lock (BRIEF 4.7.2).
-- :func:`names_of` / :func:`rels_of_kind` - the lists other modules used to hand-maintain
-  (``CONFIG_MARKERS``, ``CONFIG_FILES``, ``DERIVED_SNAPSHOTS``, ...), generated from the
-  registry's KIND column.
+**API** (``root`` is the project root the caller holds; nothing here walks the filesystem or runs
+git): names and paths (:func:`rel`, :func:`name`, :func:`path`, :func:`main_path` for the MAIN repo
+root, :func:`rel_at` per commit and :func:`legacy_rel` for history, BRIEF 11.9), locks
+(:func:`lock_for`; R1 makes it the dual lock of 4.7.2), generated lists (:func:`names_of` & co.)
+and every candidate location (:func:`known_rels`, :func:`all_known_rels`; R1c owns their contract).
 """
 
 from __future__ import annotations
@@ -57,9 +39,7 @@ REGISTER = "register"      # ledgers / registers owned by a minting tool or by h
 DERIVED = "derived"        # regenerated every run; never migrated as content
 MARKER = "marker"          # makes a directory a Shipwright project but is not config
 STATE = "state"            # runtime state records
-POINTER = "pointer"        # RESERVED: the root stub R3 leaves for old plugins. No file
-#                            carries it until R3 decides the format (BRIEF 11.5); the
-#                            kind exists now so every consumer is written against it.
+POINTER = "pointer"        # RESERVED: the root stub R3 leaves (format: shipwright_pointer)
 
 KINDS: tuple[str, ...] = (CONFIG, BASELINE, REGISTER, DERIVED, MARKER, STATE, POINTER)
 
@@ -68,8 +48,8 @@ _EVENTS_LOCK = "shipwright_events.jsonl.lock"
 
 FileSpec = namedtuple(
     "FileSpec",
-    "key basename kind moves marker main_root retired run_written lock fixed_tmp",
-    defaults=(True, False, False, False, False, None, ()),
+    "key basename kind moves marker main_root retired run_written lock fixed_tmp target",
+    defaults=(True, False, False, False, False, None, (), ".shipwright/config"),
 )
 FileSpec.__doc__ = """One registry row.
 
@@ -80,6 +60,7 @@ at its legacy location only and never listed as a snapshot. ``run_written``: a r
 nothing can re-derive it, so the mid-run restore must not reset it (``derived_snapshots``). ``lock``:
 the data-file lock name today, relative to the project root. ``fixed_tmp``: fixed-name temp siblings a
 writer creates (BRIEF 11.4 / 11.9.4); random ``<name>.<rand>.tmp`` temps come from ``lib.atomic_write``.
+``target``: the directory the file moves to (only read when ``moves``).
 """
 
 
@@ -87,8 +68,7 @@ def _cfg(key: str, **kw) -> FileSpec:
     return FileSpec(key, f"shipwright_{key}.json", CONFIG, **kw)
 
 
-#: Registry order is meaningful: it is the order of ``CONFIG_MARKERS`` and of every
-#: list generated below.
+#: Registry order is meaningful: it is the order of ``CONFIG_MARKERS`` and every generated list.
 _SPECS: tuple[FileSpec, ...] = (
     # --- project markers (run_config is the primary; it moves LAST, BRIEF 8.3)
     _cfg("run_config", marker=True, lock="shipwright_run_config.json.lock"),
@@ -129,8 +109,9 @@ _SPECS: tuple[FileSpec, ...] = (
              retired=True),
     FileSpec("plan_snapshot", "shipwright_plan_snapshot.json", DERIVED, moves=False,
              retired=True),
-    # --- runtime state; D1 (operator decision pending): provisionally stays
-    FileSpec("dev_server", "shipwright_dev_server.json", STATE, moves=False),
+    # --- runtime state; D1: moves to .shipwright/runtime/ (flag flips in R1c/R3)
+    FileSpec("dev_server", "shipwright_dev_server.json", STATE, moves=False,
+             target=".shipwright/runtime"),
 )
 
 SPECS: dict[str, FileSpec] = {s.key: s for s in _SPECS}
@@ -167,14 +148,11 @@ def legacy_rel(key: str) -> str:
 
 
 def rel_at(key: str, commit: str | None = None) -> str:
-    """Repo-relative POSIX path of *key* as it exists at *commit* (``None``: the tree the
-    caller is standing in, i.e. the working tree at its current layout).
-
-    For ``git show <rev>:<path>``, ``git cat-file``, ``git ls-tree`` and comparison
-    with ``git status --porcelain`` output. Before the flip every commit has the
-    root path; ``commit`` is accepted now so call sites are written against the final
-    signature (R1 resolves the flip commit here).
-    """
+    """Repo-relative POSIX path of *key* at *commit* (``None``: the working tree), for ``git show``,
+    ``cat-file``, ``ls-tree`` and ``git status --porcelain`` comparisons. Root for every commit
+    before the flip; the signature is final so call sites need no change when R1 resolves it. Pre-flip
+    commits keep the legacy path forever (R4 never removes it); 'migrated?' at a commit is decided by
+    the NEW path existing, never by the root blob missing - after R3 it is the stub (BRIEF 14.4)."""
     del commit  # R0b: one layout for every commit
     return spec(key).basename
 
@@ -202,11 +180,8 @@ def main_path(key: str, project_root: Path | str, main_root: Path | str | None) 
 
 
 def lock_for(key: str, root: Path | str) -> Path | None:
-    """Advisory lock file guarding *key*, or ``None`` if it has no data-file lock.
-
-    ``run_config`` and ``ac_registry`` have their own lock; ``sync_config`` is
-    serialised by the events lock (it stays at the root with the event log).
-    """
+    """Advisory lock guarding *key*, or ``None``: ``run_config`` and ``ac_registry`` have their own,
+    ``sync_config`` is serialised by the events lock (it stays at the root with the event log)."""
     lock = spec(key).lock
     return Path(root) / lock if lock else None
 
@@ -217,13 +192,8 @@ def lock_rel(key: str) -> str | None:
 
 
 def lock_beside(data_path: Path | str) -> Path:
-    """The advisory lock for an EXPLICIT data file (``<file>.lock``, same directory).
-
-    For callers handed an arbitrary path (a ``--registry-file`` argument, the event log
-    resolved by ``events_layout``) rather than a project root. R1 turns the registry-backed
-    :func:`lock_for` into the dual lock; this helper keeps the legacy ``<file>.lock``
-    shape in one place so no caller concatenates ``".lock"`` itself.
-    """
+    """``<file>.lock`` beside an EXPLICIT data file (a ``--registry-file`` argument, the event log
+    from ``events_layout``), so no caller concatenates ``".lock"`` itself."""
     p = Path(data_path)
     return p.with_name(p.name + ".lock")
 
@@ -238,18 +208,8 @@ def family_globs() -> tuple[str, ...]:
 def _select(kinds: Iterable[str] | None, *, moves: bool | None, marker: bool | None,
             include_retired: bool) -> list[FileSpec]:
     wanted = None if kinds is None else set(kinds)
-    out = []
-    for s in _SPECS:
-        if wanted is not None and s.kind not in wanted:
-            continue
-        if moves is not None and s.moves != moves:
-            continue
-        if marker is not None and s.marker != marker:
-            continue
-        if s.retired and not include_retired:
-            continue
-        out.append(s)
-    return out
+    return [s for s in _SPECS if (wanted is None or s.kind in wanted) and (moves is None or s.moves == moves)
+            and (marker is None or s.marker == marker) and (include_retired or not s.retired)]
 
 
 def names_of(kinds: Iterable[str] | None = None, *, moves: bool | None = None,
@@ -290,9 +250,48 @@ def basename_of(path_like: str | Path) -> str:
     return PurePosixPath(str(path_like).replace("\\", "/")).name
 
 
-# Best effort at ONE registry object however it was imported: when this file is loaded first as
-# ``lib.shipwright_paths`` the bare name aliases it. (A copy bound first under the other name stays
-# separate - R1, which adds layout state, must keep patching and reading through one import form.)
-_me = sys.modules.get(__name__)  # absent when a loader execs before registering
-if _me is not None:
-    sys.modules.setdefault("shipwright_paths", _me)
+# ---- known locations (R1a; no production caller until R1c) -----------------
+def new_rel(key: str) -> str | None:
+    """Post-move repo-relative path of *key*; ``None`` for a file that does not move."""
+    s = spec(key)
+    return f"{s.target}/{s.basename}" if s.moves and not s.retired else None
+
+
+def known_rels(key: str) -> tuple[str, ...]:
+    """Every location *key* may live at, new first: ``(new, legacy)`` or ``(legacy,)``."""
+    new = new_rel(key)
+    return (new, legacy_rel(key)) if new else (legacy_rel(key),)
+
+
+def all_known_rels(kinds: Iterable[str] | None = None, *, moves: bool | None = None,
+                   marker: bool | None = None, include_retired: bool = False) -> tuple[str, ...]:
+    """:func:`known_rels` of every registry entry matching the :func:`names_of` filters, in
+    registry order: the source for frozen path sets that must match both layouts."""
+    return tuple(r for s in _select(kinds, moves=moves, marker=marker,
+                                    include_retired=include_retired) for r in known_rels(s.key))
+
+
+#: Every name the repo loads this file under (plugins, ``lib``, review_record_tier, shared_lib_loader).
+_ALIASES = ("shipwright_paths", "lib.shipwright_paths", "_shipwright_shared_review_lib.shipwright_paths",
+            "_shipwright_shared_lib.shipwright_paths", "_shipwright_brief_dir_lib.shipwright_paths")
+
+
+def _unify() -> None:
+    """ONE module object for every name in :data:`_ALIASES` (BRIEF 12.3): an alias load adopts an already
+    loaded resolver from the SAME file (bare name first; importlib returns ``sys.modules[name]`` after exec
+    and binds it on the parent), and the bare name is registered when absent. ``None`` (a test hiding the
+    resolver), a fake, another tree: left alone. Not thread-safe (hooks import single-threaded)."""
+    me = sys.modules.get(__name__)
+    if me is None or me.__dict__ is not globals() or __name__ not in _ALIASES:
+        return  # exec without registering, or a probe under its own name (dotted or not)
+    import os.path as _osp  # not pathlib: import must survive a faked os.name (test_dev_server_path_anchors)
+    here = _osp.normcase(_osp.realpath(__file__))
+    for other in (sys.modules.get(n) for n in _ALIASES):
+        same = other is not None and hasattr(other, "SPECS") and getattr(other, "__file__", None)
+        if same and other is not me and _osp.normcase(_osp.realpath(other.__file__)) == here:
+            sys.modules[__name__] = me = other
+            break
+    sys.modules.setdefault("shipwright_paths", me)
+
+
+_unify()

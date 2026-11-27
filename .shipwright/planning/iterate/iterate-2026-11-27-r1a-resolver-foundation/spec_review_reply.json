@@ -1,0 +1,1 @@
+{"stage": "spec-compliance", "verdict": "PASS", "spec_citations": [], "summary": "AC1-AC7 implemented; no R1b-R1e scope; no production behaviour change. Notes: AC5 wording should name the check_file_size exception (strict xfail, BRIEF 12.8); AC2 should state the narrowed digit grammar; fixture table is a Python module, not JSON as the mini-plan said."}

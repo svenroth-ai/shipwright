@@ -1,0 +1,1 @@
+Path resolver groundwork for moving shipwright_* files into .shipwright/config/: one resolver object under every import name, a pointer-stub recogniser, and helpers for the new and old file locations (no behaviour change yet)

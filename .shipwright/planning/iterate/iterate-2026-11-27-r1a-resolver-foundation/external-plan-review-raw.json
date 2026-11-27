@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "## Findings\n\n- **Category: risk \u2014 Severity: medium**\n  **Finding:** `_unify()` replaces `sys.modules[__name__]` mid-exec when a loaded bare-name resolver already exists. This is the subtlest part of the change: the discarded module object keeps executing, and importlib's post-exec parent-package attribute binding is what makes the swap propagate. Any loader that caches the module object from `create_module` (or a custom finder) can end up binding the *old* object to `lib.shipwright_paths` while `sys.modules` holds the new one \u2014 exactly the split-brain the change is meant to eliminate.\n  **Suggestion:** In addition to the subprocess identity tests, add one assertion that after import, `lib.shipwright_paths is sys.modules[\"shipwright_paths\"] is sys.modules[\"_shipwright_shared_review_lib.shipwright_paths\"]` *and* that the parent packages' attributes (`lib.shipwright_paths`, `_shipwright_shared_review_lib.shipwright_paths`) point to the same object \u2014 attribute binding is the failure mode sys.modules checks won't catch.\n\n- **Category: edge-case \u2014 Severity: medium**\n  **Finding:** When the bare name is absent, this module registers itself under `shipwright_paths` *during* its own exec. If any code triggered transitively by the module body (or by a later re-import race) does `import shipwright_paths` mid-exec, it receives the partially-initialized module. Also unhandled: the bare-name module present but *partially loaded* (circular import) \u2014 the plan checks `has SPECS`, which covers it, but only if `SPECS` is defined before any import that could recurse.\n  **Suggestion:** Ensure `SPECS` is assigned at the very top of the module body and document the invariant; add one test where `shipwright_paths` is imported first, then `lib.shipwright_paths` (order is claimed covered, just confirm it includes this direction).\n\n- **Category: risk \u2014 Severity: low**\n  **Finding:** Registering `shipwright_paths` when absent means previously-failing bare imports now silently succeed. A plugin with a typo'd or stale `import shipwright_paths` that today fails loudly will start working \u2014 masking an intended removal.\n  **Suggestion:** Acceptable (it's the point of the change), but note it in the brief so R1e's hook-matrix test doesn't get surprised.\n\n- **Category: edge-case \u2014 Severity: low**\n  **Finding:** AC5's subprocess hide test: `sys.modules[\"shipwright_paths\"] = None` makes `import shipwright_paths` raise `ImportError`, exercising the fallback \u2014 but it does *not* exercise the case where the import succeeds and returns a module whose `rel` raises or returns `None` (a half-unified alias). If `_unify` misfires, hooks could take `rel()` results of the wrong module.\n  **Suggestion:** Add one variant test asserting that after any alias-order load, `_sp.rel(\"...\")` returns the same value regardless of which alias the hook imported under.\n\n- **Category: approach \u2014 Severity: low**\n  **Finding:** The AST basename-discipline rule (AC6 static half) plus the fallback-literal AST scan are two bespoke static analyzers for a no-behaviour-change PR. Sound, but the \"if more than ~8 hits, allowlist and defer swaps to R1b\" escape hatch means the rule could land with known-failing hits \u2014 which will rot.\n  **Suggestion:** If the deferral triggers, land the rule in a *reporting* mode (or as a skipped test with a tracked count) rather than an allowlist inside a passing test, so R1b can tighten it without editing the rule.\n\n- **Category: dependency \u2014 Severity: low**\n  **Finding:** `new_rel`/`known_rels` are defined here but only wired in R1b/R1c; the spec explicitly says no production caller. Fine, but the \u2264300-line cap on the resolver plus new helpers plus alias logic plus `SPECS` growth in R1b may force a move later.\n  **Suggestion:** Consider putting the alias-unification in a tiny separate helper module imported at the end of `shipwright_paths` \u2014 keeps the resolver clean and makes the swap logic independently testable.\n\n- **Category: security \u2014 Severity: low**\n  **Finding:** None of substance. `classify` never executes or parses paths from stubs (`moved_to` text-only per 14.2), the recogniser is stdlib-only, and no new inputs reach production until R1c. Regex is anchored, first-line-only, byte-capped \u2014 good.\n\n## Overall assessment\n\nThe approach is sound and well-scoped: the alias unification is the only genuinely risky piece, and the plan already treats it as such with subprocess identity tests. The refinements above (attribute-binding assertions, partial-init ordering, failure-mode for the alias test) would raise confidence from \"should work\" to \"pinned.\"\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Approach \u00b7 Medium**  \n   **Finding** \u2014 AC6 calls for behavioral coverage of four basename consumers. The mini-plan exercises only two at runtime. The AST rule for the other two can miss values passed through helpers or assigned to local variables, and its proposed allowlist could defer fixes needed for AC6.  \n   **Suggestion** \u2014 Run `pr_review_generated` and `event_seeder` in subprocesses rooted in their owning test suites. Patch `rel()` to return the relocated path before loading each consumer, then assert that it still matches a bare filename. Use these four targeted tests for R1a and leave the repository-wide guard to R1b.\n\n2. **Edge-case \u00b7 Medium**  \n   **Finding** \u2014 The pointer classifier needs an explicit precedence rule for inputs that are both oversized and versioned above 1. A long digit sequence can also raise during integer conversion before the classifier returns `edited`. On the render side, an unrestricted `min_plugin_version` can violate the ASCII, LF, or 512-byte guarantees.  \n   **Suggestion** \u2014 Check the normalized byte length before converting the version once the first-line signature matches. Pin the expected verdict for oversized `/2`, a very long digit sequence, and `/0`. Define accepted render inputs and reject embedded line breaks, non-ASCII text, or output exceeding 512 bytes.\n\n3. **Approach \u00b7 Medium**  \n   **Finding** \u2014 The handoff\u2019s proposed fallback still constructs `shipwright_<name>.json` when a key is missing from `CONFIG_FILES`. That leaves a second naming source and can hide a missing mapping while the output still looks correct.  \n   **Suggestion** \u2014 Verify that every listed config has a `CONFIG_FILES` entry and use direct lookup. Test byte-for-byte output through the existing handoff entry point so the new dependency is exercised in its normal import context.\n\n4. **Risk \u00b7 Low**  \n   **Finding** \u2014 The hidden-resolver subprocess test proves that a hook imports with `_sp is None`. It can still pass if the hook fails later when it uses the fallback. The AST scan checks the literal\u2019s spelling but cannot establish that the hook uses it.  \n   **Suggestion** \u2014 In each subprocess, assert the resolved constant for module-level fallbacks or invoke the smallest code path that consumes a deferred fallback.\n\nThe resolver foundation is proportionate to R1a. Tighten the behavioral tests and pointer input contract before landing, since later PRs will rely on both.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-11-27-r1a-resolver-foundation",
+    "at": "2026-11-27T15:51:41.599818+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}
