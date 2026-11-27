@@ -1,1 +1,0 @@
-The supabase-nextjs architecture-rule lint blocks are checked at the end of the build phase and can be restored with check_eslint_architecture_rules.py --apply, so a replaced eslint config no longer drops them silently

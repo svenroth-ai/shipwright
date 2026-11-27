@@ -1,1 +1,0 @@
-- (2026-11-17) iterate/campaign — a review CLI started with '( ... ) &' inside one Bash call dies when the call returns (empty raw file); run it in the foreground or with run_in_background. → iterate-2026-11-17-p1-seams-offline-proof

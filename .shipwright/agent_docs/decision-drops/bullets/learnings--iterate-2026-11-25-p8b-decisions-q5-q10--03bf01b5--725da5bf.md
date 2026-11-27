@@ -1,1 +1,0 @@
-- (2026-11-25) iterate — An index restore after a refused tool must be index-only (git update-index --force-remove / --cacheinfo): git rm --cached refuses when the restored working-tree copy matches neither HEAD nor the index. [→ iterate-2026-11-25-p8b-decisions-q5-q10]

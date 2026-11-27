@@ -1,1 +1,0 @@
-The security workflow's critical gate now fails when the prompt-injection scan crashed or left a missing, empty or unreadable report, instead of counting zero findings; a scan step that is skipped on purpose only warns.

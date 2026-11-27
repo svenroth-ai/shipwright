@@ -1,1 +1,0 @@
-- (2026-11-23) iterate — A frozen test table keyed on skill headings (coverage.py) and promise_list.json anchor hashes both move with any prose edit of the changelog skill: re-hash with the test's own section function, then take one approved delta per frozen file. [-> iterate-2026-11-23-p3-cli-prepare-aggregate]

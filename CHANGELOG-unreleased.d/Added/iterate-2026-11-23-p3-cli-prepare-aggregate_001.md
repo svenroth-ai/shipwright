@@ -1,1 +1,0 @@
-feat(changelog): release.py prepare and aggregate run the first steps of the release in one call each, with the gate answers read from the gate catalog, the upgrade-notes check done by code and the release date and run id stored once

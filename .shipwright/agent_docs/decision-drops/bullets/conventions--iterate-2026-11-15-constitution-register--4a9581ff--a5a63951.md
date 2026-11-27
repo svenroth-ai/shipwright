@@ -1,1 +1,0 @@
-- **iterate-2026-11-15-constitution-register** (2026-11-15): Convention — Every constitution rule has a declared enforcement class in shared/config/conventions.json (section constitution); constitution.md changes must update it or the shared drift test fails. → decision_log (ADR via Run-ID: iterate-2026-11-15-constitution-register)

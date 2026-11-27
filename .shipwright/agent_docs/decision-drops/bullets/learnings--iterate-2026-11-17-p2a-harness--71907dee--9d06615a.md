@@ -1,1 +1,0 @@
-- (2026-11-17) iterate/harness - build the same scratch twice in two directories and diff the traces before trusting a normalizer; compact run ids, Windows backslashes and dirty phase leftovers all differed. -> iterate-2026-11-17-p2a-harness
