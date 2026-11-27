@@ -7,7 +7,7 @@ behaviour: D2 (a driven run leaves the request open AND has pushed the tag). S19
 2026-11-25) ``--from`` is offered nowhere, and passing it anyway is refused as an unknown argument with nothing changed. S18a/b no longer record D12: since P8a (F2, operator 2026-11-25) the preview is the dry run and the real aggregation
 runs only after Accept, so Cancel leaves the tree and the drops byte-identical and Edit changes the drop and repeats the dry run.
 S18c (P8a fix round, D84; ``_s18(True, "cancel")``): an Edit then Cancel; ``release.py cancel`` puts the edited drop back, so the tree is as
-before. It is run by ``test_p8a_fix_scenarios.py`` through both drivers, not registered here: a new frozen trace would need a lock re-pin.
+before. Frozen since the stop-3 re-pin (D107).
 """
 
 from __future__ import annotations
@@ -156,5 +156,6 @@ SCENARIOS = {
     "S17b": Scenario("S17b", ("legacy",), _s17b, _check_s17b),
     "S18a": Scenario("S18a", ("legacy",), _s18(False), _check_s18(False), acs=(f"{A}AC10",)),
     "S18b": Scenario("S18b", ("legacy",), _s18(True), _check_s18(True), acs=(f"{A}AC10",)),
+    "S18c": Scenario("S18c", ("legacy",), _s18(True, "cancel"), _check_s18(True, "cancel"), acs=(f"{A}AC10",)),
     "S19": Scenario("S19", ("legacy",), _s19, _check_s19),
 }

@@ -1,8 +1,12 @@
 # Release workflow — the parts that are rationale, not instruction
 
-Reference for **Step 7** of `/shipwright-changelog`. Moved out of `SKILL.md` when
-the compliance-evidence step was added (iterate-2026-07-31-derived-docs-at-release):
-the skill is an index of what to DO, and this is the reasoning behind it.
+Reference for **Step 7** of `/shipwright-changelog`. From a feature branch only the tag is pushed (never a local trunk); in a hand-invoked release
+the tag is pushed and the release page made only after the release PR is merged (`release.py push-tag` answers `waiting_for_merge` until the release
+commit is on the base branch; a driven run neither merges nor waits). `push-tag` only decides: the push stays a literal line the release guard hook can see.
+A PR merged by squash or rebase leaves the release commit off the base; `push-tag` then refuses (`merged_without_release_commit`) because the tag would
+name a commit that is not on the trunk. A failed `gh pr create`, a rejected push or a refused tag push stops the release; `close-phase` verifies the
+release read-only and leaves a clean tree.
+The skill is an index of what to DO, and this is the reasoning behind it.
 
 ## Parallel iterate handling
 
@@ -18,29 +22,31 @@ the skill is an index of what to DO, and this is the reasoning behind it.
 
 A release must tell an existing project what, if anything, it has to do. The
 person cutting the release sees only the release, not the campaign that
-produced it, so the action has to be in the release itself. Run this BEFORE
+produced it, so the action has to be in the release itself. The check runs BEFORE
 the first `aggregate_changelog.py` call, preview or real: the real run renders
 the drops into `CHANGELOG.md` and deletes them, so a drop added afterwards
-would ship one release late.
+would ship one release late. Since the second pass (A3) the CODE does it, inside
+`release.py prepare` (`lib/release_upgrade_notes.py`); the model only reviews what it wrote.
 
-1. List the pages under `docs/migrations/` that were added or changed since the
+1. It lists the pages under `docs/migrations/` that were added or changed since the
    previous tag (`git diff --name-only <previous-tag>..HEAD -- docs/migrations`;
-   with no previous tag, list every page).
-2. For each one, read its "Do you have to do anything?" line. A page without
+   with no previous tag, every page).
+2. For each one it reads the "Do you have to do anything?" line. A page without
    that line, or with an answer other than a plain "no", counts as action
-   required: summarise the page. Then add a drop under
-   `CHANGELOG-unreleased.d/Changed/` that states the action in one or two plain
-   sentences and links the page, e.g. `Existing projects: update the WebUI to
-   <min-webui-version> first (take the real number from the WebUI release),
-   then the plugins; see docs/migrations/events-drop-files.md.` The
-   release-notes condenser may file an item under `Breaking Changes` when the
-   reader must act to keep working, otherwise it stays under `Changed`; keep the
-   wording factual, not alarming.
-3. If a page says a companion release (another repository) must come first,
-   name its minimum version in that drop and confirm it is published before the
-   release PR is merged.
-4. No migration page changed: nothing to add. Say so in the Step 5 preview, or
-   in the Step 6 summary when the mode skips the preview.
+   required: it adds a drop under `CHANGELOG-unreleased.d/Changed/` that carries
+   the page's own words and links the page (`Existing projects: <the answer> (see
+   docs/migrations/<page>.md)`), through `write_changelog_drop.py`, once per page and never
+   after the version's section is already in `CHANGELOG.md` (a re-run must not add a drop the section lacks).
+   `upgrade_notes.status` is then `action_drop_written`. While a question (`gates`) is still open nothing is written yet:
+   the status is `action_drop_deferred`, `upgrade_notes.pending` has the text, the Step 4 preview names it in
+   `upgrade_notes_pending` and the real `aggregate` (after Step 5) files the drop(s). Step 3 applies to them the same way.
+3. **The model's part:** read each such drop, shorten or sharpen it where the page's line is too long or
+   misleads, and keep it factual, not alarming (the release-notes condenser may file an item under
+   `Breaking Changes` when the reader must act to keep working, otherwise it stays under `Changed`). If a page says
+   a companion release (another repository) must come first, name its minimum version in that drop
+   (take the real number from that release) and confirm it is published before the release PR is merged.
+4. No migration page changed, or none needs an action: `upgrade_notes.sentence` is the sentence to say in the Step 5
+   preview, or in the Step 6 summary when the mode skips the preview.
 
 The check never edits the migration pages.
 
