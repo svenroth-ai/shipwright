@@ -1,16 +1,20 @@
-"""S14a/b/c/d and S15: where the release is made from, and what Step 6 may commit.
+"""S14a-e and S15: where the release is made from, and what Step 6 may commit.
 
 S14 runs the whole release (guided, the one configuration that can finish today: ``scenario_support.ready_release``)
 from a branch the remote has never seen, from ``main`` and from a repository whose default branch is ``master``.
 Since P8a (operator 2026-11-25) they assert the fixes, not the findings: F3 for D7 (the head is pushed right before the
 request is opened, so the host accepts it) and F5 for D24 (the default branch is read from the remote: on a ``master``
 repository the release is cut on ``master`` as the trunk, with no request, and ``master`` and the tag reach the remote).
-``_s14d`` (P8a fix round, D85): the default branch is ``develop`` and the release is cut on ``main``, which stays a trunk. It is run by
-``test_p8a_fix_scenarios.py`` through both drivers, not registered here: a new frozen trace would need a re-pin of the golden lock.
+S14d (P8a fix round, D85): the default branch is ``develop`` and the release is cut on ``main``, which stays a trunk. S14e (Q10, D96):
+a guided release from a feature branch whose section holds a hand-written entry; the PR body is ``## Changelog`` and exactly this
+version's section, passed as a file (``release.py pr-body`` through the CLI driver). Both frozen since the stop-3 re-pin (D107).
+The trace masks a PR's title and body, so S14e's body is pinned by its check, and it judges ``release.py pr-body`` on the CLI
+driver's pass (``test_driver_cli.py``); on the replay's pass it judges the replay's own restatement.
 """
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 from . import oracle
@@ -112,6 +116,31 @@ def _check_s14d(run: Run) -> None:
     oracle.check_ac11_not_published(s.gh_state(), tag_on_remote=_on_origin(s, "refs/tags/v1.3.0"), pr_open=False)
 
 
+BODY_HISTORY = ("# Changelog\n\n## [Unreleased]\n\n### Security\n\n- A hand-written security note\n\n"
+                "## [1.2.0] - 2026-01-15\n\n### Added\n\n- Earlier feature\n")
+
+
+def _s14e(make_project, layout: str) -> Run:
+    return _flow(make_project, branch="release/body", history=BODY_HISTORY)
+
+
+def _check_s14e(run: Run) -> None:
+    s = run.scratch
+    # Q10 (D96): the PR body is `## Changelog`, a blank line, then exactly this version's section, handed over as a file
+    (pr,) = s.gh_state()["prs"]
+    section = dict(oracle.sections((s.repo / "CHANGELOG.md").read_text(encoding="utf-8")))["1.3.0"].strip("\n")  # [Unreleased] stays on top
+    assert pr["body"] == f"## Changelog\n\n{section}\n" and pr["title"] == "Release v1.3.0", pr
+    assert "## [1.2.0]" not in pr["body"] and "(hand-written)" not in pr["body"] and "\\n" not in pr["body"]
+    assert "- A hand-written security note" in section  # Q5: the moved hand-written entry is part of the section the body holds
+    (create,) = run.gh_calls("pr", "create")
+    assert "--body-file" in create["argv"] and "--body" not in create["argv"]
+    body_file = Path(create["argv"][create["argv"].index("--body-file") + 1]).resolve()
+    assert (s.repo / ".git").resolve() in body_file.parents  # the file lives in the git directory, never in the work tree
+    assert [r.step for r in run.results][-1] == "record-event" and _tag_made(s) and not _on_origin(s, "refs/tags/v1.3.0")
+    oracle.check_ac01(section, _tag_made(s), request_open=pr["state"] == "open", outcome="prepared")
+    oracle.check_ac11_not_published(s.gh_state(), tag_on_remote=_on_origin(s, "refs/tags/v1.3.0"), pr_open=pr["state"] == "open")
+
+
 def _s15(make_project, layout: str) -> Run:
     s = ss.ready_release(make_project)
     ss.commit(s, "notes.txt", "one\n", "docs: notes")
@@ -142,5 +171,7 @@ SCENARIOS = {
     "S14a": Scenario("S14a", ("legacy",), _s14a, _check_s14a, acs=(f"{A}AC01", f"{A}AC11")),
     "S14b": Scenario("S14b", ("legacy",), _s14b, _check_s14b, acs=(f"{A}AC01", f"{A}AC11")),
     "S14c": Scenario("S14c", ("legacy",), _s14c, _check_s14c, acs=(f"{A}AC01", f"{A}AC11")),
+    "S14d": Scenario("S14d", ("legacy",), _s14d, _check_s14d, acs=(f"{A}AC01", f"{A}AC11")),
+    "S14e": Scenario("S14e", ("legacy",), _s14e, _check_s14e, acs=(f"{A}AC01", f"{A}AC11")),
     "S15": Scenario("S15", ("legacy",), _s15, _check_s15),
 }

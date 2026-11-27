@@ -1,12 +1,19 @@
-"""The commands today's ``SKILL.md`` prescribes, each with the line it comes from (programme P7).
+"""The commands the replay runs, each cited to the line of ``SKILL.md`` that prescribes its step (programme P7).
 
-``CITES`` is the citation table: replay key -> ``(line, needle)`` pairs. A test (``test_replay_citations``)
-reads ``SKILL`` and fails when a line no longer holds its needle. Since stop 2 ``SKILL`` is the PINNED copy of the
-prose (``pinned_prose/SKILL.md.pin``, frozen in ``golden.lock.json``), not the live file: the citations, the
-frozen chains and the coverage checks describe today's prose, and a later prose edit (P5, P8) moves them only when
-that unit re-pins the copy with an approved delta. The three shell chains below are FROZEN copies of the fenced blocks (comments dropped,
-placeholders marked ``@name@``): the replay runs the copy, not the live prose, so editing ``SKILL.md`` later
-cannot change what the replay does. Line numbers are those of ``SKILL.md`` at the freeze (P2a's tree).
+``CITES`` is the citation table: replay key -> ``(line, needle)`` pairs. A test (``test_replay_driver.py::test_every_replay_command_cites_a_line_of_the_prose_that_holds_it``)
+reads ``SKILL`` and fails when a line no longer holds its needle. ``SKILL`` is the PINNED copy of the prose
+(``pinned_prose/SKILL.md.pin``, frozen in ``golden.lock.json``), not the live file. Since the stop-3 re-pin (FINDINGS D99)
+the pin is the thin ``SKILL.md`` as it stands after P8b and stop 3: a step the replay still runs as single tools is cited at
+the ``release.py`` call (or the literal outward command) that does it now. A later prose edit moves a citation only when
+that unit re-pins the copy.
+
+The three shell chains below (and the phase-complete block) are the replay's own restatement of the stop-2 prose: FROZEN
+copies of its fenced blocks (comments dropped, placeholders marked ``@name@``), made at P2a and checked equal to that prose
+until the re-pin. The thin prose no longer holds them (``release.py`` runs those steps), so they are compared with no prose
+now; ``golden.lock.json`` still freezes them, and the CLI driver must reach the same trace. Line numbers in their comments
+are those of the stop-2 ``SKILL.md`` (``pinned_prose/SKILL.md.pin`` before the re-pin), and so is every other ``SKILL.md:NNN``
+in a comment or docstring of this directory outside ``CITES`` and ``NOT_REPLAYED``: read them with
+``git show c2ff04d57:plugins/shipwright-changelog/tests/golden/pinned_prose/SKILL.md.pin``.
 
 ``NOT_REPLAYED`` lists prose the replay deliberately does not run, each with the reason (programme P8b).
 """
@@ -22,40 +29,38 @@ SHARED = REPO_ROOT / "shared"
 SKILL = PLUGIN / "tests" / "golden" / "pinned_prose" / "SKILL.md.pin"  # the pin of skills/changelog/SKILL.md
 
 CITES: dict[str, list[tuple[int, str]]] = {
-    "context": [(46, "get_phase_context.py")],
-    "setup": [(26, "--from v0.1.0"), (75, "setup-changelog.py")],
-    "parse-commits": [(114, "git_utils.py")],
-    "aggregate-dry": [(171, "aggregate_changelog.py")],
-    "aggregate": [(185, "aggregate_changelog.py")],
-    "decisions": [(211, "aggregate_decisions.py")],
-    "fallback-append": [(224, "append_changelog_entry.py")],  # P8b F9: the same fallback, now a drop file (write_changelog_drop.py)
-    "fold-events": [(260, "fold_events_for_release.py")],
-    "sync": [(273, "sync_release_manifests.py")],
-    "evidence": [(288, "refresh_compliance_docs.py")],
-    "commit-and-tag": [(303, "BULLET_DOCS"), (304, "git add CHANGELOG.md"), (305, "decision_log_index.md"),
-                       (306, "git add -A"), (307, "git commit -m"), (311, "refresh_compliance_docs.py"),
-                       (313, "sync_release_manifests.py"), (317, "git tag -a")],
-    "push-branch": [(346, "git push origin HEAD")],  # P8a F3: the same push, now right before the PR (stop-2 prose ran it after)
-    "open-pr": [(330, "gh pr create")],  # P8b Q10: the same PR, its body now from a file (`release.py pr-body`, `--body-file`)
-    "record-event-pr": [(343, "record_event.py"), (344, "stage_event_drops.py"), (345, "git add shipwright_events.jsonl"),
-                        (346, "git push origin HEAD")],
-    "merge-pr": [(351, "gh pr merge")],
-    "record-event-main": [(358, "record_event.py"), (359, "stage_event_drops.py"), (360, "git add shipwright_events.jsonl")],
-    "push-tags": [(365, "git push --tags origin main")],
-    "release-page": [(373, "publish_release_notes.py")],
-    "close-phase": [(386, "SHIPWRIGHT_RUN_ID"), (392, "update_build_dashboard.py"), (396, "generate_session_handoff.py"),
-                    (403, "append_phase_history.py"), (408, "orchestrator.py"), (412, "refresh_compliance_docs.py")],
+    "context": [(48, "get_phase_context.py")],
+    "setup": [(20, "the setup script"), (24, 'release.py" prepare')],
+    "parse-commits": [(20, "the history and the commit types"), (24, 'release.py" prepare')],
+    "aggregate-dry": [(92, "--dry-run")],
+    "aggregate": [(136, 'release.py" aggregate')],
+    "decisions": [(105, "aggregate_decisions.py")],
+    "fallback-append": [(112, "--fallback-entry")],
+    "fold-events": [(150, 'release.py" sync'), (153, "folds old per-run event files")],
+    "sync": [(150, 'release.py" sync'), (154, "syncs every declared published-package manifest")],
+    "evidence": [(150, 'release.py" sync'), (155, "refreshes the seven compliance")],
+    "commit-and-tag": [(163, 'release.py" commit-and-tag')],
+    "push-branch": [(188, "git push origin HEAD --no-follow-tags")],
+    "open-pr": [(184, 'release.py" pr-body'), (192, "gh pr create")],
+    "record-event-pr": [(201, "On a feature branch it commits only the event paths and pushes the head"),
+                        (205, 'release.py" record-event')],
+    "merge-pr": [(212, "gh pr merge")],
+    "record-event-main": [(201, "on the trunk it commits and"), (205, 'release.py" record-event')],
+    # the replay's trunk push is `git push origin <branch> refs/tags/vX` without --atomic (frozen; the CLI prints the atomic line)
+    "push-tags": [(223, 'release.py" push-tag'), (225, 'git push origin "refs/tags/v{version}"'), (226, "on the trunk")],
+    "release-page": [(234, "publish_release_notes.py")],
+    "close-phase": [(245, 'release.py" close-phase')],
 }
 
 NOT_REPLAYED: dict[str, str] = {
-    "SKILL.md:18-31 banner": "printed text, no command",
-    "SKILL.md:156 upgrade-notes check": "judgement: a model reads migration pages and may write a drop (references/release-workflow.md)",
-    "SKILL.md:242-251 preview question": "an operator decision; the plan carries it as the 'preview' step",
-    "SKILL.md:147-150 custom version entry": "an operator decision; the plan passes it as the 'version' parameter (the ask itself is recorded as version_question)",
-    "SKILL.md:416-430 summary": "printed text, no command",
+    "SKILL.md:28 banner and notices": "printed text (prepare's stderr), no command",
+    "SKILL.md:86-87 upgrade-notes check": "judgement: a model reads migration pages and may write a drop (references/release-workflow.md)",
+    "SKILL.md:119-128 preview question": "an operator decision; the plan carries it as the 'preview' step",
+    "SKILL.md:74-80 custom version entry": "an operator decision; the plan passes it as the 'version' parameter (the ask itself is recorded as version_question)",
+    "SKILL.md:240-242 closing summary": "printed text (close-phase's stderr), no command",
 }
 
-# Step 6, SKILL.md:303-317. @shared@ is the shared dir (posix form), @version@ the version without 'v',
+# Step 6 of the stop-2 prose, SKILL.md:303-317. @shared@ is the shared dir (posix form), @version@ the version without 'v',
 # @evidence@ and @manifests@ the pathspecs Step 5.5 / 5.4 returned (space-joined; empty when none).
 COMMIT_AND_TAG = r'''BULLET_DOCS=""; for f in architecture conventions; do if [ -f ".shipwright/agent_docs/$f.md" ]; then BULLET_DOCS="$BULLET_DOCS .shipwright/agent_docs/$f.md"; fi; done
 git add CHANGELOG.md
@@ -74,20 +79,20 @@ git commit -m "chore(release): v@version@" -- \
   && git tag -a v@version@ -m "Release v@version@"
 '''
 
-# Step 7, SKILL.md:343-346 (a feature branch: commits the event, pushes the head). @pr_url@ is the PR URL.
+# Step 7 of the stop-2 prose, SKILL.md:343-346 (a feature branch: commits the event, pushes the head). @pr_url@ is the PR URL.
 EVENT_PR = r'''uv run "@shared@/scripts/tools/record_event.py" --project-root "$(pwd)" --type phase_completed --phase changelog --run-id "release-v@version@" --detail "v@version@ — @pr_url@" \
 && uv run "@shared@/scripts/tools/stage_event_drops.py" --project-root "$(pwd)" --run-id "release-v@version@" \
 && { [ ! -f shipwright_events.jsonl ] || git add shipwright_events.jsonl; paths=$(git diff --cached --name-only -- shipwright_events.jsonl .shipwright/events/drops); [ -z "$paths" ] || git commit -m "chore(release): record changelog event for v@version@" -- $paths; } \
 && git push origin HEAD
 '''
 
-# Step 7, SKILL.md:358-360 (already on main: commits, never pushes).
+# Step 7 of the stop-2 prose, SKILL.md:358-360 (already on main: commits, never pushes).
 EVENT_MAIN = r'''uv run "@shared@/scripts/tools/record_event.py" --project-root "$(pwd)" --type phase_completed --phase changelog --run-id "release-v@version@" --detail "v@version@ — tagged on main" \
 && uv run "@shared@/scripts/tools/stage_event_drops.py" --project-root "$(pwd)" --run-id "release-v@version@" \
 && { [ ! -f shipwright_events.jsonl ] || git add shipwright_events.jsonl; paths=$(git diff --cached --name-only -- shipwright_events.jsonl .shipwright/events/drops); [ -z "$paths" ] || git commit -m "chore(release): record changelog event for v@version@" -- $paths; }
 '''
 
-# The phase-complete block, SKILL.md:386-413. @plugin@ is the plugin dir (posix form), @session@ the session id.
+# The phase-complete block of the stop-2 prose, SKILL.md:386-413. @plugin@ is the plugin dir (posix form), @session@ the session id.
 CLOSE_PHASE = r''': "${SHIPWRIGHT_RUN_ID:=changelog-v@version@-$(date +%Y%m%d-%H%M%S)}"
 export SHIPWRIGHT_RUN_ID
 uv run "@shared@/scripts/tools/update_build_dashboard.py"   --project-root "$(pwd)" --phase changelog --session-id "@session@"

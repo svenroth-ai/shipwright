@@ -71,7 +71,7 @@ REQUIRED = (HARNESS, "shared/testkit/gh_stub.py", "shared/testkit/release_scratc
             # pytest_* hook there), the root conftest and the package markers. Frozen here instead of hashed into every closure. Known cost: once the lock exists, any edit of these files (the root conftest too) needs an approved delta.
             "conftest.py", "plugins/shipwright-changelog/tests/conftest.py",
             "plugins/shipwright-changelog/tests/__init__.py", "plugins/shipwright-changelog/tests/golden/__init__.py",
-            # P2-op (stop 2): the lock writer and its tests, the promise lock it writes, and the pinned prose P8b reads
+            # P2-op (stop 2): the lock writer and its tests, the promise lock it writes, and the pinned prose the replay cites (re-pinned at stop 3)
             "shared/testkit/golden_lock.py", "shared/tests/test_golden_driver_freeze.py",
             "plugins/shipwright-changelog/tests/golden/promise.lock.json",
             "plugins/shipwright-changelog/tests/golden/pinned_prose/SKILL.md.pin",

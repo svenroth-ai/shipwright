@@ -1,8 +1,10 @@
 """The replay driver itself: its citations, its step list and the stability of the traces it produces.
 
 The scenarios (``test_scenarios_*.py``) prove today's behaviour; this file proves the instrument: every command
-cites the line of ``SKILL.md`` it comes from, the driver implements exactly the steps it declares, and two runs of
-a scenario in two different directories give the same trace, equal to the committed file.
+cites the line of the pinned ``SKILL.md`` that prescribes its step, the driver implements exactly the steps it declares, and
+two runs of a scenario in two different directories give the same trace, equal to the committed file. The check that the
+frozen chains equal the prose they copied retired with the stop-3 re-pin (FINDINGS D99): the thin prose holds no such block
+any more. The chains keep a check of their own: the sha256 of each, as it was when last proven equal to the stop-2 prose.
 """
 
 from __future__ import annotations
@@ -59,30 +61,20 @@ def test_a_marker_left_unfilled_in_a_replayed_chain_is_an_error_not_a_blank():
         fill("git tag v@version@ @shared@", shared="/x")
 
 
-_PLACEHOLDERS = {"{shared_root}": "@shared@", "{version}": "@version@", "{PR_URL}": "@pr_url@", "{plugin_root}": "@plugin@",
-                 "{SHIPWRIGHT_SESSION_ID}": "@session@", "<every path from evidence_pathspec>": "@evidence@",
-                 "<every path from manifest_pathspec>": "@manifests@"}
+# sha256 of each chain at c2ff04d57, where test_the_frozen_chains_match_the_prose_they_copy_in_full last passed
+_CHAIN_SHA256 = {"COMMIT_AND_TAG": "8f3ce73a7dd7e3dc57c6a3f0ceec5a93320b875a380ffc15e6ee7649f448341d",
+                 "EVENT_PR": "d79b3b135dbc7a46d8f2b3d9b1cf5c0576428d18132a32d4be64ad4b55ce176c",
+                 "EVENT_MAIN": "688bc335a77ed660f578b87e8a62852147b9955acef2027bfd1956d6cdac362f",
+                 "CLOSE_PHASE": "bddf86837f4dcb25843fd36b2ba9d89c1d28ead8bb1f99572c9a77171957188d"}
 
 
-def _prose_block(lines: list[str], anchor: int) -> str:
-    """The fenced block that holds ``lines[anchor - 1]``, as one whitespace-collapsed string, comments dropped."""
-    start = max(i for i in range(anchor) if lines[i].startswith("```"))
-    end = min(i for i in range(anchor, len(lines)) if lines[i].startswith("```"))
-    kept = [re.sub(r"\s+#\s.*$", "", ln) for ln in lines[start + 1:end] if not ln.lstrip().startswith("#")]
-    text = "\n".join(kept).replace("\\\n", " ")
-    for prose, marker in _PLACEHOLDERS.items():
-        text = text.replace(prose, marker)
-    return re.sub(r"\s+", " ", text).strip()
+def test_the_frozen_chains_are_the_copies_once_proven_equal_to_the_stop_2_prose():
+    """A chain edit is visible on its own, not only as one more change of ``replay_commands.py``'s lock hash at a re-pin."""
+    import hashlib
 
-
-def test_the_frozen_chains_match_the_prose_they_copy_in_full():
-    """The chains are copies, so a drift of the prose does not change the replay; this pins that they WERE equal
-    - every command and every flag, not only the ``uv run`` lines - and fails when a copy is edited by itself."""
-    from .replay_commands import CLOSE_PHASE, COMMIT_AND_TAG, EVENT_MAIN, EVENT_PR
-    lines = SKILL.read_text(encoding="utf-8").splitlines()
-    for chain, anchor in ((COMMIT_AND_TAG, 303), (EVENT_PR, 343), (EVENT_MAIN, 358), (CLOSE_PHASE, 386)):
-        frozen = re.sub(r"\s+", " ", chain.replace("\\\n", " ")).strip()
-        assert frozen == _prose_block(lines, anchor), f"the copy at SKILL.md:{anchor} differs from the prose"
+    from . import replay_commands
+    got = {name: hashlib.sha256(getattr(replay_commands, name).encode("utf-8")).hexdigest() for name in _CHAIN_SHA256}
+    assert got == _CHAIN_SHA256
 
 
 @pytest.mark.parametrize("sid", ["S3", "S5b"])

@@ -1,4 +1,4 @@
-"""S6, S7a-c, S8, S9: running Step 4 again, legacy bullets, and the dry run.
+"""S6, S7a-c, S8, S8b, S9: running Step 4 again, legacy bullets, hand-written entries, and the dry run.
 
 Step 4 is driven alone (``aggregate``), on a repository tagged ``v1.2.0`` with a ``CHANGELOG.md`` that already holds
 that release. ``references/rerunning-a-release.md`` is the contract the oracle checks: a converging re-run is a
@@ -141,6 +141,37 @@ def _check_s8(run: Run) -> None:
                             _changelog(run.scratch), VERSION)  # AC09: each one named back, not folded, not lost
 
 
+HAND_WRITTEN = "A hand-written fix\n  with a second line"
+
+
+def _s8b(make_project, layout: str) -> Run:
+    """Q5 (D92): a hand-written bullet under a category heading of ``[Unreleased]`` moves into the release; one under no heading stays."""
+    unreleased = f"## [Unreleased]\n\n- Old bullet one\n\n### Fixed\n\n- {HAND_WRITTEN}\n\n"
+    s, driver, results = _base(make_project, HISTORY.replace("# Changelog\n\n", "# Changelog\n\n" + unreleased)), ReplayDriver(), []
+    _drop(s)
+    before = ss.digest(s)
+    _agg(driver, s, results, dry_run=True, release_date=ORIGINAL_DATE)
+    ctx = {"before": before, "after_dry": ss.digest(s)}
+    _agg(driver, s, results, release_date=ORIGINAL_DATE)
+    return Run(s, driver, results, ctx)
+
+
+def _check_s8b(run: Run) -> None:
+    dry, real = run.step("aggregate", 0), run.step("aggregate", 1)
+    assert dry.exit_code == real.exit_code == 0 and real.output["changelog_updated"] is True
+    shown = run.commands("aggregate-dry")[0]["stdout"]
+    oracle.check_ac10_unchanged(run.ctx["before"], run.ctx["after_dry"], shown, ["A new capability readers can use", "A hand-written fix"])
+    assert "(hand-written)" in shown  # the preview marks the moved entry; the written section does not
+    changelog = _changelog(run.scratch)
+    section = dict(oracle.sections(changelog))[VERSION]
+    assert oracle.groups(section) == {"Added": ["A new capability readers can use"], "Fixed": ["A hand-written fix"]}
+    assert f"- {HAND_WRITTEN}\n" in section and "(hand-written)" not in changelog  # moved whole, continuation line included
+    unreleased = changelog.split("## [Unreleased]", 1)[1].split("\n## [", 1)[0]
+    assert "- Old bullet one" in unreleased and "hand-written fix" not in unreleased and "### Fixed" not in unreleased
+    assert real.output["legacy_bullets"] == 1
+    oracle.check_ac09_named(run.commands("aggregate")[-1]["stderr"], ["Old bullet one"], changelog, VERSION)  # AC09: the unheaded one is named
+
+
 def _s9(make_project, layout: str) -> Run:
     s, driver, results = _base(make_project), ReplayDriver(), []
     _drop(s)
@@ -170,6 +201,8 @@ SCENARIOS = {
                      acs=("FR-01.09/AC07",)),
     "S8": Scenario("S8", ("drops",), _s8, _check_s8, LITERALS,
                      acs=("FR-01.09/AC09",)),
+    "S8b": Scenario("S8b", ("drops",), _s8b, _check_s8b, LITERALS,
+                     acs=("FR-01.09/AC09", "FR-01.09/AC10")),
     "S9": Scenario("S9", ("drops",), _s9, _check_s9, LITERALS,
                      acs=("FR-01.09/AC10",)),
 }

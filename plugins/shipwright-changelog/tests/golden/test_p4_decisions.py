@@ -1,6 +1,6 @@
 """The behaviour changes the operator decided at stop 2 (2026-11-23), each proven on real git and the gh stub (unit P4).
 
-Every test names the OLD behaviour it fails on: the pinned prose of today's ``SKILL.md`` pushed ``git push --tags origin main``
+Every test names the OLD behaviour it fails on: the stop-2 prose of ``SKILL.md`` pushed ``git push --tags origin main``
 from any branch (F1a), pushed the tag while a guided release's PR was open (F1b), carried on after a failed ``gh pr create``
 or a rejected push (F4, F6), wrote the dashboard, the handover note and ``phase_history`` in a hand-invoked release and left
 the tree dirty (F10), and never checked the tag against the CHANGELOG outside the orchestrator's ``update-step`` (F7). B1 and B4
@@ -148,7 +148,7 @@ def test_f10_a_hand_invoked_release_leaves_a_clean_tree_with_nothing_written_by_
 
 @pytest.mark.covers("FR-01.09/AC01")
 def test_f10_the_old_close_block_left_the_tree_dirty_and_the_dashboard_changed(make_project):
-    """The pinned prose's block (replay_commands.CLOSE_PHASE) on the same finished release: it writes the three files."""
+    """The stop-2 prose's block (replay_commands.CLOSE_PHASE) on the same finished release: it writes the three files."""
     s = ss.ready_release(make_project, autonomy="autonomous")
     release_flow(ReplayDriver(), s, "autonomous")
     script = fill(CLOSE_PHASE, version=VERSION, shared=SHARED.as_posix(), plugin=PLUGIN.as_posix(), session="old-session")
