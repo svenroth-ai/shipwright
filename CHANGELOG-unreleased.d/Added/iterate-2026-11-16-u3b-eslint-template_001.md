@@ -1,1 +1,0 @@
-feat(profiles): ESLint config template for supabase-nextjs scaffolds carrying the profile's two architecture lint rules, a scaffold step that writes it, and a real ESLint test replacing the Python emulation (U3b)

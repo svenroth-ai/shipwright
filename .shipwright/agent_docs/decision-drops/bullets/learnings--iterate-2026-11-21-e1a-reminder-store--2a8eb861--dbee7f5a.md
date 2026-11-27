@@ -1,1 +1,0 @@
-- (2026-11-21) iterate — a secret-check widened past the brief's named pattern set is a Stage-1 spec REJECT even when the widening is sensible; record the widening as a decision first. [→ iterate-2026-11-21-e1a-reminder-store]

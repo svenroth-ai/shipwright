@@ -1,1 +1,0 @@
-- **iterate-2026-11-17-p2a-harness** (2026-11-17): Convention — (2026-11-17) golden-trace harness - release scenarios run in a scratch project built by shared/testkit/release_scratch.py (allowlist env, bare origin, gh_stub.py); golden_trace.py records and normalizes the trace; stdlib only. → decision_log (ADR via Run-ID: iterate-2026-11-17-p2a-harness)

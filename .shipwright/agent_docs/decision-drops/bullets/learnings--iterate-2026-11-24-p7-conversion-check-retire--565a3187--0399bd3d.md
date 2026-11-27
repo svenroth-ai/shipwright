@@ -1,1 +1,0 @@
-- (2026-11-24) iterate - a promise marked passing because its test exists is not evidence; read the run's JUnit report, and a check that lives inside the file it guards needs a sentinel outside it (check_plugin_conversion). [-> iterate-2026-11-24-p7-conversion-check-retire]

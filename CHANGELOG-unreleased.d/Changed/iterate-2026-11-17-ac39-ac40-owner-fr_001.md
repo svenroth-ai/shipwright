@@ -1,1 +1,0 @@
-The requirement that code reviewer notes stay on the review record, and the requirement that campaign runners never bypass git hooks, now sit under the ongoing-change requirement (FR-01.11 AC53, AC54) instead of project setup.

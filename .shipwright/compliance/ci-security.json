@@ -8,9 +8,9 @@
   "critical_gate": "pass",
   "degraded": false,
   "open_high_critical": 0,
-  "prompt_injection": 10,
-  "scan_date": "2026-11-12T08:28:21Z",
+  "prompt_injection": 12,
+  "scan_date": "2026-11-27T16:58:02Z",
   "schema": 1,
-  "source": "security.yml#43183206267",
+  "source": "security.yml#46037981810",
   "total": 10
 }

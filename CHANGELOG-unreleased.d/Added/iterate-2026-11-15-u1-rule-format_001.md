@@ -1,1 +1,0 @@
-feat(profiles): stack profiles can declare architecture rules as structured entries (id, text, why, how it is enforced); resolve_profile.py validate reports a wrong rule without failing the profile and warns about the old sentence list; a project profile shadowing a bundled one that has rules now gets a warning

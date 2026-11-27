@@ -5,6 +5,80 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.37.0] - 2026-11-27
+
+### Added
+
+- shared/config/conventions.json carries a constitution section that declares, per rule, whether a hook, a validator, a test or the prose alone enforces it; a drift test fails when the constitution and the register disagree, and constitution_register.md is generated from it.
+- shared/config/conventions.json holds the skill-authoring limits and the alignment with Anthropic's Skill authoring best practices; check_skill_authoring.py reports skills that break a limit.
+- feat(profiles): stack profiles can declare architecture rules as structured entries (id, text, why, how it is enforced); resolve_profile.py validate reports a wrong rule without failing the profile and warns about the old sentence list; a project profile shadowing a bundled one that has rules now gets a warning
+- The review record keeps the code reviewer's notes beside its findings (never as findings); the campaign runner contract states that git hooks are never bypassed
+- feat(profiles): render_architecture_rules.py writes a profile's architecture rules into a marked block of conventions.md; project scaffolding and adopt both run it (U2)
+- feat(profiles): supabase-nextjs architecture rules as rule objects with a why; client use and fetch in components are lint fragments, and the shipped template examples obey them (U3a)
+- feat(profiles): ESLint config template for supabase-nextjs scaffolds carrying the profile's two architecture lint rules, a scaffold step that writes it, and a real ESLint test replacing the Python emulation (U3b)
+- feat(profiles): bundled claude-plugin profile for Claude Code plugin repositories (generic Python data plus six architecture rules); adopt matches it on a .claude-plugin folder in Python-only repos and python-plugin-monorepo is described as the generic Python profile (U4)
+- feat(profiles): Shipwright's own project profile shipwright-monorepo (claude-plugin plus the repo-only rules for the test-root guard, the pre-commit hook and the bloat checks); the repository's configs name it and conventions.md carries the rendered rules (U5)
+- feat(reviewers): the code reviewer checks every diff against the architecture rules block in conventions.md (per rule id; judgement rules need a cited line; duplicated or stale blocks are reported), and the building guide explains how to add an architecture rule (U6)
+- Test seams for the release path: an argv prefix for gh and a fixture model for release-note condensation, so a release can be exercised offline (inert unless SHIPWRIGHT_TEST_* variables are set)
+- Golden-trace test harness for the changelog release flow: scratch project with a bare origin, a local gh stand-in and a normalized trace recorder with a freeze check (test support only, no behaviour change)
+- Changelog golden-trace replay driver, oracle and scenarios S1-S9 with committed traces; harness hardening (gh stub leaves the checkout on the merged base, dummy GH token, per-command short flags, masked PR bodies)
+- test(changelog): scenarios S10-S19, close-phase replay, coverage checks P8a-c and three seeded regressions for the golden-trace baseline (P2b2)
+- test(changelog): promise tests for FR-01.09, a promise list, judgement scenarios and the promise lock's hashing helper for the golden-trace baseline (P2p)
+- F11 test-tag gate: a Python harness test can declare itself infrastructure with pytest.mark.covers_none (tooling or infra) instead of carrying a stand-in requirement tag; honoured only for files named exactly in shared/config/infra_test_paths.json at the merge-base, never counted as requirement coverage
+- The security prompt scan now also reports, as warnings that never block a release, package sources redirected away from their default registry, hooks and settings that send data to another machine or run commands by themselves, whitespace padding, wording that tells the assistant to drop its safety rules, wildcard tool grants and programs disguised as documents; the checks are re-implemented after category ideas from NVIDIA SkillSpector (Apache-2.0), no code copied
+- feat(reminders): reminder store and CLI (add, list, show, done, snooze) with a secret check on all reminder text
+- feat(reminders): reminder_cli due returns reminders and expired triage parks in one versioned, redacted answer
+- test(testkit): a generic golden-lock writer (shared/testkit/golden_lock.py) writes and checks a plugin's golden.lock.json and promise.lock.json; the changelog pilot is frozen at stop 2 with its skill prose pinned for the coverage checks
+- feat(changelog): release.py prepare and aggregate run the first steps of the release in one call each, with the gate answers read from the gate catalog, the upgrade-notes check done by code and the release date and run id stored once
+- feat(changelog): release.py sync, commit-and-tag, record-event and close-phase run steps 5.3 to 7 of the release in code, with the stop rules for a failed PR, push or tag, a tag-only push from a feature branch, a clean tree after a hand-invoked release and a read-only check at the end
+- feat(changelog): a guard hook that denies pushing a tag or the trunk, merging the release PR and creating the release page while a release is in progress and its verified record does not name HEAD
+- check_prompt_mechanics.py and shared/config/converted_skills.json: a CI and verify_local gate that stops chained or multi-command shell blocks and new shell commands creeping back into a converted skill's SKILL.md (changelog is the first); the SKILL.md bloat entry is lowered to its thin size
+- Conversion check for converted plugins (check_plugin_conversion.py) with a JUnit reader that holds each passing promise against the run's own report; the pilot's inventory and coverage checks are retired
+- Constitution NEVER rule: do not hide a flaky test with skips, fixed sleeps or more retries; find the root cause or delete the test and record why
+- shipwright-test reference for property-based and differential tests (Hypothesis round-trip, invariant, idempotency, equivalence; old implementation as oracle for refactors)
+
+### Changed
+
+- BREAKING for repos on the drops layout: the event folders moved from the repo root to .shipwright/events/{drops,archive,quarantine}. A repo that still has shipwright_events.d/ is refused with the fix; run shared/scripts/tools/migrate_events_folder.py --project-root . once, then commit.
+- The changelog pilot brief now records the operator decisions, the re-measured start numbers and a per-plugin LEARNINGS report template.
+- docs(changelog): add the deterministic-first pilot inventory, truth table, subprocess map and checker for the changelog skill, with findings and ledger reconcile (no behaviour change)
+- The code-versus-AI rule for building skills, hooks and agents is now linked from CLAUDE.md, AGENTS.md and the plugin-writing guide.
+- Architecture rules with a linter fragment now render honestly: the fragment comes with the scaffold template and applies only where the project's linter config carries it
+- The requirement that code reviewer notes stay on the review record, and the requirement that campaign runners never bypass git hooks, now sit under the ongoing-change requirement (FR-01.11 AC53, AC54) instead of project setup.
+- The never-bypass-hooks requirement is now checked by behaviour: a test fails when any instruction or script of the iterate plugin or the campaign loop tells anyone to skip, redirect or disable git hooks.
+- test(changelog): the promise-lock hashing now notices import aliases, name rebinding, autouse fixtures, pytest hooks and mark forms, and the promise tests check more of what their sentences claim
+- Seed the infrastructure-test catalog (shared/config/infra_test_paths.json) with the six testkit meta-test files so they can declare covers_none in a follow-up merge
+- Document running the Linux-only test roots locally through WSL2 in the guide
+- Reclassify six testkit meta-test files as infrastructure (covers_none) instead of carrying a stand-in requirement tag
+- docs(campaign): R0a survey of every root shipwright_* file (readers, writers, locks, old-reader behaviour, CI and WebUI surfaces) appended to the root-files-into-config brief
+- External review cascade and Codex review transport now use GPT-6.2 Sol (openai/gpt-6.2-sol via OpenRouter, gpt-6.2-sol direct and via Codex CLI); the PR-review gate (Claude Haiku 5.5) is unchanged
+- refactor(paths): one resolver (shared/scripts/lib/shipwright_paths.py) now owns the names, kinds, locks and per-commit paths of the root shipwright_* files; every Python reference goes through it and a guard test forbids new literals (no behaviour change, files stay at the repo root)
+- Catalogue the changelog golden freeze test as an infrastructure test so it can leave the stand-in requirement tag
+- docs(planning): changelog pilot brief shows P8 split into P8a and P8b, marks the stop-1 decisions confirmed and notes where the stop-3 harness lives
+- The changelog golden-trace freeze now also covers the plugin's pytest configuration and the live changelog skill prose, so neither can change or switch the freeze off without an approved delta
+- Eight external-review tooling test files are now listed as infrastructure tests, so they can be marked as proving no product requirement
+- changelog: the skill prose writes no run state in any mode, and release.py push-tag decides the release tag push (which line, or why none) while the push itself stays a literal line the release guard sees
+- Existing projects: Not to upgrade. Update the plugins and carry on — your project keeps working exactly as before. Switching to the new layout is a separate, deliberate step that you take later, per project (see "Switching a project over" below). (see docs/migrations/events-drop-files.md)
+
+### Fixed
+
+- GitHub finding sync no longer re-files cards the default branch's tracked triage log already holds when the checkout is behind origin (origin only fills gaps; fail-soft)
+- FR-tag collector now counts curried it.skipIf(cond)(title, fn) / test.runIf(cond)(...) test declarations instead of silently leaving them uncounted
+- Compliance findings F6 and H1: CLAUDE.md is back under 200 lines and 29 oversize files are recorded in the bloat baseline
+- fix(iterate): a campaign unit's declared complexity is now a floor - the planner writes it into the unit spec, Stage 1 and the diff-driven risk re-check may raise it but never lower it, and the finalization gate holds the recorded tier to it, so a medium unit with a small diff still gets the plan, architecture and doubt reviews
+- The supabase-nextjs architecture-rule lint blocks are checked at the end of the build phase and can be restored with check_eslint_architecture_rules.py --apply, so a replaced eslint config no longer drops them silently
+- A failed compliance refresh in finalize now logs the real error lines instead of only the uv warnings printed before them
+- Campaign finalize now writes the final status.json into the main tree when the campaign directory is gitignored, so a finished campaign no longer reads active.
+- /shipwright-changelog now previews the release without writing anything and writes CHANGELOG.md only after you accept; Edit changes the pending entry and previews again, and Cancel leaves your files and the pending entries exactly as they were (an entry you edited is put back by the new `release.py cancel`)
+- /shipwright-changelog pushes the release branch before it opens the pull request, and opens it against the default branch your remote reports (master or any other name) instead of assuming main (main and develop still count as release branches with no pull request); neither push sends the release tag early, and asking the remote never waits for a password prompt
+- /shipwright-changelog: hand-written [Unreleased] entries now go into the release (marked in the preview), a typed version may start with v and must be SemVer above the last tag, the PR description keeps its line breaks (passed from a file), a refused evidence refresh no longer leaves files staged, and a cherry-picked bullet lands in its release; the never-built --from option is gone
+- Changelog release: the tag push after a merged release PR is no longer blocked by the release guard; a project without decision folders, a tracked bullet drop, or the compliance event written during the release no longer stop the tag; unrelated changes in the working tree now stop the release before its commit, naming the files.
+
+### Security
+
+- The security workflow's critical gate now fails when the prompt-injection scan crashed or left a missing, empty or unreadable report, instead of counting zero findings; a scan step that is skipped on purpose only warns.
+- The JUnit reader behind the plugin-conversion promise check now refuses a report that carries a DTD or entity declaration, or exceeds 8 MB, before parsing it, closing an XML entity-expansion path (Semgrep use-defused-xml-parse).
+
 ## [0.36.0] - 2026-11-12
 
 ### Added

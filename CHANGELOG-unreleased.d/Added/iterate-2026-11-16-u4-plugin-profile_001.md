@@ -1,1 +1,0 @@
-feat(profiles): bundled claude-plugin profile for Claude Code plugin repositories (generic Python data plus six architecture rules); adopt matches it on a .claude-plugin folder in Python-only repos and python-plugin-monorepo is described as the generic Python profile (U4)
