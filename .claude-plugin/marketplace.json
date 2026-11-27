@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "shipwright",
-  "description": "Shipwright SDLC — AI-powered software delivery lifecycle framework",
+  "description": "Shipwright SDLC: an AI software factory for Claude Code that you control",
   "version": "0.37.0",
   "owner": {
     "name": "svenroth.ai",

@@ -7,7 +7,7 @@
 
 **AI can build your software now. The hard part is keeping it true to what you already decided, on every change, not just the first.**
 
-Shipwright is **the harness your AI follows**. On every change it checks the work back against your baseline (requirements, architecture, past decisions) and won't let through a change that silently drops a requirement or reverses a call you already made. That is enforced in code, not left to the model to remember; the traceability and audit trail just fall out of it.
+Shipwright is **an AI software factory that you control**. You set the intent and you check the result; everything in between (plan, build, test, security, review) runs in the factory without you standing in it. On every change it checks the work back against your baseline (requirements, architecture, past decisions) and won't let through a change that silently drops a requirement or reverses a call you already made. That is enforced in code, not left to the model to remember; the traceability and audit trail just fall out of it.
 
 ```
 /shipwright-iterate "Add a dark mode toggle"
@@ -15,7 +15,7 @@ Shipwright is **the harness your AI follows**. On every change it checks the wor
 
 **What comes with it:** a failing test written first, the change, your specs and traceability updated to match, and a clean Conventional-Commit PR, security-scanned and gated on green checks. Nothing you'd already settled gets quietly undone.
 
-Not a stack framework, not autonomous codegen, just the discipline layer that makes whatever generates your code something you can stand behind. Use it from the **Claude Code VSCode Extension or CLI terminal**, or for multi-project work through the **Shipwright Command Center** web UI. Built for daily iteration, not one-shot generation. It scales from a one-line change to a whole new app:
+Not a stack framework, and not a dark factory: you still own the intent and the check of what comes out. Inside, a harness enforces the rules and a loop runs every change through the same checks, so whatever generates your code becomes something you can stand behind. Use it from the **Claude Code VSCode Extension or CLI terminal**, or for multi-project work through the **Shipwright Command Center** web UI. Built for daily iteration, not one-shot generation. It scales from a one-line change to a whole new app:
 
 ```
 /shipwright-run "A SaaS time tracking app with Supabase and Next.js"
