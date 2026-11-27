@@ -124,6 +124,29 @@ Notes (not defects; after the campaign at most):
   - ruff and `verify_local.py` are green.
 - **Reviews:** code and doubt reviews found nothing high. Two medium findings were fixed: the per-chain hash, and the note on the masked body.
 
+## First monorepo release, v0.37.0 (step 6, 2026-11-27)
+
+An Opus subagent ran the installed plugin in a clean worktree, with the release guard active. The release was 60 commits since v0.36.0, 62 changelog bullets, 82 decision drops (ADR-699 to ADR-748) and 29 version slots.
+
+- From `prepare` to the open PR #1114, every step exited 0. close-phase in "waiting" passed, and the guard denied nothing.
+- **The plugin could not finish the release by itself (FINDINGS D110).** This repo allows squash merges only. A squash leaves the release commit off `main`, so `push-tag` correctly refuses with `merged_without_release_commit`. The operator chose the hand path, as for v0.26 to v0.36:
+  1. bump the root `pyproject.toml` and `uv.lock` (D111);
+  2. squash-merge #1114;
+  3. tag the squash commit by hand.
+
+  The guard was lifted for the merge and the tag push only, with the operator's consent, by moving its run state aside.
+- **A foreign commit landed in the tag (D112).** #1115 (R1a) merged onto `main` between the release branch and the squash merge, so its code was in the tag and its notes were still pending. The operator required matching notes. Addendum #1116 moved the R1a entry into `[0.37.0]` and its decision drop into ADR-749. The tag was then moved onto that commit (`23f1f3539`), before any release page existed.
+- Release page: https://github.com/svenroth-ai/shipwright/releases/tag/v0.37.0.
+- Closing check: 6 of 8. `tag_local` and `tag_remote` fail by design, because the tag is not the commit the release audit verified. That is the D110 gap.
+- Notes from the run: `SHIPWRIGHT_PLUGIN_ROOT` was not set in the subagent's shell. The upgrade note reads badly as a changelog bullet ("Not to upgrade. … see below"). Some drop bullets keep commit-style prefixes.
+
+## Hand-over (step 7)
+
+- FINDINGS gained a "Stop 3 (2026-11-27)" section (D110 to D113), and LEARNINGS gained a stop-3 section.
+- The follow-up campaign's input is `2026-11-27-dfp-changelog-followups-BRIEF.md`. The first item is that a release must finish with any merge method.
+
+**STOP 3 closes here.**
+
 ## Observations (not defects; after the campaign at most)
 
 - **Empty preview (S3d, S4d):** with no drops, the model still presents the empty preview, and the real aggregate then refuses. Stopping at an empty preview would be new behaviour.
