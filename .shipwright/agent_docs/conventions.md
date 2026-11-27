@@ -931,3 +931,4 @@ Contribution rules, dev setup, the graduated trust model, and high-sensitivity a
 - **ADR-702** (2026-11-14): Convention — Skill inventory data and checker for the pilot. → decision_log (ADR-702)
 - **ADR-713** (2026-11-16): Convention — Bundled claude-plugin profile with plugin-project architecture rules. → decision_log (ADR-713)
 - **ADR-719** (2026-11-17): Convention — Replay driver records today's changelog prose, refusals included. → decision_log (ADR-719)
+- **iterate-2026-11-27-r1a-resolver-foundation** (2026-11-27): Convention — Root pointer stub: classify bytes only through shared/scripts/lib/shipwright_pointer.py (BRIEF 14.1); every recogniser shares shared/testkit/pointer_stub_cases.py. A new private package over shared/scripts/lib must be added to shipwright_paths._ALIASES. → decision_log (ADR via Run-ID: iterate-2026-11-27-r1a-resolver-foundation)

@@ -53,6 +53,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - docs(campaign): R0a survey of every root shipwright_* file (readers, writers, locks, old-reader behaviour, CI and WebUI surfaces) appended to the root-files-into-config brief
 - External review cascade and Codex review transport now use GPT-6.2 Sol (openai/gpt-6.2-sol via OpenRouter, gpt-6.2-sol direct and via Codex CLI); the PR-review gate (Claude Haiku 5.5) is unchanged
 - refactor(paths): one resolver (shared/scripts/lib/shipwright_paths.py) now owns the names, kinds, locks and per-commit paths of the root shipwright_* files; every Python reference goes through it and a guard test forbids new literals (no behaviour change, files stay at the repo root)
+- Path resolver groundwork for moving shipwright_* files into .shipwright/config/: one resolver object under every import name, a pointer-stub recogniser, and helpers for the new and old file locations (no behaviour change yet)
 - Catalogue the changelog golden freeze test as an infrastructure test so it can leave the stand-in requirement tag
 - docs(planning): changelog pilot brief shows P8 split into P8a and P8b, marks the stop-1 decisions confirmed and notes where the stop-3 harness lives
 - The changelog golden-trace freeze now also covers the plugin's pytest configuration and the live changelog skill prose, so neither can change or switch the freeze off without an approved delta

@@ -9984,3 +9984,16 @@ shipwright/
 - **Commit:** (assigned post-merge)
 - **Consequences:** Under the drops layout a release finishes from a clean tree; the replay restates the rule, 8 golden traces moved as approved deltas; a person's own work in progress now stops the release before any commit.
 - **Rejected:** Sweeping all of CHANGELOG-unreleased.d/ and .shipwright/events/drops into the commit (would commit unrelated drops); stashing unrelated work automatically (new behaviour, the operator chose refuse).
+
+---
+
+### ADR-749: One resolver object, one pointer-stub recogniser, known-location helpers (R1a)
+- **Date:** 2026-11-27
+- **Section:** Iterate — change: R1a resolver foundation
+- **Run-ID:** iterate-2026-11-27-r1a-resolver-foundation
+- **Context:** Campaign root-files-into-config moves root shipwright_* files to .shipwright/config/. R1 needs one resolver state across four import names, one recogniser for the signed-off SHIPWRIGHT-POINTER/1 stub, and helpers naming both the new and the old location.
+- **Decision:** shipwright_paths unifies every name in _ALIASES to one module object (same-file check); new shipwright_pointer.classify/render implement BRIEF 14.1 with a shared fixture table; new_rel/known_rels/all_known_rels plus a FileSpec.target column. No production answer changes.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Split state across import names would make R1c's layout detection disagree between hooks. One recogniser with one fixture set keeps the Python, CI and WebUI readers from drifting.
+- **Consequences:** R1b-R1e build on one object and one recogniser. The resolver sits at its 300-line cap, so R1c's dual read goes to a sibling module. The check_file_size fallback stays dead until R1c (strict xfail).
+- **Rejected:** Patching every importer to one import form (160 files, R1b scope); a JSON stub (rejected at sign-off: a stub must never parse as config).
