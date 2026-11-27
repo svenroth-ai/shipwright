@@ -3,7 +3,7 @@
 It implements the per-step driver interface of ``golden_trace`` for the steps of Step C through Step 7
 that the first half of the scenarios (S1-S9) need. Every command it runs cites its ``SKILL.md`` line
 (``replay_commands.CITES``); ``ReplayDriver.log`` records each command with its key, so a test can check
-the citations against the live prose. It is FROZEN with the traces at the operator's stop 2.
+the citations against the pinned prose (``pinned_prose/SKILL.md.pin``). It is FROZEN with the traces at the operator's stop 2.
 
 Order follows the prose; where a later unit fixed the prose (P8a: D7, D12, D24; P8b: D15, F9, Q5, Q7) the replay follows
 the fixed prose. Stop 3 (D21, D22, D23, D25) fixed Step 6 in the code only (``release.py commit-and-tag``); the replay restates

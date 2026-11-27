@@ -33,6 +33,11 @@ def test_s18b_edit_at_the_preview_keeps_the_edit_and_the_consumed_drops(make_pro
     verify(SCENARIOS["S18b"], "legacy", make_project)
 
 
+@pytest.mark.covers("FR-01.09/AC10")
+def test_s18c_edit_then_cancel_puts_the_edited_drop_back_d84(make_project):
+    verify(SCENARIOS["S18c"], "legacy", make_project)
+
+
 @pytest.mark.covers("FR-01.09/AC01")
 def test_s19_from_is_no_option_and_passing_it_is_refused_q7(make_project):
     verify(SCENARIOS["S19"], "legacy", make_project)

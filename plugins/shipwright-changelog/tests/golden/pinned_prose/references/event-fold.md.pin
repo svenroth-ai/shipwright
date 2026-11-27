@@ -1,5 +1,7 @@
 # Folding old event files at release (Step 5.3)
 
+`release.py sync` runs the fold as the first of its three steps (Steps 5.3 to 5.5) and reports `fold.status`; the rules below are unchanged.
+
 `tools/fold_events_for_release.py` (shared) is the routine housekeeping of `fold_events.py fold` made automatic. It runs
 BEFORE Step 5.4, so the fold lands in a commit of its own and nothing of the release is staged yet, and BEFORE Step 5.5, so
 the evidence documents are built from the folded tree. It never blocks the release: it prints one JSON object and exits 0.

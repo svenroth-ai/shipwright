@@ -47,3 +47,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Date format: YYYY-MM-DD
 - Version links at bottom of file (optional)
 - Empty sections are omitted
+- `## [Unreleased]` empties into the release: a hand-written bullet under `### Added`, `### Changed`, `### Deprecated`,
+  `### Removed`, `### Fixed` or `### Security` moves into that category of the new version (the preview marks it
+  `(hand-written)`); a bullet under no such heading stays and is named in a warning (operator decision Q5)

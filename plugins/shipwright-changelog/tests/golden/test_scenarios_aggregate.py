@@ -1,4 +1,4 @@
-"""S3-S9: version proposals, the empty-release stops, re-runs, legacy bullets and the dry run.
+"""S3-S9: version proposals, the empty-release stops, re-runs, legacy and hand-written bullets and the dry run.
 
 Each test runs its scenario through the replay driver, asserts the ACs it names through ``oracle`` and compares the
 normalized trace with the committed ``*.trace.json`` (see ``scenario_core.verify``).
@@ -61,6 +61,11 @@ def test_s7c_two_sections_claiming_the_version_stop_the_write(make_project):
 @pytest.mark.covers("FR-01.09/AC09")
 def test_s8_legacy_bullets_are_named_back_not_folded(make_project):
     verify(RERUN["S8"], "drops", make_project)
+
+
+@pytest.mark.covers("FR-01.09/AC09", "FR-01.09/AC10")
+def test_s8b_a_hand_written_entry_under_a_category_heading_moves_into_the_release_q5(make_project):
+    verify(RERUN["S8b"], "drops", make_project)
 
 
 @pytest.mark.covers("FR-01.09/AC10")
