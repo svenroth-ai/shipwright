@@ -154,7 +154,7 @@ def _profile(root: Path) -> dict | None:
     """The run's stack profile; ``None`` when the run config names none. A profile the config names but
     the resolver refuses (unknown, corrupt, too new) raises -- the caller fails loud (exit 2)."""
     try:
-        name = json.loads((root / _sp.rel("run_config")).read_text(encoding="utf-8")).get("profile")
+        name = json.loads(_sp.path("run_config", root).read_text(encoding="utf-8")).get("profile")
     except (OSError, ValueError, AttributeError):  # no readable run config: no profile declares anything
         return None
     if not isinstance(name, str) or not name:

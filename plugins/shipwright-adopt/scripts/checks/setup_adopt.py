@@ -141,7 +141,7 @@ def run_preflight(project_root: Path, excludes: list[str]) -> dict:
         )
         return report
 
-    if (project_root / _sp.rel("run_config")).exists():
+    if _sp.path("run_config", project_root).exists():
         report["ok"] = False
         report["hard_stops"].append(
             "shipwright_run_config.json already exists — this project is already adopted. "

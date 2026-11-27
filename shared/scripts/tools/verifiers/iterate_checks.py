@@ -457,7 +457,7 @@ def _freshness_mtime_reference(project_root: Path, run_id: str) -> float | None:
     entry_path = entry_file_for(project_root, run_id)
     if entry_path.exists():
         return entry_path.stat().st_mtime
-    cfg = project_root / _sp.rel("run_config")
+    cfg = _sp.path("run_config", project_root)
     if cfg.exists():
         return cfg.stat().st_mtime
     return None

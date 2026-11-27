@@ -63,7 +63,7 @@ def _design_not_applicable(project_root: Path) -> Optional[str]:
     ``recover-phase-task --force-status skipped``, so honouring it here would let a
     later completion launder a skip into a clean pass.
     """
-    run_config = _read_json(project_root / _sp.rel("run_config"))
+    run_config = _read_json(_sp.path("run_config", project_root))
     if run_config.get("scope") in _NO_UI_SCOPES:
         return f"scope={run_config['scope']} has no UI surface"
     return None

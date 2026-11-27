@@ -135,7 +135,7 @@ def _detect_phase_complete(current_phase: str, project_root: Path, completed_pha
         return False
 
     if current_phase == "build":
-        config_path = project_root / _sp.rel("build_config")
+        config_path = _sp.path("build_config", project_root)
         if config_path.exists():
             try:
                 config = json.loads(config_path.read_text(encoding="utf-8"))
@@ -146,7 +146,7 @@ def _detect_phase_complete(current_phase: str, project_root: Path, completed_pha
             except (json.JSONDecodeError, OSError):
                 pass
     elif current_phase == "plan":
-        config_path = project_root / _sp.rel("plan_config")
+        config_path = _sp.path("plan_config", project_root)
         if config_path.exists():
             try:
                 config = json.loads(config_path.read_text(encoding="utf-8"))
@@ -154,7 +154,7 @@ def _detect_phase_complete(current_phase: str, project_root: Path, completed_pha
             except (json.JSONDecodeError, OSError):
                 pass
     elif current_phase == "project":
-        config_path = project_root / _sp.rel("project_config")
+        config_path = _sp.path("project_config", project_root)
         if config_path.exists():
             try:
                 config = json.loads(config_path.read_text(encoding="utf-8"))
@@ -162,7 +162,7 @@ def _detect_phase_complete(current_phase: str, project_root: Path, completed_pha
             except (json.JSONDecodeError, OSError):
                 pass
     elif current_phase == "test":
-        results_path = project_root / _sp.rel("test_results")
+        results_path = _sp.path("test_results", project_root)
         if results_path.exists():
             try:
                 results = json.loads(results_path.read_text(encoding="utf-8"))

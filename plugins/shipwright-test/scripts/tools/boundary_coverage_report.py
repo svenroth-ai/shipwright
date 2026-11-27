@@ -611,7 +611,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     project_root = args.project_root.resolve()
-    events_path = args.events_jsonl or (project_root / _sp.rel("events"))
+    events_path = args.events_jsonl or (_sp.path("events", project_root))
 
     specs = scan_specs(project_root)
     rows = correlate_with_commits(specs, events_path, project_root=project_root)

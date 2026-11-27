@@ -31,7 +31,7 @@ def load_thresholds(project_root: str | Path) -> EnforcementThresholds:
     Reads from {project_root}/shipwright_compliance_config.json
     field "enforcement". Falls back to defaults if missing.
     """
-    config_path = Path(project_root) / _sp.rel("compliance_config")
+    config_path = _sp.path("compliance_config", project_root)
     if not config_path.exists():
         return EnforcementThresholds()
 

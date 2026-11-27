@@ -1,0 +1,317 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-27-r1b-path-joins",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-27T19:50:55.119561+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "Make the allowlist per-line or per-expression (e.g., record the fallback pattern shape and only exempt `BinOp(Div, x, IfExp(..., rel(...)))` matches), or at minimum have the scanner restrict the exemption to lines whose right operand contains the `_sp is None` IfExp.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "Have the codemod assert the left operand is a `Name`, `Attribute`, or single-arg `Path(...)` call, and bail loudly (skip + report) on anything else rather than rewriting blindly.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency ·",
+          "file": null,
+          "line": null,
+          "finding": "Confirm the survey already checked this; if not, add `name()`/`legacy_rel()` joins to the codemod's target set or verify zero exist before merging (the negative control run should surface this — make sure it's actually run and diffed against the expected 98, not just \"flags exist\").",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "Add a codemod precondition: only rewrite single-positional-argument `rel()` calls; anything else aborts that file for manual review.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk ·",
+          "file": null,
+          "line": null,
+          "finding": "Include the \"point at `path()`\" message text in the guard implementation as a constant, tested via a positive control.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach ·",
+          "file": null,
+          "line": null,
+          "finding": "Add a positive control for the IfExp shape in a non-exempt test fixture file.  Overall assessment: Sound, well-scoped mechanical refactor with a good guard design and clear R1c handoff. The main refinement needed is tightening the per-file fallback allowlist and adding codemod preconditions on non-canonical call shapes; neither blocks the approach.  SHIPWRIGHT_VERDICT: approve",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The file-wide `REL_JOIN_ALLOWED` exemption lets new joins pass in all seven hook files. Those files still need the guard because they read project files and can acquire new resolver call sites.",
+          "suggestion": "Exempt only the seven existing fallback expressions. Match the pinned conditional shape and scope each exception by file and key. Add a control showing that a direct join in an exempt hook file still fails.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The codemod covers only `/ _sp.rel(...)`, while the guard covers other receivers, join methods, and resolver helpers. The 98-site survey therefore does not establish whether the broader guard will flag existing production code.",
+          "suggestion": "Run the new scanner against the unmodified tree and compare the flagged locations with the 98 planned edits and seven pinned fallbacks. Resolve any additional hits explicitly. Keep `name()` and `legacy_rel()` in the guard only if the migration has a concrete reason to prohibit those joins.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The survey records the syntax of each root expression but does not establish the runtime types of the 89 bare-name roots. The rewrite replaces the original operand’s `/` dispatch with `Path(root)`, which can change behavior for a custom path object or a `PureWindowsPath` used on a non-Windows host.",
+          "suggestion": "Trace the root definitions and caller contracts for those sites. Where they establish native `Path` values, the existing verification plan is sufficient. Investigate any other supported root types before rewriting those sites.  The mechanical rewrite is appropriate for this migration, and the proposed test scope is proportionate. Narrow the hook exemptions and reconcile the scanner’s baseline with the codemod before merging. No change-specific security issue is evident from the plan.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-27T19:50:34.195211+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] **Findings**\n\n- **Category:** edge-case · **Severity:** medium — The `REL_JOIN_ALLOWED` allowlist is per-file, not per-expression. The 7 fallback files get a blanket exemption, so a *new* `_sp.rel` join added anywhere in those files next quarter passes the guard silently. That's exactly the regression AC2 is meant to prevent, and those files (hook fallbacks) are the ones most likely to grow.\n  **Suggestion:** Make the allowlist per-line or per-expression (e.g., record the fallback pattern shape and only exempt `BinOp(Div, x, IfExp(..., rel(...)))` matches), or at minimum have the scanner restrict the exemption to lines whose right operand contains the `_sp is None` IfExp.\n\n- **Category:** edge-case · **Severity:** low — The codemod rewrites `BinOp(Div, left, rel(arg))` unconditionally, including where the left side is a plain string rather than a `Path`. That's fine semantically (`path()` wraps the root), but the survey's claim \"98 sites, 9 `Path(x)` calls\" should be verified to include any `str`-typed roots; if a site does `os.sep`-style string concatenation via `/` (rare but possible in `os.path`-adjacent code), the rewrite changes semantics. The re-parse step mitigates syntax errors but not type errors.\n  **Suggestion:** Have the codemod assert the left operand is a `Name`, `Attribute`, or single-arg `Path(...)` call, and bail loudly (skip + report) on anything else rather than rewriting blindly.\n\n- **Category:** dependency · **Severity:** low — The guard detects `name()` and `legacy_rel()` joins but the codemod only rewrites `_sp.rel(...)` sites. If any of the 98 sites (or other files) use `_sp.name(...)` / `legacy_rel(...)` in a join, the guard will fail immediately post-change with no codemod coverage for them.\n  **Suggestion:** Confirm the survey already checked this; if not, add `name()`/`legacy_rel()` joins to the codemod's target set or verify zero exist before merging (the negative control run should surface this — make sure it's actually run […truncated]\n\n[openai] 1. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** The file-wide `REL_JOIN_ALLOWED` exemption lets new joins pass in all seven hook files. Those files still need the guard because they read project files and can acquire new resolver call sites.  \n   **Suggestion:** Exempt only the seven existing fallback expressions. Match the pinned conditional shape and scope each exception by file and key. Add a control showing that a direct join in an exempt hook file still fails.\n\n2. **Category:** approach  \n   **Severity:** medium  \n   **Finding:** The codemod covers only `/ _sp.rel(...)`, while the guard covers other receivers, join methods, and resolver helpers. The 98-site survey therefore does not establish whether the broader guard will flag existing production code.  \n   **Suggestion:** Run the new scanner against the unmodified tree and compare the flagged locations with the 98 planned edits and seven pinned fallbacks. Resolve any additional hits explicitly. Keep `name()` and `legacy_rel()` in the guard only if the migration has a concrete reason to prohibit those joins.\n\n3. **Category:** edge-case  \n   **Severity:** low  \n   **Finding:** The survey records the syntax of each root expression but does not establish the runtime types of the 89 bare-name roots. The rewrite replaces the original operand’s `/` dispatch with `Path(root)`, which can change behavior for a custom path object or a `PureWindowsPath` used on a non-Windows host.  \n   **Suggestion:** Trace the root definitions and caller contracts for those sites. Where they establish native `Path` values, the existing verification plan is sufficient. Investigate any other supported root types before rewriting those sites.\n\nThe mechanical rewrite is appropriate for this migration, and the proposed test scope is proportionate. Narrow the hook exemptions and reconcile the scanner’s baseline with the codemod before merging. No change-specific security issue is evident from the plan.\n\nSHIPWRIG […truncated]",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/_shipwright_paths_scan.py",
+          "line": 192,
+          "finding": "Any call named join with a rel() argument counted as a filesystem join, incl. message and shlex pathspec joins.",
+          "suggestion": "Limit to os.path/posixpath/ntpath and '/'/os.sep joins; negative controls.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/_shipwright_paths_scan.py",
+          "line": 1163,
+          "finding": "Bare-name calls of rel imported from shipwright_paths are not seen.",
+          "suggestion": "Track ImportFrom names or record as a blind spot.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_shipwright_paths_guard.py",
+          "line": 131,
+          "finding": "Inventory compares (file, name) sets: a second binding of an inventoried name passes.",
+          "suggestion": "Count bindings.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/_shipwright_paths_scan.py",
+          "line": 1219,
+          "finding": "A lambda calling path() at use time is reported as frozen at import.",
+          "suggestion": "Skip lambda bodies; negative control.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-27T19:59:07.738034+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "shared/scripts/lib/shipwright_paths.py",
+          "line": null,
+          "finding": "Claim under doubt: rewrite changes no behaviour incl. stale caches — dropped Path(x) wrappers rely on path() wrapping a str root; untested, older resolvers unchecked",
+          "suggestion": "history shows Path(root) since R0b; pin str-root contract by a test",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "shared/tests/_shipwright_paths_scan.py",
+          "line": null,
+          "finding": "Claim under doubt: guard flags every direct join shape — Path(*[root, rel]) missed; with_name, %-format, bare/aliased join not listed",
+          "suggestion": "count Starred; list the rest as blind spots",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling & blast radius",
+          "file": ".shipwright/planning/campaigns/2026-11-14-root-files-into-shipwright-dir-BRIEF.md",
+          "line": null,
+          "finding": "Claim under doubt: R1c work list complete — importers of inventoried constants and non-Python carriers not named",
+          "suggestion": "list importers in 12.10b; state carrier ownership",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-27T20:07:00.722285+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_shipwright_paths_guard.py` (`test_a_plain_join_in_a_fallback_file_is_not_allowed`)",
+          "line": null,
+          "finding": "This test only asserts dict structure (`\"rel-join\" not in ALLOWED`); it never runs the scanner on a fallback-allowed file containing a plain join to prove the end-to-end `_violations()` path actually fails. The mechanism is pinned, but indirectly.",
+          "suggestion": "Add a case that monkeypatches a synthetic file into `production_py()` with a plain join and asserts it lands in `_violations()` even when the file is in `REL_JOIN_ALLOWED`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/tests/_shipwright_paths_scan.py`, `_rel_joins` BinOp branch",
+          "line": null,
+          "finding": "Two join shapes slip through: (a) `_sp.rel(\"k\") / \"x\"` (rel on the left, plain, not through a `Path()` wrapper — the left-side clause requires the left to be a wrapper call), and (b) a multi-argument wrapper on the left of a BinOp, e.g. `Path(_sp.rel(\"k\"), \"sub\") / x` (`_has_rel`'s wrapper recursion requires exactly one arg). These are adjacent to the blind spots already recorded in BRIEF 12.10d (aliased receivers, locals, f-strings) but not listed there.",
+          "suggestion": "Either extend the left-side check, or add these two shapes to the 12.10d blind-spot list so R1c's moved-layout test knows to cover them.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/tests/_shipwright_paths_scan.py`, `_has_rel` receiver check",
+          "line": null,
+          "finding": "rel()` calls through a non-`Name` receiver (e.g. `import shared.scripts.lib.shipwright_paths as m; m.rel(k)`, or `from . import x; x.rel(k)`) are invisible — the receiver must be a bare `_sp`/`sp`/`shipwright_paths` Name. Same class as the aliased-import blind spot, but a distinct trigger (module-attribute access) worth naming in 12.10d.",
+          "suggestion": "Record it alongside the aliased-receiver blind spot; R1c's layout test is the real net.  Positives worth noting: the shape parametrization is a genuine positive control per AC2 (all 15 shapes, including `/=`, starred `joinpath`, tuple `str.join`, `os.path.join`, both `Path(root, rel)` and `Path(rel)`-wrapper sides); the `rel-constant` inventory test is bidirectional (new names fail, gone names must be removed, cap enforced), which is a real ratchet, not a smoke test; the ignore-test still exercises the documented local-variable blind spot, confirming it is intentional. The fixture JSON matches the scanner's own definition, so the closed list is self-consistent. No security issues (pure refactor, no new input paths). No caller-visible behavior change: `_sp.path(key, root)` equals `Path(root) / rel(key)` per the resolver contract stated in the spec.  Overall assessment: ship-as-is — the findings are refinements to recorded blind-spot documentation and one test hardening, none block the mechanical rewrite or R1c's hand-off.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/tests/_shipwright_paths_scan.py",
+          "line": 128,
+          "finding": "The guard classifies any conditional join operand as a guarded fallback. In an allowlisted file, `root / (_sp.rel(\"run_config\") if enabled else _sp.rel(\"plan_config\"))` passes even though neither branch handles a missing resolver. This violates AC2’s requirement that the exemption apply only to the guarded fallback shape.",
+          "suggestion": "Match the `_sp is None` test, string literal branch, and `_sp.rel(...)` branch explicitly. Add a test that verifies an unrelated conditional produces `rel-join` in an allowlisted file.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/tests/_shipwright_paths_scan.py",
+          "line": 123,
+          "finding": "The `.joinpath()` check inspects arguments only. `Path(_sp.rel(\"run_config\")).joinpath(\"child\")` therefore passes the guard, even though it directly joins a resolver result and bypasses `path()`. The equivalent `/` form is covered.",
+          "suggestion": "Check the `.joinpath()` receiver for a wrapped resolver call and add a positive control for this form.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_shipwright_paths_guard.py",
+          "line": 187,
+          "finding": "The positive controls exercise joins on `rel()` and `name()`, but `legacy_rel()` appears only in a constant-inventory case. Removing it from `_JOINED` would leave those tests green, so AC2’s coverage is incomplete.",
+          "suggestion": "Add a direct `legacy_rel()` join that asserts the scanner emits `rel-join`.  Overall assessment: Ship-with-fixes. The shown production rewrites preserve the keys and root expressions. The guard needs the two detection fixes and targeted coverage before AC2 is met.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-27T19:53:22.701529+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] **Review of R1b path-joins diff**\n\nI checked the 98 rewritten call sites (key and root preserved at each one — all samples in the diff keep the same key and the same root expression, with `Path(x)` wrappers dropped, matching AC1), the scanner logic in `_shipwright_paths_scan.py`, and the guard tests.\n\nFindings:\n\n- Category: test — Severity: low\n  File: `shared/tests/test_shipwright_paths_guard.py` (`test_a_plain_join_in_a_fallback_file_is_not_allowed`)\n  Finding: This test only asserts dict structure (`\"rel-join\" not in ALLOWED`); it never runs the scanner on a fallback-allowed file containing a plain join to prove the end-to-end `_violations()` path actually fails. The mechanism is pinned, but indirectly.\n  Suggestion: Add a case that monkeypatches a synthetic file into `production_py()` with a plain join and asserts it lands in `_violations()` even when the file is in `REL_JOIN_ALLOWED`.\n\n- Category: edge-case — Severity: low\n  File: `shared/tests/_shipwright_paths_scan.py`, `_rel_joins` BinOp branch\n  Finding: Two join shapes slip through: (a) `_sp.rel(\"k\") / \"x\"` (rel on the left, plain, not through a `Path()` wrapper — the left-side clause requires the left to be a wrapper call), and (b) a multi-argument wrapper on the left of a BinOp, e.g. `Path(_sp.rel(\"k\"), \"sub\") / x` (`_has_rel`'s wrapper recursion requires exactly one arg). These are adjacent to the blind spots already recorded in BRIEF 12.10d (aliased receivers, locals, f-strings) but not listed there.\n  Suggestion: Either extend the left-side check, or add these two shapes to the 12.10d blind-spot list so R1c's moved-layout test knows to cover them.\n\n- Category: edge-case — Severity: low\n  File: `shared/tests/_shipwright_paths_scan.py`, `_has_rel` receiver check\n  Finding: `rel()` calls through a non-`Name` receiver (e.g. `import shared.scripts.lib.shipwright_paths as m; m.rel(k)`, or `from . import x; x.rel(k)`) are invisible — the receiver must be a bare `_sp`/`sp`/`shipwright_paths` Name […truncated]\n\n[openai] - **Category:** spec  \n  **Severity:** medium  \n  **File:line:** `shared/tests/_shipwright_paths_scan.py:128`  \n  **Finding:** The guard classifies any conditional join operand as a guarded fallback. In an allowlisted file, `root / (_sp.rel(\"run_config\") if enabled else _sp.rel(\"plan_config\"))` passes even though neither branch handles a missing resolver. This violates AC2’s requirement that the exemption apply only to the guarded fallback shape.  \n  **Suggestion:** Match the `_sp is None` test, string literal branch, and `_sp.rel(...)` branch explicitly. Add a test that verifies an unrelated conditional produces `rel-join` in an allowlisted file.\n\n- **Category:** spec  \n  **Severity:** medium  \n  **File:line:** `shared/tests/_shipwright_paths_scan.py:123`  \n  **Finding:** The `.joinpath()` check inspects arguments only. `Path(_sp.rel(\"run_config\")).joinpath(\"child\")` therefore passes the guard, even though it directly joins a resolver result and bypasses `path()`. The equivalent `/` form is covered.  \n  **Suggestion:** Check the `.joinpath()` receiver for a wrapped resolver call and add a positive control for this form.\n\n- **Category:** test  \n  **Severity:** low  \n  **File:line:** `shared/tests/test_shipwright_paths_guard.py:187`  \n  **Finding:** The positive controls exercise joins on `rel()` and `name()`, but `legacy_rel()` appears only in a constant-inventory case. Removing it from `_JOINED` would leave those tests green, so AC2’s coverage is incomplete.  \n  **Suggestion:** Add a direct `legacy_rel()` join that asserts the scanner emits `rel-join`.\n\n**Overall assessment:** Ship-with-fixes. The shown production rewrites preserve the keys and root expressions. The guard needs the two detection fixes and targeted coverage before AC2 is met.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-27T19:52:04.637659+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-27T19:50:33.735673+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-27T19:50:34.042406+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

@@ -136,7 +136,7 @@ def load_engagement_inputs(project_root: Path) -> tuple[dict | None, list[dict]]
     read error never silently suppresses alerts (AC-1b).
     """
     cfg: dict | None = None
-    cfg_path = project_root / _sp.rel("run_config")
+    cfg_path = _sp.path("run_config", project_root)
     if cfg_path.exists():
         try:
             data = json.loads(cfg_path.read_text(encoding="utf-8"))

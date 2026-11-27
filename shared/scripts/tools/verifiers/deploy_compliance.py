@@ -40,7 +40,7 @@ W7_REMEDIATION = (
 
 
 def _smoke_from_deploy_config(project_root: Path) -> str | None:
-    path = project_root / _sp.rel("deploy_config")
+    path = _sp.path("deploy_config", project_root)
     if not path.exists():
         return None
     try:
@@ -52,7 +52,7 @@ def _smoke_from_deploy_config(project_root: Path) -> str | None:
 
 
 def _smoke_from_test_results(project_root: Path) -> str | None:
-    path = project_root / _sp.rel("test_results")
+    path = _sp.path("test_results", project_root)
     if not path.exists():
         return None
     try:

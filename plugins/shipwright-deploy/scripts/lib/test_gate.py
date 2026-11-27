@@ -42,7 +42,7 @@ def evaluate_test_gate(project_root: Path, confirmed: bool) -> tuple[str, str | 
     ``failing-*``, not ``no-results`` — a present-but-corrupt file is not the
     same as an absent one.
     """
-    results_path = project_root / _sp.rel("test_results")
+    results_path = _sp.path("test_results", project_root)
     if not results_path.exists():
         if confirmed:
             return "no-results", None

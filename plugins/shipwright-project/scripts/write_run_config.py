@@ -90,7 +90,7 @@ def detect_profile(project_root: Path) -> str | None:
 
 def write_run_config(project_root: Path, profile: str) -> Path:
     """Write shipwright_run_config.json with initial state."""
-    config_path = project_root / _sp.rel("run_config")
+    config_path = _sp.path("run_config", project_root)
     if config_path.exists():
         raise FileExistsError(f"shipwright_run_config.json already exists at {config_path}")
     now = datetime.now(timezone.utc).isoformat()

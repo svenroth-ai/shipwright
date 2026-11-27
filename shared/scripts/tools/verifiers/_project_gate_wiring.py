@@ -66,7 +66,7 @@ def _read_project_scope(
     external code review round 4 low + round 5 medium); ``config_exists``
     lets a caller distinguish "nothing written yet" from a config that
     exists but has no ``scope`` key (``scope is None`` either way)."""
-    path = project_root / _sp.rel("project_config")
+    path = _sp.path("project_config", project_root)
     if not path.exists():
         return None, None, False
     try:

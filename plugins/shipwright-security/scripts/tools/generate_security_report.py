@@ -543,7 +543,7 @@ def main() -> int:
         findings = load_findings_from_stdin()
 
     # Priority 3: shipwright_security_config.json
-    config_path = Path(args.project_root) / _sp.rel("security_config")
+    config_path = _sp.path("security_config", args.project_root)
     if not findings:
         findings = load_findings_from_file(config_path)
 

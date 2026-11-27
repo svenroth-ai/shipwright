@@ -137,7 +137,7 @@ def _git_commit_bodies(repo: Path, shas: list[str]) -> dict[str, str]:
 
 def _project_split_names(project_root: Path) -> set[str]:
     """Return the set of split names from ``shipwright_project_config.json``."""
-    cfg_path = project_root / _sp.rel("project_config")
+    cfg_path = _sp.path("project_config", project_root)
     if not cfg_path.exists():
         return set()
     try:

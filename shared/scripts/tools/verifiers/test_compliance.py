@@ -34,7 +34,7 @@ _DEFAULT_COVERAGE_MIN = 70
 
 
 def _load_threshold(project_root: Path) -> int:
-    cfg = project_root / _sp.rel("test_config")
+    cfg = _sp.path("test_config", project_root)
     if not cfg.exists():
         return _DEFAULT_COVERAGE_MIN
     try:
@@ -51,7 +51,7 @@ def _load_threshold(project_root: Path) -> int:
 
 
 def _load_coverage(project_root: Path) -> tuple[float | None, str]:
-    path = project_root / _sp.rel("test_results")
+    path = _sp.path("test_results", project_root)
     if not path.exists():
         return None, "shipwright_test_results.json missing"
     try:

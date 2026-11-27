@@ -145,7 +145,7 @@ def _read_plan_section_names(project_root: Path) -> list[str] | None:
     of ``None`` means "no plan material found yet" and downstream logic
     should SKIP instead of FAILing.
     """
-    snapshot = project_root / _sp.rel("plan_snapshot")
+    snapshot = _sp.path("plan_snapshot", project_root)
     if snapshot.exists():
         try:
             data = json.loads(snapshot.read_text(encoding="utf-8"))
@@ -177,7 +177,7 @@ _ARCHIVED_SPLIT_KEY_RE = re.compile(r"^split_.+_sections$")
 
 
 def _read_build_section_status(project_root: Path) -> dict[str, str] | None:
-    cfg = project_root / _sp.rel("build_config")
+    cfg = _sp.path("build_config", project_root)
     if not cfg.exists():
         return None
     try:

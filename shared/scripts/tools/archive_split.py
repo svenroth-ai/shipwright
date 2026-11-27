@@ -76,7 +76,7 @@ def archive_split(project_root: Path, next_split: str) -> dict:
     config["completed_splits"] = completed_splits
 
     # Archive test results for this split (if they exist)
-    test_results_path = project_root / _sp.rel("test_results")
+    test_results_path = _sp.path("test_results", project_root)
     archived_test_results = False
     if test_results_path.exists():
         dest = project_root / f"split_{prefix}_test_results.json"

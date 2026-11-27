@@ -116,7 +116,7 @@ def _playwright_dirs(root: Path) -> list[Path]:
 
 
 def _screen_map(root: Path) -> dict:
-    cfg = _read_json(root / _sp.rel("run_config"))
+    cfg = _read_json(_sp.path("run_config", root))
     brief_dir = cfg.get("brief_dir") if isinstance(cfg, dict) else None
     if not isinstance(brief_dir, str) or not brief_dir:
         return {}

@@ -67,7 +67,7 @@ def _validate_test(
     validator — the test phase must run again within the pipeline context.
     """
     issues: list[dict[str, str]] = []
-    results_path = project_root / _sp.rel("test_results")
+    results_path = _sp.path("test_results", project_root)
 
     if not results_path.exists():
         issues.append({

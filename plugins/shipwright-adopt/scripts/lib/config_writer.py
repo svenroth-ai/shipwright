@@ -63,7 +63,7 @@ def write_project_config(
         "adopted": True,
         "updated_at": _utc_now_iso(),
     }
-    path = project_root / _sp.rel("project_config")
+    path = _sp.path("project_config", project_root)
     _write_json(path, config)
     return path
 
@@ -80,7 +80,7 @@ def write_plan_config(project_root: Path, *, split_name: str) -> Path:
         ),
         "updated_at": _utc_now_iso(),
     }
-    path = project_root / _sp.rel("plan_config")
+    path = _sp.path("plan_config", project_root)
     _write_json(path, config)
     return path
 
@@ -108,7 +108,7 @@ def write_build_config(
         "current_split": None,
         "updated_at": _utc_now_iso(),
     }
-    path = project_root / _sp.rel("build_config")
+    path = _sp.path("build_config", project_root)
     _write_json(path, config)
     return path
 
@@ -137,7 +137,7 @@ def write_iterate_config(project_root: Path) -> Path:
         "seeded_by_adopt": True,
         "updated_at": _utc_now_iso(),
     }
-    path = project_root / _sp.rel("iterate_config")
+    path = _sp.path("iterate_config", project_root)
     _write_json(path, config)
     return path
 
@@ -149,7 +149,7 @@ def write_compliance_config(project_root: Path) -> Path:
         "last_full_generation": _utc_now_iso(),
         "seeded_by_adopt": True,
     }
-    path = project_root / _sp.rel("compliance_config")
+    path = _sp.path("compliance_config", project_root)
     _write_json(path, config)
     return path
 
@@ -161,7 +161,7 @@ def write_sync_config(project_root: Path) -> Path:
         "note": "Empty by default. Populated incrementally by /shipwright-iterate as file changes get mapped to FRs.",
         "updated_at": _utc_now_iso(),
     }
-    path = project_root / _sp.rel("sync_config")
+    path = _sp.path("sync_config", project_root)
     config.update(layout_entry(project_root, path))  # issue 978, S7
     _write_json(path, config)
     return path
@@ -220,7 +220,7 @@ def write_run_config(
         "created_at": now,
         "updated_at": now,
     }
-    path = project_root / _sp.rel("run_config")
+    path = _sp.path("run_config", project_root)
     _write_json(path, config)
 
     # Initialize the file-per-iterate directories with .gitkeep so a fresh

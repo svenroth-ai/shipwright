@@ -170,7 +170,7 @@ def detect_drift(project_root: str, ref: str = "HEAD~1..HEAD") -> dict:
     root = Path(project_root)
 
     # Load sync config
-    config_path = root / _sp.rel("sync_config")
+    config_path = _sp.path("sync_config", root)
     if not config_path.exists():
         return {
             "drift_detected": False,

@@ -102,9 +102,9 @@ def convert(project_root: Path) -> list[dict]:
     """Convert all config state to events."""
     events: list[dict] = []
 
-    run_config = _read_json(project_root / _sp.rel("run_config"))
-    build_config = _read_json(project_root / _sp.rel("build_config"))
-    project_config = _read_json(project_root / _sp.rel("project_config"))
+    run_config = _read_json(_sp.path("run_config", project_root))
+    build_config = _read_json(_sp.path("build_config", project_root))
+    project_config = _read_json(_sp.path("project_config", project_root))
 
     # Build split name lookup from project config
     splits = project_config.get("splits", [])
@@ -204,7 +204,7 @@ def main() -> int:
         return 0
 
     # Write
-    out_path = project_root / _sp.rel("events")
+    out_path = _sp.path("events", project_root)
     drops = events_layout(project_root) == "drops"
     if out_path.exists() or (drops and any(p.exists() for p in event_files(project_root))):
         print(f"ERROR: {out_path} already exists. Delete it first or use --dry-run.")
@@ -222,7 +222,7 @@ def main() -> int:
 
     # Verify
     section_count = 0
-    for key, val in _read_json(project_root / _sp.rel("build_config")).items():
+    for key, val in _read_json(_sp.path("build_config", project_root)).items():
         if key == "sections" and isinstance(val, list):
             section_count += len(val)
         elif key.startswith("split_") and key.endswith("_sections") and isinstance(val, list):

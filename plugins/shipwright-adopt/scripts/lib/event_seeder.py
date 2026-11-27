@@ -61,7 +61,7 @@ def _drops_layout(root: Path) -> bool:
         if forced in ("legacy", "drops"):
             return forced == "drops"
     try:
-        cfg = json.loads((root / _sp.rel("sync_config")).read_text(encoding="utf-8-sig"))
+        cfg = json.loads(_sp.path("sync_config", root).read_text(encoding="utf-8-sig"))
         return isinstance(cfg, dict) and cfg.get("events_layout") == "drops"
     except (OSError, ValueError):
         return False

@@ -86,7 +86,7 @@ def resolve_run_id(project_root: Path, session_id: str) -> str:
     if from_pointer:
         return from_pointer
 
-    run_config = project_root / _sp.rel("run_config")
+    run_config = _sp.path("run_config", project_root)
     if run_config.exists():
         try:
             data = json.loads(run_config.read_text(encoding="utf-8"))

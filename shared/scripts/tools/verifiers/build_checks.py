@@ -55,7 +55,7 @@ import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent
 # ---------------------------------------------------------------------------
 
 def _read_build_config(project_root: Path, split_id: str | None = None) -> dict:
-    path = project_root / _sp.rel("build_config")
+    path = _sp.path("build_config", project_root)
     if not path.exists():
         return {}
     try:  # as ``split_id`` saw it: an archived split's own sections (build_split)

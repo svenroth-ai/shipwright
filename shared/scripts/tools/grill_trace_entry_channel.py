@@ -33,7 +33,7 @@ def interview_expected(project_root: Path, planning_dir: Path) -> bool:
         except OSError:
             continue
     try:
-        config = json.loads((project_root / _sp.rel("project_config")).read_text(encoding="utf-8-sig"))
+        config = json.loads(_sp.path("project_config", project_root).read_text(encoding="utf-8-sig"))
     except (OSError, ValueError):
         return False
     return isinstance(config, dict) and config.get("status") == "complete"
@@ -41,7 +41,7 @@ def interview_expected(project_root: Path, planning_dir: Path) -> bool:
 
 def is_extension_scope(project_root: Path) -> bool:
     try:
-        config = json.loads((project_root / _sp.rel("project_config")).read_text(encoding="utf-8-sig"))
+        config = json.loads(_sp.path("project_config", project_root).read_text(encoding="utf-8-sig"))
     except (OSError, ValueError):
         return False
     return isinstance(config, dict) and config.get("scope") == "extension"
@@ -99,7 +99,7 @@ _SELF_ATTESTED = frozenset({"agent", "claude", "assistant", "ai", "model", "auto
 
 def _has_brief_dir(project_root: Path) -> bool:
     try:
-        config = json.loads((project_root / _sp.rel("run_config")).read_text(encoding="utf-8-sig"))
+        config = json.loads(_sp.path("run_config", project_root).read_text(encoding="utf-8-sig"))
     except (OSError, ValueError):
         return False
     return isinstance(config, dict) and bool(config.get("brief_dir"))

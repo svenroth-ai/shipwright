@@ -91,7 +91,7 @@ def _is_no_ui_scope(project_root: Path) -> bool:
     (WP8/F24 config-reader convention) so a BOM'd ``scope=library`` config is
     still detected as library rather than false-failing the check.
     """
-    cfg = project_root / _sp.rel("run_config")
+    cfg = _sp.path("run_config", project_root)
     try:
         data = json.loads(cfg.read_text(encoding="utf-8-sig"))
     except (OSError, UnicodeDecodeError, json.JSONDecodeError):
@@ -122,7 +122,7 @@ def _design_phase_ran(project_root: Path) -> bool:
     only once the manifest is present, so a manifest-gated skip preserves
     FR-orphan / screen-existence enforcement.
     """
-    cfg = project_root / _sp.rel("run_config")
+    cfg = _sp.path("run_config", project_root)
     try:
         data = json.loads(cfg.read_text(encoding="utf-8-sig"))
     except (OSError, UnicodeDecodeError, json.JSONDecodeError):

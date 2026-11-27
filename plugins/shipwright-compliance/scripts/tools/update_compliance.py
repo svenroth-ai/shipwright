@@ -276,7 +276,7 @@ def main() -> int:
                     grade_snapshot_result = {"appended": 0, "error": str(exc)}
 
     # Update compliance config
-    config_path = project_root / _sp.rel("compliance_config")
+    config_path = _sp.path("compliance_config", project_root)
     if config_path.exists():
         config = json.loads(config_path.read_text(encoding="utf-8"))
     else:

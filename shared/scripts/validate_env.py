@@ -296,7 +296,7 @@ def init_env_file(
     ``detecting``) names no profile file and is skipped.
     """
     # Load profile
-    run_config_path = project_root / _sp.rel("run_config")
+    run_config_path = _sp.path("run_config", project_root)
     if not run_config_path.exists():
         return {"action": "skipped", "reason": "No shipwright_run_config.json found"}
 
@@ -472,7 +472,7 @@ def validate(
     Returns a result dict suitable for JSON output.
     """
     # Read run config to get profile name
-    if not (project_root / _sp.rel("run_config")).exists():
+    if not _sp.path("run_config", project_root).exists():
         return _skipped(phase, None, "No shipwright_run_config.json found — skipping env validation")
     profile_name = None
     try:

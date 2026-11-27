@@ -225,7 +225,7 @@ def _read_run_config(project_root: Path) -> dict[str, Any]:
     ``json.loads`` rejects at char 0 (``lib/config.py`` BOM-hardened the sibling
     config readers for exactly this).
     """
-    path = Path(project_root) / _sp.rel("run_config")
+    path = _sp.path("run_config", project_root)
     try:
         data = json.loads(durable_read_text(path, encoding="utf-8-sig"))
     except (OSError, json.JSONDecodeError, ValueError):

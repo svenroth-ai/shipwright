@@ -140,7 +140,7 @@ def verified_package_mockups(project_root: Path) -> tuple[Path | None, str]:
     the ``brief_package.package_sha256`` run_config records OUTSIDE it; ``(None, why)`` otherwise."""
     root = Path(project_root).resolve()
     bdir = _brief_dir(root)
-    record = _json(root / _sp.rel("run_config")).get("brief_package")
+    record = _json(_sp.path("run_config", root)).get("brief_package")
     expected = record.get("package_sha256") if isinstance(record, dict) else None
     if bdir is None or not isinstance(expected, str):
         return None, "run_config records no brief package directory and hash to verify against"
@@ -185,7 +185,7 @@ def _norm(text: str) -> str:
 def _brief_dir(project_root: Path) -> Path | None:
     """The package directory run_config names (``brief_dir``: project-relative, inside the project)."""
     root = Path(project_root).resolve()
-    raw = _json(root / _sp.rel("run_config")).get("brief_dir")
+    raw = _json(_sp.path("run_config", root)).get("brief_dir")
     rel = raw.replace("\\", "/") if isinstance(raw, str) else ""
     if not rel.strip() or Path(rel).is_absolute() or ".." in rel.split("/"):
         return None

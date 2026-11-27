@@ -127,7 +127,7 @@ def read_run_config(project_root: Path) -> dict[str, Any]:
     how to flag that (usually with a ``missing shipwright_run_config.json``
     error).
     """
-    path = project_root / _sp.rel("run_config")
+    path = _sp.path("run_config", project_root)
     if not path.exists():
         return {}
     try:

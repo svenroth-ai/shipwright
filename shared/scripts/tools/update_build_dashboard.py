@@ -215,7 +215,7 @@ def _generate_build_summary(all_sections: list[dict], completed_splits: list[str
 def _generate_test_results(project_root: Path) -> list[str]:
     """Generate test results table from shipwright_test_results.json."""
     try:
-        data = json.loads((project_root / _sp.rel("test_results")).read_text(encoding="utf-8"))
+        data = json.loads(_sp.path("test_results", project_root).read_text(encoding="utf-8"))
     except (FileNotFoundError, json.JSONDecodeError):
         return []
     lines = ["## Test Results", "", "| Layer | Passed | Total | Status |", "|-------|--------|-------|--------|"]
@@ -351,7 +351,7 @@ def generate_dashboard(
 def _read_iterate_test_results(project_root: Path) -> dict | None:
     """Read iterate_latest from shipwright_test_results.json."""
     try:
-        data = json.loads((project_root / _sp.rel("test_results")).read_text(encoding="utf-8"))
+        data = json.loads(_sp.path("test_results", project_root).read_text(encoding="utf-8"))
         return data.get("iterate_latest")
     except (FileNotFoundError, json.JSONDecodeError):
         return None

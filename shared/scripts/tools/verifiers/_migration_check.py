@@ -30,7 +30,7 @@ def check_migration_quarantine_empty(project_root: Path) -> CheckResult:
     unnoticed. Does not fail the check so follow-on work can proceed.
     """
     name = "iterate migration quarantine empty"
-    cfg = project_root / _sp.rel("run_config")
+    cfg = _sp.path("run_config", project_root)
     if not cfg.exists():
         return CheckResult(name, None, "no run_config", severity=Severity.SKIPPED.value)
     try:

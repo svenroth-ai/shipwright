@@ -92,7 +92,7 @@ def check_cmp1_dashboard_covers_phases(project_root: Path) -> dict[str, Any]:
 
 
 def _load_rtm_threshold_pct(project_root: Path) -> int:
-    cfg = project_root / _sp.rel("compliance_config")
+    cfg = _sp.path("compliance_config", project_root)
     if not cfg.exists():
         return _DEFAULT_RTM_MIN_PCT
     try:

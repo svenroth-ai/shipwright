@@ -189,7 +189,7 @@ def load_audit_config(project_root: Path) -> dict[str, Any]:
     """
     # The default config lives next to the compliance plugin; users can
     # override via a project-local ``audit_config.json`` at project root.
-    override = project_root / _sp.rel("audit_config")
+    override = _sp.path("audit_config", project_root)
     if override.exists():
         try:
             user_cfg = json.loads(override.read_text(encoding="utf-8"))

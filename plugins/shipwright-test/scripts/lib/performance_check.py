@@ -691,7 +691,7 @@ def main() -> int:
         return report_failure(exc)
     # Load shipwright_test_config.json.performance (optional)
     test_config_perf: dict[str, Any] | None = None
-    test_cfg_path = project_root / _sp.rel("test_config")
+    test_cfg_path = _sp.path("test_config", project_root)
     if test_cfg_path.exists():
         try:
             test_config_perf = json.loads(test_cfg_path.read_text(encoding="utf-8")).get("performance")

@@ -501,7 +501,7 @@ def generate(
         results["written"].append(results["env_local"]["path"])
 
     # Events
-    events_path = project_root / _sp.rel("events")
+    events_path = _sp.path("events", project_root)
     seed_adopted_event(
         events_path,
         profile=profile, scope=scope,

@@ -40,7 +40,7 @@ def get_section_scope(section_name: str) -> str:
 
 def load_section_states(project_root: str | Path) -> dict[str, Any]:
     """Load section states from shipwright_build_config.json."""
-    config_path = Path(project_root) / _sp.rel("build_config")
+    config_path = _sp.path("build_config", project_root)
     if not config_path.exists():
         return {}
     try:
