@@ -1,6 +1,6 @@
 # Shipwright -- The AI-Powered SDLC for Claude Code
 
-> **Ship right, not just fast.** The harness your AI follows, turning vibe coding into agentic engineering you can trust.
+> **Ship right, not just fast.** An AI software factory that you control, turning vibe coding into agentic engineering you can trust.
 
 ## 1. What is Shipwright?
 
@@ -64,9 +64,11 @@ Shipwright is for engineers, BAs, architects, and tech leads who work with Claud
 - No-code founders without engineering judgment.
 - Classical SAFe / Waterfall veterans looking for tooling around *their* existing process.
 
-### Discipline Layer — the Harness around AI Coding
+### An AI Software Factory That You Control
 
-Shipwright positions itself as a **discipline layer for AI coding**, not a stack framework. The six stack profiles (`supabase-nextjs`, `vite-hono`, `python-plugin-monorepo`, `claude-plugin`, `chat-first-json`, `skill-companion-app`) and the Jelastic deploy target are reference implementations, not the product. The product is the discipline: IREB-aligned specs, ADRs, RTM, phase-gates, living traceability, compliance artifacts.
+Shipwright positions itself as an **AI software factory that you control**, not a stack framework. You do two things: you set the **intent**, and you **control the output**. Everything in between (plan, build, test, security, review) runs in the factory without a person standing in it. A full *dark factory* (Dan Shapiro's level 5) would also hand the output check to machines; that still needs scenarios with realistic data kept away from the builder, machine review against them, and stand-ins for third-party services. Shipwright is built for the step from level 3 to level 4 and covers part of what level 5 depends on.
+
+What holds the factory to what you decided is its discipline layer, the harness. The six stack profiles (`supabase-nextjs`, `vite-hono`, `python-plugin-monorepo`, `claude-plugin`, `chat-first-json`, `skill-companion-app`) and the Jelastic deploy target are reference implementations, not the product. The product is the discipline: IREB-aligned specs, ADRs, RTM, phase-gates, living traceability, compliance artifacts.
 
 > **Sidenote.** What Shipwright builds, the wider AI engineering field is starting to call *harness engineering* (Martin Fowler, 2026). The harness is the surrounding system of guides (Specs, Conventions, Architecture docs) and sensors (Linters, Tests, Reviews, Scanners) that steers and corrects AI output before and after generation.
 
