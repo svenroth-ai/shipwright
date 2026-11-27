@@ -1,0 +1,372 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-27-r1a-resolver-foundation",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-27T16:26:37.256955+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "_unify()` replaces `sys.modules[__name__]` mid-exec when a loaded bare-name resolver already exists. This is the subtlest part of the change: the discarded module object keeps executing, and importlib's post-exec parent-package attribute binding is what makes the swap propagate. Any loader that caches the module object from `create_module` (or a custom finder) can end up binding the old object to `lib.shipwright_paths` while `sys.modules` holds the new one — exactly the split-brain the change is meant to eliminate.",
+          "suggestion": "In addition to the subprocess identity tests, add one assertion that after import, `lib.shipwright_paths is sys.modules[\"shipwright_paths\"] is sys.modules[\"_shipwright_shared_review_lib.shipwright_paths\"]` and that the parent packages' attributes (`lib.shipwright_paths`, `_shipwright_shared_review_lib.shipwright_paths`) point to the same object — attribute binding is the failure mode sys.modules checks won't catch.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "When the bare name is absent, this module registers itself under `shipwright_paths` during its own exec. If any code triggered transitively by the module body (or by a later re-import race) does `import shipwright_paths` mid-exec, it receives the partially-initialized module. Also unhandled: the bare-name module present but partially loaded (circular import) — the plan checks `has SPECS`, which covers it, but only if `SPECS` is defined before any import that could recurse.",
+          "suggestion": "Ensure `SPECS` is assigned at the very top of the module body and document the invariant; add one test where `shipwright_paths` is imported first, then `lib.shipwright_paths` (order is claimed covered, just confirm it includes this direction).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Registering `shipwright_paths` when absent means previously-failing bare imports now silently succeed. A plugin with a typo'd or stale `import shipwright_paths` that today fails loudly will start working — masking an intended removal.",
+          "suggestion": "Acceptable (it's the point of the change), but note it in the brief so R1e's hook-matrix test doesn't get surprised.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "AC5's subprocess hide test: `sys.modules[\"shipwright_paths\"] = None` makes `import shipwright_paths` raise `ImportError`, exercising the fallback — but it does not exercise the case where the import succeeds and returns a module whose `rel` raises or returns `None` (a half-unified alias). If `_unify` misfires, hooks could take `rel()` results of the wrong module.",
+          "suggestion": "Add one variant test asserting that after any alias-order load, `_sp.rel(\"...\")` returns the same value regardless of which alias the hook imported under.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The AST basename-discipline rule (AC6 static half) plus the fallback-literal AST scan are two bespoke static analyzers for a no-behaviour-change PR. Sound, but the \"if more than ~8 hits, allowlist and defer swaps to R1b\" escape hatch means the rule could land with known-failing hits — which will rot.",
+          "suggestion": "If the deferral triggers, land the rule in a reporting mode (or as a skipped test with a tracked count) rather than an allowlist inside a passing test, so R1b can tighten it without editing the rule.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "new_rel`/`known_rels` are defined here but only wired in R1b/R1c; the spec explicitly says no production caller. Fine, but the ≤300-line cap on the resolver plus new helpers plus alias logic plus `SPECS` growth in R1b may force a move later.",
+          "suggestion": "Consider putting the alias-unification in a tiny separate helper module imported at the end of `shipwright_paths` — keeps the resolver clean and makes the swap logic independently testable.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "None of substance. `classify` never executes or parses paths from stubs (`moved_to` text-only per 14.2), the recogniser is stdlib-only, and no new inputs reach production until R1c. Regex is anchored, first-line-only, byte-capped — good.",
+          "suggestion": null,
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-27T15:57:56.551861+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: risk — Severity: medium**\n  **Finding:** `_unify()` replaces `sys.modules[__name__]` mid-exec when a loaded bare-name resolver already exists. This is the subtlest part of the change: the discarded module object keeps executing, and importlib's post-exec parent-package attribute binding is what makes the swap propagate. Any loader that caches the module object from `create_module` (or a custom finder) can end up binding the *old* object to `lib.shipwright_paths` while `sys.modules` holds the new one — exactly the split-brain the change is meant to eliminate.\n  **Suggestion:** In addition to the subprocess identity tests, add one assertion that after import, `lib.shipwright_paths is sys.modules[\"shipwright_paths\"] is sys.modules[\"_shipwright_shared_review_lib.shipwright_paths\"]` *and* that the parent packages' attributes (`lib.shipwright_paths`, `_shipwright_shared_review_lib.shipwright_paths`) point to the same object — attribute binding is the failure mode sys.modules checks won't catch.\n\n- **Category: edge-case — Severity: medium**\n  **Finding:** When the bare name is absent, this module registers itself under `shipwright_paths` *during* its own exec. If any code triggered transitively by the module body (or by a later re-import race) does `import shipwright_paths` mid-exec, it receives the partially-initialized module. Also unhandled: the bare-name module present but *partially loaded* (circular import) — the plan checks `has SPECS`, which covers it, but only if `SPECS` is defined before any import that could recurse.\n  **Suggestion:** Ensure `SPECS` is assigned at the very top of the module body and document the invariant; add one test where `shipwright_paths` is imported first, then `lib.shipwright_paths` (order is claimed covered, just confirm it includes this direction).\n\n- **Category: risk — Severity: low**\n  **Finding:** Registering `shipwright_paths` when absent means previously-failing bare imports now silently succ […truncated]\n\n[openai] 1. **Approach · Medium**  \n   **Finding** — AC6 calls for behavioral coverage of four basename consumers. The mini-plan exercises only two at runtime. The AST rule for the other two can miss values passed through helpers or assigned to local variables, and its proposed allowlist could defer fixes needed for AC6.  \n   **Suggestion** — Run `pr_review_generated` and `event_seeder` in subprocesses rooted in their owning test suites. Patch `rel()` to return the relocated path before loading each consumer, then assert that it still matches a bare filename. Use these four targeted tests for R1a and leave the repository-wide guard to R1b.\n\n2. **Edge-case · Medium**  \n   **Finding** — The pointer classifier needs an explicit precedence rule for inputs that are both oversized and versioned above 1. A long digit sequence can also raise during integer conversion before the classifier returns `edited`. On the render side, an unrestricted `min_plugin_version` can violate the ASCII, LF, or 512-byte guarantees.  \n   **Suggestion** — Check the normalized byte length before converting the version once the first-line signature matches. Pin the expected verdict for oversized `/2`, a very long digit sequence, and `/0`. Define accepted render inputs and reject embedded line breaks, non-ASCII text, or output exceeding 512 bytes.\n\n3. **Approach · Medium**  \n   **Finding** — The handoff’s proposed fallback still constructs `shipwright_<name>.json` when a key is missing from `CONFIG_FILES`. That leaves a second naming source and can hide a missing mapping while the output still looks correct.  \n   **Suggestion** — Verify that every listed config has a `CONFIG_FILES` entry and use direct lookup. Test byte-for-byte output through the existing handoff entry point so the new dependency is exercised in its normal import context.\n\n4. **Risk · Low**  \n   **Finding** — The hidden-resolver subprocess test proves that a hook imports with `_sp is None`. It can still pass if the hook fails  […truncated]",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/shipwright_pointer.py",
+          "line": 24,
+          "finding": "Docstring says later lines are not inspected, but step 3 scans every line for conflict markers.",
+          "suggestion": "Reword: apart from the conflict-marker scan.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_shipwright_paths_fallbacks.py",
+          "line": 907,
+          "finding": "Hidden-resolver test accepts 'absent' so LOOSE-only hooks are import-only checks.",
+          "suggestion": "Split ids or limit to _sp files.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_shipwright_paths_fallbacks.py",
+          "line": 780,
+          "finding": "Statement-form `if _sp is None:` fallbacks and foreign receivers are not flagged.",
+          "suggestion": "Add ast.If to ODD; require receiver _sp.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/shipwright_paths.py",
+          "line": 210,
+          "finding": "Resolver at exactly 300 lines; no headroom for R1c.",
+          "suggestion": "Record hand-off: R1c needs a sibling module or trimmed prose.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_shipwright_paths_identity.py",
+          "line": 965,
+          "finding": "Subprocess harnesses use text=True; convention is bytes + utf-8 replace.",
+          "suggestion": "Decode bytes explicitly.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-27T16:34:25.072472+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "reviewer_notes": "All _unify branches traced sound; _select rewrite behaviour-identical; classify total; handoff change safe."
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "shared/scripts/lib/shipwright_pointer.py",
+          "line": null,
+          "finding": "Claim under doubt: one recogniser, portable — str.strip() strips Unicode whitespace; ports differ",
+          "suggestion": "strip ASCII whitespace only + fixture rows",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling",
+          "file": "shared/scripts/lib/shipwright_paths.py",
+          "line": null,
+          "finding": "Claim under doubt: one module object — bare entry removed then re-imported splits",
+          "suggestion": "bare load adopts loaded alias",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "shared/scripts/lib/shipwright_paths.py",
+          "line": null,
+          "finding": "Claim under doubt: __name__ stays shipwright_paths — first loader's name wins",
+          "suggestion": "reword docstring",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling",
+          "file": "shared/scripts/lib/brief_dir_intake.py",
+          "line": null,
+          "finding": "Claim under doubt: _ALIASES complete — _shipwright_brief_dir_lib missing",
+          "suggestion": "add it + static test",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "test efficacy",
+          "file": "shared/tests/test_generate_session_handoff.py",
+          "line": null,
+          "finding": "Claim under doubt: handoff follows a move — reverting the change keeps tests green",
+          "suggestion": "moved-layout handoff probe",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-27T16:42:28.093921+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_shipwright_paths_fallbacks.py (test_resolver_hidden_branch_ tests)",
+          "line": null,
+          "finding": "AC5 requires that every shared hook with a resolver fallback \"imports cleanly with the resolver hidden and takes the fallback\". The diff statically scans all fallback sites (`PAIRS`, ≥11 asserted) but only runs 4 hooks under `sys.modules[\"shipwright_paths\"] = None` (`session_start_using_shipwright`, `required_checks_state`, `check_file_size`, `suggest_iterate`). The scan's own \"must\" list names `track_tool_calls.py` and `check_required_checks_hook.py` — shared hooks with literal fallbacks (BRIEF 12.7a) — plus `master_stop_check.py`, none of which is ever imported with the resolver hidden. A transitive unguarded `lib.` import in any of those hooks (exactly the dead-fallback shape discovered in `check_file_size`) would pass this test file undetected.",
+          "suggestion": "Parametrize the hidden-resolver import test over every distinct file the scan finds (at minimum the three named hooks), asserting `_sp is None` and the fallback literal is used, mirroring the `check_file_size` xfail pattern for any that fail for pre-existing reasons.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_shipwright_paths_fallbacks.py (`_scan`, the `assert isinstance(lit, ast.Constant)...` line)",
+          "line": null,
+          "finding": "The scan asserts the exact AST shape of every `_sp is None` ternary at collection time. A hook that writes the fallback any other way (e.g. `\"x.json\" if _sp is None else _sp.rel(...) + \"\"`, or `_sp.rel(k) if _sp is not None else \"x.json\"`) raises `AttributeError`/`AssertionError` during collection — which is loud, so it's not a silent miss, but it means the \"fallbacks written another way\" fix promised in the architecture review is only partly delivered (the `except ImportError` branch is covered, the inverted/shaped ternary is not).",
+          "suggestion": "Either relax the assert to skip-and-record non-literal shapes (so a second test can fail on \"unrecognized fallback shape\" with a clear message), or accept the current loud-crash behavior explicitly in the module docstring.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/shipwright_pointer.py (`_FIRST_LINE = re.compile(SIGNATURE + r\"/([1-9][0-9]{0,8}\", ...)`)",
+          "line": null,
+          "finding": "BRIEF 14.1 specifies `^SHIPWRIGHT-POINTER/(\\d+)$`; the implementation narrows this to 1–9 ASCII digits without leading zero, so a 10-digit version (`/1234567890`) or `/0`/`/01` returns `not_stub` where the spec's literal regex matches. The plan review signed off on `/0`, `/01`, and Unicode digits, but the 10-digit cap is a silent extra rule: a stub written by a future version numbering scheme would be misreported as `not_stub` (and thus read as config) rather than `too_new`.",
+          "suggestion": "Fine to keep, but record the digit-count cap in the BRIEF 14.1 text (one sentence) so the fixture row `version_overlong` is spec-backed rather than implementation-invented; alternatively widen to `[0-9]{1,10}` and cap the `int()` conversion.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "shared/scripts/tools/generate_session_handoff.py:430 / shared/tests/test_generate_session_handoff.py",
+          "line": null,
+          "finding": "AC7's \"byte-identical today\" rests on `lib.config.CONFIG_FILES[skill]` returning exactly `shipwright_<skill>_config.json` for all six skills. The test pins the new output but nothing in the diff verifies equality with the OLD expression's output (`(_sp.json_path_or_none(skill + '_config', '') or Path(skill)).name`); if `json_path_or_none` returns `None` for a key whose file doesn't exist (its name suggests it may), the old line printed the bare skill name (`run`), and the new line prints the full filename — a behaviour change that this test would not catch. The AC record claims byte-identity was verified; the diff alone doesn't demonstrate it.",
+          "suggestion": "Add one assertion that `CONFIG_FILES[skill]` equals `json_path_or_none(skill + \"_config\", \"\").name` for every listed skill (or run the old expression in the test as the oracle), so the byte-identity claim is pinned by a test rather than by review prose.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/tests/test_shipwright_paths_identity.py (`test_known_locations`)",
+          "line": null,
+          "finding": "This test mutates `sys.path` and imports `lib.shipwright_paths` inside the shared pytest process, after other test files (e.g. `test_shipwright_pointer.py`) have already inserted overlapping paths. It doesn't break anything today (unification is the point), but it means this test's outcome now depends on import order across the test session — exactly the fragility the file's own docstring says a shared process \"cannot reset honestly\". The other identity tests correctly use subprocesses; this one doesn't.",
+          "suggestion": "Move `test_known_locations` into a subprocess like its siblings, or relocate it to a file that doesn't claim fresh-interpreter isolation.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "line — `shared/scripts/lib/shipwright_pointer.py",
+          "line": 47,
+          "finding": "AC2 specifies `\\d+`, but the recognizer accepts only one to nine ASCII digits and forbids leading zeros. `/01` therefore returns `not_stub` instead of `stub`, and `/1234567890` returns `not_stub` instead of `too_new`. An oversized signature with a long version also misses the `edited` verdict. The fixture matrix explicitly expects some of these conflicting outcomes.",
+          "suggestion": "Match the specified digit grammar and apply the size cap before converting the version. Use a length-safe comparison for arbitrarily long versions and update the fixtures to match AC2.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "line — `shared/scripts/lib/shipwright_paths.py",
+          "line": 281,
+          "finding": "Concurrent imports under the bare and package names can leave two resolver objects. Python holds import locks per name, so the package import can reach `_unify()` after the bare module enters `sys.modules` but before it defines `SPECS`. The package import then returns its own object, and the bare import never reconciles it. The identity tests exercise sequential orders only.",
+          "suggestion": "Serialize initialization through a shared canonical loading path. Add a deterministic concurrent-import test that pauses the bare module before `SPECS` is assigned.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "line — `shared/scripts/lib/shipwright_paths.py",
+          "line": 275,
+          "finding": "Any dotted name ending in `.shipwright_paths` is treated as a production alias. Loading the file as `probe.shipwright_paths` replaces the probe’s `sys.modules` entry with the live resolver, or makes the probe canonical if it loads first. AC1 requires probe isolation, and the test only checks an undotted probe name.",
+          "suggestion": "Explicitly recognize the supported aliases, including `_shipwright_shared_lib.shipwright_paths` if it remains part of the import contract. Test a dotted probe both before and after a production import.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "line — `shared/tests/test_shipwright_paths_fallbacks.py",
+          "line": 132,
+          "finding": "AC5 requires every shared hook with a fallback to import cleanly and take that fallback. `check_file_size` still fails during its transitive import of `lib.bloat_baseline`, and the strict xfail accepts the failure. The `suggest_iterate` test also checks only that `_sp` is `None`, so it would pass if the hook read the wrong fallback file.",
+          "suggestion": "Make `check_file_size` importable with the resolver hidden and remove the xfail, or explicitly defer this part of AC5 in the acceptance criteria. Exercise `suggest_iterate` against a config fixture and compare paired `rel` fallbacks directly with `sp.rel(key)`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "line — `shared/tests/test_shipwright_paths_basenames.py",
+          "line": 62,
+          "finding": "The `event_seeder` check calls `seed._sp.name(\"events\")` directly and never exercises the seeder. It would pass if the seeder switched to `rel()`, because the simulated layout leaves `events` at its legacy basename and both methods return the same string.",
+          "suggestion": "Give `rel(\"events\")` a distinct directory-bearing value in the test and call the seeder’s basename-dependent behavior with a bare event filename.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "line — `shared/scripts/lib/shipwright_pointer.py",
+          "line": 49,
+          "finding": "The renderer’s SemVer validator accepts invalid versions such as `01.2.3`, `1.2.3-01`, and `1.2.3+build..5`, despite the documented `ValueError` contract.",
+          "suggestion": "Validate the core, prerelease, and build identifiers separately or use a compliant SemVer pattern. Add those inputs to the rejection tests.  Overall assessment: ship-with-fixes. The foundation is viable, but the recognizer diverges from AC2, module identity can split, and the fallback and basename tests leave explicit acceptance criteria unverified.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-27T16:31:49.522250+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- Category: test\n  Severity: medium\n  File: shared/tests/test_shipwright_paths_fallbacks.py (test_resolver_hidden_branch_* tests)\n  Finding: AC5 requires that **every** shared hook with a resolver fallback \"imports cleanly with the resolver hidden and takes the fallback\". The diff statically scans all fallback sites (`PAIRS`, ≥11 asserted) but only runs 4 hooks under `sys.modules[\"shipwright_paths\"] = None` (`session_start_using_shipwright`, `required_checks_state`, `check_file_size`, `suggest_iterate`). The scan's own \"must\" list names `track_tool_calls.py` and `check_required_checks_hook.py` — shared hooks with literal fallbacks (BRIEF 12.7a) — plus `master_stop_check.py`, none of which is ever imported with the resolver hidden. A transitive unguarded `lib.*` import in any of those hooks (exactly the dead-fallback shape discovered in `check_file_size`) would pass this test file undetected.\n  Suggestion: Parametrize the hidden-resolver import test over every distinct file the scan finds (at minimum the three named hooks), asserting `_sp is None` and the fallback literal is used, mirroring the `check_file_size` xfail pattern for any that fail for pre-existing reasons.\n\n- Category: test\n  Severity: low\n  File: shared/tests/test_shipwright_paths_fallbacks.py (`_scan`, the `assert isinstance(lit, ast.Constant)...` line)\n  Finding: The scan asserts the exact AST shape of every `_sp is None` ternary at *collection* time. A hook that writes the fallback any other way (e.g. `\"x.json\" if _sp is None else _sp.rel(...) + \"\"`, or `_sp.rel(k) if _sp is not None else \"x.json\"`) raises `AttributeError`/`AssertionError` during collection — which is loud, so it's not a silent miss, but it means the \"fallbacks written another way\" fix promised in the architecture review is only partly delivered (the `except ImportError` branch is covered, the inverted/shaped ternary is not).\n  Suggestion: Either relax the assert to skip-and-record non-literal shapes (so a s […truncated]\n\n[openai] - **Category:** spec\n- **Severity:** high\n- **File:line** — `shared/scripts/lib/shipwright_pointer.py:47`\n- **Finding:** AC2 specifies `\\d+`, but the recognizer accepts only one to nine ASCII digits and forbids leading zeros. `/01` therefore returns `not_stub` instead of `stub`, and `/1234567890` returns `not_stub` instead of `too_new`. An oversized signature with a long version also misses the `edited` verdict. The fixture matrix explicitly expects some of these conflicting outcomes.\n- **Suggestion:** Match the specified digit grammar and apply the size cap before converting the version. Use a length-safe comparison for arbitrarily long versions and update the fixtures to match AC2.\n\n- **Category:** bug\n- **Severity:** medium\n- **File:line** — `shared/scripts/lib/shipwright_paths.py:281`\n- **Finding:** Concurrent imports under the bare and package names can leave two resolver objects. Python holds import locks per name, so the package import can reach `_unify()` after the bare module enters `sys.modules` but before it defines `SPECS`. The package import then returns its own object, and the bare import never reconciles it. The identity tests exercise sequential orders only.\n- **Suggestion:** Serialize initialization through a shared canonical loading path. Add a deterministic concurrent-import test that pauses the bare module before `SPECS` is assigned.\n\n- **Category:** spec\n- **Severity:** medium\n- **File:line** — `shared/scripts/lib/shipwright_paths.py:275`\n- **Finding:** Any dotted name ending in `.shipwright_paths` is treated as a production alias. Loading the file as `probe.shipwright_paths` replaces the probe’s `sys.modules` entry with the live resolver, or makes the probe canonical if it loads first. AC1 requires probe isolation, and the test only checks an undotted probe name.\n- **Suggestion:** Explicitly recognize the supported aliases, including `_shipwright_shared_lib.shipwright_paths` if it remains part of the import contract. Test a dotted  […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-27T16:28:36.877236+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-27T15:57:56.286459+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-27T15:57:56.414964+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

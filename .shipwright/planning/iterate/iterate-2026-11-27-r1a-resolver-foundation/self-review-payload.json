@@ -1,0 +1,9 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"AC1-AC7 met: one object under every alias incl. _shipwright_shared_lib (28 identity cases, fail on the old resolver: 18 red); recogniser follows the 14.1 algorithm with 27 shared fixture rows; known-location helpers; fallback scan (11 pairs + import-error literals); moved-layout basename test over all four consumers; handoff list via CONFIG_FILES, byte-identical."},
+{"name":"Error Handling","verdict":"pass","note":"classify is total (random-bytes test, None/str input); render raises ValueError on non-SemVer input; _unify leaves None/fake/foreign-tree bare entries alone."},
+{"name":"Security Basics","verdict":"pass","note":"No path is ever read from the stub (public API pinned to classify/render/Verdict); stdlib only; render refuses newline injection."},
+{"name":"Test Quality","verdict":"pass","note":"Identity, fallback and moved-layout checks run in fresh interpreters (no sys.modules leakage); importlib mechanism pinned by a toy contract test; static rule proven by a synthetic positive case; run on 3.11/3.12/3.13."},
+{"name":"Performance Basics","verdict":"pass","note":"_unify is O(1) dict lookups at import; no new import in the resolver."},
+{"name":"Naming & Structure","verdict":"pass","note":"Resolver 294 lines (cap 300) after trimming duplicated API prose; recogniser is its own module; shared fixtures in shared/testkit."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Stub text producer/consumer round-trip tested; no existing serialized format changes. Found and recorded a pre-existing gap (check_file_size fallback dead) as strict xfail + BRIEF 12 item 8."},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"scan_test_hygiene over the five touched test files: no findings."}]}

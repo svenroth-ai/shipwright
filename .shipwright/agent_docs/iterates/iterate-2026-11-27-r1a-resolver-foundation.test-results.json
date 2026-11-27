@@ -1,0 +1,180 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-27-r1a-resolver-foundation",
+    "date": "2026-11-27",
+    "unit": {
+      "status": "passed",
+      "passed": 26973,
+      "skipped": 116,
+      "total": 27089
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 689,
+      "skipped": 0,
+      "total": 689
+    },
+    "pgtap": {
+      "status": "not_run",
+      "passed": 0,
+      "skipped": 0,
+      "total": 0
+    },
+    "e2e": {
+      "status": "not_run",
+      "passed": 0,
+      "skipped": 0,
+      "total": 0
+    },
+    "design_fidelity": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run pytest -p no:cacheprovider shared/tests/test_shipwright_pointer.py shared/tests/test_shipwright_paths_identity.py shared/tests/test_shipwright_paths_fallbacks.py shared/tests/test_shipwright_paths_basenames.py shared/tests/test_generate_session_handoff_config_list.py",
+      "exit_code": 0,
+      "tests_run": 113,
+      "evidence_path": ".shipwright/runs/iterate-2026-11-27-r1a-resolver-foundation/surface_verification.json",
+      "timestamp": "2026-11-27T18:16:55.554Z"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "AC1 one resolver object under every alias name, any load order",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_shipwright_paths_identity.py::test_every_import_name_yields_one_object_in_any_order PASSED"
+        },
+        {
+          "behavior": "AC1 bare re-import after the bare entry was dropped rejoins the loaded alias",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_shipwright_paths_identity.py::test_a_bare_reload_after_the_bare_entry_was_dropped_rejoins_the_loaded_alias PASSED"
+        },
+        {
+          "behavior": "AC1 every private package over shared/scripts/lib is a listed alias",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_shipwright_paths_identity.py::test_every_private_package_over_the_shared_lib_is_an_alias PASSED"
+        },
+        {
+          "behavior": "AC1 probe names (plain and dotted) stay separate",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_shipwright_paths_identity.py::test_a_dotted_probe_name_stays_separate_in_either_order PASSED"
+        },
+        {
+          "behavior": "AC1 hidden None, fake module, foreign tree are left alone",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_shipwright_paths_identity.py::test_a_resolver_from_another_tree_is_not_adopted PASSED"
+        },
+        {
+          "behavior": "AC1 importlib hands back the sys.modules entry after exec",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_shipwright_paths_identity.py::test_importlib_hands_back_whatever_a_module_left_in_sys_modules PASSED"
+        },
+        {
+          "behavior": "resolver import survives a faked os.name (no pathlib at import)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_dev_server_path_anchors.py::test_importing_dev_server_does_no_pathlib_path_arithmetic PASSED"
+        },
+        {
+          "behavior": "AC2 classify verdict for every shared fixture row (BRIEF 14.1)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_shipwright_pointer.py::test_every_shared_fixture_row_gets_its_verdict PASSED"
+        },
+        {
+          "behavior": "AC2 classify is total on arbitrary input",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_shipwright_pointer.py::test_classify_is_total_on_arbitrary_input PASSED"
+        },
+        {
+          "behavior": "AC2 version numbers reported",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_shipwright_pointer.py::test_versions_are_reported PASSED"
+        },
+        {
+          "behavior": "AC3 render round-trips and keeps the 11.5 shape",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_shipwright_pointer.py::test_render_round_trips_and_keeps_the_11_5_shape PASSED"
+        },
+        {
+          "behavior": "AC3 render refuses anything but a SemVer string",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_shipwright_pointer.py::test_render_refuses_anything_but_a_semver_string PASSED"
+        },
+        {
+          "behavior": "AC3 no public function returns or follows a path",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_shipwright_pointer.py::test_nothing_in_the_module_returns_or_follows_a_path_from_the_stub PASSED"
+        },
+        {
+          "behavior": "AC4 new_rel / known_rels / all_known_rels and the target column",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_shipwright_paths_identity.py::test_known_locations PASSED"
+        },
+        {
+          "behavior": "AC5 every paired fallback literal equals the resolver",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_shipwright_paths_fallbacks.py::test_each_paired_fallback_names_the_resolver_file PASSED"
+        },
+        {
+          "behavior": "AC5 every fallback has the checkable shape",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_shipwright_paths_fallbacks.py::test_every_resolver_fallback_has_the_one_checkable_shape PASSED"
+        },
+        {
+          "behavior": "AC5 every hook with a fallback imports with the resolver hidden",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_shipwright_paths_fallbacks.py::test_every_hook_with_a_fallback_imports_with_the_resolver_hidden PASSED"
+        },
+        {
+          "behavior": "AC5 hidden-resolver branch reads the fallback file",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_shipwright_paths_fallbacks.py::test_resolver_hidden_branch_reads_the_fallback_file PASSED"
+        },
+        {
+          "behavior": "AC5 known gap pinned: check_file_size cannot import with the resolver hidden (strict xfail, R1c)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_shipwright_paths_fallbacks.py::test_resolver_hidden_branch_check_file_size PASSED"
+        },
+        {
+          "behavior": "AC6 basename sets survive a moved layout; path tables and the handoff follow",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_shipwright_paths_basenames.py PASSED"
+        },
+        {
+          "behavior": "AC7 handoff config list byte-identical to the pre-R1a expression",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_generate_session_handoff_config_list.py::test_config_list_equals_the_pre_r1a_expression_for_every_skill PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 21,
+        "tested": 21,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 7,
+        "covered_acs": 7
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-24-r5b-merge-lane",
+    "commit": "032d1ebbf0ef9c99eb98f240c8f1110e981a32a5",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

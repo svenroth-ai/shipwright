@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "1. **The question, answered in one sentence.** Yes \u2014 this is a small foundation layer on machinery that already exists (the resolver), and the alternatives are either infeasible under the stated constraints or not clearly smaller.\n\n2. **The smallest thing that would do.** What is proposed is close to it: load-time import-name collapsing (a few lines inside the existing resolver, not a new package), the pointer classify/render pair as one small stdlib module, two lookup helpers on the existing registry, and tests. Option B (one canonical import name enforced by the guard) would be smaller in standing cost \u2014 no aliasing rule to reason about \u2014 but it's ruled out by the plugin-shadowing constraint: the resolver *must* load under three names, so collapsing is the correct minimal response to a fact already true, not a new mechanism invented here. Option C (fold into R1c) saves nothing permanent \u2014 the same code would exist, just landing in a larger, riskier PR \u2014 and loses the \"no production behaviour changes\" property that makes this PR cheap to verify.\n\n3. **What it costs to keep.** The aliasing rule must be understood by anyone extending the resolver or adding import sites; the stub format is operator-signed, so `classify` is a contract that must track it; the static hook-fallback scan must be updated whenever hooks change. All are small and local, and all die at R4 except the stub contract, which is the point of the campaign.\n\n4. **What it forecloses.** None identified. The helpers keep new-location-first ordering but nothing here locks in the legacy path permanently \u2014 R4 removes it and the helpers are the natural place to do so.\n\n5. **Findings**\n\n- Category: proportionality\n- Severity: low\n- Finding: `render()` has no production caller until R3; it exists now only so the test can assert `classify(render(v)) == stub`. That is a round-trip convenience, not a standing obligation anyone else will lean on.\n- Suggestion: Keep it \u2014 it is ~10 lines and pinning the format against its own recogniser is exactly the test you want while the format is being signed off. No change needed; just note that R3 may still rewrite `render` when a real caller appears.\n\nNo findings beyond the above.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "Choose A, scoped to the migration. The resolver should share state across its three supported import names, and the signed pointer format should have one shared reader and writer.\n\n**Smallest implementation** \u2014 Alias the three supported names inside the existing resolver, derive candidate paths from its registry, and keep pointer parsing and rendering together in one stdlib module. Pin the existing hook fallback and basename contracts in tests. The separate foundation PR preserves the required behavior-neutral boundary.\n\n**Ongoing cost** \u2014 The campaign owner must maintain import identity, pointer compatibility, and agreement between the registry and hook fallback literals. The tests make drift visible. R4 is the point to reassess which obligations can be retired.\n\n**What it forecloses** \u2014 Independent resolver state under the three supported names. Once stubs ship, changing their format requires accounting for older readers.\n\n**Findings**\n\nNo findings.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "architecture",
+  "capture": {
+    "run_id": "iterate-2026-11-27-r1a-resolver-foundation",
+    "at": "2026-11-27T15:52:05.851323+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "approve"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}

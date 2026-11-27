@@ -1,0 +1,7 @@
+{"stage": "doubt", "gating": "advisory-must-address", "doubts": [
+{"severity": "low", "lens": "boundary & contract", "claim_under_doubt": "one recogniser, portable", "file": "shared/scripts/lib/shipwright_pointer.py", "disproof_attempt": "str.strip() strips Unicode whitespace; ports differ", "what_would_resolve_it": "strip ASCII whitespace only + fixture rows"},
+{"severity": "low", "lens": "hidden coupling", "claim_under_doubt": "one module object", "file": "shared/scripts/lib/shipwright_paths.py", "disproof_attempt": "bare entry removed then re-imported splits", "what_would_resolve_it": "bare load adopts loaded alias"},
+{"severity": "low", "lens": "boundary & contract", "claim_under_doubt": "__name__ stays shipwright_paths", "file": "shared/scripts/lib/shipwright_paths.py", "disproof_attempt": "first loader's name wins", "what_would_resolve_it": "reword docstring"},
+{"severity": "low", "lens": "hidden coupling", "claim_under_doubt": "_ALIASES complete", "file": "shared/scripts/lib/brief_dir_intake.py", "disproof_attempt": "_shipwright_brief_dir_lib missing", "what_would_resolve_it": "add it + static test"},
+{"severity": "low", "lens": "test efficacy", "claim_under_doubt": "handoff follows a move", "file": "shared/tests/test_generate_session_handoff.py", "disproof_attempt": "reverting the change keeps tests green", "what_would_resolve_it": "moved-layout handoff probe"}],
+"summary": "5 low; no production behaviour change disproved."}

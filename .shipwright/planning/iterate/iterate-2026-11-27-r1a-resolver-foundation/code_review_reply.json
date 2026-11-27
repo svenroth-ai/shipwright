@@ -1,0 +1,7 @@
+{"section": "iterate-2026-11-27-r1a-resolver-foundation", "review": [
+{"severity": "low", "category": "readability", "file": "shared/scripts/lib/shipwright_pointer.py", "line": 24, "finding": "Docstring says later lines are not inspected, but step 3 scans every line for conflict markers.", "suggestion": "Reword: apart from the conflict-marker scan."},
+{"severity": "low", "category": "correctness", "file": "shared/tests/test_shipwright_paths_fallbacks.py", "line": 907, "finding": "Hidden-resolver test accepts 'absent' so LOOSE-only hooks are import-only checks.", "suggestion": "Split ids or limit to _sp files."},
+{"severity": "low", "category": "correctness", "file": "shared/tests/test_shipwright_paths_fallbacks.py", "line": 780, "finding": "Statement-form `if _sp is None:` fallbacks and foreign receivers are not flagged.", "suggestion": "Add ast.If to ODD; require receiver _sp."},
+{"severity": "low", "category": "readability", "file": "shared/scripts/lib/shipwright_paths.py", "line": 210, "finding": "Resolver at exactly 300 lines; no headroom for R1c.", "suggestion": "Record hand-off: R1c needs a sibling module or trimmed prose."},
+{"severity": "low", "category": "correctness", "file": "shared/tests/test_shipwright_paths_identity.py", "line": 965, "finding": "Subprocess harnesses use text=True; convention is bytes + utf-8 replace.", "suggestion": "Decode bytes explicitly."}],
+"notes": "All _unify branches traced sound; _select rewrite behaviour-identical; classify total; handoff change safe."}
