@@ -146,16 +146,23 @@ def test_every_ac_of_the_requirement_has_an_entry_and_the_replay_only_parts_are_
 
 @pytest.mark.covers("FR-01.09/AC01")
 def test_every_promise_test_is_bound_by_an_entry_and_carries_that_entrys_covers_tag():
-    bound, pins = {}, []
+    bound, pins, unit_tested = {}, [], {}
     for e in _entries():
         ac = re.match(r"FR-\d{2}\.\d{2}/AC\d{2,}", e["id"])
         for c in _checks(e):
-            if c["kind"] == "test" and ac:
+            if c["kind"] == "test" and ac and ac.group(0) in scenario_index.UNIT_TESTED_UNTIL_U6:  # U4 option B: L1 tests until U6
+                unit_tested.setdefault(ac.group(0), []).append(c["id"])
+            elif c["kind"] == "test" and ac:
                 bound[c["id"]] = ac.group(0)
             elif c["kind"] == "test":  # P8b Q6: a promise with no AC is pinned by an L1 test of the code, never by a promise test
                 pins.append(c["id"])
     promise_paths = {p.relative_to(REPO_ROOT).as_posix() for p in _promise_files()}
     assert pins and not [p for p in pins if p.partition("::")[0] in promise_paths], pins
+    assert {ac: tuple(ids) for ac, ids in unit_tested.items()} == scenario_index.UNIT_TESTED_UNTIL_U6
+    for ac, ids in unit_tested.items():
+        for check in ids:
+            path, _, name = check.partition("::")
+            assert path not in promise_paths and ac in ph.covers_of(name, (REPO_ROOT / path).read_text(encoding="utf-8")), check
     found = {}
     for path in _promise_files():
         source = path.read_text(encoding="utf-8")
