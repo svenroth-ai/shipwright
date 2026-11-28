@@ -1,0 +1,92 @@
+{
+  "run_id": "iterate-2026-11-28-u2-guard-accepts-proven-merge",
+  "date": "2026-11-28T07:45:37.981424Z",
+  "event_at": "2026-11-28T05:32:40.014580+00:00",
+  "type": "feature",
+  "complexity": "medium",
+  "prior_source": "history",
+  "branch": "iterate/campaign-dfp-changelog-followups--U2",
+  "spec": ".shipwright/planning/iterate/campaigns/dfp-changelog-followups/sub-iterates/U2-guard-accepts-proven-merge.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-11-28-u2-guard-accepts-proven-merge",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "a record with a valid proof: the guard allows the tag push of the merge commit",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-changelog/tests/test_release_merge_proof.py::test_the_guard_allows_the_tag_push_of_a_proven_merge_commit PASSED"
+      },
+      {
+        "behavior": "squash-merged release with a valid proof: guard allows, close-phase passes 8 of 8 (real git, bare remote, gh stub)",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-changelog/tests/test_release_merge_proof_e2e.py::test_a_squash_merged_release_with_a_valid_proof_passes_the_guard_and_closes_8_of_8 PASSED",
+        "category": "integration"
+      },
+      {
+        "behavior": "a record whose tree does not match is denied by the guard and fails close-phase",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-changelog/tests/test_release_merge_proof_e2e.py::test_a_squash_merged_release_whose_tree_does_not_match_is_denied_by_both PASSED",
+        "category": "integration"
+      },
+      {
+        "behavior": "a hand-edited record (other commit, own tree, non-release head, unknown commit, orphan) proves nothing",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-changelog/tests/test_release_merge_proof.py::test_a_hand_edited_record_cannot_approve_another_commit PASSED"
+      },
+      {
+        "behavior": "a record without the new fields behaves as before and costs no git call",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-changelog/tests/test_release_merge_proof.py::test_a_record_without_the_new_fields_claims_nothing_and_costs_no_git_call PASSED"
+      },
+      {
+        "behavior": "rebase merge and merge commit on an unmoved base are proven; a merge after the base moved is not",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-changelog/tests/test_release_merge_proof.py::test_a_rebase_merge_of_the_release_branch_is_proven PASSED"
+      },
+      {
+        "behavior": "the PR check follows the commit the tag names",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-changelog/tests/test_release_merge_proof.py::test_the_pr_check_follows_the_tag_a_merge_commit_off_the_base_fails_even_when_the_release_commit_is_on_it PASSED"
+      },
+      {
+        "behavior": "the second close-phase summary says pushed once the tag is on origin (CLI, twice)",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-changelog/tests/test_release_merge_proof_e2e.py::test_the_second_close_phase_of_a_guided_release_says_pushed_once_the_tag_is_on_origin PASSED",
+        "category": "integration"
+      },
+      {
+        "behavior": "summary lines for pushed, waiting, another commit, origin not asked, missing",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-changelog/tests/test_release_merge_proof.py::test_the_summary_of_a_guided_release_says_pushed_only_when_origin_holds_the_tag PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 9,
+      "tested": 9,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 4,
+      "covered_acs": 4
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run --directory plugins/shipwright-changelog pytest tests/test_release_merge_proof.py tests/test_release_merge_proof_e2e.py -q -p no:cacheprovider",
+    "exit_code": 0,
+    "tests_run": 28,
+    "evidence_path": ".shipwright/runs/iterate-2026-11-28-u2-guard-accepts-proven-merge/surface_verification.json",
+    "timestamp": "2026-11-28T07:44:42.702Z",
+    "attempts": 1
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": [
+    "cross_component"
+  ]
+}

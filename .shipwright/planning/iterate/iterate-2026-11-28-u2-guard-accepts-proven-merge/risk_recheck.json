@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-28-u2-guard-accepts-proven-merge",
+  "risk_recheck": {
+    "changed_file_count": 9,
+    "diff_loc": 509,
+    "risk_flags": [
+      "cross_component"
+    ],
+    "diff_risk_flags": [
+      "cross_component"
+    ],
+    "complexity_floor": "medium",
+    "stage1_complexity": "medium",
+    "declared_complexity": "medium",
+    "effective_complexity": "medium",
+    "upgraded": false,
+    "plan_review_required": true,
+    "ci_ack_recorded": false,
+    "escalate": {
+      "required": false,
+      "reason_code": null,
+      "paths": []
+    }
+  }
+}

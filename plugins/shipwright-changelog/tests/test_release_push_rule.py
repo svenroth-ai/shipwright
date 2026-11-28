@@ -80,7 +80,7 @@ def test_the_hook_and_push_tag_judge_every_history_shape_the_same_way(tmp_path, 
         done = subprocess.run(["git", *args], cwd=repo, capture_output=True, text=True, encoding="utf-8")
         return done.returncode, done.stdout
 
-    assert release_guard._is_the_release(repo, commit, tip) is is_release  # the hook
+    assert release_guard._is_the_release(repo, {"commit": commit}, tip) is is_release  # the hook
     assert release_descent.is_the_release(git, commit, tip) is is_release  # the shared rule
     release_commit.write_state(repo, {"version": VERSION, "commit": commit, "tag": f"v{VERSION}", "checks_passed": []})
     seed(repo, mode="standalone", branch="main", on_trunk=True)
@@ -92,7 +92,8 @@ def test_the_hook_and_push_tag_judge_every_history_shape_the_same_way(tmp_path, 
 
 
 def test_the_hook_and_push_tag_share_one_rule_file_and_cannot_drift():
-    assert "release_descent.is_the_release" in (HOOKS / "release_guard.py").read_text(encoding="utf-8")
+    assert "release_merge_proof.accepts" in (HOOKS / "release_guard.py").read_text(encoding="utf-8")  # U2: the descent rule, or a proven merge
+    assert "release_descent.is_the_release" in (HOOKS / "release_merge_proof.py").read_text(encoding="utf-8")
     assert "release_descent.is_the_release" in (PLUGIN / "scripts" / "lib" / "release_push.py").read_text(encoding="utf-8")
     assert "merge-base" not in (HOOKS / "release_guard.py").read_text(encoding="utf-8") or "--is-ancestor" not in (HOOKS / "release_guard.py").read_text(encoding="utf-8")
 

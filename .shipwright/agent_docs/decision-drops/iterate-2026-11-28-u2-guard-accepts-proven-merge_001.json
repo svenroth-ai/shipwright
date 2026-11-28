@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-28-u2-guard-accepts-proven-merge",
+  "date": "2026-11-28",
+  "section": "Iterate — feature: guard and close-phase accept a proven merge commit",
+  "title": "Release guard and closing verify accept a proven squash or rebase merge commit (U2, D110 part 1, D113(1))",
+  "context": "On a squash-only repository the checked release commit never reaches the base, so the release guard and the closing verify refused the merge commit that did, and v0.37.0 had to be finished by hand with the guard lifted (D110). The closing summary also kept saying the tag would be pushed later after it was pushed (D113(1)).",
+  "decision": "The release record may carry published_commit, merged_via and a proof (pr_head, tree, base_before). One stdlib rule, scripts/hooks/release_merge_proof.py, accepts the release as before or the published commit when the PR head is the release, both trees match and base_before is its ancestor. Guard and verify use it; the summary reads what origin holds.",
+  "consequences": "Inert until U3 writes the fields; a record without them costs no extra git call and answers as before. The guard proves content, not that S is on origin's base: U3 proves that, and the closing PR check follows the commit the tag names. Two private guard helpers changed signature; two tests adapted.",
+  "rationale": "One rule shared by both callers cannot drift, and the tree checks tie the merge commit to the audited content, so a hand-edited record cannot approve other code.",
+  "rejected": "Asking the code host from the guard on every command (D90: no remote calls in the hook); refusing squash merges or finishing by hand (operator decision 2026-11-27); a tree-only proof (a hand-edited record could name any commit and its own tree).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-11-28-u2-guard-accepts-proven-merge.md"
+}

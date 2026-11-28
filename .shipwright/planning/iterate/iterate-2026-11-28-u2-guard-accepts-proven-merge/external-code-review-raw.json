@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "- Category: bug\n- Severity: low\n- File: release_verify.py (`proven_published` / `accepts` interplay via `release_merge_proof.accepts`)\n- Finding: `accepts` calls `claimed(record)` and then `proven(git, record)`, which internally calls `claimed(record)` again \u2014 and `proven` also re-runs `release_descent.is_the_release` for `pr_head` even though the tag-push path already ran a descent check on `judged`. This is redundant git work per guard decision, not incorrect output. No user-visible failure; noting for completeness only.\n- Suggestion: Acceptable as-is; if it matters, have `accepts` short-circuit `proven`'s re-validation or cache `claimed`.\n\n- Category: edge-case\n- Severity: low\n- File: plugins/shipwright-changelog/scripts/lib/release_close.py (summary, new `tag_remote` lookup)\n- Finding: If `checks` ever arrives without a `tag_remote` entry (a `next(..., {})` default covers missing/renamed), the summary silently falls back to `tag_may_be_pending`, so a guided release whose tag was actually never pushed would still print \"Tag is pushed after the PR is merged\" \u2014 the pre-D113 over-optimistic line. This only bites if verify is ever changed to return without the tag check; today verify always appends it.\n- Suggestion: Optional hardening: treat a missing `tag_remote` check as \"unknown\" rather than falling through to the mode-based guess.\n\n- Category: test\n- Severity: low\n- File: tests/test_release_push_rule.py (drift assertion)\n- Finding: The renamed one-rule assertion now greps for the literal strings `\"release_merge_proof.accepts\"` in `release_guard.py` and `\"release_descent.is_the_release\"` in `release_merge_proof.py`. String-presence checks are weak (a comment would satisfy them), but they were equally weak before, and the behavior is genuinely covered by `test_release_merge_proof*.py` on real git. Not a blocker.\n- Suggestion: None needed; the behavioral tests carry the weight.\n\nPositive notes on the likely suspects, checked and clean: the `_SHA` regex correctly admits both SHA-1 and SHA-256; `proven` fails closed on unknown commits, malformed proofs, foreign trees, and non-base-grown squashes; a record without the new fields costs no extra git call (verified by the `calls == []` test); the `_pr_check` retry with `published` happens before the `reached is None` branch so an unknown first lookup with a proven merge commit still gets the second chance; `_advice` is safe because `_record` already validated `commit`; the summary's `on_origin: None` (unreachable origin) is distinguished from both \"waiting\" and \"missing\", which matches D113(1). The tests genuinely validate behavior (real git, bare remote, both guard and verify paths, tree-mismatch denial, hand-edited record, orphan-tree commit, moved-base merge), not just call counts.\n\nThe acceptance criteria appear fully covered: guard allows a proven merge commit's tag push and close-phase passes 8 of 8 (e2e test), tree mismatch denied by both, absent fields behave as today (including the no-extra-git-call test), and the second close-phase summary flips to \"pushed\" once the tag reaches origin.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "- **Category** spec\n- **Severity** medium\n- **File:line** `plugins/shipwright-changelog/scripts/lib/release_verify.py:108`\n- **Finding** The PR check can pass for a different commit than the one the release publishes. If the original release commit `R` is on the base and a proof-valid `published_commit` `S` is only local, both tag checks pass for tags pointing at `S`. The PR check then succeeds on `R` and never verifies that `S` reached the base. Close-phase can report 8 of 8 even though the published tag points to a commit outside the PR base.\n- **Suggestion** When the remote tag points to `published_commit`, require that commit on the PR base in modes that require a merged PR. Add a bare-remote regression test with `R` on the base and the tag pointing to a same-tree `S` outside the base.\n\n- **Category** test\n- **Severity** low\n- **File:line** `plugins/shipwright-changelog/tests/test_release_merge_proof.py:232`\n- **Finding** The test named for a second guided `close-phase` calls `verify()` and `summary()` directly. It can pass even if the CLI fails on its second invocation or prints a different summary after the first invocation writes close-phase state.\n- **Suggestion** Invoke `release.py close-phase` twice against the same guided release, push the tag between invocations, and assert both summaries from the CLI output.\n\n**Ship-with-fixes.** Tie the PR check to the published tag target and exercise the guided rerun through the CLI. Local shell access was blocked, so this review is based on the supplied diff and specification. I could not inspect the referenced campaign files or run the tests.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-11-28-u2-guard-accepts-proven-merge",
+    "at": "2026-11-28T06:40:58.456788+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

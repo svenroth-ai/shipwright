@@ -91,30 +91,30 @@ def test_active_state_branches(repo, tmp_path):
     assert rg._active_state(repo) is not None
 
 
-def test_record_commit_reads(repo):
-    assert rg._record_commit(repo, VERSION) is None
+def test_record_reads(repo):
+    assert rg._record(repo, VERSION) is None
     record(repo)
-    assert rg._record_commit(repo, VERSION) == git(repo, "rev-parse", "HEAD")
-    assert rg._record_commit(repo, "9.9.9") is None
+    assert rg._record(repo, VERSION)["commit"] == git(repo, "rev-parse", "HEAD")
+    assert rg._record(repo, "9.9.9") is None
     (repo / rg.RECORD_REL).write_text("[1]", encoding="utf-8")
-    assert rg._record_commit(repo, VERSION) is None
+    assert rg._record(repo, VERSION) is None
 
 
 def test_event_only_descent_and_judged_commit(repo):
     release = git(repo, "rev-parse", "HEAD")
-    assert rg._is_the_release(repo, release, release) and not rg._is_the_release(repo, release, "")
+    assert rg._is_the_release(repo, {"commit": release}, release) and not rg._is_the_release(repo, {"commit": release}, "")
     (repo / ".shipwright/events/drops").mkdir(parents=True)
     (repo / ".shipwright/events/drops/e.jsonl").write_text("{}\n", encoding="utf-8")
     git(repo, "add", ".shipwright")
     git(repo, "commit", "-m", "event")
-    assert rg._is_the_release(repo, release, git(repo, "rev-parse", "HEAD"))
+    assert rg._is_the_release(repo, {"commit": release}, git(repo, "rev-parse", "HEAD"))
     git(repo, "checkout", "-q", "-b", "side", release)
     (repo / "b.txt").write_text("b\n", encoding="utf-8")
     git(repo, "add", "b.txt")
     git(repo, "commit", "-m", "side")
-    assert not rg._is_the_release(repo, git(repo, "rev-parse", "main"), git(repo, "rev-parse", "HEAD"))  # not a descendant
+    assert not rg._is_the_release(repo, {"commit": git(repo, "rev-parse", "main")}, git(repo, "rev-parse", "HEAD"))  # not a descendant
     git(repo, "merge", "--no-ff", "-m", "m", "main")
-    assert not rg._is_the_release(repo, release, git(repo, "rev-parse", "HEAD"))  # a merge commit in between
+    assert not rg._is_the_release(repo, {"commit": release}, git(repo, "rev-parse", "HEAD"))  # a merge commit in between
     git(repo, "tag", f"v{VERSION}", release)
     assert rg._judged_commit(repo, VERSION, True) == release
     assert rg._judged_commit(repo, VERSION, False) == git(repo, "rev-parse", "HEAD")
