@@ -33,24 +33,33 @@
     "code": {
       "review_type": "code",
       "status": "completed",
-      "findings_count": 4,
+      "findings_count": 6,
       "findings": [
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_paths.py",
+          "line": null,
+          "finding": "gh() turns a SeamError into None, so push-tag answers waiting_for_merge instead of refusing loudly; fails closed (nothing pushed or written) but contradicts the seam contract and loses the error text.",
+          "suggestion": "Distinct refusal for an unusable seam plus a unit test. Disposition: carried into U7 (guard-gaps unit, same campaign) with the other release-path lows.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "docs/hooks-and-pipeline.md",
+          "line": null,
+          "finding": "Pre-existing stale doc: line ~4431 says .test-results.json sidecars are never retention-pruned, but append_iterate_entry._apply_retention deletes them by design (trg-b28a039c). U3's deletion is designed F5c behaviour.",
+          "suggestion": "Fix the doc row. Disposition: listed in the campaign follow-up report; not U3's scope.",
+          "source": "code-reviewer"
+        },
         {
           "severity": "low",
           "category": "security",
           "file": "plugins/shipwright-changelog/scripts/lib/release_push.py",
           "line": null,
-          "finding": "Only rec.results is redacted; refusal detail strings (e.g. merge_state_unknown from fetch stderr at the push URL) are not, so hiding the push-URL user/token relies on git's own stripping.",
-          "suggestion": "Redact string fields of `more` in answer(). Disposition: carried into U7 (guard-gaps unit, same campaign) as a named item.",
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": "correctness",
-          "file": "shared/testkit/gh_stub.py",
-          "line": null,
-          "finding": "pr_view takes the last path part of any argument, so a branch name with a slash never matches.",
-          "suggestion": "Only split URL-shaped arguments. Disposition: ACCEPTED as a test-stub gap; no test uses a branch lookup today; listed in the campaign follow-up report (stub is at 300 lines and needs a split first).",
+          "finding": "Earlier pass (pre-merge head): refusal detail strings not redacted.",
+          "suggestion": "Disposition: carried into U7.",
           "source": "code-reviewer"
         },
         {
@@ -58,8 +67,17 @@
           "category": "readability",
           "file": "plugins/shipwright-changelog/scripts/hooks/release_merge_proof.py",
           "line": null,
-          "finding": "Docstring says 'each PR commit replayed once'; git cherry + count proves each chain commit is patch-equal to some PR commit, not one-to-one. Tree equality bounds content, so not a safety hole.",
-          "suggestion": "Reword the docstring. Disposition: carried into U7 with the redaction item (same hook family).",
+          "finding": "Earlier pass: docstring overclaims one-to-one replay.",
+          "suggestion": "Disposition: carried into U7.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/testkit/gh_stub.py",
+          "line": null,
+          "finding": "Earlier pass: pr_view mangles branch names with '/'.",
+          "suggestion": "Disposition: follow-up report.",
           "source": "code-reviewer"
         },
         {
@@ -67,31 +85,40 @@
           "category": "correctness",
           "file": "plugins/shipwright-changelog/scripts/lib/release_publish.py",
           "line": null,
-          "finding": "An OSError from write_state escapes as an exception (not a refusal) and can leave a .part file; a failed retag after the write is recovered by a re-run.",
-          "suggestion": "Optional refusal record_write_failed. Disposition: ACCEPTED; fails loud, nothing unsafe follows; listed in the follow-up report.",
+          "finding": "Earlier pass: write_state OSError escapes as exception.",
+          "suggestion": "Disposition: follow-up report.",
           "source": "code-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-11-28T11:12:14.632663+00:00",
+      "completed_at": "2026-11-28T12:00:39.646628+00:00",
       "disposition": null,
       "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus",
-      "reviewer_notes": "Orchestrator 3f-bis, opus. Every failing git call in publish leads to a refusal or proven=None, never to allow or a write. Record and tag change only after all checks hold. Hook stays stdlib-only. Tests cover squash, rebase, merge end to end, foreign commits, re-runs, tag already on origin, retargeted PR, token redaction in commands; they fail without the fix. Four lows, verdict pass."
+      "reviewer_notes": "Orchestrator 3f-bis, opus, fresh pass after merging origin/main (rebase_count 1). Merge resolution in release_paths.py correct. Every refusal returns before write_state except retag_failed, which leaves a consistent re-runnable state. Proof requires is_the_release(H), S on a checked fresh fetch, and proven() with per-method parent ties. A tag on origin is never moved. Atomic write. Answer redacted. gh_stub matches contract for squash, rebase, merge. No architecture-rule violation. Verdict pass, lows only."
     },
     "doubt": {
       "review_type": "doubt",
       "status": "completed",
-      "findings_count": 2,
+      "findings_count": 3,
       "findings": [
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_paths.py",
+          "line": null,
+          "finding": "every push-tag failure, including a loader failure from shared_module, fails closed with a JSON answer",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
         {
           "severity": "low",
           "category": "reversibility / boundary & contract",
           "file": "plugins/shipwright-changelog/scripts/lib/release_publish.py",
           "line": null,
-          "finding": "every git failure fails closed and the operator can tell a retry from a real stop",
+          "finding": "(earlier pass) git failures in the proof path are labelled retryable",
           "suggestion": null,
           "source": "doubt-reviewer"
         },
@@ -100,13 +127,13 @@
           "category": "boundary & contract",
           "file": "plugins/shipwright-changelog/scripts/lib/release_publish.py",
           "line": null,
-          "finding": "S is on the freshly fetched base, re-checked independently by the closing verify",
+          "finding": "(earlier pass) S on the freshly fetched base is re-checked independently",
           "suggestion": null,
           "source": "doubt-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-11-28T11:12:14.760440+00:00",
+      "completed_at": "2026-11-28T12:00:39.779395+00:00",
       "disposition": null,
       "recorded_by": "doubt-reviewer",
       "parse_status": null,
@@ -199,7 +226,7 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-11-28T11:12:14.504088+00:00",
+      "completed_at": "2026-11-28T12:00:39.509816+00:00",
       "disposition": null,
       "recorded_by": "spec-reviewer",
       "parse_status": null,
@@ -209,8 +236,8 @@
         {
           "ac": "FR-01.09.AC11",
           "verdict": "matches",
-          "diff_location": "plugins/shipwright-changelog/scripts/lib/release_push.py:78-91",
-          "reason": "A hand-run release still waits for the merge while the PR is open; once gh reports MERGED, publish() proves the merge commit, writes the record and retags locally; it never pushes.",
+          "diff_location": "plugins/shipwright-changelog/scripts/lib/release_push.py:88",
+          "reason": "push-tag still waits while the PR is open and only proves, records and retags once gh reports MERGED; after a squash or rebase merge the closing verify passes 8 of 8; preparing a release publishes nothing by itself.",
           "weakens": false
         }
       ]
