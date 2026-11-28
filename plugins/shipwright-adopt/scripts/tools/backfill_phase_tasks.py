@@ -73,7 +73,7 @@ def _utc_now_iso() -> str:
 
 
 def run(project_root: Path, *, dry_run: bool) -> dict[str, Any]:
-    config_path = project_root / RUN_CONFIG_NAME
+    config_path = _sp.path("run_config", project_root)
     if not config_path.is_file():
         raise SystemExit(
             f"ERROR: {config_path} does not exist. This tool backfills an "

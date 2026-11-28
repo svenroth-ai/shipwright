@@ -1,0 +1,8 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"AC1-AC7 met: every join of a frozen moving name goes through path() (codemod + key lists + fallbacks + indirect joins + five plan-review finds), audit_config/dev_server rows move, guard with positive controls for every join shape, 11 moved-layout cases that all fail on the pre-change tree, a real SessionStart hook integration case, full F0 suite."},
+{"name":"Error Handling","verdict":"pass","note":"security_gate reads a LayoutError (matched by class name) as zero tolerance so two copies never reach the deploy hook's fail-open wrapper; config_profile rejects a file name with a clear error; the remaining LayoutError surface is listed for R1e in BRIEF 12.12(c)."},
+{"name":"Security Basics","verdict":"pass","note":"Stale-cache fallbacks keep the legacy literal; the test-gate escape check runs on the file actually read; no deploy gate can be widened by a broken layout; symlink follow-ups for R3 recorded."},
+{"name":"Code Quality","verdict":"pass","note":"Mechanical one-line rewrites with the same key and root; no file over 300 lines (bloat_baseline stays at 300 via an in-place rename); ruff clean."},
+{"name":"Test Coverage","verdict":"pass","note":"New guard test (13 shape cases + label-default negative case), moved-layout end-to-end test (11 cases incl. writer, security gate, stack profile, hook subprocess), fallback scan extended to the join shape, D1 pin added."},
+{"name":"Scope","verdict":"pass","note":"Pathspecs, sets, messages, the rel()-moved test and carriers are R1c-3; LayoutError per hook is R1e; recorded in the spec and BRIEF item 12."}
+]}

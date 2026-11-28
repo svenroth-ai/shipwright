@@ -201,7 +201,7 @@ def main(argv: list[str] | None = None) -> int:
         # about to overwrite — is worse than a loud usage error.
         parser.error("--check-baseline-growth cannot be combined with --write")
     project_root = Path(args.project_root).resolve()
-    baseline_path = args.baseline or (project_root / BASELINE_RELPATH)
+    baseline_path = args.baseline or (_sp.path("ac_coverage_baseline", project_root))
     try:
         return _run_gate(project_root, baseline_path, args.write, args.check_baseline_growth,
                           args.parent_sha)

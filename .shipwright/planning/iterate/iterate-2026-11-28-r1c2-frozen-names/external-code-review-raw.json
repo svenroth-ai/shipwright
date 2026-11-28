@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "- **Category:** regression  \n  **Severity:** medium  \n  **File:** `shared/scripts/profile_consumer.py:98`  \n  **Finding:** `config_profile()` replaces the `filename` parameter with a registry key. A caller that passes `filename=...` now gets `TypeError`, and a caller that passes the previously supported `\"shipwright_project_config.json\"` positionally now sends a filename to the registry as a key. Both calls can break on an unmigrated project.  \n  **Suggestion:** Preserve the `filename` parameter and translate recognized config filenames to registry keys before resolving them. Add a test for an existing explicit-filename call.\n\n- **Category:** test  \n  **Severity:** medium  \n  **File:** `shared/tests/_shipwright_paths_scan.py:236`  \n  **Finding:** The class-8 guard misses a resolver path assigned to a variable and then passed to Git. If a function assigns `_sp.path(\"test_results\", root)` to `p` and later uses `p` in a `git(\"show\", ...)` argument, the resolver call is outside the argument\u2019s AST and the guard accepts it. The new positive control only covers the inline form.  \n  **Suggestion:** Track simple local assignments that feed Git or blob-reader arguments. Add a positive control for an assigned path and keep a negative control for a separate working-tree read in the same function.\n\n- **Category:** test  \n  **Severity:** low  \n  **File:** `shared/tests/test_shipwright_paths_moved_layout.py:66`  \n  **Finding:** The dev-server case exercises `_save_state()`, while the changed module identifies `_save_state_atomic()` as the production writer. The test would still pass if the production writer reverted to creating a root copy alongside the migrated state file.  \n  **Suggestion:** Run the moved-layout case through `_save_state_atomic()` and retain the assertions that the migrated file was updated and no root copy was created.\n\nShip-with-fixes. The resolver routing is broadly consistent with the spec, but the profile API regression and the gaps in the Git guard and production-writer coverage should be addressed before merge. Workspace commands were blocked, so this assessment is based on the supplied diff.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "## Findings\n\n- Category: regression\n  Severity: medium\n  File: shared/scripts/profile_consumer.py (diff hunk `config_profile`)\n  Finding: The parameter semantic changed silently from a *filename* (`filename: str = RUN_CONFIG`) to a *registry key* (`key: str = \"run_config\"`). Any caller outside this diff that still passes a filename (e.g. `config_profile(root, \"shipwright_run_config.json\")`) now raises a `KeyError`/`SPECS` lookup failure inside `_sp.path`, and a caller passing a *different* file's name gets a `LayoutError`-style lookup of a nonexistent key. The diff shows one caller updated; nothing pins that no other caller exists.\n  Suggestion: Add a `pytest.raises`/guard: reject keys not in `_sp.SPECS` with a clear error naming the new contract, and grep the repo (including tests and other plugins) for `config_profile(` call sites to confirm the single-caller claim in a test.\n\n- Category: bug\n  Severity: low\n  File: plugins/shipwright-compliance/scripts/lib/security_gate.py (`load_threshold` new `except Exception`)\n  Finding: The catch is `except Exception` gated only on `getattr(exc, \"code\", None) is None`. Any unrelated exception that happens to carry a non-None `code` attribute (several library exceptions do, e.g. `SystemExit.code`, some `KeyError`-like classes, `mmap.error`) is silently read as \"zero tolerance\". That direction is fail-closed, so it's not a security hole, but it masks real bugs.\n  Suggestion: Match the resolver's `LayoutError` explicitly (import it, or check `type(exc).__name__ == \"LayoutError\"` / `exc.code == \"both_copies\"`), not \"any `.code`\".\n\n- Category: test\n  Severity: low\n  File: shared/tests/test_shipwright_paths_constant_joins.py (`_aliases`, `_module_level`)\n  Finding: The guard has concrete false negatives: (a) an unaliased `import lib.bloat_baseline` followed by `root / bloat_baseline.BASELINE_FILENAME` is not seen (`_aliases` records only the first component `\"lib\"`, so `mods.get(\"bloat_baseline\")` misses); (b) `from m import *`; (c) module-level bindings inside `for`/`while`/`match` bodies are not descended into (`_module_level` handles only `if`/`try`/`with`). AC1's guard is the pin for the whole campaign; a gap here is how the next frozen-name join re-enters.\n  Suggestion: In `_aliases`, also map full dotted names and bare last components for plain `import` statements; add a positive control for the unaliased-module shape.\n\n- Category: edge-case\n  Severity: low\n  File: plugins/shipwright-test/scripts/tools/merge_boundary_coverage.py (`--target` default)\n  Finding: `_sp.path(\"test_results\", \".\")` is a *relative* path; when the file exists only at `.shipwright/config/shipwright_test_results.json`, `merge` will write into a directory that may not exist yet in a non-migrated checkout (the help text says \"Created if missing\", which the old root-relative default satisfied because the root always exists). Whether this fails depends on `merge`'s mkdir behaviour, which is not shown.\n  Suggestion: Confirm `merge` creates parent directories (or add `args.target.parent.mkdir(parents=True, exist_ok=True)`), and add a new-layout case to the moved-layout test for this tool.\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/tools/compliance_input_state.py (`producer_inputs`)\n  Finding: `_sp.path(\"compliance_config\", root).relative_to(root)` runs unconditionally on every producer-inputs snapshot. With two copies (post-R3 brownfield scenario this campaign explicitly worries about) this raises `LayoutError` into the compliance-gating snapshot path, which previously could not raise. This module is not in the R1e narrow-handler list in BRIEF 12.12 (c).\n  Suggestion: Add it to the R1e classification list, or catch by `.code` here and report instead of aborting the compliance gate.\n\n- Category: test\n  Severity: low\n  File: shared/tests/test_shipwright_paths_moved_layout.py (`test_the_dev_server_state_follows_its_file`)\n  Finding: The dev-server writer case exercises `_save_state` (the docstring says \"used for tests\"), not the production `_save_state_atomic`. The new-place update behaviour of the real writer is therefore untested.\n  Suggestion: Drive `_save_state_atomic` in the same test (or at least the load-after-atomic-save round trip).\n\n- Category: regression\n  Severity: low\n  File: shared/scripts/lib/bloat_baseline.py (`_baseline_path` \u2192 `baseline_path`)\n  Finding: The rename deletes the old private name. Any out-of-diff caller of `_baseline_path` (tests, tools) breaks with `AttributeError`. Nothing in the diff confirms the old name had no other users.\n  Suggestion: Verify with a repo-wide grep; if any exist, keep a `_baseline_path = baseline_path` alias or update them.\n\nPositive notes: the ternary-precedence rewrites (`root / \"lit\" if _sp is None else _sp.path(...)`) are all parsed correctly by Python's operator precedence (IfExp binds loosest), so the five hook/gate fallbacks are fine; the fixture cap math checks out (7 entries removed, 80\u219273); the moved-layout tests genuinely drive reader/writer behaviour (not just call the function) and the security-gate both-copies\u21920 test is a real behavioral assertion; the scan's class-8 change has a matching positive control.\n\n**Overall:** this is a careful, well-guarded change; the findings are refinements and coverage gaps rather than blocking defects. Ship-as-is with the profile_consumer caller audit recommended.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-11-28-r1c2-frozen-names",
+    "at": "2026-11-28T09:23:15.793127+00:00"
+  },
+  "verdicts": {
+    "openai": "revise",
+    "glm": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

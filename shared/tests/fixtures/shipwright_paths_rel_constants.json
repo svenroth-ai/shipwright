@@ -1,12 +1,8 @@
 {
- "_about": "R1b inventory (BRIEF 12.1): module-level names bound to a value built from rel(), frozen at import and joined elsewhere as root / CONST, so they would bypass path() and R1c's new-then-old lookup. Closed list: a new name fails test_no_new_rel_constants; R1c removes entries as it routes them through path() (the list may only shrink).",
+ "_about": "R1b inventory (BRIEF 12.1): module-level names bound to a value built from rel(), frozen at import and joined elsewhere as root / CONST, so they would bypass path() and R1c's new-then-old lookup. Closed list: a new name fails test_no_new_rel_constants; R1c removes entries as it routes them through path() (the list may only shrink). Since R1c-2 no entry of a MOVING file may be joined to a root (test_shipwright_paths_constant_joins.py); what remains are names used as git pathspecs, path sets and messages (R1c-3), and the event log, which stays.",
  "files": {
   "plugins/shipwright-adopt/scripts/checks/setup_adopt.py": [
    "_EXISTING_ARTIFACT_CANDIDATES"
-  ],
-  "plugins/shipwright-adopt/scripts/checks/validate_adoption.py": [
-   "REQUIRED_CONFIGS",
-   "_HONESTY_ARTIFACTS"
   ],
   "plugins/shipwright-adopt/scripts/lib/inherited_baseline.py": [
    "REGISTER_REL"
@@ -29,9 +25,6 @@
   "plugins/shipwright-compliance/scripts/lib/collectors/change_history.py": [
    "EVENT_FILE"
   ],
-  "plugins/shipwright-compliance/scripts/lib/security_gate.py": [
-   "CONFIG_FILENAME"
-  ],
   "plugins/shipwright-design/scripts/checks/check-design-gates.py": [
    "DESIGN_ALLOWED_PREFIXES"
   ],
@@ -40,12 +33,6 @@
   ],
   "plugins/shipwright-plan/scripts/checks/check-plan-gates.py": [
    "PLAN_ALLOWED_PREFIXES"
-  ],
-  "plugins/shipwright-plan/scripts/lib/config.py": [
-   "SESSION_CONFIG_NAME"
-  ],
-  "plugins/shipwright-run/scripts/hooks/master_stop_check.py": [
-   "CONFIG_NAME"
   ],
   "plugins/shipwright-run/scripts/lib/orchestrator_pkg/brief_resume_guard.py": [
    "_CONFIG"
@@ -85,9 +72,6 @@
   ],
   "shared/scripts/hooks/generate_handoff_on_stop.py": [
    "_RUN_CONFIG_NAME"
-  ],
-  "shared/scripts/hooks/session_start_using_shipwright.py": [
-   "CONFIG_NAME"
   ],
   "shared/scripts/inline_suppression_baseline.py": [
    "BASELINE_NAME"
@@ -218,9 +202,6 @@
   ],
   "shared/scripts/tools/verifiers/_iterate_latest.py": [
    "RESULTS_NAME"
-  ],
-  "shared/scripts/tools/verifiers/adopt_compliance.py": [
-   "REQUIRED_CONFIGS"
   ],
   "shared/scripts/tools/verifiers/ci_supplychain_ack_store.py": [
    "_RESULTS"

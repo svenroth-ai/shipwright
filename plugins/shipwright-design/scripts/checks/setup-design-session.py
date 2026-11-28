@@ -124,7 +124,7 @@ def main() -> int:
     profile_name = None
     try:
         # absent / null / empty -> the legacy default; a corrupt config is an error, not a traceback
-        profile_name = pc.config_profile(project_root, PROJECT_CONFIG) or "supabase-nextjs"
+        profile_name = pc.config_profile(project_root, "project_config") or "supabase-nextjs"
         design_system, profile_source = load_profile_design_system(project_root, profile_name)
     except ValueError as exc:  # unknown / invalid / too new: stop, name the file, no fallback
         sys.stderr.write(f"error: {exc}\n")

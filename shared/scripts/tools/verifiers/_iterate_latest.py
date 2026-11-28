@@ -78,7 +78,7 @@ class IterateLatest:
 
 def read_iterate_latest(project_root: Path, run_id: str) -> IterateLatest:
     """Read ``iterate_latest`` and say whose run it is."""
-    path = Path(project_root) / RESULTS_NAME
+    path = _sp.path("test_results", Path(project_root))
     if not path.exists():
         return IterateLatest(STATE_MISSING, detail=f"{RESULTS_NAME} does not exist")
     try:

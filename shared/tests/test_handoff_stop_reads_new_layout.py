@@ -66,5 +66,7 @@ def test_two_copies_stop_the_detector_and_are_reported(tmp_path, monkeypatch, ca
     assert _stop(root, monkeypatch, f"r1c1-both-{phase}") == [], "one of two divergent copies was read"
     err = capsys.readouterr().err
     assert "both_copies" in err and str(new) in err, err
-    # reported by the phase-completion block itself, not by the outer "generation skipped" handler
-    assert "generated at" in err and "generation skipped" not in err, err
+    # Said aloud, never swallowed. Since R1c-2 the handoff generator reads the configs through path() too,
+    # so it meets the two copies first and the outer handler reports them ("generation skipped"); whether
+    # the handoff should still be written then is R1e's call (BRIEF 12.12 (c)).
+    assert "generation skipped: LayoutError" in err or "generated at" in err, err

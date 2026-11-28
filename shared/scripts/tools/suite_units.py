@@ -179,7 +179,7 @@ def _positive_int(value: object, label: str) -> int:
 
 def load_suite_config(project_root: Path, unit_ids) -> SuiteConfig:
     """Validate the whole config BEFORE a single subprocess starts (AC7)."""
-    path = project_root / CONFIG_NAME
+    path = _sp.path("test_config", project_root)
     if not path.is_file():
         raise SuiteConfigError(f"{CONFIG_NAME} not found in {project_root} - {_OPT_IN}")
     try:

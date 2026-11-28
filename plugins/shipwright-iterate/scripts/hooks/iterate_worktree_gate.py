@@ -225,7 +225,7 @@ def _iterate_eligible(main_root: Path) -> bool:
     in files — yet it is exactly what iterate is for). Arming a project the
     skill will refuse would block its session for 24 h for nothing."""
     try:
-        config = json.loads((main_root / ("shipwright_run_config.json" if _sp is None else _sp.rel("run_config"))).read_text(encoding="utf-8"))
+        config = json.loads((main_root / "shipwright_run_config.json" if _sp is None else _sp.path("run_config", main_root)).read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return False
     if not isinstance(config, dict):

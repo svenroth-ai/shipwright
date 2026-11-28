@@ -1,0 +1,392 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-28-r1c2-frozen-names",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-28T09:44:17.219508+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "risk |",
+          "file": null,
+          "line": null,
+          "finding": "The codemod rewrote 58 joins based on static name binding, but Python imports are dynamic (aliasing via `from m import CONST as X`, re-export chains, `globals()[...]`-style lookup, or monkeypatching in tests would be invisible to it). The plan's verification is the new guard test, which uses the same static analysis the codemod used — so it cannot catch what the codemod's model missed. AC1's negative control covers layout behavior, not detection coverage.",
+          "suggestion": "Add at least one behavioral sweep beyond the static guard: a runtime check (e.g., a test that intercepts `path()`/`rel()` and greps, or a temporary assert in `path()` during a full F0 run) confirming no reader still constructs the legacy path. Cheap and catches dynamic binding the AST missed.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "merge_boundary_coverage --target` defaults to `_sp.path(\"test_results\", \".\")`. Everything else in this change passes an explicit project root; `\".\"` means the resolution depends on process CWD. If `path()` for a moving key does `Path(\" . \") / new_rel`, that's cwd-relative as stated — but the stale-cache fallback shape (`_sp is None` branch) and the `both_copies` check (AC5) now also become CWD-dependent, and a user running the tool from a subdirectory gets different behavior than before (previously it was also cwd-relative, but the file location never varied with layout).",
+          "suggestion": "Confirm `path()` handles a relative root the same way as an absolute one (especially `LayoutError` on both copies — does it check the right relative location?). Add a test case for the cwd-relative call site specifically.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk |",
+          "file": null,
+          "line": null,
+          "finding": "The three inlined fallback constants (`session_start_using_shipwright.CONFIG_NAME`, `master_stop_check.CONFIG_NAME`, `security_gate.CONFIG_FILENAME`) were module-level names. Inlining removes them from the module namespace — anything importing or patching those names (tests, other plugins) breaks with AttributeError rather than a join.",
+          "suggestion": "Grep for imports/`setattr` of these names before considering this done; the guard's importer tracking presumably checked join uses, not non-join uses of the constant itself.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "The test-gate escape check now does `path(...).relative_to(root)`. If a migrated layout places the file at `.shipwright/...`, `relative_to(root)` yields a path with `.shipwright` components — fine — but if `path()` ever returns something outside `root` (e.g., root passed as `\".\"` while path resolves against an absolute CWD), `relative_to` raises ValueError, turning an escape check into a crash (LayoutError handling is explicitly deferred to R1e).",
+          "suggestion": "Verify `_safe_project_file` catches/wraps `ValueError` and `LayoutError`, or document that this hook is on the R1e list.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency |",
+          "file": null,
+          "line": null,
+          "finding": "The `class-8` guard exception for `ci_supplychain_ack_store._read_legacy` (\"path() inside a git-reading function is the working-tree leg\") is a carve-out keyed to a specific function. If another git-reading function adopts the same pattern, the guard won't know it's legitimate — or worse, the carve-out will silently bless a genuine join there.",
+          "suggestion": "Scope the exception to that module/function explicitly rather than \"any git-reading function,\" or add a comment tying it to a reopen trigger.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach |",
+          "file": null,
+          "line": null,
+          "finding": "Row flips (D1/D2) change `new_rel` but nothing creates the new directories until R3. Readers calling `path()` on an unmigrated repo resolve to the root — but writers (dev-server state, audit_config writers) will still write to the root. That's the intended no-op, yet AC4 only tests \"reads as before\"; a write-path test in an unmigrated repo would confirm the writer doesn't create `.shipwright/runtime/` prematurely and violate the \"Spec Impact: NONE\" claim.",
+          "suggestion": "Add a write-path assertion to the unmigrated F0 coverage (or confirm one exists in dev_server/state tests).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach |",
+          "file": null,
+          "line": null,
+          "finding": "The pre-build AC record gap (\"none was written, as in R1a to R1c-1\") is acknowledged, not fixed. For a 69-file change with a static-analysis guard as the primary safety net, the absence of a written AC record means the AC checkboxes were verified post-hoc against implementation rather than pre-specified.",
+          "suggestion": "Acceptable to carry the catalog gap, but note it should be paid down before R1c-3, which is the riskier half (pathspecs/sets need `rel_at()` reasoning).",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-28T09:44:33.507405+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] ## Findings\n\n**Category: risk | Severity: medium**\n**Finding:** The codemod rewrote 58 joins based on static name binding, but Python imports are dynamic (aliasing via `from m import CONST as X`, re-export chains, `globals()[...]`-style lookup, or monkeypatching in tests would be invisible to it). The plan's verification is the new guard test, which uses the same static analysis the codemod used — so it cannot catch what the codemod's model missed. AC1's negative control covers layout behavior, not detection coverage.\n**Suggestion:** Add at least one behavioral sweep beyond the static guard: a runtime check (e.g., a test that intercepts `path()`/`rel()` and greps, or a temporary assert in `path()` during a full F0 run) confirming no reader still constructs the legacy path. Cheap and catches dynamic binding the AST missed.\n\n**Category: edge-case | Severity: medium**\n**Finding:** `merge_boundary_coverage --target` defaults to `_sp.path(\"test_results\", \".\")`. Everything else in this change passes an explicit project root; `\".\"` means the resolution depends on process CWD. If `path()` for a moving key does `Path(\" . \") / new_rel`, that's cwd-relative as stated — but the stale-cache fallback shape (`_sp is None` branch) and the `both_copies` check (AC5) now also become CWD-dependent, and a user running the tool from a subdirectory gets different behavior than before (previously it was also cwd-relative, but the file location never varied with layout).\n**Suggestion:** Confirm `path()` handles a relative root the same way as an absolute one (especially `LayoutError` on both copies — does it check the right relative location?). Add a test case for the cwd-relative call site specifically.\n\n**Category: risk | Severity: medium**\n**Finding:** The three inlined fallback constants (`session_start_using_shipwright.CONFIG_NAME`, `master_stop_check.CONFIG_NAME`, `security_gate.CONFIG_FILENAME`) were module-level names. Inlining removes them from the module namespace — a […truncated]\n\n[openai] 1. **Category** risk · **Severity** medium  \n   **Finding** — The class-8 exemption for `path()` is broader than the case that motivated it. `_read_legacy` has a legitimate working-tree read alongside a `rel_at()` lookup, but exempting `path()` throughout git-reading functions also lets a future git argument derive its path from the current checkout. That can produce incorrect results when the queried commit uses a different layout.  \n   **Suggestion** — Scope the exception to the working-tree read. Keep the guard checking git path arguments and add a control showing that it catches a `path()`-derived argument in a function that also calls `rel_at()`.\n\n2. **Category** edge-case · **Severity** medium  \n   **Finding** — The moved-layout tests prepopulate the target file. For dev-server state, that covers updating an existing file but leaves first creation and recreation after cleanup unverified. If `path()` falls back to the legacy root when neither copy exists, a fresh start could write state back to the root even when `.shipwright/runtime/` is present.  \n   **Suggestion** — Test the normal dev-server start with the runtime directory present and both state files absent. Pin the intended destination. If first-write routing belongs to R3, record that dependency explicitly.\n\n3. **Category** security · **Severity** medium  \n   **Finding** — The test-gate change introduces a moved-layout path to the escape check, but the described tests do not show that the gate rejects a symlinked `.shipwright/config/` or `.shipwright/runtime/` parent that points outside the project. A regular moved file only verifies the successful read.  \n   **Suggestion** — Exercise the real gate with a routed file reached through a symlinked parent outside the project. Assert that the gate reports the escape before reading the file.\n\nCentralizing the joins in `path()` is sound, and deferring pathspec changes keeps this PR focused. Tighten the git guard and verify first-write and symlink  […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "approve"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/tests/test_shipwright_paths_constant_joins.py",
+          "line": 49,
+          "finding": "joins through a dict or tuple constant (root / CONFIG_FILES['run'], for n in NAMES: root / n) are not seen",
+          "suggestion": "recorded as a guard blind spot for R1c-3 in BRIEF 12.12(c), with deriving CONFIG_FILES from CONFIG_KEYS",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/gate_policy.py",
+          "line": 164,
+          "finding": "readers documented as never raising (gate_policy, phase_invocation_mode, project_facts) can now raise LayoutError",
+          "suggestion": "added to the R1e precondition list in BRIEF 12.12(c); nothing reaches them before R3 creates the new places",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": "shared/scripts/lib/iterate_test_results.py",
+          "line": 167,
+          "finding": "leaf-only symlink check; a symlinked .shipwright/config would read evidence from outside the repo after R3",
+          "suggestion": "recorded for R3 in BRIEF 12.12(d)",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/check_ac_coverage_ratchet.py",
+          "line": 204,
+          "finding": "LayoutError exits with a traceback, not the infra exit",
+          "suggestion": "BRIEF wording corrected (still non-zero, still blocks)",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/tools/fr_split.py",
+          "line": 190,
+          "finding": "path() resolved several times per expression",
+          "suggestion": "FIXED: bound once",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/config.py",
+          "line": 33,
+          "finding": "CONFIG_KEYS repeats CONFIG_FILES",
+          "suggestion": "R1c-3 (both move together with the inventory)",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-adopt/scripts/checks/validate_adoption.py",
+          "line": 147,
+          "finding": "_HONESTY_ARTIFACTS mixes keys and paths",
+          "suggestion": "accepted",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/ac_mode.py",
+          "line": 74,
+          "finding": "codemod left redundant parentheses",
+          "suggestion": "accepted, cosmetic",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/scripts/dev_server/state.py",
+          "line": 29,
+          "finding": "resolver import style differs from sibling",
+          "suggestion": "accepted; one module object since R1a",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-28T09:44:18.058277+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "concurrency & ordering",
+          "file": "shared/scripts/lib/shipwright_layout.py",
+          "line": null,
+          "finding": "Claim under doubt: unmigrated = byte-for-byte unchanged — path('run_config') reads a 2 KiB head of the root run config; existence-only sites now open the file; Windows os.replace may hit a sharing violation",
+          "suggestion": "ACCEPTED with rebuttal in spec (Spec Impact): writers retry via replace_retrying; skipping the stub check is R1e's call",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "shared/tests/_shipwright_paths_scan.py",
+          "line": null,
+          "finding": "Claim under doubt: class-8 still catches path() as a git pathspec — subprocess.run(['git','show', ...path()...]) not flagged",
+          "suggestion": "FIXED: a call whose argv names git counts; positive control added",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "reversibility",
+          "file": "shared/tests/test_shipwright_layout.py",
+          "line": null,
+          "finding": "Claim under doubt: safety window pinned for both row flips — pin greps only the config folder",
+          "suggestion": "FIXED: pin also names runtime/shipwright_dev_server",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling",
+          "file": "shared/tests/test_shipwright_paths_constant_joins.py",
+          "line": null,
+          "finding": "Claim under doubt: guard catches every join — root / Path(NAME), joinpath(f'{NAME}') missed at the use site",
+          "suggestion": "FIXED: key_of unwraps Path/str/f-string; two positive controls added",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-28T09:44:18.394186+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "regression",
+          "file": "shared/scripts/profile_consumer.py (diff hunk `config_profile`)",
+          "line": null,
+          "finding": "The parameter semantic changed silently from a filename (`filename: str = RUN_CONFIG`) to a registry key (`key: str = \"run_config\"`). Any caller outside this diff that still passes a filename (e.g. `config_profile(root, \"shipwright_run_config.json\")`) now raises a `KeyError`/`SPECS` lookup failure inside `_sp.path`, and a caller passing a different file's name gets a `LayoutError`-style lookup of a nonexistent key. The diff shows one caller updated; nothing pins that no other caller exists.",
+          "suggestion": "Add a `pytest.raises`/guard: reject keys not in `_sp.SPECS` with a clear error naming the new contract, and grep the repo (including tests and other plugins) for `config_profile(` call sites to confirm the single-caller claim in a test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "plugins/shipwright-compliance/scripts/lib/security_gate.py (`load_threshold` new `except Exception`)",
+          "line": null,
+          "finding": "The catch is `except Exception` gated only on `getattr(exc, \"code\", None) is None`. Any unrelated exception that happens to carry a non-None `code` attribute (several library exceptions do, e.g. `SystemExit.code`, some `KeyError`-like classes, `mmap.error`) is silently read as \"zero tolerance\". That direction is fail-closed, so it's not a security hole, but it masks real bugs.",
+          "suggestion": "Match the resolver's `LayoutError` explicitly (import it, or check `type(exc).__name__ == \"LayoutError\"` / `exc.code == \"both_copies\"`), not \"any `.code`\".",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_shipwright_paths_constant_joins.py (`_aliases`, `_module_level`)",
+          "line": null,
+          "finding": "The guard has concrete false negatives: (a) an unaliased `import lib.bloat_baseline` followed by `root / bloat_baseline.BASELINE_FILENAME` is not seen (`_aliases` records only the first component `\"lib\"`, so `mods.get(\"bloat_baseline\")` misses); (b) `from m import `; (c) module-level bindings inside `for`/`while`/`match` bodies are not descended into (`_module_level` handles only `if`/`try`/`with`). AC1's guard is the pin for the whole campaign; a gap here is how the next frozen-name join re-enters.",
+          "suggestion": "In `_aliases`, also map full dotted names and bare last components for plain `import` statements; add a positive control for the unaliased-module shape.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "plugins/shipwright-test/scripts/tools/merge_boundary_coverage.py (`--target` default)",
+          "line": null,
+          "finding": "_sp.path(\"test_results\", \".\")` is a relative path; when the file exists only at `.shipwright/config/shipwright_test_results.json`, `merge` will write into a directory that may not exist yet in a non-migrated checkout (the help text says \"Created if missing\", which the old root-relative default satisfied because the root always exists). Whether this fails depends on `merge`'s mkdir behaviour, which is not shown.",
+          "suggestion": "Confirm `merge` creates parent directories (or add `args.target.parent.mkdir(parents=True, exist_ok=True)`), and add a new-layout case to the moved-layout test for this tool.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/compliance_input_state.py (`producer_inputs`)",
+          "line": null,
+          "finding": "_sp.path(\"compliance_config\", root).relative_to(root)` runs unconditionally on every producer-inputs snapshot. With two copies (post-R3 brownfield scenario this campaign explicitly worries about) this raises `LayoutError` into the compliance-gating snapshot path, which previously could not raise. This module is not in the R1e narrow-handler list in BRIEF 12.12 (c).",
+          "suggestion": "Add it to the R1e classification list, or catch by `.code` here and report instead of aborting the compliance gate.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_shipwright_paths_moved_layout.py (`test_the_dev_server_state_follows_its_file`)",
+          "line": null,
+          "finding": "The dev-server writer case exercises `_save_state` (the docstring says \"used for tests\"), not the production `_save_state_atomic`. The new-place update behaviour of the real writer is therefore untested.",
+          "suggestion": "Drive `_save_state_atomic` in the same test (or at least the load-after-atomic-save round trip).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "regression",
+          "file": "shared/scripts/lib/bloat_baseline.py (`_baseline_path` → `baseline_path`)",
+          "line": null,
+          "finding": "The rename deletes the old private name. Any out-of-diff caller of `_baseline_path` (tests, tools) breaks with `AttributeError`. Nothing in the diff confirms the old name had no other users.",
+          "suggestion": "Verify with a repo-wide grep; if any exist, keep a `_baseline_path = baseline_path` alias or update them.  Positive notes: the ternary-precedence rewrites (`root / \"lit\" if _sp is None else _sp.path(...)`) are all parsed correctly by Python's operator precedence (IfExp binds loosest), so the five hook/gate fallbacks are fine; the fixture cap math checks out (7 entries removed, 80→73); the moved-layout tests genuinely drive reader/writer behaviour (not just call the function) and the security-gate both-copies→0 test is a real behavioral assertion; the scan's class-8 change has a matching positive control.  Overall: this is a careful, well-guarded change; the findings are refinements and coverage gaps rather than blocking defects. Ship-as-is with the profile_consumer caller audit recommended.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "regression",
+          "file": "shared/scripts/profile_consumer.py",
+          "line": 98,
+          "finding": "config_profile()` replaces the `filename` parameter with a registry key. A caller that passes `filename=...` now gets `TypeError`, and a caller that passes the previously supported `\"shipwright_project_config.json\"` positionally now sends a filename to the registry as a key. Both calls can break on an unmigrated project.",
+          "suggestion": "Preserve the `filename` parameter and translate recognized config filenames to registry keys before resolving them. Add a test for an existing explicit-filename call.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/_shipwright_paths_scan.py",
+          "line": 236,
+          "finding": "The class-8 guard misses a resolver path assigned to a variable and then passed to Git. If a function assigns `_sp.path(\"test_results\", root)` to `p` and later uses `p` in a `git(\"show\", ...)` argument, the resolver call is outside the argument’s AST and the guard accepts it. The new positive control only covers the inline form.",
+          "suggestion": "Track simple local assignments that feed Git or blob-reader arguments. Add a positive control for an assigned path and keep a negative control for a separate working-tree read in the same function.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_shipwright_paths_moved_layout.py",
+          "line": 66,
+          "finding": "The dev-server case exercises `_save_state()`, while the changed module identifies `_save_state_atomic()` as the production writer. The test would still pass if the production writer reverted to creating a root copy alongside the migrated state file.",
+          "suggestion": "Run the moved-layout case through `_save_state_atomic()` and retain the assertions that the migrated file was updated and no root copy was created.  Ship-with-fixes. The resolver routing is broadly consistent with the spec, but the profile API regression and the gaps in the Git guard and production-writer coverage should be addressed before merge. Workspace commands were blocked, so this assessment is based on the supplied diff.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-28T09:44:33.864145+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- Category: regression\n  Severity: medium\n  File: shared/scripts/profile_consumer.py (diff hunk `config_profile`)\n  Finding: The parameter semantic changed silently from a *filename* (`filename: str = RUN_CONFIG`) to a *registry key* (`key: str = \"run_config\"`). Any caller outside this diff that still passes a filename (e.g. `config_profile(root, \"shipwright_run_config.json\")`) now raises a `KeyError`/`SPECS` lookup failure inside `_sp.path`, and a caller passing a *different* file's name gets a `LayoutError`-style lookup of a nonexistent key. The diff shows one caller updated; nothing pins that no other caller exists.\n  Suggestion: Add a `pytest.raises`/guard: reject keys not in `_sp.SPECS` with a clear error naming the new contract, and grep the repo (including tests and other plugins) for `config_profile(` call sites to confirm the single-caller claim in a test.\n\n- Category: bug\n  Severity: low\n  File: plugins/shipwright-compliance/scripts/lib/security_gate.py (`load_threshold` new `except Exception`)\n  Finding: The catch is `except Exception` gated only on `getattr(exc, \"code\", None) is None`. Any unrelated exception that happens to carry a non-None `code` attribute (several library exceptions do, e.g. `SystemExit.code`, some `KeyError`-like classes, `mmap.error`) is silently read as \"zero tolerance\". That direction is fail-closed, so it's not a security hole, but it masks real bugs.\n  Suggestion: Match the resolver's `LayoutError` explicitly (import it, or check `type(exc).__name__ == \"LayoutError\"` / `exc.code == \"both_copies\"`), not \"any `.code`\".\n\n- Category: test\n  Severity: low\n  File: shared/tests/test_shipwright_paths_constant_joins.py (`_aliases`, `_module_level`)\n  Finding: The guard has concrete false negatives: (a) an unaliased `import lib.bloat_baseline` followed by `root / bloat_baseline.BASELINE_FILENAME` is not seen (`_aliases` records only the first component `\"lib\"`, so `mods.get(\"bloat_baseline\")` misses); (b) `from m […truncated]\n\n[openai] - **Category:** regression  \n  **Severity:** medium  \n  **File:** `shared/scripts/profile_consumer.py:98`  \n  **Finding:** `config_profile()` replaces the `filename` parameter with a registry key. A caller that passes `filename=...` now gets `TypeError`, and a caller that passes the previously supported `\"shipwright_project_config.json\"` positionally now sends a filename to the registry as a key. Both calls can break on an unmigrated project.  \n  **Suggestion:** Preserve the `filename` parameter and translate recognized config filenames to registry keys before resolving them. Add a test for an existing explicit-filename call.\n\n- **Category:** test  \n  **Severity:** medium  \n  **File:** `shared/tests/_shipwright_paths_scan.py:236`  \n  **Finding:** The class-8 guard misses a resolver path assigned to a variable and then passed to Git. If a function assigns `_sp.path(\"test_results\", root)` to `p` and later uses `p` in a `git(\"show\", ...)` argument, the resolver call is outside the argument’s AST and the guard accepts it. The new positive control only covers the inline form.  \n  **Suggestion:** Track simple local assignments that feed Git or blob-reader arguments. Add a positive control for an assigned path and keep a negative control for a separate working-tree read in the same function.\n\n- **Category:** test  \n  **Severity:** low  \n  **File:** `shared/tests/test_shipwright_paths_moved_layout.py:66`  \n  **Finding:** The dev-server case exercises `_save_state()`, while the changed module identifies `_save_state_atomic()` as the production writer. The test would still pass if the production writer reverted to creating a root copy alongside the migrated state file.  \n  **Suggestion:** Run the moved-layout case through `_save_state_atomic()` and retain the assertions that the migrated file was updated and no root copy was created.\n\nShip-with-fixes. The resolver routing is broadly consistent with the spec, but the profile API regression and the gaps in the Git  […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-28T09:44:17.510150+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-28T09:44:32.591856+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-28T09:44:32.937514+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

@@ -197,7 +197,7 @@ def read_text(path: Path) -> str:
 def load_config(project_root: Path) -> dict:
     """run_config as a dict; ``{}`` when absent."""
     try:
-        cfg = json.loads((Path(project_root) / CONFIG_NAME).read_text(encoding="utf-8-sig"))
+        cfg = json.loads((_sp.path("run_config", Path(project_root))).read_text(encoding="utf-8-sig"))
     except OSError:
         return {}
     except ValueError as exc:
@@ -209,7 +209,7 @@ def record(project_root: Path, brief_dir: str, env: Optional[Mapping[str, str]] 
     """Verify the package, then store ``brief_dir`` + ``brief_package`` in run_config (under the
     run-config lock). A second record never re-baselines: it verifies against the stored hash."""
     root = Path(project_root).resolve()
-    path = root / CONFIG_NAME
+    path = _sp.path("run_config", root)
     if not path.is_file():
         raise BriefRefused("no_run_config", f"{CONFIG_NAME} does not exist yet; run write-config first")
     bdir = resolve_dir(brief_dir, root)
@@ -282,7 +282,7 @@ def main(argv: Optional[list] = None) -> int:
     rec.add_argument("--brief-dir", required=True)
     args = parser.parse_args(argv)
     try:
-        if args.cmd == "verify" and not (Path(args.project_root) / CONFIG_NAME).is_file():
+        if args.cmd == "verify" and not (_sp.path("run_config", Path(args.project_root))).is_file():
             raise BriefRefused("no_run_config", f"no {CONFIG_NAME} under {args.project_root}: wrong --project-root?")
         out = (verify_run_config(Path(args.project_root)) if args.cmd == "verify"
                else record(Path(args.project_root), args.brief_dir))

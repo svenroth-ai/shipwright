@@ -117,7 +117,7 @@ def main(argv: list[str] | None = None) -> int:
             f"{coverage_xml} — refusing to write a fabricated total.\n")
         return 1
 
-    results = _resolve(args.results) if args.results else project_root / RESULTS_REL
+    results = _resolve(args.results) if args.results else _sp.path("test_results", project_root)
     data = merge_coverage_total(
         _load_results(results), total,
         measured_tier=args.measured_tier, source=args.source,

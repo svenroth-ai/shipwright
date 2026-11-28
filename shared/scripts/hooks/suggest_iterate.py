@@ -174,7 +174,7 @@ def classify_for_iterate(prompt: str, project_root: Path) -> dict | None:
     except ImportError:
         return None
 
-    sync_config_path = project_root / ("shipwright_sync_config.json" if _sp is None else _sp.rel("sync_config"))
+    sync_config_path = (project_root / "shipwright_sync_config.json" if _sp is None else _sp.path("sync_config", project_root))
     result = classify(
         prompt,
         str(sync_config_path) if sync_config_path.exists() else None,
@@ -213,7 +213,7 @@ def main():
     project_root = Path(cwd)
 
     # Guard 1: Is this a Shipwright project?
-    run_config_path = project_root / ("shipwright_run_config.json" if _sp is None else _sp.rel("run_config"))
+    run_config_path = (project_root / "shipwright_run_config.json" if _sp is None else _sp.path("run_config", project_root))
     if not run_config_path.exists():
         sys.exit(0)
 

@@ -71,7 +71,7 @@ def read_marker(project_root: str | Path, run_id: str, commit: str = "") -> dict
 
 def _project_mode(project_root: str | Path) -> str:
     try:
-        data = json.loads((Path(project_root) / CONFIG_FILE).read_text(encoding="utf-8-sig"))
+        data = json.loads((_sp.path("iterate_config", Path(project_root))).read_text(encoding="utf-8-sig"))
     except FileNotFoundError:
         return ""
     except (OSError, ValueError) as exc:

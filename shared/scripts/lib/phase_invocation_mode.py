@@ -78,7 +78,7 @@ def read_run_config(project_root: Path) -> Optional[dict[str, Any]]:
     when it matters most — a token-bearing invocation, which must produce a structured
     ``error``, not a traceback (external code review, GPT).
     """
-    config_path = Path(project_root) / CONFIG_NAME
+    config_path = _sp.path("run_config", Path(project_root))
     if not config_path.exists():
         return None
     try:
@@ -230,7 +230,7 @@ def resolve_invocation_mode(
     phase_task_id = phase_task_id.strip()
 
     root = Path(project_root)
-    if not (root / CONFIG_NAME).exists():
+    if not (_sp.path("run_config", root)).exists():
         return _error_payload(
             "no_run_config", phase_task_id,
             f"dispatched with phaseTaskId {phase_task_id} but no {CONFIG_NAME} exists "

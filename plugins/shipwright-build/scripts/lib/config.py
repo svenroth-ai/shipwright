@@ -22,7 +22,7 @@ DEFAULTS = {
 
 def load_build_config(project_root: str | Path) -> dict[str, Any]:
     """Load build config with defaults."""
-    path = Path(project_root) / CONFIG_NAME
+    path = _sp.path("build_config", Path(project_root))
     config = DEFAULTS.copy()
     if path.exists():
         try:
@@ -35,5 +35,5 @@ def load_build_config(project_root: str | Path) -> dict[str, Any]:
 
 def save_build_config(project_root: str | Path, config: dict[str, Any]) -> None:
     """Save build config."""
-    path = Path(project_root) / CONFIG_NAME
+    path = _sp.path("build_config", Path(project_root))
     path.write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8")

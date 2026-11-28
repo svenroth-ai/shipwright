@@ -79,13 +79,11 @@ LITERAL_ALLOWED = {
 #: R1b: joins on ``rel()`` that are not routed through ``path()``. Each is the guarded fallback shape
 #: ``root / ("<literal>" if _sp is None else _sp.rel(key))`` R1a pinned; R1c changes it with the lookup (BRIEF 12.7a).
 _FALLBACK_JOIN = "guarded fallback join (resolver may be absent); R1c routes it with the lookup (BRIEF 12.7a)"
+#: R1c-2 rewrote the moving keys' fallback joins to ``root / "<lit>" if _sp is None else _sp.path(key, root)``;
+#: what is left joins the event log, which stays at the root
 REL_JOIN_ALLOWED = {f: _FALLBACK_JOIN for f in (
-    "plugins/shipwright-compliance/scripts/lib/rtm_gate_support.py",
     "plugins/shipwright-grade/scripts/lib/authoritative.py",
     "plugins/shipwright-grade/scripts/lib/routing.py",
-    "plugins/shipwright-iterate/scripts/hooks/iterate_worktree_gate.py",
-    "shared/scripts/hooks/required_checks_state.py",
-    "shared/scripts/hooks/suggest_iterate.py",
 )}
 #: a plain ``rel-join`` has NO allowlist: only the fallback shape is exempt, and only in these files
 ALLOWED = {"lock-construction": LOCK_ALLOWED, "shipwright-prefix-rule": PREFIX_RULE_ALLOWED, "literal": LITERAL_ALLOWED,
@@ -93,7 +91,7 @@ ALLOWED = {"lock-construction": LOCK_ALLOWED, "shipwright-prefix-rule": PREFIX_R
 #: held by its own inventory (fixtures/shipwright_paths_rel_constants.json), per NAME, not per file
 INVENTORIED = {"rel-constant"}
 REL_CONSTANTS = scan.BASELINE.parent / "shipwright_paths_rel_constants.json"
-REL_CONSTANTS_CAP = 80
+REL_CONSTANTS_CAP = 73  # R1c-2: 80 -> 73
 
 
 def _violations():
@@ -144,7 +142,7 @@ def test_no_new_rel_constants():
 
 @pytest.mark.covers("FR-01.11")
 def test_a_plain_join_in_a_fallback_file_is_not_allowed(tmp_path, monkeypatch):
-    """Only the guarded fallback SHAPE is exempt in the 7 files, never a plain join there (end to end)."""
+    """Only the guarded fallback SHAPE is exempt in the 2 event-log files, never a plain join there (end to end)."""
     allowed = sorted(REL_JOIN_ALLOWED)[0]
     (tmp_path / allowed).parent.mkdir(parents=True)
     (tmp_path / allowed).write_text('def f(root):\n    a = root / ("x.json" if _sp is None else _sp.rel("run_config"))\n'
@@ -190,6 +188,8 @@ def test_carrier_scan_covers_every_carrier_kind():
     ('RX = r"^(a|shipwright_bloat_baseline\\.json)"\n', "literal"),
     ('ok = path.startswith((".shipwright/", "docs/"))\n', "shipwright-prefix-rule"),
     ('def f(r, c):\n    return git("show", c + ":" + _sp.rel("test_results"))\n', "class8-uses-rel"),
+    ('def f(r, c):\n    return git("show", c + ":" + str(_sp.path("test_results", r)))\n', "class8-uses-rel"),
+    ('def f(r, c):\n    return subprocess.run(["git", "show", c + ":" + str(_sp.path("test_results", r))])\n', "class8-uses-rel"),
     ('def f(root):\n    return root / _sp.rel("run_config")\n', "rel-join"),
     ('def f(root):\n    return Path(root) / shipwright_paths.rel("run_config")\n', "rel-join"),
     ('def f(root):\n    return root.joinpath(_sp.rel("run_config"))\n', "rel-join"),

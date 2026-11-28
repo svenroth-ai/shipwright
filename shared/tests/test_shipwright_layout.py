@@ -222,7 +222,9 @@ def test_no_production_code_writes_the_new_place_before_r3():
     allowed = {"shared/scripts/lib/shipwright_paths.py", "shared/scripts/lib/shipwright_layout.py",
                "shared/scripts/lib/shipwright_pointer.py"}  # the resolver, its lookup, the stub renderer
     scope = ["--", "plugins", "shared", "scripts", ".github", ":!*/tests/*", ":!shared/testkit/*"]
-    named = subprocess.run(["git", "grep", "-l", "--untracked", "-E", r"shipwright[/\\]+config", *scope],
+    # R1c-2 (D1): the dev-server state's new place is a FILE in the already-used runtime folder, so name it
+    named = subprocess.run(["git", "grep", "-l", "--untracked", "-E",
+                            r"shipwright[/\\]+config|runtime[/\\]+shipwright_dev_server", *scope],
                            capture_output=True, text=True, cwd=str(REPO)).stdout.split()
     assert [h for h in named if h not in allowed] == []
     asked = subprocess.run(["git", "grep", "-l", "--untracked", "-E", r"\b(new_rel|known_rels|all_known_rels)\(", *scope],

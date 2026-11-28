@@ -30,13 +30,18 @@ CONFIG_FILES = {
     "compliance": _sp.rel("compliance_config"),
     "events": EVENT_FILE,
 }
+#: skill -> resolver key; a moving config is found in either layout through ``_sp.path`` (R1c-2)
+CONFIG_KEYS = {"run": "run_config", "project": "project_config", "plan": "plan_config", "build": "build_config",
+               "security": "security_config", "compliance": "compliance_config"}
 
 
 def get_config_path(skill: str, project_root: str | Path) -> Path:
     """Get the config file path for a given skill."""
     if skill not in CONFIG_FILES:
         raise ValueError(f"Unknown skill: {skill}. Must be one of: {list(CONFIG_FILES.keys())}")
-    return Path(project_root) / CONFIG_FILES[skill]
+    if skill in CONFIG_KEYS:
+        return _sp.path(CONFIG_KEYS[skill], project_root)
+    return Path(project_root) / CONFIG_FILES[skill]  # the event log stays at the root
 
 
 def read_config(skill: str, project_root: str | Path) -> dict[str, Any]:

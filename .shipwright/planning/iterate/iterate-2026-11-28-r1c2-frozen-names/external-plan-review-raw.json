@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "1. **Category** risk \u00b7 **Severity** medium  \n   **Finding** \u2014 The class-8 exemption for `path()` is broader than the case that motivated it. `_read_legacy` has a legitimate working-tree read alongside a `rel_at()` lookup, but exempting `path()` throughout git-reading functions also lets a future git argument derive its path from the current checkout. That can produce incorrect results when the queried commit uses a different layout.  \n   **Suggestion** \u2014 Scope the exception to the working-tree read. Keep the guard checking git path arguments and add a control showing that it catches a `path()`-derived argument in a function that also calls `rel_at()`.\n\n2. **Category** edge-case \u00b7 **Severity** medium  \n   **Finding** \u2014 The moved-layout tests prepopulate the target file. For dev-server state, that covers updating an existing file but leaves first creation and recreation after cleanup unverified. If `path()` falls back to the legacy root when neither copy exists, a fresh start could write state back to the root even when `.shipwright/runtime/` is present.  \n   **Suggestion** \u2014 Test the normal dev-server start with the runtime directory present and both state files absent. Pin the intended destination. If first-write routing belongs to R3, record that dependency explicitly.\n\n3. **Category** security \u00b7 **Severity** medium  \n   **Finding** \u2014 The test-gate change introduces a moved-layout path to the escape check, but the described tests do not show that the gate rejects a symlinked `.shipwright/config/` or `.shipwright/runtime/` parent that points outside the project. A regular moved file only verifies the successful read.  \n   **Suggestion** \u2014 Exercise the real gate with a routed file reached through a symlinked parent outside the project. Assert that the gate reports the escape before reading the file.\n\nCentralizing the joins in `path()` is sound, and deferring pathspec changes keeps this PR focused. Tighten the git guard and verify first-write and symlink behavior before merging. This assessment is based on the supplied approach and test summary because workspace inspection was blocked.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "## Findings\n\n**Category: risk | Severity: medium**\n**Finding:** The codemod rewrote 58 joins based on static name binding, but Python imports are dynamic (aliasing via `from m import CONST as X`, re-export chains, `globals()[...]`-style lookup, or monkeypatching in tests would be invisible to it). The plan's verification is the new guard test, which uses the same static analysis the codemod used \u2014 so it cannot catch what the codemod's model missed. AC1's negative control covers layout behavior, not detection coverage.\n**Suggestion:** Add at least one behavioral sweep beyond the static guard: a runtime check (e.g., a test that intercepts `path()`/`rel()` and greps, or a temporary assert in `path()` during a full F0 run) confirming no reader still constructs the legacy path. Cheap and catches dynamic binding the AST missed.\n\n**Category: edge-case | Severity: medium**\n**Finding:** `merge_boundary_coverage --target` defaults to `_sp.path(\"test_results\", \".\")`. Everything else in this change passes an explicit project root; `\".\"` means the resolution depends on process CWD. If `path()` for a moving key does `Path(\" . \") / new_rel`, that's cwd-relative as stated \u2014 but the stale-cache fallback shape (`_sp is None` branch) and the `both_copies` check (AC5) now also become CWD-dependent, and a user running the tool from a subdirectory gets different behavior than before (previously it was also cwd-relative, but the file location never varied with layout).\n**Suggestion:** Confirm `path()` handles a relative root the same way as an absolute one (especially `LayoutError` on both copies \u2014 does it check the right relative location?). Add a test case for the cwd-relative call site specifically.\n\n**Category: risk | Severity: medium**\n**Finding:** The three inlined fallback constants (`session_start_using_shipwright.CONFIG_NAME`, `master_stop_check.CONFIG_NAME`, `security_gate.CONFIG_FILENAME`) were module-level names. Inlining removes them from the module namespace \u2014 anything importing or patching those names (tests, other plugins) breaks with AttributeError rather than a join.\n**Suggestion:** Grep for imports/`setattr` of these names before considering this done; the guard's importer tracking presumably checked join uses, not non-join uses of the constant itself.\n\n**Category: edge-case | Severity: low**\n**Finding:** The test-gate escape check now does `path(...).relative_to(root)`. If a migrated layout places the file at `.shipwright/...`, `relative_to(root)` yields a path with `.shipwright` components \u2014 fine \u2014 but if `path()` ever returns something *outside* `root` (e.g., root passed as `\".\"` while path resolves against an absolute CWD), `relative_to` raises ValueError, turning an escape check into a crash (LayoutError handling is explicitly deferred to R1e).\n**Suggestion:** Verify `_safe_project_file` catches/wraps `ValueError` and `LayoutError`, or document that this hook is on the R1e list.\n\n**Category: dependency | Severity: low**\n**Finding:** The `class-8` guard exception for `ci_supplychain_ack_store._read_legacy` (\"path() inside a git-reading function is the working-tree leg\") is a carve-out keyed to a specific function. If another git-reading function adopts the same pattern, the guard won't know it's legitimate \u2014 or worse, the carve-out will silently bless a genuine join there.\n**Suggestion:** Scope the exception to that module/function explicitly rather than \"any git-reading function,\" or add a comment tying it to a reopen trigger.\n\n**Category: approach | Severity: low**\n**Finding:** Row flips (D1/D2) change `new_rel` but nothing creates the new directories until R3. Readers calling `path()` on an unmigrated repo resolve to the root \u2014 but writers (dev-server state, audit_config writers) will still *write* to the root. That's the intended no-op, yet AC4 only tests \"reads as before\"; a write-path test in an unmigrated repo would confirm the writer doesn't create `.shipwright/runtime/` prematurely and violate the \"Spec Impact: NONE\" claim.\n**Suggestion:** Add a write-path assertion to the unmigrated F0 coverage (or confirm one exists in dev_server/state tests).\n\n**Category: approach | Severity: low**\n**Finding:** The pre-build AC record gap (\"none was written, as in R1a to R1c-1\") is acknowledged, not fixed. For a 69-file change with a static-analysis guard as the primary safety net, the absence of a written AC record means the AC checkboxes were verified post-hoc against implementation rather than pre-specified.\n**Suggestion:** Acceptable to carry the catalog gap, but note it should be paid down before R1c-3, which is the riskier half (pathspecs/sets need `rel_at()` reasoning).\n\n## Overall assessment\n\nThe approach is sound and unusually well-instrumented: codemod with printed rewrites, a static guard with positive controls, moved-layout tests with a negative control, and a carefully scoped split from R1c-3. The main residual risk is that detection and rewrite share the same static model, so dynamic binding escapes both \u2014 a cheap runtime sweep would close that. The remaining findings are edge refinements rather than blockers.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-11-28-r1c2-frozen-names",
+    "at": "2026-11-28T09:12:36.197032+00:00"
+  },
+  "verdicts": {
+    "openai": "revise",
+    "glm": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

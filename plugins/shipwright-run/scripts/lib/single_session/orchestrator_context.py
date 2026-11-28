@@ -33,7 +33,7 @@ _TASK_KEYS = ("phaseTaskId", "phase", "splitId", "status")
 
 def run_config_path(project_root: Path) -> Path:
     """Canonical run-config path for a project."""
-    return Path(project_root) / RUN_CONFIG_REL_PATH
+    return _sp.path("run_config", Path(project_root))
 
 
 # The run_config schema this reader understands. Kept as a literal (no

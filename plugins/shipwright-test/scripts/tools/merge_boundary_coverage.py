@@ -65,10 +65,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--target",
         type=Path,
-        default=Path(_sp.rel("test_results")),
+        default=None,  # resolved after parsing: cwd-relative, in either layout (R1c-2)
         help="Path to shipwright_test_results.json. Created if missing.",
     )
     args = parser.parse_args(argv)
+    if args.target is None:
+        args.target = _sp.path("test_results", ".")
 
     try:
         merge(args.input, args.target)

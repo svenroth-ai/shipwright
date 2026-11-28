@@ -36,7 +36,7 @@ def _load() -> Any:
 
 def _records_package(project_root: Path) -> bool:
     try:
-        cfg = json.loads((Path(project_root) / _CONFIG).read_text(encoding="utf-8-sig"))
+        cfg = json.loads((_sp.path("run_config", Path(project_root))).read_text(encoding="utf-8-sig"))
     except (OSError, ValueError):
         return False
     return isinstance(cfg, dict) and ("brief_dir" in cfg or "brief_package" in cfg)

@@ -37,8 +37,6 @@ CI_SECURITY_REL = ".shipwright/compliance/ci-security.json"
 #: :func:`read_security_summary` sentinel for a present-but-untrustworthy file.
 UNUSABLE = "unusable"
 
-CONFIG_FILENAME = ("shipwright_compliance_config.json" if _sp is None else _sp.rel("compliance_config"))
-
 
 def read_security_summary(project_root: str | Path) -> dict | str | None:
     """Return the summary dict, ``None`` if genuinely absent, else :data:`UNUSABLE`.
@@ -106,11 +104,15 @@ def load_threshold(project_root: str | Path) -> int:
     must never raise into the hook's fail-open wrapper, which would allow the
     deploy outright.
     """
-    config_path = Path(project_root) / CONFIG_FILENAME
     try:
+        config_path = Path(project_root) / "shipwright_compliance_config.json" if _sp is None else _sp.path("compliance_config", project_root)
         config = json.loads(config_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError, UnicodeDecodeError):
         return 0
+    except Exception as exc:  # a LayoutError (one class per tree, so matched by name): two copies, a stub at the new path
+        if type(exc).__name__ != "LayoutError":
+            raise
+        return 0  # a broken layout never widens the gate, and never reaches the fail-open wrapper
     if not isinstance(config, dict):
         return 0
     enforcement = config.get("enforcement")

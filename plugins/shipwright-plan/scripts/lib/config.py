@@ -15,7 +15,7 @@ from typing import Any
 import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 GLOBAL_CONFIG_NAME = "config.json"
-SESSION_CONFIG_NAME = _sp.rel("plan_config")
+SESSION_CONFIG_NAME = _sp.name("plan_config")  # a file of that NAME in the planning dir, not the root config
 
 
 def load_global_config(plugin_root: str | Path) -> dict[str, Any]:

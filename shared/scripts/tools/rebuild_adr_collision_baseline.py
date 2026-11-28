@@ -27,7 +27,8 @@ _SCRIPTS_ROOT = Path(__file__).resolve().parents[1]
 if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
-from lib.adr_collision_baseline import BASELINE_RELPATH, collect_collisions  # noqa: E402
+from lib import shipwright_paths as _sp  # noqa: E402
+from lib.adr_collision_baseline import collect_collisions  # noqa: E402
 from lib.adr_index import ADR_SPEC_FOLDER, adr_spec_folder  # noqa: E402
 from lib.atomic_write import durable_atomic_write  # noqa: E402
 
@@ -46,7 +47,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     entries = collect_collisions(folder)
-    baseline_path = project_root / BASELINE_RELPATH
+    baseline_path = _sp.path("adr_collision_baseline", project_root)
     body = json.dumps({"version": 1, "entries": entries}, indent=2, sort_keys=True) + "\n"
     try:
         durable_atomic_write(baseline_path, body)

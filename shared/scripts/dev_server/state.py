@@ -15,7 +15,7 @@ import json
 from pathlib import Path
 
 from ._paths import _ensure_scripts_on_path
-from .profile_config import _DEFAULT_SERVICE, STATE_FILE, STATE_VERSION
+from .profile_config import _DEFAULT_SERVICE, STATE_VERSION
 
 # `lib.atomic_write` is imported EAGERLY below, so `shared/scripts` has to be on
 # `sys.path` before that line runs. This is the call that puts it there for a
@@ -26,10 +26,11 @@ from .profile_config import _DEFAULT_SERVICE, STATE_FILE, STATE_VERSION
 _ensure_scripts_on_path()
 
 from lib.atomic_write import durable_atomic_write  # noqa: E402
+from lib import shipwright_paths as _sp  # noqa: E402
 
 
 def _load_state(cwd: Path) -> dict | None:
-    state_path = cwd / STATE_FILE
+    state_path = _sp.path("dev_server", cwd)
     if not state_path.exists():
         return None
     try:
@@ -66,18 +67,18 @@ def _load_state(cwd: Path) -> dict | None:
 
 def _save_state(cwd: Path, state: dict) -> None:
     """Non-atomic save (used for tests; production path uses _save_state_atomic)."""
-    state_path = cwd / STATE_FILE
+    state_path = _sp.path("dev_server", cwd)
     state_path.write_text(json.dumps(state, indent=2) + "\n", encoding="utf-8")
 
 
 def _save_state_atomic(cwd: Path, state: dict) -> None:
     """Durable atomic save (tmp + fsync + os.replace via the shared
     :func:`durable_atomic_write`)."""
-    durable_atomic_write(cwd / STATE_FILE, json.dumps(state, indent=2) + "\n")
+    durable_atomic_write(_sp.path("dev_server", cwd), json.dumps(state, indent=2) + "\n")
 
 
 def _clear_state(cwd: Path) -> None:
-    state_path = cwd / STATE_FILE
+    state_path = _sp.path("dev_server", cwd)
     if state_path.exists():
         try:
             state_path.unlink()

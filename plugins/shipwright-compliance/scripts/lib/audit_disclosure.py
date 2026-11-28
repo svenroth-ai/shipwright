@@ -153,7 +153,7 @@ def _parse_record(block: object) -> AuditRecord | None:
 
 def _read_config(project_root: Path) -> tuple[str, dict]:
     """``(status, config)`` — ``status`` is ABSENT / VALID / INVALID."""
-    path = Path(project_root) / CONFIG_FILE
+    path = _sp.path("compliance_config", Path(project_root))
     if not path.is_file():
         return ABSENT, {}
     try:
@@ -236,7 +236,7 @@ def record_audit_run(
     byte-for-byte alone rather than replaced.
     """
     project_root = Path(project_root)
-    path = project_root / CONFIG_FILE
+    path = _sp.path("compliance_config", project_root)
 
     status, config = _read_config(project_root)
     if status == INVALID:

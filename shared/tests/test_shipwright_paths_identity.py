@@ -214,13 +214,13 @@ def test_known_locations():
     """In a fresh interpreter like the rest of this file (this pytest process has its own import history)."""
     res = _run("""
         sp = load("lib")
-        stays = ("events", "audit_config", "dev_server", "audit_report", "plan_snapshot")
+        stays = ("events", "audit_report", "plan_snapshot")  # audit_config + dev_server move since R1c-2 (D1/D2)
         every = sp.all_known_rels()
         print(json.dumps({
             "run": sp.new_rel("run_config"),
             "bloat": list(sp.known_rels("bloat_baseline")),
             "stays": all(sp.new_rel(k) is None and sp.known_rels(k) == (sp.legacy_rel(k),) for k in stays),
-            "dev_target": sp.spec("dev_server").target,
+            "dev": sp.new_rel("dev_server"), "audit": sp.new_rel("audit_config"),
             "every_is_concat": every == tuple(r for k in sp.keys_of() for r in sp.known_rels(k)),
             "every_count": len(every) == len(sp.names_of()) + len(sp.keys_of(moves=True)),
             "baseline_first": list(sp.all_known_rels(("baseline",))[:2]) == list(sp.known_rels("bloat_baseline")),
@@ -228,5 +228,6 @@ def test_known_locations():
     """)
     assert res == {"run": ".shipwright/config/shipwright_run_config.json",
                    "bloat": [".shipwright/config/shipwright_bloat_baseline.json", "shipwright_bloat_baseline.json"],
-                   "stays": True, "dev_target": ".shipwright/runtime", "every_is_concat": True,
+                   "stays": True, "dev": ".shipwright/runtime/shipwright_dev_server.json",
+                   "audit": ".shipwright/config/audit_config.json", "every_is_concat": True,
                    "every_count": True, "baseline_first": True, "unchanged": True}

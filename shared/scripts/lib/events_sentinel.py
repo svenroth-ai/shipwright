@@ -44,7 +44,7 @@ class UnsupportedEventsLayout(RuntimeError):
 def declared_layout(project_root: Path | str) -> object:
     """The raw ``events_layout`` value (``None`` = absent, unreadable or not an object)."""
     try:
-        cfg = json.loads((Path(project_root) / SYNC_CONFIG).read_text(encoding="utf-8-sig"))
+        cfg = json.loads((_sp.path("sync_config", Path(project_root))).read_text(encoding="utf-8-sig"))
     except (OSError, ValueError):
         return None
     return cfg.get("events_layout") if isinstance(cfg, dict) else None
@@ -53,7 +53,7 @@ def declared_layout(project_root: Path | str) -> object:
 def unsupported_layout(project_root: Path | str) -> str | None:
     """The unsupported declared value as text, or ``None`` when absent / supported."""
     try:
-        cfg = json.loads((Path(project_root) / SYNC_CONFIG).read_text(encoding="utf-8-sig"))
+        cfg = json.loads((_sp.path("sync_config", Path(project_root))).read_text(encoding="utf-8-sig"))
     except (OSError, ValueError):
         return None
     if not isinstance(cfg, dict) or "events_layout" not in cfg:
@@ -139,7 +139,7 @@ def ensure_layout_key(project_root: Path | str) -> bool:
     explicit key survives a later plugin that changes the default). Creates a minimal config when
     none exists; leaves an unparsable one alone. Returns True when the file was written.
     """
-    path = Path(project_root) / SYNC_CONFIG
+    path = _sp.path("sync_config", Path(project_root))
     try:
         cfg = json.loads(path.read_text(encoding="utf-8-sig")) if path.exists() else {}
     except (OSError, ValueError):

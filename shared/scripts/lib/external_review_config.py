@@ -96,7 +96,7 @@ def _load_project_iterate_config(project_root: Path) -> dict[str, Any]:
     JSON emits a stderr warning so operators see why their override
     didn't take effect rather than silently being ignored.
     """
-    path = project_root / _PROJECT_ITERATE_CONFIG_NAME
+    path = _sp.path("iterate_config", project_root)
     if not path.exists():
         return {}
     try:

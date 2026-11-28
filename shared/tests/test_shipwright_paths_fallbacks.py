@@ -48,6 +48,30 @@ def _catches_import_error(h: ast.ExceptHandler) -> bool:
     return any(isinstance(t, ast.Name) and t.id in ("ImportError", "ModuleNotFoundError") for t in types)
 
 
+def _is_sp_call(call: ast.expr) -> bool:
+    return (isinstance(call, ast.Call) and isinstance(call.func, ast.Attribute)
+            and isinstance(call.func.value, ast.Name) and call.func.value.id == "_sp")
+
+
+def _unwrap_path(x: ast.expr) -> ast.expr:
+    """``Path(root)`` -> ``root``: the fallback may wrap the root it joins, ``path()`` takes it bare."""
+    if isinstance(x, ast.Call) and isinstance(x.func, ast.Name) and x.func.id == "Path" and len(x.args) == 1:
+        return x.args[0]
+    return x
+
+
+def _join_shape(lit: ast.expr, call: ast.expr):
+    """R1c-2 shape ``root / "<literal>" if _sp is None else _sp.path("<key>", root)`` (same root on both
+    sides): ``(literal, "path", key)``, else ``None``."""
+    if not (isinstance(lit, ast.BinOp) and isinstance(lit.op, ast.Div) and isinstance(lit.right, ast.Constant)
+            and _is_sp_call(call) and call.func.attr == "path" and len(call.args) == 2
+            and isinstance(call.args[0], ast.Constant)):
+        return None
+    if ast.dump(_unwrap_path(lit.left)) != ast.dump(_unwrap_path(call.args[1])):
+        return None
+    return lit.right.value, "path", call.args[0].value
+
+
 def _scan():
     pairs, loose, odd = [], [], []
     for f in _production_files():
@@ -58,9 +82,10 @@ def _scan():
                 odd.append(f"{rel}:{node.lineno}")   # a statement-form fallback cannot be paired
             elif isinstance(node, ast.IfExp) and _is_sp_none(node.test):
                 lit, call = node.body, node.orelse
-                if (isinstance(lit, ast.Constant) and isinstance(call, ast.Call)
-                        and isinstance(call.func, ast.Attribute) and isinstance(call.func.value, ast.Name)
-                        and call.func.value.id == "_sp" and call.args
+                join = _join_shape(lit, call)
+                if join:
+                    pairs.append((f"{rel}:{node.lineno}", *join))
+                elif (isinstance(lit, ast.Constant) and _is_sp_call(call) and call.args
                         and isinstance(call.args[0], ast.Constant)):
                     pairs.append((f"{rel}:{node.lineno}", lit.value, call.func.attr, call.args[0].value))
                 else:
@@ -77,7 +102,8 @@ PAIRS, LOOSE, ODD = _scan()
 
 @pytest.mark.covers("FR-01.11")
 def test_every_resolver_fallback_has_the_one_checkable_shape():
-    """``"<literal>" if _sp is None else _sp.rel("<key>")`` is the only shape this file can verify."""
+    """``"<literal>" if _sp is None else _sp.rel("<key>")`` or, for a join (R1c-2), ``root / "<literal>" if _sp
+    is None else _sp.path("<key>", root)``: the only shapes this file can verify."""
     assert ODD == [], f"rewrite these fallbacks in the checkable shape: {ODD}"
 
 
@@ -94,7 +120,8 @@ def test_the_scan_sees_the_known_fallbacks():
 @pytest.mark.covers("FR-01.11")
 @pytest.mark.parametrize("site, literal, fn, key", PAIRS, ids=[p[0] for p in PAIRS])
 def test_each_paired_fallback_names_the_resolver_file(site, literal, fn, key):
-    assert fn in ("rel", "name"), site
+    assert fn in ("rel", "name", "path"), site
+    # the stale-cache fallback names the LEGACY root file (R1c-2): an old cache predates every move
     assert literal == sp.legacy_rel(key) == sp.rel(key), f"{site}: fallback {literal!r} != resolver {sp.rel(key)!r}"
 
 
@@ -123,12 +150,18 @@ def _hidden(body: str) -> dict:
 
 
 @pytest.mark.covers("FR-01.11")
-def test_resolver_hidden_branch_session_start_and_stop_hook_constants():
+def test_resolver_hidden_branch_session_start_finds_the_project_by_the_literal(tmp_path):
+    """R1c-2: the hook names the root config inline (no frozen constant); hidden resolver, legacy layout."""
+    (tmp_path / sp.legacy_rel("run_config")).write_text("{}", encoding="utf-8")
+    (tmp_path / "p").mkdir()
+    (tmp_path / "p" / "using-shipwright.md").write_text("hello", encoding="utf-8")
     res = _hidden(f"""
         a = load({str(_HOOKS / "session_start_using_shipwright.py")!r})
-        print(json.dumps({{"sp": a._sp is None, "name": a.CONFIG_NAME}}))
+        root = pathlib.Path({str(tmp_path)!r})
+        out = a.run(project_root=root, session_id="s-hidden", prompts_dir=root / "p")
+        print(json.dumps({{"sp": a._sp is None, "speaks": bool(out)}}))
     """)
-    assert res == {"sp": True, "name": sp.legacy_rel("run_config")}
+    assert res == {"sp": True, "speaks": True}
 
 
 @pytest.mark.covers("FR-01.11")

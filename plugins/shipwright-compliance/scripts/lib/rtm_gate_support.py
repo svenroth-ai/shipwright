@@ -73,7 +73,8 @@ def read_threshold(project_root: str) -> tuple[float, list[str], float | None]:
     """
     warnings: list[str] = []
     baseline: float | None = None
-    config_path = os.path.join(project_root, ("shipwright_compliance_config.json" if _sp is None else _sp.rel("compliance_config")))
+    config_path = str(Path(project_root) / "shipwright_compliance_config.json" if _sp is None
+                      else _sp.path("compliance_config", project_root))
     if not os.path.exists(config_path):
         return DEFAULT_THRESHOLD, warnings, baseline
     try:

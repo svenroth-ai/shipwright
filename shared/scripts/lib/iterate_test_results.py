@@ -164,7 +164,7 @@ def validate_evidence_bytes(raw: bytes, run_id: str) -> dict[str, Any]:
 
 def read_current_evidence(project_root: Path, run_id: str) -> bytes:
     """Read and validate the current root snapshot exactly once as raw bytes."""
-    source = Path(project_root).resolve() / RESULTS_FILENAME
+    source = _sp.path("test_results", Path(project_root).resolve())
     try:
         metadata = source.lstat()
     except FileNotFoundError:
