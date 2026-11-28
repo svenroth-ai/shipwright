@@ -1,0 +1,51 @@
+{
+  "stage": "doubt",
+  "gating": "advisory-must-address",
+  "trigger": "irreversible operations (autonomous gh pr merge, remote branch delete) + boundary (gh/git/host contract) + test-gate exemption",
+  "doubts": [
+    {
+      "severity": "medium",
+      "lens": "boundary & contract",
+      "claim_under_doubt": "the line merges the PR merge-ready checked, and the checked base is the base the host merges into",
+      "file": "plugins/shipwright-changelog/scripts/lib/release_merge.py (74, 83, 91, 99); scripts/lib/release_verify.py fetch_base",
+      "evidence": "merge-ready reads the PR from pr_url, the settings from gh's default repo, and the base from origin's push URL; the printed line has no PR target. In a fork layout (origin = fork, PR upstream) or with two open PRs from the release branch these can differ, so a squash could pass the base check against a stale fork main.",
+      "disposition": "ACCEPTED FOR THE INTERVAL, CARRIED INTO U7 (guard and line-target work, together with the --match-head-commit value check). Reasons: (1) the gap predates U4 for the target: the pinned and the pre-U4 live line `gh pr merge --merge --delete-branch` also has no PR target and relies on gh's current-branch resolution; (2) the release flow already assumes origin == the PR's repo == gh's default: prepare pushes to origin and opens the PR with gh's default, push-tag proves and tags against origin; (3) the outcome is fail-safe for the release record: push-tag stops with merge_commit_not_on_base / foreign_commits_on_base and never tags foreign content; (4) this monorepo has no fork layout. U7 fix: refuse (fail closed) when pr_url's owner/repo is not origin's, read settings with the PR's repo, and print the PR URL as the line's target (the guard already accepts a URL target)."
+    },
+    {
+      "severity": "low",
+      "lens": "concurrency & ordering",
+      "claim_under_doubt": "'base not moved' is read from the base just fetched",
+      "file": "plugins/shipwright-changelog/scripts/lib/release_merge.py:91-92",
+      "evidence": "merge-fetch writes FETCH_HEAD and merge-behind reads the symbolic FETCH_HEAD in a separate process; a concurrent fetch in the same worktree in that millisecond window could replace it. Same pattern in release_publish (pre-existing).",
+      "disposition": "ACCEPTED under the already-accepted 'base moves between answer and merge' risk (push-tag backstop); CARRIED INTO U7: fetch into a private ref or test against a fixed oid from ls-remote, in both release_merge and release_publish."
+    },
+    {
+      "severity": "low",
+      "lens": "boundary & contract",
+      "claim_under_doubt": "a PR retargeted away from the checked base is always refused",
+      "file": "plugins/shipwright-changelog/scripts/lib/release_merge.py:80-82, 91",
+      "evidence": "The retarget check is skipped when runstate stores neither base_branch nor trunk.",
+      "disposition": "CARRIED INTO U7: refuse when base_name is empty or baseRefName is missing (fail closed). Low: prepare records the trunk for a standalone feature-branch release; the check stays consistent with what gh reports."
+    },
+    {
+      "severity": "low",
+      "lens": "hidden coupling",
+      "claim_under_doubt": "the AC16 exemption cannot stay green once its tests stop running",
+      "file": "plugins/shipwright-changelog/tests/golden/scenario_index.py:55-73",
+      "evidence": "An emptied parametrize list would make pytest skip the first listed test without a skip token in the file.",
+      "disposition": "REBUTTED as non-silent: emptying the literal argvalues is a deliberate, visible diff in a reviewed test file; U6 removes the exemption anyway. Noted in the carry list for U6."
+    }
+  ],
+  "attempted_and_not_disproven": [
+    "head pinning: HEAD must be the release or event commit, the host PR head must equal HEAD, the line always carries --match-head-commit HEAD; empty rev-parse and detached HEAD refuse; the guard tokenizer treats the sha as an option value",
+    "moved base: direction correct, exit codes other than 0/1 or a failed fetch give base_state_unknown; skipping it for a merge commit is sound",
+    "fail closed: unparsable or failed gh answers refuse as pr_state_unknown / repo_settings_unknown; no allowed method refuses; MERGED/CLOSED have own reasons",
+    "exemption widening: key set pinned to AC16, ids and covers tag pinned, tied to the pinned --merge line",
+    "reversibility and frozen replay: merge-ready writes only FETCH_HEAD; fetch_base keeps verify keys and order; pinned prose and replay merge line untouched",
+    "rebase cascade 1 (head 781bddf63, merge of #1132): same run config and runstate paths (path() unchanged, plugin literals untouched, manifest_sync CONFIG_NAME same value)",
+    "restore_derived / release_close with #1132's widened path lists: nothing new restorable, extra pathspec harmless; golden replay argv and traces unchanged",
+    "compliance_refresh: new test_results path is RUN_WRITTEN, never regenerated or staged at release",
+    "union-merged triage.jsonl and docs/hooks-and-pipeline.md well-formed (orchestrator: all 2591 triage lines parse as JSON); release guard and push-tag proof untouched by #1132 (orchestrator: git diff 6763f8449 781bddf63 -- plugins/shipwright-changelog is empty)"
+  ],
+  "summary": "Orchestrator 3f-bis, opus, attempt 2 (head 6763f8449). One medium (repo/PR identity across pr_url, gh default and origin; fork layouts) accepted for the interval as pre-existing in the target, fail-safe for the release record and not reachable in this repo, carried into U7 with a concrete fail-closed fix; two lows carried into U7; one low rebutted as a visible, deliberate edit. Claims (2)-(5) held; (1) held for the head sha. Re-review after rebase cascade 1 (merge of origin/main #1132): no new doubts; the reviewer's two evidence limits were closed by the orchestrator (empty changelog-plugin diff across the merge, triage.jsonl parses line by line)."
+}

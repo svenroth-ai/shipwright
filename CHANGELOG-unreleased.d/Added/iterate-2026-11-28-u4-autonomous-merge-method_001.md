@@ -1,0 +1,1 @@
+shipwright-changelog: `release.py merge-ready` picks the autonomous release merge from the repository's merge settings (a merge commit when allowed, else squash or rebase), always pins the checked head with `--match-head-commit`, and stops with a restart message when the base moved before a squash or rebase merge; nothing is merged and no repository setting is changed

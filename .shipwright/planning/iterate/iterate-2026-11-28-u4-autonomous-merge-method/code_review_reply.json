@@ -1,0 +1,12 @@
+{
+  "section": "iterate-2026-11-28-u4-autonomous-merge-method",
+  "verdict": "PASS",
+  "notes": "Orchestrator 3f-bis, opus, rebase cascade 1 (head 781bddf63 = merge of origin/main 345a62978 (#1132) into reviewed head 6763f8449). First pass on 6763f8449: PASS, no blocking findings, five lows carried into U7 (listed below). Re-review of the merge: PASS, no new findings. release_paths loads shipwright_paths under its aliased name, path('run_config') is unchanged by #1132; the two changed functions (snapshot_paths, run_written_paths) are reached by the release only through restore_derived, where the added paths only widen a git status path list; no golden trace contains .shipwright/config; gh stubs do not use the paths module; no conflict markers; docs/hooks-and-pipeline.md keeps both #1132's row and U4's text; triage.jsonl union merge left every line a single record. Orchestrator ran the changelog test root and golden_lock --check on the merged head (see PR checks for Linux).",
+  "review": [
+    {"severity": "low", "category": "correctness", "file": "plugins/shipwright-changelog/skills/changelog/SKILL.md", "line": 216, "finding": "SKILL says any refused merge-ready stops the release, but repo_settings_unknown, base_state_unknown and pr_state_unknown say 'run merge-ready again' in detail.", "disposition": "CARRIED INTO U7 (frozen file, needs an approved delta)."},
+    {"severity": "low", "category": "correctness", "file": "plugins/shipwright-changelog/tests/golden/scenario_index.py", "line": 71, "finding": "check_unit_tested misses a fixture skip (warm_uv outside CI); in CI warm_uv raises.", "disposition": "CARRIED INTO U7 / U6 (U6 empties the map)."},
+    {"severity": "low", "category": "security", "file": "plugins/shipwright-changelog/scripts/lib/release_verify.py", "line": 122, "finding": "fetch_base lacks the no-prompt protections of release_publish._remote on the autonomous merge-ready path.", "disposition": "CARRIED INTO U7. Fails safe (stall, no merge)."},
+    {"severity": "low", "category": "readability", "file": "plugins/shipwright-changelog/scripts/lib/release_merge.py", "line": 94, "finding": "Private release_publish._USERINFO use; trace key 'merge-base' reads like git merge-base.", "disposition": "CARRIED INTO U7."},
+    {"severity": "low", "category": "correctness", "file": "shared/testkit/gh_stub.py", "line": 101, "finding": "Stub coerces non-bool repo settings with bool().", "disposition": "CARRIED INTO U7 (frozen stub)."}
+  ]
+}

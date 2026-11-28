@@ -360,7 +360,7 @@
           "FR-01.09 — Release notes and changelog",
           "AC15"
         ],
-        "content_hash": "0fc67637409046d247bb81d97adb79c59ffda46f725927c3ed09d12c840cc274"
+        "content_hash": "82bae40287ef7523dffd55afcf5e827c66448bbb5be453a8c5c010fd983fc3a8"
       },
       "class": "outward command",
       "check": {
@@ -380,7 +380,7 @@
           "FR-01.09 — Release notes and changelog",
           "AC15"
         ],
-        "content_hash": "0fc67637409046d247bb81d97adb79c59ffda46f725927c3ed09d12c840cc274"
+        "content_hash": "82bae40287ef7523dffd55afcf5e827c66448bbb5be453a8c5c010fd983fc3a8"
       },
       "class": "outward command",
       "check": {
@@ -390,6 +390,44 @@
       "status": "passing",
       "decision": "Seen only through the stub's argv log, so the replay is the only oracle: oracle trace.",
       "oracle": "trace"
+    },
+    {
+      "id": "FR-01.09/AC16",
+      "sentence": "A release that merges itself picks the merge method from the code host's settings (a merge commit when allowed), merges only the checked head, and stops with a restart message when the base moved.",
+      "source": {
+        "file": ".shipwright/planning/01-adopted/spec.md",
+        "heading_path": [
+          "FR-01.09 — Release notes and changelog",
+          "AC16"
+        ],
+        "content_hash": "2dfc74b9c58aefef65b6c100105fb4cfc6666dff446e622ed364c08ca201625f"
+      },
+      "class": "outward command",
+      "check": {
+        "kind": "test",
+        "id": "plugins/shipwright-changelog/tests/test_release_merge_ready.py::test_the_method_follows_the_repository_settings_and_prefers_a_merge_commit"
+      },
+      "more_checks": [
+        {
+          "kind": "test",
+          "id": "plugins/shipwright-changelog/tests/test_release_merge_ready.py::test_a_squash_onto_a_base_that_moved_stops_with_a_plain_restart_message"
+        },
+        {
+          "kind": "test",
+          "id": "plugins/shipwright-changelog/tests/test_release_merge_ready_e2e.py::test_a_repo_that_allows_merge_commits_gets_a_pinned_merge_line_and_the_tag_stays_on_the_release"
+        },
+        {
+          "kind": "test",
+          "id": "plugins/shipwright-changelog/tests/test_release_merge_ready_e2e.py::test_a_base_that_moved_stops_before_a_squash_with_a_restart_message_and_nothing_is_merged"
+        },
+        {
+          "kind": "test",
+          "id": "plugins/shipwright-changelog/tests/test_release_merge_ready_e2e.py::test_a_commit_pushed_to_the_branch_after_the_answer_makes_the_host_refuse_the_pinned_line"
+        }
+      ],
+      "status": "passing",
+      "decision": "Unit-tested until U6 (operator decision 2026-11-28, U4 option B): the replay driver follows the pinned stop-3 prose, which still merges with --merge, so no scenario can assert it yet. The checks are L1 tests of merge-ready, named in scenario_index.UNIT_TESTED_UNTIL_U6; U6 re-pins the prose and binds AC16 to a replay scenario and a promise test.",
+      "oracle": "test"
     },
     {
       "id": "JUDGE/version-suggestion",
@@ -526,7 +564,7 @@
         "heading_path": [
           "Step 7: Create PR (Optional)"
         ],
-        "content_hash": "31c49f33bcafb2ce67bf3b34cba4ca755d4843f947a2a377d4034794392398bf"
+        "content_hash": "66c8693734242655b0b820e07a9b2fe9e0306cd2cee34c42dbd4effe25436d4d"
       },
       "class": "mechanic",
       "check": {

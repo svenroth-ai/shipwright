@@ -9,6 +9,7 @@
     uv run release.py commit-and-tag [--project-root .] --version X.Y.Z       (Step 6; writes .shipwright/runtime/release_state.json)
     uv run release.py pr-body        [--project-root .] --version X.Y.Z       (Step 7: the PR body as a file, for gh pr create --body-file)
     uv run release.py record-event   [--project-root .] --version X.Y.Z [--pr-url URL]
+    uv run release.py merge-ready    [--project-root .] --version X.Y.Z       (Step 7: which merge line an autonomous release runs)
     uv run release.py push-tag       [--project-root .] --version X.Y.Z       (Step 7: the tag push, once the run state allows it)
     uv run release.py close-phase    [--project-root .] --version X.Y.Z [--release-status S --release-url U --release-note N]
 
@@ -29,7 +30,7 @@ from pathlib import Path
 PLUGIN_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from lib import release_aggregate, release_cancel, release_close, release_commit, release_event, release_pr_body, release_prepare, release_push, release_sync, release_version  # noqa: E402
+from lib import release_aggregate, release_cancel, release_close, release_commit, release_event, release_merge, release_pr_body, release_prepare, release_push, release_sync, release_version  # noqa: E402
 from lib.release_runner import Recorder, subprocess_runner  # noqa: E402
 
 
@@ -55,7 +56,7 @@ def _task_id(text: str) -> str:
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="release.py", description="Release steps of /shipwright-changelog")
     sub = parser.add_subparsers(dest="command", required=True)
-    for name in ("prepare", "aggregate", "cancel", "sync", "commit-and-tag", "pr-body", "record-event", "push-tag", "close-phase"):
+    for name in ("prepare", "aggregate", "cancel", "sync", "commit-and-tag", "pr-body", "record-event", "merge-ready", "push-tag", "close-phase"):
         p = sub.add_parser(name)
         p.add_argument("--project-root", default=".")
         p.add_argument("--version", required=name != "prepare", type=_version, help="X.Y.Z (a leading v is cut off)")
@@ -96,6 +97,8 @@ def main(argv: list[str] | None = None, runner=subprocess_runner) -> int:
         code, payload = release_pr_body.pr_body(rec, version=args.version)
     elif args.command == "record-event":
         code, payload = release_event.record_event(rec, PLUGIN_ROOT, version=args.version, pr_url=args.pr_url)
+    elif args.command == "merge-ready":
+        code, payload = release_merge.merge_ready(rec, PLUGIN_ROOT, version=args.version)
     elif args.command == "push-tag":
         code, payload = release_push.push_tag(rec, PLUGIN_ROOT, version=args.version)
     elif args.command == "close-phase":

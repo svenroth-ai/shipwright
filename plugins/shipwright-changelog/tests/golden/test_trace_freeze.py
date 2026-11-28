@@ -32,7 +32,7 @@ TRACE_SUFFIX = ".trace.json"
 HARNESS = "shared/testkit/golden_trace.py"
 # What shapes every trace besides the trace files: a lock that leaves one out is refused. P2b added the replay
 # driver and its command table, P2b2 the second half of the scenarios, the coverage checks and the seeded regressions; P2p added the promise tests and the hashing helper; the promise-hash hardening adds the lock's two modules, their tests and the conftests above the golden root; P2-op adds the pinned prose copy, the promise lock and the lock writer with its tests.
-REQUIRED = (HARNESS, "shared/testkit/gh_stub.py", "shared/testkit/release_scratch.py",
+REQUIRED = (HARNESS, "shared/testkit/gh_stub.py", "shared/testkit/gh_stub_support.py", "shared/testkit/release_scratch.py",
             "plugins/shipwright-changelog/tests/golden/conftest.py",
             "plugins/shipwright-changelog/tests/golden/driver_replay.py",
             "plugins/shipwright-changelog/tests/golden/oracle.py",

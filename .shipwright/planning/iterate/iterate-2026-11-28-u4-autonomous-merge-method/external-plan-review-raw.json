@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "## Review Findings\n\n- **Category: edge-case \u00b7 Severity: medium** \u2014 Race between the `merge-ready` check and the actual merge: for squash/rebase `--match-head-commit` protects the head pin but *not* a base that moves *after* the fetch/ancestor check (the pin only guarantees the head SHA, not base currency). Since the operator chose merge-commit-preferred, and merge commits tolerate a moved base, this is mostly benign \u2014 but the design should state explicitly that `--match-head-commit` is the only post-check protection, so nobody later assumes the ancestor check is a guarantee. The plan's e2e \"late push\" test covers push-after-check for the head; consider whether a base-move-after-check case is worth a stub-level test or an accepted, documented residual.\n\n- **Category: edge-case \u00b7 Severity: medium** \u2014 `merge-base --is-ancestor FETCH_HEAD HEAD` after fetching the base: if the base branch has been *deleted* (e.g., a previous `--delete-branch` or repo change), the fetch fails and the plan doesn't specify behavior. A failed `git fetch` / `gh pr view` / network error should produce a `refused` answer with a reason, not a crash or a silent `ok`. Make \"all external commands fail into a refusal\" an explicit AC for `merge_ready`.\n\n- **Category: edge-case \u00b7 Severity: low** \u2014 `--match-head-commit` with `--merge`: harmless in real `gh`, but verify the new stub applies the pin uniformly across all three methods (the plan says \"honour --match-head-commit\" without scoping it). Also confirm the minimum `gh` CLI version that supports `--match-head-commit` (\u22652.23) is either documented or accepted as an environment assumption.\n\n- **Category: risk \u00b7 Severity: medium** \u2014 The gh_stub split at the 300-line cap: splitting frozen plumbing into `gh_stub_support.py` and re-pinning via `golden_lock.py --repin` touches the golden harness that other units (U5/U6/U7) and frozen traces depend on. The plan correctly says \"no trace moves\" \u2014 make that a hard test assertion (golden traces byte-identical before/after the split), not just an intention, since a subtle stub behavior change (e.g., flag parsing order, error messages) could silently alter traces.\n\n- **Category: security \u00b7 Severity: low** \u2014 Redaction of push URL user/token is called out for the answer payload \u2014 good. Also ensure the `detail`/`reason` fields from a failed `git fetch` or `gh pr view` don't embed URLs with credentials either (same redaction path should apply to error text, not just the success payload).\n\n- **Category: dependency \u00b7 Severity: low** \u2014 `release_verify.fetch_base` extraction from `on_base`: confirm `on_base`'s existing behavior/callers are unchanged in observable behavior (same keys is stated \u2014 good), and that existing `release_verify` tests still pass without modification; if they need edits, that's a scope signal worth noting.\n\n- **Category: approach \u00b7 Severity: low** \u2014 Keeping the merge as one literal outward line and having `merge-ready` only answer is the right call for guard visibility; the rejected alternative (merge inside merge-ready) would hide the outward command from the guard. No over-production concerns \u2014 the refusal taxonomy, redaction, and stub split are all load-bearing, not padding.\n\n## Overall Assessment\n\nThe approach is sound, well-scoped, and consistent with the campaign brief's guard-visible-literal-line constraint and the operator decisions. The main gaps are failure-path specification (external command failures must land in `refused`, not crash) and hardening the golden-trace-unchanged claim into a test around the stub split.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Category** edge-case \u00b7 **Severity** high  \n   **Finding** The base ancestry check and the merge are separate operations. If the base advances between them, `--match-head-commit` still matches, and GitHub can accept the squash or rebase on a branch without an up-to-date requirement.  \n   **Suggestion** Identify the server-side rule that enforces base freshness at merge time. If the target branch lacks that rule, resolve the operator decision before implementation. The prescribed CLI line can enforce a head pin and perform a best-effort base check. Add a test that advances the base after `merge-ready` returns.\n\n2. **Category** risk \u00b7 **Severity** medium  \n   **Finding** The readiness check reads the PR head but takes the base from the existing fetch path. If someone retargets the PR, the check can pass against the recorded base while the merge goes into a different branch. Retargeting can leave the head SHA unchanged.  \n   **Suggestion** Read `baseRefName` alongside `headRefOid`, refuse a mismatch against the recorded release base, and confirm the PR lookup, settings lookup, and merge command all resolve to the same repository. Cover a retargeted PR with an unchanged head in the refusal tests.\n\n3. **Category** edge-case \u00b7 **Severity** medium  \n   **Finding** `git merge-base --is-ancestor` can fail because Git cannot resolve or read a commit. Treating every nonzero exit as `base_moved` would tell the operator to restart after a Git error.  \n   **Suggestion** Reserve `base_moved` for exit status 1 after a successful base fetch. Report fetch failures and other ancestry-check errors separately, with no merge line in any refusal.\n\nKeeping the merge as one guarded command and pinning its head is sound. Resolve the base-freshness guarantee and bind the preflight to the PR\u2019s actual base before implementation. Workspace command access was blocked, so this review is based on the supplied specification and mini-plan, and campaign brief and guard compatibility remain unverified.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-11-28-u4-autonomous-merge-method",
+    "at": "2026-11-28T12:52:51.353975+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

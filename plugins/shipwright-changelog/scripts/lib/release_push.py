@@ -90,7 +90,7 @@ def push_tag(rec: Recorder, plugin_root: Path, *, version: str) -> tuple[int, di
                     return answer("ok", 0, argv=argv, line=" ".join(argv), base=base, **more)
                 if pr_state == "CLOSED":  # closed without a merge: it will not get merged by waiting
                     return refuse("pr_closed_unmerged", base=base, detail="the PR was closed without being merged; nothing is pushed")
-                return answer("waiting_for_merge", 1, reason="waiting_for_merge", base=base, detail="the PR is not merged yet; run this again after the merge")
+                return answer("waiting_for_merge", 1, reason="waiting_for_merge", base=base, detail="the PR is not merged yet; merge it while the branch is up to date with the base, then run this again")
     return answer("ok", 0, argv=argv, line=" ".join(argv))
 
 

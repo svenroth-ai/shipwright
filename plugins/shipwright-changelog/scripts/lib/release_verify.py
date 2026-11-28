@@ -114,12 +114,18 @@ def _pr_check(rec: Recorder, state: dict[str, Any], commit: str | None, publishe
     return _check("pr_state", reached, f"{what} is on {base} (origin)" if reached else f"this run merges its PR, but {what} is not on {base}")
 
 
+def fetch_base(rec: Recorder, state: dict[str, Any], prefix: str = "verify") -> tuple[str, Any]:
+    """``(base, fetch result)``: the PR's base branch, fetched from the push URL into FETCH_HEAD (no ref, no tree moves). ``prefix``
+    names the recorded calls (``verify-base``, ``verify-remote-url``, ``verify-fetch``), so each caller's trace stays its own."""
+    base = state.get("base_branch") or state.get("trunk") or rec.run(f"{prefix}-base", ["git", "symbolic-ref", "--short", "-q", "refs/remotes/origin/HEAD"]).stdout.strip().removeprefix("origin/") or "main"
+    url = rec.run(f"{prefix}-remote-url", ["git", "remote", "get-url", "--push", "origin"]).stdout.strip() or "origin"  # where a push goes, like the tag check
+    return base, rec.run(f"{prefix}-fetch", ["git", "fetch", "--quiet", "--end-of-options", url, base])
+
+
 def on_base(rec: Recorder, state: dict[str, Any], commit: str | None) -> tuple[bool | None, str, str]:
     """``(reached, base, detail)``: is the release commit on the PR's base branch on origin? ``None`` = cannot tell (no commit, no
     fetch, or git could not answer: unknown is not "not merged"). Only FETCH_HEAD moves, never a ref or the tree."""
-    base = state.get("base_branch") or state.get("trunk") or rec.run("verify-base", ["git", "symbolic-ref", "--short", "-q", "refs/remotes/origin/HEAD"]).stdout.strip().removeprefix("origin/") or "main"
-    url = rec.run("verify-remote-url", ["git", "remote", "get-url", "--push", "origin"]).stdout.strip() or "origin"  # where a push goes, like the tag check
-    fetched = rec.run("verify-fetch", ["git", "fetch", "--quiet", "--end-of-options", url, base])
+    base, fetched = fetch_base(rec, state)
     ancestry = rec.run("verify-merged", ["git", "merge-base", "--is-ancestor", commit or "", "FETCH_HEAD"]) if commit and fetched.exit == 0 else None
     if ancestry is None or ancestry.exit not in (0, 1):
         return None, base, (fetched.stderr or (ancestry.stderr if ancestry else "")).strip()[:120] or ("git could not tell" if commit else "no release commit recorded")

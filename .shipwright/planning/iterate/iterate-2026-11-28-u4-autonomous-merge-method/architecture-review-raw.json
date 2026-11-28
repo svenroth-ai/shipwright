@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "1. **The question, answered in one sentence.** Yes \u2014 but only as a thin decision call alongside the existing push-tag pattern; this is extending machinery that already exists (release.py + the one-literal-line guard contract), not a new standing mechanism.\n\n2. **The smallest thing that would do.** Option A, kept minimal: a `release.py merge-ready` that reads settings once, prints the one line or one refusal reason. That is essentially \"push-tag, but for the merge.\" Option B is smaller still but violates the operator's frozen decision (merge commit preferred, base-moved stops pre-merge), so it is off the table regardless of its size. Option C adds automatic re-creation the operator explicitly forbade; D leaves a real known failure (this very repo is squash-only).\n\n3. **What it costs to keep.** The stub must keep reporting merge settings and honouring head pins; every future change to merge methods or the guard's expectations in SKILL.md must reason about one more decision subcommand. That cost is the same shape and order of magnitude as push-tag, which the project already carries.\n\n4. **What it forecloses.** `none identified` \u2014 the one-literal-line contract is preserved, and `merge-ready` does not pin the project to any particular merge method (it reads settings at runtime).\n\n5. **Findings**\n\n- Category: proportionality\n- Severity: low\n- Finding: The brief bundles three behaviours into the new subcommand (method choice, head pin, base-moved refusal), which is close to the line where a \"print one line\" helper becomes a policy engine someone must keep explaining.\n- Suggestion: Keep merge-ready strictly a pure decision call \u2014 no side effects, no retries, no settings mutation \u2014 and make its output exactly one line or one refusal reason, mirroring push-tag's contract so future maintainers learn one pattern, not two.\n\n- Category: simpler-alternative\n- Severity: low\n- Finding: The base-moved check could plausibly be dropped and left to push-tag's post-merge proof (option B's argument), but that merges first and stops after, which contradicts the frozen operator decision \"nothing is merged when behind.\"\n- Suggestion: Keep the pre-merge stop, but implement the base-moved check as the only extra branch in merge-ready \u2014 do not introduce a second hook or gate to enforce it.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "Approve option A. The existing autonomous release needs a merge decision that supports both repository configurations and can stop before merging a stale release.\n\nThe smallest change is a `release.py merge-ready` call that selects the permitted method, prefers a merge commit, pins the audited PR head, and tells the operator to restart if the base has moved before a squash or rebase. SKILL.md retains the literal merge command for the guard.\n\nThe changelog plugin maintainers must keep that decision and the guarded command aligned with the merge methods GitHub supports.\n\n**What it forecloses** \u2014 none identified.\n\nNo findings.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "architecture",
+  "capture": {
+    "run_id": "iterate-2026-11-28-u4-autonomous-merge-method",
+    "at": "2026-11-28T12:52:51.368497+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "approve"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}

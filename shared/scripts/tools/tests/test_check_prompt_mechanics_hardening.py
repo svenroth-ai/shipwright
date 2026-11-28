@@ -138,6 +138,7 @@ def test_the_real_registry_is_pinned() -> None:
         "uv run {plugin_root}/scripts/release.py pr-body",  # P8b (Q10, D15): the PR body as a file for --body-file
         "gh pr create",
         "uv run {plugin_root}/scripts/release.py record-event",
+        "uv run {plugin_root}/scripts/release.py merge-ready",  # U4 (D110): picks the autonomous merge line, never merges
         "gh pr merge",
         "uv run {plugin_root}/scripts/release.py push-tag",
         "uv run {shared_root}/scripts/tools/publish_release_notes.py",

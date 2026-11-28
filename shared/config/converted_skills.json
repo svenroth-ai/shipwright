@@ -15,6 +15,7 @@
         "uv run {plugin_root}/scripts/release.py pr-body",
         "gh pr create",
         "uv run {plugin_root}/scripts/release.py record-event",
+        "uv run {plugin_root}/scripts/release.py merge-ready",
         "gh pr merge",
         "uv run {plugin_root}/scripts/release.py push-tag",
         "uv run {shared_root}/scripts/tools/publish_release_notes.py",
