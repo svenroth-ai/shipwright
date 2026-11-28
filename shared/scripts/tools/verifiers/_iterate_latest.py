@@ -48,7 +48,7 @@ __all__ = [
     "stale_detail",
 ]
 
-RESULTS_NAME = _sp.rel("test_results")
+RESULTS_NAME = _sp.name("test_results")
 
 #: The block names this run — the only state in which it is evidence.
 STATE_CURRENT = "current"

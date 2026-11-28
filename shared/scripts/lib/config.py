@@ -21,18 +21,11 @@ from .events_log import EVENT_FILE
 from .events_read import AssembledRead, read_events_assembled
 import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
-CONFIG_FILES = {
-    "run": _sp.rel("run_config"),
-    "project": _sp.rel("project_config"),
-    "plan": _sp.rel("plan_config"),
-    "build": _sp.rel("build_config"),
-    "security": _sp.rel("security_config"),
-    "compliance": _sp.rel("compliance_config"),
-    "events": EVENT_FILE,
-}
 #: skill -> resolver key; a moving config is found in either layout through ``_sp.path`` (R1c-2)
 CONFIG_KEYS = {"run": "run_config", "project": "project_config", "plan": "plan_config", "build": "build_config",
                "security": "security_config", "compliance": "compliance_config"}
+#: skill -> FILE NAME (a label, never a path to join: ``get_config_path`` resolves it); derived (R1c-3)
+CONFIG_FILES = {**{skill: _sp.name(key) for skill, key in CONFIG_KEYS.items()}, "events": EVENT_FILE}
 
 
 def get_config_path(skill: str, project_root: str | Path) -> Path:

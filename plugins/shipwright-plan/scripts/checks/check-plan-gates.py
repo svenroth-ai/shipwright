@@ -75,9 +75,9 @@ GATES = ("review", "sections", "boundary", "all")
 #: (`step-9-completion.md`); `shipwright_plan_config.json` is written every session.
 PLAN_ALLOWED_PREFIXES = (
     ".shipwright/",
-    _sp.rel("run_config"),
-    _sp.rel("project_config"),
-    _sp.rel("plan_config"),
+    *_sp.known_rels("run_config"),
+    *_sp.known_rels("project_config"),
+    *_sp.known_rels("plan_config"),
     "CHANGELOG-unreleased.d/",
     _sp.rel("events"), ".shipwright/events/drops/", ".shipwright/events/archive/", ".shipwright/events/quarantine/",  # the pipeline's own event log (file and drops folders): bookkeeping, not a breach
 )

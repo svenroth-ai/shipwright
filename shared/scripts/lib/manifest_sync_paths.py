@@ -18,7 +18,7 @@ import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent
 
 __all__ = ["CONFIG_NAME", "load_declared_manifests", "resolve_contained_path"]
 
-CONFIG_NAME = _sp.rel("changelog_config")
+CONFIG_NAME = _sp.name("changelog_config")
 
 _DRIVE_LETTER_RE = re.compile(r"^[A-Za-z]:")
 

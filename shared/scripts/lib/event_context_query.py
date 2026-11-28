@@ -96,7 +96,7 @@ def resolve_mode(project_root: Path | str, requested: str | None = None) -> tupl
         config = json.loads(config_path.read_text(encoding="utf-8"))
         value = config.get("events_context", {}).get("mode", "compact")
         if value in MODES:
-            return value, _sp.rel("iterate_config")
+            return value, _sp.name("iterate_config")
     except (OSError, UnicodeError, json.JSONDecodeError, AttributeError):
         pass
     return "compact", "default"

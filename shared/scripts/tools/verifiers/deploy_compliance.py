@@ -88,8 +88,8 @@ def _smoke_from_events(project_root: Path) -> str | None:
 
 def check_w7_smoke_status(project_root: Path) -> dict[str, Any]:
     for source_fn, source_name in (
-        (_smoke_from_deploy_config, _sp.rel("deploy_config")),
-        (_smoke_from_test_results, _sp.rel("test_results")),
+        (_smoke_from_deploy_config, _sp.name("deploy_config")),
+        (_smoke_from_test_results, _sp.name("test_results")),
         (_smoke_from_events, "events.jsonl"),
     ):
         status = source_fn(project_root)

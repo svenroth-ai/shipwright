@@ -38,7 +38,7 @@ ADVISORY_CONTEXTS: frozenset[str] = frozenset()
 
 # Where a consumer repo records its own "deliberately not required" decision:
 # a top-level list of check names in the run config every Shipwright project has.
-ADVISORY_CONFIG_FILE = _sp.rel("run_config")
+ADVISORY_CONFIG_FILE = _sp.name("run_config")
 ADVISORY_CONFIG_KEY = "required_checks_advisory"
 
 

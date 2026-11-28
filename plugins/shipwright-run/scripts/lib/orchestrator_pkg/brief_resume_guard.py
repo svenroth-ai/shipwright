@@ -19,7 +19,7 @@ import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent
 
 _NAME = "_shipwright_brief_resume_guard_bdi"
 _BDI = Path(__file__).resolve().parents[5] / "shared" / "scripts" / "lib" / "brief_dir_intake.py"
-_CONFIG = _sp.rel("run_config")
+_CONFIG = _sp.name("run_config")
 
 
 def _load() -> Any:

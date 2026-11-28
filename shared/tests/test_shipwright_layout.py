@@ -216,9 +216,10 @@ def test_layout_error_is_not_caught_as_missing_file_bad_json_or_lock_timeout():
 
 @pytest.mark.covers("FR-01.11")
 def test_no_production_code_writes_the_new_place_before_r3():
-    """R1c-1 alone is safe only because nothing creates ``.shipwright/config/`` yet (frozen root constants
-    and the locked writers still name the root until R1c-2/R3): no production file of ANY type (code, prompts,
-    templates, hooks.json, workflows) names the folder, and nothing outside the resolver asks for the new paths."""
+    """Nothing creates ``.shipwright/config/`` before R3: no production file of ANY type (code, prompts, templates,
+    hooks.json, workflows) names the folder, and nothing outside the resolver asks for the new place ALONE
+    (``new_rel``, what a writer would use). Since R1c-3 the recognisers (sets, pathspecs, regexes) ask for BOTH
+    places through ``known_rels`` / ``all_known_rels``: recognising a file there is reading, not creating it."""
     allowed = {"shared/scripts/lib/shipwright_paths.py", "shared/scripts/lib/shipwright_layout.py",
                "shared/scripts/lib/shipwright_pointer.py"}  # the resolver, its lookup, the stub renderer
     scope = ["--", "plugins", "shared", "scripts", ".github", ":!*/tests/*", ":!shared/testkit/*"]
@@ -227,7 +228,7 @@ def test_no_production_code_writes_the_new_place_before_r3():
                             r"shipwright[/\\]+config|runtime[/\\]+shipwright_dev_server", *scope],
                            capture_output=True, text=True, cwd=str(REPO)).stdout.split()
     assert [h for h in named if h not in allowed] == []
-    asked = subprocess.run(["git", "grep", "-l", "--untracked", "-E", r"\b(new_rel|known_rels|all_known_rels)\(", *scope],
+    asked = subprocess.run(["git", "grep", "-l", "--untracked", "-E", r"\bnew_rel\(", *scope],
                            capture_output=True, text=True, cwd=str(REPO)).stdout.split()
     assert [h for h in asked if h not in allowed] == []
 

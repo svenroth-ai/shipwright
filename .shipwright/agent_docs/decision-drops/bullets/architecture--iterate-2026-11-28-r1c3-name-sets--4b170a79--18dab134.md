@@ -1,0 +1,1 @@
+- **iterate-2026-11-28-r1c3-name-sets** (2026-11-28): Component — Recognisers of moving root files (derived/churn sets, SENSITIVE_PATH_RE, CONFIG_MARKERS, change-type coverage, the fold pathspec, phase hints) use shipwright_paths.known_rels(); labels use name(); guarded by test_shipwright_paths_recognisers.py. → decision_log (ADR via Run-ID: iterate-2026-11-28-r1c3-name-sets)

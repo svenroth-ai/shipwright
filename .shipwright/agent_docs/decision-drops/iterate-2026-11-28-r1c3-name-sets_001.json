@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-28-r1c3-name-sets",
+  "date": "2026-11-28",
+  "section": "Iterate — change: R1c-3 recognisers see both places",
+  "title": "Every recogniser of a moving root file sees it in both places; labels use name() (R1c-3)",
+  "context": "After R1c-2 every reader and writer found a moving file through path(), but sets, a regex, project markers, a git pathspec and phase hints still recognised it by its root name, so after R3 a moved file would be misclassified (derived snapshot, sensitive path, FR coverage, project detection).",
+  "decision": "Recognisers ask the registry for every known location (known_rels / all_known_rels); readers that report a place report the resolved one; pure labels use name(); change_type_paths judges a moved root file as the root file it is. Skip-safety stays root-only because it loosens the required review gate. An AST net forbids rel()/legacy_rel() of a moving or computed key in production code.",
+  "consequences": "Unmigrated repos behave as before: sets only gain paths that do not exist. The safety window of BRIEF 12.12 (b) ends. R3 must switch skip-safety and narrow the design/plan boundary prefixes with the move (BRIEF 12.13 (a)); the fold release path joins the R1e LayoutError list.",
+  "rationale": "Both places must be recognised during the transition, because existing repos keep the root copy until they migrate; doing it before the move keeps R3 a pure move.",
+  "rejected": "Waiting for R3 and flipping rel() (sets would hold only the new place while repos keep the root copy); basename matching (widens the security sets); a single is_known_location predicate (regexes, pathspecs and frozensets need the list up front).",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ""
+}

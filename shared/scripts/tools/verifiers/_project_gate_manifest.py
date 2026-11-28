@@ -96,7 +96,7 @@ def _declared_split_names(
         # this, the real manifest, was present and perfectly valid — the
         # fallback must never take priority over, or block on, the
         # manifest it is a fallback FOR.
-        source = _sp.rel("project_config")
+        source = _sp.name("project_config")
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
         except (json.JSONDecodeError, OSError) as exc:
@@ -111,7 +111,7 @@ def _declared_split_names(
         # same way the branch above does, lets a malformed run-config
         # surface its own error instead of silently becoming "zero splits
         # declared". Only reached when the project config is ABSENT.
-        source = _sp.rel("run_config")
+        source = _sp.name("run_config")
         data: object = {}
         if run_config_path.exists():
             try:

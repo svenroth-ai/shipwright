@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "- **Category:** spec  \n  **Severity:** medium  \n  **File:line:** `shared/tests/test_shipwright_paths_guard.py:95`  \n  **Finding:** The diff lowers the inventory cap from 73 to 16 but leaves `shared/tests/fixtures/shipwright_paths_rel_constants.json` unchanged. AC7 requires the checked-in inventory itself to shrink to 16 entries.  \n  **Suggestion:** Regenerate the fixture and verify that its remaining entries are the event-log constants and `churn_merge.TEST_RESULTS`.\n\n- **Category:** test  \n  **Severity:** medium  \n  **File:line:** `shared/tests/test_shipwright_paths_recognisers.py:159`  \n  **Finding:** The AST guard only checks literal positional arguments. The new `_sp.legacy_rel(e)` call in `get_phase_context.py:124` therefore passes unnoticed even though it resolves moving keys to root paths and is outside the specified exceptions. The positive control only checks a literal `_sp.rel(\"run_config\")` call.  \n  **Suggestion:** Have the guard flag calls with unresolved keys outside the explicit exceptions. Remove the phase-context fallback or document and narrowly test it if the specification is updated to allow it.\n\n**Overall assessment:** Ship-with-fixes. Update the inventory fixture and close the AST guard gap before merging. The workspace shell was blocked, so the review was limited to the supplied diff.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "I reviewed the diff against the R1c-3 spec. The implementation matches the design closely: the snapshot sets return both places, hand-written sets use `known_rels`, labels use `name()`, skip-safety stays at the root on purpose, and the new guard test drives each recogniser with a path in the new place plus a positive control for the AST net. Findings:\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/tools/fold_events.py \u2014 `_stage_paths(result, root)` computes `sync` via `_sp.path(\"sync_config\", ...)` before the status branches, i.e. unconditionally. If the resolver ever raises (or returns a place the fold did not write) when no sync config exists anywhere, an emergency fold in a repo with no sync config would fail where the old `rel()` never could. The comment in `get_phase_context._where` claims `path()` \"never raises\" but that invariant is not asserted anywhere in this diff (R1e is out of scope, so this is a documented risk rather than a bug).\n  Suggestion: compute `sync` lazily inside the branches that actually use it, or assert the never-raises invariant in `test_shipwright_paths_recognisers.py`.\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/tools/get_phase_context.py \u2014 `except _sp.LayoutError` assumes the resolver module re-exports `LayoutError`. If it lives only in `shipwright_layout` and is not re-exported, the handler itself raises `AttributeError` and masks the original error. Worth a one-line confirmation (e.g. `assert hasattr(sp, \"LayoutError\")` in the new test).\n  Suggestion: verify the re-export or import `LayoutError` from its defining module.\n\n- Category: regression\n  Severity: medium\n  File: all sites changing `_sp.rel(...)` \u2192 `_sp.name(...)` (e.g. `required_checks_drift.ADVISORY_CONFIG_FILE`, `brief_resume_guard._CONFIG`, `backfill_phase_tasks.RUN_CONFIG_NAME`, `stamp_test_results.RESULTS_REL`). `name()` is correct only if the constant is truly a label; if any of these is ever joined to a root to read/write the file (rather than routed through `path()`), the reader silently pins the root place and will miss the file after R3. In the current unmigrated repo this is unobservable (spec impact: NONE), so it cannot fail today \u2014 but it is exactly the class of drift the AST net does not catch, because the net only forbids `_sp.rel`/`legacy_rel`, not `root / name(key)` joins. The spec claims all 47 were audited as labels; the diff shows the changes but not the audit evidence for the non-test consumers.\n  Suggestion: add a guard test (or extend the AST net) that flags `Path(...) /` or `os.path.join` against `name()`-derived constants for moving keys, or confirm each consumer in the PR description.\n\n- Category: test\n  Severity: low\n  File: shared/tests/test_shipwright_paths_recognisers.py \u2014 `test_the_fold_stages_the_sync_config_where_it_lives` covers only the `nothing_to_fold`/emergency branch. The `folded`/`folded_into_legacy` branch appends the same `sync` variable, so a regression that stages the wrong place only in the folded path would still pass. Same for the unmigrated-repo case (sync at the root) which is the state every real repo is in today.\n  Suggestion: add one assertion for the folded branch and one for a root-placed sync config.\n\n- Category: edge-case\n  Severity: low\n  File: plugins/shipwright-adopt/scripts/lib/nested_project_detector.py \u2014 the marker string changed from the fixed `\"shipwright_run_config.json\"` to a resolved relative path. Any consumer comparing `markers` against the literal basename (not visible in this diff) would now see `config/shipwright_run_config.json` in a migrated nested project. Confirm no string-equality consumer exists.\n  Suggestion: grep consumers of the returned `markers` list for literal comparisons.\n\nNothing security-relevant was introduced: the sensitive-path regex gains paths via escaped alternations and stays anchored, and the skip-safety set deliberately does not loosen (AC5 is verified by a test that the new place is NOT skip-safe, including a planted basename).\n\nOverall: the change is sound, spec-compliant, and well-tested; the findings above are verification hardening rather than blocking defects.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-11-28-r1c3-name-sets",
+    "at": "2026-11-28T14:19:24.212174+00:00"
+  },
+  "verdicts": {
+    "openai": "revise",
+    "glm": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

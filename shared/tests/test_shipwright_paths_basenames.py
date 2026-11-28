@@ -6,7 +6,8 @@ Two checks make that visible now:
 
 * runtime - each named basename consumer is loaded in a fresh interpreter with the WHOLE layout moved
   (``rel``, ``names_of``/``rels_of_kind``, ``snapshot_paths`` answer ``.shipwright/config/...``): its
-  basename sets must not change, while a path table (``lib.config.CONFIG_FILES``) must follow;
+  basename sets must not change; ``lib.config.CONFIG_FILES`` is a label table since R1c-3 (``name()``) and the
+  session handoff names the place ``path()`` finds;
 * static - no production comparison of a basename expression with a path-returning resolver call.
   Limits: a path constant imported from ANOTHER module, and ``fnmatch`` patterns, are not traced.
 """
@@ -56,6 +57,9 @@ def test_basename_sets_survive_a_moved_layout_while_path_tables_follow():
         prg = by_file("prg_probe", {str(REPO / "plugins/shipwright-security/scripts/lib/pr_review_generated.py")!r})
         from tools.generate_session_handoff import generate_handoff
         with tempfile.TemporaryDirectory() as proj:
+            moved = pathlib.Path(proj) / sp.new_rel("run_config")   # the file really lives in the new place
+            moved.parent.mkdir(parents=True)
+            moved.write_text("{{}}", encoding="utf-8")
             text = generate_handoff(pathlib.Path(proj), session_id="s")
         handoff_run_line = next(x for x in text.splitlines() if "shipwright_run_config.json" in x)
         seed = by_file("seed_probe", {str(REPO / "plugins/shipwright-adopt/scripts/lib/event_seeder.py")!r})
@@ -74,8 +78,8 @@ def test_basename_sets_survive_a_moved_layout_while_path_tables_follow():
             "moved": sp.rel("run_config")}}))
     """)
     assert res["moved"] == ".shipwright/config/shipwright_run_config.json"     # the layout really moved
-    assert res["run_path"] == res["moved"]                                     # a path table follows
-    assert res["handoff_line"] == f"- `{res['moved']}` — missing"                # ...and the handoff list with it
+    assert res["run_path"] == "shipwright_run_config.json" and "/" not in res["run_path"]   # R1c-3: a label
+    assert res["handoff_line"].startswith(f"- `{res['moved']}`")   # the handoff names where the file lives
     assert {"shipwright_events.jsonl", "shipwright_test_results.json",
             "shipwright_bloat_baseline.json"} <= set(res["ledgers"])
     assert all("/" not in n for n in res["ledgers"] + res["generated"])

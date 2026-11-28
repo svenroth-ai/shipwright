@@ -27,7 +27,7 @@ if _LOCAL_LIB not in sys.path:
     sys.path.insert(0, _LOCAL_LIB)
 
 # --- Schema constants ------------------------------------------------------
-CONFIG_NAME = _sp.rel("run_config")
+CONFIG_NAME = _sp.name("run_config")
 
 # Pipeline schema version. F2+ phase-lifecycle subcommands (claim-phase-task,
 # complete-phase-task, etc.) hard-fail on anything else.

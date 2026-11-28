@@ -34,7 +34,7 @@ import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent
 
 FIXTURE_ENV = "SHIPWRIGHT_ACCEPT_FIXTURE_APPROVAL"
 FIXTURE_PREFIX = "fixture:"
-CONFIG_NAME = _sp.rel("run_config")
+CONFIG_NAME = _sp.name("run_config")
 _LIB = Path(__file__).resolve().parent
 _PKG = "_shipwright_brief_dir_lib"
 _SHA_RE = re.compile(r"[0-9a-f]{64}")

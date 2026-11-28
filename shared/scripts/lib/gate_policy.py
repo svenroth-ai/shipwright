@@ -56,7 +56,7 @@ INERT_MODE = "standalone"
 _REQUIRED_GATE_KEYS = ("id", "phase", "policy", "default_answer", "constitution", "fires", "summary")
 
 _CATALOG_PATH = Path(__file__).resolve().parents[2] / "config" / "gate_catalog.json"
-_CONFIG_NAME = _sp.rel("run_config")
+_CONFIG_NAME = _sp.name("run_config")
 
 
 class GateCatalogError(ValueError):

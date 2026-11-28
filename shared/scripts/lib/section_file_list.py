@@ -76,7 +76,7 @@ FRAMEWORK_BOOKKEEPING: tuple[str, ...] = (
     ".shipwright/events/drops/",
     ".shipwright/events/archive/",
     ".shipwright/events/quarantine/",
-    _sp.rel("build_config"),
+    *_sp.known_rels("build_config"),
     "design-fidelity-report.json",
 )
 #: Prose placeholders an LLM writes when a section declares no files. Kept as a

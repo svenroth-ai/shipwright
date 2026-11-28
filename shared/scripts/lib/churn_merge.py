@@ -40,6 +40,7 @@ DERIVED_MDS: frozenset[str] = COMPLIANCE_MDS | AGENT_DOC_MDS
 
 EVENTS_LOG = _sp.rel("events")
 TEST_RESULTS = _sp.rel("test_results")
+TEST_RESULTS_RELS: tuple[str, ...] = _sp.known_rels("test_results")  # both places: what a set must recognise (R1c-3)
 #: The triage backlog — an append-only JSONL log tracked since campaign
 #: 2026-06-05-track-triage-jsonl (C). Reconciled like ``EVENTS_LOG`` but with a
 #: triage-specific dedup whose id-collision rule differs from the events one —
@@ -99,7 +100,7 @@ THROUGHPUT_REPORT = ".shipwright/compliance/performance/iterate-throughput.md"
 #: NOTE: ``.shipwright/agent_docs/architecture.md`` is intentionally absent
 #: (curated prose — must reach a human; folds external-review G4/O1).
 CHURN_ALLOWLIST: frozenset[str] = DERIVED_MDS | {
-    EVENTS_LOG, TEST_RESULTS, TRIAGE_LOG, CI_SECURITY_SUMMARY, TEST_TRACEABILITY,
+    EVENTS_LOG, *TEST_RESULTS_RELS, TRIAGE_LOG, CI_SECURITY_SUMMARY, TEST_TRACEABILITY,
     ADR_INDEX, DECISION_LOG_INDEX, THROUGHPUT_REPORT,
 }
 

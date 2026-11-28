@@ -64,7 +64,7 @@ def _import_lib_with_retry(do_import=_do_lib_imports, attempts: int = 20, delay:
  _phase_tasks_has_usable_entries, _phase_tasks_progress, resolve_run_id,
  is_shipwright_project, resolve_project_root, _sp) = _import_lib_with_retry()
 
-_RUN_CONFIG_NAME = _sp.rel("run_config")
+_RUN_CONFIG_NAME = _sp.name("run_config")
 # Matches orchestrator_pkg/run_config_store.py's LOCK_NAME — the same
 # advisory lock every other shipwright_run_config.json writer coordinates
 # through. The name comes from the resolver, so the lock cannot drift from the data file.

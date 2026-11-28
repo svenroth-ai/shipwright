@@ -54,7 +54,7 @@ EXIT_OK = 0
 EXIT_BLOCKED = 1
 EXIT_INFRA = 2
 
-BASELINE_RELPATH = _sp.rel("ac_coverage_baseline")
+BASELINE_RELPATH = _sp.name("ac_coverage_baseline")
 
 
 def _emit(payload: dict, code: int) -> int:

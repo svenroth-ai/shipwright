@@ -25,7 +25,7 @@ from pathlib import Path
 import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 SUPPORTED_LAYOUTS = ("legacy", "drops")
-SYNC_CONFIG = _sp.rel("sync_config")
+SYNC_CONFIG = _sp.name("sync_config")
 DROPS_DIR = ".shipwright/events/drops"
 UPDATE_HINT = "Update the Shipwright plugins to a version that supports this layout."
 #: Where the event folders lived before they moved under ``.shipwright/events/`` (old root name -> new name).

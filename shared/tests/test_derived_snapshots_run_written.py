@@ -65,6 +65,7 @@ def repo(tmp_path: Path) -> Path:
     return root
 
 
+@pytest.mark.covers("FR-01.11")
 def test_restorable_excludes_exactly_the_run_written_paths() -> None:
     """The exclusion is TWO paths, and each is one a run writes.
 
@@ -81,9 +82,10 @@ def test_restorable_excludes_exactly_the_run_written_paths() -> None:
     asserted, not narrated, because the prose in ``docs/hooks-and-pipeline.md`` had already
     fallen a path behind ("ten of the eleven") before this change touched it.
     """
-    assert DERIVED_SNAPSHOTS - RESTORABLE_SNAPSHOTS == {TEST_RESULTS, SESSION_HANDOFF}
+    new_place = ".shipwright/config/" + TEST_RESULTS   # R1c-3: the ledger is recognised in either place
+    assert DERIVED_SNAPSHOTS - RESTORABLE_SNAPSHOTS == {TEST_RESULTS, new_place, SESSION_HANDOFF}
     assert RESTORABLE_SNAPSHOTS < DERIVED_SNAPSHOTS, "the exclusion must be a real subset"
-    assert (len(DERIVED_SNAPSHOTS), len(RESTORABLE_SNAPSHOTS)) == (12, 10)
+    assert (len(DERIVED_SNAPSHOTS), len(RESTORABLE_SNAPSHOTS)) == (13, 10)
 
 
 def test_the_carve_out_reaches_the_ledger_that_carries_the_bytes() -> None:

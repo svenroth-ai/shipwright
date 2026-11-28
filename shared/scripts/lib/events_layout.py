@@ -55,7 +55,7 @@ from .jsonl_records import ends_without_newline
 from .events_sentinel import require_writable_layout
 import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
-SYNC_CONFIG = _sp.rel("sync_config")
+SYNC_CONFIG = _sp.name("sync_config")
 LAYOUTS = ("legacy", "drops")
 
 ENV_LAYOUT = "SHIPWRIGHT_EVENTS_LAYOUT"

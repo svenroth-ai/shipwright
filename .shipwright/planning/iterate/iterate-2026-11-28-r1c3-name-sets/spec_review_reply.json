@@ -1,0 +1,1 @@
+{"stage":"spec-compliance","verdict":"PASS","spec_citations":[],"summary":"Every AC has code and a test that drives the real recogniser; the AC2 review-size half and AC5 pin today's behaviour (stated in the spec). Low notes addressed: review.diff regenerated unfiltered, Design 6 wording tightened, AST net widened to computed keys. No scope creep, Out of Scope respected."}
