@@ -36,30 +36,12 @@
       "findings_count": 5,
       "findings": [
         {
-          "severity": "low",
+          "severity": "medium",
           "category": "correctness",
-          "file": "shared/scripts/lib/manifest_sync_toml.py",
+          "file": "shared/scripts/tests/test_manifest_sync_toml.py",
           "line": null,
-          "finding": "_ANY_HEADER matched an array row starting with '[' and ended the table early (fail-closed refusal).",
-          "suggestion": "Tighten to a real header shape.",
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": "readability",
-          "file": "shared/scripts/lib/manifest_sync_toml.py",
-          "line": null,
-          "finding": "Lines split and string flags computed twice in render_toml_write.",
-          "suggestion": "Compute once and pass into _table_span.",
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": "readability",
-          "file": "shared/scripts/lib/manifest_sync_toml.py",
-          "line": null,
-          "finding": "Over-long spliced docstring lines (also manifest_sync_core.read_manifest_version).",
-          "suggestion": "Re-wrap.",
+          "finding": "No test reaches the re-parse equality check in render_toml_write; deleting it would leave every test green although the safety argument rests on it.",
+          "suggestion": "Add a case that passes the line scan and is refused only by the re-parse (e.g. a [tool.\"a/b\"] header _ANY_HEADER does not match). Follow-up, not blocking: the check exists and fails closed.",
           "source": "code-reviewer"
         },
         {
@@ -67,82 +49,78 @@
           "category": "correctness",
           "file": "plugins/shipwright-changelog/skills/changelog/references/manifest-sync.md",
           "line": null,
-          "finding": "invalid_version_type row not widened for the TOML formats.",
-          "suggestion": "Widen the row and update the approved delta.",
+          "finding": "'refused before anything is written' is inaccurate: earlier manifests are written then restored by _restore. Declaring the root files means this repo now refuses SemVer pre-release versions.",
+          "suggestion": "Move the plain-X.Y.Z check to preflight or fix the wording; note the pre-release consequence.",
           "source": "code-reviewer"
         },
         {
           "severity": "low",
           "category": "correctness",
-          "file": "shared/scripts/tests/test_manifest_sync_toml.py",
+          "file": "shared/scripts/lib/manifest_sync_toml.py",
           "line": null,
-          "finding": "Byte-identity check assumes 9.9.9 does not occur in the real files.",
-          "suggestion": "Assert the sentinel is absent.",
+          "finding": "_ANY_HEADER matches an array row without trailing comma, ending the table early; a later version line then gets 0 hits and is refused (no corruption).",
+          "suggestion": "Track bracket depth or document the refusal in the test.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/manifest_sync_toml.py",
+          "line": null,
+          "finding": "render_toml_write parses the original text twice.",
+          "suggestion": "Reuse the parsed doc.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": ".shipwright/agent_docs/iterates/iterate-2026-10-08-u13-hook-command-shapes.json",
+          "line": null,
+          "finding": "Unrelated iterate record deleted.",
+          "suggestion": "Confirm it is store retention. Orchestrator note: spec-reviewer confirmed append_iterate_entry._apply_retention removes it.",
           "source": "code-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-11-27T23:57:45.998519+00:00",
+      "completed_at": "2026-11-28T05:43:28.830787+00:00",
       "disposition": null,
       "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "b6c616e73977697cd8df04011f143b2d315d83fd",
-      "reviewer_notes": "No high/medium findings. Verified: k-th [[package]] header mapping, re-parse equality makes any misplaced edit a refusal, CRLF preserved, all consumers route through read_manifest_version/describe_version_state/render_manifest_write, real uv.lock has exactly one root package."
+      "reviewer_notes": "Orchestrator 3f-bis, opus. No high finding. Medium and lows carried as follow-ups for the operator report; none blocks the release path (all failure modes refuse, none writes wrong data). File sizes under 300 LOC; CRLF, comments, lock top-level version and dependency entries verified untouched."
     },
     "doubt": {
       "review_type": "doubt",
       "status": "completed",
-      "findings_count": 4,
+      "findings_count": 2,
       "findings": [
         {
           "severity": "medium",
-          "category": null,
-          "file": null,
+          "category": "reversibility",
+          "file": "shared/scripts/tools/sync_release_manifests.py",
           "line": null,
-          "finding": "Claim under doubt: the release commit changes only the version line in uv.lock — a uv re-lock between sync and commit-and-tag would be swept into the release commit by the manifest pathspec",
+          "finding": "a pre-release or build version is refused before anything is written",
           "suggestion": null,
           "source": "doubt-reviewer"
         },
         {
           "severity": "low",
-          "category": null,
-          "file": null,
+          "category": "hidden coupling & blast radius",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_sync.py",
           "line": null,
-          "finding": "any SemVer accepted can be written into pyproject.toml/uv.lock",
-          "suggestion": null,
-          "source": "doubt-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": null,
-          "file": null,
-          "line": null,
-          "finding": "JSON-only consumers are unaffected",
-          "suggestion": null,
-          "source": "doubt-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": null,
-          "file": null,
-          "line": null,
-          "finding": "a stale uv.lock reports a useful error",
+          "finding": "declaring uv.lock only changes the version line",
           "suggestion": null,
           "source": "doubt-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-11-28T00:04:41.848048+00:00",
+      "completed_at": "2026-11-28T05:43:28.971761+00:00",
       "disposition": null,
       "recorded_by": "doubt-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "b6c616e73977697cd8df04011f143b2d315d83fd"
+      "model_tier": "opus"
     },
     "external_code": {
       "review_type": "external_code",
@@ -212,20 +190,18 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-11-27T23:54:10.148695+00:00",
+      "completed_at": "2026-11-28T05:43:28.707770+00:00",
       "disposition": null,
       "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "b6c616e73977697cd8df04011f143b2d315d83fd",
       "ac_verdicts": [
         {
-          "ac": "FR-01.09.AC16",
+          "ac": "FR-01.09.AC12",
           "verdict": "matches",
-          "diff_location": "shared/scripts/lib/manifest_sync_toml.py",
-          "reason": "render_toml_write replaces only the one version line in [project] or the root [[package]], refuses a result that re-parses to more than that change; read_toml_version stops with missing_version_field / missing_root_package.",
+          "diff_location": "shared/scripts/lib/manifest_sync_core.py",
+          "reason": "SUPPORTED_FORMATS includes pyproject_toml and uv_lock; read, write and verify-commit route through manifest_sync_toml; the repo config declares both root files; a stale TOML manifest stops the release as verify_mismatch.",
           "weakens": false
         }
       ]
