@@ -57,7 +57,7 @@ def detect_nested_projects(project_root: Path, max_depth: int = 2) -> list[dict[
             if (child / ".git").exists():
                 markers.append(".git")
                 reasons.append("nested-git")
-            if (child / _sp.rel("run_config")).exists():
+            if _sp.path("run_config", child).exists():
                 markers.append(_sp.rel("run_config"))
                 reasons.append("separate-shipwright-project")
             if (child / "CLAUDE.md").exists() and (child / ".shipwright" / "agent_docs").is_dir():

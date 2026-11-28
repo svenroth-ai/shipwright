@@ -70,7 +70,7 @@ def _deploy_target(project_root: Path) -> str | None:
     """The run config's deploy_target, or None when unreadable/absent."""
     try:
         data = json.loads(
-            (project_root / _sp.rel("run_config")).read_text(encoding="utf-8")
+            _sp.path("run_config", project_root).read_text(encoding="utf-8")
         )
         target = data.get("deploy_target")
         return target if isinstance(target, str) else None

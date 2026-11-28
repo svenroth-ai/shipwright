@@ -91,7 +91,7 @@ def resolve_mode(project_root: Path | str, requested: str | None = None) -> tupl
         if requested not in MODES:
             raise ValueError(f"unknown context mode: {requested}")
         return requested, "cli"
-    config_path = Path(project_root) / _sp.rel("iterate_config")
+    config_path = _sp.path("iterate_config", project_root)
     try:
         config = json.loads(config_path.read_text(encoding="utf-8"))
         value = config.get("events_context", {}).get("mode", "compact")

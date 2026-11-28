@@ -270,7 +270,7 @@ def _collect_split_e2e_results(project_root: Path) -> dict[str, dict]:
     result: dict[str, dict] = {}
 
     # Get split names from project config
-    project_config_path = project_root / _sp.rel("project_config")
+    project_config_path = _sp.path("project_config", project_root)
     split_names: dict[str, str] = {}  # "01" -> "01-foundation"
     if project_config_path.exists():
         try:
@@ -283,7 +283,7 @@ def _collect_split_e2e_results(project_root: Path) -> dict[str, dict]:
             pass
 
     # Current test results have aggregate E2E — distribute to last split
-    current = project_root / _sp.rel("test_results")
+    current = _sp.path("test_results", project_root)
     if current.exists():
         try:
             data = json.loads(current.read_text(encoding="utf-8"))

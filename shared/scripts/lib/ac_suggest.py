@@ -86,7 +86,7 @@ def _opted_out(project_root: str | Path) -> bool:
     if any(os.environ.get(name, "").strip().lower() in _OFF_WORDS for name in (SWITCH_ENV, OFF_ENV)) or os.environ.get("SHIPWRIGHT_REVIEW_GATEWAY_BASE_URL"):
         return True
     try:
-        own = json.loads((Path(project_root) / _sp.rel("iterate_config")).read_text(encoding="utf-8-sig"))
+        own = json.loads(_sp.path("iterate_config", project_root).read_text(encoding="utf-8-sig"))
         block = own.get("ac_decision") if isinstance(own, dict) else None
         if isinstance(block, dict) and block.get("model_suggest") is False:
             return True

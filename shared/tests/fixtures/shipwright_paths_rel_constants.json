@@ -1,0 +1,229 @@
+{
+ "_about": "R1b inventory (BRIEF 12.1): module-level names bound to a value built from rel(), frozen at import and joined elsewhere as root / CONST, so they would bypass path() and R1c's new-then-old lookup. Closed list: a new name fails test_no_new_rel_constants; R1c removes entries as it routes them through path() (the list may only shrink).",
+ "files": {
+  "plugins/shipwright-adopt/scripts/checks/setup_adopt.py": [
+   "_EXISTING_ARTIFACT_CANDIDATES"
+  ],
+  "plugins/shipwright-adopt/scripts/checks/validate_adoption.py": [
+   "REQUIRED_CONFIGS",
+   "_HONESTY_ARTIFACTS"
+  ],
+  "plugins/shipwright-adopt/scripts/lib/inherited_baseline.py": [
+   "REGISTER_REL"
+  ],
+  "plugins/shipwright-adopt/scripts/tools/backfill_phase_tasks.py": [
+   "RUN_CONFIG_NAME"
+  ],
+  "plugins/shipwright-build/scripts/lib/config.py": [
+   "CONFIG_NAME"
+  ],
+  "plugins/shipwright-compliance/scripts/audit/_events_read.py": [
+   "EVENT_FILE"
+  ],
+  "plugins/shipwright-compliance/scripts/lib/audit_disclosure.py": [
+   "CONFIG_FILE"
+  ],
+  "plugins/shipwright-compliance/scripts/lib/collectors/_common.py": [
+   "CONFIG_FILES"
+  ],
+  "plugins/shipwright-compliance/scripts/lib/collectors/change_history.py": [
+   "EVENT_FILE"
+  ],
+  "plugins/shipwright-compliance/scripts/lib/security_gate.py": [
+   "CONFIG_FILENAME"
+  ],
+  "plugins/shipwright-design/scripts/checks/check-design-gates.py": [
+   "DESIGN_ALLOWED_PREFIXES"
+  ],
+  "plugins/shipwright-design/scripts/checks/setup-design-session.py": [
+   "PROJECT_CONFIG"
+  ],
+  "plugins/shipwright-plan/scripts/checks/check-plan-gates.py": [
+   "PLAN_ALLOWED_PREFIXES"
+  ],
+  "plugins/shipwright-plan/scripts/lib/config.py": [
+   "SESSION_CONFIG_NAME"
+  ],
+  "plugins/shipwright-run/scripts/hooks/master_stop_check.py": [
+   "CONFIG_NAME"
+  ],
+  "plugins/shipwright-run/scripts/lib/orchestrator_pkg/brief_resume_guard.py": [
+   "_CONFIG"
+  ],
+  "plugins/shipwright-run/scripts/lib/orchestrator_pkg/constants.py": [
+   "CONFIG_NAME"
+  ],
+  "plugins/shipwright-run/scripts/lib/orchestrator_pkg/gate_run_id.py": [
+   "_RUN_CONFIG"
+  ],
+  "plugins/shipwright-run/scripts/lib/phase_task_core.py": [
+   "CONFIG_NAME"
+  ],
+  "plugins/shipwright-run/scripts/lib/run_config_store.py": [
+   "RUN_CONFIG_NAME"
+  ],
+  "plugins/shipwright-run/scripts/lib/single_session/orchestrator_context.py": [
+   "RUN_CONFIG_REL_PATH"
+  ],
+  "plugins/shipwright-security/scripts/lib/pr_review_skip_safety.py": [
+   "_SKIP_REVIEW_CANONICAL_BASENAME_PATHS"
+  ],
+  "plugins/shipwright-security/scripts/tools/finalize_security_compliance.py": [
+   "PIPELINE_MARKER"
+  ],
+  "plugins/shipwright-security/scripts/tools/review_record_tier.py": [
+   "SENSITIVE_PATH_RE"
+  ],
+  "plugins/shipwright-test/scripts/lib/warning_followups.py": [
+   "RESULTS_NAME"
+  ],
+  "shared/scripts/accepted_risks.py": [
+   "REGISTER_NAME"
+  ],
+  "shared/scripts/dev_server/profile_config.py": [
+   "STATE_FILE"
+  ],
+  "shared/scripts/hooks/generate_handoff_on_stop.py": [
+   "_RUN_CONFIG_NAME"
+  ],
+  "shared/scripts/hooks/session_start_using_shipwright.py": [
+   "CONFIG_NAME"
+  ],
+  "shared/scripts/inline_suppression_baseline.py": [
+   "BASELINE_NAME"
+  ],
+  "shared/scripts/known_failures.py": [
+   "KNOWN_FAILURES_NAME"
+  ],
+  "shared/scripts/lib/ac_mode.py": [
+   "CONFIG_FILE"
+  ],
+  "shared/scripts/lib/adr_collision_baseline.py": [
+   "BASELINE_RELPATH"
+  ],
+  "shared/scripts/lib/artifact_migrations.py": [
+   "ALLOWLIST"
+  ],
+  "shared/scripts/lib/bloat_baseline.py": [
+   "BASELINE_FILENAME"
+  ],
+  "shared/scripts/lib/brief_dir_intake.py": [
+   "CONFIG_NAME"
+  ],
+  "shared/scripts/lib/change_type_paths.py": [
+   "_BOOKKEEPING",
+   "_COMPLIANCE",
+   "_INFRA",
+   "_TOOLING"
+  ],
+  "shared/scripts/lib/churn_merge.py": [
+   "EVENTS_LOG",
+   "TEST_RESULTS"
+  ],
+  "shared/scripts/lib/config.py": [
+   "CONFIG_FILES"
+  ],
+  "shared/scripts/lib/event_context_index.py": [
+   "EVENT_LOG_NAME"
+  ],
+  "shared/scripts/lib/events_fold.py": [
+   "SYNC_CONFIG"
+  ],
+  "shared/scripts/lib/events_layout.py": [
+   "SYNC_CONFIG"
+  ],
+  "shared/scripts/lib/events_log.py": [
+   "EVENT_FILE"
+  ],
+  "shared/scripts/lib/events_sentinel.py": [
+   "SYNC_CONFIG"
+  ],
+  "shared/scripts/lib/external_review_config.py": [
+   "_PROJECT_ITERATE_CONFIG_NAME"
+  ],
+  "shared/scripts/lib/gate_policy.py": [
+   "_CONFIG_NAME"
+  ],
+  "shared/scripts/lib/gitattributes_union.py": [
+   "UNION_PATHS"
+  ],
+  "shared/scripts/lib/gitignore_selfheal.py": [
+   "MANAGED_MARKER_PATHS"
+  ],
+  "shared/scripts/lib/iterate_entry.py": [
+   "RUN_CONFIG_NAME"
+  ],
+  "shared/scripts/lib/iterate_test_results.py": [
+   "RESULTS_FILENAME"
+  ],
+  "shared/scripts/lib/iterate_tests_block.py": [
+   "RESULTS_FILENAME"
+  ],
+  "shared/scripts/lib/manifest_sync_paths.py": [
+   "CONFIG_NAME"
+  ],
+  "shared/scripts/lib/model_tier_config.py": [
+   "_CONFIG_FILENAME"
+  ],
+  "shared/scripts/lib/phase_invocation_mode.py": [
+   "CONFIG_NAME"
+  ],
+  "shared/scripts/lib/required_checks_drift.py": [
+   "ADVISORY_CONFIG_FILE"
+  ],
+  "shared/scripts/lib/review_diff_threshold.py": [
+   "UNCOUNTED_FILES"
+  ],
+  "shared/scripts/lib/section_file_list.py": [
+   "FRAMEWORK_BOOKKEEPING"
+  ],
+  "shared/scripts/profile_consumer.py": [
+   "RUN_CONFIG"
+  ],
+  "shared/scripts/project_facts.py": [
+   "RUN_CONFIG_NAME"
+  ],
+  "shared/scripts/tools/append_phase_history.py": [
+   "RUN_CONFIG_NAME"
+  ],
+  "shared/scripts/tools/check_ac_coverage_ratchet.py": [
+   "BASELINE_RELPATH"
+  ],
+  "shared/scripts/tools/check_ac_ratchet_f0.py": [
+   "_BASELINE"
+  ],
+  "shared/scripts/tools/commit_event_followup.py": [
+   "EVENT_FILE"
+  ],
+  "shared/scripts/tools/compliance_input_state.py": [
+   "PRODUCER_STATE"
+  ],
+  "shared/scripts/tools/fr_split.py": [
+   "BASELINE",
+   "REGISTRY"
+  ],
+  "shared/scripts/tools/get_phase_context.py": [
+   "PHASE_OWN_ARTIFACTS",
+   "PHASE_PREREQ_ARTIFACTS"
+  ],
+  "shared/scripts/tools/record_coverage_total.py": [
+   "RESULTS_REL"
+  ],
+  "shared/scripts/tools/stamp_test_results.py": [
+   "RESULTS_REL",
+   "RUN_CONFIG_REL"
+  ],
+  "shared/scripts/tools/suite_units.py": [
+   "CONFIG_NAME"
+  ],
+  "shared/scripts/tools/verifiers/_iterate_latest.py": [
+   "RESULTS_NAME"
+  ],
+  "shared/scripts/tools/verifiers/adopt_compliance.py": [
+   "REQUIRED_CONFIGS"
+  ],
+  "shared/scripts/tools/verifiers/ci_supplychain_ack_store.py": [
+   "_RESULTS"
+  ]
+ }
+}

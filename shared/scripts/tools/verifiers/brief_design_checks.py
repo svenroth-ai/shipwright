@@ -32,7 +32,7 @@ NAME = "brief_design_applied"
 
 def _mentions_brief(project_root: Path) -> bool:
     try:
-        raw = (project_root / _sp.rel("run_config")).read_text(encoding="utf-8-sig", errors="ignore")
+        raw = _sp.path("run_config", project_root).read_text(encoding="utf-8-sig", errors="ignore")
     except OSError:
         return False
     return "brief_dir" in raw or "brief_package" in raw

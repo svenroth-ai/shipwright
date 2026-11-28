@@ -1,0 +1,5 @@
+{"stage": "doubt", "gating": "advisory-must-address", "doubts": [
+{"severity": "medium", "lens": "boundary & contract", "claim_under_doubt": "rewrite changes no behaviour incl. stale caches", "file": "shared/scripts/lib/shipwright_paths.py", "disproof_attempt": "dropped Path(x) wrappers rely on path() wrapping a str root; untested, older resolvers unchecked", "what_would_resolve_it": "history shows Path(root) since R0b; pin str-root contract by a test"},
+{"severity": "low", "lens": "boundary & contract", "claim_under_doubt": "guard flags every direct join shape", "file": "shared/tests/_shipwright_paths_scan.py", "disproof_attempt": "Path(*[root, rel]) missed; with_name, %-format, bare/aliased join not listed", "what_would_resolve_it": "count Starred; list the rest as blind spots"},
+{"severity": "medium", "lens": "hidden coupling & blast radius", "claim_under_doubt": "R1c work list complete", "file": ".shipwright/planning/campaigns/2026-11-14-root-files-into-shipwright-dir-BRIEF.md", "disproof_attempt": "importers of inventoried constants and non-Python carriers not named", "what_would_resolve_it": "list importers in 12.10b; state carrier ownership"}
+]}

@@ -84,7 +84,7 @@ def is_autonomous_design_run(project_root: Path) -> bool:
     unreadable config is "not autonomous" (the old behaviour), never a crash.
     """
     try:
-        cfg = json.loads((Path(project_root) / _sp.rel("run_config")).read_text(encoding="utf-8"))
+        cfg = json.loads(_sp.path("run_config", project_root).read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return False
     if not isinstance(cfg, dict):

@@ -97,7 +97,7 @@ def _parse_section_manifest(plan_path: Path) -> list[str]:
 def check_plan_config_status_complete(project_root: Path) -> CheckResult:
     """``shipwright_plan_config.json::status`` must be ``complete``."""
     name = "plan_config status=complete"
-    path = project_root / _sp.rel("plan_config")
+    path = _sp.path("plan_config", project_root)
     if not path.exists():
         return CheckResult(name, False, "shipwright_plan_config.json missing")
     try:

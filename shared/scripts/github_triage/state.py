@@ -33,7 +33,7 @@ def _state_path(project_root) -> Path:
 def _run_config(project_root) -> dict:
     try:
         raw = (
-            Path(project_root) / _sp.rel("run_config")
+            _sp.path("run_config", project_root)
         ).read_text(encoding="utf-8")
         data = json.loads(raw)
         return data if isinstance(data, dict) else {}

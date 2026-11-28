@@ -115,7 +115,7 @@ def check_agents_md_completion(project_root: Path) -> CheckResult:
     re-validate CLAUDE.md itself. ERROR severity, like C1/C4/C5: a Full
     Application project without a correct AGENTS.md is not actually done.
     """
-    path = project_root / _sp.rel("project_config")
+    path = _sp.path("project_config", project_root)
     if not path.exists():
         return CheckResult(_NAME, True, "no project config yet — nothing to check")
     try:

@@ -81,7 +81,7 @@ def check_test_results_file_fresh(project_root: Path) -> CheckResult:
     particular failures are the accepted ones.
     """
     name = "test_results unit layer populated"
-    path = project_root / _sp.rel("test_results")
+    path = _sp.path("test_results", project_root)
     if not path.exists():
         return CheckResult(name, False, "shipwright_test_results.json missing")
     try:

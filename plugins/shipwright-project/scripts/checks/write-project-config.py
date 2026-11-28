@@ -142,7 +142,7 @@ def main() -> int:
             },
         }
 
-    config_path = project_root / _sp.rel("project_config")
+    config_path = _sp.path("project_config", project_root)
     config_path.write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8")
 
     # Propagate the canonical .shipwright artifact-ignore block into the

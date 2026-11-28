@@ -86,8 +86,8 @@ def _declared_split_names(
     The manifest already knows which dirs ARE splits; reading it is THE
     interpretation, shared with the existing WARNING-severity check.
     """
-    run_config_path = project_root / _sp.rel("run_config")
-    path = project_root / _sp.rel("project_config")
+    run_config_path = _sp.path("run_config", project_root)
+    path = _sp.path("project_config", project_root)
     if path.exists():
         # The authoritative source, checked FIRST. Tier-3 review (PR #729,
         # round 6): a prior version of this function read the run-config

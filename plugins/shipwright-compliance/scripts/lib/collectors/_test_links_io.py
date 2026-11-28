@@ -158,7 +158,7 @@ def default_test_roots(project_root: Path) -> list[Path]:
 def _read_traceability_config(project_root: Path, *, quiet: bool = False) -> dict:
     """Return the ``traceability`` block of ``shipwright_compliance_config.json`` — an empty
     dict when the file/key is absent or unreadable (⇒ the historical default behavior)."""
-    path = project_root / _sp.rel("compliance_config")
+    path = _sp.path("compliance_config", project_root)
     if not path.exists():
         return {}
     try:

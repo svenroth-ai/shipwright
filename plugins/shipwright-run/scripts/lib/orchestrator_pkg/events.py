@@ -60,7 +60,7 @@ def _run_id_of(project_root: Path) -> str:
     """
     try:
         cfg = json.loads(
-            (project_root / _sp.rel("run_config")).read_text(encoding="utf-8")
+            _sp.path("run_config", project_root).read_text(encoding="utf-8")
         )
     except (OSError, json.JSONDecodeError):
         return "unknown-run"

@@ -1,0 +1,1 @@
+- **iterate-2026-11-27-r1b-path-joins** (2026-11-27): Convention — Join a root shipwright_* file only as _sp.path(key, root), never root / _sp.rel(key) (guard rule rel-join); do not bind a new module constant to rel()/path() (closed inventory shared/tests/fixtures/shipwright_paths_rel_constants.json). → decision_log (ADR via Run-ID: iterate-2026-11-27-r1b-path-joins)

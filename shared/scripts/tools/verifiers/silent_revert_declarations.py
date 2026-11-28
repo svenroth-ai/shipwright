@@ -56,7 +56,7 @@ def _unattributed_declared_removals(project_root) -> list[dict]:
     :func:`attributed_declared_removals` is about to DISREGARD, so the message
     can say how much was ignored.
     """
-    path = Path(project_root) / _sp.rel("test_results")
+    path = _sp.path("test_results", project_root)
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError, UnicodeDecodeError):

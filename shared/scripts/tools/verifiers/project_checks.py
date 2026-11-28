@@ -75,7 +75,7 @@ def check_project_config_status_complete(project_root: Path) -> CheckResult:
     phase is not actually complete.
     """
     name = "project_config status=complete"
-    path = project_root / _sp.rel("project_config")
+    path = _sp.path("project_config", project_root)
     if not path.exists():
         return CheckResult(name, False, "shipwright_project_config.json missing")
     try:
@@ -100,7 +100,7 @@ def check_manifest_splits_match_dirs(project_root: Path) -> CheckResult:
     data = read_run_config(project_root)  # permissive reader; returns {} on missing
     # Fall back to project_config if run_config has no splits (project
     # plugin writes to shipwright_project_config.json, not run_config).
-    path = project_root / _sp.rel("project_config")
+    path = _sp.path("project_config", project_root)
     if path.exists():
         import json
         try:

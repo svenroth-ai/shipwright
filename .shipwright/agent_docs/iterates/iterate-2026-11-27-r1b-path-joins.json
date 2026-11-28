@@ -1,0 +1,84 @@
+{
+  "run_id": "iterate-2026-11-27-r1b-path-joins",
+  "date": "2026-11-28T02:30:33.392401Z",
+  "event_at": "2026-11-27T23:58:13.105388+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "prior_source": "keyword",
+  "branch": "iterate/r1b-path-joins",
+  "spec": ".shipwright/planning/iterate/2026-11-27-r1b-path-joins.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-11-27-r1b-path-joins",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "AC1 no direct join left in production; all 98 rewrites equivalent",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_shipwright_paths_guard.py::test_python_goes_through_the_resolver PASSED"
+      },
+      {
+        "behavior": "AC2 each direct join shape detected (/, /=, joinpath, os.path/'/'/os.sep join, Path(root, rel), Path(*[...]), wrappers, name/legacy_rel)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_shipwright_paths_guard.py::test_scanner_catches_each_reference_shape PASSED"
+      },
+      {
+        "behavior": "AC2 only the exact fallback shape is exempt; a plain join in an allowed file fails",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_shipwright_paths_guard.py::test_a_plain_join_in_a_fallback_file_is_not_allowed PASSED"
+      },
+      {
+        "behavior": "AC2 no false positive on message/pathspec joins, lambdas, basename comparison",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_shipwright_paths_guard.py::test_scanner_ignores_prose_docstrings_and_resolver_calls PASSED"
+      },
+      {
+        "behavior": "AC3 closed per-binding inventory of rel() constants, cap, stale entries",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_shipwright_paths_guard.py::test_no_new_rel_constants PASSED"
+      },
+      {
+        "behavior": "AC4 hook fallbacks untouched (R1a fallback tests unedited)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_shipwright_paths_fallbacks.py::test_every_resolver_fallback_has_the_one_checkable_shape PASSED"
+      },
+      {
+        "behavior": "str-root contract the dropped Path() wrappers rely on",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_shipwright_paths.py::test_path_accepts_a_str_root PASSED"
+      },
+      {
+        "behavior": "Stop hook (real main(), real run config, real resolver) reads each phase's evidence where path() points, not the old root location (all four rewritten reads)",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "shared/tests/test_handoff_stop_follows_resolver.py::test_hook_reads_the_phase_evidence_where_the_resolver_points PASSED (fails on the pre-R1b hook)"
+      }
+    ],
+    "counts": {
+      "testable": 8,
+      "tested": 8,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 4,
+      "covered_acs": 4
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run pytest -p no:cacheprovider shared/tests/test_shipwright_paths_guard.py shared/tests/test_shipwright_paths.py shared/tests/test_shipwright_paths_fallbacks.py shared/tests/test_shipwright_paths_basenames.py shared/tests/test_shipwright_paths_identity.py",
+    "exit_code": 0,
+    "tests_run": 112,
+    "evidence_path": ".shipwright/runs/iterate-2026-11-27-r1b-path-joins/surface_verification.json",
+    "timestamp": "2026-11-27T20:53:25.147Z"
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": [
+    "touches_shared_infra"
+  ]
+}

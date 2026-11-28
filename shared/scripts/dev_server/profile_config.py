@@ -236,7 +236,7 @@ def _services_from_profile_data(
         return [_normalize_legacy_dev_server(legacy)], warnings
 
     # Build config fallback
-    build_config = cwd / _sp.rel("build_config")
+    build_config = _sp.path("build_config", cwd)
     if build_config.exists():
         try:
             data = json.loads(build_config.read_text(encoding="utf-8"))
@@ -277,7 +277,7 @@ def _get_config(profile: str | None, cwd: Path | None = None) -> dict:
     if profile and profile in PROFILE_DEV_SERVERS:
         return dict(PROFILE_DEV_SERVERS[profile])
     if cwd:
-        build_config = cwd / _sp.rel("build_config")
+        build_config = _sp.path("build_config", cwd)
         if build_config.exists():
             try:
                 data = json.loads(build_config.read_text(encoding="utf-8"))

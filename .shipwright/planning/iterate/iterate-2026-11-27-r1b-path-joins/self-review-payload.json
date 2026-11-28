@@ -1,0 +1,8 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"AC1: 98 direct joins rewritten, line-by-line equivalence check 98/98 (only redundant parentheses differ). AC2: rel-join / rel-join-fallback rules with 13 positive controls; old tree flags exactly 98. AC3: 80-name closed inventory with cap. AC4: fallback shapes untouched (R1a fallback tests green)."},
+{"name":"Error Handling","verdict":"pass","note":"path() raises the same TypeError for a None root as the old join; try blocks around the rewritten sites catch the same exceptions."},
+{"name":"Security Basics","verdict":"pass","note":"No new input, path or secret handling; the symlink-escape helper in _test_gate_paths is untouched and listed for R1c."},
+{"name":"Code Quality","verdict":"pass","note":"Mechanical AST codemod with byte offsets; a regex paren cleanup broke 3 call sites and was caught by ruff and repaired; ruff clean; scan 238 lines, guard test 215 lines."},
+{"name":"Test Coverage","verdict":"pass","note":"Guard positive controls for every new shape, a negative control on the old tree, the full F0 suite as the equivalence net (behaviour unchanged)."},
+{"name":"Scope","verdict":"pass","note":"Indirect joins, constants, fallbacks and path() read/write semantics are written into BRIEF 12 item 10 for R1c, not built here."}
+]}

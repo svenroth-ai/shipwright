@@ -71,6 +71,16 @@ def test_path_main_path_and_unknown_keys(tmp_path):
 
 
 @pytest.mark.covers("FR-01.11")
+def test_path_accepts_a_str_root(tmp_path):
+    """R1b dropped ``Path(x)`` wrappers at its call sites (argparse strings, ``str | Path`` roots): ``path()``
+    must keep wrapping the root itself, whatever R1c puts inside it."""
+    for k in ("run_config", "test_results", "events"):
+        assert sp.path(k, str(tmp_path)) == sp.path(k, tmp_path) == tmp_path / sp.rel(k)
+        assert isinstance(sp.path(k, str(tmp_path)), Path)
+    assert sp.main_path("model_config", str(tmp_path), str(tmp_path / "m")) == tmp_path / "m" / sp.rel("model_config")
+
+
+@pytest.mark.covers("FR-01.11")
 def test_json_path_or_none_only_accepts_exact_shipwright_json_names(tmp_path):
     assert sp.json_path_or_none("run_config", tmp_path) == tmp_path / "shipwright_run_config.json"
     assert sp.json_path_or_none("events", tmp_path) is None        # .jsonl, not shipwright_events.json

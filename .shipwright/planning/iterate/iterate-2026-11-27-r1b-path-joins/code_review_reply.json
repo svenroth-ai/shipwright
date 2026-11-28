@@ -1,0 +1,6 @@
+{"section": "iterate-2026-11-27-r1b-path-joins", "review": [
+{"severity": "low", "category": "correctness", "file": "shared/tests/_shipwright_paths_scan.py", "line": 192, "finding": "Any call named join with a rel() argument counted as a filesystem join, incl. message and shlex pathspec joins.", "suggestion": "Limit to os.path/posixpath/ntpath and '/'/os.sep joins; negative controls."},
+{"severity": "low", "category": "correctness", "file": "shared/tests/_shipwright_paths_scan.py", "line": 1163, "finding": "Bare-name calls of rel imported from shipwright_paths are not seen.", "suggestion": "Track ImportFrom names or record as a blind spot."},
+{"severity": "low", "category": "correctness", "file": "shared/tests/test_shipwright_paths_guard.py", "line": 131, "finding": "Inventory compares (file, name) sets: a second binding of an inventoried name passes.", "suggestion": "Count bindings."},
+{"severity": "low", "category": "correctness", "file": "shared/tests/_shipwright_paths_scan.py", "line": 1219, "finding": "A lambda calling path() at use time is reported as frozen at import.", "suggestion": "Skip lambda bodies; negative control."}
+]}

@@ -164,7 +164,7 @@ def resolve_source(project_root: Path, phase: str) -> str:
     """
     if phase == "iterate":
         return "iterate"
-    run_config = project_root / _sp.rel("run_config")
+    run_config = _sp.path("run_config", project_root)
     if not run_config.exists():
         return "standalone"
     try:

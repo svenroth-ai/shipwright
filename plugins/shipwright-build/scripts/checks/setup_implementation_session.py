@@ -107,7 +107,7 @@ def main() -> int:
     # Derive branch name from session-id + project-slug (not section name)
     # Pattern: build/{slug}-{session-id} or build/{session-id} or build/{section-name}
     slug = ""
-    run_config_path = project_root / _sp.rel("run_config")
+    run_config_path = _sp.path("run_config", project_root)
     if run_config_path.exists():
         try:
             run_config = json.loads(run_config_path.read_text(encoding="utf-8"))

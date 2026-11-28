@@ -69,8 +69,8 @@ def freeze_splits(project_root: Path) -> dict[str, Any]:
 def _resolve_splits_with_fallback(project_root: Path) -> tuple[list[str], str, Optional[str]]:
     """Returns (splits, source, warning). Never raises."""
     for candidate, source in (
-        (project_root / _sp.rel("design_config"), "design"),
-        (project_root / _sp.rel("project_config"), "project"),
+        (_sp.path("design_config", project_root), "design"),
+        (_sp.path("project_config", project_root), "project"),
     ):
         if not candidate.exists():
             continue

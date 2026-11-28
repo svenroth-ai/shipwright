@@ -127,7 +127,7 @@ def main() -> int:
     args = parser.parse_args()
 
     project_root = Path(args.project_root).resolve() if args.project_root else Path.cwd()
-    config_path = project_root / _sp.rel("build_config")
+    config_path = _sp.path("build_config", project_root)
 
     config = {}
     if config_path.exists():

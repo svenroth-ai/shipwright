@@ -142,7 +142,7 @@ def check_test_gate_passed(project_root: Path) -> CheckResult:
     alone without importing phase_validators.
     """
     name = "test gate: unit tests passed upstream"
-    path = project_root / _sp.rel("test_results")
+    path = _sp.path("test_results", project_root)
     if not path.exists():
         return CheckResult(
             name, False,

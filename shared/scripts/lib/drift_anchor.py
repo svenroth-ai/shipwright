@@ -38,7 +38,7 @@ def is_shipwright_project(project_root) -> bool:
 
         return bool(_shared_marker(root))
     except (ImportError, ValueError):
-        return (root / _sp.rel("run_config")).exists()
+        return _sp.path("run_config", root).exists()
 
 
 def _strip_worktree_prefix(rel: str) -> str:

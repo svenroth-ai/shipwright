@@ -103,7 +103,7 @@ def collect_test_results(project_root: Path) -> TestResults | None:
             all_results.append(tr)
 
     # Current results
-    current = project_root / _sp.rel("test_results")
+    current = _sp.path("test_results", project_root)
     if current.exists():
         tr = _parse_test_results_file(current)
         if tr:

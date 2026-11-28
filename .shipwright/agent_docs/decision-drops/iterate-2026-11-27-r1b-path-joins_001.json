@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-27-r1b-path-joins",
+  "date": "2026-11-27",
+  "section": "Iterate — change: R1b route root-file joins through path()",
+  "title": "Root-file paths are joined only by the resolver's path() (R1b)",
+  "context": "Campaign root-files-into-config: R1c adds a new-then-old lookup for the moving root shipwright_* files. 98 call sites joined root / _sp.rel(key) themselves, so a lookup inside the resolver would never reach them.",
+  "decision": "Every direct join is now _sp.path(key, root) (AST codemod, 98 sites in 67 files, line-by-line equivalent). The path guard forbids new direct joins (rel-join), allows the guarded fallback shape only in 7 named files (rel-join-fallback), and holds the 80 module-level rel()/path() bindings to a closed, shrinking inventory. No behaviour change.",
+  "consequences": "R1c's lookup in path() reaches these readers. Constants and their importers, indirect joins (the test-gate escape-check helper), the fallback joins, non-Python carriers and path()'s read/write semantics remain R1c's work, listed in BRIEF 12 item 10.",
+  "rationale": "Keeping the mechanical rewrite apart from the behaviour change keeps both reviewable; the guard stops new bypasses while R1c is built.",
+  "rejected": "Flipping rel() to the new location (needs the project root, would make unmigrated repos unreadable); rewriting lazily inside R1c (mixes 98 mechanical edits into the behaviour change, nothing catches a missed join).",
+  "commit": "",
+  "architecture_impact": "convention",
+  "spec_ref": ""
+}

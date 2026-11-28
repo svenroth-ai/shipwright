@@ -37,7 +37,7 @@ def main() -> int:
             "sections": args.sections or 0,
         }
 
-    config_path = project_root / _sp.rel("plan_config")
+    config_path = _sp.path("plan_config", project_root)
     config_path.write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8")
 
     print(json.dumps(config, indent=2))

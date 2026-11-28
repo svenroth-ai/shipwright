@@ -1,0 +1,1 @@
+{"stage": "spec-compliance", "verdict": "PASS", "spec_citations": [], "summary": "AC1-AC4 met; numbers verified (98 rewrites in 67 files, 80 constants in 72 files, 7 fallback files); no R1c scope. Nit: BRIEF 12.10(a) should say 8 guarded fallback joins in 7 files (suggest_iterate.py has two)."}

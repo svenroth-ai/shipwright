@@ -103,7 +103,7 @@ def setup(
     if not config_path.exists() and template_config.exists():
         content = template_config.read_text(encoding="utf-8")
         # Self-healing: substitute port from build config if available
-        build_cfg = cwd / _sp.rel("build_config")
+        build_cfg = _sp.path("build_config", cwd)
         if build_cfg.exists():
             try:
                 data = json.loads(build_cfg.read_text(encoding="utf-8"))
