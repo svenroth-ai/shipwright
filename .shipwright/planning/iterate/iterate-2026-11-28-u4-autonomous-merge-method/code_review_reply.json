@@ -1,0 +1,4 @@
+{"section": "U4-autonomous-merge-method", "review": [
+ {"severity": "low", "category": "readability", "file": "plugins/shipwright-changelog/scripts/lib/release_merge.py", "line": 74, "finding": "The PR-state refusal builds two inline dict lookups chained across a line break; a reason/detail pair is easy to get out of step.", "suggestion": "One module-level mapping of state to (reason, detail) with a default."},
+ {"severity": "low", "category": "correctness", "file": "plugins/shipwright-changelog/scripts/lib/release_merge.py", "line": 93, "finding": "base_state_unknown drops git's own error text, and the wording is wrong when the fetch succeeded and only the ancestry check failed.", "suggestion": "Word it as 'could not tell whether the base moved' and add git's short, redacted error."}
+]}

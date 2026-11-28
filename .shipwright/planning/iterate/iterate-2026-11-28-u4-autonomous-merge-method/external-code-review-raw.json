@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "**Findings**\n\n- Category: edge-case \u2014 Severity: low \u2014 `plugins/shipwright-changelog/scripts/lib/release_merge.py` (~line 82, `base_name` block)\n  Finding: The retarget check `if base_name and view.get(\"baseRefName\") != base_name` is skipped when the run state carries neither `base_branch` nor `trunk`. In that same state, a squash/rebase merge falls back to `origin/HEAD`/`main` inside `fetch_base`, so the ancestry check can run against a branch the PR is not targeting: a moved *actual* base could pass (or an unmoved one fail) against the wrong ref.\n  Suggestion: When no base name is known in the state, either refuse (`pr_base_changed`-style / `base_state_unknown`) or use the PR's own `baseRefName` for both the fetch and the comparison.\n\n- Category: edge-case \u2014 Severity: low \u2014 `shared/testkit/gh_stub.py` (`pr_merge`, pinned check)\n  Finding: The `--match-head-commit` check does `[:40]` on the ls-remote output; with SHA-256 repos the head oid is 64 chars, so the comparison truncates to a 40-char prefix of a 64-char remote oid and always mismatches, refusing a legitimate pinned merge. Real `gh` compares full oids.\n  Suggestion: Compare the full first token of ls-remote output (`split()[0]`) against `pinned` instead of slicing to 40.\n\n- Category: test \u2014 Severity: low \u2014 `plugins/shipwright-changelog/tests/test_release_merge_ready.py` (`test_the_method_follows...`)\n  Finding: The assertion `\"merge-run\" not in runner.keys()` checks that no command *keyed* `merge-run` ran, but `merge_ready` never names any key `merge-run`; the test can't detect a future implementation that actually merges under a different key (e.g. `merge-exec`). The e2e tests partially cover this (gh_argv_log), so impact is limited to the unit layer.\n  Suggestion: Assert no recorded command argv starts with `gh pr merge` (or `[\"gh\",\"pr\",\"merge\"]`) rather than checking one specific key name.\n\n- Category: regression \u2014 Severity: low \u2014 `plugins/shipwright-changelog/tests/golden/approved_deltas.json`\n  Finding: The file is emptied and the previous operator-approval records (U1's manifest-sync, U3's gh_stub/SKILL.md/release-workflow/rerunning-a-release deltas) are deleted while their new hashes are baked into `golden.lock.json`. D116 documents this as a re-pin, but the audit trail of *why* those frozen files changed now lives only in FINDINGS prose; if the campaign's freeze rules require the approvals to persist until the corresponding unit lands in the exported trace set, this loses evidence. Confirm the brief's re-pin rule tolerates deleting the entries rather than marking them consumed.\n  Suggestion: If the rule is \"consumed, not deleted,\" keep the entries with a `consumed: true` field; otherwise note the re-pin in the FINDINGS row (already partly done).\n\n- Category: edge-case \u2014 Severity: low \u2014 `plugins/shipwright-changelog/scripts/lib/release_merge.py` (`_restart`)\n  Finding: The restart message tells the operator `git tag -d v{version}; it was never pushed`. That holds for the hand-invoked (standalone) path this function gates, but if a caller ever reaches here with the tag already on origin (e.g. a future pipeline path), deleting a local tag that origin holds is wrong advice. Since `mode != standalone` is refused earlier, this is currently safe \u2014 noting only as a latent hazard.\n  Suggestion: Optionally condition the \"never pushed\" clause on the mode, or leave as-is given the current gating.\n\n**Coverage against the acceptance criteria:** all three ACs are implemented and tested \u2014 the squash-only/merge/rebase method selection is covered in both unit and e2e (including guard allowance and stub refusal of a late push), the `base_moved` stop with restart message and nothing merged is covered e2e on real git, and the release guard allowing the chosen line is asserted via `rg.decide` with an active release. The `fetch_base` extraction preserves the existing `verify-*` trace keys, so U3's frozen traces are unaffected.\n\nOverall assessment: the unit is implemented and well-tested; the findings are refinements (SHA-256 stub comparison being the most concrete). Ship with fixes recommended but none blocking.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "- **Category:** spec \u00b7 **Severity:** high  \n  `plugins/shipwright-changelog/scripts/lib/release_merge.py:92`  \n  **Finding:** The base can advance after `merge-ready` checks it and before GitHub executes the squash or rebase. `--match-head-commit` still passes because the PR head has stayed the same. GitHub can merge the release onto the newer base, violating the requirement that nothing be merged when the base has moved. The post-merge proof can stop tag publication after the PR has already been merged.  \n  **Suggestion:** Require a host-enforced up-to-date condition for autonomous squash and rebase, or refuse those methods when the host cannot enforce it. Test a base update after `merge-ready` returns and assert that the PR stays open.\n\n- **Category:** bug \u00b7 **Severity:** medium  \n  `plugins/shipwright-changelog/scripts/lib/release_merge.py:98`  \n  **Finding:** The code validates the PR at the stored URL, then emits a merge command that lets GitHub CLI infer the repository and PR from the checkout. In a fork checkout or a shell with `GH_REPO` set, the inferred repository can differ from the checked URL. The release can fail or merge a different PR if that PR points to the same head commit. The stub resolves every command against one repository, so the tests miss this mismatch.  \n  **Suggestion:** Use the validated PR URL for the literal merge command, read settings from that PR\u2019s base repository, and verify that the guard allows the explicit-target form.\n\n**Overall assessment: ship-with-fixes.** The diff covers method preference, head pinning, and a base that moved before the check, but the merge must enforce base freshness and target the checked PR. Shell access was blocked, so this review used the supplied diff and specification. The campaign brief and test execution remain unverified.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-11-28-u4-autonomous-merge-method",
+    "at": "2026-11-28T12:58:05.910029+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}
