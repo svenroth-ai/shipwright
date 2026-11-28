@@ -67,8 +67,9 @@ def _waiting_task(project_root: Path, config: dict[str, Any]) -> dict[str, Any] 
     except (OSError, ValueError):
         return None
     marker = state.get("waiting") if isinstance(state, dict) else None
-    if not isinstance(marker, dict) or state.get("runId") != config.get("runId"):
-        return None
+    if (not isinstance(marker, dict) or marker.get("released")
+            or state.get("runId") != config.get("runId")):
+        return None  # a hold the operator released (Resume) no longer waits
     for t in config.get("phase_tasks") or []:
         if t.get("phaseTaskId") == marker.get("phaseTaskId") and t.get("status") == "in_progress":
             try:

@@ -188,6 +188,8 @@ Rules:
   resumes, dispatches the SAME phase again. So a phase that can report waiting
   must check the outside state itself when re-run and return `waiting` again or
   `ok` — never repeat its outward work (no second pull request, version or tag).
+  A waiting result's `summary` and `artifacts` are not stored (send `artifacts: []`;
+  anything the phase wrote is recorded by its final `ok` result).
 
 Return ONLY this contract as your structured result. Prose before the JSON block
 is fine for a human reading the transcript, but the JSON block is the payload the

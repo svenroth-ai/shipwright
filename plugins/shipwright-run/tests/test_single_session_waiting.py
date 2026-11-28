@@ -320,3 +320,45 @@ def test_stop_hook_names_the_waiting_pull_request(tmp_project):
     # a stale hold (the task was recovered) is not reported
     recover_phase_task(tmp_project, phase_task_id=d["phaseTaskId"])
     assert "PIPELINE WAITING" not in _stop_banner(tmp_project)
+
+
+def test_a_task_of_another_phase_cannot_be_held(tmp_project):
+    """The contract checks the phase the result names; apply checks the task's own phase."""
+    create_config("full_app", "python-plugin-monorepo", "guided", "none", tmp_project,
+                  mode="single_session")
+    d = _dispatch(tmp_project)
+    assert d["phase"] == "project"
+    refused = _apply(tmp_project, d, _waiting())  # the result claims "changelog"
+    assert refused["ok"] is False and refused["reason"] == "waiting_phase_mismatch"
+    assert "waiting" not in (load_loop_state(tmp_project) or {})
+
+
+def _hook_module():
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("master_stop_check_u5", _HOOK)
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_stop_hook_in_process_reports_a_hold_and_not_a_released_one(tmp_project, capsys):
+    hook = _hook_module()
+    assert hook._PR_URL_RE.pattern == __import__(
+        "single_session.result_contract", fromlist=["PR_URL_RE"]).PR_URL_RE.pattern
+    _run_to_changelog(tmp_project)
+    _wait(tmp_project)
+    assert hook.run(tmp_project) == 0
+    assert "PIPELINE WAITING" in capsys.readouterr().err
+
+    resume_run(tmp_project, confirm=True)  # released, version not yet rotated
+    assert hook.run(tmp_project) == 0
+    assert "PIPELINE WAITING" not in capsys.readouterr().err
+
+    state = load_loop_state(tmp_project)
+    state["waiting"] = {**state["waiting"], "released": False, "version": "x"}
+    save_loop_state(tmp_project, state)
+    assert hook._waiting_task(tmp_project, _cfg(tmp_project)) is None  # unreadable version
+    (tmp_project / ".shipwright" / "run_loop_state.json").write_text("{", encoding="utf-8")
+    assert hook._waiting_task(tmp_project, _cfg(tmp_project)) is None  # unreadable file

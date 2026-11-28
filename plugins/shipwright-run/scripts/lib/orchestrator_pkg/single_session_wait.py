@@ -41,6 +41,7 @@ from single_session.loop_state import (  # noqa: E402
     waiting_for,
     waiting_released_for,
 )
+from single_session.result_contract import WAITING_PHASES  # noqa: E402
 
 
 def _lifecycle():
@@ -57,7 +58,10 @@ def apply_waiting(
 
     Same refusals as a completion, checked first, so nothing is written for them:
     ``stale_version`` / ``stale_session`` (exit 2 at the CLI) and
-    ``invalid_status_for_completion`` for a task that is no longer ``in_progress``."""
+    ``invalid_status_for_completion`` for a task that is no longer ``in_progress``; plus
+    ``waiting_phase_mismatch`` when the task's own phase may not wait for this reason (or
+    the result names another phase). The result's ``summary`` and ``artifacts`` are not
+    stored: a waiting pass leaves only the hold (reason + link) and the event."""
     version = _lifecycle().task_version(task)
     if version != int(expected_version):
         return {"ok": False, "reason": "stale_version",
@@ -67,6 +71,11 @@ def apply_waiting(
     if task.get("status") != "in_progress":
         return {"ok": False, "reason": "invalid_status_for_completion",
                 "status": task.get("status")}
+    reason = result["waiting"]["reason"]
+    if result.get("phase") != task.get("phase") or task.get("phase") not in WAITING_PHASES[reason]:
+        # The contract checks the phase the RESULT names; the task's own phase decides.
+        return {"ok": False, "reason": "waiting_phase_mismatch",
+                "task_phase": task.get("phase"), "result_phase": result.get("phase")}
     try:
         state = load_loop_state(project_root)
     except (OSError, ValueError) as exc:
