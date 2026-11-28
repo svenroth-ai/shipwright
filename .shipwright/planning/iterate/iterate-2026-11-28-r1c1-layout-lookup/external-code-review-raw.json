@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "- Category: test / spec\n- Severity: high\n- File: shared/tests/test_shipwright_layout.py \u2014 `test_no_production_code_writes_the_new_place_before_r3`\n- Finding: The test greps production files for the string `shipwright/config` and allows only `shipwright_paths.py` and `shipwright_pointer.py`, but the NEW production file `shared/scripts/lib/shipwright_layout.py` contains the literal string several times (module docstring: \"the move into\\n+``.shipwright/config/`` did not finish\", and the `incomplete_migration` fix text). Git pathspec `shared/scripts/*.py` matches `lib/` files (git's `*` crosses `/`), so the grep hits `shared/scripts/lib/shipwright_layout.py`, which is neither under `/tests/` nor in `allowed` \u2014 the assertion `== []` fails on this very diff. This also exposes an AC3 ambiguity: the AC says \"no production file names `.shipwright/config` outside the resolver and the stub renderer\", and `shipwright_layout.py` is a production file that names it.\n- Suggestion: Add `shared/scripts/lib/shipwright_layout.py` to `allowed` (treating the layout module as part of the resolver), or change the grep to anchor on writes/joins rather than any textual mention. Run the test to confirm.\n\n- Category: edge-case\n- Severity: low\n- File: shared/scripts/lib/shipwright_layout.py \u2014 `locate()`\n- Finding: `new_there`/`old_there` are `Path.exists()`, so a **directory** (or FIFO/symlink loop) at the new path satisfies `new_there`, `_verdict` returns `not_stub` (it guards with `is_file()`), and `path()` returns the directory path as the file's location even when a valid root file exists. `test_a_directory_in_the_new_place_is_never_read_as_a_stub` even pins this. A writer calling `path()` then writing will get `IsADirectoryError` from the write, not a `LayoutError`, and a reader will get a confusing parse error. `exists()`/`is_file()` TOCTOU is also possible but low-risk.\n- Suggestion: Either treat a non-regular file at the new path as \"not there\" (fall back to root) or raise a `LayoutError`; document whichever the spec intends, since \"only regular files are read\" currently only applies to stub classification, not presence.\n\n- Category: regression\n- Severity: low\n- File: shared/scripts/hooks/check_file_size.py \u2014 `_limit_for`\n- Finding: `_sp.path(\"build_config\", cwd)` can raise `LayoutError` (both_copies / stub cases). Unlike the previous `cwd / rel(...)` construction, this is a new exception path out of `_limit_for`; nothing in the diff shows `main()` handling it, and the spec deliberately makes `LayoutError` not caught by the usual OSError/ValueError handlers. Pre-R3 this is unreachable (no repo has the new-place copy), but post-R3 the hook will hard-crash on divergent copies unless a handler is added in R1e/R3.\n- Suggestion: Confirm the hook matrix work (R1e) covers this, or add a small `except Exception` around the per-file limit computation that reports once and falls back to the baseline limit.\n\n- Category: test\n- Severity: low\n- File: shared/tests/test_shipwright_layout.py \u2014 `test_a_writer_and_a_reader_meet_in_both_layouts`\n- Finding: `assert not (root / sp.legacy_rel(\"test_config\")).exists() if migrated else True` parses as `(assert A) if migrated else (assert True)` \u2014 in the unmigrated branch the final statement asserts `True`, i.e. nothing; it also never checks that the migrated write went to the *new* path explicitly beyond the read round-trip. The core write-then-read loop is fine, so this is a weak assertion, not a false pass, but the AC1 \"round trip in both layouts\" check is thinner than it looks.\n- Suggestion: Replace with explicit asserts per branch: migrated \u2192 wrote to new, legacy absent; unmigrated \u2192 wrote to root, new absent.\n\nOtherwise the state table, ordering (stub-at-new \u2192 root verdict \u2192 both-copies), sibling loading (CRC-named, registered-before-exec, ImportError on missing), `LayoutError` subclassing, the dead-fallback removal with xfail cleanup, and the seven test-tree sibling copies all match the spec. AC1\u2013AC5 and AC7 are implemented; AC6 has real integration tests with no patching.\n\nOverall: one concrete failing test (the R3-pinning grep omits `shipwright_layout.py`) plus minor edge cases \u2014 ship-with-fixes.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "- **Category:** spec  \n  **Severity:** high  \n  **File:line:** `shared/scripts/lib/shipwright_layout.py:52`  \n  **Finding:** AC3\u2019s production-path guard will flag the new layout module itself. The recovery message contains `shipwright/config`, which the guard searches for, and the module is outside the guard\u2019s two-file allowlist. This also prevents AC7\u2019s full-suite requirement from being met.  \n  **Suggestion:** Build the recovery message from the resolved paths already passed to `LayoutError`.\n\n- **Category:** bug  \n  **Severity:** medium  \n  **File:line:** `shared/scripts/lib/shipwright_layout.py:118`  \n  **Finding:** The duplicate-copy check reads both paths without verifying that they are regular files. On POSIX, if both paths are FIFOs, their reported sizes match and `read_bytes()` can block waiting for a writer. The lookup hangs before it can raise `both_copies`.  \n  **Suggestion:** Remove the content comparison. Both copies require the same error and recovery step regardless of their contents.\n\n- **Category:** spec  \n  **Severity:** medium  \n  **File:line:** `shared/scripts/lib/shipwright_layout.py:83`  \n  **Finding:** A valid single-line config larger than 2 KiB triggers a full-file read because the prefix has no newline. This violates the specified bounded read for ordinary configs. The test named `test_a_large_root_config_is_judged_on_one_short_read` checks only the returned path, so it passes even when the entire file is read.  \n  **Suggestion:** Make the bounded prefix decision consistent with the shared recognizer\u2019s signature rules, and assert the bytes read for a large single-line config.\n\nShip-with-fixes. The lookup structure fits the specification, but the guard failure and file-read defects need correction before merge. This was a static review of the supplied diff.\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-11-28-r1c1-layout-lookup",
+    "at": "2026-11-28T07:34:32.343076+00:00"
+  },
+  "verdicts": {
+    "glm": "revise",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

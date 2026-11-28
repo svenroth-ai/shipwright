@@ -174,8 +174,8 @@ def test_a_resolver_from_another_tree_is_not_adopted(tmp_path):
     """Plugin cache version A next to a dev tree B: a ``lib.`` import must not get A's registry."""
     other = tmp_path / "other"
     other.mkdir()
-    (other / "shipwright_paths.py").write_text((LIB / "shipwright_paths.py").read_text(encoding="utf-8"),
-                                               encoding="utf-8")
+    for n in ("shipwright_paths.py", "shipwright_layout.py", "shipwright_pointer.py"):  # the resolver + its siblings
+        (other / n).write_text((LIB / n).read_text(encoding="utf-8"), encoding="utf-8")
     res = _run(f"""
         sys.path.remove(LIB); sys.path.insert(0, {str(other)!r})
         import shipwright_paths as foreign

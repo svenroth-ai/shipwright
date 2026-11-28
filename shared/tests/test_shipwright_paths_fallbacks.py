@@ -84,7 +84,7 @@ def test_every_resolver_fallback_has_the_one_checkable_shape():
 @pytest.mark.covers("FR-01.11")
 def test_the_scan_sees_the_known_fallbacks():
     files = {p[0].rsplit(":", 1)[0] for p in PAIRS} | {x[0].rsplit(":", 1)[0] for x in LOOSE}
-    assert len(PAIRS) >= 11, PAIRS  # 11 `"<lit>" if _sp is None else _sp.rel(...)` sites at R1a
+    assert len(PAIRS) >= 10, PAIRS  # 11 `"<lit>" if _sp is None else _sp.rel(...)` sites at R1a, 10 since R1c-1 (check_file_size)
     for must in ("shared/scripts/hooks/suggest_iterate.py", "shared/scripts/hooks/session_start_using_shipwright.py",
                  "plugins/shipwright-run/scripts/hooks/master_stop_check.py",
                  "shared/scripts/hooks/track_tool_calls.py", "shared/scripts/hooks/check_required_checks_hook.py"):
@@ -143,21 +143,8 @@ def test_resolver_hidden_branch_reads_the_fallback_file(tmp_path):
     assert res == {"sp": True, "throttle": 7.5}
 
 
-@pytest.mark.covers("FR-01.11")
-@pytest.mark.xfail(strict=True, raises=AssertionError, reason=(
-    "KNOWN GAP (pre-existing, R0b): check_file_size imports lib.bloat_baseline, which imports the "
-    "resolver unguarded, so the hook's own fallback never runs when the resolver is missing. "
-    "Hand-off to R1c in BRIEF 12 item 8; when fixed this test passes and strict=True forces the "
-    "xfail marker off."))
-def test_resolver_hidden_branch_check_file_size(tmp_path):
-    (tmp_path / sp.legacy_rel("build_config")).write_text(json.dumps({"enforcement": {"max_file_lines": 4242}}),
-                                                          encoding="utf-8")
-    res = _hidden(f"""
-        root = pathlib.Path({str(tmp_path)!r})
-        size = load({str(_HOOKS / "check_file_size.py")!r})
-        print(json.dumps({{"sp": size._sp is None, "limit": size._limit_for(str(root / "x.py"), root)}}))
-    """)
-    assert res == {"sp": True, "limit": 4242}
+# check_file_size has NO resolver fallback since R1c-1 (BRIEF 12.8): it needs lib.bloat_baseline, which
+# stays strict because the pre-commit anti-ratchet and the CI gate read the baseline through it.
 
 
 @pytest.mark.covers("FR-01.11")
@@ -173,13 +160,10 @@ def test_resolver_hidden_branch_suggest_iterate_imports():
 # ANOTHER import (LOOSE only, e.g. track_tool_calls): import-only check; their literals are checked statically.
 _SP_HOOKS = sorted({s.rsplit(":", 1)[0] for s, *_ in PAIRS if "/hooks/" in s})
 _HOOK_FILES = [f for f in sorted({s.rsplit(":", 1)[0] for s, _ in LOOSE if "/hooks/" in s} | set(_SP_HOOKS))]
-_DEAD_FALLBACK = {"shared/scripts/hooks/check_file_size.py"}  # BRIEF 12 item 8, see the xfail above
 
 
 @pytest.mark.covers("FR-01.11")
-@pytest.mark.parametrize("hook", [pytest.param(h, marks=pytest.mark.xfail(strict=True, raises=AssertionError,
-                                                                          reason="BRIEF 12 item 8"))
-                                  if h in _DEAD_FALLBACK else h for h in _HOOK_FILES])
+@pytest.mark.parametrize("hook", _HOOK_FILES)
 def test_every_hook_with_a_fallback_imports_with_the_resolver_hidden(hook):
     res = _hidden(f"""
         m = load({str(REPO / hook)!r})
