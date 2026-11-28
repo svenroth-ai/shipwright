@@ -134,7 +134,7 @@ class Stub:
         if not self.settings()[_METHOD_SETTING[method[0]]]:  # the host refuses a method the repository's settings do not allow
             raise Refusal(f"gh-stub: {method[0].removeprefix('--')} merges are not allowed on this repository")
         pinned = v.get("--match-head-commit")
-        if pinned and _git("ls-remote", self.remote(), f"refs/heads/{pr['head']}", cwd=self.cwd, check=False)[:40] != pinned:
+        if pinned and (_git("ls-remote", self.remote(), f"refs/heads/{pr['head']}", cwd=self.cwd, check=False).split() or [""])[0] != pinned:  # the full oid
             raise Refusal("gh-stub: Head branch was modified. Review and try the merge again.")  # the host's own words
         head = f"origin/{pr['head']}"
         steps = {"--merge": [["merge", "--no-ff", "-m", f"Merge pull request #{pr['number']} from {pr['head']}", head]],

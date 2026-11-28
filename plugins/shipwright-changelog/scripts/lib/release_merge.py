@@ -88,7 +88,7 @@ def merge_ready(rec: Recorder, plugin_root: Path, *, version: str) -> tuple[int,
         return refuse("no_merge_method_allowed", "the repository allows no merge method; a person merges the PR")
     out["method"] = method
     if method != "merge":
-        base, fetched = release_verify.fetch_base(rec, state, prefix="merge")
+        base, fetched = release_verify.fetch_base(rec, {**state, "base_branch": base_name or view.get("baseRefName")}, prefix="merge")  # the PR's own base when none is stored
         behind = rec.run("merge-behind", ["git", "merge-base", "--is-ancestor", "FETCH_HEAD", head]) if fetched.exit == 0 else None
         if behind is None or behind.exit not in (0, 1):
             return refuse("base_state_unknown", f"could not fetch {base} to see whether it moved; run merge-ready again", base=base)

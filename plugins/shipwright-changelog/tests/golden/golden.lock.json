@@ -104,7 +104,7 @@
     "plugins/shipwright-changelog/tests/golden/test_scenarios_release.py": "5f9ccc51dc553156a0e62381c6d7d9ec22c2d686bbeffc36e0a64e712eed32c0",
     "plugins/shipwright-changelog/tests/golden/test_seeded_regressions.py": "d90b06d8ff5694451796998563c4e7ee8c6b566824a3cba7dee83c6a10991c5f",
     "plugins/shipwright-changelog/tests/golden/test_trace_freeze.py": "3f2ba377f4b97bd0609c1e8968a60dca4478c4d1bd9202405f06ef88029ce895",
-    "shared/testkit/gh_stub.py": "681e0ee00f266f8f4ef31d974e01a19007faa8931087174ec87d97ab5256769b",
+    "shared/testkit/gh_stub.py": "94bff802340fb3bc970e6f2d0daa8c410abe643f44f87355b1bfb5ec7b5a1efc",
     "shared/testkit/gh_stub_support.py": "86ced1847a448e333b4e5e2c517126bbb4e0fe23282d19500072ce7ff6c41310",
     "shared/testkit/golden_lock.py": "24b0932e6107c5d1b3ac147f618bacf052e551258c6d7277dc0f827d47756f63",
     "shared/testkit/golden_trace.py": "61e68debd1df93ed7fdae7fa93b1da961d18387253ec9d123ff0847230dbdb90",

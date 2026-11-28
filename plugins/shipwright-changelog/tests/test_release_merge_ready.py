@@ -52,7 +52,7 @@ def test_the_method_follows_the_repository_settings_and_prefers_a_merge_commit(t
     code, out = ask(tmp_path, plugin_root, runner)
     assert code == 0 and out["status"] == "ok" and out["method"] == method, out
     assert out["argv"] == ["gh", "pr", "merge", f"--{method}", "--match-head-commit", HEAD, "--delete-branch"]
-    assert out["line"] == " ".join(out["argv"]) and "merge-run" not in runner.keys()  # decides, never merges
+    assert out["line"] == " ".join(out["argv"]) and not any(argv[:3] == ["gh", "pr", "merge"] for _, argv in runner.calls)  # decides, never merges
     assert runner.argv("merge-settings")[-3:] == ["view", "--json", "mergeCommitAllowed,squashMergeAllowed,rebaseMergeAllowed"]
     assert ("merge-fetch" in runner.keys()) is (method != "merge")  # only a squash or rebase merge asks whether the base moved
 
