@@ -33,6 +33,8 @@ from . import release_commit, release_paths, release_publish, release_runstate, 
 from .release_runner import Recorder  # noqa: E402
 
 METHODS = (("merge", "mergeCommitAllowed"), ("squash", "squashMergeAllowed"), ("rebase", "rebaseMergeAllowed"))  # in order of preference
+_PR_STATE = {"MERGED": ("pr_already_merged", "the PR is merged already; run push-tag"),
+             "CLOSED": ("pr_closed_unmerged", "the PR was closed without a merge")}  # any other state: pr_state_unknown
 
 
 def merge_ready(rec: Recorder, plugin_root: Path, *, version: str) -> tuple[int, dict[str, Any]]:
@@ -71,9 +73,7 @@ def merge_ready(rec: Recorder, plugin_root: Path, *, version: str) -> tuple[int,
     out.update(branch=branch, head=head)
     view = _gh_json(rec, plugin_root, "merge-pr-view", "pr", "view", state["pr_url"], "--json", "state,headRefOid,baseRefName")
     if view.get("state") != "OPEN":
-        reason = {"MERGED": "pr_already_merged", "CLOSED": "pr_closed_unmerged"}.get(str(view.get("state")), "pr_state_unknown")
-        return refuse(reason, {"pr_already_merged": "the PR is merged already; run push-tag", "pr_closed_unmerged": "the PR was closed without a merge"}
-                      .get(reason, "gh could not say whether the PR is open; run merge-ready again"))
+        return refuse(*_PR_STATE.get(str(view.get("state")), ("pr_state_unknown", "gh could not say whether the PR is open; run merge-ready again")))
     if view.get("headRefOid") != head:
         return refuse("pr_head_not_the_release", f"the PR head on the host is {str(view.get('headRefOid'))[:10]}, not the release's {head[:10]}; "
                       "push the release branch, or restart the release if someone else pushed to it")
@@ -91,7 +91,8 @@ def merge_ready(rec: Recorder, plugin_root: Path, *, version: str) -> tuple[int,
         base, fetched = release_verify.fetch_base(rec, {**state, "base_branch": base_name or view.get("baseRefName")}, prefix="merge")  # the PR's own base when none is stored
         behind = rec.run("merge-behind", ["git", "merge-base", "--is-ancestor", "FETCH_HEAD", head]) if fetched.exit == 0 else None
         if behind is None or behind.exit not in (0, 1):
-            return refuse("base_state_unknown", f"could not fetch {base} to see whether it moved; run merge-ready again", base=base)
+            why = release_publish._USERINFO.sub("***@", (fetched.stderr if behind is None else behind.stderr).strip())[:120]
+            return refuse("base_state_unknown", f"could not tell whether {base} moved ({why or 'git gave no reason'}); run merge-ready again", base=base)
         if behind.exit == 1:
             return refuse("base_moved", _restart(base, version, method), base=base)
         out["base"] = base
