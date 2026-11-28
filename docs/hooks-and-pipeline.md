@@ -923,7 +923,7 @@ module rather than a growth of `fr_criteria.py`, so tightening the shape rule
 can never touch the criteria-FINDING logic three other gates (S5, the
 cross-layer hard gate, I6) depend on staying exactly as permissive as today.
 
-**One requirement, one capability: scope rule + I10 (atomic-frs U1).** `fr-authoring.md` §3c replaces any size
+**One requirement, one function: scope rule + I10 (atomic-frs U1).** `fr-authoring.md` §3c replaces any size
 number with the question "can this FR still be split". Code finds the seams: `shared/scripts/lib/fr_clusters.py`
 groups one FR's criteria by bound tests, the source files those tests import and shared wording (evidence from
 `lib/fr_cluster_evidence.py`, which reads test files for `FR-xx.yy/ACnn` references; source files imported by the tests

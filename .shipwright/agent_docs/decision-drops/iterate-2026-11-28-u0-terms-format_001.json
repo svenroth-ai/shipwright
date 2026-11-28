@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-28-u0-terms-format",
+  "date": "2026-11-28",
+  "section": "Iterate - feature: intent pyramid terms and format (U0)",
+  "title": "Capability column next to D7; intent.md as second human-owned file",
+  "context": "Product owners cannot accept a product without reading FRs and ACs; the FR is also called a capability in prompts.",
+  "decision": "FR is one function; a Capability groups FRs, stored in a Capability column next to Area (D7); intent.md is the second human-owned file.",
+  "consequences": "Vocabulary, schema and constitution entry exist; column, parser, gate and confirmation are later units.",
+  "rationale": "Ownership stays checkable per file path; Area is rendered, Capability is stored.",
+  "rejected": "Human section inside spec.md; JSON/YAML source rendered to markdown.",
+  "commit": "",
+  "architecture_impact": "convention",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-11-28-u0-terms-format-capability-column-intent-md.md"
+}

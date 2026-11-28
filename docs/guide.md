@@ -803,7 +803,7 @@ The third autonomy level, `unattended` (only from an approved Brief package), be
 - Analyzes the interview to determine whether the project needs multiple splits or is a single unit
 - Writes `project-manifest.md` with the proposed structure and presents it for your approval
 - Creates split directories and generates `spec.md` for each split
-- Spec writing is **blocked per requirement** until it names one capability: each group of acceptance criteria must pass the capability test (one plain sentence without "and") and the code form checks (`shared/scripts/tools/fr_scope_check.py`) before the phase may finish (`shared/fr-authoring.md` §3c).
+- Spec writing is **blocked per requirement** until it names one function: each group of acceptance criteria must pass the capability test (one plain sentence without "and") and the code form checks (`shared/scripts/tools/fr_scope_check.py`) before the phase may finish (`shared/fr-authoring.md` §3c).
 - For new projects: lists the built-in and your own stack profiles (see [Stack Profiles](stack-profiles.md)), proposes the one that fits (or `generic` when none does, and you can name a custom one), scaffolds `CLAUDE.md`, `.shipwright/agent_docs/`, and path-specific Claude rules
 - Logs all project-level decisions (auth strategy, third-party services, naming conventions) to `.shipwright/agent_docs/decision_log.md`
 
@@ -1755,6 +1755,7 @@ The **constitution** (`shared/constitution.md`) defines behavioral boundaries fo
 - `git push --force` to main/master.
 - `git reset --hard`.
 - `--no-verify` to bypass pre-commit hooks.
+- Never set `confirmed` on an intent element yourself, and never change or remove an element's status or text in `.shipwright/planning/intent.md` outside the recorded flow; new elements may be added as `assumption`, and an unrecorded `confirmed` is read as `assumption` and reported, never edited (tamper-evident, not tamper-proof).
 - `DROP DATABASE`.
 - Skip or weaken tests to make them pass.
 - Hide a flaky test by skipping it, adding fixed sleeps, or adding or raising retries until it goes green -- find the root cause (waiting for an explicit condition with a timeout is a fix; a runner retry that reports the test as flaky stays visible and is allowed). Only after the 3-attempt debugging limit, delete the test, record what was tried and what it covered (commit body or ADR), and replace it with a deterministic test of the same behaviour where possible.
@@ -1799,9 +1800,9 @@ Users can override complexity (`--complexity medium`) and adjust phases before e
 
 Every FEATURE, CHANGE and BUG iterate must classify how it changes the requirement spec -- this is the "spec update" step the complexity table lists, and it is **enforced**, not advisory:
 
-- **ADD** -- a new endpoint, page, or user-visible capability: a new FR row is appended to `spec.md`.
+- **ADD** -- a new endpoint, page, or user-visible function: a new FR row is appended to `spec.md`.
 - **MODIFY** -- an existing FR's behavior changed: its row + acceptance criteria are updated.
-- **REMOVE** -- a capability was deleted: the FR row moves into a `### Removed Requirements` section (never silently dropped).
+- **REMOVE** -- a function was deleted: the FR row moves into a `### Removed Requirements` section (never silently dropped).
 - **NONE** -- a behavior-preserving internal refactor: recorded with a one-line justification. A NONE iterate (or one explicitly classified `simplify`) runs the **Simplify sub-mode** below, which guards the "behavior-preserving" claim mechanically.
 
 Two layers enforce it. At finalization both write paths (`record_event.py` and F5b's `finalize_iterate.py`) refuse a feature, change or bug iterate that names no FR and gives no `spec_impact=none` justification plus a closed `spec_impact_reason_code`, and check a no-FR `change_type` label against the files the iterate actually changed; and the F11 verifier fails the run if the iterate's own work touched no `spec.md` without a recorded `spec_impact=none` (measured across the iterate's work up to the recorded commit rather than just the tip commit, so an integration merge at HEAD normally does not hide it; where no trunk base can be corroborated the check falls back to the single commit). The on-demand `/shipwright-compliance` detective audit (Group D, check D5) additionally surfaces any historical feature/change events that landed with no FR linkage. Fixes are not exempt: a fix that restores what the spec already says records `spec_impact=none` with `restores-specified-behavior`. F5b takes the intent from the run's own iterate entry when the event leaves it out, so the rule cannot be skipped by omitting `intent`. The closed codes are `behavior-preserving`, `restores-specified-behavior`, `docs-only`, `tests-only`, `tooling-only`, `infra-only` and `compliance-only`; a `*-only` code next to a no-FR `change_type` must name the same label (`docs-only` with `docs`, and so on).

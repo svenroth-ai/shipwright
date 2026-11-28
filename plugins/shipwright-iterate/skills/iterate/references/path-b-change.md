@@ -31,7 +31,7 @@ differences:
 1. Identify which spec file(s) cover the affected area.
 1a. **MINT-vs-FOLD gate** — identical to FEATURE Step 1a; read
    `shared/fr-authoring.md` (§3). For CHANGE the answer is almost always
-   **FOLD**: modifying, completing, or polishing an existing capability is
+   **FOLD**: modifying, completing, or polishing an existing function is
    MODIFY on its FR, never a new row. Minting a row for a change is how a
    requirements table decays into a second changelog.
 2. **Classify the spec impact** as one or more of ADD / MODIFY / REMOVE,
@@ -58,11 +58,11 @@ differences:
        unrecorded, not to substitute for hand-widening the FR you are
        modifying right now.
    - **ADD** (rare for CHANGE) — only when the modification carves out a
-     genuinely new user-visible capability alongside the old one, and only
+     genuinely new user-visible function alongside the old one, and only
      after the gate above says MINT: append a new FR table row + an
      acceptance-criteria block; the new FR ID goes to F7 `--new-frs`.
      Number it deterministically (next free `FR-{split}.NN`, counting live
-     **and** removed rows) and name it as a capability, per FEATURE Step 2.
+     **and** removed rows) and name it as a function, per FEATURE Step 2.
      - **The row has seven cells:**
        `| ID | Area | Name | Priority | Description | Basis | Layers |`.
        `Basis` is ONE value from `interview` / `code` / `observed` / `tests`
@@ -81,7 +81,7 @@ differences:
        write `unit, e2e (inferred)`, which is advisory and is the honest form
        when the layers have not been verified. See `shared/fr-authoring.md`
        §4a.
-   - **REMOVE** — the change deletes a user-visible capability: move the
+   - **REMOVE** — the change deletes a user-visible function: move the
      FR row into a `### Removed Requirements` subsection with the run_id
      and the literal `status: deprecated` (never silently delete).
    - **NONE** — a behavior-preserving internal refactor: record a

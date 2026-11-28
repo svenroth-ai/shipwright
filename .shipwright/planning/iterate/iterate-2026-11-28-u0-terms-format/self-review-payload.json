@@ -1,0 +1,9 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"All six scope items present: glossary, FR-is-one-function sweep, schema+fixtures, ADR drop, constitution+register+guide, CLAUDE.md."},
+{"name":"Error Handling","verdict":"pass","note":"Schema rejects malformed status, id, FR id in text, missing capability name."},
+{"name":"Security Basics","verdict":"pass","note":"No secrets; constitution entry names tamper-evident residual risk and the agent as likely forger."},
+{"name":"Test Quality","verdict":"pass","note":"Sample, malformed, no-upper-limit and structural-violation cases; register drift test green."},
+{"name":"Performance Basics","verdict":"pass","note":"No runtime code."},
+{"name":"Naming & Structure","verdict":"pass","note":"Capability test name kept because the scope-check tool prints it; noted in fr-authoring."},
+{"name":"Affected Boundaries","verdict":"pass","note":"intent.md to parsed shape to schema probed by test with checked-in markdown fixtures."},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"scan_test_hygiene --diff clean."}]}

@@ -1,0 +1,85 @@
+{
+  "run_id": "iterate-2026-11-28-u0-terms-format",
+  "date": "2026-11-28T11:09:01.486145Z",
+  "event_at": "2026-11-28T08:17:06.987714+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "prior_source": "keyword",
+  "branch": "iterate/campaign-U0-terms-format",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-11-28-u0-terms-format",
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": [
+    "touches_auth",
+    "touches_migrations"
+  ],
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "sample intent.md validates against the schema",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_intent_schema.py::test_sample_validates PASSED"
+      },
+      {
+        "behavior": "malformed intent.md is rejected (bad status, bad id, FR id in text)",
+        "disposition": "tested",
+        "evidence": "test_intent_schema.py::test_malformed_file_is_rejected PASSED"
+      },
+      {
+        "behavior": "no upper limit on counts or text length",
+        "disposition": "tested",
+        "evidence": "test_intent_schema.py::test_no_upper_limits PASSED"
+      },
+      {
+        "behavior": "structural violations rejected (missing intent, untrimmed text, wrong id kind, unknown key, version, missing capability name)",
+        "disposition": "tested",
+        "evidence": "test_intent_schema.py::test_structural_violations_are_rejected PASSED x6"
+      },
+      {
+        "behavior": "constitution NEVER entry is declared in the enforcement register",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_constitution_register.py PASSED"
+      },
+      {
+        "behavior": "glossary stays within its LOC ceiling",
+        "disposition": "tested",
+        "evidence": "test_bloat_defense_artifacts.py::test_glossary_under_loc_limit PASSED"
+      },
+      {
+        "behavior": "cross-component composition of prompt wording across skills",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "plugins/shipwright-project tests 110 passed; shared/tests full suite 15647 passed"
+      },
+      {
+        "behavior": "no 'FR is a capability' wording in prompts/skills",
+        "disposition": "tested",
+        "evidence": "grep sweep of fr-authoring, step-6, spec-generation, path-a/b, project SKILL (run in-session)"
+      }
+    ],
+    "counts": {
+      "testable": 8,
+      "tested": 8,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 1,
+      "covered_acs": 1
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run pytest shared/tests/test_intent_schema.py shared/tests/test_constitution_register.py -q -p no:cacheprovider",
+    "exit_code": 0,
+    "tests_run": 21,
+    "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\campaign-intent-pyramid--U0\\.shipwright\\runs\\iterate-2026-11-28-u0-terms-format\\surface_verification.log",
+    "timestamp": "2026-11-28T10:15:10.240Z",
+    "attempts": 1
+  }
+}

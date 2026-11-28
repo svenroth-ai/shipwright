@@ -1,0 +1,5 @@
+Goal: Lay down the intent pyramid vocabulary and intent.md format: glossary terms, FR is one function, intent.schema.json, constitution entry, CLAUDE.md exception.
+Reason: A product owner must accept the product without reading ACs; the FR/capability naming collision must go first.
+Reference: campaign intent-pyramid U0, brief rev 10
+AC item: {"ac": "FR-01.16.AC02", "confirmed": false, "decided_by": "code", "files": ["plugins/shipwright-iterate/skills/iterate/references/path-a-feature.md", "plugins/shipwright-iterate/skills/iterate/references/path-b-change.md", "plugins/shipwright-project/skills/project/SKILL.md", "plugins/shipwright-project/skills/project/references/spec-generation.md", "plugins/shipwright-project/skills/project/references/step-6-fr-scope.md", "shared/config/constitution_register.md", "shared/config/conventions.json", "shared/constitution.md", "shared/fr-authoring.md", "shared/glossary.md", "shared/schemas/intent.schema.json"], "kind": "unchanged"}
+AC decisions: [{"ac": "FR-01.16.AC02", "mode": "auto", "answer": "auto", "kind": "unchanged", "answered_via": "none", "decided_by": "code", "confirmed": false}]

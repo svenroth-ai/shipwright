@@ -103,6 +103,7 @@
 - Amend a commit that was blocked by a pre-commit hook
 - Loop more than 3 debugging attempts without escalating
 - Claim "all tests pass" when output shows failures — report actual numbers honestly
+- **Never set an intent element to `confirmed` yourself**, not even after a yes in chat, and never change or remove the status or text of any element in `.shipwright/planning/intent.md` outside the recorded confirmation or change flow. You may add new elements as `assumption` and apply an edit the human gave in that flow. Until the recorded confirmation exists in an installation, the checks read every `confirmed` as `assumption` and report it; you never edit it. Confirmation is tamper-evident, not tamper-proof.
 
 ---
 

@@ -1,6 +1,7 @@
 # Campaign brief: intent pyramid (`intent-pyramid`), for operator review
 
-Date: 2026-11-28 · Status: READY rev 10, nothing built.
+Date: 2026-11-28 · Status: READY rev 11, nothing built.
+- rev 11 (2026-11-28): Stop 1 answered; constitution entry moved to NEVER (never-intent-self-confirm) by operator decision; status at line end.
 - rev 2: operator answers of 2026-11-27, prior-art research, repo impact survey, drift prototype.
 - rev 3: Opus plan review (verdict "ready after fixes"; H1-H5, M1-M5, L1-L4 worked in, see §12).
 - rev 10 (2026-11-28): Opus review of rev 9 worked in (§12).
@@ -76,7 +77,7 @@ Operator decisions of 2026-11-27: one `intent.md` per product; scenarios first i
 - **Record**, one line per question: `ts, session_id, group, doc_digest, verified, answer_label, other_text, dwell_s, artifact_url/version (information only), elements: [{id, sha256, draft_sha256}], prev_record_sha256` (a chain, so editing or deleting a line is visible). A fixed label registry maps answers to accept / reject / edit.
 - **F11 / gate P rule:** every element marked `confirmed` in the committed `intent.md` needs its latest record to be `verified`, `accept`, with a hash equal to the committed text and an intact chain. An `edit` must be followed by a change-flow record. For a multi-select, selected candidates are confirmed and unselected ones must be absent. `assumption` elements need no record.
 - **Shown, not gated:** "confirmed without edit" (draft hash unchanged), and how long the dialog was open (a 3-second confirmation of all CAPs is visible in the report).
-- **Honest limit:** tamper-evident, not tamper-proof. Named as residual risk in the constitution ASK FIRST entry.
+- **Honest limit:** tamper-evident, not tamper-proof. Named as residual risk in the constitution NEVER (never-intent-self-confirm) entry.
 - **Verify first (U2a1):** PostToolUse for AskUserQuestion receives the full `tool_input` (including previews) and the chosen labels, under Claude Code and under the Codex bundle. If not, fall back to recording answer plus digest only; then F11 accepts a record whose digest equals the committed file and whose chain is intact (named as weaker in the constitution entry). Under Codex there is no AskUserQuestion equivalent: confirmation is unavailable there and elements stay `assumption`.
 - Later option (not this campaign): a confirm button in the webui writing the same record.
 
@@ -108,7 +109,7 @@ Output: one triage finding per FR with flagged AC ids, the CAP they seem to belo
 | grade | repo without `intent.md` = "not applicable", never 0; no field added in this campaign |
 | iterate | Step 1a prints change level and whether confirmation is needed; D2 on FOLD (after validation); F11 confirmation check |
 | adopt | `enrichment_schema.py` / Step B.8 add intent, non-goals, CAPs, scenarios, all `assumption`; `spec_table.py` writes the column; `derived-catalogue.json` counts confirmed elements; caveat "derived from code = what exists, not what is wanted" |
-| shared | glossary; `fr-authoring.md` §2; constitution ASK FIRST with enforcement + residual risk; `intent.schema.json`; confirmation hook + guard; `contracts/compliance.py` reader; CLAUDE.md template + codex appendix; **this repo's CLAUDE.md "Where documents live" section** (second human-owned file in `.shipwright/`); `docs/hooks-and-pipeline.md` (new hook!); guide Ch. 4/7.5/8/App. B |
+| shared | glossary; `fr-authoring.md` §2; constitution NEVER (never-intent-self-confirm) with enforcement + residual risk; `intent.schema.json`; confirmation hook + guard; `contracts/compliance.py` reader; CLAUDE.md template + codex appendix; **this repo's CLAUDE.md "Where documents live" section** (second human-owned file in `.shipwright/`); `docs/hooks-and-pipeline.md` (new hook!); guide Ch. 4/7.5/8/App. B |
 | Codex bundle | new agent/hook picked up by `build_codex_plugin.py`; check `BUILD_MANIFEST.json` and that the hook runs under Codex |
 | webui | **Ship's Log links the intent:** each entry shows the CAPs/SCNs it touched (derived from the event's affected FRs through the Capability column, no new event field unless that derivation fails) and links to the intent view; reads `dashboard.md` (markdown), `test-traceability.json`, adopt `snapshot.json`, grade JSON, Ship's Log list; adds a view of `intent-report.json`; verify `fold-map.ts` with the new column |
 | leadwright | being extended in its own 3-iterate campaign right now: U10 starts after it and covers the FRs it adds; consumes shipwright only via webui contracts; own spec tools (`spec/check-spec.py`, `spec_parse.py`, `spec_tabellen.py`) must accept the column; own spec to migrate |
@@ -171,7 +172,7 @@ Each unit is one iterate with the review cascade (spec -> code -> doubt, model=o
 
 | Unit | Content | Done when |
 |---|---|---|
-| U0 terms + format | glossary, `fr-authoring.md` §2 + 3 prompt sites, `intent.schema.json`, ADR "Capability column next to D7", constitution ASK FIRST, repo CLAUDE.md section | grep finds no "FR is a capability" left in prompts/skills; schema validates a sample `intent.md`; **Stop 1: operator approves terms and format** |
+| U0 terms + format | glossary, `fr-authoring.md` §2 + 3 prompt sites, `intent.schema.json`, ADR "Capability column next to D7", constitution NEVER (never-intent-self-confirm), repo CLAUDE.md section | grep finds no "FR is a capability" left in prompts/skills; schema validates a sample `intent.md`; **Stop 1: operator approves terms and format** |
 | R1 AI attribution | collector `collectors/change_history.py:38` reads trailers too (`%(trailers:key=Co-authored-by)`), `CommitEntry` gets the field; `lib/change_history.py:93` counts a commit as AI-assisted when a co-author trailer names Claude (case-insensitive, GitHub squash writes "Co-authored-by") or the author does | fixture commits with "Co-Authored-By" and "Co-authored-by" trailers both count; shipwright no longer shows "0 AI-assisted" |
 | R2 growth wording | `control_grade.py:199` says "net shrink" / "net growth" by the sign of the delta | test pins both words by sign |
 | R3 one license count | the SBOM collector (`collectors/sbom.py`) is the one source; the dashboard reads its unknown-license count instead of counting itself | dashboard and SBOM show the same number on a fixture with unknown licenses |

@@ -20,7 +20,7 @@ that decides; the fences in §2 and §5 are only the mechanical shortcuts to it.
 
 **Write:**
 
-- the capability from the user's or the system's standpoint;
+- the function from the user's or the system's standpoint;
 - every behavioural guarantee that matters — what is prevented, what is kept,
   what happens when it goes wrong;
 - ordinary words. If a technical term is genuinely unavoidable, add a short
@@ -44,9 +44,9 @@ deferred, nothing sits blocked) and drops only the mechanism.
 
 ---
 
-## 2. Altitude — a capability, not a route and not a change
+## 2. Altitude — one function, not a route and not a change
 
-An FR is a **stable, observable capability or guarantee**. These are *not* FRs:
+An FR is **one stable, observable function or guarantee** of the product. A *capability* (`intent.md`, CAP-xx) is the level above (to be stored in the FR table's `Capability` column from intent-pyramid U1a, AI-assigned, product-level; unlike `Area`, which is only the rendered split name; the column is not in the template yet): it groups several FRs and is what a user would name as a reason to use the product. An FR is never a capability. (Tool output, audit titles and `chat-map.json` still use the older word "capability" for an FR-level item until a follow-up renames them.) These are *not* FRs:
 
 | Not an FR | Where it belongs |
 |---|---|
@@ -65,13 +65,13 @@ replaces FR-x*, it is a route or a change — not a requirement.
 ## 3. Mint or fold — decide before writing a row
 
 Before adding an FR row, answer one question:
-**is this a capability the product did not have before?**
+**is this a product function (what the product does, not a code function) that did not exist before?**
 
 - **FOLD** — the change *completes, polishes, fixes, extends,* or is
   *"Phase N of"* something that already exists.
   → **Do not add a row.** Append acceptance-criteria lines to the existing FR
   and record it as Spec Impact `MODIFY` with that FR in `--affected-frs`.
-- **MINT** — a genuinely new, user- or system-observable capability.
+- **MINT** — a genuinely new, user- or system-observable function.
   → Add one row, per §4 and §5.
 
 Folding is the common case — but only into a requirement the new criterion
@@ -79,7 +79,7 @@ Folding is the common case — but only into a requirement the new criterion
 requirement's other criteria; otherwise MINT. A spec that grows one FR per unit of work stops
 describing the product and starts duplicating the changelog.
 
-**Worked example.** Four rows had accumulated for one capability:
+**Worked example.** Four rows had accumulated for one function:
 
 ```
 ❌ FR-01.38 Responsive tablet layout
@@ -96,7 +96,7 @@ describing the product and starts duplicating the changelog.
      - [ ] … no unwanted zoom on iOS …
 ```
 
-One capability, four rounds of work recorded as acceptance criteria. The change
+One function, four rounds of work recorded as acceptance criteria. The change
 history already lives in the commits, the changelog, and `shipwright_events.jsonl` —
 it does not need a second home in the requirements table.
 
@@ -105,14 +105,14 @@ it does not need a second home in the requirements table.
 ## 3a. How big is one requirement?
 
 §3 asks *does this deserve a row?* This asks the opposite question about the row
-you decided to write: **is it one capability, or several wearing one name?**
+you decided to write: **is it one function, or several wearing one name?**
 
 > **The granularity test:** can you enumerate acceptance criteria that **a
 > single delivery** would satisfy? If you cannot, the requirement is too broad
 > and gets divided.
 
 Being **unable to enumerate what would settle it** is the signal — it is what
-naming several capabilities at once feels like from the inside. You reach for
+naming several functions at once feels like from the inside. You reach for
 criteria, and each one you write turns out to be about a different piece of the
 thing; or the list refuses to end; or every criterion is so general that
 satisfying it would not tell you the work was done.
@@ -123,16 +123,16 @@ file sizes the **planning unit** — how much work goes into one split so a plan
 stays tractable. This sizes **one row in the table**. A split holds many
 requirements; getting one right says nothing about the other.
 
-**Signs a requirement names more than one capability**
+**Signs a requirement names more than one function**
 
-- its description joins two capabilities with *and*, and only one half has
+- its description joins two functions with *and*, and only one half has
   criteria (the negative-space pass in `shared/requirement-elicitation.md` §8.1
   finds this reliably);
 - its criteria cannot be satisfied by one delivery — some would land in a later
   round, so the row can never honestly be called done;
 - it has **no criteria at all**, and attempts to write them keep sliding off.
 
-**The judgement stays human.** No check can decide whether a capability is too
+**The judgement stays human.** No check can decide whether a function is too
 broad; that requires reading it. What is observable is the last sign above —
 zero criteria — and the compliance audit reports it as **`I6`, advisory** (§7).
 Treat an I6 hit as a prompt to apply this test, not as a verdict that the row is
@@ -189,17 +189,17 @@ exactly the legacy content a run did not touch.
 
 ## 3c. Scope: can this requirement still be split?
 
-One requirement names **one capability** with a small, countable set of
+One requirement names **one function** with a small, countable set of
 promises. The question is never *how many* criteria it has — 20 criteria can be
-one capability and 8 can be two — but **can it still be split?**
+one function and 8 can be two — but **can it still be split?**
 
 - **Fold or mint:** does the new criterion serve the **same purpose** as the
   requirement's other criteria? Yes → FOLD it. No → MINT a new requirement.
   A criterion that needs a different test setup and a different reader than its
-  neighbours is a new capability, whatever its topic.
-- **The capability test:** can each group of criteria be named in **one plain
+  neighbours is a new function, whatever its topic.
+- **The capability test** (the name is kept because the scope-check tool prints it; it asks whether an FR is one function): can each group of criteria be named in **one plain
   sentence without "and"**? If the sentence needs an *and*, the group is two
-  capabilities. (A judgement — a person or the AI makes it.)
+  functions. (A judgement — a person or the AI makes it.)
 - **Stop rule, against hundreds of tiny requirements:** split only if **every
   part has a name a user understands, keeps at least three criteria, AND code
   finds no shared tests or files between the parts.** Parts that share tests or
@@ -217,7 +217,7 @@ one capability and 8 can be two — but **can it still be split?**
   **"no evidence"**; it never guesses. The criterion count only sorts the
   worklist, biggest first.
 - **Honest limit:** clusters show what is connected in code, not what is one
-  capability. Two promises that share a test can still be two capabilities. Code
+  function. Two promises that share a test can still be two functions. Code
   proposes; the operator confirms every cut.
 - **Performing a cut** (`shared/scripts/tools/fr_split.py`): the AI proposes ONE
   grouping (a small JSON file: the source FR, and per new requirement a plain
@@ -379,7 +379,7 @@ is not cosmetic:
 in the same iterate.** Declaring `unit, e2e` on a requirement with no `@FR`-
 tagged tests hard-fails finalization on the spot, and there is no bypass — no
 env var, no flag, no label. That is intended: a human declaring layers for a
-capability they are building should be held to it.
+function they are building should be held to it.
 
 **When the layers have not been verified, `(inferred)` is the honest cell** and
 it is the one that does not block. `Basis: assumed` expresses the same *kind* of
@@ -397,14 +397,14 @@ with no required layers at all.
 
 ## 5. The name
 
-1. A capability phrase, present tense, from the user's or system's standpoint.
+1. A function phrase, present tense, from the user's or system's standpoint.
 2. No `GET`/`POST`/`PUT`/`PATCH`/`DELETE`, no `snake_case` symbols, no file
    paths, no ADR numbers, no iterate slugs. Those go to the acceptance
    criteria or `architecture.md`. **Not** to `Basis` — that column takes one
    value from a closed vocabulary (§4a) and nothing else; the file path a
    requirement came from is exactly what it replaced.
 3. About six words. Detail belongs in the description.
-4. One FR, one capability. A name joining two unrelated capabilities with
+4. One FR, one function. A name joining two unrelated functions with
    "and" is usually two FRs.
 
 | ❌ | ✅ |
@@ -423,7 +423,7 @@ Nothing is being thrown away — it is being filed correctly.
 | Detail | Home |
 |---|---|
 | file paths, module and symbol names | `architecture.md`, the code |
-| the endpoints serving a capability | `architecture.md` — the FR states what the capability does, not how it is reached |
+| the endpoints serving a function | `architecture.md` — the FR states what the function does, not how it is reached |
 | why it was built this way | the ADR / decision log |
 | which iterate changed what | commits, changelog, `shipwright_events.jsonl` |
 | what must be true for it to be done | the FR's acceptance criteria |
@@ -511,9 +511,9 @@ requirement with no recorded changes at all is the third, not silently
 folded into `unlinked`).
 
 `I10` is advisory because the cut is a judgement: code shows what is connected,
-not what is one capability, and a legacy catalog must not redden CI. It says
+not what is one function, and a legacy catalog must not redden CI. It says
 "no evidence" rather than guess when too few criteria are named by tests.
 
 Not linted, deliberately: §5.3 (name length) needs editorial judgement, and a
-wrong automated verdict would be worse than silence. §5.4 (one capability per FR)
+wrong automated verdict would be worse than silence. §5.4 (one function per FR)
 is only *advised* (`I10`) — never decided — by code.

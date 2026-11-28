@@ -730,6 +730,14 @@
           "note": ""
         },
         {
+          "id": "never-intent-self-confirm",
+          "tier": "never",
+          "text_hash": "dde0eea30523",
+          "enforcement": "unimplemented",
+          "mechanism": [],
+          "note": "Not enforced in U0 (format only). The recorded confirmation (PostToolUse hook, chained record, F11 rule) is built in campaign intent-pyramid U2a1. Residual risk: tamper-evident, not tamper-proof, since an agent that can write files can still forge a record, visibly (broken chain, hash mismatch). Until then a confirmed without a record is read as assumption and reported. To be added once U2a1 settles them: the weaker digest-only fallback and that confirmation is unavailable under Codex."
+        },
+        {
           "id": "esc-two-same-root",
           "tier": "escalation",
           "text_hash": "f9c04e915189",

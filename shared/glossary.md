@@ -255,8 +255,31 @@
 
 ## Requirements & elicitation
 
-- **Functional Requirement (FR)** — A stable capability the product guarantees,
-  in business language; one catalog row `FR-{group}.{NN}`. Rules: `fr-authoring.md`.
+- **Functional Requirement (FR)** — One stable function the product performs or
+  guarantees (not a code function), in business language; one catalog row `FR-{group}.{NN}`. A
+  Capability groups FRs; an FR is not a capability. Rules: `fr-authoring.md`.
+- **Intent (product)** — Not the iterate change kind of the same name (see
+  "Intent (`fix`…" below). The product's purpose, audience and problem, in one or more INT statements a
+  person reads in one sitting; the top level of the intent pyramid, held in
+  `.shipwright/planning/intent.md` (one file per product, human-owned).
+  Format: `shared/schemas/intent.schema.json`.
+- **Non-goal** — Something the product is explicitly *not*; an Element of
+  `intent.md` (id `NG-nn`). Picked by the human, not approved in bulk.
+- **Capability (CAP)** — What a user would name as a reason to use the product
+  (id `CAP-nn`); a level above the FR, which it groups. Glossed as *what IREB
+  calls a feature*. Not called "Feature" because that is already the iterate
+  change type (feature / change / bug). Split one only when the user's goal
+  differs, merge two when a user would not tell them apart; no fixed count.
+- **Key scenario (SCN)** — User does A, system does B, result C (id `SCN-nn`),
+  product-level and human-owned, text only, no FR ids. A design flow or a plan
+  journey may *realise* one and then names its SCN id; it is not the scenario.
+- **Element** — One human-owned entry of `intent.md`: the intent text, each
+  non-goal, each CAP, each SCN. Carries `confirmed | assumption`, last on its
+  line (`- NG-01: text [confirmed]`). An agent never sets `confirmed` and never
+  changes an element's status or text outside the recorded confirmation or change
+  flow; it may add new elements as `assumption`; without a record a `confirmed`
+  is read as `assumption` and reported, never edited. An id is never reused once
+  confirmed. A missing `intent.md` means "no intent declared". FRs and ACs carry no status.
 - **Acceptance Criterion** — One testable behaviour of an FR,
   `- (E) Given … when … then …`; the unit REQ-3 binds tests to. `TBD` = a gap.
 - **Basis** — Catalog column, *how we know* a requirement:

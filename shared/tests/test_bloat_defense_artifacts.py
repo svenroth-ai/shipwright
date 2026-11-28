@@ -143,6 +143,7 @@ def test_glossary_exists():
     assert _GLOSSARY.is_file()
 
 
+@pytest.mark.covers("FR-01.16")  # the glossary is the home of the requirement vocabulary
 def test_glossary_under_loc_limit():
     body = _GLOSSARY.read_text(encoding="utf-8")
     # Raised 300 → 500 (REQ-3 Phase 2, 2026-07-24). The original cap was set in
@@ -168,8 +169,15 @@ def test_glossary_under_loc_limit():
     # The entries added were compressed first (539 → 519) and only then was the
     # ceiling moved, to a number with little headroom on purpose — so the next
     # round faces this question again instead of coasting through it.
-    assert len(body.splitlines()) <= 540, (
-        "Glossary must stay ≤540 LOC (raised 300 → 500 → 540, REQ-3 Phase 2). "
+    #
+    # Raised 540 → 565 (campaign intent-pyramid U0, 2026-11-28) — the THIRD raise. The
+    # intent pyramid adds a product level above the FR (Intent, Non-goal, Capability,
+    # Key scenario, Element: 5 terms and the FR entry, 23 net lines). They are the vocabulary the operator
+    # approves at Stop 1 and later units bind to; each also disambiguates against an
+    # existing term (Feature, Intent as change kind), so they cannot be dropped. The
+    # existing entries were not compressible without losing collision splits.
+    assert len(body.splitlines()) <= 565, (
+        "Glossary must stay ≤565 LOC (raised 300 → 500 → 540 → 565, REQ-3 Phase 2, intent-pyramid U0). "
         "Compress existing entries before raising this again — and if it is "
         "raised, say why here."
     )

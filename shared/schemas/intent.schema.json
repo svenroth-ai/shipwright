@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://shipwright.local/schemas/intent.schema.json",
+  "title": "Shipwright intent.md (parsed shape)",
+  "description": "The parsed shape of .shipwright/planning/intent.md, the human-owned top of the intent pyramid. File format: YAML front matter with `intent_version: 1` and `product`, then four `##` sections in this order: Intent, Non-goals, Capabilities, Key scenarios. Each element is one line `- <ID>: <text> [<status>]`, a capability `- CAP-nn <name>: <text> [<status>]` (the short name used in reports); the status is always last, never in front of the text (ID INT-nn, NG-nn, CAP-nn, SCN-nn; status confirmed or assumption). The file holds human text only: no FR ids (every link to an FR lives on the AI side). There are deliberately NO upper limits on counts or text length (operator 2026-11-28); size is information in a report, never a rule. Counts and cross-element rules (each CAP has a scenario, each FR one CAP) belong to gate P (U1b), not to this schema. Ids are never reused once an element has been confirmed (an FR link to a removed id is a gate-P finding, U1b). Rewording a confirmed element needs a change-flow record, otherwise F11 refuses it; the confirmation evidence (id plus text hash) lives outside intent.md (U2a1). Every non-blank line under the four sections must parse as an element (an unparseable line is an error, never silently dropped), ids are unique per file and zero-padding is part of the id (both U1b rules; the schema cannot express them). A missing file means no intent declared. One file per repository for now. The parser arrives in U1b; this schema fixes the shape it produces.",
+  "type": "object",
+  "required": ["intent_version", "product", "intent", "non_goals", "capabilities", "scenarios"],
+  "additionalProperties": false,
+  "properties": {
+    "intent_version": {"const": 1},
+    "product": {"$ref": "#/$defs/text"},
+    "intent": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/intent_element"}},
+    "non_goals": {"type": "array", "items": {"$ref": "#/$defs/non_goal_element"}},
+    "capabilities": {"type": "array", "items": {"$ref": "#/$defs/capability_element"}},
+    "scenarios": {"type": "array", "items": {"$ref": "#/$defs/scenario_element"}}
+  },
+  "$defs": {
+    "status": {"enum": ["confirmed", "assumption"]},
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[^\\s](?:[^\\n]*[^\\s])?$",
+      "not": {"pattern": "[\\n\\r]|(?:^|[^A-Za-z])(?:FR-[0-9]+[.][0-9]+|CAP-[0-9]+|SCN-[0-9]+|INT-[0-9]+|NG-[0-9]+)|\\[(?:confirmed|assumption)\\]"},
+      "description": "Human text on one line, trimmed, no FR id and no id of another element (links live on the AI side). No maximum length."
+    },
+    "intent_element": {
+      "type": "object", "required": ["id", "text", "status"], "additionalProperties": false,
+      "properties": {"id": {"type": "string", "pattern": "^INT-[0-9]{2,}$", "not": {"pattern": "[\\n\\r]"}}, "text": {"$ref": "#/$defs/text"}, "status": {"$ref": "#/$defs/status"}}
+    },
+    "non_goal_element": {
+      "type": "object", "required": ["id", "text", "status"], "additionalProperties": false,
+      "properties": {"id": {"type": "string", "pattern": "^NG-[0-9]{2,}$", "not": {"pattern": "[\\n\\r]"}}, "text": {"$ref": "#/$defs/text"}, "status": {"$ref": "#/$defs/status"}}
+    },
+    "capability_element": {
+      "type": "object", "required": ["id", "name", "text", "status"], "additionalProperties": false,
+      "properties": {"name": {"type": "string", "pattern": "^[^\\s:\\[\\]](?:[^:\\n\\[\\]]*[^\\s:\\[\\]])?$", "not": {"pattern": "[\\n\\r]|(?:^|[^A-Za-z])(?:FR-[0-9]+[.][0-9]+|CAP-[0-9]+|SCN-[0-9]+|INT-[0-9]+|NG-[0-9]+)"}}, "id": {"type": "string", "pattern": "^CAP-[0-9]{2,}$", "not": {"pattern": "[\\n\\r]"}}, "text": {"$ref": "#/$defs/text"}, "status": {"$ref": "#/$defs/status"}}
+    },
+    "scenario_element": {
+      "type": "object", "required": ["id", "text", "status"], "additionalProperties": false,
+      "properties": {"id": {"type": "string", "pattern": "^SCN-[0-9]{2,}$", "not": {"pattern": "[\\n\\r]"}}, "text": {"$ref": "#/$defs/text"}, "status": {"$ref": "#/$defs/status"}}
+    }
+  }
+}

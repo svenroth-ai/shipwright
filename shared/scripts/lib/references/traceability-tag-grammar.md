@@ -73,7 +73,7 @@ P1 only records them.
 
 ## Folded FR ids — `## FR-Fold-Map`
 
-A spec clean-up may **fold** a fine-grained FR into the broader capability FR that now
+A spec clean-up may **fold** a fine-grained FR into the broader function FR that now
 owns it. Folded ids are never retired; the spec records them in an alias table so old
 references keep resolving — **including your test tags, which you do not have to rewrite:**
 

@@ -1,0 +1,332 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-28-u0-terms-format",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-28T10:16:56.195022+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "dependency |",
+          "file": null,
+          "line": null,
+          "finding": "The change is scoped against brief rev 10 \"on main once PR #1124 merges\" — the PR branch is based on a state that doesn't exist yet. If the three prompt sites named in the spec move or are reworded in #1124's merge, the enumerated sites (spec-generation, step-6-fr-scope, project SKILL, path-a-feature) may not match.",
+          "suggestion": "Branch from the post-#1124 merge point (or rebase before finishing), and re-run the site enumeration after the merge, not from the spec's static list.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk |",
+          "file": null,
+          "line": null,
+          "finding": "\"Constitution register entry (unimplemented until U2a1)\" + a \"constitution register drift test\" is ambiguous — if the drift test asserts that every registered ASK FIRST entry has a corresponding implemented hook, adding the register entry now will fail the test; if it only checks textual presence, it can't detect drift. Either way, the test contract needs to be pinned down.",
+          "suggestion": "Decide explicitly whether the register supports \"declared, not yet enforced\" entries (e.g. a status field), and state what the drift test actually asserts for U0.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "The \"Done when\" grep check (\"no 'FR is a capability' wording left\") is wording-sensitive — paraphrases (\"an FR describes a capability\", \"FR = capability\") will pass the grep while violating the intent.",
+          "suggestion": "Grep for both \"capability\" in the named prompt/skill files and manually review each hit, rather than a single literal phrase.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "\"no FR ids in text\" appears in the mini-plan but not the spec's schema description — if this is a schema-enforceable constraint (e.g. pattern on `text` fields), the schema can't reliably enforce it; if it's a convention, it belongs in fr-authoring/intent authoring guidance, not silently in the schema.",
+          "suggestion": "Clarify whether it's validation or convention; if convention, document it in the glossary/authoring text and cover it in the sample fixture by example.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "The schema must validate a front-matter + body file (intent.md). The spec mentions a sample fixture and a malformed fixture, but not what the malformed case covers — trivially malformed JSON will pass while the actual risk is semantic (wrong id prefix, missing status, bad front-matter/body split).",
+          "suggestion": "Make the malformed fixture cover id-prefix violations, missing status, and a broken front-matter delimiter, not just generic invalid syntax.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security |",
+          "file": null,
+          "line": null,
+          "finding": "\"Tamper-evident, not tamper-proof\" is correctly named as a residual risk in the constitution entry — good. Just ensure the named residual risk and the confirmation mechanism it references are described concretely (what record, who signs) even though the mechanism lands in a later unit.",
+          "suggestion": "One sentence in the constitution entry pointing to the (future) confirmation record is enough; don't leave it dangling.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach |",
+          "file": null,
+          "line": null,
+          "finding": "Scope discipline is good — terms/format only, no gate/parser/hook. The STOP 1 hold is the right control. No over-production detected; the schema + fixtures + one test file is the minimal professional footprint.  Overall assessment: Sound, well-scoped doc/schema change with the main practical risks being sequencing against PR #1124 and pinning down the constitution register drift-test contract. Approve with the sequencing and register-test clarifications addressed during the STOP 1 hold.  SHIPWRIGHT_VERDICT: approve",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "The mini-plan lists the glossary terms but omits the definitions of `confirmed` and `assumption` and the boundary of what carries status. Later units will rely on those definitions when they implement confirmation.",
+          "suggestion": "Define both statuses and state that they apply to the intent text, each non-goal, each capability, and each key scenario. State explicitly that FRs, acceptance criteria, and tests carry no intent status.  2. Dependency · Medium",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "The plan promises to validate an `intent.md` fixture but leaves unspecified how its YAML front matter and Markdown body become the instance passed to the JSON Schema. A test built around a separate JSON object could pass while the checked-in Markdown fixture violates the format.",
+          "suggestion": "Specify where each field lives and document the mapping to the schema. Validate the checked-in Markdown fixtures through that mapping in the test, using existing test utilities where available. Keep runtime parsing in its scheduled unit.  3. Edge-case · Medium",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "“No FR ids in text” adds a restriction absent from the supplied change specification. Applying it to free text could reject a legitimate non-goal or scenario that mentions an existing FR for context.",
+          "suggestion": "Verify this restriction against rev 10 of the brief. If the brief excludes FRs as intent elements, enforce that through the allowed element ID families. Add a prose restriction only if the brief explicitly requires it.  4. Risk · Medium",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "The mini-plan omits STOP 1, so its implementation and test checklist could be treated as sufficient to merge before the operator approves the terms and format.",
+          "suggestion": "Make recorded operator approval an explicit merge prerequisite and assign the hold to the orchestrator, as specified.  The documentation-and-schema approach fits U0. Resolve the file-format and confirmation semantics before merging. Repository access was blocked, so I could not verify rev 10 of the brief or the existing validation conventions.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-28T10:07:29.667101+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] **Findings**\n\n- Category: dependency | Severity: medium\n  Finding: The change is scoped against brief rev 10 \"on main once PR #1124 merges\" — the PR branch is based on a state that doesn't exist yet. If the three prompt sites named in the spec move or are reworded in #1124's merge, the enumerated sites (spec-generation, step-6-fr-scope, project SKILL, path-a-feature) may not match.\n  Suggestion: Branch from the post-#1124 merge point (or rebase before finishing), and re-run the site enumeration after the merge, not from the spec's static list.\n\n- Category: risk | Severity: medium\n  Finding: \"Constitution register entry (unimplemented until U2a1)\" + a \"constitution register drift test\" is ambiguous — if the drift test asserts that every registered ASK FIRST entry has a corresponding implemented hook, adding the register entry now will fail the test; if it only checks textual presence, it can't detect drift. Either way, the test contract needs to be pinned down.\n  Suggestion: Decide explicitly whether the register supports \"declared, not yet enforced\" entries (e.g. a status field), and state what the drift test actually asserts for U0.\n\n- Category: edge-case | Severity: low\n  Finding: The \"Done when\" grep check (\"no 'FR is a capability' wording left\") is wording-sensitive — paraphrases (\"an FR describes a capability\", \"FR = capability\") will pass the grep while violating the intent.\n  Suggestion: Grep for both \"capability\" in the named prompt/skill files and manually review each hit, rather than a single literal phrase.\n\n- Category: edge-case | Severity: low\n  Finding: \"no FR ids in text\" appears in the mini-plan but not the spec's schema description — if this is a schema-enforceable constraint (e.g. pattern on `text` fields), the schema can't reliably enforce it; if it's a convention, it belongs in fr-authoring/intent authoring guidance, not silently in the schema.\n  Suggestion: Clarify whether it's validation or convention; if convention, document it in […truncated]\n\n[openai] 1. **Approach · Medium**  \n   **Finding:** The mini-plan lists the glossary terms but omits the definitions of `confirmed` and `assumption` and the boundary of what carries status. Later units will rely on those definitions when they implement confirmation.  \n   **Suggestion:** Define both statuses and state that they apply to the intent text, each non-goal, each capability, and each key scenario. State explicitly that FRs, acceptance criteria, and tests carry no intent status.\n\n2. **Dependency · Medium**  \n   **Finding:** The plan promises to validate an `intent.md` fixture but leaves unspecified how its YAML front matter and Markdown body become the instance passed to the JSON Schema. A test built around a separate JSON object could pass while the checked-in Markdown fixture violates the format.  \n   **Suggestion:** Specify where each field lives and document the mapping to the schema. Validate the checked-in Markdown fixtures through that mapping in the test, using existing test utilities where available. Keep runtime parsing in its scheduled unit.\n\n3. **Edge-case · Medium**  \n   **Finding:** “No FR ids in text” adds a restriction absent from the supplied change specification. Applying it to free text could reject a legitimate non-goal or scenario that mentions an existing FR for context.  \n   **Suggestion:** Verify this restriction against rev 10 of the brief. If the brief excludes FRs as intent elements, enforce that through the allowed element ID families. Add a prose restriction only if the brief explicitly requires it.\n\n4. **Risk · Medium**  \n   **Finding:** The mini-plan omits STOP 1, so its implementation and test checklist could be treated as sufficient to merge before the operator approves the terms and format.  \n   **Suggestion:** Make recorded operator approval an explicit merge prerequisite and assign the hold to the orchestrator, as specified.\n\nThe documentation-and-schema approach fits U0. Resolve the file-format and confirmation semant […truncated]",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/requirement-elicitation.md",
+          "line": 347,
+          "finding": "Prompt still calls an FR a capability; fixed by sweep.",
+          "suggestion": "fixed",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/schemas/intent.schema.json",
+          "line": 22,
+          "finding": "Regex dialect: trailing newline and non-space whitespace pass; fixed with strict patterns and tests.",
+          "suggestion": "fixed",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-design/skills/design/references/upload-mode.md",
+          "line": 74,
+          "finding": "Tool messages keep the older word; recorded as deferred.",
+          "suggestion": "follow-up",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_intent_schema.py",
+          "line": 29,
+          "finding": "Reference parser dropped unmatched lines; now raises.",
+          "suggestion": "fixed",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-28T11:25:31.829393+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "0c2002cf5852b3b805b912fc0e68e8a606c40595"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "blast radius",
+          "file": "shared/requirement-elicitation.md",
+          "line": null,
+          "finding": "Claim under doubt: The FR-is-function sweep is complete. — requirement-elicitation.md and guide.md still used the old sense.",
+          "suggestion": "sweep; done",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary",
+          "file": "shared/scripts/tools/brief_project_mode.py",
+          "line": null,
+          "finding": "Claim under doubt: Prompts and tool strings agree. — Tool strings still say capability.",
+          "suggestion": "named in fr-authoring section 2 and the ADR as follow-up",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary",
+          "file": "shared/schemas/intent.schema.json",
+          "line": null,
+          "finding": "Claim under doubt: Schema test proves rejection. — Reference parser dropped lines.",
+          "suggestion": "parser raises; rules stated",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "honesty",
+          "file": "shared/glossary.md",
+          "line": null,
+          "finding": "Claim under doubt: Glossary states confirmation accurately. — Present tense for unbuilt F11 rule.",
+          "suggestion": "reworded",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-28T11:25:31.955269+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "0c2002cf5852b3b805b912fc0e68e8a606c40595"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/fr-authoring.md",
+          "line": 49,
+          "finding": "The diff documents the Capability column and the human ownership of `intent.md`, but it contains no ADR drop. U0 explicitly requires a generated decision record covering both choices.",
+          "suggestion": "Use `write_decision_drop.py` to generate the record and include it in the change. Record that Capability sits alongside D7 and Area is rendered from the FR ID.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "plugins/shipwright-project/skills/project/references/spec-generation.md",
+          "line": 198,
+          "finding": "The active spec-generation prompt says Capability assignments are stored in a `Capability` column, while its canonical table immediately above has seven columns and omits `Capability`. An agent following the prose can emit a different table from the one the prompt requires. U0 calls for recording the column decision while leaving authoring behavior for a later unit.",
+          "suggestion": "Describe the Capability column as a future format change here and in `shared/fr-authoring.md:49`. Keep the current authoring instructions consistent with the seven-column template.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/schemas/intent.schema.json",
+          "line": 36,
+          "finding": "The schema accepts capability names that violate the documented file format. `Collection: recipes` passes the name pattern, but the fixture reader uses the first colon as the delimiter and reads back the name as `Collection`. A name such as `FR-01.02` also passes, bypassing the file-wide rule against FR references.",
+          "suggestion": "Exclude colons throughout capability names and apply the FR-reference restriction to names as well as element text. Add validation cases for both inputs.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "shared/schemas/intent.schema.json",
+          "line": 23,
+          "finding": "The FR-reference pattern rejects ordinary intent text containing `FR4` or `FR 4`, even though neither is an FR catalog ID. For example, an electronics product cannot state that it supports `FR4 boards`.",
+          "suggestion": "Match the actual `FR-{group}.{NN}` syntax with token boundaries. Test that `FR-01.02` is rejected and `FR4 boards` is accepted.  Overall assessment: Ship-with-fixes. The vocabulary and fixture-based validation are in place. Complete the ADR drop and align the authoring guidance and schema before approval.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-28T11:10:27.559508+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] Findings:\n\n- Category: spec — Severity: high — shared/schemas/intent.schema.json (and whole diff) — The spec's item (4) requires an ADR drop (via `write_decision_drop.py`, never hand-numbered) recording two decisions: \"Capability column in the FR table next to D7 (Area rendered from the id)\" and \"intent.md as the second human-owned file in `.shipwright/`\". No ADR file appears anywhere in the diff. The diff *edits prose* that assumes the ADR exists (`spec-generation.md` Area paragraph now speaks of a \"stored and assigned `Capability` column\"; `fr-authoring.md` §2 likewise), but the decision record itself is absent. Suggestion: add the ADR drop for both decisions before merge; the FR-table prose changes currently cite a decision that is not on record.\n\n- Category: spec — Severity: low — shared/glossary.md:~270 / shared/schemas/intent.schema.json:6 — The schema description cites \"operator 2026-11-28\" while the spec says the operator decision is dated 2026-11-29. Harmless unless the date is meant to identify the operator ruling (as the glossary LOC comment does). Suggestion: align the date with the brief.\n\n- Category: test — Severity: low — shared/tests/test_intent_schema.py:42-49 — The malformed-file test partially works by accident: the bad status (`maybe`), bad id (`CAP-1`), and FR-id-in-text all fail on the *same* element, so if one rule were broken the assertion for the other two could still pass; more importantly the third assertion's fallback `\"should not be valid\"` matches nearly any `iter_errors` message mentioning the pattern keyword, so it could pass even if the FR-in-text rule did not fire (the first two assertions would already satisfy \"any\"). Suggestion: assert each violation against the specific offending element, e.g. check the error's `json_path` or that the FR-text message names the `not/pattern` keyword, rather than a loose \"any\" over all messages.\n\n- Category: edge-case — Severity: low — shared/schemas/intent.schema.json:25-30 — The FR-i […truncated]\n\n[openai] - **Category:** spec\n  **Severity:** medium\n  **File:line:** `shared/fr-authoring.md:49`\n  **Finding:** The diff documents the Capability column and the human ownership of `intent.md`, but it contains no ADR drop. U0 explicitly requires a generated decision record covering both choices.\n  **Suggestion:** Use `write_decision_drop.py` to generate the record and include it in the change. Record that Capability sits alongside D7 and Area is rendered from the FR ID.\n\n- **Category:** spec\n  **Severity:** medium\n  **File:line:** `plugins/shipwright-project/skills/project/references/spec-generation.md:198`\n  **Finding:** The active spec-generation prompt says Capability assignments are stored in a `Capability` column, while its canonical table immediately above has seven columns and omits `Capability`. An agent following the prose can emit a different table from the one the prompt requires. U0 calls for recording the column decision while leaving authoring behavior for a later unit.\n  **Suggestion:** Describe the Capability column as a future format change here and in `shared/fr-authoring.md:49`. Keep the current authoring instructions consistent with the seven-column template.\n\n- **Category:** bug\n  **Severity:** medium\n  **File:line:** `shared/schemas/intent.schema.json:36`\n  **Finding:** The schema accepts capability names that violate the documented file format. `Collection: recipes` passes the name pattern, but the fixture reader uses the first colon as the delimiter and reads back the name as `Collection`. A name such as `FR-01.02` also passes, bypassing the file-wide rule against FR references.\n  **Suggestion:** Exclude colons throughout capability names and apply the FR-reference restriction to names as well as element text. Add validation cases for both inputs.\n\n- **Category:** edge-case\n  **Severity:** medium\n  **File:line:** `shared/schemas/intent.schema.json:23`\n  **Finding:** The FR-reference pattern rejects ordinary intent text containing `FR4` or […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-28T11:19:28.105044+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "0c2002cf5852b3b805b912fc0e68e8a606c40595"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-28T10:13:21.813506+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-28T10:08:22.876971+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}
