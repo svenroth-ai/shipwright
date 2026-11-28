@@ -1,0 +1,1 @@
+shipwright-run: a phase can report that it waits for a pull request merge; the run then pauses without failing, shows what to do, and on Resume runs the same phase again (used by the changelog phase from the next unit on).

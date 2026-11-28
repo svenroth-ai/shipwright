@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "Findings:\n\n- Category: bug\n  Severity: medium\n  File: `plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_wait.py` (apply_waiting, `loop_state_unreadable` branch) and `plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_cli.py:38` (`_FAIL_CLOSED_REASONS`)\n  Finding: `apply_waiting` can return a new refusal reason `loop_state_unreadable`, but the diff does not add it to any CLI-side refusal/exit-code mapping (`_FAIL_CLOSED_REASONS` or an equivalent failure set). Depending on how `single_session_cli.py` classifies unknown `ok: False` reasons, an unreadable loop state on a waiting apply may exit 0 (looking like success) instead of failing closed \u2014 the exact failure mode the code comments say they want to avoid. There is also no test for this path.\n  Suggestion: Add `loop_state_unreadable` to the CLI's failure classification and add a test that a waiting apply with an unreadable/corrupt `run_loop_state.json` exits non-zero and writes nothing.\n\n- Category: bug\n  Severity: low\n  File: `plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_recovery.py` (~line 136\u2013150)\n  Finding: When `confirm=True` on a waiting run, the function re-resolves `resolved` after releasing the hold, but the returned `context` was loaded before the release and `loop_state` in the returned pointer comes from the pre-release state in the non-waiting path \u2014 in the waiting path `loop_state` is reassigned so that's fine, but the stale `context` (and the fact that `waiting` in the output is the *entire* old `resolved` dict, including `action`/`next_step`, not a minimal `{pr_url, next_step}` block) makes the confirmed resume card structurally inconsistent with the unconfirmed one. Tests only assert `waiting is not None` / `pr_url` presence, so this asymmetry is unvalidated.\n  Suggestion: Return a stable minimal `waiting` block (pr_url, reason, next_step) in both confirmed and unconfirmed resume responses, and re-load `context` after the hold release.\n\n- Category: test\n  Severity: low\n  File: `plugins/shipwright-run/tests/test_single_session_waiting.py` (`test_a_late_waiting_result_from_an_older_dispatch_writes_nothing`)\n  Finding: The assertion `applied == {**applied, \"ok\": False, \"reason\": \"stale_version\"}` is a tautology-compatible pattern only if `applied` has no other keys; it actually asserts the dict equals itself with two keys overridden \u2014 i.e. it only checks `ok` and `reason` and silently permits any extra keys, so a regression adding stale fields to the refusal would still pass.\n  Suggestion: Assert `applied[\"ok\"] is False and applied[\"reason\"] == \"stale_version\"` and, if the exact refusal shape matters, compare the full dict.\n\n- Category: edge-case\n  Severity: low\n  File: `plugins/shipwright-run/scripts/hooks/master_stop_check.py` (`_waiting_task`)\n  Finding: If the run config's task is `in_progress` and versions match but the loop-state marker was written by a *different session* of the same task (session UUID rotated by a re-dispatch that didn't bump version), the hook still prints the WAITING banner; the loop-side `waiting_action` has the same property. Given `record_waiting`/`waiting_for` never check the session, this is consistent with the design, but it means a stale marker that survives a same-version session change is indistinguishable. Low impact since version rotation covers re-dispatch.\n  Suggestion: None needed unless session rotation without version bump is possible; if it is, key the marker on sessionUuid too.\n\nSecurity: the `pr_url` is validated as a plain https URL with a character-class regex excluding control/escape chars in both the contract and the Stop hook, and the hook re-validates before printing \u2014 no injection path found. Event emission is best-effort with a closed type set. No auth/secrets concerns.\n\nSpec compliance: all four ACs are implemented and exercised by real end-to-end tests (task stays in_progress, run not complete, no deploy task; `next` answers `waiting` with the link; resume re-dispatches the same task with a rotated version; ok-after-waiting both schedules deploy and ends the run with `deploy_target: none`). Docs, skill, reference, agent contract, and observability are all updated consistently, including the \"inert until U6\" gating (changelog phase only, validated).\n\nOverall assessment: a well-executed, thoroughly tested change; the findings are refinements, the most concrete being the unclassified `loop_state_unreadable` refusal reason. Ship-with-fixes.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "- **Category:** bug  \n  **Severity:** medium  \n  **File:line:** `plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_recovery.py:143`  \n  **Finding:** Confirming Resume clears the hold while the previous dispatch\u2019s version is still valid. If that dispatch\u2019s waiting result is retried before the next `single-session-next` call, apply accepts it and reinstates the hold. The next call then reports `waiting` again instead of redispatching the changelog task. The existing stale-result test only retries after the version has already rotated.  \n  **Suggestion:** Invalidate the previous dispatch as part of releasing the hold. Add a test that confirms Resume, replays the old result before calling next, and verifies that next dispatches the same task.\n\n- **Category:** edge-case  \n  **Severity:** low  \n  **File:line:** `plugins/shipwright-run/scripts/lib/single_session/result_contract.py:189`  \n  **Finding:** The regex checks allowed characters but does not require a hostname. A value such as `https:///pull/42` passes validation and puts the run on hold with an unusable PR link.  \n  **Suggestion:** Keep the character check, parse the URL, and require a nonempty hostname. Add a regression case for a missing hostname.\n\n**Ship-with-fixes.** The diff covers the expected wait, resume, and deploy transitions, but a replay can undo a confirmed resume. Workspace commands were blocked, so I reviewed the supplied diff and could not verify the full campaign brief, pipeline document, or test suite.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-11-28-u5-pipeline-waits-for-merge",
+    "at": "2026-11-28T17:47:05.630829+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

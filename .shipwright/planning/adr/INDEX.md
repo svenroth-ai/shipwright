@@ -234,3 +234,4 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [Guard and close-phase accept a proven merge commit](iterate-2026-11-28-u2-guard-accepts-proven-merge.md)
 - [push-tag proves a squash or rebase merge commit, retags, stops on foreign commits](iterate-2026-11-28-u3-push-tag-squash-proof.md)
 - [The autonomous release merge picks its method, pins the head, stops when the base moved](iterate-2026-11-28-u4-autonomous-merge-method.md)
+- [A pipeline phase can wait for an outside event (the release pull request merge)](iterate-2026-11-28-u5-pipeline-waits-for-merge.md)

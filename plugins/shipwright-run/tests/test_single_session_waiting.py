@@ -110,12 +110,14 @@ def test_contract_accepts_a_changelog_waiting_result():
     ({"waiting": "merge"}, "'waiting' must be a dict"),
     ({"phase": "build"}, "only the ('changelog',) phase"),
 ])
+@pytest.mark.covers("FR-01.01/AC39")
 def test_contract_refuses_a_malformed_waiting_result(bad, needle):
     result = {**_waiting(), **bad}
     errors = validate_phase_runner_result(result)
     assert any(needle in e for e in errors), errors
 
 
+@pytest.mark.covers("FR-01.01/AC39")
 def test_contract_refuses_a_waiting_reason_without_the_block():
     """A runner that only says reason=waiting_for_merge would be strict-stopped as failed."""
     result = {"ok": False, "phase": "changelog", "summary": "s", "artifacts": [],
@@ -204,6 +206,7 @@ def test_a_late_waiting_result_from_an_older_dispatch_writes_nothing(tmp_project
     assert loop.resolve_next_dispatch(tmp_project)["action"] == "dispatch"
 
 
+@pytest.mark.covers("FR-01.01/AC39")
 def test_a_replayed_waiting_result_cannot_undo_a_confirmed_resume(tmp_project):
     """Resume released the hold of dispatch d; d's waiting result, applied again before the
     next dispatch, is refused and the next call still dispatches the same task."""
@@ -216,6 +219,7 @@ def test_a_replayed_waiting_result_cannot_undo_a_confirmed_resume(tmp_project):
     assert again["phaseTaskId"] == d["phaseTaskId"]
 
 
+@pytest.mark.covers("FR-01.01/AC39")
 def test_an_unreadable_loop_state_fails_the_waiting_apply_closed(tmp_project):
     _run_to_changelog(tmp_project)
     d = _dispatch(tmp_project)
@@ -228,6 +232,7 @@ def test_an_unreadable_loop_state_fails_the_waiting_apply_closed(tmp_project):
     assert task["status"] == "in_progress"
 
 
+@pytest.mark.covers("FR-01.01/AC39")
 def test_waiting_refuses_an_override_and_a_task_that_is_not_open(tmp_project):
     _run_to_changelog(tmp_project)
     d = _dispatch(tmp_project)
@@ -240,6 +245,7 @@ def test_waiting_refuses_an_override_and_a_task_that_is_not_open(tmp_project):
     assert late["ok"] is False
 
 
+@pytest.mark.covers("FR-01.01/AC39")
 def test_recover_makes_the_hold_stale(tmp_project):
     _run_to_changelog(tmp_project)
     d, _ = _wait(tmp_project)
@@ -247,6 +253,7 @@ def test_recover_makes_the_hold_stale(tmp_project):
     assert loop.resolve_next_dispatch(tmp_project)["action"] == "dispatch"
 
 
+@pytest.mark.covers("FR-01.01/AC39")
 def test_a_gate_decision_for_a_person_comes_before_the_hold(tmp_project):
     _run_to_changelog(tmp_project)
     d, _ = _wait(tmp_project)
@@ -256,6 +263,7 @@ def test_a_gate_decision_for_a_person_comes_before_the_hold(tmp_project):
     assert loop.resolve_next_dispatch(tmp_project)["action"] == "ask_human"
 
 
+@pytest.mark.covers("FR-01.01/AC39")
 def test_waiting_resets_the_retry_count(tmp_project):
     """A waiting pass is a finished pass: the re-dispatch does not eat the gate retry budget."""
     _run_to_changelog(tmp_project)
@@ -322,6 +330,7 @@ def test_stop_hook_names_the_waiting_pull_request(tmp_project):
     assert "PIPELINE WAITING" not in _stop_banner(tmp_project)
 
 
+@pytest.mark.covers("FR-01.01/AC39")
 def test_a_task_of_another_phase_cannot_be_held(tmp_project):
     """The contract checks the phase the result names; apply checks the task's own phase."""
     create_config("full_app", "python-plugin-monorepo", "guided", "none", tmp_project,
@@ -343,6 +352,7 @@ def _hook_module():
     return mod
 
 
+@pytest.mark.covers("FR-01.01/AC39")
 def test_stop_hook_in_process_reports_a_hold_and_not_a_released_one(tmp_project, capsys):
     hook = _hook_module()
     assert hook._PR_URL_RE.pattern == __import__(

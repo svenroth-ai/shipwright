@@ -4,13 +4,13 @@
   "reviews": {
     "self": {
       "review_type": "self",
-      "status": "pending",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": null,
+      "completed_at": "2026-11-28T18:12:37.181178+00:00",
       "disposition": null,
-      "recorded_by": null,
+      "recorded_by": "self-review",
       "parse_status": null,
       "raw_excerpt": null
     },
@@ -128,27 +128,76 @@
         }
       ],
       "provider": null,
-      "completed_at": "2026-11-28T17:51:11.887378+00:00",
+      "completed_at": "2026-11-28T18:09:08.243164+00:00",
       "disposition": null,
       "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus",
       "verdict": "pass",
-      "reviewed_commit": "5c437cfdb6f8fd09b66648ecc23ab72b7888efbc",
+      "reviewed_commit": "af6bb77e6a70cc5ddaffacf9b41812b959dd902c",
       "reviewer_notes": "code-reviewer (opus) on origin/main...5c437cfdb. All three findings accepted and fixed in the next commit."
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "pending",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_apply.py:182; single_session_wait.py:86",
+          "line": null,
+          "finding": "a held phase only finishes via Resume + re-dispatch",
+          "suggestion": "refuse any apply whose task has a waiting marker at the current version",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "concurrency",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_wait.py:80-96",
+          "line": null,
+          "finding": "the marker write is race-free",
+          "suggestion": "confirm a single serial writer or lock",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "blast radius",
+          "file": "plugins/shipwright-run/scripts/lib/single_session/loop_state.py:108",
+          "line": null,
+          "finding": "the gate retry cap still holds",
+          "suggestion": "accept as intended or preserve gateRejections",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-run/scripts/lib/single_session/result_contract.py:171",
+          "line": null,
+          "finding": "runs that never emit waiting are unchanged",
+          "suggestion": "accept; no pipeline producer emits it today",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "reversibility",
+          "file": "plugins/shipwright-run/scripts/lib/single_session/result_contract.py:30-36",
+          "line": null,
+          "finding": "re-dispatching the held phase is safe",
+          "suggestion": "U6 test: a re-run with an open PR reports waiting without a second PR",
+          "source": "doubt-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": null,
+      "completed_at": "2026-11-28T18:12:37.040216+00:00",
       "disposition": null,
-      "recorded_by": null,
+      "recorded_by": "doubt-reviewer",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "7fb13a45bf5917617a3733a1f2fecffedb33ecc6"
     },
     "external_code": {
       "review_type": "external_code",
@@ -227,14 +276,14 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-11-28T17:50:10.459163+00:00",
+      "completed_at": "2026-11-28T18:09:08.100329+00:00",
       "disposition": null,
       "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus",
       "verdict": "pass",
-      "reviewed_commit": "5c437cfdb6f8fd09b66648ecc23ab72b7888efbc",
+      "reviewed_commit": "af6bb77e6a70cc5ddaffacf9b41812b959dd902c",
       "ac_verdicts": [
         {
           "ac": "item-1",
