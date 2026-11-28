@@ -135,3 +135,31 @@ def test_the_security_gate_reads_the_new_place_and_never_widens_on_two_copies(tm
     assert gate.load_threshold(tmp_path) == 3
     (tmp_path / sp.legacy_rel("compliance_config")).write_text(cfg, encoding="utf-8")
     assert gate.load_threshold(tmp_path) == 0   # two copies: zero tolerance, no exception into the fail-open hook
+
+
+@pytest.mark.covers("FR-01.11")
+def test_the_security_gate_lets_an_unrelated_error_through(tmp_path, monkeypatch):
+    """Only a broken layout reads as zero tolerance; any other fault is not swallowed by that branch."""
+    gate = _security_gate()
+    _new(tmp_path, "compliance_config", "{}")
+
+    def boom(*_a, **_k):
+        raise KeyError("unrelated")
+    monkeypatch.setattr(gate.json, "loads", boom)
+    with pytest.raises(KeyError):
+        gate.load_threshold(tmp_path)
+
+
+@pytest.mark.covers("FR-01.11")
+def test_never_raise_readers_stay_total_on_two_copies(tmp_path):
+    """Readers documented as never raising answer conservatively on two copies of the run config."""
+    from lib import gate_policy, phase_invocation_mode
+    body = json.dumps({"schemaVersion": 2, "mode": "single_session"})
+    _new(tmp_path, "run_config", body)
+    (tmp_path / sp.legacy_rel("run_config")).write_text(body, encoding="utf-8")
+    assert project_facts.read_run_config(tmp_path) == {}
+    assert gate_policy.read_run_config_mode(tmp_path) == gate_policy.INERT_MODE
+    assert phase_invocation_mode.read_run_config(tmp_path) is None
+    payload = phase_invocation_mode.resolve_invocation_mode(tmp_path, "pt-1")[0]
+    assert payload["mode"] == phase_invocation_mode.ERROR and payload["reason"] == "run_config_unreadable"
+    assert "both" in payload["message"].lower() or sp.legacy_rel("run_config") in payload["message"]

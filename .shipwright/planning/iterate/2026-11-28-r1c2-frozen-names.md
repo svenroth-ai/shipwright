@@ -99,3 +99,6 @@ APPROVE, no critical or high. Fixed: `fr_split` resolves each path once. Recorde
 
 ## Doubt Review (Stage 3)
 Four low doubts. Fixed: class-8 sees `subprocess.run(["git", ...path()...])`; the joins guard unwraps `Path()`/`str()`/f-string at the use site; the safety-window pin names the D1 dev-server file. Accepted with rebuttal (Spec Impact): the 2 KiB stub check now opens the root run config at existence-only sites; writers retry the Windows sharing violation.
+
+## Tier-3 PR Review (PR #1128)
+BLOCK, fixed in a second commit: the three readers documented as never raising (`gate_policy`, `phase_invocation_mode`, `project_facts`) now catch `LayoutError` by type and return their safe value or a structured error (test with two copies); the security gate catches by type and lets an unrelated error through (test); the handoff assertion pins the exact branch per file. Not changed: committed review records are the pipeline's evidence by design (F6 stages the run directory; `reviews.json` is what F11 and the Tier-3 tier decision read).

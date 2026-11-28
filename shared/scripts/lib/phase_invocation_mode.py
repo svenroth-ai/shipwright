@@ -78,12 +78,9 @@ def read_run_config(project_root: Path) -> Optional[dict[str, Any]]:
     when it matters most — a token-bearing invocation, which must produce a structured
     ``error``, not a traceback (external code review, GPT).
     """
-    config_path = _sp.path("run_config", Path(project_root))
-    if not config_path.exists():
-        return None
-    try:
-        config = json.loads(config_path.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError, UnicodeDecodeError):
+    try:  # two copies (LayoutError) read as unreadable, never a traceback
+        config = json.loads(_sp.path("run_config", Path(project_root)).read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError, UnicodeDecodeError, _sp.LayoutError):
         return None
     if not isinstance(config, dict) or config.get("schemaVersion") != 2:
         return None
@@ -230,11 +227,14 @@ def resolve_invocation_mode(
     phase_task_id = phase_task_id.strip()
 
     root = Path(project_root)
-    if not (_sp.path("run_config", root)).exists():
+    try:
+        present = _sp.path("run_config", root).exists()
+    except _sp.LayoutError as exc:  # two copies: a structured error, never a traceback
+        return _error_payload("run_config_unreadable", phase_task_id, str(exc)), None, None
+    if not present:
         return _error_payload(
             "no_run_config", phase_task_id,
-            f"dispatched with phaseTaskId {phase_task_id} but no {CONFIG_NAME} exists "
-            f"at {root}",
+            f"dispatched with phaseTaskId {phase_task_id} but no {CONFIG_NAME} exists at {root}",
         ), None, None
 
     config = read_run_config(root)
