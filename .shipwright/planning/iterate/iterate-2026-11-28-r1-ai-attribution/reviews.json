@@ -94,9 +94,9 @@
         {
           "severity": "medium",
           "category": "correctness",
-          "file": "plugins/shipwright-compliance/tests/test_change_history.py",
+          "file": ".shipwright/compliance/change-history.md",
           "line": null,
-          "finding": "git fixture not hermetic (GIT_* env leak); fixed with hook_env + scrub_git_env",
+          "finding": "Regenerated report count not shown in the diff.",
           "suggestion": null,
           "source": "code-reviewer"
         },
@@ -104,17 +104,8 @@
           "severity": "low",
           "category": "correctness",
           "file": "plugins/shipwright-compliance/scripts/lib/collectors/change_history.py",
-          "line": null,
-          "finding": "log.showSignature would glue gpg lines to hash; fixed with --no-show-signature",
-          "suggestion": null,
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": "correctness",
-          "file": "plugins/shipwright-compliance/scripts/lib/collectors/change_history.py",
-          "line": null,
-          "finding": "trailer format needs git>=2.24; documented",
+          "line": 37,
+          "finding": "git >= 2.24 comment unverified; old git would silently print the placeholder.",
           "suggestion": null,
           "source": "code-reviewer"
         },
@@ -123,33 +114,73 @@
           "category": "readability",
           "file": "plugins/shipwright-compliance/tests/test_change_history.py",
           "line": null,
-          "finding": "imports at module top; fixed",
+          "finding": "test_email_alone_does_not_count sits in the real-git class.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-compliance/scripts/lib/collectors/_types.py",
+          "line": null,
+          "finding": "Substring 'claude' also matches a human named Claude.",
           "suggestion": null,
           "source": "code-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-11-28T10:12:53.598352+00:00",
+      "completed_at": "2026-11-28T12:08:12.833660+00:00",
       "disposition": null,
       "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus",
       "verdict": "pass",
-      "reviewed_commit": "af9a0c475cf879d726dde1be1e375918fb74414d"
+      "reviewed_commit": "8d7b58fe5fbc2cdb51ad8f4e468b0ac997a4364b",
+      "reviewer_notes": "Opus code-reviewer at 3f-bis; NUL splitting, multi-trailer, case-insensitive key, Windows encoding and hermetic git test verified correct."
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "not_applicable",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "low",
+          "category": null,
+          "file": "plugins/shipwright-compliance/scripts/lib/collectors/change_history.py",
+          "line": null,
+          "finding": "older git fails loudly",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": ".shipwright/compliance/change-history.md",
+          "line": null,
+          "finding": "report shows the new count",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": "plugins/shipwright-compliance/scripts/lib/collectors/_types.py",
+          "line": null,
+          "finding": "only Claude co-authors counted",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-11-28T10:12:54.155631+00:00",
-      "disposition": "closed by reason_code diff-below-threshold",
-      "recorded_by": "none",
+      "completed_at": "2026-11-28T12:08:12.969355+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "diff-below-threshold"
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "8d7b58fe5fbc2cdb51ad8f4e468b0ac997a4364b"
     },
     "external_code": {
       "review_type": "external_code",
@@ -238,14 +269,14 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-11-28T10:11:10.868733+00:00",
+      "completed_at": "2026-11-28T12:08:12.695910+00:00",
       "disposition": null,
       "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus",
       "verdict": "pass",
-      "reviewed_commit": "0464fd6b32254528d18f1fdb74a258a955be06d1"
+      "reviewed_commit": "8d7b58fe5fbc2cdb51ad8f4e468b0ac997a4364b"
     },
     "plan_internal": {
       "review_type": "plan_internal",
