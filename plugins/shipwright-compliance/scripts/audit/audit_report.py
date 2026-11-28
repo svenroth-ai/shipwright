@@ -27,9 +27,29 @@ from scripts.audit.audit_adapters import (
     Finding,
 )
 from scripts.audit.audit_detector import AuditReport
+from scripts.lib.audit_freshness import mark_audit_report_stale
 
 _SEVERITY_ORDER = {"HIGH": 0, "MEDIUM": 1, "LOW": 2}
 _STATUS_ORDER = {"fail": 0, "skip": 1, "pass": 2}
+
+
+def format_generated(ran_at: str | None) -> str:
+    """The ``Generated:`` stamp, derived from the run record (``report.ran_at``).
+
+    The run record is the one source for "last run"; the wall clock is only the
+    fallback for a hand-built report that never recorded one.
+    """
+    when = None
+    if ran_at:
+        try:
+            when = datetime.fromisoformat(ran_at)
+        except ValueError:
+            when = None
+    if when is None:
+        when = datetime.now(timezone.utc)
+    elif when.tzinfo is None:
+        when = when.replace(tzinfo=timezone.utc)
+    return when.astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
 
 
 def _sort_key(f: Finding) -> tuple:
@@ -96,7 +116,7 @@ def render_markdown(
     project_root: Path | None = None,
 ) -> str:
     """Produce the Markdown form of the report."""
-    generated = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+    generated = format_generated(report.ran_at)
     preventive = [f for f in report.findings if f.source == SOURCE_PREVENTIVE_RERUN]
     detective = [f for f in report.findings if f.source == SOURCE_DETECTIVE_ONLY]
 
@@ -171,6 +191,9 @@ def write(
     json_out: bool = True,
 ) -> dict[str, Path]:
     """Persist the report(s) under ``project_root``. Returns {format: path}."""
+    if not report.ran_at:
+        # Mint once so the md and json can never disagree about when this ran.
+        report.ran_at = datetime.now(timezone.utc).isoformat()
     paths: dict[str, Path] = {}
     if markdown:
         md_dir = project_root / ".shipwright" / "compliance"
@@ -191,4 +214,7 @@ def write(
         json_path = json_dir / "audit-report.json"
         json_path.write_text(render_json(report), encoding="utf-8")
         paths["json"] = json_path
+        if not markdown:
+            # An older md left behind must say so, not pose as the current run.
+            mark_audit_report_stale(project_root)
     return paths

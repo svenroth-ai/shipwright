@@ -1,0 +1,1 @@
+{"v":1,"id":"evt-d1c6e4ca6f5c471d","ts":"2026-11-28T13:02:22.941651+00:00","type":"grade_snapshot","session":"c7be30c9-d0a8-4936-98b6-bb359d9e8446","grade":"A","score":97.4,"dirty":true,"lineage":"branch","branch":"iterate/campaign-R4-audit-date","base":"7022e510cef6f8f9468b600ab123071bff4ac27d","run":"campaign-intent-pyramid--R4"}

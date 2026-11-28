@@ -23,9 +23,7 @@ import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent
 )
 
 # Every group callable takes ``(project_root, config, data)`` and returns
-# a list of Findings. Missing groups raise ``NotImplementedError`` for now
-# so the detector skeleton can be imported + unit-tested independently of
-# the check implementations.
+# a list of Findings (missing groups: ``NotImplementedError`` until wired).
 GroupFn = Callable[[Path, dict, Any], list[Finding]]
 
 
@@ -38,6 +36,7 @@ class AuditReport:
     groups_run: list[str] = field(default_factory=list)
     groups_skipped: list[tuple[str, str]] = field(default_factory=list)  # (group, reason)
     import_gate_error: str | None = None
+    ran_at: str | None = None  # run instant, minted once; md/json/record share it
 
     @property
     def any_fail(self) -> bool:
@@ -53,6 +52,7 @@ class AuditReport:
                 {"group": g, "reason": r} for g, r in self.groups_skipped
             ],
             "import_gate_error": self.import_gate_error,
+            "ran_at": self.ran_at,
         }
 
 

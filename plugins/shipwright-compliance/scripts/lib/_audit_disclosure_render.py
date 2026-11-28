@@ -26,7 +26,7 @@ checked          the last whole-project cross-check, with its age
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 # RELATIVE, deliberately (ADR-045). ``collect_all`` reaches this module as
@@ -50,6 +50,17 @@ _ON_DEMAND = (
 )
 
 
+def _day(ran_at: str) -> str:
+    """The UTC calendar day of ``ran_at`` (a ``+02:00`` stamp is shifted)."""
+    try:
+        when = datetime.fromisoformat(ran_at)
+    except ValueError:
+        return ran_at[:10]
+    if when.tzinfo:
+        when = when.astimezone(timezone.utc)
+    return when.date().isoformat()
+
+
 def _age_phrase(ran_at: str, as_of: str) -> str:
     """How long before ``as_of`` the run happened; ``""`` when undeterminable.
 
@@ -58,7 +69,7 @@ def _age_phrase(ran_at: str, as_of: str) -> str:
     nonsense ("checked in 2 days").
     """
     try:
-        ran = date.fromisoformat(ran_at[:10])
+        ran = date.fromisoformat(_day(ran_at))
         ref = date.fromisoformat((as_of or "")[:10])
     except (ValueError, TypeError):
         return ""
@@ -70,7 +81,7 @@ def _age_phrase(ran_at: str, as_of: str) -> str:
 
 def _when(record: AuditRecord, as_of: str) -> str:
     age = _age_phrase(record.ran_at, as_of)
-    return f"{record.ran_at[:10]}{f' ({age})' if age else ''}"
+    return f"{_day(record.ran_at)}{f' ({age})' if age else ''}"
 
 
 def _verdict(record: AuditRecord) -> str:
@@ -103,13 +114,14 @@ def format_note(freshness: AuditFreshness, *, as_of: str) -> str:
         )
     return (
         f"{_LEAD}last full run {_when(full, as_of)} — {_verdict(full)}; "
-        f"latest {latest.ran_at[:10]} partial ({_groups(latest)})"
+        f"latest {_day(latest.ran_at)} partial ({_groups(latest)})"
     )
 
 
 def freshness_note(project_root: Path, *, as_of: str) -> str:
     """:func:`format_note` over the project's durable record."""
-    return format_note(load_audit_freshness(project_root), as_of=as_of)
+    freshness = load_audit_freshness(project_root)
+    return format_note(freshness, as_of=as_of)
 
 
 def _checks_sentence(record: AuditRecord) -> str:
@@ -150,9 +162,9 @@ def _headline(freshness: AuditFreshness, as_of: str) -> list[str]:
 def render_consistency_audit(project_root: Path, *, as_of: str) -> list[str]:
     """The dashboard's Consistency Audit section (AR-03).
 
-    Rendered from the durable record ONLY — never from the gitignored
-    ``audit-report.*`` transients — so the tracked dashboard reads identically on
-    a developer's machine, in CI, and on the public repo.
+    Rendered from the tracked record ONLY — never from the gitignored
+    ``audit-report.*`` files, which are local and not tied to the branch — so the
+    tracked dashboard reads identically on every machine.
     """
     lines = ["## 🔎 Consistency Audit", ""]
     freshness = load_audit_freshness(project_root)
