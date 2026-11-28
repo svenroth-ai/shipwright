@@ -132,6 +132,16 @@ def test_a_rebase_merge_of_the_release_branch_is_proven(merged):
     assert proof.proven(_git_fn(repo), record) == tip and proof.accepts(_git_fn(repo), record, tip)
 
 
+def test_a_merge_commit_on_an_unmoved_base_is_proven(merged):
+    repo = merged["repo"]
+    git(repo, "checkout", "-q", "-b", "merged-no-ff", merged["base"])
+    git(repo, "merge", "-q", "--no-ff", "-m", "Merge the release", merged["H"])
+    merge = git(repo, "rev-parse", "HEAD")
+    git(repo, "checkout", "-q", "release/next")
+    record = _record(merged, published_commit=merge, merged_via="merge")
+    assert proof.proven(_git_fn(repo), record) == merge and proof.accepts(_git_fn(repo), record, merge)
+
+
 def test_a_merge_commit_made_after_the_base_moved_is_not_proven(merged):
     repo = merged["repo"]
     git(repo, "checkout", "-q", "-b", "moved", merged["base"])
@@ -239,7 +249,7 @@ def test_a_release_that_does_not_wait_and_whose_tag_is_missing_says_so():
 
 
 @pytest.mark.covers("FR-01.09/AC11")
-def test_the_second_close_phase_of_a_guided_release_says_pushed_once_the_tag_is_on_origin(merged, plugin_root):
+def test_the_second_close_phase_of_a_guided_release_says_pushed_once_the_tag_is_on_origin_via_verify(merged, plugin_root):
     repo = merged["repo"]
     release_runstate.patch(repo, VERSION, mode="standalone", autonomy="guided", on_trunk=False, pr_url="u", branch="release/next")
     _record(merged)

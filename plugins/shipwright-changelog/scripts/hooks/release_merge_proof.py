@@ -20,7 +20,9 @@ claim at all (the release-descent rule alone).
 Trust boundary: this rule proves content and that S grows from the recorded base, not that S is on the base on origin. That is proven by the writer (U3: S is an ancestor of
 the freshly fetched base) and checked again by the closing verify's PR check (S on the base on origin). The guard cannot ask the
 remote (D90), so a commit with exactly the release's tree that is not on the base passes the guard; its content is the audited
-release, so the worst case is a tag off the trunk, which the closing verify then fails. A merge commit or a squash made after the
+release, so the worst case is a tag off the trunk, which the closing verify then fails. ``base_before`` means what U3's writer
+makes it mean (the fetched base tip the merge was made on); a hand-edited record can name any ancestor of S there, so the
+guard's protection rests on the two tree checks, never on ``base_before``. A merge commit or a squash made after the
 base moved has another tree and is refused here; U3 keeps a merge commit on R and stops on foreign commits (D112).
 
 The caller supplies ``git(*args) -> (exit_code, stdout)`` as for ``release_descent``. Loaded by ``release_guard.py`` from its own
