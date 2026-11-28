@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-28-u1a-capability-column",
+  "date": "2026-11-28",
+  "section": "Iterate — change: optional Capability column in the FR table",
+  "title": "Optional Capability column after Area; every FR-table reader tolerant",
+  "context": "Intent pyramid U1a: the FR table needs a stored Capability column (U0 ADR) before values (U2b) and a gate (U1b) arrive; fixed-shape readers would break on it.",
+  "decision": "Define the with-Capability shape in fr_table_shape (after Area); the layer writer accepts both canonical headers; the label-hit scan reads bookkeeping columns by header; the digest ignores Capability. Producers still emit seven columns.",
+  "consequences": "Readers take the table with and without the column; webui fold-map.ts and leadwright spec-ac-parsing.ts are positional and must be fixed before U2b fills the column.",
+  "rationale": "Header-driven reading removes position dependence for the next optional column too; Capability is AI-owned bookkeeping, not normative text.",
+  "rejected": "Column last (keeps external positional readers working but departs from the U0 ADR); derive from the id group; store outside the table.",
+  "commit": "",
+  "architecture_impact": "convention",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-11-28-u1a-capability-column-fr-table-reader-inventory.md"
+}

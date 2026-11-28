@@ -7,6 +7,9 @@ simply moved upstream. This module is the producer-side counterpart:
 
     | ID | Area | Name | Priority | Description | Basis | Layers |
 
+plus, optionally, a stored ``Capability`` column right after ``Area`` (see
+``FR_TABLE_COLUMNS_WITH_CAPABILITY``).
+
 **It is deliberately a two-sided contract, not a writer helper.** The
 ``(inferred)`` marker lives here and the compliance-side provenance rule imports
 it from here, because producer and consumer of a serialized format that each keep
@@ -50,6 +53,35 @@ FR_TABLE_COLUMNS: tuple[str, ...] = (
 #: and the greenfield template looks correct in both files independently.
 FR_TABLE_HEADER = "| " + " | ".join(FR_TABLE_COLUMNS) + " |"
 FR_TABLE_SEPARATOR = "|" + "|".join("---" for _ in FR_TABLE_COLUMNS) + "|"
+
+#: The optional stored ``Capability`` column (intent pyramid, U1a; ADR "Capability
+#: column next to D7"). A CAP id assigned by the AI, product-level, unlike ``Area``
+#: (rendered from the group digit). It sits directly after ``Area``. Producers keep
+#: emitting :data:`FR_TABLE_COLUMNS` until a unit fills values (U2b); every READER
+#: must take a spec with and without it, which is why the writer helper and the
+#: label-hit scan resolve columns from the header instead of from a fixed index.
+CAPABILITY_COLUMN = "Capability"
+FR_TABLE_COLUMNS_WITH_CAPABILITY: tuple[str, ...] = (
+    FR_TABLE_COLUMNS[:2] + (CAPABILITY_COLUMN,) + FR_TABLE_COLUMNS[2:]
+)
+FR_TABLE_HEADER_WITH_CAPABILITY = "| " + " | ".join(FR_TABLE_COLUMNS_WITH_CAPABILITY) + " |"
+FR_TABLE_SEPARATOR_WITH_CAPABILITY = (
+    "|" + "|".join("---" for _ in FR_TABLE_COLUMNS_WITH_CAPABILITY) + "|"
+)
+
+
+def columns_of_canonical_header(line: str) -> tuple[str, ...] | None:
+    """The column tuple a header line equals verbatim, or ``None``.
+
+    Recognises exactly the two canonical headers (without and with ``Capability``;
+    trailing whitespace aside). Anything else is a differently-shaped table.
+    """
+    stripped = line.rstrip()
+    if stripped == FR_TABLE_HEADER:
+        return FR_TABLE_COLUMNS
+    if stripped == FR_TABLE_HEADER_WITH_CAPABILITY:
+        return FR_TABLE_COLUMNS_WITH_CAPABILITY
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -147,7 +179,12 @@ def area_for(fr_id: str, split_dir_name: str) -> str:
 
 
 __all__ = [
+    "CAPABILITY_COLUMN",
     "FR_TABLE_COLUMNS",
+    "FR_TABLE_COLUMNS_WITH_CAPABILITY",
+    "FR_TABLE_HEADER_WITH_CAPABILITY",
+    "FR_TABLE_SEPARATOR_WITH_CAPABILITY",
+    "columns_of_canonical_header",
     "FR_TABLE_HEADER",
     "FR_TABLE_SEPARATOR",
     "INFERRED_MARKER",

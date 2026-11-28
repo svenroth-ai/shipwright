@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: spec\n- Severity: medium\n- File: `docs/hooks-and-pipeline.md:4428`\n- Finding: The diff summarizes several readers in the pipeline docs, but it leaves the required ADR or iterate-spec inventory missing. It also identifies positional readers in shipwright-webui and leadwright without recording follow-ups in those repos. The proposed timing leaves a compatibility gap because an empty `Capability` cell already shifts the later columns.\n- Suggestion: Record the complete reader inventory and each reader\u2019s verification result in the ADR or iterate spec. Record both downstream follow-ups and make them prerequisites for introducing eight-column specs to those consumers.\n\n- Category: regression\n- Severity: medium\n- File: `shared/scripts/tools/verifiers/_baseline_label_hits.py:218`\n- Finding: `_spec_lines` carries bookkeeping indices across Markdown headings. If an eight-column table is followed in a new section by a headerless seven-cell FR row, the stale indices drop that row\u2019s `Name` and retain its `Basis`. The previous implementation kept the name and excluded the basis, so this can hide a name-only edit or report a bookkeeping edit as substantive.\n- Suggestion: Reset the indices when leaving the table so headerless rows use the existing five-cell fallback. Add a regression test with an eight-column table followed by a headerless legacy row.\n\nShip-with-fixes. Complete the reader inventory and downstream follow-ups, and scope the baseline scanner\u2019s column indices to the table that declared them.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "## Review\n\nThe core change is sound and well-tested: the two fixed-shape readers (`fr_layer_cell_writer`, `_baseline_label_hits`/`_baseline_touch_spec`) are converted to header-driven, `columns_of_canonical_header` is a clean two-sided contract, and the tests genuinely pin behavior (idempotence, refusal on two candidate headers across shapes, wrong-cell-count refusal, capability-reassignment digest invariance, blank-cell digest equality). The header-driven readers (`fr_table_reader`, `ac_catalog`, etc.) are asserted for both shapes rather than just assumed.\n\n### Findings\n\n- **Category: spec | Severity: medium**\n  `File: diff (no ADR / iterate-spec file changed)` \u2014 The spec requires \"the inventory is recorded in the ADR/iterate spec\". The diff contains no change to an ADR or the U1a iterate spec; the inventory lives only in a prose paragraph in `docs/hooks-and-pipeline.md`. If the ADR \"Capability column next to D7\" exists in the repo, it needs the reader inventory appended; if not, it's a missing deliverable.\n  **Suggestion:** add the inventory (readers changed / unchanged / cross-repo follow-ups) to the referenced ADR or the U1a iterate spec file.\n\n- **Category: edge-case | Severity: low**\n  `shared/scripts/tools/verifiers/_baseline_label_hits.py` (`_spec_lines`) \u2014 when no header has been seen (`drop is None`), the fallback keeps `cells[:5]`, which for an 8-column row keeps the `Capability` cell and drops the description entirely (silent mis-digestion rather than error). Also `drop` is set by the first `| ID | \u2026` header and never reset, so a later table with a different header shape keeps stale column indices.\n  **Suggestion:** when `drop is None` and the cell count exceeds the expected normative width (or a row appears before any header), skip or flag the row rather than silently truncating; reset `drop` on a section heading.\n\n- **Category: edge-case | Severity: low**\n  `integration-tests/test_requirements_catalog_contract.py:69-73` \u2014 header detection requires the header line to come after any earlier-matching row branch and only fires when `head[0] == \"id\"` and `\"description\"` is present; a spec whose FR table header uses different casing (`| id | area | \u2026`) falls back to the hardcoded `description_idx = 4` and would read the Capability cell as the description. This is a tolerance gap, not a break for canonical specs.\n  **Suggestion:** lowercase-compare is already applied to `head` \u2014 also accept `head` detection on the canonical header strings from `fr_table_shape` for robustness.\n\n- **Category: test | Severity: low**\n  `shared/tests/test_fr_table_capability_column.py` \u2014 there is no test for `_spec_lines` on a document where the FR row appears *before* any table header (the `drop is None` fallback with the capability column), i.e., the edge case above is unpinned.\n  **Suggestion:** add a case asserting the fallback path either errors or behaves deterministically for an 8-cell row with no header seen.\n\nNo security issues (all parsing of repo-internal spec text, no injection surface). No regression risk found: the changed `_canonical_layers_index` signature is module-private and its only caller is updated; `__all__` additions are purely additive; producers still emit the 7-column shape.\n\nOverall: the code itself is ship-with-fixes quality \u2014 the only real gap against the spec is the missing ADR/iterate-spec inventory record; the rest are low-severity edge-case hardening in the baseline label-hit scanner.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-11-28-u1a-capability-column",
+    "at": "2026-11-28T14:13:19.693813+00:00"
+  },
+  "verdicts": {
+    "openai": "revise",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

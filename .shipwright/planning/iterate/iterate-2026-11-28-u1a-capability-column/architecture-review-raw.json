@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "Approve the optional `Capability` column in the existing FR table, immediately after `Area`.\n\nHave readers look up `Capability` by header and treat an absent column as an unset mapping. This keeps the relationship on the FR row and lets authors change capability assignments without renumbering FRs.\n\nThe ongoing cost is keeping the column\u2019s meaning consistent and supporting both table forms across readers.\n\nWhat it forecloses: none identified.\n\nNo findings.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "1. **Answer:** Yes, a place for the FR\u2192capability mapping should exist, and a column in the FR table is the right shape \u2014 but only if the mapping is genuinely not derivable from FR ids (option 4); if it is, that option and this whole unit evaporate.\n\n2. **Smallest thing that would do:** Option 1 \u2014 optional `Capability` column, readers made header-driven rather than column-count-driven. Option 4 is the smaller thing if the capability assignment happens to align with FR id groups; the brief should say why it doesn't.\n\n3. **Cost to keep:** Every future FR-table parser must handle variable column count forever. That's the entire permanent cost, and it is small if done as header-driven parsing (which also buys tolerance for any future column, not just this one).\n\n4. **Forecloses:** Almost nothing \u2014 a header-driven parser is strictly more general than a fixed-shape one. Storing the mapping in the table does couple FR ordering/capability to one file, which is a feature here.\n\n5. **Findings:**\n\n- Category: simpler-alternative\n- Severity: low\n- Finding: Option 4 (derive from FR id group) removes the column, the reader inventory, and the entire U1a unit. The brief does not establish that capabilities will map non-contiguously to FR ids.\n- Suggestion: Record one sentence in the ADR stating why FR-id-derived mapping is insufficient (e.g. capabilities cut across id ranges); that sentence is the justification for this unit existing. If it can't be written, take option 4 and delete U1a.\n\n- Category: proportionality\n- Severity: low\n- Finding: The wide reader inventory (all plugins, two external repos) is the bulk of the cost, paid now for a column that stays empty until U2b.\n- Suggestion: Still do it now \u2014 the tolerance work is a prerequisite for U1b/U2b and gets harder the more readers accumulate \u2014 but make the cross-repo checks read-only follow-up tickets rather than blocking acceptance.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "architecture",
+  "capture": {
+    "run_id": "iterate-2026-11-28-u1a-capability-column",
+    "at": "2026-11-28T14:06:52.948101+00:00"
+  },
+  "verdicts": {
+    "openai": "approve",
+    "glm": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}

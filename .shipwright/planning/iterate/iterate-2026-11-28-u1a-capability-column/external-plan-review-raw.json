@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "## Review Findings\n\n**Category: risk \u2014 Severity: high**\nFinding: Point 4 only fixes `_baseline_label_hits._spec_lines` and `_baseline_touch_spec` for the digest/baseline mechanism, but the plan doesn't inventory *where else* positional assumptions live until step 1 completes. If any reader does `cells[1]` for Description (or similar positional indexing on FR rows) outside those two named spots, inserting Capability at index 2 silently shifts every subsequent field. The plan names two fixes up front but the actual safety depends entirely on the step-1 inventory being complete \u2014 including plugin specs.\nSuggestion: Make step 1 produce a written artifact (a table of reader \u2192 header-driven/positional \u2192 verified tolerant) *before* any code changes, and gate step 2\u20135 on it. If the inventory is recorded only in the ADR at the end, mid-implementation discoveries can be missed.\n\n**Category: edge-case \u2014 Severity: medium**\nFinding: \"Header-driven\" parsing introduces a new failure mode: a spec with a *misspelled or non-canonical* header (e.g. `Capabilty` or a hand-edited table). Previously column count was fixed; now a malformed header could be interpreted as \"no Capability column\" and silently mis-parse a spec that actually has 6 columns. This is worse than an error \u2014 it's silent data misalignment.\nSuggestion: Define the tolerance rule precisely: a reader accepts *exactly* the two canonical headers; any other column count or header set should fail loudly (or at least warn), not fall back.\n\n**Category: edge-case \u2014 Severity: medium**\nFinding: Mixed/transition states aren't addressed: a repo or plugin whose fixture set is half-old-format at test time, or a spec where the header says Capability but some rows have 5 cells (ragged rows). Markdown tables are hand-edited; ragged rows are common.\nSuggestion: State explicitly how ragged rows are handled (error vs. pad vs. ignore) and ensure the parametrized tests include a ragged-row case for both shapes.\n\n**Category: dependency \u2014 Severity: medium**\nFinding: `_baseline_touch_spec` excluding the Capability cell from the normative digest is a compatibility decision with forward implications: U2b will fill values in, and if the digest never includes them, downstream consumers diffing specs won't see capability changes. That may be intentional for this iterate, but it should be recorded as an explicit, revisitable decision in the ADR \u2014 otherwise U2b inherits an invisible constraint.\nSuggestion: Add an ADR note: \"Capability excluded from digest for U1a tolerance; revisit in U2b whether filled values should be digested.\"\n\n**Category: risk \u2014 Severity: low**\nFinding: The alternative \"column last\" was rejected correctly per the ADR, but the plan defers external positional readers (webui/leadwright) as follow-ups without a rollback trigger. If a webui reader breaks in production before the follow-up lands, there's no stated mitigation.\nSuggestion: Since no values are filled in this unit and the column is optional, existing specs won't carry it \u2014 so external readers are safe *today*. Note that explicitly in the ADR, and make the webui/leadwright follow-up a hard prerequisite of U2b (when real specs start carrying the column), not merely recorded.\n\n**Category: approach \u2014 Severity: low**\nFinding: Acceptance criteria are \"TBD\" for a change whose whole point is \"done when every inventoried reader passes on a spec with and without the column.\" The plan is otherwise concrete; leaving AC empty invites scope drift.\nSuggestion: Fill the ACs now from the plan's own done-definition: inventory recorded in ADR, parametrized with/without tests green across shared/adopt/compliance, docs updated.\n\n**Category: security \u2014 Severity: low**\nFinding: No meaningful security surface for this change; only note is that a new header-driven parse must not treat arbitrary header cell contents as code or paths.\nSuggestion: Keep header comparison to literal canonical strings.\n\n## Overall Assessment\n\nThe approach is sound and appropriately scoped: inventory-then-tolerate is the right shape for adding an optional column, and the two named positional fixes show the author already found the real hazards. The main gap is that correctness depends entirely on the inventory being complete and explicit \u2014 fail-loud rules for non-canonical headers, a written reader inventory before code changes, and filled-in acceptance criteria would make it robust.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Category:** dependency \u00b7 **Severity:** medium  \n   **Finding:** The plan records follow-ups for incompatible WebUI or Leadwright readers but leaves rollout order unspecified. If either reader consumes updated specs, it could break as soon as an author adds an empty `Capability` column, before U2b populates it.  \n   **Suggestion:** Keep the external review read-only. If it finds an incompatible reader, record the follow-up and make that fix a prerequisite for introducing the column into specs the reader consumes.\n\n2. **Category:** approach \u00b7 **Severity:** medium  \n   **Finding:** The inventory covers every plugin, but the implementation and test steps name only a subset of readers. With acceptance criteria still marked `TBD`, there\u2019s no explicit closure check for readers such as `spec_table.py` and grill-trace.  \n   **Suggestion:** Use the ADR inventory as the acceptance checklist. For each in-repo reader, record whether it already supports both shapes or needs a fix, and identify the automated check that demonstrates both. Reuse existing reader tests where possible.\n\n3. **Category:** edge-case \u00b7 **Severity:** medium  \n   **Finding:** A two-shape fixture that only checks whether a spec parses could miss the positional regressions this change introduces. A reader could accept the row while misreading `Description`, a layer update could touch the wrong cell, or inserting a blank `Capability` cell could change the normative digest.  \n   **Suggestion:** Give the shared fixture distinct values in the existing columns. Assert that both shapes produce the same description and label-hit results, that the layer writer changes only the intended cell in either shape, and that inserting a blank `Capability` cell leaves the digest unchanged while editing a normative cell still changes it.\n\nAdding the optional column after `Area` is sound and respects the U0 ADR. Fill in the acceptance criteria to cover every inventoried reader, protect the positional behavior with explicit assertions, and resolve any external compatibility dependency before rollout.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-11-28-u1a-capability-column",
+    "at": "2026-11-28T14:06:52.948101+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

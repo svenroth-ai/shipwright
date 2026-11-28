@@ -64,7 +64,9 @@ differences:
      Number it deterministically (next free `FR-{split}.NN`, counting live
      **and** removed rows) and name it as a function, per FEATURE Step 2.
      - **The row has seven cells:**
-       `| ID | Area | Name | Priority | Description | Basis | Layers |`.
+       `| ID | Area | Name | Priority | Description | Basis | Layers |`
+       (eight when the table's header carries the optional `Capability`
+       column after `Area`: match the header of the table you add to).
        `Basis` is ONE value from `interview` / `code` / `observed` / `tests`
        / `assumed` / `other: <reason>` — anything else, including a blank
        cell, is a hard audit failure. `assumed` also obliges you to **name
