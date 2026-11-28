@@ -47,7 +47,7 @@ E derives it); omit it rather than guessing.
 
 - **`label` + `description` follow `shared/fr-authoring.md`** — they become the
   Name and Description of an FR, so they are **plain business language**: what
-  the capability does and what it guarantees, in words a product owner
+  the function does and what it guarantees, in words a product owner
   understands. No file paths, ADR numbers, HTTP verbs, or code symbols in
   either field — the route belongs in the `route` field and the file in
   `Source`, not in the prose. Read that document before writing enrichment.
@@ -56,8 +56,8 @@ E derives it); omit it rather than guessing.
   - ✅ `"label": "Pending questions"`,
     `"description": "Shows every question the assistant is waiting on, so no session sits blocked unnoticed."`
 - **Code > Prose**: if README contradicts the actual folder structure, the code
-  wins. Derive the capability from what the code actually *does* — then state
-  that capability in business language, not as a description of the code.
+  wins. Derive the function from what the code actually *does* — then state
+  that function in business language, not as a description of the code.
 - **Don't invent.** If unclear, write `"TBD"` — the Layer-3 review and
   `/shipwright-iterate` will refine.
 - **No marketing copy, and no implementation dump either.** Sober and concrete,

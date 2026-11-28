@@ -1,0 +1,5 @@
+{"section":"U0-terms-format","review":[
+{"severity":"medium","category":"correctness","file":"shared/requirement-elicitation.md","line":347,"finding":"Prompt still calls an FR a capability; fixed by sweep.","suggestion":"fixed"},
+{"severity":"medium","category":"correctness","file":"shared/schemas/intent.schema.json","line":22,"finding":"Regex dialect: trailing newline and non-space whitespace pass; fixed with strict patterns and tests.","suggestion":"fixed"},
+{"severity":"low","category":"correctness","file":"plugins/shipwright-design/skills/design/references/upload-mode.md","line":74,"finding":"Tool messages keep the older word; recorded as deferred.","suggestion":"follow-up"},
+{"severity":"low","category":"correctness","file":"shared/tests/test_intent_schema.py","line":29,"finding":"Reference parser dropped unmatched lines; now raises.","suggestion":"fixed"}]}

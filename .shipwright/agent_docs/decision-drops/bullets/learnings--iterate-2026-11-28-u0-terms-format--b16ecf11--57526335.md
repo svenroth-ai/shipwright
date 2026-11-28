@@ -1,0 +1,1 @@
+- (2026-11-28) iterate — A vocabulary change needs a sweep across every prompt that uses the old word, not just the heading: the plan reviewer found fr-authoring contradicting its own section 2. Tools that print the old term (capability test) pin it in tests, so name the legacy label in prose instead of renaming it.

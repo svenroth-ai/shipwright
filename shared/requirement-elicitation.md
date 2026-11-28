@@ -34,12 +34,12 @@ than asking does. Every failure named below was observed in this method's own
 acceptance round (REQ-3 Phase 2, 2026-07), by an agent who had read this document
 and was deliberately dogfooding it.
 
-1. **Name what the capability produces — write that criterion first (§8).**
+1. **Name what the function produces — write that criterion first (§8).**
    Before any analysis, before reading a line of code: *what exists afterwards
    that did not before?* **The most common failure** — six of eight requirements
    were signed off without it, because criteria derived from analysis inherit the
    analysis's bias: refusals and edge cases are what *stand out* when reading
-   code, while the core capability is too self-evident to write down. A
+   code, while the core function is too self-evident to write down. A
    requirement whose first criterion is a refusal or an edge case is the
    signature.
 2. **Look up the facts (§3, §6)** — read the code, not the description of it.
@@ -239,7 +239,7 @@ forbids.
 | **Out of scope** | What will this explicitly **not** do? | an acceptance criterion saying so |
 
 **Outcome is the spine — and it is the one most often missed.** It is easy to
-write criteria that describe how a capability *behaves* — the steps it takes, the
+write criteria that describe how a function *behaves* — the steps it takes, the
 order it takes them in, what it asks — and never state what must be **true when
 it is done**. Those criteria read as thorough and verify nothing: a phase can
 follow every step and still produce an artifact that is empty, incomplete, or
@@ -254,7 +254,7 @@ question that settles it: *how would someone tell this is any good?* — phrased
 the answer is yes or no. This is the **fit criterion** (Volere): an objective
 measure of what the requirement actually means, so its author, its implementer
 and its tester read it the same way. "A requirements catalogue exists" passes
-while the catalogue is empty; "every capability the person described appears in
+while the catalogue is empty; "every function the person described appears in
 it, and none appears that they did not" can be answered. Vague qualities are the
 tell — *fast, intuitive, robust, user-friendly* are not outcomes until they carry
 a number or an observable event.
@@ -269,20 +269,20 @@ finished.
 ### 8.1 The negative-space pass
 
 The checklist above verifies that what you *recorded* is complete. It cannot
-tell you the capability itself is under-specified — every dimension can be
+tell you the function itself is under-specified — every dimension can be
 answered about a requirement that still fails to promise something it obviously
 should.
 
 So before confirming, ask the inverse question once, deliberately:
 
-> **What should this capability guarantee that it currently does not?**
+> **What should this function guarantee that it currently does not?**
 
 Two moves that surface it reliably:
 
 - **Read the description back as a promise and check each half is covered.** A
-  description joining two capabilities with "and" needs criteria for *both*; it
+  description joining two functions with "and" needs criteria for *both*; it
   is common to find one half with none at all.
-- **Ask what the capability must refuse, not just what it must do.** Coverage in
+- **Ask what the function must refuse, not just what it must do.** Coverage in
   one direction ("everything asked for gets built") rarely has its mirror
   ("nothing gets built that was not asked for"), and the missing direction is
   where unrequested work enters unnoticed.
@@ -332,7 +332,7 @@ conversation either — between those two, the whole discipline sits.
 > *"Do not act on it until I confirm we have reached a shared understanding."*
 
 When the checklist (§8) is satisfied, play back the shared understanding — the
-capability, its boundaries, its failure behaviour, the assumptions still open —
+function, its boundaries, its failure behaviour, the assumptions still open —
 and wait for the person to confirm it. Only then write the requirement. The
 confirmation is the hand-off from *their* mental model to *the recorded one*; skip
 it and you have recorded your own guess.
@@ -344,7 +344,7 @@ per requirement:
 
 - a **functional-requirement row** and its **assertion-shaped acceptance
   criteria** (`- (E) Given … when … then …`), authored under the rules in
-  **`shared/fr-authoring.md`** — plain business language, capability altitude,
+  **`shared/fr-authoring.md`** — plain business language, function altitude,
   MINT-vs-FOLD, `Basis` and `Layers` cells;
 - any sharpened terms into **`CONTEXT.md`**;
 - any hard-to-reverse *why* into a linked **ADR**.
@@ -395,7 +395,7 @@ surface-specific questions, layered on top:
   `assumed` is available *with what would settle it named*. Producing a
   plausible-looking specification without asking is the failure mode this phase
   exists to prevent — the questions are the product.
-  **Requirement granularity** is this phase's own to get right: a capability
+  **Requirement granularity** is this phase's own to get right: a function
   that cannot be given criteria a single delivery would satisfy is too broad and
   gets divided (`shared/fr-authoring.md` §3a). Splitting the *work* into
   planning units is a separate judgement, made against `split-heuristics.md`.
@@ -412,7 +412,7 @@ surface-specific questions, layered on top:
   basis honestly, never a reason to leave the criteria blank.
 - **`/shipwright-iterate` (change to a finished project)** — the scope of *this
   change*, and the MINT-vs-FOLD question (`fr-authoring.md` §3): is this a new
-  capability, or a change to one that already has a requirement?
+  function, or a change to one that already has a requirement?
 
 A plugin's own reference doc names these specifics and cites this module for the
 method itself.

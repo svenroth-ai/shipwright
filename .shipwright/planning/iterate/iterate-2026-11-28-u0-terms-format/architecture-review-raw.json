@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "Yes, choose B because the product owner needs a concise product description they can review and confirm without reading FRs or acceptance criteria.\n\n**Smallest thing that would do.** Keep one human-owned `intent.md` per product, with an ID and confirmation status for each element. Use one schema for the shared format and keep traceability in the existing AI-owned documents.\n\n**What it costs to keep.** The product owner must keep the intent current and confirm changes. Shipwright maintainers must keep the schema, example, and authoring guidance aligned as the format evolves.\n\n**What it forecloses.** Moving back to a single AI-maintained spec would require a deliberate migration of human-owned content and its confirmation state.\n\nNo findings.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "1. **The question, answered in one sentence.** Yes \u2014 Option B should exist: the campaign (an intent layer above FRs) is a real, permanent product change and it needs its vocabulary and file format defined once, here; B is close to the smallest thing that would do.\n\n2. **The smallest thing that would do.** What is proposed: one human-owned markdown file per product, one JSON schema fixing its shape, five glossary entries, one constitution rule, one ADR drop. Option D (a human-owned section inside spec.md) is the only smaller candidate, and it fails on the one thing that matters: ownership. The entire premise of the intent layer is that a human confirms intent and an AI owns FRs/ACs \u2014 putting the human-owned layer inside the AI-owned file destroys the boundary the constitution rule is about to assert. Option C (JSON/YAML rendered to markdown) is smaller to parse but larger to keep: it adds a rendering step and a second representation that can drift, for no human benefit. Option A leaves the problem unsolved. So B is the floor, not an overshoot.\n\n3. **What it costs to keep.** One more human-owned file to explain in every authoring conversation (the CLAUDE.md exception is the right mitigation and is included); one schema that must track the format through every future change to it; five glossary terms that must stay consistent with fr-authoring.md wording; one constitution rule that U1a+ mechanisms will have to honor and that future agents must not silently weaken.\n\n4. **What it forecloses.** `none identified` \u2014 the format is deliberately vocabulary-only, with no gate, parser, or limits baked in, so U1 units retain full freedom over behavior.\n\n5. **Findings**\n\n- Category: proportionality\n- Severity: low\n- Finding: The schema plus sample fixture plus \"rejects a malformed one\" acceptance criterion nudges U0 toward building a validator now, which is U1 territory and would make this unit a standing enforcement mechanism rather than a format definition.\n- Suggestion: Keep the schema declarative and the done-criteria to \"the sample validates\"; leave validation behavior entirely to U1.\n\nNo findings.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "architecture",
+  "capture": {
+    "run_id": "iterate-2026-11-28-u0-terms-format",
+    "at": "2026-11-28T10:07:02.820383+00:00"
+  },
+  "verdicts": {
+    "openai": "approve",
+    "glm": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}

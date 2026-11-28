@@ -1,4 +1,4 @@
-# Step 6 gate: one requirement, one capability
+# Step 6 gate: one requirement, one function
 
 **Binding.** Read `shared/fr-authoring.md` §3c before you finish any FR. This gate BLOCKS: you may not call a
 requirement finished, move to the next one, or end Step 6 until it passes. A spec has no code or tests yet, so the
@@ -10,11 +10,11 @@ as advice).
 Group the requirement's acceptance criteria by what they are about. For **each group**, write one plain sentence
 that says what the group lets the user do or guarantees. Then check:
 
-- The sentence needs **"and"** → the group is two capabilities. Split the requirement: mint a new FR for the second
+- The sentence needs **"and"** → the group is two functions. Split the requirement: mint a new FR for the second
   part and move its criteria there. The number is the next free one in the split: the highest in use plus one,
   counting the rows under "Removed Requirements" too (no tool does this yet; check by hand).
 - Two groups have different sentences AND each part keeps **at least 3 criteria** AND the parts are built or tested
-  separately, or serve different readers → they are different capabilities. Split. A part that would keep fewer
+  separately, or serve different readers → they are different functions. Split. A part that would keep fewer
   than 3 criteria stays folded into its neighbour (a requirement carved out of one or two criteria is too thin).
 - A group's sentence can only be said by naming a mechanism (route, table, library) → rewrite it as what the user
   gets, then re-test.
@@ -39,7 +39,7 @@ requirements may have no criteria yet, and product names such as LinkedIn are no
 
 Everything else is a printed `?` prompt that never changes the exit code: a criterion not in `Given … when … then …`
 form (checkbox criteria and "confirm with the product owner" criteria are allowed), an HTTP verb / ADR number in a
-criterion, and a name joining two capabilities with "and" ("Terms and conditions" is one capability). Take each prompt
+criterion, and a name joining two functions with "and" ("Terms and conditions" is one function). Take each prompt
 as a reason to apply the capability test to that FR in section 1, and decide there.
 
 ## 3. Hand-off

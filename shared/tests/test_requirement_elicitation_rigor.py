@@ -57,6 +57,7 @@ def test_outcome_is_the_spine_and_does_not_displace_the_other_dimensions():
     )
 
 
+@pytest.mark.covers("FR-01.02")
 def test_module_carries_the_negative_space_pass():
     """§8.1 — REQ-3 Phase 2 finding 3.
 
@@ -67,7 +68,7 @@ def test_module_carries_the_negative_space_pass():
     """
     body = MODULE.read_text(encoding="utf-8")
     assert "### 8.1 The negative-space pass" in body, "§8.1 negative-space pass is gone"
-    assert "should this capability guarantee that it currently does not" in body, (
+    assert "should this function guarantee that it currently does not" in body, (
         "keep the inverse question verbatim — it is the whole point of §8.1"
     )
 
@@ -211,8 +212,9 @@ def test_module_requires_confirmation_before_writing_the_requirement():
 
 @pytest.mark.covers("FR-01.02/AC03")
 def test_fit_criterion_names_every_described_capability_present():
-    """FR-01.02 AC03 (req3-06-enforcement-mono, sub-iterate e6): 'every
-    capability the person described is present as a requirement — nothing
+    """FR-01.02 AC03 (req3-06-enforcement-mono, sub-iterate e6; spec.md still
+    says 'capability', the wording here is a paraphrase): 'every
+    function the person described is present as a requirement — nothing
     they raised is silently dropped.' Comparing an interview transcript to a
     written catalogue is reading comprehension — no deterministic oracle
     exists (campaign decision D7). The honest ceiling is a drift test
@@ -220,7 +222,7 @@ def test_fit_criterion_names_every_described_capability_present():
     """
     normalized = " ".join(MODULE.read_text(encoding="utf-8").split())
     assert (
-        "every capability the person described appears in it, and none "
+        "every function the person described appears in it, and none "
         "appears that they did not" in normalized
     ), (
         "§8's fit-criterion worked example must survive verbatim — it is "

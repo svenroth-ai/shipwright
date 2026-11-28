@@ -9,7 +9,7 @@ gates **by content**, in code, and writes the same artifacts the interview would
 
 ## Format of `<brief_dir>/brief.md`
 
-Every `##` section is one **capability**, except `## Glossary`. The heading is the FR `Name`
+Every `##` section is one **function** (one FR), except `## Glossary`. The heading is the FR `Name`
 verbatim; its lower-kebab slug is the `requirement_key` and the anchor `brief.md#<slug>`.
 Text before the first `##` (the `#` title, an introduction) is free.
 
@@ -40,7 +40,7 @@ Package intake (`write_run_config.py --brief-dir`, `/shipwright-run --brief`) al
 
 It verifies the package against the hash `run_config` holds (exit 3 = changed or unapproved:
 stop), checks the content, and only then writes `shipwright_project_interview.md` (a pointer, not
-a transcript: no interview was held), `requirements.md`, one grill-trace per capability
+a transcript: no interview was held), `requirements.md`, one grill-trace per function
 (`evidence: ["brief.md#<slug>"]`, `confirmed_by: "brief:<brief_dir>/brief.md"`) and the glossary
 terms in `CONTEXT.md` (the `write_context_term.py` producer path). Exit 1 prints the issues:
 fix the package (which needs a new approval), never the traces by hand.
@@ -55,7 +55,7 @@ results for a run that records `brief_dir`, from `verifiers/brief_mode_checks.py
 
 - `brief_evidence_anchors`: every brief-confirmed trace's evidence anchor resolves to a non-empty
   `brief.md` section (the shape-only gate cannot see that);
-- `brief_fr_names`: the Names in the `spec.md` FR tables equal the brief's capability Names
+- `brief_fr_names`: the Names in the `spec.md` FR tables equal the brief's function Names
   (skipped until a spec.md exists).
 
 Red means the phase is not complete. The same checks run early, with details, as

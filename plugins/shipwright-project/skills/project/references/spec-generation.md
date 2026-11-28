@@ -43,7 +43,7 @@ Write requirements using IREB's sentence template:
 - **MAY** = Nice-to-have (maps to MoSCoW "Could")
 
 **The sentence is plain business language** — read `shared/fr-authoring.md`
-before writing requirements. It must name a *capability* the product offers, in
+before writing requirements. It must name a *function* the product offers, in
 words a product owner understands, and carry no implementation detail (no file
 paths, ADR numbers, HTTP verbs, or code symbols).
 
@@ -72,7 +72,7 @@ Examples for Split 01:
 ### Quality Targets Are FR Rows, Not a Separate Section
 
 A quality target is written as an ordinary row in the Functional Requirements
-table, with an FR id and a Priority, exactly like any other capability. There
+table, with an FR id and a Priority, exactly like any other function. There
 is no `QR-` id space: nothing in the framework reads a `QR-` id — not the
 FR-table reader, not compliance, not the RTM — so a row minted under that
 space was never addressable. It looked like a tracked requirement and was not
@@ -84,7 +84,7 @@ business language:
     The system SHALL complete login requests within 500ms (p95).
 
 That sentence is self-evidently a performance requirement; it needs no
-`Category` column to say so. File it under the Area of the capability it
+`Category` column to say so. File it under the Area of the function it
 constrains (a login-latency target belongs under "Authentication", not a
 generic "Quality" bucket).
 
@@ -97,10 +97,10 @@ generic "Quality" bucket).
 - How many criteria per requirement is decided by scope, not a count: `shared/fr-authoring.md` §3c
 
 **The criteria are also how you find out the requirement is too big.** Read
-`shared/fr-authoring.md` §3a: a capability that cannot be given criteria **a
+`shared/fr-authoring.md` §3a: a function that cannot be given criteria **a
 single delivery** would satisfy is too broad and gets divided, and being unable
 to enumerate what would settle it is the signal that it names several
-capabilities at once. If the list refuses to end, or each criterion turns out to
+functions at once. If the list refuses to end, or each criterion turns out to
 be about a different piece, split the requirement rather than writing vaguer
 criteria. A requirement with **no** criteria at all is reported by audit `I6`.
 
@@ -110,11 +110,11 @@ split correctly says nothing about whether any one row inside it is right.
 
 ### Removed Requirements
 
-When an iterate REMOVES a user-visible capability, its FR is **never silently
+When an iterate REMOVES a user-visible function, its FR is **never silently
 deleted** — `/shipwright-iterate` moves the row into a `### Removed
 Requirements` subsection placed last under `## 2. Functional Requirements`.
 This preserves traceability: the FR id keeps a home, and the RTM stops
-reporting the retired capability as an uncovered/failing requirement.
+reporting the retired function as an uncovered/failing requirement.
 
 Rules:
 - Each row keeps the original FR id, requirement text, and priority, and adds
@@ -151,10 +151,10 @@ Regulatory / Integration), with no numbering.
   code must be able to read the requirement and say what the product does —
   see `shared/fr-authoring.md`. Specific and plain are not in tension: the *what*
   gets sharper, the *how* moves to `architecture.md`.
-- **One requirement, one capability:** a route, a bugfix, a polish pass, or a
+- **One requirement, one function:** a route, a bugfix, a polish pass, or a
   "Phase 2" is not its own requirement — it is acceptance criteria on the
-  capability it belongs to (`fr-authoring.md` §3). The mirror of that rule is
-  §3a: a row too *broad* to be settled by one delivery is several capabilities
+  requirement it belongs to (`fr-authoring.md` §3). The mirror of that rule is
+  §3a: a row too *broad* to be settled by one delivery is several functions
   and gets divided.
 
 ## Template Structure
@@ -178,10 +178,10 @@ Regulatory / Integration), with no numbering.
 
 | ID | Area | Name | Priority | Description | Basis | Layers |
 |---|---|---|---|---|---|---|
-| FR-{NN}.01 | {Area} | {Short capability name} | Must | The system SHALL ... | interview | unit, e2e |
-| FR-{NN}.02 | {Area} | {Short capability name} | Must | The system SHALL ... | interview | unit, integration |
-| FR-{NN}.03 | {Area} | {Short capability name} | Should | The system SHOULD ... | interview | unit |
-| FR-{NN}.04 | {Area} | {Short capability name} | May | The system MAY ... | interview | unit |
+| FR-{NN}.01 | {Area} | {Short product function name} | Must | The system SHALL ... | interview | unit, e2e |
+| FR-{NN}.02 | {Area} | {Short product function name} | Must | The system SHALL ... | interview | unit, integration |
+| FR-{NN}.03 | {Area} | {Short product function name} | Should | The system SHOULD ... | interview | unit |
+| FR-{NN}.04 | {Area} | {Short product function name} | May | The system MAY ... | interview | unit |
 
 **Every seeded row reads `interview`, and that is deliberate.** In a new project
 the person who knows is in the conversation, so `interview` is the basis you
@@ -195,7 +195,7 @@ This header is the **one converged shape**, emitted byte-identically by
 reorder a column: the reader resolves columns by name, so a renamed column is
 not a cosmetic choice — it is a column that no longer exists.
 
-**`Area`** is the requirement's capability group, **rendered from the group digit
+**`Area`** is the split's display name (a label that only groups the table, not the product-level Capability, which a later unit (intent-pyramid U1a) stores in a `Capability` column; the template above has no such column yet), **rendered from the group digit
 of its ID** — `FR-03.xx` belongs to split `03-…`, and the Area cell is that
 split's name. It is a display label, never a second grouping axis: if you find
 yourself choosing an Area that disagrees with the ID's group, the ID is
@@ -205,7 +205,7 @@ Add `### {Area}` sub-sections **only when one split genuinely holds more than on
 area**. A greenfield split already carries its grouping in the ID, so in the
 normal case the sections would restate what the IDs already say.
 
-**`Name`** is a short capability name (2–5 words, a noun phrase — "Password
+**`Name`** is a short product function name (what the product does, not a code function; 2–5 words, a noun phrase — "Password
 reset", not "The system SHALL reset passwords"). **`Description`** carries the
 full Rupp/IREB sentence. They are separate columns because the name fence in
 `shared/fr-authoring.md` §5 applies to the name only.
@@ -426,7 +426,7 @@ not an accident:
 - **FR-01.01–.05, .08 and .09 are bare** — binding declarations. This is the
   recommended form: you are building these, so the tests land with them. Until
   they do, the missing layer hard-aborts finalization.
-- **FR-01.06 carries `(inferred)`** — advisory, for a `May` capability whose
+- **FR-01.06 carries `(inferred)`** — advisory, for a `May` function whose
   layers nobody has verified yet. Reported, never blocking.
 
 **FR-01.08 and FR-01.09 are quality targets** (response time, password

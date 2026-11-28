@@ -58,7 +58,7 @@
 | `ask-after-3-failed-fixes` | prompt-only (judgement) | - |  |
 | `ask-plain-language` | prompt-only (judgement) | - |  |
 
-## never (17)
+## never (18)
 
 | id | enforcement | mechanism | note |
 |---|---|---|---|
@@ -79,6 +79,7 @@
 | `never-amend-blocked-commit` | prompt-only (mechanisable) | - |  |
 | `never-loop-over-3` | prompt-only (judgement) | - |  |
 | `never-claim-all-pass` | prompt-only (judgement) | - |  |
+| `never-intent-self-confirm` | unimplemented | - | Not enforced in U0 (format only). The recorded confirmation (PostToolUse hook, chained record, F11 rule) is built in campaign intent-pyramid U2a1. Residual risk: tamper-evident, not tamper-proof, since an agent that can write files can still forge a record, visibly (broken chain, hash mismatch). Until then a confirmed without a record is read as assumption and reported. To be added once U2a1 settles them: the weaker digest-only fallback and that confirmation is unavailable under Codex. |
 
 ## escalation (6)
 

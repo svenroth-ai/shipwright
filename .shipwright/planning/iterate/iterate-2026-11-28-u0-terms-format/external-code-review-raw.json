@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "Findings:\n\n- Category: spec \u2014 Severity: high \u2014 shared/schemas/intent.schema.json (and whole diff) \u2014 The spec's item (4) requires an ADR drop (via `write_decision_drop.py`, never hand-numbered) recording two decisions: \"Capability column in the FR table next to D7 (Area rendered from the id)\" and \"intent.md as the second human-owned file in `.shipwright/`\". No ADR file appears anywhere in the diff. The diff *edits prose* that assumes the ADR exists (`spec-generation.md` Area paragraph now speaks of a \"stored and assigned `Capability` column\"; `fr-authoring.md` \u00a72 likewise), but the decision record itself is absent. Suggestion: add the ADR drop for both decisions before merge; the FR-table prose changes currently cite a decision that is not on record.\n\n- Category: spec \u2014 Severity: low \u2014 shared/glossary.md:~270 / shared/schemas/intent.schema.json:6 \u2014 The schema description cites \"operator 2026-11-28\" while the spec says the operator decision is dated 2026-11-29. Harmless unless the date is meant to identify the operator ruling (as the glossary LOC comment does). Suggestion: align the date with the brief.\n\n- Category: test \u2014 Severity: low \u2014 shared/tests/test_intent_schema.py:42-49 \u2014 The malformed-file test partially works by accident: the bad status (`maybe`), bad id (`CAP-1`), and FR-id-in-text all fail on the *same* element, so if one rule were broken the assertion for the other two could still pass; more importantly the third assertion's fallback `\"should not be valid\"` matches nearly any `iter_errors` message mentioning the pattern keyword, so it could pass even if the FR-in-text rule did not fire (the first two assertions would already satisfy \"any\"). Suggestion: assert each violation against the specific offending element, e.g. check the error's `json_path` or that the FR-text message names the `not/pattern` keyword, rather than a loose \"any\" over all messages.\n\n- Category: edge-case \u2014 Severity: low \u2014 shared/schemas/intent.schema.json:25-30 \u2014 The FR-in-text ban `\"not\": {\"pattern\": \"[Ff][Rr][- ]?[0-9]\"}` will reject legitimate human text containing any `FR` followed by optional separator and a digit \u2014 e.g. intent text mentioning \"FR-03\" deliberately is intended, but so is a phrase like \"per FR1 policies\" or German \"\u2026Anzahl FR 3\u2026\"; conversely it will not catch lowercase \"fr-01\" variants? It will (\"[Ff][Rr]\"). The rule is ownership-correct but the regex is broad enough to false-positive on innocuous text. Low risk for a human-authored file; acceptable, but worth noting the pattern cannot distinguish \"mentions an FR id\" from \"coincidental letters\", which the parser (U1b) will inherit. No change required for U0.\n\nThe core deliverables are present and coherent: glossary terms with the Feature-collision and Intent-collision disambiguations, the reworded fr-authoring \u00a72 and prompt sites (no \"FR is a capability\" wording remains in the shown prompts), the schema with no upper limits, both fixtures, the constitution/register entries marked `unimplemented` with the U2a1 hand-off, guide.md 7.5, and the CLAUDE.md \"Where documents live\" exception. The glossary LOC ceiling raise is justified in place. Nothing here breaks existing consumers (the schema is new, tests are new).\n\nOverall: ship-with-fixes \u2014 the missing ADR drop (spec item 4) is the one concrete gap; the test loose-assertion refinement can ride along.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "- **Category:** spec\n  **Severity:** medium\n  **File:line:** `shared/fr-authoring.md:49`\n  **Finding:** The diff documents the Capability column and the human ownership of `intent.md`, but it contains no ADR drop. U0 explicitly requires a generated decision record covering both choices.\n  **Suggestion:** Use `write_decision_drop.py` to generate the record and include it in the change. Record that Capability sits alongside D7 and Area is rendered from the FR ID.\n\n- **Category:** spec\n  **Severity:** medium\n  **File:line:** `plugins/shipwright-project/skills/project/references/spec-generation.md:198`\n  **Finding:** The active spec-generation prompt says Capability assignments are stored in a `Capability` column, while its canonical table immediately above has seven columns and omits `Capability`. An agent following the prose can emit a different table from the one the prompt requires. U0 calls for recording the column decision while leaving authoring behavior for a later unit.\n  **Suggestion:** Describe the Capability column as a future format change here and in `shared/fr-authoring.md:49`. Keep the current authoring instructions consistent with the seven-column template.\n\n- **Category:** bug\n  **Severity:** medium\n  **File:line:** `shared/schemas/intent.schema.json:36`\n  **Finding:** The schema accepts capability names that violate the documented file format. `Collection: recipes` passes the name pattern, but the fixture reader uses the first colon as the delimiter and reads back the name as `Collection`. A name such as `FR-01.02` also passes, bypassing the file-wide rule against FR references.\n  **Suggestion:** Exclude colons throughout capability names and apply the FR-reference restriction to names as well as element text. Add validation cases for both inputs.\n\n- **Category:** edge-case\n  **Severity:** medium\n  **File:line:** `shared/schemas/intent.schema.json:23`\n  **Finding:** The FR-reference pattern rejects ordinary intent text containing `FR4` or `FR 4`, even though neither is an FR catalog ID. For example, an electronics product cannot state that it supports `FR4 boards`.\n  **Suggestion:** Match the actual `FR-{group}.{NN}` syntax with token boundaries. Test that `FR-01.02` is rejected and `FR4 boards` is accepted.\n\n**Overall assessment:** Ship-with-fixes. The vocabulary and fixture-based validation are in place. Complete the ADR drop and align the authoring guidance and schema before approval.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-11-28-u0-terms-format",
+    "at": "2026-11-28T11:09:52.113850+00:00"
+  },
+  "verdicts": {
+    "glm": "revise",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

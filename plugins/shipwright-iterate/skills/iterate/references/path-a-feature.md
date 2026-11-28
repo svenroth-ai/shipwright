@@ -107,14 +107,14 @@ If no boundaries touched: write `n/a` with one-line justification.}
 
 1. Identify which spec file(s) cover the affected area.
 1a. **MINT-vs-FOLD gate — run this BEFORE choosing ADD.** Read
-   `shared/fr-authoring.md` (§3). Ask: *is this a capability the product
-   did not have before?*
+   `shared/fr-authoring.md` (§3). Ask: *is this a product function (what the product does, not a code function) that
+   did not exist before?*
    - **FOLD → classify MODIFY, do not add a row.** The change *completes,
      polishes, fixes, extends,* or is *"Phase N of"* something that already
      exists. Append acceptance-criteria lines to the existing FR instead.
      Folding is the common case.
    - **MINT → classify ADD.** Only for a genuinely new, user- or
-     system-observable capability.
+     system-observable function.
    - **Fold only if it fits (`fr-authoring.md` §3c) — RUN the evidence:**
      `uv run "{shared_root}/scripts/tools/fr_cluster_report.py"
      --project-root "{project_root}" --fr FR-xx.yy --json` for the candidate
@@ -128,7 +128,7 @@ If no boundaries touched: write `n/a` with one-line justification.}
      different test setup; "shares no evidence" alone is never a reason to
      MINT. Size is not the test.
    - A new endpoint, route, or component is **not** by itself a new
-     capability — it is usually the plumbing of one that already has an FR.
+     function — it is usually the plumbing of one that already has an FR.
    - Altitude self-check before writing the row: could a non-technical
      person read the FR *name* as something the product can do? If the name
      needs a verb like GET/POST, a `snake_case` symbol, an ADR number, or an
@@ -137,7 +137,7 @@ If no boundaries touched: write `n/a` with one-line justification.}
    NONE. Record it in the iterate spec's `## Spec Impact` section
    (medium+) and carry the same FR IDs into F7 (`--spec-impact`,
    `--affected-frs`, `--new-frs`).
-   - **ADD** — a genuinely new user- or system-observable capability that
+   - **ADD** — a genuinely new user- or system-observable function that
      survived the MINT-vs-FOLD gate: append a new FR table row + an
      acceptance-criteria block. The new FR ID goes to F7 `--new-frs` (and
      `--affected-frs`).
@@ -147,7 +147,7 @@ If no boundaries touched: write `n/a` with one-line justification.}
        retired number is never reused. Never guess a number. If a parallel
        iterate already took it, resolve the duplicate at merge — never keep
        two rows on one ID.
-     - **Name + description follow `shared/fr-authoring.md`:** a capability
+     - **Name + description follow `shared/fr-authoring.md`:** a function
        phrase (~6 words, no verbs/symbols/paths/ADR numbers), and a plain
        business-language description a product owner can sign off. Put the
        implementation detail in `architecture.md`, not the row.
@@ -201,7 +201,7 @@ If no boundaries touched: write `n/a` with one-line justification.}
        (`shared/fr-authoring.md` §1) — do not let an edit smuggle a file
        path, symbol, or ADR number into a row that was previously clean.
        The run_id/ADR provenance belongs in the AC line, not the description.
-   - **REMOVE** — the change deletes a user-visible capability: move the
+   - **REMOVE** — the change deletes a user-visible function: move the
      FR row out of `## 2. Functional Requirements` into a
      `### Removed Requirements` subsection — never silently delete it.
    - **NONE** — a behavior-preserving internal refactor with no
