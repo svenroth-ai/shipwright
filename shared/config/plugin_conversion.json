@@ -7,7 +7,7 @@
       "skill": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
       "references": "plugins/shipwright-changelog/skills/changelog/references",
       "cli": "plugins/shipwright-changelog/scripts/release.py",
-      "subcommands": ["prepare", "aggregate", "sync", "commit-and-tag", "pr-body", "record-event", "push-tag", "close-phase"],
+      "subcommands": ["prepare", "aggregate", "sync", "commit-and-tag", "pr-body", "record-event", "merge-ready", "push-tag", "close-phase"],
       "promise_list": "plugins/shipwright-changelog/tests/golden/promise_list.json",
       "export": ".shipwright/planning/campaigns/2026-10-25-dfp-pilot-changelog-baseline/trace.json",
       "sentinel": {
