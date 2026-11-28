@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-28-r4-audit-date",
+  "date": "2026-11-28",
+  "section": "Iterate — bug: one source for the last audit run date",
+  "title": "One minted run instant feeds audit md, json and dashboard",
+  "context": "audit-report.md stamped its own wall-clock Generated date while the dashboard read the tracked last_audit record, so they could name different audits as current.",
+  "decision": "AuditReport carries ran_at, minted once in run_audit and passed to the tracked record, so md Generated, json and record agree by construction. Tracked documents (dashboard, every provenance header) read ONLY the tracked last_audit record. The local json feeds only the md staleness banner, which names the newest recorded run; an empty run writes no json.",
+  "consequences": "md, json and dashboard show one date in the normal case; an older md says a newer run exists. A newer local json changes no tracked document. A json with empty groups_run or no findings list is ignored. If the record write fails, the local md and json run ahead of the tracked dashboard; only the stderr warning says so. A consumer project that tracks audit-report.md has a banner that depends on the local json; acceptable, as md and json are written as a pair.",
+  "rationale": "Threading one value through existing artifacts adds no mechanism; both external reviewers and the architecture review approved this size.",
+  "rejected": "Promoting the gitignored json into tracked documents: an empty typo run (--only Z) or a run whose record failed would be shown as a newer run (H1); it would reach all five evidence provenance headers and break their machine-independence (H2); the json survives git checkout so main could cite another branch's run. Also rejected: warning-only banner.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

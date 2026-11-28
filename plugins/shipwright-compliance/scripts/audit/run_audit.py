@@ -18,6 +18,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 # Make sibling modules importable whether run as script or via uv.
@@ -58,6 +59,8 @@ def main(argv: list[str] | None = None) -> int:
 
     register_all()
     report = run_all(project_root, only=only, fix=args.fix)  # detection only; lifecycle owns backlog writes
+    # Mint the run instant once: the reports and the tracked record share it.
+    report.ran_at = datetime.now(timezone.utc).isoformat()
 
     if report.import_gate_error:
         print(report.import_gate_error, file=sys.stderr)
@@ -70,7 +73,9 @@ def main(argv: list[str] | None = None) -> int:
     want_md = args.format in ("md", "both")
     want_json = args.format in ("json", "both")
     written = write_report(report, project_root,
-                           markdown=want_md, json_out=want_json)
+                           markdown=want_md and bool(report.groups_run),
+                           # an empty run (typo'd --only) must leave no json behind
+                           json_out=want_json and bool(report.groups_run))
 
     # Nothing schedules this audit — no cron, no workflow, no hook — so it is
     # the only thing that can say it ran. Record that durably (tracked state,
@@ -100,6 +105,7 @@ def main(argv: list[str] | None = None) -> int:
                 statuses=[f.status for f in report.findings],
                 any_fail=bool(report.any_fail),
                 scope=",".join(only) if only else SCOPE_FULL,
+                ran_at=report.ran_at,
             )
         except Exception as exc:  # noqa: BLE001 — never change the audit's verdict
             recorded = {"recorded": False, "reason": str(exc)}

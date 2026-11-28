@@ -1,0 +1,9 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"md Generated, json ran_at and the dashboard date come from one run instant; stale md is flagged; tests pin it."},
+{"name":"Error Handling","verdict":"pass","note":"Unreadable json or unparseable Generated degrade to the tracked record / stale-date-unknown, never raise."},
+{"name":"Security Basics","verdict":"pass","note":"ran_at is validated as an ISO timestamp before it reaches markdown."},
+{"name":"Test Quality","verdict":"pass","note":"Tests assert rendered dates on a fixture, the banner text, fallback without json, stale json, fractional seconds."},
+{"name":"Performance Basics","verdict":"pass","note":"One small json read per render."},
+{"name":"Naming & Structure","verdict":"pass","note":"read_report_ran_at lives with the record loader; audit_detector.py kept at its baseline size."},
+{"name":"Affected Boundaries","verdict":"pass","note":"audit-report.json gains ran_at; producer write() and consumers (dashboard, banner) round-tripped in tests."},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"No skips or only-markers added."}]}

@@ -1,0 +1,248 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-28-r4-audit-date",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-28T12:54:42.868984+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Write real acceptance criteria now: \"md and dashboard render the same date on a fixture; a fixture md with an older Generated date than the newest run triggers the stale banner; both paths succeed when audit-report.json is absent (fresh clone).\"",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "When `ran_at` is absent, either refuse to write a run record (error) or render the md with an explicit \"unknown\" date rather than minting one silently. At minimum, ensure the minted value is immediately persisted to the tracked last_audit record so the two can't diverge.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Compare md Generated against tracked last_audit.ran_at only; treat unparseable Generated as \"stale, date unknown.\"",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Write the tracked last_audit record with the ran_at before rendering audit-report.md.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Add a tolerant-read for legacy records without `ran_at` and grep tests for the old date behavior.  Overall assessment: The approach is sound and the deviation from the brief is a reasonable, well-reasoned improvement — but the fallback-minting path in step 1 risks reintroducing the exact divergence bug, and the acceptance criteria need to be written before implementation.  SHIPWRIGHT_VERDICT: revise",
+          "suggestion": null,
+          "source": "external-review"
+        }
+      ],
+      "provider": "codex",
+      "completed_at": "2026-11-28T12:52:47.504374+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] **Findings**\n\n- **Category: approach** — **Severity: medium**\n  The brief says both renderers read the JSON run record; the plan deviates by having the dashboard keep reading the tracked config record and only the *instant* be shared. This is defensible (gitignored JSON absent on fresh clones) and arguably better, but the deviation should be surfaced in the change spec itself, not buried in the mini-plan — the acceptance criteria are still \"TBD,\" which for a \"done when tests pin it\" change is a gap.\n  **Suggestion:** Write real acceptance criteria now: \"md and dashboard render the same date on a fixture; a fixture md with an older Generated date than the newest run triggers the stale banner; both paths succeed when audit-report.json is absent (fresh clone).\"\n\n- **Category: edge-case** — **Severity: medium**\n  Fresh-clone / missing-json case is called out in the deviation but not handled in steps 1–5. If `write()` mints `ran_at` when absent, the fallback clock is a *second* source of truth — the exact bug being fixed can reappear through that path (md mints a date the dashboard's tracked record doesn't know).\n  **Suggestion:** When `ran_at` is absent, either refuse to write a run record (error) or render the md with an explicit \"unknown\" date rather than minting one silently. At minimum, ensure the minted value is immediately persisted to the tracked last_audit record so the two can't diverge.\n\n- **Category: edge-case** — **Severity: low**\n  Step 4's staleness comparison mixes three sources (md `Generated:` string, json `ran_at`, tracked `last_audit`). Parsing the human-formatted md date string is fragile — the plan should specify which is authoritative for comparison (the tracked record, per the deviation) and that the md string parse failure degrades gracefully rather than raising.\n  **Suggestion:** Compare md Generated against tracked last_audit.ran_at only; treat unparseable Generated as \"stale, date unknown.\"\n\n- **Category: risk** — **Severity: low* […truncated]\n\n[openai] 1. **Category** approach · **Severity** high  \n   **Finding** — The dashboard remains on tracked `last_audit` even when `audit-report.json` exists. Sharing a timestamp during a successful run still allows the two dates to diverge after a partial write.  \n   **Suggestion** — Have the dashboard prefer the JSON `ran_at` and use tracked `last_audit` when the JSON or its timestamp is absent. This makes JSON authoritative while preserving the fresh-clone behavior.\n\n2. **Category** risk · **Severity** medium  \n   **Finding** — The stale banner leaves the older `Generated:` date visible, so the proposed behavior fails the stated acceptance condition. Comparing against whichever record is newest also lets tracked config override the canonical JSON.  \n   **Suggestion** — Derive the displayed last-run date from JSON when it exists. If the Markdown findings are from an older run, identify them as stale without relabeling them as current. Pin both behaviors with a fixture where JSON, tracked config, and Markdown disagree.\n\n3. **Category** edge-case · **Severity** medium  \n   **Finding** — A wall-clock fallback can make an older report with no `ran_at` appear to have just run when it is re-rendered.  \n   **Suggestion** — Assign `ran_at` when creating a new run record. When rendering a legacy report, retain a known historical date or show that the run date is unavailable. Test the legacy case alongside the fresh-clone fallback.\n\nMinting the timestamp once is sound. The plan needs to make JSON authoritative when present and define what stale Markdown displays. This review is based on the supplied plan because workspace commands were blocked.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "plugins/shipwright-compliance/scripts/lib/audit_freshness.py",
+          "line": 34,
+          "finding": "Imports private _valid_timestamp from audit_disclosure.",
+          "suggestion": "Optionally make it public.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-compliance/scripts/audit/run_audit.py",
+          "line": 98,
+          "finding": "Run instant minted in main and as fallback in write().",
+          "suggestion": "Optional comment.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-28T13:02:33.209538+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "0c3bbe5fb94544ce5e4672d0a04b09d881c372c5"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-28T12:54:38.079647+00:00",
+      "disposition": "Stage 3 conditional: no migration, async, cross-plugin import or irreversible op",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "diff-below-threshold"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "plugins/shipwright-compliance/scripts/lib/_audit_disclosure_render.py (in `_with_run_record`)",
+          "line": null,
+          "finding": "The dashboard takes the json's `ran_at` unconditionally whenever the json exists — including when the json is older than the tracked record. E.g., a developer with a stale local `audit-report.json` (from a run before pulling a newer tracked `last_audit` record) will see the dashboard regress to an older date than the tracked record. The spec fixes \"md older than json\"; this is the mirror case and it's not guarded or tested.",
+          "suggestion": "Only override when `_instant(ran) >= _instant(freshness.latest.ran_at)`, or at least pin the current behavior (older json wins) in a test so it's a deliberate choice.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "plugins/shipwright-compliance/scripts/lib/_audit_disclosure_render.py (`full = latest` branch)",
+          "line": null,
+          "finding": "When `latest_full.ran_at == latest.ran_at`, `full` is replaced with the re-dated `latest` — but `latest` and `latest_full` are different records (scope/checks differ). Re-dating `latest` also keeps its other fields (e.g. whatever `format_note`/`_checks_sentence` print) un-rebased on the new date, so a partially-updated record could render internally inconsistent output. When the ran_ats differ, only `latest` is re-dated and `full` keeps the old instant, so the dashboard can then cite two runs in one section.",
+          "suggestion": "Either re-date both consistently or leave `full` untouched; add a test with a `latest_full` whose `ran_at` differs to pin the intended behavior.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "plugins/shipwright-compliance/scripts/audit/run_audit.py (record call) + run_audit.py's `except Exception` swallow",
+          "line": null,
+          "finding": "The record path is wrapped in a broad `except Exception` that converts any failure into `recorded: False`. If `record_audit_run` rejects `ran_at` (or any future signature drift), the run completes \"green\" while the durable record silently keeps the old date — exactly the divergence this change exists to prevent. The tests confirm the signature works today, so this is only a fragility note, not a live defect.",
+          "suggestion": "Narrow the swallow (or at least surface `recorded: False` loudly, e.g. stderr) so a divergence between json and record is visible rather than silent.  Positive notes: the tests are behavior-pinning (they assert the rendered date strings, the stale banner text, and the fallback path), not just call-count checks; `_instant` correctly handles both `Generated: ... UTC` stamps and ISO `ran_at`; the \"unparseable Generated → stale, date unknown\" degradation is tested. The core acceptance criteria (md/json/dashboard agree on a fixture; stale md can't silently show an older date; tests pin it) appear satisfied.  Overall assessment: sound implementation with behavior-driven tests; the findings are edge cases worth a guard or a pinning test, but nothing blocks. Ship with the low-severity hardening.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "line `plugins/shipwright-compliance/scripts/audit/audit_report.py",
+          "line": 118,
+          "finding": "The Markdown renderer uses the in-memory timestamp, and a JSON-only write leaves the existing Markdown on disk with its old `Generated:` date. The stale-report test only gets a warning by calling `mark_audit_report_stale()` separately, so it misses the inconsistent state immediately after the write.",
+          "suggestion": "Make the JSON record authoritative when rendering the last-run date. On a JSON-only write, automatically mark any existing Markdown as historical and show the current recorded date alongside it. Test the state immediately after the write.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "line `plugins/shipwright-compliance/scripts/lib/_audit_disclosure_render.py",
+          "line": 117,
+          "finding": "A valid `audit-report.json` contributes no last-run date if the tracked record is missing or invalid. The dashboard can therefore omit a run that the JSON and Markdown both document.",
+          "suggestion": "Display the JSON last-run date independently of tracked-record validity. Add a fixture with a valid JSON report and no tracked record.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": "line `plugins/shipwright-compliance/scripts/lib/_audit_disclosure_render.py",
+          "line": 119,
+          "finding": "Replacing only the tracked run’s timestamp can attach old results to a different run. If the tracked record describes a June full audit and July’s JSON comes from a partial audit, the dashboard presents June’s results as a July full audit. The lagging-record test checks dates alone and passes with this misattribution.",
+          "suggestion": "Keep each run’s timestamp, scope, and results together. Add a regression test with an older tracked full audit and a newer partial JSON report, and assert that each retains its own date and scope.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "line `plugins/shipwright-compliance/scripts/lib/audit_freshness.py",
+          "line": 113,
+          "finding": "A normal run can flag its own Markdown as older. JSON preserves microseconds, while `Generated:` truncates to seconds, so the strict comparison treats two representations of the same run as different instants. The current-report fixture uses a whole-second timestamp and misses this.",
+          "suggestion": "Preserve the exact run timestamp in Markdown metadata and use it for comparison. For legacy reports, compare at the precision of the displayed stamp. Add a fixture with a fractional-second timestamp.  Overall assessment: Ship-with-fixes. The shared timestamp works when both reports are written together, but JSON-only updates and mismatched records can still produce stale dates or misattribute audit results.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "codex",
+      "completed_at": "2026-11-28T12:54:38.296972+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] Review findings:\n\n- Category: edge-case\n  Severity: low\n  File: plugins/shipwright-compliance/scripts/lib/_audit_disclosure_render.py (in `_with_run_record`)\n  Finding: The dashboard takes the json's `ran_at` unconditionally whenever the json exists — including when the json is *older* than the tracked record. E.g., a developer with a stale local `audit-report.json` (from a run before pulling a newer tracked `last_audit` record) will see the dashboard regress to an older date than the tracked record. The spec fixes \"md older than json\"; this is the mirror case and it's not guarded or tested.\n  Suggestion: Only override when `_instant(ran) >= _instant(freshness.latest.ran_at)`, or at least pin the current behavior (older json wins) in a test so it's a deliberate choice.\n\n- Category: edge-case\n  Severity: low\n  File: plugins/shipwright-compliance/scripts/lib/_audit_disclosure_render.py (`full = latest` branch)\n  Finding: When `latest_full.ran_at == latest.ran_at`, `full` is replaced with the re-dated `latest` — but `latest` and `latest_full` are different records (scope/checks differ). Re-dating `latest` also keeps its other fields (e.g. whatever `format_note`/`_checks_sentence` print) un-rebased on the new date, so a partially-updated record could render internally inconsistent output. When the ran_ats *differ*, only `latest` is re-dated and `full` keeps the old instant, so the dashboard can then cite two runs in one section.\n  Suggestion: Either re-date both consistently or leave `full` untouched; add a test with a `latest_full` whose `ran_at` differs to pin the intended behavior.\n\n- Category: bug\n  Severity: low\n  File: plugins/shipwright-compliance/scripts/audit/run_audit.py (record call) + run_audit.py's `except Exception` swallow\n  Finding: The record path is wrapped in a broad `except Exception` that converts any failure into `recorded: False`. If `record_audit_run` rejects `ran_at` (or any future signature drift), the run completes \"green\" while t […truncated]\n\n[openai] 1. **Category:** spec  \n   **Severity:** high  \n   **File:line** `plugins/shipwright-compliance/scripts/audit/audit_report.py:118`  \n   **Finding:** The Markdown renderer uses the in-memory timestamp, and a JSON-only write leaves the existing Markdown on disk with its old `Generated:` date. The stale-report test only gets a warning by calling `mark_audit_report_stale()` separately, so it misses the inconsistent state immediately after the write.  \n   **Suggestion:** Make the JSON record authoritative when rendering the last-run date. On a JSON-only write, automatically mark any existing Markdown as historical and show the current recorded date alongside it. Test the state immediately after the write.\n\n2. **Category:** spec  \n   **Severity:** medium  \n   **File:line** `plugins/shipwright-compliance/scripts/lib/_audit_disclosure_render.py:117`  \n   **Finding:** A valid `audit-report.json` contributes no last-run date if the tracked record is missing or invalid. The dashboard can therefore omit a run that the JSON and Markdown both document.  \n   **Suggestion:** Display the JSON last-run date independently of tracked-record validity. Add a fixture with a valid JSON report and no tracked record.\n\n3. **Category:** bug  \n   **Severity:** high  \n   **File:line** `plugins/shipwright-compliance/scripts/lib/_audit_disclosure_render.py:119`  \n   **Finding:** Replacing only the tracked run’s timestamp can attach old results to a different run. If the tracked record describes a June full audit and July’s JSON comes from a partial audit, the dashboard presents June’s results as a July full audit. The lagging-record test checks dates alone and passes with this misattribution.  \n   **Suggestion:** Keep each run’s timestamp, scope, and results together. Add a regression test with an older tracked full audit and a newer partial JSON report, and assert that each retains its own date and scope.\n\n4. **Category:** bug  \n   **Severity:** medium  \n   **File:line** `plugins/shi […truncated]",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-28T12:54:49.840444+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "305b64f2cb86fcb87594ff476a13bf2e8246d61a"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-28T12:54:37.576684+00:00",
+      "disposition": "small complexity: below the medium threshold, arm does not run",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-28T12:54:37.825047+00:00",
+      "disposition": "small complexity: below the medium threshold, arm does not run",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}

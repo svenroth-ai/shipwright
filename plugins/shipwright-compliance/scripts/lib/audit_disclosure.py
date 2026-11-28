@@ -105,7 +105,7 @@ def _sanitize_scope(value: object) -> str:
     return _SCOPE_ALLOWED.sub("", value)[:_SCOPE_MAX]
 
 
-def _valid_timestamp(value: object) -> str:
+def valid_timestamp(value: object) -> str:
     """Return ``value`` when it is a parseable ISO-8601 instant, else ``""``."""
     if not isinstance(value, str) or not value.strip():
         return ""
@@ -132,11 +132,11 @@ def _clean_checks(value: object) -> dict:
     return clean
 
 
-def _parse_record(block: object) -> AuditRecord | None:
+def parse_record(block: object) -> AuditRecord | None:
     """Validate one stored block. ``None`` means "present but not trustworthy"."""
     if not isinstance(block, dict):
         return None
-    ran_at = _valid_timestamp(block.get("ran_at"))
+    ran_at = valid_timestamp(block.get("ran_at"))
     verdict = block.get("verdict")
     if not ran_at or verdict not in _VERDICTS:
         return None
@@ -177,11 +177,11 @@ def load_audit_freshness(project_root: Path) -> AuditFreshness:
     if raw_latest is None and raw_full is None:
         return AuditFreshness(ABSENT)
 
-    latest = _parse_record(raw_latest)
+    latest = parse_record(raw_latest)
     if latest is None:
         return AuditFreshness(INVALID)
 
-    latest_full = _parse_record(raw_full)
+    latest_full = parse_record(raw_full)
     if latest.is_full and (
         latest_full is None or latest_full.ran_at <= latest.ran_at
     ):
@@ -257,12 +257,12 @@ def record_audit_run(
     config[LAST_AUDIT_KEY] = block
     if scope == SCOPE_FULL:
         config[LAST_FULL_AUDIT_KEY] = block
-    elif _parse_record(config.get(LAST_FULL_AUDIT_KEY)) is None:
+    elif parse_record(config.get(LAST_FULL_AUDIT_KEY)) is None:
         # Upgrade path: a config written before ``last_full_audit`` existed holds
         # its full run only under ``last_audit``. Promote it before this partial
         # run overwrites that slot, or the first ``--only`` invocation after the
         # upgrade would silently downgrade the project to "never fully run".
-        prior = _parse_record(previous)
+        prior = parse_record(previous)
         if prior is not None and prior.is_full:
             config[LAST_FULL_AUDIT_KEY] = previous
 
