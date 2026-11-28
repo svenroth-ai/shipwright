@@ -79,49 +79,169 @@
     "code": {
       "review_type": "code",
       "status": "completed",
-      "findings_count": 2,
+      "findings_count": 6,
       "findings": [
         {
-          "severity": "low",
-          "category": "architecture",
-          "file": "plugins/shipwright-compliance/scripts/lib/audit_freshness.py",
-          "line": 34,
-          "finding": "Imports private _valid_timestamp from audit_disclosure.",
-          "suggestion": "Optionally make it public.",
+          "severity": "medium",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "json re-date kept the record's verdict/scope (partial run shown as full)",
+          "suggestion": "fixed, then superseded: tracked docs read the tracked record only",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "latest_recorded_run preferred a stale json over a newer record",
+          "suggestion": "fixed: newer of json and record",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "empty --only run promoted via json",
+          "suggestion": "fixed: no json/md written for an empty run; banner ignores empty json",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "test evidence cited a deleted test",
+          "suggestion": "fixed: ledger rewritten, iterate entry regenerated via F5c",
           "source": "code-reviewer"
         },
         {
           "severity": "low",
-          "category": "readability",
-          "file": "plugins/shipwright-compliance/scripts/audit/run_audit.py",
-          "line": 98,
-          "finding": "Run instant minted in main and as fallback in write().",
-          "suggestion": "Optional comment.",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "md written for empty run; banner day not UTC; stale docstrings/comments; dropped stamped assertion; finalize_payload stale; private import; test gaps; blank lines",
+          "suggestion": "fixed",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "absolute import of scripts.lib.audit_freshness in audit_report.py",
+          "suggestion": "accepted (informational, no cycle or identity check)",
           "source": "code-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-11-28T13:02:33.209538+00:00",
+      "completed_at": "2026-11-28T13:38:21.777803+00:00",
       "disposition": null,
       "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus",
       "verdict": "pass",
-      "reviewed_commit": "0c3bbe5fb94544ce5e4672d0a04b09d881c372c5"
+      "reviewed_commit": "56afc5cca1cc4ac16a3ccce157b1eabf8b9cec31"
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "not_applicable",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "high",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "empty or unrecorded run promoted through the json as PASS",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "all five evidence provenance headers machine-dependent",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "json not bound to a branch",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "local origin of a date not disclosed",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "typo'd --only run overwrites the md",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "evidence cites a deleted test",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "banner day not UTC",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "record write failure leaves local md/json ahead of the dashboard",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "consumer projects tracking audit-report.md: banner depends on local json",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-11-28T12:54:38.079647+00:00",
-      "disposition": "Stage 3 conditional: no migration, async, cross-plugin import or irreversible op",
-      "recorded_by": "none",
+      "completed_at": "2026-11-28T13:38:06.203131+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "diff-below-threshold"
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "56afc5cca1cc4ac16a3ccce157b1eabf8b9cec31"
     },
     "external_code": {
       "review_type": "external_code",
@@ -209,14 +329,14 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-11-28T12:54:49.840444+00:00",
+      "completed_at": "2026-11-28T13:38:05.933042+00:00",
       "disposition": null,
       "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus",
       "verdict": "pass",
-      "reviewed_commit": "305b64f2cb86fcb87594ff476a13bf2e8246d61a"
+      "reviewed_commit": "56afc5cca1cc4ac16a3ccce157b1eabf8b9cec31"
     },
     "plan_internal": {
       "review_type": "plan_internal",
