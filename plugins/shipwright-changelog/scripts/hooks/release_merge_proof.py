@@ -11,19 +11,27 @@ is ``published_commit`` and the proof still holds in this repository:
 
 - ``proof.pr_head`` is the release (R or an event-only descendant of R), and
 - ``proof.tree`` is both the tree of ``proof.pr_head`` and the tree of ``published_commit``, and
-- ``proof.base_before`` (the base just before the merge) is an ancestor of ``published_commit`` (S grows from that base).
+- ``proof.base_before`` (the base just before the merge) is an ancestor of ``proof.pr_head`` (the PR already held that base), and
+- S sits directly on ``proof.base_before`` the way ``merged_via`` says (unit U3, review of U2): ``squash``: S's only parent is
+  ``base_before``; ``merge``: S's parents are ``base_before`` and ``pr_head``, in that order; ``rebase``: walking down from S as
+  many commits as ``pr_head`` is past ``base_before`` (first parents), each has exactly one parent, the walk ends on
+  ``base_before`` and ``git cherry`` finds each of them patch-equal to a PR commit (each PR commit replayed once, nothing
+  reached through a second parent, no foreign commit in the chain).
 
-So S carries exactly the audited content of the release. A hand-edited record cannot approve any other commit: a different S has
-a different tree, and a ``proof`` pointing at another head is not the release. A malformed or partial set of the new fields is no
-claim at all (the release-descent rule alone).
+So S carries exactly the audited content of the release on top of a base the release already contained: nothing that landed on
+the base after the release branch was cut can sit between ``base_before`` and S, and S's tree, equal to the release head's, holds
+everything the base held. A hand-edited record cannot approve any other commit: a different S has a different tree, a ``proof``
+pointing at another head is not the release, and S = ``commit-tree <release tree> -p <moved base>`` (which would silently revert
+what landed on the base in between, D112) fails the parent check whichever base the record names: the old base is not S's parent,
+the moved base is not in the release head. A malformed or partial set of the new fields is no claim at all (the release-descent
+rule alone).
 
-Trust boundary: this rule proves content and that S grows from the recorded base, not that S is on the base on origin. That is proven by the writer (U3: S is an ancestor of
-the freshly fetched base) and checked again by the closing verify's PR check (S on the base on origin). The guard cannot ask the
-remote (D90), so a commit with exactly the release's tree that is not on the base passes the guard; its content is the audited
-release, so the worst case is a tag off the trunk, which the closing verify then fails. ``base_before`` means what U3's writer
-makes it mean (the fetched base tip the merge was made on); a hand-edited record can name any ancestor of S there, so the
-guard's protection rests on the two tree checks, never on ``base_before``. A merge commit or a squash made after the
-base moved has another tree and is refused here; U3 keeps a merge commit on R and stops on foreign commits (D112).
+Trust boundary: this rule proves content and S's place right on top of a base the release contained, not that S is on the base
+on origin. That is proven by the writer (U3: S is an ancestor of the freshly fetched base) and checked again by the closing
+verify's PR check (S on the base on origin). The guard cannot ask the remote (D90), so a commit that satisfies every check above
+but is not on the base passes the guard; its content is the audited release on an older state of the base, so the worst case is
+a tag off the trunk, which the closing verify then fails. A merge commit or a squash made after the base moved has another tree
+(or another parent) and is refused here; U3 keeps a merge commit on R and stops on foreign commits (D112).
 
 The caller supplies ``git(*args) -> (exit_code, stdout)`` as for ``release_descent``. Loaded by ``release_guard.py`` from its own
 directory and by ``lib/release_verify.py`` by path.
@@ -60,6 +68,42 @@ def _tree(git: release_descent.Git, commit: str) -> str:
     return out.strip() if code == 0 else ""
 
 
+def _ancestor(git: release_descent.Git, older: str, newer: str) -> bool:
+    return git("merge-base", "--is-ancestor", older, newer)[0] == 0
+
+
+def parents(git: release_descent.Git, commit: str) -> list[str] | None:
+    """``commit``'s parents in order, ``None`` when git cannot answer (an unknown commit)."""
+    code, out = git("rev-list", "--parents", "-n", "1", commit)
+    found = out.split()
+    return found[1:] if code == 0 and found[:1] == [commit] else None
+
+
+def _chain(git: release_descent.Git, base: str, tip: str) -> int | None:
+    code, out = git("rev-list", "--count", "--first-parent", f"{base}..{tip}")
+    return int(out.strip()) if code == 0 and out.strip().isdigit() else None
+
+
+def on_base_as_merged(git: release_descent.Git, merged_via: str, published: str, pr_head: str, base: str) -> bool:
+    """S sits directly on ``base``, a base the PR head already holds, the way ``merged_via`` says (see the module docstring)."""
+    if not _ancestor(git, base, pr_head):
+        return False
+    if merged_via == "squash":
+        return parents(git, published) == [base]
+    if merged_via == "merge":
+        return parents(git, published) == [base, pr_head]
+    replayed = _chain(git, base, pr_head)  # rebase: walk S down that many single-parent commits, and land exactly on base
+    if not replayed:
+        return False
+    code, out = git("rev-list", "--parents", "--first-parent", "-n", str(replayed), published)
+    rows = [line.split() for line in out.splitlines()] if code == 0 else []
+    if not (len(rows) == replayed and all(len(row) == 2 for row in rows) and rows[0][0] == published and rows[-1][1] == base):
+        return False
+    code, out = git("cherry", pr_head, published, base)  # and each of them is a PR commit replayed (same patch), not a foreign one
+    marks = [line for line in out.splitlines() if line.strip()] if code == 0 else []
+    return len(marks) == replayed and all(line.startswith("- ") for line in marks)
+
+
 def proven(git: release_descent.Git, record: Any) -> str | None:
     """``published_commit`` when the record claims one and its proof holds in this repository, else ``None``.
     Asks git only when the record claims a published commit, so a record without the new fields costs no git call."""
@@ -72,7 +116,7 @@ def proven(git: release_descent.Git, record: Any) -> str | None:
     tree = proof["tree"]
     if _tree(git, proof["pr_head"]) != tree or _tree(git, published) != tree:
         return None
-    return published if git("merge-base", "--is-ancestor", proof["base_before"], published)[0] == 0 else None  # S grows from the recorded base
+    return published if on_base_as_merged(git, record["merged_via"], published, proof["pr_head"], proof["base_before"]) else None
 
 
 def accepts(git: release_descent.Git, record: Any, judged: str) -> bool:

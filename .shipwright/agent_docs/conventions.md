@@ -621,7 +621,7 @@ Python 3.11+ with uv as package manager. All scripts are invoked via uv run. Hoo
 - (2026-11-24) iterate — a gate over a frozen file cannot ask that file for an escape marker; keep escapes in the gate's own registry and cap them (check_prompt_mechanics). [→ iterate-2026-11-24-p6-ratchet-docs-bloat]
 - (2026-11-24) iterate - a promise marked passing because its test exists is not evidence; read the run's JUnit report, and a check that lives inside the file it guards needs a sentinel outside it (check_plugin_conversion). [-> iterate-2026-11-24-p7-conversion-check-retire]
 - (2026-11-25) iterate — An index restore after a refused tool must be index-only (git update-index --force-remove / --cacheinfo): git rm --cached refuses when the restored working-tree copy matches neither HEAD nor the index. [→ iterate-2026-11-25-p8b-decisions-q5-q10]
-
+- (2026-11-28) iterate — a merge proof by equal trees alone admits `commit-tree <release tree> -p <moved base>`: tie the merge commit to its parents per method; and a release CLI calling gh must go through the test seam (release_seams.gh_command), a bare gh in the scratch is the logged-out stub. [→ iterate-2026-11-28-u3-push-tag-squash-proof]
 
 ## Contributing
 

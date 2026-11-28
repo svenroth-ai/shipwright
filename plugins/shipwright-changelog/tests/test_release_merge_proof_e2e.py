@@ -1,8 +1,8 @@
 """U2 (D110 part 1) end to end: a whole autonomous release on real git with a bare remote and the ``gh`` stub, squash-merged.
 
-The stub merges with a merge commit only, so the squash is made by hand on the bare remote (S = a commit with the PR head's tree
-on top of the base) and the stub's PR is marked merged. U3 will write the record fields and retag; until then this test writes
-them the way the brief settles them. The guard then allows the tag push of S and close-phase passes 8 of 8; a record whose tree
+The squash is made by hand on the bare remote (S = a commit with the PR head's tree on top of the base), the stub's PR is marked
+merged and this test writes the record fields itself, so it pins the reader side alone; the writer (``push-tag``, unit U3) runs end to
+end through the stub's own squash and rebase merges in ``test_release_push_merge_e2e.py``. The guard then allows the tag push of S and close-phase passes 8 of 8; a record whose tree
 does not match is denied by both.
 """
 

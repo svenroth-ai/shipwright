@@ -6,10 +6,14 @@ the release guard hook (``scripts/hooks/release_guard.py``) sees it. This call r
 - ``status: "ok"`` with ``argv`` and ``line``: F1a. From a feature branch only the tag goes out (``git push origin refs/tags/vX``); on the
   trunk the trunk and exactly this tag go out together and all-or-nothing (``git push --atomic origin main refs/tags/vX``).
 - ``status: "waiting_for_merge"`` (exit 1): F1b. A hand-invoked release (``mode: standalone``) from a feature branch pushes only once the
-  release commit is on the PR's base branch on origin. A driven run (``mode: pipeline``) never merges its PR and never waits.
+  PR is merged. A driven run (``mode: pipeline``) never merges its PR and never waits.
 - ``status: "refused"`` (exit 1) with a ``reason``: no recorded release, no recorded event, a tag that names another commit, a trunk that moved
-  by more than the event commit (the hook's rule, ``release_descent``), a PR merged without the release commit
-  (``merged_without_release_commit``), or a merge state that could not be read.
+  by more than the event commit (the hook's rule, ``release_descent``), a PR closed without a merge, or a merge state that could not be read.
+
+After a merge commit the release commit is on the base and the tag stays on it, as before. After a squash or rebase merge it is not:
+``release_publish`` then proves the PR's merge commit (D110 part 2, unit U3), writes the proof into the release record and moves the
+local tag onto it, or stops with ``foreign_commits_on_base`` (D112) and writes nothing. **push-tag writes since unit U3**, only there.
+A re-run gives the same answer: a tag already moved onto the proven merge commit is the release's.
 
 The same ``release_verify.waits_for_merge`` answers "does this release wait" for the closing verify.
 """
@@ -24,11 +28,10 @@ from typing import Any
 sys.path.append(str(Path(__file__).resolve().parents[1] / "hooks"))  # appended: never shadow a module of the caller
 import release_descent  # noqa: E402  (stdlib-only, shared with the release guard hook)
 
-from . import release_commit, release_event, release_runstate, release_verify  # noqa: E402
-from .release_runner import Recorder  # noqa: E402
+import release_merge_proof  # noqa: E402
 
-SQUASHED = ("the PR was merged, but the release commit is not on {base}: the tag would name a commit that is not on the trunk "
-            "(a squash or rebase merge). Nothing is pushed; an operator decides how to tag the merge commit")
+from . import release_commit, release_event, release_paths, release_publish, release_runstate, release_verify  # noqa: E402
+from .release_runner import Recorder  # noqa: E402
 
 
 def push_tag(rec: Recorder, plugin_root: Path, *, version: str) -> tuple[int, dict[str, Any]]:
@@ -37,6 +40,7 @@ def push_tag(rec: Recorder, plugin_root: Path, *, version: str) -> tuple[int, di
     out: dict[str, Any] = {"version": version, "tag": tag}
 
     def answer(status: str, code: int, **more: Any) -> tuple[int, dict[str, Any]]:
+        release_publish.redact(rec)  # the push URL on_base and publish read may carry a user and token: never in the answer
         return code, {**out, **more, "status": status, "commands": rec.as_json()}
 
     def refuse(reason: str, **more: Any) -> tuple[int, dict[str, Any]]:
@@ -54,7 +58,8 @@ def push_tag(rec: Recorder, plugin_root: Path, *, version: str) -> tuple[int, di
         return refuse("branch_not_a_trunk")
     out.update(branch=branch, on_trunk=on_trunk)
     named = rec.run("push-tag-commit", ["git", "rev-parse", "--verify", "-q", f"refs/tags/{tag}^{{commit}}"]).stdout.strip()
-    if named != commit:  # a tag moved since commit-and-tag would publish another commit as the release
+    moved = not on_trunk and release_verify.waits_for_merge(state) and bool(named) and named == release_merge_proof.claimed(record)
+    if named != commit and not moved:  # a tag moved since commit-and-tag publishes another commit (U3: unless it is the recorded merge commit)
         return refuse("tag_not_the_release_commit", tag_commit=named)
     if on_trunk:
         if rec.run("push-head", ["git", "rev-parse", "--abbrev-ref", "HEAD"]).stdout.strip() != branch:  # the rule below reads HEAD, the push sends the branch
@@ -73,24 +78,32 @@ def push_tag(rec: Recorder, plugin_root: Path, *, version: str) -> tuple[int, di
             reached, base, detail = release_verify.on_base(rec, state, commit)
             if reached is None:
                 return refuse("merge_state_unknown", base=base, detail=detail)
+            if reached and moved:  # the release commit reached the base after the tag was moved: no rule says which to tag
+                return refuse("tag_not_the_release_commit", tag_commit=named)
             if not reached:
-                pr_state = _pr_state(rec, state)
-                if pr_state == "MERGED":  # waiting would never end: ancestry cannot prove a squash or rebase merge
-                    return refuse("merged_without_release_commit", base=base, detail=SQUASHED.format(base=base))
+                view = _pr_view(rec, plugin_root, state)
+                pr_state = str(view.get("state") or "")
+                if pr_state == "MERGED":  # a squash or rebase merge: prove the merge commit, or stop (D110 part 2, D112)
+                    reason, more = release_publish.publish(rec, record, tag=tag, base_branch=base, view=view)
+                    if reason != "ok":
+                        return refuse(reason, base=base, **more)
+                    return answer("ok", 0, argv=argv, line=" ".join(argv), base=base, **more)
                 if pr_state == "CLOSED":  # closed without a merge: it will not get merged by waiting
                     return refuse("pr_closed_unmerged", base=base, detail="the PR was closed without being merged; nothing is pushed")
                 return answer("waiting_for_merge", 1, reason="waiting_for_merge", base=base, detail="the PR is not merged yet; run this again after the merge")
     return answer("ok", 0, argv=argv, line=" ".join(argv))
 
 
-def _pr_state(rec: Recorder, state: dict[str, Any]) -> str:
-    """``gh pr view``: the release PR's state (``MERGED`` in any way, ``CLOSED``, ``OPEN``). Unknown, unreadable or no PR URL is ``""``."""
+def _pr_view(rec: Recorder, plugin_root: Path, state: dict[str, Any]) -> dict[str, Any]:
+    """``gh pr view``: the release PR's ``state`` (``MERGED`` in any way, ``CLOSED``, ``OPEN``), its head at the merge and its merge
+    commit. Unknown, unreadable or no PR URL is ``{}``."""
     url = state.get("pr_url")
-    if not url:
-        return ""
-    done = rec.run("push-pr-view", ["gh", "pr", "view", url, "--json", "state,mergeCommit"])
+    argv = release_paths.gh(plugin_root, "pr", "view", url, "--json", "state,mergeCommit,headRefOid,baseRefName") if url else None
+    if not argv:
+        return {}
+    done = rec.run("push-pr-view", argv)
     try:
         found = json.loads(done.stdout)
     except ValueError:
-        return ""
-    return str(found.get("state") or "") if done.exit == 0 and isinstance(found, dict) else ""
+        return {}
+    return found if done.exit == 0 and isinstance(found, dict) else {}

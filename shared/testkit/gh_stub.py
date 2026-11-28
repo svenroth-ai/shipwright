@@ -1,51 +1,41 @@
 """A stand-in for ``gh`` that talks to a LOCAL bare repository, for the golden-trace harness.
 
-Wired in through the argv-prefix seam (``SHIPWRIGHT_TEST_GH_ARGV_PREFIX``, see
-``shared/scripts/release_seams.py``): ``["<python>", "<this file>"]`` replaces the leading
-``gh`` of the release scripts. Standard library only (ADR-044): it runs in a scratch
-project's environment, not the repo's.
-
-Where it looks (no environment guessing, no network):
-
-* ``SHIPWRIGHT_GH_STUB_STATE`` -- a directory for ``state.json`` and ``argv.jsonl``. Unset: the
-  stub refuses (exit 3), it never pretends to succeed.
-* the remote -- ``git remote get-url --push origin`` of the current directory. The scratch
-  project gives ``origin`` a fake GitHub fetch URL and the bare repository as its push URL.
+Wired in through the argv-prefix seam (``SHIPWRIGHT_TEST_GH_ARGV_PREFIX``, ``shared/scripts/release_seams.py``):
+``["<python>", "<this file>"]`` replaces the leading ``gh`` of the release scripts. Standard library only (ADR-044):
+it runs in a scratch project's environment, not the repo's. No environment guessing, no network: the state lives in
+``SHIPWRIGHT_GH_STUB_STATE`` (``state.json``, ``argv.jsonl``; unset: exit 3, it never pretends to succeed), the remote is
+``git remote get-url --push origin`` of the current directory (the scratch's bare repository; its fetch URL is fake).
 
 **Contract** (what the stub refuses or does, from the brief, section 5 P2a):
 
-* ``pr create``: refuses (exit 1) unless the head branch (``--head``, else the current branch)
-  is on the bare remote. Records the PR (title, body, base, head) and prints its URL. The base
-  is ``--base``, else the bare repository's default branch.
-* ``pr merge``: really merges the head into the remote's base branch (a merge commit, ``--merge``
-  only; ``--squash`` and ``--rebase`` are refused as unsupported) and, with ``--delete-branch``,
-  deletes the head branch on the remote. When the LOCAL checkout is on the PR's head, ``--delete-branch``
-  also does what the real ``gh`` does: check out the base, fast-forward it from the push URL
-  (``git fetch <bare> <base>`` and ``merge --ff-only FETCH_HEAD``) and delete the local head, so a later
-  ``git push --tags origin main`` pushes the merged ``main``. Refuses without a merge flag (as ``gh`` does
-  when it cannot prompt), when no open PR matches, and on a merge conflict.
-* ``release create``: refuses unless the tag is on the remote, or the release exists already;
-  otherwise persists it. ``release view`` then reports it (``--json url`` prints ``{"url": ...}``),
-  or exits 1 with ``release not found``.
+* ``pr create``: refuses (exit 1) unless the head branch (``--head``, else the current branch) is on the bare remote, the
+  base (``--base``, else the remote's default branch) is there too and no open PR has the same head and base. Records the
+  PR (title, body, base, head) and prints its URL.
+* ``pr merge``: really merges the head into the remote's base branch: ``--merge`` a merge commit, ``--squash`` one commit
+  with the merged tree on the base, ``--rebase`` each head commit replayed onto the base (always new commits, as GitHub
+  does; unit U3, FINDINGS D114). It keeps the head and the merge commit for ``pr view``. ``--delete-branch`` deletes the
+  head on the remote; when the LOCAL checkout is on the PR's head it also does what the real ``gh`` does: check out the
+  base, fast-forward it from the push URL and delete the local head. Refuses without exactly one merge flag (as ``gh``
+  does when it cannot prompt), when no open PR matches, and on a merge conflict.
+* ``pr view <url|number|branch> --json <fields>``: ``state`` (``OPEN``/``MERGED``/``CLOSED``), ``mergeCommit``
+  (``{"oid": ...}`` or null), ``headRefOid`` (the head at the merge, else the remote's), ``baseRefName``,
+  ``headRefName``, ``number``; another field is exit 1, no ``--json`` exit 2.
+* ``release create``: refuses unless the tag is on the remote, or the release exists already; otherwise persists it.
+  ``release view`` then reports it (``--json url`` prints ``{"url": ...}``), or exits 1 with ``release not found``.
 * ``--version`` and ``auth status`` succeed. Anything else: exit 2. A BARE gh (the shim sets SHIPWRIGHT_GH_STUB_UNSEAMED=1) is
   logged out: ``auth status`` exits 1, anything but ``--version`` exits 4, and it is logged to ``unseamed.jsonl``, not ``argv.jsonl``.
-* ``--repo`` / ``-R`` is accepted and ignored (only the URL of the PR and release comes from it): the
-  repository is always the one in the current directory, so the cwd MUST be the scratch repository.
-* ``pr create`` also refuses a base that is not on the remote and a second open PR for the same
-  head and base, as ``gh`` does. Short flags map per command (``_SHORT``: ``release create`` has
-  ``-t -n -F -d -p``, ``pr create`` ``-t -b -B -H -F -R``, ``pr merge`` ``-m -d -s -r -R``); any other
-  short flag, a bundled one (``-md``) and a valued flag without a value is refused (exit 2).
-* A long flag the contract does not list is refused (exit 2): a valued flag would otherwise leak its value
-  into the positionals. A crash inside the stub exits 4 and is logged like any call; a call killed by
-  a timeout is the one case that writes no log line.
+* ``--repo`` / ``-R`` is accepted and ignored (only the URL of the PR and release comes from it): the repository is always
+  the one in the current directory, so the cwd MUST be the scratch repository.
+* Short flags map per command (``_SHORT``); any other short flag, a bundled one (``-md``), a valued flag without a value
+  and a long flag the contract does not list are refused (exit 2). A crash inside the stub exits 4 and is logged like any
+  call; a call killed by a timeout is the one case that writes no log line.
 
-**Fidelity limits, on purpose:** the local checkout is touched only as described under ``pr merge``
-(the real ``gh`` also updates remote-tracking refs, which the scratch never reads); no auth, no squash or rebase merge, one repository. ``release create`` refuses an unpushed tag even
-without ``--verify-tag`` (the real ``gh`` would create the tag; the release script always passes the
-flag), and a missing notes file is an internal error (exit 4) where the real ``gh`` exits 1. A scenario that depends on those has no oracle.
+**Fidelity limits, on purpose:** the local checkout is touched only as described under ``pr merge``; no auth, no merge
+queue, one repository. ``release create`` refuses an unpushed tag even without ``--verify-tag`` (the release script always
+passes it), and a missing notes file is exit 4 where the real ``gh`` exits 1. A scenario that depends on those has no oracle.
 
-**The argv log is part of the trace:** every call appends ``{"argv": [...], "exit": n}`` to
-``argv.jsonl`` in the state directory, refusals included, in call order.
+**The argv log is part of the trace:** every call appends ``{"argv": [...], "exit": n}`` to ``argv.jsonl`` in the state
+directory, refusals included, in call order.
 """
 
 from __future__ import annotations
@@ -59,19 +49,15 @@ from pathlib import Path
 
 STATE_ENV = "SHIPWRIGHT_GH_STUB_STATE"
 VERSION_TEXT = "gh version 2.60.0 (2026-01-01)\nhttps://github.com/cli/cli/releases/tag/v2.60.0 (shipwright test stub)\n"
-_GIT = ["git", "-c", "user.name=gh-stub", "-c", "user.email=gh-stub@example.invalid",
-        "-c", "commit.gpgsign=false", "-c", "core.autocrlf=false"]
-
+_GIT = ["git", "-c", "user.name=gh-stub", "-c", "user.email=gh-stub@example.invalid", "-c", "commit.gpgsign=false", "-c", "core.autocrlf=false"]
 
 _SHORT: dict[tuple[str, str], dict[str, str]] = {
-    ("pr", "create"): {"-t": "--title", "-b": "--body", "-B": "--base", "-H": "--head", "-F": "--body-file",
-                       "-R": "--repo"},
+    ("pr", "create"): {"-t": "--title", "-b": "--body", "-B": "--base", "-H": "--head", "-F": "--body-file", "-R": "--repo"},
     ("pr", "merge"): {"-m": "--merge", "-d": "--delete-branch", "-s": "--squash", "-r": "--rebase", "-R": "--repo"},
-    ("release", "create"): {"-t": "--title", "-n": "--notes", "-F": "--notes-file", "-d": "--draft",
-                            "-p": "--prerelease", "-R": "--repo"},
+    ("pr", "view"): {"-R": "--repo"},
+    ("release", "create"): {"-t": "--title", "-n": "--notes", "-F": "--notes-file", "-d": "--draft", "-p": "--prerelease", "-R": "--repo"},
     ("release", "view"): {"-R": "--repo"},
 }
-
 
 _GIT_ENV_DROP = ("GIT_AUTHOR_NAME", "GIT_AUTHOR_EMAIL", "GIT_COMMITTER_NAME", "GIT_COMMITTER_EMAIL")
 
@@ -98,9 +84,7 @@ def _git(*args: str, cwd: Path | str, check: bool = True) -> str:
 def _flags(argv: list[str], valued: tuple[str, ...], bare_ok: tuple[str, ...] = (),
            short: dict[str, str] | None = None) -> tuple[list[str], dict[str, str], set[str]]:
     """Split ``argv`` into positionals, ``--name value`` pairs and bare flags. ``short`` is the command's own map."""
-    positional: list[str] = []
-    values: dict[str, str] = {}
-    bare: set[str] = set()
+    positional, values, bare = [], {}, set()  # type: tuple[list[str], dict[str, str], set[str]]
     it = iter(argv)
     for arg in it:
         if arg.startswith("-") and not arg.startswith("--") and len(arg) > 1:
@@ -182,25 +166,30 @@ class Stub:
     def pr_merge(self, argv: list[str]) -> str:
         pos, v, bare = _flags(argv, ("--repo",), ("--merge", "--squash", "--rebase", "--delete-branch"),
                               short=_SHORT[("pr", "merge")])
-        if "--squash" in bare or "--rebase" in bare:
-            raise Refusal("gh-stub: only --merge is supported", 2)
-        if "--merge" not in bare:
+        method = [m for m in ("--merge", "--squash", "--rebase") if m in bare]
+        if len(method) != 1:
             raise Refusal("gh-stub: --merge, --rebase, or --squash required when not running interactively")
         key = pos[0] if pos else self.current_branch()
         pr = next((p for p in self.state["prs"] if p["state"] == "open"
                    and (str(p["number"]) == key or p["head"] == key)), None)
         if pr is None:
             raise Refusal(f"gh-stub: no open pull request found for '{key}'")
+        head = f"origin/{pr['head']}"
+        steps = {"--merge": [["merge", "--no-ff", "-m", f"Merge pull request #{pr['number']} from {pr['head']}", head]],
+                 "--squash": [["merge", "--squash", head], ["commit", "-m", f"{pr['title']} (#{pr['number']})"]],
+                 "--rebase": [["rebase", "--force-rebase", pr["base"], "stub-rebase"], ["checkout", "--quiet", pr["base"]],
+                              ["merge", "--ff-only", "stub-rebase"]]}[method[0]]
         with tempfile.TemporaryDirectory(dir=self.state_dir) as work:
             _git("clone", "--quiet", self.remote(), work, cwd=self.state_dir)
             _git("checkout", "--quiet", pr["base"], cwd=work)
-            merged = subprocess.run([*_GIT, "merge", "--no-ff", "-m", f"Merge pull request #{pr['number']} from {pr['head']}",
-                                     f"origin/{pr['head']}"], cwd=work, env=_env(), capture_output=True, text=True,
-                                    encoding="utf-8", errors="replace", timeout=120)
-            if merged.returncode != 0:
-                raise Refusal(f"gh-stub: pull request #{pr['number']} is not mergeable: {merged.stdout.strip()[-200:]}")
+            _git("branch", "stub-rebase", head, cwd=work)
+            for step in steps:
+                merged = subprocess.run([*_GIT, *step], cwd=work, env=_env(), capture_output=True, text=True,
+                                        encoding="utf-8", errors="replace", timeout=120)
+                if merged.returncode != 0:
+                    raise Refusal(f"gh-stub: pull request #{pr['number']} is not mergeable: {merged.stdout.strip()[-200:]}")
             _git("push", "--quiet", "origin", pr["base"], cwd=work)
-            pr["state"] = "merged"
+            pr.update(state="merged", head_oid=_git("rev-parse", head, cwd=work), merge_commit=_git("rev-parse", "HEAD", cwd=work))
             self.save()  # the remote is merged now, whatever the branch delete does
             if "--delete-branch" in bare:
                 _git("push", "--quiet", "origin", "--delete", pr["head"], cwd=work)
@@ -220,6 +209,21 @@ class Stub:
         _git("fetch", "--quiet", self.remote(), base, cwd=self.cwd)
         _git("merge", "--quiet", "--ff-only", "FETCH_HEAD", cwd=self.cwd)
         _git("branch", "-D", pr["head"], cwd=self.cwd)
+
+    def pr_view(self, argv: list[str]) -> str:
+        pos, v, _ = _flags(argv, ("--repo", "--json"), short=_SHORT[("pr", "view")])
+        key = (pos[0] if pos else self.current_branch()).rstrip("/").rsplit("/", 1)[-1]
+        pr = next((p for p in reversed(self.state["prs"]) if key in (str(p["number"]), p["head"])), None)
+        if pr is None:
+            raise Refusal(f"gh-stub: no pull requests found for '{key}'")
+        merged = pr["state"] == "merged"
+        head = pr.get("head_oid") if merged else _git("ls-remote", self.remote(), f"refs/heads/{pr['head']}", cwd=self.cwd, check=False)[:40]
+        facts = {"state": pr["state"].upper(), "mergeCommit": {"oid": pr["merge_commit"]} if merged and pr.get("merge_commit") else None,
+                 "headRefOid": head or None, "baseRefName": pr["base"], "headRefName": pr["head"], "number": pr["number"]}
+        wanted = [f for f in v.get("--json", "").split(",") if f]
+        if not wanted or any(f not in facts for f in wanted):
+            raise Refusal(f"gh-stub: pr view needs --json with fields from {', '.join(facts)}", 2 if not wanted else 1)
+        return json.dumps({f: facts[f] for f in wanted}) + "\n"
 
     def release_create(self, argv: list[str]) -> str:
         pos, v, _ = _flags(argv, ("--notes-file", "--title", "--repo", "--notes", "--target"),
@@ -256,7 +260,7 @@ def dispatch(stub: Stub, argv: list[str], *, unseamed: bool = False) -> str:
         return "github.com\n  Logged in to github.com (shipwright test stub)\n"
     if unseamed:  # a bare gh is logged out: it may probe (--version, auth status above) but never act
         raise Refusal("To get started with GitHub CLI, please run:  gh auth login", 4)
-    table = {("pr", "create"): stub.pr_create, ("pr", "merge"): stub.pr_merge,
+    table = {("pr", "create"): stub.pr_create, ("pr", "merge"): stub.pr_merge, ("pr", "view"): stub.pr_view,
              ("release", "create"): stub.release_create, ("release", "view"): stub.release_view}
     handler = table.get(tuple(argv[:2]))
     if handler is None:

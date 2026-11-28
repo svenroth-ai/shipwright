@@ -71,6 +71,13 @@ still consumed. Likewise `"section_action": "none"` means there was nothing
 pending. Neither is a reason to retry or escalate. A genuine failure is a
 non-zero exit with the reason on stderr.
 
+## Re-running `push-tag`
+
+`release.py push-tag` may be run again at any point of Step 7 and gives the same answer. After a squash or rebase merge its first run
+records the PR's merge commit in `.shipwright/runtime/release_state.json` and moves the local tag onto it; a re-run proves the merge again,
+finds the record and the tag already there and prints the same push line. It never moves a tag that is already on origin. A
+`foreign_commits_on_base` stop also repeats: nothing was written, so nothing changes until a person decides.
+
 ## What a re-run is not
 
 - **Not "start from version X".** There is no `--from` option: it was advertised and never built, and P8b (operator

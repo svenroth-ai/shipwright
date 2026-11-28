@@ -262,3 +262,71 @@ def test_the_second_close_phase_of_a_guided_release_says_pushed_once_the_tag_is_
     assert "Tag is pushed after the PR is merged" in release_close.summary(VERSION, state, checks(), "waiting", None, "n")
     git(repo, "push", "-q", "origin", f"refs/tags/{TAG}")  # after the merge the tag goes out
     assert "\nTag pushed to origin\n" in release_close.summary(VERSION, state, checks(), "waiting", None, "n")
+
+
+# ---- U3 review of U2: S is tied to its parent(s), not only to an ancestor named base_before ---------------------------
+
+@pytest.mark.parametrize("recorded", ["old", "moved"])
+def test_the_release_tree_committed_onto_a_moved_base_is_denied_by_the_guard_and_failed_by_the_close(merged, recorded):
+    """D112 by hand: S = commit-tree of R's tree onto a base that moved silently reverts what landed in between. Whichever base
+    the record names (the old one, an ancestor of S; or the moved one, S's parent), the proof does not hold."""
+    repo = merged["repo"]
+    start_release(repo)
+    git(repo, "checkout", "-q", "-b", "other", merged["base"])
+    moved = _commit(repo, "other.txt", "o\n", "feat: another PR merged first")
+    git(repo, "checkout", "-q", "release/next")
+    reverting = _squash(repo, merged["R"], moved, "Release made by hand on the moved base")
+    git(repo, "push", "-q", "-f", "origin", f"{reverting}:refs/heads/main")
+    git(repo, "tag", "-f", "-a", "-m", "moved by hand", TAG, reverting)
+    base_before = merged["base"] if recorded == "old" else moved
+    tree = git(repo, "rev-parse", f"{merged['R']}^{{tree}}")
+    record = _record(merged, published_commit=reverting, merged_via="squash",
+                     proof={"pr_head": merged["R"], "tree": tree, "base_before": base_before})
+    assert proof.claimed(record) == reverting and proof.proven(_git_fn(repo), record) is None
+    reason = rg.decide(PUSH, repo)
+    assert reason and "nor its merge commit" in reason
+    git(repo, "push", "-q", "origin", f"refs/tags/{TAG}")  # pushed past the guard by hand: the close must still refuse it
+    checks, _ = _verify(merged)
+    assert [n for n in ("tag_local", "tag_remote", "pr_state") if checks[n]["ok"]] == []
+
+
+def test_a_rebase_claim_whose_chain_is_longer_than_the_pr_is_not_proven(merged):
+    repo = merged["repo"]
+    extra = _squash(repo, merged["base"], merged["base"], "an empty commit that landed first")
+    first = _squash(repo, merged["R"], extra, "chore(release): v1.2.3 (rebased)")
+    tip = _squash(repo, merged["H"], first, "chore(changelog): record the release event (rebased)")
+    assert proof.proven(_git_fn(repo), _record(merged, published_commit=tip, merged_via="rebase")) is None
+
+
+def test_a_merge_claim_needs_the_pr_head_as_second_parent(merged):
+    repo = merged["repo"]
+    fake = git(repo, "commit-tree", f"{merged['H']}^{{tree}}", "-p", merged["base"], "-p", merged["R"], "-m", "not the PR head")
+    assert proof.proven(_git_fn(repo), _record(merged, published_commit=fake, merged_via="merge")) is None
+    assert proof.proven(_git_fn(repo), _record(merged, merged_via="merge")) is None  # a squash (one parent) claimed as a merge
+
+
+@pytest.mark.covers("FR-01.09/AC11")
+def test_the_summary_on_the_trunk_says_the_tag_is_not_on_origin():
+    text = _summary({"mode": "standalone", "autonomy": "guided", "on_trunk": True, "branch": "main"}, {"ok": False, "on_origin": False})
+    assert f"\n\nTag {TAG} is not on origin\n" in text and "Tag pushed to origin" not in text and "Tag + main pushed" not in text
+
+
+def test_a_rebase_claim_that_reaches_the_base_only_through_a_second_parent_is_not_proven(merged):
+    """External code review of U3: B and X siblings, S with parents X and B and the PR head's tree; B..S counts two first-parent
+    commits, as many as the PR, yet S sits on X. The walk must stay on single-parent commits and land on B."""
+    repo = merged["repo"]
+    sibling = _squash(repo, merged["base"], merged["base"], "X: a sibling of the base")
+    first = git(repo, "commit-tree", f"{merged['R']}^{{tree}}", "-p", sibling, "-p", merged["base"], "-m", "two parents")
+    tip = _squash(repo, merged["H"], first, "the PR head's tree")
+    assert proof.proven(_git_fn(repo), _record(merged, published_commit=tip, merged_via="rebase")) is None
+
+
+def test_a_rebase_claim_whose_chain_runs_through_a_foreign_commit_is_not_proven(merged):
+    """Doubt review of U3: base0 -> R -> H on the branch; F lands on main on base0; S = commit-tree tree(H) -p F has the right chain
+    shape (two single-parent commits down to base0) and H's tree, and silently undoes F. git cherry finds F is no PR commit."""
+    repo = merged["repo"]
+    git(repo, "checkout", "-q", "-b", "landed", merged["base"])
+    foreign = _commit(repo, "landed.txt", "landed on main\n", "feat: landed on main first")
+    forged = _squash(repo, merged["H"], foreign, "not a replay")
+    record = _record(merged, published_commit=forged, merged_via="rebase")
+    assert proof.proven(_git_fn(repo), record) is None and not proof.accepts(_git_fn(repo), record, forged)

@@ -225,8 +225,8 @@ uv run "{plugin_root}/scripts/release.py" push-tag --project-root "$(pwd)" --ver
 `status: "ok"` gives the one `line` to run: from a feature branch `git push origin "refs/tags/v{version}"` (only the tag, never a local trunk,
 never `--tags`), on the trunk `git push --atomic origin {branch} "refs/tags/v{version}"` (`{branch}` is the branch you are on, a trunk: run the printed line; the trunk and exactly this tag, together or not at all).
 Run that line as printed. `status: "waiting_for_merge"` (exit 1) means a hand-invoked release's PR is not merged yet: run `push-tag` again after the merge.
-`reason: "merge_state_unknown"` is retryable (origin could not be asked: run `push-tag` again). `status: "refused"` otherwise stops the release and names the `reason` (`merged_without_release_commit`: the PR was merged without the release commit, so
-the tag would name a commit that is not on the trunk; do not run it again, report it). A refused push stops the release.
+After a squash or rebase merge it first proves the merge commit carries exactly the release, records it and moves the local tag onto it (never one on origin); a re-run gives the same answer. `reason: "merge_state_unknown"` is retryable (run `push-tag` again).
+`status: "refused"` otherwise stops the release and names the `reason` (`foreign_commits_on_base`: other commits merged into the base before the release, with their pending drops; nothing was tagged or written; report them, the user decides). A refused push stops the release.
 
 **Create GitHub Release (best-effort, never blocks this phase):** what it publishes, the LLM/mechanical split and every reported
 outcome: [release-workflow.md](references/release-workflow.md).

@@ -231,3 +231,4 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [ADR (run iterate-2026-11-25-p8b-decisions-q5-q10): hand-written entries in the release, the version at the boundary, the PR body from a file, a clean index after a refused refresh](iterate-2026-11-25-p8b-decisions-q5-q10-release-decisions.md)
 - [TOML release manifests (root pyproject.toml and uv.lock)](iterate-2026-11-28-u1-root-pyproject-manifest.md)
 - [Guard and close-phase accept a proven merge commit](iterate-2026-11-28-u2-guard-accepts-proven-merge.md)
+- [push-tag proves a squash or rebase merge commit, retags, stops on foreign commits](iterate-2026-11-28-u3-push-tag-squash-proof.md)

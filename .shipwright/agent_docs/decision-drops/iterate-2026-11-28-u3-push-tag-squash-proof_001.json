@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-28-u3-push-tag-squash-proof",
+  "date": "2026-11-28",
+  "section": "Iterate — feature: push-tag after a squash or rebase merge",
+  "title": "push-tag proves a squash or rebase merge commit, retags, stops on foreign commits",
+  "context": "After a squash or rebase merge the release commit never reaches the base, so push-tag waited forever on a squash-only repository (D110 part 2); foreign commits squashed into the release would ship without their changelog entries (D112).",
+  "decision": "push-tag accepts the PR's merge commit only when the PR head is the release, the merge commit is on the freshly fetched recorded base and the shared merge proof holds (equal trees, parents tied per method, rebase chain patch-equal to the PR); it then writes the proof into the release record and moves the local tag while origin does not hold it.",
+  "consequences": "A squash or rebase release finishes through the plugin; foreign commits stop it with foreign_commits_on_base naming them and their drops; a tag on origin is never moved; push-tag now writes the release record (atomically). The gh stub learns squash, rebase and pr view.",
+  "rationale": "Option A of the architecture review: the record slot and the guard's acceptance already existed (U2), so the decision step only writes what it can prove. Parent ties and git cherry close forged commits the tree check alone admitted.",
+  "rejected": "Matching changelog text (fragile); accepting foreign commits (contradicts the operator decision); leaving the release to hand work (the failure the campaign closes); proving by equal trees alone (admits a commit on a moved base).",
+  "commit": "",
+  "architecture_impact": "data-flow",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-11-28-u3-push-tag-squash-proof.md"
+}

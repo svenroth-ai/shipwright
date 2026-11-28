@@ -3,9 +3,15 @@
 Reference for **Step 7** of `/shipwright-changelog`. From a feature branch only the tag is pushed (never a local trunk); in a hand-invoked release
 the tag is pushed and the release page made only after the release PR is merged (`release.py push-tag` answers `waiting_for_merge` until the release
 commit is on the base branch; a driven run neither merges nor waits). `push-tag` only decides: the push stays a literal line the release guard hook can see.
-A PR merged by squash or rebase leaves the release commit off the base; `push-tag` then refuses (`merged_without_release_commit`) because the tag would
-name a commit that is not on the trunk. A failed `gh pr create`, a rejected push or a refused tag push stops the release; `close-phase` verifies the
-release read-only and leaves a clean tree.
+A PR merged by squash or rebase leaves the release commit off the base (FINDINGS D110). `push-tag` then accepts the PR's merge commit only when the PR
+head at the merge is the release commit (or its event commit), the merge commit is on the freshly fetched base, and its tree equals the PR head's
+right on top of a base the release already held; it writes the proof into `.shipwright/runtime/release_state.json` and moves the tag onto the merge
+commit only while the tag is not on origin, so the release guard and `close-phase` accept it. Nothing weaker is accepted: a check of "same CHANGELOG
+section and versions" is exactly what let code ship without its entry (D112). Commits another PR merged into the base before the release land in the
+merge commit without their changelog entries, so `push-tag` stops with `foreign_commits_on_base`, names them and their drops, and tags nothing; a
+person decides (for v0.37.0 that was an addendum release). A merge commit keeps the tag on the release commit: commits merged next to it are not in
+its tree, and their drops stay pending for the next release. A failed `gh pr create`, a rejected push or a refused tag push stops the release;
+`close-phase` verifies the release read-only and leaves a clean tree.
 The skill is an index of what to DO, and this is the reasoning behind it.
 
 ## Parallel iterate handling
