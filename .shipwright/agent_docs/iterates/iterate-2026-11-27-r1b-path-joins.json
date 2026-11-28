@@ -1,6 +1,6 @@
 {
   "run_id": "iterate-2026-11-27-r1b-path-joins",
-  "date": "2026-11-27T23:58:50.184651Z",
+  "date": "2026-11-28T02:30:33.392401Z",
   "event_at": "2026-11-27T23:58:13.105388+00:00",
   "type": "change",
   "complexity": "medium",
@@ -46,11 +46,17 @@
         "behavior": "str-root contract the dropped Path() wrappers rely on",
         "disposition": "tested",
         "evidence": "shared/tests/test_shipwright_paths.py::test_path_accepts_a_str_root PASSED"
+      },
+      {
+        "behavior": "Stop hook (real main(), real run config, real resolver) reads each phase's evidence where path() points, not the old root location (all four rewritten reads)",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "shared/tests/test_handoff_stop_follows_resolver.py::test_hook_reads_the_phase_evidence_where_the_resolver_points PASSED (fails on the pre-R1b hook)"
       }
     ],
     "counts": {
-      "testable": 7,
-      "tested": 7,
+      "testable": 8,
+      "tested": 8,
       "untestable": 0,
       "untested_testable": 0
     },

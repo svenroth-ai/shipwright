@@ -28,7 +28,7 @@ Second of five R1 PRs of the root-files campaign (BRIEF `.shipwright/planning/ca
 - New-then-old lookup, both-copies error, dual lock (R1c); silent-failure gates (R1d); hook matrix (R1e).
 
 ## Test-runner config (incidental)
-`shipwright_test_config.json` `suite.xdist` gains `"shipwright-changelog": 4`. The changelog unit (810 tests, golden scenarios with real git runs) no longer fits the 1800 s F0 unit timeout serially on this host: three F0 runs of this iterate timed out on it with no test failure (none of its files is touched here). Run alone under `-n 4`: 808 passed, 2 skipped in 24 min, so the unit is xdist-safe. Config only, no test or gate weakened.
+`shipwright_test_config.json` `suite.xdist` gains `"shipwright-changelog": 8`. The changelog unit (810 tests, golden scenarios with real git runs) no longer fits the 1800 s F0 unit timeout serially on this host: three F0 runs of this iterate timed out on it with no test failure (none of its files is touched here). Run alone under `-n 4`: 808 passed, 2 skipped in 24 min, so the unit is xdist-safe; under full-fleet load 4 workers still timed out, hence 8. Config only, no test or gate weakened.
 
 ## Affected Boundaries
 None: no serialized format, no file location changes.
@@ -47,8 +47,9 @@ None: no serialized format, no file location changes.
 | AC3 closed per-binding inventory, cap, stale entries | tested | test_no_new_rel_constants, rel-constant rows |
 | AC4 fallbacks untouched, hook fallback tests unchanged | tested | test_shipwright_paths_fallbacks.py (unedited) |
 | str-root contract the dropped wrappers rely on | tested | test_path_accepts_a_str_root |
+| integration: the Stop hook (real `main()`, run config, resolver) reads each phase's evidence where `path()` points, not the old root location | tested | test_handoff_stop_follows_resolver.py (4 phases; fails on the pre-R1b hook) |
 
-- **Confidence-pattern check:** depth - the equivalence claim is checked per line and by the full suite, the guard by positive and negative controls; breadth - every shape the reviews named is either a control or a written blind spot (BRIEF 12.10d); integration composition - not `cross_component` machinery.
+- **Confidence-pattern check:** depth - the equivalence claim is checked per line and by the full suite, the guard by positive and negative controls; breadth - every shape the reviews named is either a control or a written blind spot (BRIEF 12.10d); integration composition - the diff touches `hooks/generate_handoff_on_stop.py` (cross_component), so a real-scenario test drives the hook's `main()` with `path()` pointing into a subfolder (R1c's shape) and proves all four rewritten reads follow it.
 
 ## End-to-End Verification
 - **Surface:** cli
