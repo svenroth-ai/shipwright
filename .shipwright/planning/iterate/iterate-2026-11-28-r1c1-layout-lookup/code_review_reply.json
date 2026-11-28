@@ -1,0 +1,8 @@
+{"section":"iterate-2026-11-28-r1c1-layout-lookup","verdict":"APPROVE","review":[
+{"severity":"low","category":"readability","file":"shared/scripts/lib/shipwright_paths.py","line":268,"finding":"except BaseException turns KeyboardInterrupt/SystemExit during sibling load into ImportError, which guarded hook imports swallow","suggestion":"catch Exception only"},
+{"severity":"low","category":"correctness","file":"shared/scripts/hooks/check_file_size.py","line":78,"finding":"LayoutError from path() is swallowed by the top-level except Exception -> exit 0; the size check is skipped silently on two copies","suggestion":"report on stderr before exit 0, or record it for R1e"},
+{"severity":"low","category":"correctness","file":"shared/scripts/lib/shipwright_layout.py","line":215,"finding":"path() now calls Path.is_file(), which on Py3.11 re-raises EACCES","suggestion":"use os.path.isfile"},
+{"severity":"low","category":"correctness","file":"shared/tests/test_handoff_stop_reads_new_layout.py","line":613,"finding":"assertion also passes when LayoutError reaches the outer 'generation skipped' handler","suggestion":"also assert 'generated at' in err and 'generation skipped' not in err"},
+{"severity":"low","category":"correctness","file":"shared/tests/test_shipwright_layout.py","line":888,"finding":"'left' is collected but not asserted","suggestion":"assert res == {'raised':'ImportError','left':False}"},
+{"severity":"low","category":"architecture","file":"shared/scripts/lib/shipwright_paths.py","line":274,"finding":"12 hooks without a fallback now also need both siblings synced","suggestion":"record it in the R1e hook matrix"}],
+"notes":"No high or medium finding. Fixes: 1, 3, 4, 5 applied; 2 and 6 recorded for R1e (BRIEF 12 item 11e)."}

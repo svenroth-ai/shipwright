@@ -37,7 +37,11 @@ def shared_module(shared: Path, folder: str, name: str) -> Any:
         spec = importlib.util.spec_from_file_location(name, Path(shared) / "scripts" / folder / f"{name}.py")
         module = importlib.util.module_from_spec(spec)
         sys.modules[name] = module  # register before exec, or its dataclasses cannot resolve their own module
-        spec.loader.exec_module(module)
+        try:
+            spec.loader.exec_module(module)
+        except BaseException:  # e.g. a sibling missing from a half-synced cache: leave no half-built module
+            sys.modules.pop(name, None)
+            raise
     return module
 
 

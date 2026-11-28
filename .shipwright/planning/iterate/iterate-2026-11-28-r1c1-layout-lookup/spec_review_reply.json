@@ -1,0 +1,1 @@
+{"stage":"spec-compliance","verdict":"PASS","spec_citations":[],"summary":"Re-review after round 1 (REJECT: invariant test flagged shipwright_layout.py; 2 KiB promise unmet for single-line configs). Both fixed and proven; external-review changes match the revised spec; spec text corrected. AC1-AC7 met."}

@@ -74,7 +74,6 @@ LITERAL_ALLOWED = {
     "plugins/shipwright-grade/scripts/lib/authoritative.py": "grade stays usable without shared (lazy/soft-fail design)",
     "shared/scripts/hooks/session_start_using_shipwright.py": "session hook: must still run when the shared cache is stale",
     "shared/scripts/hooks/suggest_iterate.py": "hook must not crash when the shared cache is stale: guarded import with a literal fallback (Tier-3 review, PR 1089)",
-    "shared/scripts/hooks/check_file_size.py": "hook must not crash when the shared cache is stale: guarded import with a literal fallback (Tier-3 review, PR 1089)",
     "shared/scripts/hooks/required_checks_state.py": "hook must not crash when the shared cache is stale: guarded import with a literal fallback (Tier-3 review, PR 1089)",
 }
 #: R1b: joins on ``rel()`` that are not routed through ``path()``. Each is the guarded fallback shape
@@ -85,7 +84,6 @@ REL_JOIN_ALLOWED = {f: _FALLBACK_JOIN for f in (
     "plugins/shipwright-grade/scripts/lib/authoritative.py",
     "plugins/shipwright-grade/scripts/lib/routing.py",
     "plugins/shipwright-iterate/scripts/hooks/iterate_worktree_gate.py",
-    "shared/scripts/hooks/check_file_size.py",
     "shared/scripts/hooks/required_checks_state.py",
     "shared/scripts/hooks/suggest_iterate.py",
 )}

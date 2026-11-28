@@ -419,8 +419,8 @@ def main() -> int:
 
                 if current_phase and _detect_phase_complete(current_phase, project_root, completed_phases):
                     _run_phase_completion(project_root, current_phase)
-        except Exception:
-            pass  # Phase-completion fallback is best-effort
+        except Exception as e:  # best-effort, but a file-layout error (two copies, unfinished move) is said aloud
+            if type(e).__name__ == "LayoutError": sys.stderr.write(f"[shipwright:handoff] {e}\n")  # by name: per tree
 
         relative_path = handoff_path.relative_to(project_root) if handoff_path.is_relative_to(project_root) else handoff_path
         sys.stderr.write(

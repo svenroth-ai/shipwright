@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-28-r1c1-layout-lookup",
+  "date": "2026-11-28",
+  "section": "Iterate — change: R1c-1 new-then-old lookup in path()",
+  "title": "path() looks in .shipwright/config/ first and refuses a broken layout (R1c-1)",
+  "context": "Campaign root-files-into-config: R3 moves the root shipwright_* files into .shipwright/config/ and leaves a pointer stub at the old run_config path. Readers must find a file in either place, and a half-done or doubled move must never be read silently.",
+  "decision": "path() calls a new sibling module, shipwright_layout.locate: a stub at the new path, a too-new or edited root stub, a root stub without its new copy, or two regular copies (identical ones too) raise LayoutError(Exception) with the file, both paths and the fix; otherwise the new copy wins, else the root. Only regular files count; the root head is read at most 2 KiB (64 KiB for a signature-led file). No second lock; the legacy root lock stays the one lock until R3 decides again.",
+  "consequences": "Nothing creates .shipwright/config/ yet, so unmigrated repos resolve exactly as before (pinned by a repo-wide guard test). The Stop hook reports a LayoutError on stderr; the 12 resolver-only hooks also need the two sibling files in the cache. Hook-by-hook handling of LayoutError is R1e; constants and carriers are R1c-2.",
+  "rationale": "One lookup in the resolver reaches every reader at once (R1b routed them through path()); failing loudly on two copies is safer than guessing which one is current.",
+  "rejected": "A dual lock from R1 (architecture reviewers: unneeded before R3, adds leak and timeout paths; operator chose to drop it); comparing contents to accept identical copies (breaks after the first write, can block on FIFOs); inlining the lookup in shipwright_paths (300-line cap).",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ""
+}
