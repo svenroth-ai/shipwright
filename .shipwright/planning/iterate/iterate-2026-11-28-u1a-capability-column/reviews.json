@@ -125,88 +125,124 @@
     "code": {
       "review_type": "code",
       "status": "completed",
-      "findings_count": 3,
+      "findings_count": 6,
       "findings": [
         {
-          "severity": "high",
+          "severity": "medium",
           "category": "correctness",
-          "file": "shared/scripts/tools/verifiers/_baseline_b_packs.py",
-          "line": 21,
-          "finding": "Fixed-position FR row regex missed in the inventory; would read the CAP id as the name.",
-          "suggestion": "fixed: rows read by header name, test added",
+          "file": null,
+          "line": null,
+          "finding": "_spec_lines reset its column map at every heading (FV-5 shape: Capability kept, Description dropped)",
+          "suggestion": "fixed: map kept across headings, width fallback, test with an id only under the later heading",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "cross-repo prerequisites only in a closed unit's ADR",
+          "suggestion": "fixed: recorded in campaign.md, cited by the ADR",
           "source": "code-reviewer"
         },
         {
           "severity": "low",
-          "category": "correctness",
-          "file": "shared/scripts/tools/verifiers/_baseline_label_hits.py",
-          "line": 224,
-          "finding": "Extra legacy columns after Description now counted as normative.",
-          "suggestion": "fixed: columns up to Description only",
+          "category": "architecture",
+          "file": null,
+          "line": null,
+          "finding": "private _IGNORED_COL imported across modules",
+          "suggestion": "fixed: public IGNORED_COL_RE",
           "source": "code-reviewer"
         },
         {
           "severity": "low",
           "category": "readability",
-          "file": "shared/scripts/tools/verifiers/_baseline_label_hits.py",
-          "line": 204,
-          "finding": "Two bookkeeping predicates could disagree.",
-          "suggestion": "fixed: one shared _IGNORED_COL",
+          "file": null,
+          "line": null,
+          "finding": "floating comment; hooks-and-pipeline listed only some readers",
+          "suggestion": "fixed",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "b_packs row set now follows read_fr_rows; description_idx from any id header",
+          "suggestion": "fixed: ADR note; header must contain priority",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": null,
+          "line": null,
+          "finding": "heading test passed without the fix",
+          "suggestion": "fixed",
           "source": "code-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-11-28T14:26:03.643849+00:00",
+      "completed_at": "2026-11-28T16:58:36.220953+00:00",
       "disposition": null,
       "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus",
       "verdict": "pass",
-      "reviewed_commit": "ea94099946f2c4579cfeb34e317003bef6da6605"
+      "reviewed_commit": "0a9589ec69cf750e0129f57869a3650318f628d2"
     },
     "doubt": {
       "review_type": "doubt",
       "status": "completed",
-      "findings_count": 3,
+      "findings_count": 4,
       "findings": [
         {
           "severity": "medium",
-          "category": "boundary & contract",
-          "file": "shared/scripts/tools/verifiers/_baseline_label_hits.py",
+          "category": null,
+          "file": null,
           "line": null,
-          "finding": "Claim under doubt: both baseline modules agree — Source-era column after Description counted by the digest, cut by the label.",
-          "suggestion": "fixed: one predicate, no cut at Description",
+          "finding": "inventory complete",
+          "suggestion": null,
           "source": "doubt-reviewer"
         },
         {
           "severity": "low",
-          "category": "hidden coupling",
-          "file": "shared/scripts/tools/verifiers/_baseline_label_hits.py",
+          "category": null,
+          "file": null,
           "line": null,
-          "finding": "Claim under doubt: label independence — shared private predicate",
-          "suggestion": "accepted, stated in the code comment",
+          "finding": "U2b spec carries prerequisites",
+          "suggestion": null,
           "source": "doubt-reviewer"
         },
         {
           "severity": "low",
-          "category": "blast radius",
-          "file": "integration-tests/test_fr_table_shape_convergence.py",
+          "category": null,
+          "file": null,
           "line": null,
-          "finding": "Claim under doubt: no remaining reader breaks when the column is filled — convergence test asserts the seven-column header literal",
-          "suggestion": "recorded as a U2b prerequisite in the ADR",
+          "finding": "old _spec_lines handled Source like the new",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "digest exclusion hides no requirement change",
+          "suggestion": null,
           "source": "doubt-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-11-28T14:33:56.330971+00:00",
+      "completed_at": "2026-11-28T16:58:36.469026+00:00",
       "disposition": null,
       "recorded_by": "doubt-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus",
       "verdict": "pass",
-      "reviewed_commit": "fa34c23aea24e97e5fb1240e46f8d4c468f24fdb"
+      "reviewed_commit": "0a9589ec69cf750e0129f57869a3650318f628d2"
     },
     "external_code": {
       "review_type": "external_code",
@@ -285,14 +321,14 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-11-28T14:21:16.559379+00:00",
+      "completed_at": "2026-11-28T16:58:35.756253+00:00",
       "disposition": null,
       "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus",
       "verdict": "pass",
-      "reviewed_commit": "ea94099946f2c4579cfeb34e317003bef6da6605"
+      "reviewed_commit": "0a9589ec69cf750e0129f57869a3650318f628d2"
     },
     "plan_internal": {
       "review_type": "plan_internal",
