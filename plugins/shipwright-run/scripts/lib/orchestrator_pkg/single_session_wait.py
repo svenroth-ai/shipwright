@@ -103,6 +103,37 @@ def apply_waiting(
             "run_status": config.get("status"), "next": resolve_next_dispatch(project_root)}
 
 
+def waiting_gate(
+    project_root: Path, config: dict[str, Any], task: dict[str, Any], *,
+    session_uuid: str, expected_version: int, result: dict[str, Any],
+) -> Optional[dict[str, Any]]:
+    """Apply's one entry into this module. A ``waiting`` result goes to ``apply_waiting``.
+    Any other result for the dispatch that reported waiting (its version, hold current or
+    released) is refused ``held_for_outside_event`` and writes nothing: that phase finishes
+    only by being dispatched again after Resume, which re-checks the outside event itself.
+    None = not this module's case (the normal apply path runs)."""
+    if "waiting" in result:
+        return apply_waiting(project_root, config, task, session_uuid=session_uuid,
+                             expected_version=expected_version, result=result)
+    try:
+        state = load_loop_state(project_root)
+    except (OSError, ValueError):
+        return None  # no readable hold: the normal path decides (and reports the file)
+    version = _lifecycle().task_version(task)
+    if version != int(expected_version):
+        return None  # stale: the lifecycle's own CAS answer wins
+    held = waiting_for(state, run_id=config.get("runId"), phase_task_id=task.get("phaseTaskId"),
+                       version=version)
+    if held is None and not waiting_released_for(
+            state, run_id=config.get("runId"), phase_task_id=task.get("phaseTaskId"),
+            version=version):
+        return None
+    return {"ok": False, "reason": "held_for_outside_event",
+            "detail": "This dispatch reported that the phase waits for an outside event. "
+                      "Resume the run, then apply only the result of the next "
+                      "single-session-next dispatch."}
+
+
 def next_step_text(phase: Any, reason: str, pr_url: str) -> str:
     """What the operator does next — plain words, the link as data."""
     if reason == "waiting_for_merge":

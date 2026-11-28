@@ -140,7 +140,7 @@ Repeat until a terminal signal:
    result contract) is not a strict-stop: apply completes nothing, plans no successor and
    records a hold in loop state (`waiting`, keyed to the task's `version`); it answers
    `ok: true`, `waiting`, and `next.action: "waiting"`. A late waiting result from an
-   earlier dispatch is refused `stale_version` like any apply. `--override-reason` is
+   earlier dispatch is refused `stale_version` like any apply. Any other result for the dispatch that reported waiting is refused `held_for_outside_event` (exit 2), before and after Resume: only the next dispatch can finish the phase. `--override-reason` is
    refused for it (`override_requires_ok_result`). A recover bumps the version and so
    drops the hold. Known limits: run_config shows the task only as `in_progress`, and
    the phase's duration includes the wait.

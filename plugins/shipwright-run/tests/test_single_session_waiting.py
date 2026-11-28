@@ -362,3 +362,20 @@ def test_stop_hook_in_process_reports_a_hold_and_not_a_released_one(tmp_project,
     assert hook._waiting_task(tmp_project, _cfg(tmp_project)) is None  # unreadable version
     (tmp_project / ".shipwright" / "run_loop_state.json").write_text("{", encoding="utf-8")
     assert hook._waiting_task(tmp_project, _cfg(tmp_project)) is None  # unreadable file
+
+
+@pytest.mark.covers("FR-01.01/AC39")
+def test_the_held_dispatch_cannot_finish_the_phase_without_resume_and_a_rerun(tmp_project):
+    """Doubt review: an ok (or failing) result for the dispatch that reported waiting is
+    refused, before and after Resume; only the next dispatch can finish the phase."""
+    _run_to_changelog(tmp_project)
+    d, _ = _wait(tmp_project)
+    for result in (_ok(), {**_ok(), "ok": False, "reason": "gave up"}):
+        refused = _apply(tmp_project, d, result)
+        assert refused["ok"] is False and refused["reason"] == "held_for_outside_event"
+    resume_run(tmp_project, confirm=True)
+    assert _apply(tmp_project, d, _ok())["reason"] == "held_for_outside_event"
+    task = next(t for t in _cfg(tmp_project)["phase_tasks"] if t["phaseTaskId"] == d["phaseTaskId"])
+    assert task["status"] == "in_progress"
+    assert not any(t["phase"] == "deploy" for t in _cfg(tmp_project)["phase_tasks"])
+    assert _apply(tmp_project, _dispatch(tmp_project), _ok())["ok"] is True

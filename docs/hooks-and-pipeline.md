@@ -1271,7 +1271,8 @@ After build completes: shows split summary table. After test completes: shows te
 > `in_progress`, no successor is planned (deploy is not scheduled), the run status is
 > unchanged, and a `waiting` hold is written to `.shipwright/run_loop_state.json`, keyed to
 > run id + phase task id + the task's version (the `gateTerminal` pattern; a stale or
-> late result is refused `stale_version` and writes nothing). While the hold is current,
+> late result is refused `stale_version` and writes nothing; any other result for the held
+> dispatch is refused `held_for_outside_event`, exit 2). While the hold is current,
 > `single-session-next` answers `action: "waiting"` (link + `next_step`) after any
 > `ask_human` and claims nothing; the master ends its turn. `single-session-resume` shows
 > the hold on the card, and `--confirm` releases it, so the next `single-session-next`
