@@ -1,1 +1,0 @@
-- (2026-11-16) iterate - A rule that bundles two promises under one enforcement class overclaims when its mechanism enforces only one: read the check's code (here the CI bloat check reads the baseline from the change itself) and split the rule per promise. [→ iterate-2026-11-16-u5-shipwright-profile]

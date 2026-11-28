@@ -1,1 +1,0 @@
-Changelog release: the tag push after a merged release PR is no longer blocked by the release guard; a project without decision folders, a tracked bullet drop, or the compliance event written during the release no longer stop the tag; unrelated changes in the working tree now stop the release before its commit, naming the files.

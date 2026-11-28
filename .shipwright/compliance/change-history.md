@@ -1,20 +1,20 @@
 # Commit Change Log
 
-Generated: 2026-11-12T07:33:48.573135+00:00
-Source-State: run=iterate-2026-11-12-leadwright-followups-bundle base=5f38ef07e992 release=v0.36.0
-Consistency-audit: last run 2026-07-28 (107 days earlier) — FAIL
-Total commits: 1806
+Generated: 2026-11-26T22:46:50.188715+00:00
+Source-State: run=iterate-2026-11-26-dfp-stop3-release-fixes base=a41277d79f77 release=v0.37.0
+Consistency-audit: last run 2026-07-28 (121 days earlier) — FAIL
+Total commits: 1868
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 621
-    "feat" : 506
-    "chore" : 291
-    "docs" : 187
-    "refactor" : 107
-    "test" : 58
+    "fix" : 631
+    "feat" : 531
+    "chore" : 295
+    "docs" : 199
+    "refactor" : 110
+    "test" : 66
     "ci" : 22
     "other" : 12
     "perf" : 1
@@ -23,10 +23,20 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 621 commits
+### Fixes (fix) — 631 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-11-27 | changelog | tag-only pushes after a merge, Step 6 commits what the release wrote and stops on unrelated changes (stop 3) (#1112) | c2ff04d57e0e |
+| 2026-11-26 | changelog | hand-written entries, SemVer boundary, PR body from a file, clean index after a refused refresh (P8b) (#1110) | f73a33d8a38a |
+| 2026-11-25 | changelog | preview writes nothing, push before PR, default branch from the remote (P8a) (#1109) | 7dd3791d5756 |
+| 2026-11-25 | security | refuse DTD-bearing JUnit reports in junit_promises (#1108) | f85c444a9c62 |
+| 2026-11-23 | iterate | campaign finalize writes the board status to the main tree (#1098) | db7bfd8e3604 |
+| 2026-11-20 | security | critical gate fails closed on the prompt-injection report (#1086) | ae34275c5e5c |
+| 2026-11-16 | build | the profile's architecture-rule ESLint blocks are checked after the app is created and can be restored (#1071) | 4b0655039f65 |
+| 2026-11-16 | iterate | a campaign unit's declared complexity is a floor for sizing (#1070) | be8ee16bfef5 |
+| 2026-11-15 | compliance | trim CLAUDE.md under the 200-line cap and baseline 29 oversize files (F6, H1) (#1061) | 4ea418276d1e |
+| 2026-11-13 | gates | origin-aware finding dedup and curried test declarations (#1053) | edd75e1ff0cb |
 | 2026-11-12 | compliance | leadwright follow-ups - G2 stoplist match, G4 card ids, honest tags, lexer one-line describe (#1051) | 5f38ef07e992 |
 | 2026-11-12 | windows | pr_review_local and check_required_checks decode git/gh output as UTF-8; verifier text names the unrecoverable case (U4) (#1050) | 69fd477ff4e0 |
 | 2026-11-12 | compliance | audit G2 judges each part of a comma-joined scope; no automatic skip promised (U3) (#1049) | 38c2618f29f9 |
@@ -649,10 +659,35 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 506 commits
+### Features (feat) — 531 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-11-25 | changelog | conversion check, junit passing check, retire inventory and coverage checks (P7) (#1107) | a0ab342efe02 |
+| 2026-11-24 | constitution | flaky-test NEVER rule and property/differential test guidance (#1104) | 05402f731f6c |
+| 2026-11-24 | changelog | prompt-mechanics ratchet, registry, gate step and lowered bloat entry (P6) (#1103) | 21be63f97ef1 |
+| 2026-11-24 | changelog | thin SKILL.md, release.py push-tag decision, pins moved, F7 prose removed (P5) (#1102) | d513d05ef106 |
+| 2026-11-24 | changelog | release guard hook before push, merge and release page (P4b) (#1101) | 1dd5420beea7 |
+| 2026-11-23 | changelog | release.py sync, commit-and-tag, record-event and close-phase (P4) (#1100) | 4643ac5a25ed |
+| 2026-11-23 | changelog | release.py prepare and aggregate (P3) (#1099) | 2ebdc5a5a4c2 |
+| 2026-11-21 | reminders | the one due answer, reminders and expired triage parks (E1b) (#1093) | cd28107be0ea |
+| 2026-11-21 | reminders | reminder store and CLI (E1a) (#1092) | 6842e7f38b80 |
+| 2026-11-20 | security | advisory skill-surface scan rules in the prompt-injection scanner (#1085) | dd77e0de7b4e |
+| 2026-11-19 | test-tag-gate | seed the infra test catalog, show real compliance failures, document WSL2 runs (#1083) | 1ab8012ac268 |
+| 2026-11-19 | test-tag-gate | infrastructure class for harness tests (covers_none) (#1082) | 15efc66cf9ed |
+| 2026-11-17 | changelog | replay driver, oracle and scenarios S1-S9 with committed golden traces (P2b1) (#1078) | c286dfcaf902 |
+| 2026-11-17 | changelog | golden-trace harness - scratch project, gh stub, trace recorder, freeze check (P2a) (#1077) | 74cff4851898 |
+| 2026-11-17 | changelog | release-path test seams and offline release-audit proof (P1) (#1076) | b63036a970a9 |
+| 2026-11-16 | reviewers | honest rendered rule wording, reviewer notes kept in the review record, runners never bypass hooks (#1072) | f0ecf30c97b9 |
+| 2026-11-16 | reviewers | code reviewer checks the diff against the architecture rules, how-to-add-a-rule docs (U6) (#1069) | cd775fa3ecc3 |
+| 2026-11-16 | profiles | Shipwright's own project profile shipwright-monorepo with repo-only architecture rules (U5) (#1068) | 153a45f7e380 |
+| 2026-11-16 | profiles | ESLint config template for supabase-nextjs scaffolds with a real ESLint check (U3b) (#1066) | 709ee4c20a2b |
+| 2026-11-16 | profiles | claude-plugin stack profile with plugin-project architecture rules and an adopt signal (U4) (#1067) | 6301464aa497 |
+| 2026-11-16 | profiles | supabase-nextjs architecture rules as rule objects, lint fragments and compliant template examples (U3a) (#1065) | 3e41277676ab |
+| 2026-11-16 | profiles | render a profile's architecture rules into conventions.md for new and adopted projects (U2) (#1064) | 501128bba3cd |
+| 2026-11-16 | profiles | architecture rules as structured entries in stack profiles (U1) (#1063) | 6a3eec1cd07c |
+| 2026-11-15 | constitution | declare per rule how it is enforced, with a drift test (#1059) | 9a64e333af16 |
+| 2026-11-15 | conventions | link the skill-building rule from the agent entry points, add conventions.json and a skill-authoring checker (#1058) | def8fe6b4b9e |
 | 2026-11-12 | triage | G4 closing-token audit, project-root either side, status-less append reads as triage (U2) (#1048) | be73f19983de |
 | 2026-11-12 | events | warn at 150+ open event files, name both locations in A7, LF in adopt seeder (#1042) | 5c1977f7d746 |
 | 2026-11-11 | events | fold old per-run event files automatically at release, in a commit of their own (#1041) | 1ddf4bbdecd9 |
@@ -1160,10 +1195,14 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 291 commits
+### Chores (chore) — 295 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-11-27 | events | fold 17 event files older than 14 days into the archive | a41277d79f77 |
+| 2026-11-24 | tests | list external-review tooling tests in the infra-test catalog (#1105) | 8ae676ac5e75 |
+| 2026-11-22 | test-tag-gate | catalogue the changelog golden freeze test as infrastructure (#1094) | e44847ea4608 |
+| 2026-11-12 | release | v0.36.0 (#1052) | 35e50301dbdd |
 | 2026-11-07 | release | v0.35.0 (#1016) | 72e56bd7c2ab |
 | 2026-11-03 | ci | bump the github-actions-minor-patch group across 2 directories with 1 update (#965) | dfe261d9ff03 |
 | 2026-10-24 | security | accept CVE-2023-54404 (zod, dev-only, no fix exists) (#895) | f72ef20a7469 |
@@ -1456,10 +1495,22 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 187 commits
+### Documentation (docs) — 199 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-11-26 | dfp | stop-3 plan for the changelog pilot, operator conversion rule P17a in the programme brief (#1111) | 2e0239474f49 |
+| 2026-11-23 | planning | split changelog pilot P8 into P8a and P8b, mark stop-1 decisions confirmed (#1097) | 1cc8e7120cb7 |
+| 2026-11-21 | campaign | brief for reminders part 1 (reminders-core) (#1091) | 0a6bb32963cb |
+| 2026-11-21 | campaign | record operator decisions D1-D3 for root-files-into-config (#1090) | 23a5677749b2 |
+| 2026-11-21 | campaign | R0a survey of root shipwright_* files (#1088) | 507ad45aa841 |
+| 2026-11-20 | planning | campaign brief for moving root shipwright_* files into .shipwright/config/ (#1087) | be981a42b8a4 |
+| 2026-11-17 | planning | map the changelog pilot to skill-harden (#1075) | 67a3ad0743f6 |
+| 2026-11-16 | planning | record proposed operator decisions for the changelog pilot and add unit P8 (#1062) | 83c7209a7e14 |
+| 2026-11-16 | planning | note three design ideas from NeMo Guardrails for the changelog pilot (#1073) | d36967a7ca0d |
+| 2026-11-15 | planning | campaign brief for architecture rules per stack profile (#1060) | ddbb138d5075 |
+| 2026-11-14 | changelog | P0 inventory of the changelog skill for the deterministic-first pilot (#1057) | 39ab7b5b88bf |
+| 2026-11-14 | planning | re-measure the changelog pilot start, record operator decisions, add a LEARNINGS report template (#1056) | 92dfee9011ad |
 | 2026-11-11 | events | point the guide at the per-run event layout, drop stale dormant wording (#1036) | d29db3dda20e |
 | 2026-11-10 | planning | record the merged prerequisites in the deterministic-first briefs (#1032) | 215fa84827ea |
 | 2026-11-09 | — | add the code-versus-AI convention for building skills, plugins and agents (#1030) | 1d72ed7e3310 |
@@ -1648,10 +1699,13 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Refactoring (refactor) — 107 commits
+### Refactoring (refactor) — 110 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-11-25 | review | bump external review + Codex transport to GPT-6.2 Sol (#1106) | 06fe74f928c5 |
+| 2026-11-21 | paths | one resolver for the root shipwright_* files (R0b) (#1089) | 1f0dc17c8b38 |
+| 2026-11-13 | events | move event folders under .shipwright/events/ (#1054) | aec0284d896a |
 | 2026-11-12 | tests | split the release-fold tests so both files stay under the size limit (#1045) | 987e2e5ce104 |
 | 2026-11-11 | iterate | make the finalization prose and verifier hint layout-neutral (#1037) | c689c249ad19 |
 | 2026-10-31 | catalog | tidy mixed ACs and rename command-named FR titles (baseline-package P5) (#960) | 726aa32a758e |
@@ -1760,10 +1814,18 @@ pie title Commit Types
 | 2026-03-30 | env | consolidate plugin env vars into single .env.local | 4a9267b522fb |
 | 2026-03-28 | — | unify decision log to shared ADR format across all phases | 2851babbbcfa |
 
-### Tests (test) — 58 commits
+### Tests (test) — 66 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-11-27 | changelog | stop-3 re-pin with the D107 scenarios and the current prose (D99), stop-3 report (#1113) | 1745bfaf1cc0 |
+| 2026-11-23 | changelog | freeze the pytest config and the live prose; record stop-2 decisions F1b, F7, F10 (#1096) | 0c026e314e4a |
+| 2026-11-23 | changelog | freeze the changelog pilot at stop 2 with a reusable golden-lock writer (P2-op) (#1095) | d71c875267c9 |
+| 2026-11-19 | testkit | reclassify the six harness meta-test files as infrastructure (covers_none) instead of a stand-in requirement tag (#1084) | 63edf6aed574 |
+| 2026-11-18 | testkit | harden the promise-lock hash helper and strengthen the weak promise tests (#1081) | 76772e8af163 |
+| 2026-11-18 | changelog | promise tests, promise list, judgement scenarios and promise-lock hashing helper (P2p) (#1080) | a972bc4f56e0 |
+| 2026-11-17 | changelog | scenarios S10-S19, close-phase replay, coverage checks and seeded regressions (P2b2) (#1079) | aa5cf5efedcd |
+| 2026-11-17 | iterate | move reviewer-notes and never-bypass-hooks criteria to FR-01.11, check hook bypass by behaviour (#1074) | dee4b7519641 |
 | 2026-11-07 | e2e | resume restarts the dead session; pidfile and f-string check defects (#1010) | 4803f7eb898c |
 | 2026-11-07 | events | full-system scenarios, benchmark, rollback rehearsals and flip-readiness note (S8) (#1009) | 221296c0261c |
 | 2026-11-01 | e2e | S05 proves the build kept the shipped recorded answers byte for byte (#973) | b0f15163998c |
@@ -1883,7 +1945,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1806 |
+| Total commits | 1868 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1806 |
+| Human-authored commits | 1868 |
 

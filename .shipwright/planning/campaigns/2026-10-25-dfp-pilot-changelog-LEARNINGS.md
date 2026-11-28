@@ -196,3 +196,17 @@ Older workflow tools (state machines, BPMN, job schedulers) have the same shape,
 4. **Pitfalls.** A trace whose only change is CRLF must be put back before writing deltas; comparing the first 32 characters of `md5sum` over CR-stripped content works where `cmp <(...)` did not. A quoted heredoc with many backticks still broke the shell; write the text with the editor tool and append it. The `SKILL.md` cap (263) again meant cutting a duplicated line, not re-flowing.
 5. **Tools.** `SHIPWRIGHT_GOLDEN_REGEN=1` for the touched scenarios, then the whole root once in the background.
 6. **Doable by a stranger?** The code: yes. Whether a compare link or a new AC belongs in scope: no, those are the operator's (D93, D96).
+
+## Stop 3 (2026-11-26/27): live runs, canary, first release
+
+1. **Steps and effort.** 43 model runs, then one fix PR (#1112) and 16 re-runs. After that came a canary release in a throwaway private repo, the re-pin (#1113, four new frozen scenarios), and the first monorepo release (#1114, with addendum #1116).
+2. **What the live runs found that CI did not.** The golden freeze reproduces a pinned defect. So three stop-2 failures (D21 to D23) stayed green in CI because no unit took them. A real-model run is still the only check that a release finishes.
+3. **What only the real release found.** The squash-only repo (D110), the root `pyproject.toml` (D111), and a foreign commit landing between the release branch and the merge (D112). The canary passed because its repo allowed merge commits and nothing else was merging. A canary should copy the target repo's merge settings and run while another PR merges.
+4. **Pitfalls.**
+   - An environment variable set inline on one command does not reach a PreToolUse hook. Lifting the guard needs the session environment or its run-state file.
+   - Lifting a guard "for one push" grew into lifting it for the merge as well. Stop and ask at every widening, and stop after the step the operator approved.
+5. **Doable by a stranger?** The runs: yes, with the harness. The hand path at a squash-only release: no. It needs operator decisions at every step, and that is why D110 is the first follow-up unit.
+6. **For the next plugin.**
+   - Map every stop-2 finding to a unit before the campaign closes.
+   - Run the canary under the real repo's merge rules.
+   - Treat "the plugin finishes in our own repo" as an acceptance test, not a stretch goal.

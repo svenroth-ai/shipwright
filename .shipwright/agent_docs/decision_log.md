@@ -9316,3 +9316,684 @@ shipwright/
 - **Rationale:** Same pattern as the existing fetch_pr_diff; smallest change that fixes the measured defect.
 - **Consequences:** Names and diffs round-trip on Windows; other text=True call sites are untouched by design. Two verifier texts now say a recorded event cannot be rewritten in this run.
 - **Rejected:** A shared decode helper (cross-tree import rules); sweeping all text=True call sites (separate card).
+
+---
+
+### ADR-699: Event folders move under .shipwright/events/
+- **Date:** 2026-11-13
+- **Section:** Iterate — change: event folders under .shipwright/events
+- **Run-ID:** iterate-2026-11-13-events-under-shipwright-dir
+- **Context:** The per-run event folders sat at the repo root next to config files; everything else Shipwright produces lives under .shipwright/.
+- **Decision:** shipwright_events.{d,archive,quarantine} become .shipwright/events/{drops,archive,quarantine}. A repo with an old root folder is hard-refused (writers, evidence, integrity); tools/migrate_events_folder.py moves it; no compatibility reader.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Hard abort over a transition reader: one known external adopter, and a second live location would hide split histories. The integrity check recognises the exact byte-identical move.
+- **Consequences:** Every adopter runs the migration once; the managed .gitignore gains !/.shipwright/events/; the WebUI reader must follow. An old plugin can still write the old root, caught afterwards, not prevented.
+- **Rejected:** Flat .shipwright/events.d siblings; staying at the root; a reader of both locations with a warning period.
+- **Details:** [2026-11-13-events-under-shipwright-dir.md](../planning/iterate/2026-11-13-events-under-shipwright-dir.md)
+
+---
+
+### ADR-700: Dedup the GitHub finding sync against origin too; collect curried it.skipIf declarations
+- **Date:** 2026-11-13
+- **Section:** Iterate — change: origin-aware finding dedup + curried test declarations
+- **Run-ID:** iterate-2026-11-13-silent-measurement-gaps
+- **Context:** A checkout behind origin lacks triage cards origin already holds, so the session-start sync re-filed four duplicates (measured 2026-11-12). Separately the FR-tag collector's declaration regex could not match it.skipIf(cond)('title'), leaving tagged tests silently uncounted.
+- **Decision:** The sync reads origin/<default>'s tracked triage log (bounded, non-interactive git fetch+show) and lets origin fill gaps only: keys the local view already knows stay with the local scan. Any fetch/parse failure gives an empty set. _TEST_DECL_RE accepts a curried skipIf/runIf call (two paren levels).
+- **Commit:** (assigned post-merge)
+- **Rationale:** Remedy 1 of the card (consult origin) chosen over refusing to file (trades a missed sync for a clean board) and over merge-on-collision (needs an unimplemented survivor rule).
+- **Consequences:** A stale or unreachable origin never suppresses filing; local decisions (e.g. a machine close not yet pushed) are never outvoted. Each sync adds up to two 8s git calls. Curried declarations in consumer repos newly count as tests. A new test_exemption code was considered and dropped by the operator: bind such tests to a real requirement instead.
+- **Rejected:** Refuse to file when behind origin; dedupKey-collision merge at reconciliation; a deliberately-unbound test_exemption code.
+
+---
+
+### ADR-701: The changelog pilot records its start numbers and a per-plugin LEARNINGS report
+- **Date:** 2026-11-14
+- **Section:** Iterate — change: pilot measurements, operator decisions and LEARNINGS template
+- **Run-ID:** iterate-2026-11-14-dfp-pilot-measure-learnings
+- **Context:** The pilot starts from a main after the events flip and the events-folder move, which made the 2026-11-09 measurements stale. The method is meant to become a skill for other repos after two or three migrated plugins.
+- **Decision:** Re-measure on main (440 lines, 13 of 15 ACs, 30 pins in 13 files) as MEASURE section 8, record the overlap check and the operator decisions (budget none, cross-cutting none), and add a fixed LEARNINGS template (steps and effort, code-or-AI decisions, patterns, pitfalls, generic versus Shipwright-specific tools, doable by a stranger) as pilot brief section 8.
+- **Commit:** (assigned post-merge)
+- **Consequences:** Planning documents only; no code or behaviour changes. P0 opens the LEARNINGS file and P7 closes it, so each later plugin campaign can reuse the template.
+
+---
+
+### ADR-702: Skill inventory data and checker for the pilot
+- **Date:** 2026-11-14
+- **Section:** Iterate - change: DFP pilot P0 inventory data and checker for the changelog skill
+- **Run-ID:** iterate-2026-11-14-p0-changelog-inventory
+- **Context:** The deterministic-first pilot converts /shipwright-changelog 1:1 and needs a checkable list of what its prose contains, who decides each question per mode, and what a release spawns.
+- **Decision:** Three data files in .shipwright/planning/campaigns/2026-10-25-dfp-pilot-changelog-inventory/ (not in the plugin) plus check_skill_inventory.py (out of CI and verify_local, run by pilot units, retired at P7); no plugin behaviour changed.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Brief rev 6 and programme P8/P10 make the inventory and its coverage checks binding and retired per plugin. Architecture review: glm approve, openai reject, overruled by the brief (see the ADR file).
+- **Consequences:** Findings D1-D20 and the FR-01.09 ledger reconcile are reported, not fixed; operator stop 1 decides the open questions; the pilot owns the checker until P7 deletes it.
+- **Rejected:** A report-only inventory with no checker (openai's alternative): rejected by the brief, which names the checker as a P0 deliverable; mitigated by keeping it out of CI.
+- **Details:** [iterate-2026-11-14-p0-changelog-inventory-skill-inventory-checker.md](../planning/adr/iterate-2026-11-14-p0-changelog-inventory-skill-inventory-checker.md)
+
+---
+
+### ADR-703: Baseline 29 oversize files and trim CLAUDE.md under the cap
+- **Date:** 2026-11-15
+- **Section:** Iterate — change: clear compliance findings F6 and H1
+- **Run-ID:** iterate-2026-11-15-compliance-f6-h1-cleanup
+- **Context:** Compliance audit flagged CLAUDE.md at 203 lines (F6) and 29 oversize files missing from shipwright_bloat_baseline.json (H1).
+- **Decision:** Added the 29 files as grandfathered entries at their current size, dropped the duplicate test commands from CLAUDE.md and listed shared/testkit.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Same remedy as PR #806; the files are only 1-33 lines over except two large lib/test pairs that need their own split work.
+- **Consequences:** F6 and H1 pass; the anti-ratchet now blocks any of these files from growing further.
+- **Rejected:** Splitting all 29 files in one change: too large and risky for a compliance cleanup.
+
+---
+
+### ADR-704: Every rule of the constitution has a declared enforcement class, kept in conventions.json and checked by a drift test
+- **Date:** 2026-11-15
+- **Section:** Iterate — change: constitution enforcement register in conventions.json
+- **Run-ID:** iterate-2026-11-15-constitution-register
+- **Context:** The constitution's enforcement table named four hooks against about sixty rules, so a reader could assume the rulebook was enforced. The REQ-3 design for a register existed but was not built.
+- **Decision:** Add section constitution to shared/config/conventions.json: one entry per rule (id, tier, text hash, enforcement, mechanism, note) with a closed vocabulary; a parser/checker library and CLI; a drift test that fails on an undeclared, reworded, removed or unplaced rule; a generated doc beside the JSON. Deviates from the design: no separate constitution_catalog.json, no binds field.
+- **Commit:** (assigned post-merge)
+- **Rationale:** One data file next to the rules, read by a test, cannot drift silently; honest per-rule notes replace an implied claim that the rulebook is enforced.
+- **Consequences:** A rule added or reworded in constitution.md fails shared tests until its entry is updated. Judgement rules are recorded as such and never become gates; no coverage number is computed. Architecture rules and profile pluggability are deferred: only one stack profile carries architecture rules.
+- **Rejected:** A separate constitution_catalog.json (one more file for the same job); a coverage percentage (it rewards turning judgement rules into gates).
+
+---
+
+### ADR-705: The skill-building rule is linked from the agent entry points and its numbers live in conventions.json
+- **Date:** 2026-11-15
+- **Section:** Iterate — change: skill-building rule made findable, numbers moved into conventions.json
+- **Run-ID:** iterate-2026-11-15-skill-rule-findable
+- **Context:** docs/building-skills-plugins-agents.md was linked only from campaign briefs, so a session without a brief did not know it. Anthropic's Skill authoring best practices add measurable limits (description length, SKILL.md body size, reference depth) that belong in data, not prose.
+- **Decision:** Link the rule from CLAUDE.md, AGENTS.md and writing-plugin.md; add shared/config/conventions.json (one section per topic, today skill_authoring: numeric limits and a 21-row alignment list with Anthropic's guidance; stack-dependent values stay in the stack profiles); add a report-only checker, check_skill_authoring.py, that reads the limits from it.
+- **Commit:** (assigned post-merge)
+- **Rationale:** A rule a new session never reads is not a rule; numbers kept in one data file cannot drift between prose copies.
+- **Consequences:** The checker reports 155 findings on today's skills, one hard (the compliance skill description is 1130 characters, limit 1024); none is fixed here, the skill conversions do that. It is not in CI. The two Claude Code runtime caps are recorded as unverified. The constitution and the architecture rules are the next candidates for conventions.json.
+- **Rejected:** Copying the four prose rules into the JSON: nothing reads them and the two copies would drift. A CI gate on the checker: most current skills would fail it.
+
+---
+
+### ADR-706: Machine-readable architecture rules in stack profiles
+- **Date:** 2026-11-15
+- **Section:** Iterate — feature: architecture rule format for stack profiles (U1)
+- **Run-ID:** iterate-2026-11-15-u1-rule-format
+- **Context:** Only supabase-nextjs had architecture rules, as six unchecked sentences; later campaign units (render, ESLint template, plugin profile) need one frozen, validated shape.
+- **Decision:** New profile_architecture_rules module: rule object with lint XOR mechanism, allowed class combinations, loader that accepts the old list; wrong rules are phase-local errors reported by resolve_profile.py validate (exit 0).
+- **Commit:** (assigned post-merge)
+- **Rationale:** Smallest option that keeps a wrong rule from invalidating every phase; both external architecture reviewers and the internal reviewer approved after the brief named the campaign consumers.
+- **Consequences:** Four scheduled units read this shape; a custom profile shadowing supabase-nextjs prints one more stderr warning; legacy sentences accepted until U3a.
+- **Rejected:** Tightening the JSON schema (no enum/oneOf), a separate register file, importing the constitution vocabulary (frozen AC), defining the format inside U2.
+- **Details:** [iterate-2026-11-15-u1-rule-format-rule-format.md](../planning/adr/iterate-2026-11-15-u1-rule-format-rule-format.md)
+
+---
+
+### ADR-707: Rendered rules say what is true; reviewer notes are recorded; runners never bypass hooks
+- **Date:** 2026-11-16
+- **Section:** Iterate - change: architecture rules wording, reviewer notes, runner hook rule
+- **Run-ID:** iterate-2026-11-16-arch-rules-followups
+- **Context:** The rendered rule line claimed a linter check that adopted or older projects lack; the code reviewer's notes were dropped; a runner once tried a hooks-path override.
+- **Decision:** Render the fragment as scaffold-provided and conditional; store notes as reviewer_notes on the code row; state the no-bypass rule in the runner contract.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Claims in generated docs must match what runs; notes are evidence, not findings; hook bypass is never legitimate.
+- **Consequences:** Rendered lines for linter rules change on next render; review records may carry an optional reviewer_notes string; no behaviour change for findings.
+- **Rejected:** Counting notes as findings; a new schema version; putting the sentence in campaign-mode text owned by another run.
+- **Details:** [iterate-2026-11-16-arch-rules-followups-honest-rules-notes-hooks.md](../planning/adr/iterate-2026-11-16-arch-rules-followups-honest-rules-notes-hooks.md)
+
+---
+
+### ADR-708: A campaign unit declared complexity is a floor
+- **Date:** 2026-11-16
+- **Section:** Iterate — bug: campaign unit declared complexity is a floor
+- **Run-ID:** iterate-2026-11-16-campaign-declared-complexity-floor
+- **Context:** Units declared medium in the brief were sized small from their diff, so plan, architecture and doubt reviews closed not-applicable and ran only on orchestrator request.
+- **Decision:** The planner writes a Complexity header line into the unit spec; Stage 1 and the Step 3.4 re-check take the higher of declared and derived; risk_recheck.json records declared_complexity and F11 holds effective to it.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The declaration must travel with the unit and persist; a runner-side override would be invisible to Step 3.4 and F11.
+- **Consequences:** A declared medium unit always runs the full review cascade; an omitted --spec (stale plugin cache) is a stated, undetected residual.
+- **Rejected:** A --complexity runner override; changing the size rules for every iterate; re-deriving the tier from the spec at F11.
+- **Details:** [iterate-2026-11-16-campaign-declared-complexity-floor-declared-floor.md](../planning/adr/iterate-2026-11-16-campaign-declared-complexity-floor-declared-floor.md)
+
+---
+
+### ADR-709: Architecture-rule lint blocks survive the build phase
+- **Date:** 2026-11-16
+- **Section:** Iterate — bug: eslint architecture-rule blocks survive the build phase
+- **Run-ID:** iterate-2026-11-16-eslint-rules-survive-build
+- **Context:** create-next-app replaces the scaffold's eslint config in the build phase, so the supabase-nextjs rule fragments were lost and lint passed silently.
+- **Decision:** A deterministic check in the build verifier (error when a block is missing, warning when changed) plus a closed-shape repair tool that appends the blocks and refuses anything unsafe.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The repair prose in project step 7 is not read at build time; a script is the only thing that runs there.
+- **Consequences:** Lost lint rules are a loud build finding with a one-command repair; a second writer of the eslint config exists and is limited to a closed list of shapes.
+- **Rejected:** Prose only, check only (both external reviewers preferred it; kept the repair per the unit brief), the build phase owning the whole eslint config.
+- **Details:** [iterate-2026-11-16-eslint-rules-survive-build-eslint-rules-survive-build.md](../planning/adr/iterate-2026-11-16-eslint-rules-survive-build-eslint-rules-survive-build.md)
+
+---
+
+### ADR-710: Architecture rules rendered into conventions.md by one tool
+- **Date:** 2026-11-16
+- **Section:** Iterate — feature: rules reach agents
+- **Run-ID:** iterate-2026-11-16-u2-rules-reach-agents
+- **Context:** Rules sat in profiles but reached no agent in adopted projects, and new projects got hand-composed prose.
+- **Decision:** render_architecture_rules.py writes a marked, replaceable block into conventions.md; project step 7 and adopt call it.
+- **Commit:** (assigned post-merge)
+- **Rationale:** One tool beats two hand-written copies; adopt's writer is at its bloat ceiling so the call sits in the generator script.
+- **Consequences:** Agents see rules and how each is kept; the block is a snapshot refreshed by rerunning the tool.
+- **Rejected:** Hand-written prose in both places; agents reading profile JSON at run time; waiting for the U6 reviewer only.
+- **Details:** [iterate-2026-11-16-u2-rules-reach-agents-rules-reach-agents.md](../planning/adr/iterate-2026-11-16-u2-rules-reach-agents-rules-reach-agents.md)
+
+---
+
+### ADR-711: supabase-nextjs rules: two lint fragments, four instruction-only, examples fixed
+- **Date:** 2026-11-16
+- **Section:** Iterate — feature: supabase-nextjs architecture rules as rule objects (U3a)
+- **Run-ID:** iterate-2026-11-16-u3a-supabase-rules
+- **Context:** The six supabase-nextjs rules were unchecked sentences and the shipped examples broke them (tests and two API route examples).
+- **Decision:** Six rule objects with why: client-through-helpers and no-fetch-in-components as ESLint fragments, four instruction only; route examples delegate to src/lib/supabase helpers; duplicated prose removed; fixture tree plus drift test.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Import-based meaning is mechanical and exact; judgement rules stay instruction (campaign decisions 4.3, 4.4); reviewers revised, none rejected.
+- **Consequences:** U3b writes the ESLint template from these fragments and swaps the emulation for real ESLint; new scaffolds get the rules via U2's render.
+- **Rejected:** A home-grown checker (deferred, BRIEF 2.7); deferring the drift test to U3b; making the feature-module rule mechanical without a features folder.
+- **Details:** [iterate-2026-11-16-u3a-supabase-rules-supabase-rules.md](../planning/adr/iterate-2026-11-16-u3a-supabase-rules-supabase-rules.md)
+
+---
+
+### ADR-712: ESLint config template for supabase-nextjs scaffolds
+- **Date:** 2026-11-16
+- **Section:** Iterate - feature: ESLint template for supabase-nextjs scaffolds
+- **Run-ID:** iterate-2026-11-16-u3b-eslint-template
+- **Context:** The two validator rules of the supabase-nextjs profile lived only in profile JSON; no scaffolded project had a lint config carrying them.
+- **Decision:** A flat-config template with the typescript-eslint parser block then the two profile fragments last between marker comments; a project-skill step writes or merges it; the emulation is replaced by a real ESLint test.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Rule order and parser are what makes allowTypeImports and flat-config replacement behave; a pasted copy is two fragments, kept honest by equality test.
+- **Consequences:** New supabase-nextjs projects lint the two rules; always-on drift test pins template to profile; adopted repos stay instruction only; real-ESLint test needs Node (fails under CI without it).
+- **Rejected:** Generating the config from the profile in the render tool (deferred, trigger: third validator rule or second profile with lint fragments); doing nothing.
+- **Details:** [iterate-2026-11-16-u3b-eslint-template-eslint-template.md](../planning/adr/iterate-2026-11-16-u3b-eslint-template-eslint-template.md)
+
+---
+
+### ADR-713: Bundled claude-plugin profile with plugin-project architecture rules
+- **Date:** 2026-11-16
+- **Section:** Iterate — feature: bundled claude-plugin profile
+- **Run-ID:** iterate-2026-11-16-u4-plugin-profile
+- **Context:** Repos that are Claude Code plugins got the generic Python profile, which has no architecture rules.
+- **Decision:** New bundled claude-plugin profile (generic Python data plus six honest rules) and an adopt signal for a .claude-plugin folder in Python-only repos; the generic profile is only re-described.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Operator decision 4.1: plugin rules ship to customers in a bundled profile; a data-driven signal key reuses the Jaccard matcher without special cases.
+- **Consequences:** Plugin repos get the profile and rules; Python-only, TypeScript, mixed and markdown-only repos keep their match; prompt-only rules stay inert until U6.
+- **Rejected:** Rules inside python-plugin-monorepo (hits every Python repo); a Shipwright-only project profile (contradicts 4.1); detector edit in stack_detector (at its bloat ceiling).
+- **Details:** [iterate-2026-11-16-u4-plugin-profile-plugin-profile.md](../planning/adr/iterate-2026-11-16-u4-plugin-profile-plugin-profile.md)
+
+---
+
+### ADR-714: Shipwright monorepo project profile with repo-only architecture rules
+- **Date:** 2026-11-16
+- **Section:** Iterate — feature: Shipwright's own project profile
+- **Run-ID:** iterate-2026-11-16-u5-shipwright-profile
+- **Context:** This repo named the generic Python profile, so its agents saw no architecture rules and the repo-only rules sat in prose.
+- **Decision:** A project profile copy of claude-plugin plus repo-only rules (test-root guard, pre-commit hook, bloat checks) replaces the generic name in three configs; the rules block is rendered into conventions.md.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Operator brief U5: repo-only rules must not ship to customers, so they live in a project profile.
+- **Consequences:** Agents in this repo read the rules; re-adopt loses bundled CI and CodeQL defaults; a test pins the copy against the bundled profile.
+- **Rejected:** Repo-only rules in the bundled profile (leaks to customers); keeping the generic name (no rules reach agents); a profile extends feature (new loader mechanism for one consumer).
+- **Details:** [iterate-2026-11-16-u5-shipwright-profile-shipwright-profile.md](../planning/adr/iterate-2026-11-16-u5-shipwright-profile-shipwright-profile.md)
+
+---
+
+### ADR-715: Code reviewer checks the diff against the architecture rules block
+- **Date:** 2026-11-16
+- **Section:** Iterate — feature: code reviewer reads the architecture rules
+- **Run-ID:** iterate-2026-11-16-u6-reviewers-docs
+- **Context:** The rules are rendered into conventions.md (U1-U5) but no reviewer was told to read them, so instruction-only rules had no reader.
+- **Decision:** The code-reviewer agent reads conventions.md itself and checks the marked block per rule id; the project root is a Project root line in each spawn prompt; docs gain a how-to-add-a-rule section.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The reviewer already has Read; no new script or third input path is needed.
+- **Consequences:** Violations of judgement rules surface in review; the reviewer cannot run the render check, so only duplicated markers and rule-id drift are caught, the full check stays render --check.
+- **Rejected:** Passing the block at every spawn site (drifting contract); a new extraction script (new mechanism); doing nothing (no reader for instruction-only rules).
+- **Details:** [iterate-2026-11-16-u6-reviewers-docs-reviewer-reads-architecture-rules.md](../planning/adr/iterate-2026-11-16-u6-reviewers-docs-reviewer-reads-architecture-rules.md)
+
+---
+
+### ADR-716: Reviewer-notes and hook-bypass criteria belong to FR-01.11, now AC53 and AC54
+- **Date:** 2026-11-17
+- **Section:** Iterate — change: move reviewer-notes and never-bypass-hooks criteria to FR-01.11
+- **Run-ID:** iterate-2026-11-17-ac39-ac40-owner-fr
+- **Context:** PR 1072 added FR-01.01 AC39 (code reviewer notes kept on the review record) and AC40 (campaign runner never bypasses git hooks), but both describe the change workflow, not project setup. AC40 was only checked as wording.
+- **Decision:** Removed FR-01.01 AC39/AC40 and re-added them as FR-01.11 AC53 (same wording) and AC54 (plus: no iterate-plugin or campaign-loop instruction tells anyone to bypass hooks), moved every test tag, raised the AC registry to FR-01.01=40 and FR-01.11=54, and made AC54 a sentence-level scan with a reasoned allowlist.
+- **Commit:** (assigned post-merge)
+- **Rationale:** A move across FRs cannot keep the number (the move map only renames FR with the same number), so remove plus add with the next free numbers is the faithful record; rewriting finished run records would falsify history.
+- **Consequences:** Historic records of iterate-2026-11-16-arch-rules-followups still name FR-01.01.AC39/AC40 and stay unchanged; their ids are retired. CI keystone reports removed_with_bindings for them as an expected non-blocking warning. The registry only guards ids minted by mint_ac_ids, not hand-typed ones.
+- **Rejected:** Rewriting the historic run records and event drop to the new ids; a generic never-word filter in the scan, which would let any bypass in a forbidding paragraph through.
+
+---
+
+### ADR-717: Env-var seams for gh and the condensation model
+- **Date:** 2026-11-17
+- **Section:** Iterate — feature: release-path test seams and offline proof
+- **Run-ID:** iterate-2026-11-17-p1-seams-offline-proof
+- **Context:** The release scripts call gh and a hosted model directly, so no test could run a whole release offline; the changelog pilot's golden-trace harness needs that.
+- **Decision:** shared/scripts/release_seams.py is the only reader of SHIPWRIGHT_TEST_GH_ARGV_PREFIX (JSON argv prefix replacing gh) and SHIPWRIGHT_TEST_CONDENSE_FIXTURE_MODEL (ok or bad-shape); both inert when unset, malformed values refused.
+- **Commit:** (assigned post-merge)
+- **Rationale:** An env var crosses the process boundary that in-process mocks and injected runners cannot; two independent publish-guard triggers mean a lost marker is not the only defence. Defaults are pinned by L1 tests.
+- **Consequences:** create_github_release refuses fixture notes (marker, or the fixture variable alone) unless the gh seam is set. The offline release-audit proof needs no code seam: UV_OFFLINE plus a warmed uv cache.
+- **Rejected:** A .cmd shim (gh is spawned as [gh, ...] on Windows), a runner object threaded through each script, per-test mocks only (cannot cover spawned processes).
+
+---
+
+### ADR-718: Scratch project, gh stub and trace recorder as stdlib testkit
+- **Date:** 2026-11-17
+- **Section:** Iterate - feature: golden-trace harness for the changelog pilot
+- **Run-ID:** iterate-2026-11-17-p2a-harness
+- **Context:** The changelog conversion into code is only provable if a scenario's effects are recorded and compared; no test could record commits, tags, remote refs and outward gh calls.
+- **Decision:** shared/testkit holds release_scratch.py (scratch project, bare origin, allowlist environment), gh_stub.py (local stand-in with a contract and argv log) and golden_trace.py (normalized trace, driver interface, freeze check); the changelog test root holds the freeze test.
+- **Commit:** (assigned post-merge)
+- **Rationale:** One recorded whole-outcome trace catches unexpected side effects that per-outcome assertions miss; stdlib only keeps it usable from every test root (ADR-044). Both architecture reviewers approved it.
+- **Consequences:** Later units (P2b scenarios, P2-op lock, P3-P5 CLI drivers) build on these files; golden_trace.py is frozen by hash at stop 2, so its trace format must be settled then.
+- **Rejected:** Per-outcome assertions only (miss extra tags, commits, gh calls), and real-model runs only (costly, nondeterministic).
+
+---
+
+### ADR-719: Replay driver records today's changelog prose, refusals included
+- **Date:** 2026-11-17
+- **Section:** Iterate - change: changelog replay driver and scenarios S1-S9
+- **Run-ID:** iterate-2026-11-17-p2b1-scenarios-a
+- **Context:** The deterministic-first pilot needs a repeatable account of what the unchanged changelog prose does before any step moves into code.
+- **Decision:** A replay driver runs the prose's commands (each citing its SKILL.md line), an oracle restates FR-01.09's ACs, and scenarios S1-S9 compare normalized traces with committed files.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Frozen copies of the shell chains keep the replay stable when the prose is rewritten in P5; recording refusals keeps scenarios green without hiding findings.
+- **Consequences:** Three release-blocking gaps (D21-D23) are recorded as today's behaviour in the findings file for the operator; traces and the driver are frozen at stop 2.
+- **Rejected:** Unit tests per script (miss the glue), live model runs (not repeatable), reading the prose blocks live (drifts with P5).
+
+---
+
+### ADR-720: Record the rest of today's changelog behaviour, check coverage, seed three regressions
+- **Date:** 2026-11-17
+- **Section:** Iterate - change: changelog scenarios S10-S19, coverage checks, seeded regressions
+- **Run-ID:** iterate-2026-11-17-p2b2-scenarios-b
+- **Context:** The deterministic-first pilot converts mechanical changelog steps to code; nothing yet recorded release delivery, manifests, the release page, dispatched runs, refusals or close-phase, nor proved the scenarios cover the prose or catch a regression.
+- **Decision:** Add scenarios S10-S19 and S1d with committed traces, a close-phase replay step, the oracle registry (Scenario.acs forces every tagged AC to be judged), coverage checks P8a-c with red twins, and three seeded regressions applied to the replay.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Recording today's behaviour as it is, including refusals, is the only baseline a behaviour-preserving conversion can be judged against; a check that cannot go red proves nothing.
+- **Consequences:** Conversion units must keep 40 traces green; the lock at stop 2 pins them. New findings D24-D26 recorded. The not_exercised P8a rows await operator approval; traces were generated on Windows only.
+- **Rejected:** Hand-judged coverage (B), live model runs per scenario (C), doing nothing (D); all fail the pilot's P7/P8 gate.
+
+---
+
+### ADR-721: Lock the promises, not only the traces, and hash tests by normalized AST
+- **Date:** 2026-11-17
+- **Section:** Iterate - test: promise tests and the promise lock's hashing (changelog pilot P2p)
+- **Run-ID:** iterate-2026-11-17-p2p-promise-tests
+- **Context:** The conversion needs tests of what FR-01.09 promises that survive the move from prose to a CLI; traces alone lock accidents too.
+- **Decision:** Twenty promise tests through the replay driver and the oracle, a promise list in the skill-check AC shape, scenarios.json for the judgement questions, and a stdlib AST fingerprint (helpers, constants, fixtures and every mark but covers included).
+- **Commit:** (assigned post-merge)
+- **Rationale:** Dedicated tests keep promises independent of whole-trace comparisons; an own serializer keeps the hash stable across Python versions; every mark is hashed because adding one (skip, xfail, or slow, which CI deselects) is the easiest way to weaken a test.
+- **Consequences:** Stop 2 can lock the hashes; AC11 stays a recorded gap (D2) until the operator decides which behaviour is today's. No skill or product change.
+- **Rejected:** Rebinding scenario tests as the promises (couples promises to traces); hashing only the existing covers tests (they do not exercise the skill's path); ast.dump (version-specific fields).
+
+---
+
+### ADR-722: Harden the promise-lock fingerprint before the lock is written
+- **Date:** 2026-11-18
+- **Section:** Iterate - change: promise-lock hashing hardening
+- **Run-ID:** iterate-2026-11-18-promise-hash-hardening
+- **Context:** Reviews of the first fingerprint found ways to change what a locked promise test runs while its hash stayed equal (import alias, rebinding, autouse, hooks, mark forms) and promise tests weaker than their sentences.
+- **Decision:** Hash every binding of reached names in file order incl. imports, autouse unless literal False, pytest_* bindings, mark statement kinds, covers marks carrying code; lock entries key path::name (promise_lock.py); freeze conftests via REQUIRED; narrow AC10, strengthen AC04/AC11/AC12/AC13.
+- **Commit:** (assigned post-merge)
+- **Rationale:** A closure walker that picks one binding per name misses behaviour; freezing parent conftests in REQUIRED is simpler than hashing them into every closure. Architecture review (external glm and openai, internal opus): approve, in-place hardening.
+- **Consequences:** The lock can be written at stop 2 without these bypasses; edits of the root conftest need an approved delta once it exists; the pinned digest changes only by a deliberate lock rewrite.
+- **Rejected:** Hashing whole files (every edit moves every promise hash); relying on review at the stop; hashing the conftests into each closure (the root conftest would move every hash).
+
+---
+
+### ADR-723: Infrastructure class for harness tests in the test-tag gate
+- **Date:** 2026-11-19
+- **Section:** Iterate — feature: infrastructure test class
+- **Run-ID:** iterate-2026-11-18-test-infra-tag-class
+- **Context:** Harness tests prove no requirement, so authors attached stand-in tags that inflated coverage.
+- **Decision:** A marker covers_none(tooling|infra), honoured only for files named exactly in a catalog read at the merge-base.
+- **Commit:** (assigned post-merge)
+- **Rationale:** A self-reported exemption cannot be cross-checked; a base-read exact-path list can, and leaves no loophole.
+- **Consequences:** Infra tests never count toward coverage; the gate reports their count; seeding the catalog and retagging is a follow-up merge.
+- **Rejected:** Per-test F5c exemption code, per-run label, a real harness requirement.
+- **Details:** [iterate-2026-11-18-test-infra-tag-class-infra-test-class.md](../planning/adr/iterate-2026-11-18-test-infra-tag-class-infra-test-class.md)
+
+---
+
+### ADR-724: Seed the infrastructure-test catalog and surface real compliance failures
+- **Date:** 2026-11-19
+- **Section:** Iterate - change: infra test catalog seed, compliance failure text, WSL2 docs
+- **Run-ID:** iterate-2026-11-19-infra-tag-catalog-seed
+- **Context:** The covers_none class honours a file only when it is listed in shared/config/infra_test_paths.json as it stood at the merge-base, so the catalog had to land in its own merge. A cold-start compliance failure was logged as only a uv warning because stderr was cut at 200 characters.
+- **Decision:** Seed the catalog with the six testkit meta-test files, move the failure text into lib/failure_text.py (drops uv warning lines, keeps the stderr tail) and document the local Linux run via WSL2 in the guide.
+- **Commit:** (assigned post-merge)
+- **Rationale:** A catalog edited in the same diff licenses nothing; a small new module keeps the oversized finalize_iterate.py from growing (anti-ratchet).
+- **Consequences:** The six files can be reclassified in a follow-up merge. The refresh failure log shows the real error. finalize_iterate.py shrinks by 12 lines.
+- **Rejected:** Retagging in the same PR (the gate would refuse it); an inline stderr cut in finalize_iterate.py (anti-ratchet).
+
+---
+
+### ADR-725: Reclassify the six testkit meta-test files with covers_none
+- **Date:** 2026-11-19
+- **Section:** Iterate - change: reclassify six harness tests as infrastructure
+- **Run-ID:** iterate-2026-11-19-infra-tag-retag-six
+- **Context:** The six files carried a stand-in FR-01.09/AC14 requirement tag that inflated coverage counts. The infrastructure class (#1082) and its catalog (#1083) now exist at the merge-base.
+- **Decision:** Replace the module-level covers stand-in in test_gh_stub, test_golden_driver_freeze, test_golden_trace, test_promise_hash, test_promise_hash_hardening and test_release_scratch with pytest.mark.covers_none('tooling').
+- **Commit:** (assigned post-merge)
+- **Rationale:** A harness test proves no product requirement; the class says so instead of a borrowed tag.
+- **Consequences:** The six files no longer count toward FR-01.09/AC14; FR-01.09/AC14 keeps its other linked tests. The gate reports them as infrastructure-classed.
+- **Rejected:** Retagging in the same PR as the catalog (the gate honours only the merge-base catalog).
+
+---
+
+### ADR-726: The security critical-gate fails closed on the prompt-injection report
+- **Date:** 2026-11-20
+- **Section:** Iterate — change: prompt-risks gate fails closed
+- **Run-ID:** iterate-2026-11-20-prompt-risks-gate-fail-closed
+- **Context:** An empty prompt_risks.json read as zero findings and an absent one only warned, so a crashed prompt-injection scan could pass the merge gate green, unlike findings.json which already failed closed.
+- **Decision:** The gate reads the scan step's outcome (success|skipped|other) and, when the scan was meant to run, blocks on a failed/cancelled step or a missing, empty or non-report file; a step skipped on purpose only warns. The CI-gate guard check (c) holds the gate to the same bar.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Same failure class as the findings.json fail-closed fix; keying on the step outcome keeps a deliberately disabled scan green without a new setting.
+- **Consequences:** A scan that crashes now turns CI red instead of green. A scan that completes but scanned nothing (diff mode with a failed git diff) is still not detected; that is a scanner limit and is left for a follow-up.
+- **Rejected:** Failing hard on a missing file regardless of the step state (would turn a deliberately disabled scan red); only handling the empty file (leaves a crash before the write green); an explicit repo-variable switch (new setting for adopters).
+- **Details:** [plan.md](../planning/iterate/iterate-2026-11-20-prompt-risks-gate-fail-closed/plan.md)
+
+---
+
+### ADR-727: Root-file pointer is a text stub, not JSON
+- **Date:** 2026-11-20
+- **Section:** Iterate - docs: R0a root-files survey
+- **Run-ID:** iterate-2026-11-20-r0a-survey
+- **Context:** R0a measured how current readers treat a missing or pointer-shaped root shipwright_run_config.json. An object stub gets written into by append_phase_history and an array stub crashes master_stop_check.
+- **Decision:** Propose a non-JSON text stub whose first line is SHIPWRIGHT-POINTER/1 (matched after stripping CR); writers refuse loudly and tolerant readers fall back. It needs operator sign-off before R1.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Measured on running code in throwaway directories rather than read off source; the text stub is the only shape no reader corrupts.
+- **Consequences:** R0b is not blocked; R1 must list hook exit codes for raising readers. Also found: four fail-open gates on a missing baseline (anti_ratchet, pre-commit, bloat-check.yml, _ac_baseline_growth).
+- **Rejected:** JSON object pointer, JSON array pointer, no stub (old plugins then see a Shipwright-blind project).
+
+---
+
+### ADR-728: Advisory skill-surface checks, re-implemented from SkillSpector categories
+- **Date:** 2026-11-20
+- **Section:** Iterate — feature: skill-surface scan rules
+- **Run-ID:** iterate-2026-11-20-skill-surface-scan-rules
+- **Context:** Semgrep, Trivy and Gitleaks do not cover agent-config surfaces (registry redirects, hook sinks, padding, safety wording, wildcard tools, disguised binaries).
+- **Decision:** Extend prompt_injection_scan with six re-implemented rules in skill_surface_*.py, capped at medium so they never block the critical gate; do not integrate SkillSpector.
+- **Commit:** (assigned post-merge)
+- **Rationale:** SkillSpector is Apache-2.0 and heavy; only a few categories fill real gaps, and own rules keep one schema and gate.
+- **Consequences:** Findings appear in prompt_risks.json as SURFACE_*; false positives expected on other projects; attribution in README and guide.
+- **Rejected:** Replace scanners; add SkillSpector as a backend (get_backend picks one); copy its patterns verbatim.
+- **Details:** [2026-11-20-skill-surface-scan-rules.md](../planning/iterate/2026-11-20-skill-surface-scan-rules.md)
+
+---
+
+### ADR-729: Reminders: separate local append-only store with one CLI writer
+- **Date:** 2026-11-21
+- **Section:** Iterate — feature: reminder store and CLI
+- **Run-ID:** iterate-2026-11-21-e1a-reminder-store
+- **Context:** The operator needs dated reminders with context (why, decided, open, command) that one later call can return; nothing holds them today.
+- **Decision:** A git-ignored .shipwright/reminders.jsonl at the main root, written only by reminder_cli.py, reusing FileLock and the tolerant JSONL reader, with a secret check on every text field.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Operator decisions 4/5: separate local store, no copy of triage entries; WebUI triage writer uses a lock that does not coordinate with the Python FileLock. Architecture review: glm and internal approve, openai reject (rejected with reason).
+- **Consequences:** The WebUI must call the CLI and never write the file; the secret check is a best-effort shape list; loss on re-clone is accepted. Bookkeeping: new FR FR-01.22 (tests need an FR tag; infra catalog not usable in the same merge).
+- **Rejected:** B: reminders as triage items (cross-writer lock hazard, triage JSON contract change, tracked store). C: do nothing.
+- **Details:** [iterate-2026-11-21-e1a-reminder-store-reminder-store.md](../planning/adr/iterate-2026-11-21-e1a-reminder-store-reminder-store.md)
+
+---
+
+### ADR-730: Reminders: one read-only due answer merging reminders and expired triage parks
+- **Date:** 2026-11-21
+- **Section:** Iterate — feature: the one due answer
+- **Run-ID:** iterate-2026-11-21-e1b-reminder-due
+- **Context:** A consumer in another repo needs one call that returns every reminder and every parked triage entry due on a day.
+- **Decision:** Read-only reminder_cli due backed by lib/reminder_due.py: folds reminders, reads triage via read_all_items, versioned fixed-shape redacted JSON.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Operator decision: parks are not copied into the reminder store; due merges both. Architecture review: openai and internal approve, glm approve (verdict token typo).
+- **Consequences:** Cross-repo contract v1 with the WebUI; extends FR-01.22 (AC07-AC09), no new FR; triage read failure is reported in triageError.
+- **Rejected:** B: the consumer merges two CLIs and redacts itself. C: do nothing.
+- **Details:** [iterate-2026-11-21-e1b-reminder-due-reminder-due.md](../planning/adr/iterate-2026-11-21-e1b-reminder-due-reminder-due.md)
+
+---
+
+### ADR-731: Review cascade and Codex transport move to GPT-6.2 Sol
+- **Date:** 2026-11-21
+- **Section:** Iterate — change: GPT-6.1 Sol to GPT-6.2 Sol
+- **Run-ID:** iterate-2026-11-21-gpt-6-2-sol-bump
+- **Context:** OpenAI released GPT-6.2 Sol; the openai reviewer identity pins the model in three code-owned places that must agree.
+- **Decision:** Bumped gpt-6.1-sol to gpt-6.2-sol (openai/gpt-6.2-sol on OpenRouter) in external_review.json, routing bindings, llm_review defaults, CODEX_REVIEW_MODEL, condense_release_notes fallbacks, docs and tests. History and dated observations untouched; the PR-review gate (Haiku 5.5) is unchanged.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Same mechanical bump as ADR-523; the identity lock requires every code-owned pin to agree.
+- **Consequences:** All three transports review as GPT-6.2 Sol. Slug live-verified on the OpenRouter model list and Codex CLI before the change; direct OpenAI route not pinged (no key locally).
+- **Rejected:** Leaving 6.1 pinned: reviews would run on a superseded model.
+
+---
+
+### ADR-732: One resolver owns the names of the root shipwright_* files
+- **Date:** 2026-11-21
+- **Section:** Iterate — change: root shipwright_* path resolver
+- **Run-ID:** iterate-2026-11-21-r0b-resolver
+- **Context:** About 350 files hard-code ~20 root file names; the campaign root-files-into-config will move them to .shipwright/config/. Moving them with scattered literals is unreviewable.
+- **Decision:** shared/scripts/lib/shipwright_paths.py: stdlib-only registry (key, name, kind, lock, per-commit rel_at, main-root variant). All 262 Python literals plus locks, regexes, globs and class-8 readers go through it; a guard test forbids new ones; non-Python carriers are held to a per-file, per-name no-growth ratchet.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Option 2 of the architecture brief was approved by both external architecture reviewers (glm, openai); the internal architecture reviewer said revise (per-file locks, frozen lists, reworded AC1 for carriers, stale-entry check), all folded in.
+- **Consequences:** No behaviour change: every call returns today's root name. R1-R3 become edits to one module. Plugins import it by appending shared/scripts/lib to sys.path briefly (ADR-045); a stale shared cache newer-plugin skew fails at import, so cache sync stays mandatory.
+- **Rejected:** Search-and-replace at move time (no guard, misses constructed names), core-readers-only (long tail remains), a runtime JSON registry (new failure mode for bash/hooks).
+
+---
+
+### ADR-733: Catalogue the changelog golden freeze test as an infrastructure test
+- **Date:** 2026-11-22
+- **Section:** Iterate - change: catalogue the changelog golden freeze test
+- **Run-ID:** iterate-2026-11-22-infra-catalog-trace-freeze
+- **Context:** The stop-2 lock freezes the changelog golden traces and harness files. The freeze test still carries a stand-in requirement tag; the test-tag gate honours covers_none only for files in the catalog at the merge-base.
+- **Decision:** Add plugins/shipwright-changelog/tests/golden/test_trace_freeze.py to shared/config/infra_test_paths.json. The retag to covers_none follows in the lock iterate, after this merges.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Two merges are required because the gate reads the catalog at the merge-base.
+- **Consequences:** The file may declare the infrastructure class in the next merge, so the lock hashes its final content.
+- **Rejected:** Catalogue and retag in one PR (the gate would not honour the class).
+
+---
+
+### ADR-734: Campaign finalize projects status.json into the main tree for gitignored campaigns
+- **Date:** 2026-11-23
+- **Section:** Iterate — bug: campaign finalize writes status back to main tree
+- **Run-ID:** iterate-2026-11-23-campaign-done-status-sync
+- **Context:** campaigns/ is gitignored, so an iterate worktree never contains a fresh campaign dir; F5b Step 6 skipped with 'campaign.md absent' and the main-tree board stayed active.
+- **Decision:** finalize_campaign_status falls back to the main tree (main_repo_root_or), projects from the worktree event log with the main status.json as never-downgrade baseline, and writes there; F6 does not stage it.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Smallest fix at the producer that already owns the board; no new store or flag.
+- **Consequences:** A finished campaign reads complete in the main tree without relying on the WebUI events projection. Concurrent sibling finalizes may briefly overwrite each other; the next finalize self-heals.
+- **Rejected:** Archive flag and WebUI auto-hide: deferred to a follow-up that needs a WebUI change.
+
+---
+
+### ADR-735: Changelog pilot P8 runs as two units, P8a and P8b
+- **Date:** 2026-11-23
+- **Section:** Iterate - docs: changelog pilot brief P8 split
+- **Run-ID:** iterate-2026-11-23-dfp-pilot-brief-p8-split
+- **Context:** The P3-P8 campaign draft splits P8 because P8 was sized large and a large unit cannot run as a campaign unit; the brief still showed one P8 and called the section 3a decisions open.
+- **Decision:** The brief shows P8a (Q1-Q4, FR-01.09 amendment, F3, F5) and P8b (Q5-Q10, Q6 amendment, F9, F8), P7-op after P8b, section 3a confirmed by the operator, and notes the stop-3 harness lives outside the repo.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The brief is what an autonomous run reads; it must match the campaign it drives.
+- **Consequences:** Brief and campaign draft agree on unit ids and order. P7 must decide where the stop-3 harness lives before stop 3.
+- **Rejected:** Keeping one large P8 (cannot run as a campaign unit).
+
+---
+
+### ADR-736: Freeze the changelog pytest config and live prose; record stop-2 decisions F1b, F7, F10
+- **Date:** 2026-11-23
+- **Section:** Iterate - change: changelog pilot freeze gaps
+- **Run-ID:** iterate-2026-11-23-dfp-pilot-freeze-gaps
+- **Context:** The stop-2 review of the changelog lock left the pytest config and the live skill prose unfrozen, so an addopts or ignore could switch the freeze test off and a prose edit before P5 passed the frozen-chain check; F1b, F7 and F10 waited for the operator.
+- **Decision:** Add the changelog pyproject.toml and the live SKILL.md with its references to REQUIRED, assert the session's ini file is frozen, re-pin (95 to 107 files, deltas []); record F1b and F10 in P4, F7 in P4/P5; the passing-status check becomes a P7 item.
+- **Commit:** (assigned post-merge)
+- **Rationale:** pytest roots the golden tests at the plugin pyproject, also from the repo root, so that file and not the root pyproject decides; an inipath test catches any other config; freezing the prose closes the gap the pin left.
+- **Consequences:** Every later edit of the live changelog prose or its pytest config needs an approved delta or a reviewed --repin until P5 decides; the release will not commit derived closing files (P4).
+- **Rejected:** Freezing the root pyproject.toml (never applies to the golden root, frequent edits) or ci.yml (every CI edit a delta; covered by the CI trust-boundary ack); a session-outcome hook for the passing status now (not cheap, frozen conftest).
+
+---
+
+### ADR-737: Freeze the changelog pilot at stop 2 with a reusable lock writer
+- **Date:** 2026-11-23
+- **Section:** Iterate - change: changelog pilot stop-2 lock
+- **Run-ID:** iterate-2026-11-23-dfp-pilot-p2op-lock
+- **Context:** Stop 2 of the changelog pilot needs today's behaviour frozen before extraction (P3-P8): golden traces, promise tests and the skill prose. No lock writer existed and the coverage checks read the live prose.
+- **Decision:** Add shared/testkit/golden_lock.py (plugin as parameter) writing golden.lock.json and promise.lock.json byte-stable; pin the changelog prose as .pin copies read by P8b and the replay checks; retag the freeze test covers_none tooling; lock with approved_deltas [].
+- **Commit:** (assigned post-merge)
+- **Rationale:** The full-run baseline (43 runs, 0 model errors) found no trace change; one generic writer lets the next pilot reuse the freeze step; .pin copies keep the bloat gate and prose scanners from reading them as live skill text.
+- **Consequences:** Later units change frozen files only through approved deltas; adds or removals are re-pins reviewed against the writer's entries list; the unfrozen pytest config and live prose stay operator decisions (FINDINGS).
+- **Rejected:** Keeping the copies named SKILL.md (a new unbaselined runtime-prompt crossing); importing the freeze test to read REQUIRED (not plugin-generic); a new test file for the lock check (not in the infrastructure catalog at the merge-base).
+
+---
+
+### ADR-738: Deterministic-first skills: the changelog release CLI (prepare, aggregate)
+- **Date:** 2026-11-23
+- **Section:** Iterate — change: Deterministic-first skills
+- **Run-ID:** iterate-2026-11-23-p3-cli-prepare-aggregate
+- **Context:** The changelog skill's first steps were prose a model followed by hand; 43 full runs showed the version question asked late (F12), the run id and date lost between shell calls (F14) and two copies of the gate policy. Complexity: operator-accepted large (classifier floor), complexity_override operator-accepted-large.
+- **Decision:** release.py prepare and aggregate wrap the existing tools through an injectable runner; gates come from gate_catalog.json (one source), the upgrade-notes check runs in code, date and run id are stored once in release_run.json in the git directory (shape checked on read); SKILL.md Steps A-4 are one call each.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Option 2 of the architecture brief is the smallest thing that closes F12, F14 and the duplicate policy; per-tool prints cannot carry state across shell calls. Architecture review: glm approve, openai approve, internal approve.
+- **Consequences:** Four approved deltas (SKILL.md, first-actions.md, release-workflow.md, coverage.py) and four promise-anchor re-hashes; traces unchanged; a second golden driver (driver_cli.py, not in REQUIRED) must be kept in step through P4.
+- **Rejected:** Do nothing; make each tool print the facts; one release.py run doing every step including those that need a person. External plan review asked for fewer modules: kept, each is under 110 lines with one responsibility.
+
+---
+
+### ADR-739: Deterministic-first skills: the changelog release CLI part 2 (sync, commit-and-tag, record-event, close-phase)
+- **Date:** 2026-11-23
+- **Section:** Iterate — change: Deterministic-first skills
+- **Run-ID:** iterate-2026-11-23-p4-cli-sync-commit-close
+- **Context:** Steps 5.3 to 7 of the changelog skill were shell chains a model typed, with stop rules in prose; stop 2 decided F1a, F1b, F4, F6, F10, F7. Complexity: operator-accepted-large (classifier floor).
+- **Decision:** release.py sync, commit-and-tag, record-event and close-phase run the chains through the injected runner and return each tool's exit; the decisions live in the flow; outward commands stay literal one-liners in SKILL.md.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Code enforces tag-only-on-exit-0, stop-on-failure and clean-tree; a model cannot reproduce that reliably. Architecture review: glm approve, openai approve, internal approve.
+- **Consequences:** 26 approved deltas for frozen files and one promise-lock delta; hand-invoked close writes nothing and verifies read-only; the tag push in guided mode still tags the pre-merge commit (open item for the operator).
+- **Rejected:** Leave the chains in prose; one release.py run command for every step including those that need a person; subprocess-free helpers (they would import shared lib into the plugin's own lib package).
+- **Details:** [iterate-2026-11-23-p4-cli-sync-commit-close-release-cli-part-2.md](../planning/adr/iterate-2026-11-23-p4-cli-sync-commit-close-release-cli-part-2.md)
+
+---
+
+### ADR-740: Release guard hook before push, merge and release page
+- **Date:** 2026-11-24
+- **Section:** Iterate - change: release guard hook (P4b)
+- **Run-ID:** iterate-2026-11-23-p4b-release-guard-hook
+- **Context:** Models ran git push --tags, git push origin HEAD and gh pr merge by hand while no verified release record existed for HEAD; close-phase only noticed afterwards (second pass B2).
+- **Decision:** A fail-open PreToolUse Bash|PowerShell hook in shipwright-changelog denies tag/trunk push, the release PR merge and gh release create while a release is in progress and release_state.json does not name HEAD.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Only a before-the-command hook stops a hand-typed command; prose and close-phase failed to. It reads files P4 already writes, so no new state. Both architecture reviewers and the internal arm approved A.
+- **Consequences:** Inert unless release_run.json is fresh (48 h), for this root and the tag is not on origin. HEAD may descend from the record through event-only commits (D34). Cooperative net with documented misses.
+- **Rejected:** B stricter prose (already failed); C a publish subcommand (does not stop hand-typed commands, a later complement); D do nothing.
+- **Details:** [iterate-2026-11-23-p4b-release-guard-hook-release-guard.md](../planning/adr/iterate-2026-11-23-p4b-release-guard-hook-release-guard.md)
+
+---
+
+### ADR-741: Review-tooling tests join the infrastructure-test catalog
+- **Date:** 2026-11-24
+- **Section:** Iterate — change: infra test catalog entries
+- **Run-ID:** iterate-2026-11-24-infra-test-catalog
+- **Context:** Tests of the external-review model routing prove no product requirement, and the tag gate only accepts covers_none for files already in the catalog at the merge-base.
+- **Decision:** Added 8 external-review tooling test files to shared/config/infra_test_paths.json in their own earlier merge.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The catalog gate demands the entry exist at the merge-base, so it cannot ship in the same PR as the markers.
+- **Consequences:** A follow-up PR can mark them covers_none(tooling); no behavior change.
+- **Rejected:** Tagging them to an unrelated FR; minting a new FR for a model slug.
+
+---
+
+### ADR-742: release.py push-tag decides the tag push and never runs it
+- **Date:** 2026-11-24
+- **Section:** Iterate — change: changelog skill prose writes no run state; push-tag decides, the push stays literal
+- **Run-ID:** iterate-2026-11-24-p5-thin-skill-md
+- **Context:** P5 of the changelog pilot: the skill prose still named update-step and left the tag-push branching (F1a, F1b, F4) to the model. A first build moved the push into the CLI; the independent reviews rejected it (the release guard hook cannot see a push inside release.py; BRIEF section 2 and programme P4).
+- **Decision:** Option B, chosen by the orchestrator: push-tag reads the run state and prints status plus the exact push line; SKILL.md Step 7 keeps the literal git push lines (tag only from a feature branch, --atomic trunk plus tag on the trunk). The operator may amend at stop 3.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Which push, and when, is a git question and so testable code; running it is an outward command and stays a line the hook can judge.
+- **Consequences:** The hook still sees every push. The hook and push-tag share one rule file (release_descent.py) for the trunk check, and one key (mode) says who waits for the merge. A squash-merged PR is refused as merged_without_release_commit; the guided tag fix is a P8a follow-up.
+- **Rejected:** Pushing inside the CLI (option A, built first, rejected by the reviews); leaving the branching as prose.
+
+---
+
+### ADR-743: Registry-held ratchet for converted skills
+- **Date:** 2026-11-24
+- **Section:** Iterate — feat: prompt-mechanics ratchet
+- **Run-ID:** iterate-2026-11-24-p6-ratchet-docs-bloat
+- **Context:** A converted skill's SKILL.md can take mechanics back one edit at a time, and the frozen prose cannot carry an inline escape marker.
+- **Decision:** check_prompt_mechanics.py reads shared/config/converted_skills.json: per skill a list of allowed command keys and exact escape blocks, plus a global escape_budget; chains, multi-command blocks and new commands fail.
+- **Commit:** (assigned post-merge)
+- **Rationale:** SKILL.md is frozen by golden locks, so escapes live in the registry; command keys (words before the first flag) keep flag changes free while a new command is caught.
+- **Consequences:** Runs as a (gate) step in ci.yml python-checks and in verify_local LOCAL_GATES. Widening the allowance is a reviewed registry diff; a stale escape fails, so the budget only falls.
+- **Rejected:** An inline prose escape marker (needs a frozen-prose delta); exact full-line allowlist (breaks on every flag edit); regex over all prose (false positives on inline code).
+
+---
+
+### ADR-744: Operator-run conversion check plus JUnit reader; inventory and coverage checks retired
+- **Date:** 2026-11-24
+- **Section:** Iterate - change: conversion check and retirement of the pilot scaffolding
+- **Run-ID:** iterate-2026-11-24-p7-conversion-check-retire
+- **Context:** The changelog conversion (P3-P6) had no end check, and a promise marked passing only proved its test exists, not that it ran.
+- **Decision:** Add check_plugin_conversion.py with a registry and a JUnit reader; retire the inventory and P8a/P8b coverage checks; keep P8c in a frozen scenario_index.py; re-pin the golden lock.
+- **Commit:** (assigned post-merge)
+- **Rationale:** A report-based check closes the skipped/deselected hole without editing the trust boundary; P8c is the only AC-without-oracle check and stays.
+- **Consequences:** Operator and stop-3 tool, not a CI gate (ci.yml untouched, no ack needed); no orphan removed; test time rose with the golden harness.
+- **Rejected:** Wiring the check into ci.yml (trust-boundary edit); deleting P8c with its siblings; removing orphan candidates without a per-test approval.
+
+---
+
+### ADR-745: Flaky-test NEVER rule plus property and differential test guidance
+- **Date:** 2026-11-24
+- **Section:** Iterate — change: verification test rules
+- **Run-ID:** iterate-2026-11-24-verification-test-rules
+- **Context:** The claude.dev verification article shows flaky tests teach agents to retry instead of fix, and that property and differential tests keep agents honest where hand-picked examples share the author's blind spots.
+- **Decision:** Add a NEVER rule against hiding flaky tests (skip, fixed sleeps, more retries), register it, mirror it in guide 7.5, and add a shipwright-test reference for property-based and differential tests.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Smallest change that closes the gap; judgement-only register entry because a mechanical check would flag legitimate bounded waits.
+- **Consequences:** Agents must root-cause flakes or delete the test with a record; runner retries that report flaky stay allowed. Property tests are guidance only, no new gate.
+- **Rejected:** A hook that bans sleeps or retries: it would also flag legitimate waits and runner-level retries.
+
+---
+
+### ADR-746: Release preview before write, branch push before PR, default branch from the remote
+- **Date:** 2026-11-25
+- **Section:** Iterate — bug: changelog release preview, branch push and default branch (P8a)
+- **Run-ID:** iterate-2026-11-25-p8a-decisions-q1-q4
+- **Context:** The changelog release wrote CHANGELOG.md before the preview question, opened the PR before its branch was on the remote, assumed main as the default branch, and stated the merge rule two ways (FINDINGS D7, D8, D12, D24).
+- **Decision:** Step 4 runs only a dry run, the real aggregate follows Accept; a git push origin HEAD --no-follow-tags precedes gh pr create; prepare stores the remote's default branch as trunk and record-event, push-tag, verify and --base use it; first-actions.md states the code's merge rule.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Operator re-scope 2026-11-25: port one to one, only deterministic, fix bugs and contradictions, defer new behaviour (FINDINGS D72); the merge rule was already decided by release_verify (D73).
+- **Consequences:** Cancel leaves the tree and drops unchanged; a master repository is handled as the trunk; 42 golden traces regenerated under approved deltas citing the operator re-scope of 2026-11-25.
+- **Rejected:** Tag after merge (Q1), auto-merge (Q2), refusing a hand-run during a driven run (Q3), an explicit breaking marker (Q9): new behaviour, deferred; re-pinning the pinned prose (D78); stopping when the default branch cannot be read (D82).
+- **Details:** [iterate-2026-11-25-p8a-decisions-q1-q4-release-fixes.md](../planning/adr/iterate-2026-11-25-p8a-decisions-q1-q4-release-fixes.md)
+
+---
+
+### ADR-747: Changelog release: hand-written entries released, SemVer boundary, PR body from a file, clean index after a refused refresh
+- **Date:** 2026-11-26
+- **Section:** Iterate — fix: changelog release decisions Q5, Q6, Q7, Q8, Q10, F8, F9
+- **Run-ID:** iterate-2026-11-25-p8b-decisions-q5-q10
+- **Context:** Campaign dfp-pilot-changelog-p3-p8 unit P8b under the operator re-scope of 2026-11-25: port the release 1:1, deterministic, fix bugs and contradictions only (FINDINGS D92-D103).
+- **Decision:** Hand-written [Unreleased] bullets under a category heading move into the release (--move-unreleased, preview marks them); a typed version loses one leading v and must be SemVer above the last tag; --from is removed; the PR body is written by release.py pr-body and passed with --body-file; a refused evidence refresh restores the index; cherry-picks become drop files.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Each item is an operator decision or a bug the code already contradicted; unheaded bullets, non-SemVer tags and build metadata keep today's behaviour so nothing is guessed.
+- **Consequences:** A hand-written-only release is no longer empty; an interrupted mixed release refuses on re-run; a backport below the highest tag is refused (operator question D100); the D20 behaviours are passing promises pinned by L1 tests.
+- **Rejected:** Placing unheaded bullets in a guessed category; making --move-unreleased the default for every aggregator caller; adding a compare link or a new PR title; folding the body into an existing step with no PR context.
+- **Details:** [iterate-2026-11-25-p8b-decisions-q5-q10-release-decisions.md](../planning/adr/iterate-2026-11-25-p8b-decisions-q5-q10-release-decisions.md)
+
+---
+
+### ADR-748: Stop-3 release fixes: tag-only pushes judged by the tag, Step 6 commits what the release wrote and refuses unrelated changes first
+- **Date:** 2026-11-26
+- **Section:** shipwright-changelog
+- **Run-ID:** iterate-2026-11-26-dfp-stop3-release-fixes
+- **Context:** Stop-3 live runs: the release guard denied the tag push after an autonomous merge (F-S3-1), and Step 6 failed or left an unfinished release for D21, D22, D23 and D25.
+- **Decision:** A push whose refspecs name only tags is not a trunk push, so the tag's commit is judged. The Step 6 pathspec keeps only paths git knows and adds the consumed tracked drops and the event files Step 5.5 wrote; commit-and-tag checks the tree first and stops on unrelated changes with no commit (operator decision 2026-11-26).
+- **Commit:** (assigned post-merge)
+- **Consequences:** Under the drops layout a release finishes from a clean tree; the replay restates the rule, 8 golden traces moved as approved deltas; a person's own work in progress now stops the release before any commit.
+- **Rejected:** Sweeping all of CHANGELOG-unreleased.d/ and .shipwright/events/drops into the commit (would commit unrelated drops); stashing unrelated work automatically (new behaviour, the operator chose refuse).
+
+---
+
+### ADR-749: One resolver object, one pointer-stub recogniser, known-location helpers (R1a)
+- **Date:** 2026-11-27
+- **Section:** Iterate — change: R1a resolver foundation
+- **Run-ID:** iterate-2026-11-27-r1a-resolver-foundation
+- **Context:** Campaign root-files-into-config moves root shipwright_* files to .shipwright/config/. R1 needs one resolver state across four import names, one recogniser for the signed-off SHIPWRIGHT-POINTER/1 stub, and helpers naming both the new and the old location.
+- **Decision:** shipwright_paths unifies every name in _ALIASES to one module object (same-file check); new shipwright_pointer.classify/render implement BRIEF 14.1 with a shared fixture table; new_rel/known_rels/all_known_rels plus a FileSpec.target column. No production answer changes.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Split state across import names would make R1c's layout detection disagree between hooks. One recogniser with one fixture set keeps the Python, CI and WebUI readers from drifting.
+- **Consequences:** R1b-R1e build on one object and one recogniser. The resolver sits at its 300-line cap, so R1c's dual read goes to a sibling module. The check_file_size fallback stays dead until R1c (strict xfail).
+- **Rejected:** Patching every importer to one import form (160 files, R1b scope); a JSON stub (rejected at sign-off: a stub must never parse as config).

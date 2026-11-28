@@ -1,1 +1,0 @@
-feat(changelog): release.py sync, commit-and-tag, record-event and close-phase run steps 5.3 to 7 of the release in code, with the stop rules for a failed PR, push or tag, a tag-only push from a feature branch, a clean tree after a hand-invoked release and a read-only check at the end
