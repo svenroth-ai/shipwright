@@ -29,16 +29,19 @@
     },
     "code": {
       "review_type": "code",
-      "status": "not_applicable",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-11-28T10:10:43.205231+00:00",
-      "disposition": "closed by reason_code trivial-auto",
-      "recorded_by": "close-missing",
+      "completed_at": "2026-11-28T12:14:50.131507+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "trivial-auto"
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "476fbc85531f0578e7ebea1e54c7bffa7a19b10c",
+      "reviewer_notes": "Opus code-reviewer at 3f-bis: no findings. Wording by sign correct, score/anchor unchanged, three tests pin -509/0/+1; no test asserts the old '(net growth)' text for a negative or zero delta, so the runner's 30 wider-run failures are unrelated to this diff."
     },
     "doubt": {
       "review_type": "doubt",
@@ -46,12 +49,12 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-11-28T10:10:43.205231+00:00",
-      "disposition": "closed by reason_code trivial-auto",
-      "recorded_by": "close-missing",
+      "completed_at": "2026-11-28T12:14:50.274152+00:00",
+      "disposition": "Stage 3 is conditional and did not trigger for this diff (about 24 source/test lines, wording only); Stage 2 passed at 3f-bis; full compliance root 2227 passed",
+      "recorded_by": "none",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "trivial-auto"
+      "reason_code": "diff-below-threshold"
     },
     "external_code": {
       "review_type": "external_code",
@@ -68,16 +71,18 @@
     },
     "spec": {
       "review_type": "spec",
-      "status": "not_applicable",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-11-28T10:10:43.205231+00:00",
-      "disposition": "closed by reason_code trivial-auto",
-      "recorded_by": "close-missing",
+      "completed_at": "2026-11-28T12:14:50.004776+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "trivial-auto"
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "476fbc85531f0578e7ebea1e54c7bffa7a19b10c"
     },
     "plan_internal": {
       "review_type": "plan_internal",
