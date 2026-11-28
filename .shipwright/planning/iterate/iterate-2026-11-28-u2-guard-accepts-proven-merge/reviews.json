@@ -79,46 +79,35 @@
     "code": {
       "review_type": "code",
       "status": "completed",
-      "findings_count": 3,
+      "findings_count": 2,
       "findings": [
         {
-          "severity": "low",
-          "category": "readability",
-          "file": ".shipwright/planning/iterate/iterate-2026-11-28-u2-guard-accepts-proven-merge/mini-plan.md",
-          "line": 17,
-          "finding": "Plan item 3 says pr_state falls back to S; code checks the commit the tag names.",
-          "suggestion": "Reword item 3.",
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/scripts/hooks/release_guard.py",
+          "line": null,
+          "finding": "A raised exception (TimeoutExpired/OSError) from the new proof git calls reaches main()'s except Exception: return 0, so the guarded tag push is allowed (fail-open). Non-zero git exits fail closed.",
+          "suggestion": "Catch (OSError, SubprocessError) inside the _is_the_release git closure and return (1, ''), plus an in-process test. Disposition: carried into U7 (the guard-gaps unit, same campaign) as a named item; the path is inert until U3 writes the fields and no release runs before the campaign ends.",
           "source": "code-reviewer"
         },
         {
           "severity": "low",
           "category": "correctness",
-          "file": "plugins/shipwright-changelog/tests/test_release_merge_proof.py",
-          "line": 135,
-          "finding": "No passing test for merged_via=merge on an unmoved base.",
-          "suggestion": "Add a --no-ff merge test that is proven.",
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": "readability",
-          "file": "plugins/shipwright-changelog/tests/test_release_merge_proof.py",
-          "line": 242,
-          "finding": "Unit test shares its name with the e2e test.",
-          "suggestion": "Rename the unit copy (..._via_verify).",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_verify.py",
+          "line": null,
+          "finding": "_pr_check picks R or S from the local tag while tag_remote judges origin's tag; diverging tags let pr_state check a different commit than origin publishes.",
+          "suggestion": "Pick from origin's tag when pushed, or fail on divergence. Disposition: carried into U7 with the item above.",
           "source": "code-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-11-28T06:58:27.018219+00:00",
+      "completed_at": "2026-11-28T07:56:50.732877+00:00",
       "disposition": null,
       "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "bc2e9f4a534362d4a234aa2595b57e595d77552f",
-      "reviewer_notes": "No hole in the rule; record without new fields unchanged; guard fail-open kept."
+      "reviewer_notes": "Orchestrator 3f-bis, opus. Proof rule sound (pr_head is R or event-only descendant, trees of pr_head and S equal proof.tree, base_before ancestor of S). Malformed fields = no claim; legacy record makes no git call. Guard stdlib only, 233 lines. Tests back all four ACs with real git and a bare remote."
     },
     "doubt": {
       "review_type": "doubt",
@@ -126,12 +115,12 @@
       "findings_count": 2,
       "findings": [
         {
-          "severity": "low",
-          "category": "boundary & contract",
+          "severity": "medium",
+          "category": "boundary & contract / reversibility",
           "file": "plugins/shipwright-changelog/scripts/hooks/release_merge_proof.py",
           "line": null,
-          "finding": "base_before shows S grows from the base before the merge",
-          "suggestion": "Docstring: base_before is meaningful only as U3 writes it; content rests on the tree checks.",
+          "finding": "trust boundary: worst case is a tag off the trunk that the closing verify fails",
+          "suggestion": null,
           "source": "doubt-reviewer"
         },
         {
@@ -139,20 +128,18 @@
           "category": "hidden coupling & blast radius",
           "file": "plugins/shipwright-changelog/scripts/lib/release_close.py",
           "line": null,
-          "finding": "D113(1) summary line truthful in every tag_remote state",
-          "suggestion": "Trunk wording claims the branch; commit None case wording.",
+          "finding": "without the new fields close-phase output is unchanged",
+          "suggestion": null,
           "source": "doubt-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-11-28T06:58:27.432801+00:00",
+      "completed_at": "2026-11-28T07:56:51.133589+00:00",
       "disposition": null,
       "recorded_by": "doubt-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "bc2e9f4a534362d4a234aa2595b57e595d77552f"
+      "model_tier": "opus"
     },
     "external_code": {
       "review_type": "external_code",
@@ -204,14 +191,21 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-11-28T06:46:02.138870+00:00",
+      "completed_at": "2026-11-28T07:56:50.492650+00:00",
       "disposition": null,
       "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "dd5f9ca3dda7bd83ead3f90822061c6bdf091cbb"
+      "ac_verdicts": [
+        {
+          "ac": "FR-01.09.AC11",
+          "verdict": "matches",
+          "diff_location": "plugins/shipwright-changelog/scripts/lib/release_close.py",
+          "reason": "Summary says pushed only when the closing verify saw the tag on origin; otherwise names pending, missing, other commit, or origin unreachable.",
+          "weakens": false
+        }
+      ]
     },
     "plan_internal": {
       "review_type": "plan_internal",
