@@ -753,6 +753,13 @@ _Where the work detail lives_ at the end of this document.
   capability existed, when later releases are processed, then that earlier
   version's release page is not created retroactively — only releases going
   forward get one.
+- (E) [AC16] Given a release that merges its own request without a person, when the
+  request is merged, then the code host's own merge settings decide how (a merge
+  commit when the code host allows one) and the merge goes through only while the
+  request still holds exactly the checked release; and when the main line gained
+  other work after the release was prepared and the chosen way of merging would
+  fold that work into the release, then nothing is merged and the operator is told
+  to start the release again.
 
 <a id="fr-0110"></a>
 ### FR-01.10 — Audit-ready compliance evidence

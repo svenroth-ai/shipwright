@@ -16,7 +16,10 @@ it runs in a scratch project's environment, not the repo's. No environment guess
   does; unit U3, FINDINGS D114). It keeps the head and the merge commit for ``pr view``. ``--delete-branch`` deletes the
   head on the remote; when the LOCAL checkout is on the PR's head it also does what the real ``gh`` does: check out the
   base, fast-forward it from the push URL and delete the local head. Refuses without exactly one merge flag (as ``gh``
-  does when it cannot prompt), when no open PR matches, and on a merge conflict.
+  does when it cannot prompt), when no open PR matches, on a merge conflict, for a method the repository's settings do
+  not allow, and when ``--match-head-commit`` is not the head on the remote (unit U4).
+* ``repo view --json <fields>``: the merge settings ``mergeCommitAllowed``, ``squashMergeAllowed``, ``rebaseMergeAllowed``
+  from ``state.json`` ``repo`` (a scenario writes it), each ``true`` when unset; another field is exit 1 (unit U4).
 * ``pr view <url|number|branch> --json <fields>``: ``state`` (``OPEN``/``MERGED``/``CLOSED``), ``mergeCommit``
   (``{"oid": ...}`` or null), ``headRefOid`` (the head at the merge, else the remote's), ``baseRefName``,
   ``headRefName``, ``number``; another field is exit 1, no ``--json`` exit 2.
@@ -42,68 +45,17 @@ from __future__ import annotations
 
 import json
 import os
-import subprocess
 import sys
 import tempfile
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # run as a script: the plumbing next to it, whatever the interpreter's flags
+from gh_stub_support import SHORT as _SHORT, Refusal, flags as _flags, git as _git, git_run as _git_run  # noqa: E402
+
 STATE_ENV = "SHIPWRIGHT_GH_STUB_STATE"
 VERSION_TEXT = "gh version 2.60.0 (2026-01-01)\nhttps://github.com/cli/cli/releases/tag/v2.60.0 (shipwright test stub)\n"
-_GIT = ["git", "-c", "user.name=gh-stub", "-c", "user.email=gh-stub@example.invalid", "-c", "commit.gpgsign=false", "-c", "core.autocrlf=false"]
-
-_SHORT: dict[tuple[str, str], dict[str, str]] = {
-    ("pr", "create"): {"-t": "--title", "-b": "--body", "-B": "--base", "-H": "--head", "-F": "--body-file", "-R": "--repo"},
-    ("pr", "merge"): {"-m": "--merge", "-d": "--delete-branch", "-s": "--squash", "-r": "--rebase", "-R": "--repo"},
-    ("pr", "view"): {"-R": "--repo"},
-    ("release", "create"): {"-t": "--title", "-n": "--notes", "-F": "--notes-file", "-d": "--draft", "-p": "--prerelease", "-R": "--repo"},
-    ("release", "view"): {"-R": "--repo"},
-}
-
-_GIT_ENV_DROP = ("GIT_AUTHOR_NAME", "GIT_AUTHOR_EMAIL", "GIT_COMMITTER_NAME", "GIT_COMMITTER_EMAIL")
-
-
-def _env() -> dict[str, str]:
-    """The stub's merge commit is authored by the stub, not by the scenario's identity."""
-    return {k: v for k, v in os.environ.items() if k not in _GIT_ENV_DROP}
-
-
-class Refusal(Exception):
-    def __init__(self, message: str, code: int = 1):
-        super().__init__(message)
-        self.code = code
-
-
-def _git(*args: str, cwd: Path | str, check: bool = True) -> str:
-    done = subprocess.run([*_GIT, *args], cwd=str(cwd), env=_env(), capture_output=True, text=True,
-                          encoding="utf-8", errors="replace", timeout=120)
-    if check and done.returncode != 0:
-        raise Refusal(f"git {' '.join(args)} failed: {(done.stderr or done.stdout).strip()}")
-    return done.stdout.strip()
-
-
-def _flags(argv: list[str], valued: tuple[str, ...], bare_ok: tuple[str, ...] = (),
-           short: dict[str, str] | None = None) -> tuple[list[str], dict[str, str], set[str]]:
-    """Split ``argv`` into positionals, ``--name value`` pairs and bare flags. ``short`` is the command's own map."""
-    positional, values, bare = [], {}, set()  # type: tuple[list[str], dict[str, str], set[str]]
-    it = iter(argv)
-    for arg in it:
-        if arg.startswith("-") and not arg.startswith("--") and len(arg) > 1:
-            if arg not in (short or {}):
-                raise Refusal(f"gh-stub: unsupported flag {arg}", 2)  # a difference to recognise, not to guess at
-            arg = short[arg]
-        name, eq, inline = arg.partition("=")
-        if name in valued:
-            value = inline if eq else next(it, "")
-            if not value or (not eq and value.startswith("--")):
-                raise Refusal(f"gh-stub: flag {name} needs a value", 2)
-            values[name] = value
-        elif arg.startswith("--"):
-            if arg not in bare_ok:
-                raise Refusal(f"gh-stub: unsupported flag {name}", 2)  # a long flag the contract does not list
-            bare.add(arg)
-        else:
-            positional.append(arg)
-    return positional, values, bare
+MERGE_SETTINGS = ("mergeCommitAllowed", "squashMergeAllowed", "rebaseMergeAllowed")  # a new GitHub repository allows all three
+_METHOD_SETTING = {"--merge": "mergeCommitAllowed", "--squash": "squashMergeAllowed", "--rebase": "rebaseMergeAllowed"}
 
 
 class Stub:
@@ -143,6 +95,11 @@ class Stub:
         url = _git("remote", "get-url", "origin", cwd=self.cwd, check=False)
         return url.removesuffix(".git").split("github.com/")[-1].split("github.com:")[-1]
 
+    def settings(self) -> dict[str, bool]:
+        """The repository's merge settings: ``state.json`` ``repo`` (a scenario sets it), else all allowed, as GitHub starts."""
+        given = self.state.get("repo") or {}
+        return {name: bool(given.get(name, True)) for name in MERGE_SETTINGS}
+
     # ---- commands -------------------------------------------------------------------------
     def pr_create(self, argv: list[str]) -> str:
         _, v, _ = _flags(argv, ("--title", "--body", "--base", "--head", "--repo", "--body-file"),
@@ -164,7 +121,7 @@ class Stub:
         return f"https://github.com/{self.repo_slug(v.get('--repo'))}/pull/{number}\n"
 
     def pr_merge(self, argv: list[str]) -> str:
-        pos, v, bare = _flags(argv, ("--repo",), ("--merge", "--squash", "--rebase", "--delete-branch"),
+        pos, v, bare = _flags(argv, ("--repo", "--match-head-commit"), ("--merge", "--squash", "--rebase", "--delete-branch"),
                               short=_SHORT[("pr", "merge")])
         method = [m for m in ("--merge", "--squash", "--rebase") if m in bare]
         if len(method) != 1:
@@ -174,6 +131,11 @@ class Stub:
                    and (str(p["number"]) == key or p["head"] == key)), None)
         if pr is None:
             raise Refusal(f"gh-stub: no open pull request found for '{key}'")
+        if not self.settings()[_METHOD_SETTING[method[0]]]:  # the host refuses a method the repository's settings do not allow
+            raise Refusal(f"gh-stub: {method[0].removeprefix('--')} merges are not allowed on this repository")
+        pinned = v.get("--match-head-commit")
+        if pinned and _git("ls-remote", self.remote(), f"refs/heads/{pr['head']}", cwd=self.cwd, check=False)[:40] != pinned:
+            raise Refusal("gh-stub: Head branch was modified. Review and try the merge again.")  # the host's own words
         head = f"origin/{pr['head']}"
         steps = {"--merge": [["merge", "--no-ff", "-m", f"Merge pull request #{pr['number']} from {pr['head']}", head]],
                  "--squash": [["merge", "--squash", head], ["commit", "-m", f"{pr['title']} (#{pr['number']})"]],
@@ -184,8 +146,7 @@ class Stub:
             _git("checkout", "--quiet", pr["base"], cwd=work)
             _git("branch", "stub-rebase", head, cwd=work)
             for step in steps:
-                merged = subprocess.run([*_GIT, *step], cwd=work, env=_env(), capture_output=True, text=True,
-                                        encoding="utf-8", errors="replace", timeout=120)
+                merged = _git_run(*step, cwd=work)
                 if merged.returncode != 0:
                     raise Refusal(f"gh-stub: pull request #{pr['number']} is not mergeable: {merged.stdout.strip()[-200:]}")
             _git("push", "--quiet", "origin", pr["base"], cwd=work)
@@ -225,6 +186,13 @@ class Stub:
             raise Refusal(f"gh-stub: pr view needs --json with fields from {', '.join(facts)}", 2 if not wanted else 1)
         return json.dumps({f: facts[f] for f in wanted}) + "\n"
 
+    def repo_view(self, argv: list[str]) -> str:
+        pos, v, _ = _flags(argv, ("--repo", "--json"), short=_SHORT[("repo", "view")])
+        wanted = [f for f in v.get("--json", "").split(",") if f]
+        if not wanted or any(f not in MERGE_SETTINGS for f in wanted):
+            raise Refusal(f"gh-stub: repo view needs --json with fields from {', '.join(MERGE_SETTINGS)}", 2 if not wanted else 1)
+        return json.dumps({f: self.settings()[f] for f in wanted}) + "\n"
+
     def release_create(self, argv: list[str]) -> str:
         pos, v, _ = _flags(argv, ("--notes-file", "--title", "--repo", "--notes", "--target"),
                              ("--verify-tag", "--draft", "--prerelease"), short=_SHORT[("release", "create")])
@@ -260,7 +228,7 @@ def dispatch(stub: Stub, argv: list[str], *, unseamed: bool = False) -> str:
         return "github.com\n  Logged in to github.com (shipwright test stub)\n"
     if unseamed:  # a bare gh is logged out: it may probe (--version, auth status above) but never act
         raise Refusal("To get started with GitHub CLI, please run:  gh auth login", 4)
-    table = {("pr", "create"): stub.pr_create, ("pr", "merge"): stub.pr_merge, ("pr", "view"): stub.pr_view,
+    table = {("pr", "create"): stub.pr_create, ("pr", "merge"): stub.pr_merge, ("pr", "view"): stub.pr_view, ("repo", "view"): stub.repo_view,
              ("release", "create"): stub.release_create, ("release", "view"): stub.release_view}
     handler = table.get(tuple(argv[:2]))
     if handler is None:

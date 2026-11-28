@@ -17,7 +17,17 @@ The skill is an index of what to DO, and this is the reasoning behind it.
 ## Parallel iterate handling
 
 - Multiple open PRs against the same default branch: rebase per PR is expected — no skill-logic change required.
-- `gh pr merge --merge` vs `--squash`: the default stays `--merge`; `--squash` is optional for parallel-iterate PRs when linear history matters.
+- The autonomous release merge (unit U4): `release.py merge-ready` reads the repository's merge settings and never changes them. A merge
+  commit is preferred when allowed (the tag stays on the release commit, nothing to prove); else squash, else rebase, which `push-tag`
+  proves after the merge. The line always pins the PR head (`--match-head-commit`): a commit pushed to the branch after the release makes
+  the host refuse the merge instead of merging what was never audited. Before a squash or rebase merge the freshly fetched base must be
+  in the release branch; if the base moved, the merge would ship other PRs' code without their entries (D112), so it stops with
+  `base_moved`, nothing is merged, and the operator restarts the release by hand (operator decision 2026-11-28). The check is best-effort:
+  a PR merged into the base between the answer and the merge is caught only after the merge, by push-tag's `foreign_commits_on_base`. A
+  PR retargeted to another base is refused (`pr_base_changed`). A branch rule that requires linear history refuses `--merge` even when
+  the repository allows merge commits: the merge fails and the release stops (no fallback). It never updates the
+  branch from the base: `gh pr update-branch` would put a commit past the release on the PR head, which push-tag's proof refuses. A guided
+  release is merged by a person, who should merge while the branch is up to date with the base; push-tag's proof covers that merge.
 - Tag creation is single-writer (only the release-iterate tags a version) — no concurrency change needed.
 - Conventional-Commit sort is deterministic: merge order does not affect changelog ordering.
 - **`CHANGELOG.md [Unreleased]` is a merge hotspot.** Every iterate F4 appends to `[Unreleased]`. Two parallel iterates conflict on merge — the second PR rebases and resolves the bullet merge manually. Structural fix tracked as a `CHANGELOG-unreleased.d/` drop pattern bundled with the iterate_history file-per-iterate refactor.

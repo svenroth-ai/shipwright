@@ -197,24 +197,26 @@ gh pr create \
 
 **A failed `gh pr create` stops the release here:** the tag stays on this machine; report it.
 
-**Record the changelog event — BEFORE the merge, so it ships in the release PR** (an append after the merge strands uncommitted in the main
-checkout: webui v0.28.0, monorepo v0.34.0). On a feature branch it commits only the event paths and pushes the head; on the trunk it commits and
+**Record the changelog event — BEFORE the merge, so it ships in the release PR** (an append after the merge strands uncommitted in the main checkout: webui v0.28.0, monorepo v0.34.0). On a feature branch it commits only the event paths and pushes the head; on the trunk it commits and
 never pushes (the trunk is pushed once, with the tag). A non-zero exit (a rejected push too) **stops the release**: the tag stays local.
-
 ```bash
 uv run "{plugin_root}/scripts/release.py" record-event --project-root "$(pwd)" --version "{version}" --pr-url "{PR_URL}"
 ```
 
 Omit `--pr-url` on the trunk.
 
-**A hand-invoked release with autonomy `autonomous` or `unattended`:** after recording the event, merge immediately; a failed merge stops the release:
+**A hand-invoked release with autonomy `autonomous` or `unattended`:** after recording the event, merge immediately. Ask first; the call decides and never merges:
 ```bash
-gh pr merge --merge --delete-branch
+uv run "{plugin_root}/scripts/release.py" merge-ready --project-root "$(pwd)" --version "{version}"
 ```
+`status: "ok"` gives the one `line` to run (`{method}` is `merge` when the repository allows merge commits, else `squash` or `rebase`; `{head}` pins the PR head the release was verified for). Run that line as printed, right away; a failed merge stops the release:
+```bash
+gh pr merge --{method} --match-head-commit {head} --delete-branch
+```
+`status: "refused"` stops the release and names the `reason`. `base_moved`: the base got new commits after the release branch was made, so a squash or rebase merge would ship code without its changelog entry; nothing was merged. Tell the operator the `detail` (restart the release by hand). Never update the branch from the base and never re-create the release yourself.
 
-**Any other hand-invoked release:** the PR stays open for manual review and merge. The order is: run `close-phase` now with `--release-status waiting
---release-note "waits for the PR merge"` (last block of this step); then, **after the PR is merged**, push the tag and make the release
-page (the next two blocks). Neither is done before the merge, so a failed release can never leave a tag with no release.
+**Any other hand-invoked release:** the PR stays open for manual review and merge. The order is: run `close-phase` now with `--release-status waiting --release-note "waits for the PR merge"` (last block of this step) and tell the user to merge while the branch is up to date with the
+base; then, **after the PR is merged**, push the tag and make the release page (the next two blocks). Neither is done before the merge, so a failed release can never leave a tag with no release.
 
 **A driven run** neither merges nor waits: the master owns the PR. Go straight on.
 
@@ -222,14 +224,12 @@ page (the next two blocks). Neither is done before the merge, so a failed releas
 ```bash
 uv run "{plugin_root}/scripts/release.py" push-tag --project-root "$(pwd)" --version "{version}"
 ```
-`status: "ok"` gives the one `line` to run: from a feature branch `git push origin "refs/tags/v{version}"` (only the tag, never a local trunk,
-never `--tags`), on the trunk `git push --atomic origin {branch} "refs/tags/v{version}"` (`{branch}` is the branch you are on, a trunk: run the printed line; the trunk and exactly this tag, together or not at all).
-Run that line as printed. `status: "waiting_for_merge"` (exit 1) means a hand-invoked release's PR is not merged yet: run `push-tag` again after the merge.
+`status: "ok"` gives the one `line` to run: from a feature branch `git push origin "refs/tags/v{version}"` (only the tag, never a local trunk, never `--tags`), on the trunk `git push --atomic origin {branch} "refs/tags/v{version}"` (`{branch}` is the branch you are on, a trunk: run the printed line; the trunk and exactly this tag, together or not at all).
+Run that line as printed. `status: "waiting_for_merge"` (exit 1) means a hand-invoked release's PR is not merged yet: merge it while the branch is up to date with the base, then run `push-tag` again.
 After a squash or rebase merge it first proves the merge commit carries exactly the release, records it and moves the local tag onto it (never one on origin); a re-run gives the same answer. `reason: "merge_state_unknown"` is retryable (run `push-tag` again).
 `status: "refused"` otherwise stops the release and names the `reason` (`foreign_commits_on_base`: other commits merged into the base before the release, with their pending drops; nothing was tagged or written; report them, the user decides). A refused push stops the release.
 
-**Create GitHub Release (best-effort, never blocks this phase):** what it publishes, the LLM/mechanical split and every reported
-outcome: [release-workflow.md](references/release-workflow.md).
+**Create GitHub Release (best-effort, never blocks this phase):** what it publishes, the LLM/mechanical split and every reported outcome: [release-workflow.md](references/release-workflow.md).
 ```bash
 uv run "{shared_root}/scripts/tools/publish_release_notes.py" \
   --project-root "$(pwd)" --version "{version}"

@@ -80,7 +80,8 @@ def test_f7_the_phase_close_is_one_close_phase_call_and_the_prose_has_no_history
     skill = _prose()["SKILL.md"]
     assert len(re.findall(r'release\.py" close-phase', skill)) == 1 and "orchestrator.py" not in skill
     assert "aggregate_changelog.py" not in skill and "Since the file-per-iterate refactor" not in skill and "never type these" not in skill
-    assert re.findall(r"^gh pr merge --merge --delete-branch$", skill, re.M) == ["gh pr merge --merge --delete-branch"]  # outward commands stay literal
+    merge = "gh pr merge --{method} --match-head-commit {head} --delete-branch"  # U4: the line release.py merge-ready fills in
+    assert re.findall(r"^gh pr merge .*$", skill, re.M) == [merge]  # outward commands stay literal
 
 
 def test_the_prose_uses_one_word_for_who_waits_for_the_merge():
