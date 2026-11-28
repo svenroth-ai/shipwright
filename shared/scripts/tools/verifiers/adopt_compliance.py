@@ -53,7 +53,7 @@ REQUIRED_CONFIGS = ("run_config", "project_config", "plan_config", "build_config
 def check_a1_configs_present(project_root: Path) -> dict[str, Any]:
     """A1 (Tier-1): 5 required configs exist and parse as JSON."""
     name = "A1 All shipwright_*_config.json present + valid JSON"
-    missing = [_sp.rel(k) for k in REQUIRED_CONFIGS if not _sp.path(k, project_root).exists()]
+    missing = [_sp.name(k) for k in REQUIRED_CONFIGS if not _sp.path(k, project_root).exists()]
     if missing:
         return make_finding(
             "A1", STATUS_FAIL,
@@ -63,7 +63,7 @@ def check_a1_configs_present(project_root: Path) -> dict[str, Any]:
             provenance="adopt_config_check",
         )
     for k in REQUIRED_CONFIGS:
-        c = _sp.rel(k)
+        c = _sp.name(k)
         try:
             json.loads(_sp.path(k, project_root).read_text(encoding="utf-8"))
         except (json.JSONDecodeError, OSError) as e:

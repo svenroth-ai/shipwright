@@ -14,14 +14,10 @@ from pathlib import Path
 import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[5] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 
-CONFIG_FILES = {
-    "run": _sp.rel("run_config"),
-    "project": _sp.rel("project_config"),
-    "plan": _sp.rel("plan_config"),
-    "build": _sp.rel("build_config"),
-}
-#: CONFIG_FILES key -> resolver key (R1c-2: a moving config is found in either layout)
+#: config key -> resolver key (R1c-2: a moving config is found in either layout)
 CONFIG_KEYS = {"run": "run_config", "project": "project_config", "plan": "plan_config", "build": "build_config"}
+#: config key -> FILE NAME (a label; :func:`config_path` resolves the place), derived from CONFIG_KEYS (R1c-3)
+CONFIG_FILES = {key: _sp.name(rk) for key, rk in CONFIG_KEYS.items()}
 
 
 def config_path(key: str, project_root: Path) -> Path:

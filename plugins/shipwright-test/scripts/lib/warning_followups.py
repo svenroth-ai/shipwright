@@ -47,7 +47,7 @@ from text_safety import sanitize  # noqa: E402 — same normalization both produ
 from warning_followup_items import EMITTERS  # noqa: E402
 import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
-RESULTS_NAME = _sp.rel("test_results")
+RESULTS_NAME = _sp.name("test_results")
 _TITLE_CAP = 160
 _DETAIL_CAP = 2000
 

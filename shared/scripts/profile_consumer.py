@@ -33,7 +33,7 @@ import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent
 if _ADDED:
     sys.path.remove(_HERE)
 
-RUN_CONFIG = _sp.rel("run_config")
+RUN_CONFIG = _sp.name("run_config")
 SENTINELS = pr.SENTINELS
 
 

@@ -43,7 +43,7 @@ from lib.churn_merge import (  # noqa: E402
     COMPLIANCE_MDS,
     DERIVED_MDS,
     EVENTS_LOG,
-    TEST_RESULTS,
+    TEST_RESULTS_RELS,
     TEST_TRACEABILITY,
     TRIAGE_LOG,
     classify,
@@ -232,7 +232,7 @@ def complete_merge(project_root: Path, *, run_id: str | None = None) -> ResolveR
                             "cannot union safely — resolve by hand"],
                 )
             resolved.append(rel)
-        elif rel in (EVENTS_LOG, TEST_RESULTS):
+        elif rel == EVENTS_LOG or rel in TEST_RESULTS_RELS:
             _take_side(project_root, rel, "--ours")
             resolved.append(rel)
         else:  # a regenerated allowlisted snapshot or campaign status.json (S3): placeholder, regenerated later

@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "1. **Category** security \u00b7 **Severity** medium  \n   **Finding** The acceptance criteria check the moved ledger\u2019s skip eligibility and the moved risk register\u2019s sensitivity independently. They leave the required gate\u2019s decision on a mixed diff unverified. A PR that changes both files must still receive the sensitive review tier.  \n   **Suggestion** Add a test through the required gate\u2019s normal entry point with both files in the same diff. Assert that review is required at the sensitive tier. Keep the ledger-only and noncanonical-basename cases as controls.\n\n2. **Category** risk \u00b7 **Severity** medium  \n   **Finding** The mini-plan names a Git pathspec and lists `gitignore_selfheal.MANAGED_MARKER_PATHS` as an item to check. The implemented summary gives no disposition for either. A Python membership test can pass while the actual Git command still selects only the root path or the moved path has different ignore behavior.  \n   **Suggestion** Record the intended behavior for each Git filter. For any filter that should recognize both layouts, exercise the actual Git command in a temporary repository with the file at each canonical path and an unrelated file with the same basename.\n\n3. **Category** edge-case \u00b7 **Severity** medium  \n   **Finding** The plan tests recognition in each layout, but leaves the simultaneous-copy case unspecified. Recognition should cover both copies, while phase hints, handoff, and fold staging need to agree with the resolver about the active config. A stale root copy is a practical migration case.  \n   **Suggestion** Add a fixture with distinct `sync_config` contents at both locations. Assert that fold staging selects exactly the path returned by `path()` and that the handoff reports that same path. If the resolver rejects simultaneous copies, assert that the fold stages neither.\n\nUsing registry-derived paths is sound for this change. This review is based on the supplied plan because workspace commands were blocked, so the mixed-diff gate decision, Git filtering, and simultaneous-copy behavior need verification before approval.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "## Findings\n\n**Category: edge-case \u2014 Severity: medium**\nModule constants bound to `_sp.name(key)` at import time are static. If the resolver is per-project (nested projects are explicitly in scope \u2014 AC3, \"resolve them per project\"), a constant like `CONFIG_NAME` captured at import in a long-lived process will reflect the *first* project's layout, not the current one. The plan distinguishes \"labels use `name()`\" from \"readers resolve per project,\" but any label printed during a nested-project run could be wrong.\n*Suggestion:* Verify whether the process is single-project per invocation. If not, convert message sites that run per-project to resolve `name()` at call time rather than via a module constant.\n\n**Category: risk \u2014 Severity: medium**\n`snapshot_paths()` / `run_written_paths()` now emit paths that don't exist. These feed git operations (staging, reset, churn pathspecs). Some git subcommands error on pathspecs matching nothing (`git add` does unless `--ignore-errors`/pathspec magic `:(exist)`; `git commit -- paths` semantics differ). If any consumer passes these sets directly to `git add` or `git checkout --`, the nonexistent entries could turn a previously-working operation into a failure.\n*Suggestion:* Audit every consumer of `DERIVED_SNAPSHOTS`/`RESTORABLE_SNAPSHOTS`/`CHURN_ALLOWLIST` for git invocations; use `:(exist,literal)` pathspec magic or filter to existing paths before invoking git.\n\n**Category: edge-case \u2014 Severity: medium**\n`SENSITIVE_PATH_RE` gains a second location. If built by string-joining the two rels, escaping and anchoring must be rechecked: the new path contains `/` so the anchor must be a full-path anchor (not basename anchored), and the alternation must not accidentally unanchor the legacy branch. AC4 asserts the basename case, but a regex with `^...|...$` alternation precedence bugs is a classic failure.\n*Suggestion:* Build the regex from an explicit non-capturing group `^(?:legacy|new)` and add a negative test for the legacy-path-only basename under a different directory.\n\n**Category: risk \u2014 Severity: low**\nThe constants inventory drops 73 \u2192 16 and dead constants get deleted. The plan says \"verify test imports first,\" which is right, but tests that construct expected path strings literally (golden/snapshot tests) will silently encode the legacy-only expectation and could pass while the production behavior differs.\n*Suggestion:* The new recogniser test should assert recognition *both ways* (legacy still recognized, new recognized), not only the new place, to catch sets that over-replaced.\n\n**Category: dependency \u2014 Severity: low**\nThe AST net \"forbids `_sp.rel`/`_sp.legacy_rel` of a moving key outside the resolver and two kept spots\" plus R1c-1's second half narrowed to `new_rel()` only. This means production code *can* now call something that produces the new path \u2014 consistent with the \"recognising is reading, not creating\" argument \u2014 but the guard now has two overlapping rules. A future writer could call `known_rels()` (allowed) and write to the new entry, bypassing R1c-1's intent.\n*Suggestion:* Confirm `known_rels()`-derived paths are only ever consumed in membership/read contexts, or add a write-side guard (e.g., lint that `known_rels` results never reach an open-for-write or `touch`). Cheap insurance before R3.\n\n**Category: edge-case \u2014 Severity: low**\n`gitignore_selfheal.MANAGED_MARKER_PATHS` is migrated with a \"check what it lists\" note left unresolved. If those markers are *written* as well as read, emitting both places could cause the self-heal to create/expect ignore entries for paths that don't exist yet.\n*Suggestion:* Resolve the check before merge, not after; if it's write-side, defer it to R3 explicitly in the out-of-scope list.\n\n## Overall assessment\n\nThe approach is sound and well-scoped: recognising both places before the move is the correct order of operations, the guard structure is thoughtful, and the out-of-scope boundaries are clear. The main things to nail down before merge are the git-pathspec behavior with nonexistent paths, import-time constant binding in nested-project contexts, and regex anchoring \u2014 all mechanical, none structural.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-11-28-r1c3-name-sets",
+    "at": "2026-11-28T14:11:18.949090+00:00"
+  },
+  "verdicts": {
+    "openai": "revise",
+    "glm": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

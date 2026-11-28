@@ -169,7 +169,7 @@ def run(
     # failed write leaves durable cards pointing at a file that does not exist —
     # misleading triage state that outlives the run (external code review).
     if not dry_run:
-        ib.write_register(project_root, register)
+        written = ib.write_register(project_root, register)
 
     cards: list[dict[str, Any]] = []
     if (confirm := cf.confirmation_triage(catalogue, split_name=catalogue.split_name)):
@@ -189,7 +189,7 @@ def run(
         "dry_run": dry_run,
     }
     if not dry_run:
-        summary["written"] = ib.REGISTER_REL
+        summary["written"] = written.relative_to(project_root).as_posix()   # the place it was written (R1c-3)
     return summary
 
 

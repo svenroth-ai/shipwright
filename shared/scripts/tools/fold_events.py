@@ -36,21 +36,23 @@ REFUSED = ("conflict", "changed_since_plan", "archive_incomplete", "copy_mismatc
            "folded_incomplete", "folded_into_legacy_incomplete", "quarantined_incomplete")   # the last three: a file could not be deleted
 
 
-def _stage_paths(result: dict) -> list[str]:
+def _stage_paths(result: dict, root: str) -> list[str]:
     """Exactly what the tool changed (never a folder-level add: other runs may have untracked drops there)."""
     status, paths = result.get("status", ""), []
+    def sync() -> str:   # where the fold wrote it (R1c-3); resolved only when staged, so a fold that never
+        return _sp.path("sync_config", Path(root)).relative_to(Path(root)).as_posix()   # touches it cannot fail
     if status.startswith("folded"):   # also *_incomplete: staged as far as it got, the finishing re-run (same command) stages the rest
         paths.append(f"{DROPS_DIR}/{KEEP_NAME}")
         paths += [f"{DROPS_DIR}/{n}" for n in result.get("folded_files", [])]
         paths += [result["archive"]] if result.get("archive") else []
         paths += result.get("removed_files", [])
         if result.get("mode") == "emergency" or status == "folded_into_legacy":
-            paths.append(_sp.rel("sync_config"))
+            paths.append(sync())
         paths += [result["legacy_log"]] if result.get("legacy_log") else []
     if status.startswith("quarantined"):
         paths += [f"{folder}/{n}" for folder in (QUARANTINE_DIR, DROPS_DIR) for n in result.get("files", [])]
     if status == "nothing_to_fold" and result.get("mode") == "emergency":
-        paths.append(_sp.rel("sync_config"))   # an emergency fold with nothing left still resets the layout
+        paths.append(sync())   # an emergency fold with nothing left still resets the layout
     return paths
 
 
@@ -104,8 +106,8 @@ def main(argv: list[str] | None = None) -> int:
     try:
         result = _run(a)
         if a.stage and not a.dry_run:
-            _stage(a.project_root, _stage_paths(result))
-    except (GitError, ValueError, TypeError, OSError) as exc:
+            _stage(a.project_root, _stage_paths(result, a.project_root))
+    except (GitError, ValueError, TypeError, OSError, _sp.LayoutError) as exc:   # two copies of sync_config (R1c-3)
         print(json.dumps({"status": "error", "error": str(exc)}))
         return 2
     print(json.dumps(result, indent=2, ensure_ascii=False))

@@ -84,39 +84,53 @@ EXIT_UNRESOLVED_TOKEN = 2
 # ---------------------------------------------------------------------------
 
 # Maps each phase to (a) its own primary config file and (b) artifact paths
-# its predecessors typically produce. Intentionally minimal — F5 will tune
+# its predecessors typically produce. A bare registry key (``"plan_config"``) is
+# resolved per project by :func:`_where` (R1c-3: the place the file lives now). Intentionally minimal — F5 will tune
 # per-skill based on what each Skill actually needs to read.
 PHASE_OWN_ARTIFACTS: dict[str, list[str]] = {
     "project": [".shipwright/planning/requirements.md"],
-    "design": [".shipwright/designs/", _sp.rel("design_config")],
-    "plan": [".shipwright/agent_docs/sections/", _sp.rel("plan_config")],
-    "build": [_sp.rel("build_config")],
-    "test": [_sp.rel("test_results")],
+    "design": [".shipwright/designs/", "design_config"],
+    "plan": [".shipwright/agent_docs/sections/", "plan_config"],
+    "build": ["build_config"],
+    "test": ["test_results"],
     "security": [".shipwright/compliance/security-scan-report.md"],
     "changelog": ["CHANGELOG.md"],
-    "deploy": [_sp.rel("deploy_config")],
+    "deploy": ["deploy_config"],
 }
 
 # What predecessor artifacts this phase typically reads.
 PHASE_PREREQ_ARTIFACTS: dict[str, list[str]] = {
-    "design": [".shipwright/planning/requirements.md", _sp.rel("project_config")],
-    "plan": [".shipwright/planning/requirements.md", _sp.rel("design_config"),
+    "design": [".shipwright/planning/requirements.md", "project_config"],
+    "plan": [".shipwright/planning/requirements.md", "design_config",
              ".shipwright/designs/"],
-    "build": [".shipwright/agent_docs/sections/", _sp.rel("plan_config")],
-    "test": [_sp.rel("build_config")],
-    "security": [_sp.rel("test_results")],
-    "changelog": [_sp.rel("test_results")],
+    "build": [".shipwright/agent_docs/sections/", "plan_config"],
+    "test": ["build_config"],
+    "security": ["test_results"],
+    "changelog": ["test_results"],
     "deploy": ["CHANGELOG.md"],
 }
 
 
-def _suggest_artifacts(phase: str, split_id: Optional[str]) -> list[str]:
+def _where(entries: list[str], project_root: Path) -> list[str]:
+    """Repo-relative paths: a registry key becomes the place its file lives (two copies: the root name)."""
+    out = []
+    for e in entries:
+        if e in _sp.SPECS:
+            try:
+                e = _sp.path(e, project_root).relative_to(project_root).as_posix()
+            except _sp.LayoutError:   # never raises: the reader that opens it reports the two copies
+                e = _sp.name(e)
+        out.append(e)
+    return out
+
+
+def _suggest_artifacts(phase: str, split_id: Optional[str], project_root: Path) -> list[str]:
     """Return a deduplicated list of artifact paths the Skill should read.
 
     Combines the phase's prerequisite artifacts with split-scoped subdirs
     when applicable (e.g. build/01-core reads .shipwright/agent_docs/sections/01-core/).
     """
-    paths: list[str] = list(PHASE_PREREQ_ARTIFACTS.get(phase, []))
+    paths: list[str] = _where(PHASE_PREREQ_ARTIFACTS.get(phase, []), project_root)
     if split_id:
         # Replace any generic .shipwright/agent_docs/sections/ entry with the split-scoped one
         scoped = f".shipwright/agent_docs/sections/{split_id}/"
@@ -168,12 +182,12 @@ def build_phase_context(
             "phase": pred.get("phase"),
             "splitId": pred.get("splitId"),
             "status": pred.get("status"),
-            "artifacts": PHASE_OWN_ARTIFACTS.get(pred.get("phase") or "", []),
+            "artifacts": _where(PHASE_OWN_ARTIFACTS.get(pred.get("phase") or "", []), Path(project_root)),
         })
 
     payload["prerequisites"] = prereqs_out
     payload["skill_artifacts_to_read"] = _suggest_artifacts(
-        task.get("phase") or "", task.get("splitId"),
+        task.get("phase") or "", task.get("splitId"), Path(project_root),
     )
     payload["next_action_hint"] = (
         "Read the files/dirs listed in skill_artifacts_to_read, then proceed with the "

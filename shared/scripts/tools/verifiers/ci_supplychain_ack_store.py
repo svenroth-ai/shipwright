@@ -48,7 +48,7 @@ __all__ = [
 
 #: Beside ``reviews.json`` in the run's own planning directory.
 ACK_FILENAME = "ci_supplychain_ack.json"
-_RESULTS = _sp.rel("test_results")
+_RESULTS = _sp.name("test_results")
 #: The envelope shape this verifier knows how to read.
 SCHEMA_VERSION = 1
 

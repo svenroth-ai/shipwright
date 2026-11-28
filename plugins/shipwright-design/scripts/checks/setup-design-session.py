@@ -39,7 +39,7 @@ import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent
 if _ADDED:
     sys.path.remove(_SHARED)
 
-PROJECT_CONFIG = _sp.rel("project_config")
+PROJECT_CONFIG = _sp.name("project_config")
 PROFILE_KEYS_READ = ("design_system",)  # D6: consumed profile keys (checked against the schema)
 
 

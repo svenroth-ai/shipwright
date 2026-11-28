@@ -69,10 +69,10 @@ SENSITIVE_PATH_RE = re.compile(
     r"|\.github/actions/"
     r"|shared/templates/github-actions/"
     r"|\.trivyignore(?:\.ya?ml)?$"
-    r"|" + re.escape(_sp.rel("accepted_risks")) +
+    r"|" + "|".join(map(re.escape, _sp.known_rels("accepted_risks"))) +
     r"|\.semgrepignore"
     r"|\.claude/settings\.json"
-    r"|" + re.escape(_sp.rel("bloat_baseline")) +
+    r"|" + "|".join(map(re.escape, _sp.known_rels("bloat_baseline"))) +
     r"|scripts/hooks/"
     r"|scripts/install-hooks\."
     r")"

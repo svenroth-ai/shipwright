@@ -91,7 +91,7 @@ ALLOWED = {"lock-construction": LOCK_ALLOWED, "shipwright-prefix-rule": PREFIX_R
 #: held by its own inventory (fixtures/shipwright_paths_rel_constants.json), per NAME, not per file
 INVENTORIED = {"rel-constant"}
 REL_CONSTANTS = scan.BASELINE.parent / "shipwright_paths_rel_constants.json"
-REL_CONSTANTS_CAP = 73  # R1c-2: 80 -> 73
+REL_CONSTANTS_CAP = 16  # R1c-3: 73 -> 16 (the event log + churn_merge.TEST_RESULTS)
 
 
 def _violations():

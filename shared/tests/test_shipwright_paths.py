@@ -104,9 +104,13 @@ def test_locks_only_where_a_data_file_lock_exists(tmp_path):
 
 @pytest.mark.covers("FR-01.11")
 def test_generated_lists_equal_the_hand_written_lists_they_replaced():
+    cfg = ".shipwright/config/"   # R1c-3: a marker counts in either place, new first
     assert CONFIG_MARKERS == (
-        "shipwright_run_config.json", "shipwright_project_config.json", "shipwright_plan_config.json",
-        "shipwright_build_config.json", "shipwright_events.jsonl", ".shipwright/events/drops",
+        cfg + "shipwright_run_config.json", "shipwright_run_config.json",
+        cfg + "shipwright_project_config.json", "shipwright_project_config.json",
+        cfg + "shipwright_plan_config.json", "shipwright_plan_config.json",
+        cfg + "shipwright_build_config.json", "shipwright_build_config.json",
+        "shipwright_events.jsonl", ".shipwright/events/drops",
         ".shipwright/events/archive", ".shipwright/events/quarantine")
     assert CONFIG_FILES["run"] == "shipwright_run_config.json" and CONFIG_FILES["compliance"].endswith("compliance_config.json")
     assert sp.family_globs() == ("shipwright_*.json", "shipwright_*.yaml")
@@ -114,9 +118,10 @@ def test_generated_lists_equal_the_hand_written_lists_they_replaced():
 
 @pytest.mark.covers("FR-01.11")
 def test_derived_and_restorable_snapshots_come_from_the_kind_list():
-    assert sp.snapshot_paths() == frozenset({"shipwright_test_results.json"})   # retired names are not snapshots
+    both = frozenset({"shipwright_test_results.json", ".shipwright/config/shipwright_test_results.json"})
+    assert sp.snapshot_paths() == both   # either place (R1c-3); retired names are not snapshots
     assert sp.run_written_paths() == sp.snapshot_paths()   # restore exclusion comes from the run_written flag
-    assert "shipwright_test_results.json" in DERIVED_SNAPSHOTS and len(DERIVED_SNAPSHOTS) == 12
+    assert "shipwright_test_results.json" in DERIVED_SNAPSHOTS and len(DERIVED_SNAPSHOTS) == 13
     assert "shipwright_test_results.json" not in RESTORABLE_SNAPSHOTS and len(RESTORABLE_SNAPSHOTS) == 10
 
 

@@ -1,0 +1,1827 @@
+diff --git a/docs/hooks-and-pipeline.md b/docs/hooks-and-pipeline.md
+index cb98cb0b5..b72d11169 100644
+--- a/docs/hooks-and-pipeline.md
++++ b/docs/hooks-and-pipeline.md
+@@ -142,6 +142,7 @@ artifact has exactly one documented resolution strategy:
+ | `.shipwright/agent_docs/decision_log_index.md` | **regenerate** (same treatment as the ADR INDEX row above, for the same reason — `lib.decision_log_index.rebuild_decision_log_index` re-derives it as a pure function of `decision_log.md`'s own already-merged content). Refreshed by TWO producers rather than one: `write_decision_log.py` (the direct-append path plan/build/deploy use) and `aggregate_decisions.py` (the release-time fold), because either can be the last write to `decision_log.md` before a commit. Also refreshed post-merge by `integrate_regenerate.regenerate_after_merge` alongside the ADR index. Not a `DERIVED_SNAPSHOTS` member for the same reason the ADR index isn't. **Deliberately no sibling row for `decision-drops/INDEX.md`** — that ONE file (not the directory it lists, which is tracked since iterate-2026-08-08-track-decision-drops) stays gitignored, so git never sees a conflict on it and an allowlist entry would be exercised by nothing; a concurrent write within the SAME checkout is guarded by a file lock instead. **Also no row for `decision-drops/*.json` itself** — each drop is a uniquely-named new file per run, so two branches adding different ones merges cleanly with no conflict to resolve (the same shape `CHANGELOG-unreleased.d/` already relies on); it needs neither `merge=union` nor a `CHURN_ALLOWLIST` entry. Refresh the index by hand with `uv run {shared_root}/scripts/tools/rebuild_decision_log_index.py --project-root .`. |
+ | `.shipwright/compliance/performance/iterate-throughput.md` | **theirs** (cleared like the other regenerated snapshots; no dedicated branch is wired in `regenerate_tracked_snapshots` yet, so a conflict leaves it stale until the next iterate's own F5b run refreshes it — see `iterate_throughput_report.py`) |
+ | `shipwright_test_results.json` | **ours** (PR-owned snapshot) |
++| `.shipwright/config/shipwright_test_results.json` | **ours** (the same snapshot in its new place, recognised from R1c-3 on) |
+ 
+ > **Since iterate-2026-07-27-derived-snapshots-off-branch the twelve
+ > `DERIVED_SNAPSHOTS` rows above describe a path an iterate no longer takes.**
+diff --git a/plugins/shipwright-adopt/scripts/checks/validate_adoption.py b/plugins/shipwright-adopt/scripts/checks/validate_adoption.py
+index 443a36c6a..d62a3f6bb 100644
+--- a/plugins/shipwright-adopt/scripts/checks/validate_adoption.py
++++ b/plugins/shipwright-adopt/scripts/checks/validate_adoption.py
+@@ -68,7 +68,7 @@ REQUIRED_AGENT_DOCS = [
+ def _validate_configs(project_root: Path) -> list[str]:
+     errors: list[str] = []
+     for key in REQUIRED_CONFIGS:
+-        name, p = _sp.rel(key), _sp.path(key, project_root)
++        name, p = _sp.name(key), _sp.path(key, project_root)
+         if not p.exists():
+             errors.append(f"missing: {name}")
+             continue
+@@ -173,7 +173,7 @@ def _derived_catalogue_doc():
+ 
+ def _validate_honesty_artifacts(project_root: Path) -> list[str]:
+     errors = [
+-        f"missing: {_sp.rel(rel) if rel in _sp.SPECS else rel} — written by {step}; re-run it"
++        f"missing: {_sp.name(rel) if rel in _sp.SPECS else rel} — written by {step}; re-run it"
+         for rel, step in _HONESTY_ARTIFACTS
+         if not (_sp.path(rel, project_root) if rel in _sp.SPECS else project_root / rel).exists()
+     ]
+diff --git a/plugins/shipwright-adopt/scripts/lib/inherited_baseline.py b/plugins/shipwright-adopt/scripts/lib/inherited_baseline.py
+index b0b95bdc9..7f70d15bf 100644
+--- a/plugins/shipwright-adopt/scripts/lib/inherited_baseline.py
++++ b/plugins/shipwright-adopt/scripts/lib/inherited_baseline.py
+@@ -47,7 +47,7 @@ from typing import Any
+ import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
+ 
+ #: Where the register lands — the path the compliance collector looks at.
+-REGISTER_REL = _sp.rel("known_failures")
++REGISTER_REL = _sp.name("known_failures")
+ 
+ #: The ONLY fields copied out of an observed-baseline payload: exactly what
+ #: ``collect_known_failures`` reads. A payload assembled from raw test output can
+diff --git a/plugins/shipwright-adopt/scripts/lib/nested_project_detector.py b/plugins/shipwright-adopt/scripts/lib/nested_project_detector.py
+index 6f31aca60..4aa760d67 100644
+--- a/plugins/shipwright-adopt/scripts/lib/nested_project_detector.py
++++ b/plugins/shipwright-adopt/scripts/lib/nested_project_detector.py
+@@ -57,8 +57,8 @@ def detect_nested_projects(project_root: Path, max_depth: int = 2) -> list[dict[
+             if (child / ".git").exists():
+                 markers.append(".git")
+                 reasons.append("nested-git")
+-            if _sp.path("run_config", child).exists():
+-                markers.append(_sp.rel("run_config"))
++            if (found := _sp.path("run_config", child)).exists():
++                markers.append(found.relative_to(child).as_posix())   # the place it was found (R1c-3)
+                 reasons.append("separate-shipwright-project")
+             if (child / "CLAUDE.md").exists() and (child / ".shipwright" / "agent_docs").is_dir():
+                 markers.append("CLAUDE.md+.shipwright/agent_docs/")
+diff --git a/plugins/shipwright-adopt/scripts/tools/backfill_phase_tasks.py b/plugins/shipwright-adopt/scripts/tools/backfill_phase_tasks.py
+index ee0c9edc8..00c103245 100644
+--- a/plugins/shipwright-adopt/scripts/tools/backfill_phase_tasks.py
++++ b/plugins/shipwright-adopt/scripts/tools/backfill_phase_tasks.py
+@@ -57,7 +57,7 @@ from atomic_write import durable_atomic_write, durable_read_text  # noqa: E402
+ from file_lock import LockTimeout, file_lock  # noqa: E402
+ import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
+ 
+-RUN_CONFIG_NAME = _sp.rel("run_config")
++RUN_CONFIG_NAME = _sp.name("run_config")
+ # Same lock-file PATH `plugins/shipwright-run/scripts/lib/run_config_store.py`
+ # uses -- mutual exclusion is guaranteed by the shared path, not by which
+ # module acquired it (see that module's docstring). This tool never imports
+diff --git a/plugins/shipwright-adopt/scripts/tools/record_inherited_baseline.py b/plugins/shipwright-adopt/scripts/tools/record_inherited_baseline.py
+index 5e056f5c6..4a641c49f 100644
+--- a/plugins/shipwright-adopt/scripts/tools/record_inherited_baseline.py
++++ b/plugins/shipwright-adopt/scripts/tools/record_inherited_baseline.py
+@@ -169,7 +169,7 @@ def run(
+     # failed write leaves durable cards pointing at a file that does not exist —
+     # misleading triage state that outlives the run (external code review).
+     if not dry_run:
+-        ib.write_register(project_root, register)
++        written = ib.write_register(project_root, register)
+ 
+     cards: list[dict[str, Any]] = []
+     if (confirm := cf.confirmation_triage(catalogue, split_name=catalogue.split_name)):
+@@ -189,7 +189,7 @@ def run(
+         "dry_run": dry_run,
+     }
+     if not dry_run:
+-        summary["written"] = ib.REGISTER_REL
++        summary["written"] = written.relative_to(project_root).as_posix()   # the place it was written (R1c-3)
+     return summary
+ 
+ 
+diff --git a/plugins/shipwright-build/scripts/lib/config.py b/plugins/shipwright-build/scripts/lib/config.py
+index 187c3c942..8c62af74b 100644
+--- a/plugins/shipwright-build/scripts/lib/config.py
++++ b/plugins/shipwright-build/scripts/lib/config.py
+@@ -9,7 +9,7 @@ from typing import Any
+ import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
+ 
+ 
+-CONFIG_NAME = _sp.rel("build_config")
++CONFIG_NAME = _sp.name("build_config")
+ 
+ DEFAULTS = {
+     "auto_push": False,
+diff --git a/plugins/shipwright-compliance/scripts/lib/audit_disclosure.py b/plugins/shipwright-compliance/scripts/lib/audit_disclosure.py
+index 6f0e847bd..eec0eb3d6 100644
+--- a/plugins/shipwright-compliance/scripts/lib/audit_disclosure.py
++++ b/plugins/shipwright-compliance/scripts/lib/audit_disclosure.py
+@@ -53,7 +53,7 @@ from pathlib import Path
+ from typing import Iterable, NamedTuple
+ import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
+ 
+-CONFIG_FILE = _sp.rel("compliance_config")
++CONFIG_FILE = _sp.name("compliance_config")
+ LAST_AUDIT_KEY = "last_audit"
+ LAST_FULL_AUDIT_KEY = "last_full_audit"
+ SCOPE_FULL = "full"
+diff --git a/plugins/shipwright-compliance/scripts/lib/collectors/_common.py b/plugins/shipwright-compliance/scripts/lib/collectors/_common.py
+index f903d82bb..323bee2ba 100644
+--- a/plugins/shipwright-compliance/scripts/lib/collectors/_common.py
++++ b/plugins/shipwright-compliance/scripts/lib/collectors/_common.py
+@@ -14,14 +14,10 @@ from pathlib import Path
+ import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[5] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
+ 
+ 
+-CONFIG_FILES = {
+-    "run": _sp.rel("run_config"),
+-    "project": _sp.rel("project_config"),
+-    "plan": _sp.rel("plan_config"),
+-    "build": _sp.rel("build_config"),
+-}
+-#: CONFIG_FILES key -> resolver key (R1c-2: a moving config is found in either layout)
++#: config key -> resolver key (R1c-2: a moving config is found in either layout)
+ CONFIG_KEYS = {"run": "run_config", "project": "project_config", "plan": "plan_config", "build": "build_config"}
++#: config key -> FILE NAME (a label; :func:`config_path` resolves the place), derived from CONFIG_KEYS (R1c-3)
++CONFIG_FILES = {key: _sp.name(rk) for key, rk in CONFIG_KEYS.items()}
+ 
+ 
+ def config_path(key: str, project_root: Path) -> Path:
+diff --git a/plugins/shipwright-design/scripts/checks/check-design-gates.py b/plugins/shipwright-design/scripts/checks/check-design-gates.py
+index 2c46ec84e..bb8dc9871 100644
+--- a/plugins/shipwright-design/scripts/checks/check-design-gates.py
++++ b/plugins/shipwright-design/scripts/checks/check-design-gates.py
+@@ -97,8 +97,8 @@ DESIGNS_DIRNAME = ".shipwright/designs"
+ #: that patches shared plumbing has stopped producing mockups.
+ DESIGN_ALLOWED_PREFIXES = (
+     ".shipwright/",
+-    _sp.rel("run_config"),
+-    _sp.rel("project_config"),
++    *_sp.known_rels("run_config"),
++    *_sp.known_rels("project_config"),
+     "CHANGELOG-unreleased.d/",
+     "CHANGELOG.md",  # the design verifier (C5) REQUIRES the "Design: N screens + M flows added" line there
+     _sp.rel("events"), ".shipwright/events/drops/", ".shipwright/events/archive/", ".shipwright/events/quarantine/",  # the pipeline's own event log (file and drops folders): bookkeeping, not a breach
+diff --git a/plugins/shipwright-design/scripts/checks/setup-design-session.py b/plugins/shipwright-design/scripts/checks/setup-design-session.py
+index 4a453fcbe..ce0850d8e 100644
+--- a/plugins/shipwright-design/scripts/checks/setup-design-session.py
++++ b/plugins/shipwright-design/scripts/checks/setup-design-session.py
+@@ -39,7 +39,7 @@ import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent
+ if _ADDED:
+     sys.path.remove(_SHARED)
+ 
+-PROJECT_CONFIG = _sp.rel("project_config")
++PROJECT_CONFIG = _sp.name("project_config")
+ PROFILE_KEYS_READ = ("design_system",)  # D6: consumed profile keys (checked against the schema)
+ 
+ 
+diff --git a/plugins/shipwright-plan/scripts/checks/check-plan-gates.py b/plugins/shipwright-plan/scripts/checks/check-plan-gates.py
+index 0bb61344e..a46add194 100644
+--- a/plugins/shipwright-plan/scripts/checks/check-plan-gates.py
++++ b/plugins/shipwright-plan/scripts/checks/check-plan-gates.py
+@@ -75,9 +75,9 @@ GATES = ("review", "sections", "boundary", "all")
+ #: (`step-9-completion.md`); `shipwright_plan_config.json` is written every session.
+ PLAN_ALLOWED_PREFIXES = (
+     ".shipwright/",
+-    _sp.rel("run_config"),
+-    _sp.rel("project_config"),
+-    _sp.rel("plan_config"),
++    *_sp.known_rels("run_config"),
++    *_sp.known_rels("project_config"),
++    *_sp.known_rels("plan_config"),
+     "CHANGELOG-unreleased.d/",
+     _sp.rel("events"), ".shipwright/events/drops/", ".shipwright/events/archive/", ".shipwright/events/quarantine/",  # the pipeline's own event log (file and drops folders): bookkeeping, not a breach
+ )
+diff --git a/plugins/shipwright-run/scripts/lib/orchestrator_pkg/brief_resume_guard.py b/plugins/shipwright-run/scripts/lib/orchestrator_pkg/brief_resume_guard.py
+index d4e16eeea..18a657e85 100644
+--- a/plugins/shipwright-run/scripts/lib/orchestrator_pkg/brief_resume_guard.py
++++ b/plugins/shipwright-run/scripts/lib/orchestrator_pkg/brief_resume_guard.py
+@@ -19,7 +19,7 @@ import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent
+ 
+ _NAME = "_shipwright_brief_resume_guard_bdi"
+ _BDI = Path(__file__).resolve().parents[5] / "shared" / "scripts" / "lib" / "brief_dir_intake.py"
+-_CONFIG = _sp.rel("run_config")
++_CONFIG = _sp.name("run_config")
+ 
+ 
+ def _load() -> Any:
+diff --git a/plugins/shipwright-run/scripts/lib/orchestrator_pkg/constants.py b/plugins/shipwright-run/scripts/lib/orchestrator_pkg/constants.py
+index abbf6d9b0..352e96c99 100644
+--- a/plugins/shipwright-run/scripts/lib/orchestrator_pkg/constants.py
++++ b/plugins/shipwright-run/scripts/lib/orchestrator_pkg/constants.py
+@@ -27,7 +27,7 @@ if _LOCAL_LIB not in sys.path:
+     sys.path.insert(0, _LOCAL_LIB)
+ 
+ # --- Schema constants ------------------------------------------------------
+-CONFIG_NAME = _sp.rel("run_config")
++CONFIG_NAME = _sp.name("run_config")
+ 
+ # Pipeline schema version. F2+ phase-lifecycle subcommands (claim-phase-task,
+ # complete-phase-task, etc.) hard-fail on anything else.
+diff --git a/plugins/shipwright-run/scripts/lib/orchestrator_pkg/gate_run_id.py b/plugins/shipwright-run/scripts/lib/orchestrator_pkg/gate_run_id.py
+index 9f0e393c1..c03d604f3 100644
+--- a/plugins/shipwright-run/scripts/lib/orchestrator_pkg/gate_run_id.py
++++ b/plugins/shipwright-run/scripts/lib/orchestrator_pkg/gate_run_id.py
+@@ -32,7 +32,7 @@ from pathlib import Path
+ from typing import Any, Optional
+ import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[5] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
+ 
+-_RUN_CONFIG = _sp.rel("run_config")
++_RUN_CONFIG = _sp.name("run_config")
+ NO_ENTRY_SUFFIX = ":no-phase_history-entry-since-claim"
+ _SKEW = timedelta(minutes=5)   # clock-skew tolerance for an entry's ``at``
+ 
+diff --git a/plugins/shipwright-run/scripts/lib/phase_task_core.py b/plugins/shipwright-run/scripts/lib/phase_task_core.py
+index 269323f5e..b6e8fda37 100644
+--- a/plugins/shipwright-run/scripts/lib/phase_task_core.py
++++ b/plugins/shipwright-run/scripts/lib/phase_task_core.py
+@@ -36,7 +36,7 @@ if str(_SHARED_LIB) not in sys.path:
+ from file_lock import FileLock  # noqa: E402
+ import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
+ 
+-CONFIG_NAME = _sp.rel("run_config")
++CONFIG_NAME = _sp.name("run_config")
+ 
+ TERMINAL_STATUSES = frozenset({"done", "failed", "skipped"})
+ 
+diff --git a/plugins/shipwright-run/scripts/lib/run_config_store.py b/plugins/shipwright-run/scripts/lib/run_config_store.py
+index d45abdbe6..9dca469ae 100644
+--- a/plugins/shipwright-run/scripts/lib/run_config_store.py
++++ b/plugins/shipwright-run/scripts/lib/run_config_store.py
+@@ -59,7 +59,7 @@ from atomic_write import durable_atomic_write, durable_read_text  # noqa: E402
+ from file_lock import LockTimeout, file_lock  # noqa: E402
+ import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
+ 
+-RUN_CONFIG_NAME = _sp.rel("run_config")
++RUN_CONFIG_NAME = _sp.name("run_config")
+ LOCK_NAME = _sp.lock_rel("run_config")
+ 
+ # Generous default -- the read-modify-write critical section is fast (no
+diff --git a/plugins/shipwright-run/scripts/lib/single_session/orchestrator_context.py b/plugins/shipwright-run/scripts/lib/single_session/orchestrator_context.py
+index b4a453d7c..663758b0b 100644
+--- a/plugins/shipwright-run/scripts/lib/single_session/orchestrator_context.py
++++ b/plugins/shipwright-run/scripts/lib/single_session/orchestrator_context.py
+@@ -24,7 +24,7 @@ from .result_contract import MAX_SUMMARY_CHARS
+ import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[5] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
+ 
+ # Public config name (stable per the Shipwright ``shipwright_`` config prefix).
+-RUN_CONFIG_REL_PATH = _sp.rel("run_config")
++RUN_CONFIG_REL_PATH = _sp.name("run_config")
+ 
+ # Keys copied verbatim from a phase_tasks[] entry into a compact summary record.
+ # Deliberately small — the reload never pulls anything transcript-sized.
+diff --git a/plugins/shipwright-security/scripts/lib/pr_review_skip_safety.py b/plugins/shipwright-security/scripts/lib/pr_review_skip_safety.py
+index f812e771d..2b56a1024 100644
+--- a/plugins/shipwright-security/scripts/lib/pr_review_skip_safety.py
++++ b/plugins/shipwright-security/scripts/lib/pr_review_skip_safety.py
+@@ -30,7 +30,8 @@ __all__ = ["is_safe_to_skip_review"]
+ # never the actual regenerated artifact the basename rule was written for —
+ # must not borrow that classification (Stage-3 doubt review, medium finding).
+ _SKIP_REVIEW_CANONICAL_BASENAME_PATHS = frozenset({
+-    _sp.rel("test_results"),
++    _sp.rel("test_results"),   # the ROOT place only until R3 creates the new one: skip-safety loosens a gate, so it
++                               # follows the file, never ahead of it (R1c-3 architecture review)
+     _sp.rel("events"),
+     ".shipwright/triage.jsonl",
+     ".shipwright/triage.outbox.jsonl",
+diff --git a/plugins/shipwright-security/scripts/tools/finalize_security_compliance.py b/plugins/shipwright-security/scripts/tools/finalize_security_compliance.py
+index 20a95b09e..96a923eac 100644
+--- a/plugins/shipwright-security/scripts/tools/finalize_security_compliance.py
++++ b/plugins/shipwright-security/scripts/tools/finalize_security_compliance.py
+@@ -54,7 +54,7 @@ COMPLIANCE_DIR = ".shipwright/compliance"
+ # Files that signal "this project went through the orchestrator pipeline".
+ # Their presence is what distinguishes pipeline-mode security from
+ # standalone-mode security.
+-PIPELINE_MARKER = _sp.rel("project_config")
++PIPELINE_MARKER = _sp.name("project_config")
+ 
+ 
+ def _is_pipeline_mode(project_root: Path) -> bool:
+diff --git a/plugins/shipwright-security/scripts/tools/review_record_tier.py b/plugins/shipwright-security/scripts/tools/review_record_tier.py
+index 792e0fb7d..e3e17ef53 100644
+--- a/plugins/shipwright-security/scripts/tools/review_record_tier.py
++++ b/plugins/shipwright-security/scripts/tools/review_record_tier.py
+@@ -69,10 +69,10 @@ SENSITIVE_PATH_RE = re.compile(
+     r"|\.github/actions/"
+     r"|shared/templates/github-actions/"
+     r"|\.trivyignore(?:\.ya?ml)?$"
+-    r"|" + re.escape(_sp.rel("accepted_risks")) +
++    r"|" + "|".join(map(re.escape, _sp.known_rels("accepted_risks"))) +
+     r"|\.semgrepignore"
+     r"|\.claude/settings\.json"
+-    r"|" + re.escape(_sp.rel("bloat_baseline")) +
++    r"|" + "|".join(map(re.escape, _sp.known_rels("bloat_baseline"))) +
+     r"|scripts/hooks/"
+     r"|scripts/install-hooks\."
+     r")"
+diff --git a/plugins/shipwright-test/scripts/lib/warning_followups.py b/plugins/shipwright-test/scripts/lib/warning_followups.py
+index 9267dc7ec..0ae426fb9 100644
+--- a/plugins/shipwright-test/scripts/lib/warning_followups.py
++++ b/plugins/shipwright-test/scripts/lib/warning_followups.py
+@@ -47,7 +47,7 @@ from text_safety import sanitize  # noqa: E402 — same normalization both produ
+ from warning_followup_items import EMITTERS  # noqa: E402
+ import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
+ 
+-RESULTS_NAME = _sp.rel("test_results")
++RESULTS_NAME = _sp.name("test_results")
+ _TITLE_CAP = 160
+ _DETAIL_CAP = 2000
+ 
+diff --git a/shared/scripts/accepted_risks.py b/shared/scripts/accepted_risks.py
+index 318b9f15b..22ef913cc 100644
+--- a/shared/scripts/accepted_risks.py
++++ b/shared/scripts/accepted_risks.py
+@@ -61,7 +61,7 @@ import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent
+ 
+ #: Repo-root register filename. Follows the ``shipwright_`` config prefix
+ #: convention; YAML (not JSON) because it is hand-written and needs comments.
+-REGISTER_NAME = _sp.rel("accepted_risks")
++REGISTER_NAME = _sp.name("accepted_risks")
+ SCHEMA_VERSION = 1
+ 
+ TARGET_TRIVY_IGNORE = "trivy-ignore"
+diff --git a/shared/scripts/dev_server/profile_config.py b/shared/scripts/dev_server/profile_config.py
+index ff0a555bb..eb3dcfd91 100644
+--- a/shared/scripts/dev_server/profile_config.py
++++ b/shared/scripts/dev_server/profile_config.py
+@@ -37,7 +37,7 @@ def _pkg():
+ # Constants
+ # ---------------------------------------------------------------------------
+ 
+-STATE_FILE = _sp.rel("dev_server")
++STATE_FILE = _sp.name("dev_server")
+ STATE_VERSION = 2
+ 
+ # Default service used if no profile / no build_config / no inline JSON.
+diff --git a/shared/scripts/hooks/generate_handoff_on_stop.py b/shared/scripts/hooks/generate_handoff_on_stop.py
+index 746745b7e..d830a75cf 100644
+--- a/shared/scripts/hooks/generate_handoff_on_stop.py
++++ b/shared/scripts/hooks/generate_handoff_on_stop.py
+@@ -64,7 +64,7 @@ def _import_lib_with_retry(do_import=_do_lib_imports, attempts: int = 20, delay:
+  _phase_tasks_has_usable_entries, _phase_tasks_progress, resolve_run_id,
+  is_shipwright_project, resolve_project_root, _sp) = _import_lib_with_retry()
+ 
+-_RUN_CONFIG_NAME = _sp.rel("run_config")
++_RUN_CONFIG_NAME = _sp.name("run_config")
+ # Matches orchestrator_pkg/run_config_store.py's LOCK_NAME — the same
+ # advisory lock every other shipwright_run_config.json writer coordinates
+ # through. The name comes from the resolver, so the lock cannot drift from the data file.
+diff --git a/shared/scripts/inline_suppression_baseline.py b/shared/scripts/inline_suppression_baseline.py
+index e41be104b..637b919e7 100644
+--- a/shared/scripts/inline_suppression_baseline.py
++++ b/shared/scripts/inline_suppression_baseline.py
+@@ -27,7 +27,7 @@ from inline_suppression_scan import scan_sites
+ import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[0] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
+ 
+ #: Repo-root baseline. Follows the ``shipwright_`` config-file prefix.
+-BASELINE_NAME = _sp.rel("inline_suppressions")
++BASELINE_NAME = _sp.name("inline_suppressions")
+ SCHEMA_VERSION = 1
+ 
+ _ALLOWED_KEYS = frozenset({"rule", "max_sites", "rationale_ref", "statement"})
+diff --git a/shared/scripts/known_failures.py b/shared/scripts/known_failures.py
+index ee173bc04..513920a21 100644
+--- a/shared/scripts/known_failures.py
++++ b/shared/scripts/known_failures.py
+@@ -38,7 +38,7 @@ from dataclasses import dataclass
+ from pathlib import Path
+ import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[0] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
+ 
+-KNOWN_FAILURES_NAME = _sp.rel("known_failures")
++KNOWN_FAILURES_NAME = _sp.name("known_failures")
+ 
+ # A declared id shorter than this is not used for substring matching — a
+ # one- or two-character entry would swallow unrelated failures. Such an entry
+diff --git a/shared/scripts/lib/ac_mode.py b/shared/scripts/lib/ac_mode.py
+index ba5dffefc..6c0cafbbd 100644
+--- a/shared/scripts/lib/ac_mode.py
++++ b/shared/scripts/lib/ac_mode.py
+@@ -23,7 +23,7 @@ __all__ = ["ENV", "MODES", "is_safe_run_id", "marker_path", "read_marker", "reso
+ 
+ ENV = "SHIPWRIGHT_AC_MODE"
+ MODES = ("ask", "auto", "off")
+-CONFIG_FILE = _sp.rel("iterate_config")
++CONFIG_FILE = _sp.name("iterate_config")
+ 
+ 
+ def is_safe_run_id(run_id: object) -> bool:
+diff --git a/shared/scripts/lib/adr_collision_baseline.py b/shared/scripts/lib/adr_collision_baseline.py
+index 54abaaa17..1a8f8d678 100644
+--- a/shared/scripts/lib/adr_collision_baseline.py
++++ b/shared/scripts/lib/adr_collision_baseline.py
+@@ -28,7 +28,7 @@ from pathlib import Path
+ from lib.adr_index import parse_adr_number
+ import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
+ 
+-BASELINE_RELPATH = _sp.rel("adr_collision_baseline")
++BASELINE_RELPATH = _sp.name("adr_collision_baseline")
+ 
+ 
+ def collect_collisions(folder: Path) -> dict[str, list[str]]:
+diff --git a/shared/scripts/lib/artifact_migrations.py b/shared/scripts/lib/artifact_migrations.py
+index fb82522b0..35d5cb749 100644
+--- a/shared/scripts/lib/artifact_migrations.py
++++ b/shared/scripts/lib/artifact_migrations.py
+@@ -154,7 +154,7 @@ ALLOWLIST: dict[str, list[str]] = {
+         # so inline `artifact-path-canon: legacy` markers can't be applied.
+         # Same class as conventions.md (Learnings prose) and architecture.md
+         # / decision_log.md. Added in iterate-2026-05-21-post-43-hygiene.
+-        _sp.rel("test_results"),
++        *_sp.known_rels("test_results"),
+         ".shipwright/compliance/change-history.md",
+         # Generated agent-doc caches (single-producer trio, ADR-089) render
+         # arbitrary text — triage finding detail/launchPayload, iterate/build
+@@ -254,7 +254,7 @@ ALLOWLIST: dict[str, list[str]] = {
+         ".shipwright/agent_docs/decision_log_index.md",
+         ".shipwright/agent_docs/conventions.md",
+         # See "planning" entry for shipwright_test_results.json rationale.
+-        _sp.rel("test_results"),
++        *_sp.known_rels("test_results"),
+         ".shipwright/compliance/change-history.md",
+         # Generated agent-doc caches (single-producer trio, ADR-089) render
+         # arbitrary text — triage finding detail/launchPayload, iterate/build
+@@ -333,7 +333,7 @@ ALLOWLIST: dict[str, list[str]] = {
+         ".shipwright/agent_docs/decision_log_index.md",
+         ".shipwright/agent_docs/conventions.md",
+         # See "planning" entry for shipwright_test_results.json rationale.
+-        _sp.rel("test_results"),
++        *_sp.known_rels("test_results"),
+         ".shipwright/compliance/change-history.md",
+         # Generated agent-doc caches (single-producer trio, ADR-089) render
+         # arbitrary text — triage finding detail/launchPayload, iterate/build
+@@ -361,7 +361,7 @@ ALLOWLIST: dict[str, list[str]] = {
+         ".shipwright/planning/adr/**.md",
+         # Campaign handover / state files (see "planning" entry above).
+         ".shipwright/planning/campaigns/**.md",
+-        _sp.rel("project_config"),
++        *_sp.known_rels("project_config"),
+         # Layer-2 setup-contract test references both paths by design
+         "shared/tests/test_setup_writes_canonical.py",
+         # Edge-case test file that intentionally references both paths (introduced in designs migration)
+@@ -458,7 +458,7 @@ ALLOWLIST: dict[str, list[str]] = {
+         # Same generated-cache class as the agent_docs siblings below.
+         ".shipwright/agent_docs/triage_inbox.md",
+         # See "planning" entry for shipwright_test_results.json rationale.
+-        _sp.rel("test_results"),
++        *_sp.known_rels("test_results"),
+         ".shipwright/compliance/change-history.md",
+         # test-traceability.json is the generated requirement→test manifest
+         # (test_links collector) — a per-iterate churn artifact update_compliance
+@@ -618,7 +618,7 @@ ALLOWLIST: dict[str, list[str]] = {
+         # iterate-2026-08-01-canon-lookbehind-hyphen, which fixed it at the root
+         # (pinned per file in test_artifact_path_canon_manifest_allowlist.py).
+         "shared/contracts/**",
+-        _sp.rel("bloat_baseline"),
++        *_sp.known_rels("bloat_baseline"),
+     ],
+ }
+ 
+diff --git a/shared/scripts/lib/bloat_baseline.py b/shared/scripts/lib/bloat_baseline.py
+index 12615688c..db0505c3e 100644
+--- a/shared/scripts/lib/bloat_baseline.py
++++ b/shared/scripts/lib/bloat_baseline.py
+@@ -43,7 +43,7 @@ import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent
+ # Constants
+ # ---------------------------------------------------------------------
+ 
+-BASELINE_FILENAME = _sp.rel("bloat_baseline")
++BASELINE_FILENAME = _sp.name("bloat_baseline")
+ MARKER_TTL_SECONDS = 3600  # 1 hour — campaign §5.2
+ 
+ LIMIT_RUNTIME_PROMPT = 400
+diff --git a/shared/scripts/lib/brief_dir_intake.py b/shared/scripts/lib/brief_dir_intake.py
+index 75784f062..487a86cd7 100644
+--- a/shared/scripts/lib/brief_dir_intake.py
++++ b/shared/scripts/lib/brief_dir_intake.py
+@@ -34,7 +34,7 @@ import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent
+ 
+ FIXTURE_ENV = "SHIPWRIGHT_ACCEPT_FIXTURE_APPROVAL"
+ FIXTURE_PREFIX = "fixture:"
+-CONFIG_NAME = _sp.rel("run_config")
++CONFIG_NAME = _sp.name("run_config")
+ _LIB = Path(__file__).resolve().parent
+ _PKG = "_shipwright_brief_dir_lib"
+ _SHA_RE = re.compile(r"[0-9a-f]{64}")
+diff --git a/shared/scripts/lib/change_type_paths.py b/shared/scripts/lib/change_type_paths.py
+index 81215f060..b2d027156 100644
+--- a/shared/scripts/lib/change_type_paths.py
++++ b/shared/scripts/lib/change_type_paths.py
+@@ -60,7 +60,7 @@ SHAPE_SHIPWRIGHT_MONOREPO = "shipwright-monorepo"
+ #: Shipwright's own finalization records, written by every iterate.
+ _BOOKKEEPING = (
+     ".shipwright/**", "CHANGELOG-unreleased.d/**", "CHANGELOG.md",
+-    _sp.rel("events"), _sp.rel("test_results"),
++    _sp.rel("events"), *_sp.known_rels("test_results"),
+     ".shipwright/events/drops/**", ".shipwright/events/archive/**", ".shipwright/events/quarantine/**",
+ )
+ _DOCS = (
+@@ -78,7 +78,7 @@ _TOOLING = (
+     ".editorconfig", ".pre-commit-config.yaml", "ruff.toml", ".ruff.toml", "pyproject.toml",
+     ".eslintrc*", "eslint.config.*", ".prettierrc*", "prettier.config.*", ".prettierignore",
+     "vitest.config.*", "jest.config.*", "playwright.config.*", "pytest.ini", "tox.ini",
+-    "noxfile.py", "Makefile", "justfile", *_sp.family_globs(), _sp.rel("audit_config"),
++    "noxfile.py", "Makefile", "justfile", *_sp.family_globs(), *_sp.known_rels("audit_config"),
+ )
+ _INFRA = (
+     ".github/**", ".gitlab-ci.yml", ".circleci/**", "Dockerfile*", "**/Dockerfile*",
+@@ -89,13 +89,18 @@ _INFRA = (
+     "pnpm-workspace.yaml", "yarn.lock", ".npmrc", ".nvmrc", ".python-version",
+     "tsconfig*.json", "vite.config.*", "vercel.json", "netlify.toml", "fly.toml",
+     "Procfile", ".env.example", "renovate.json", "scripts/**", *_sp.family_globs(),
+-    _sp.rel("audit_config"), ".trivyignore*",
++    *_sp.known_rels("audit_config"), ".trivyignore*",
+ )
+ _COMPLIANCE = (
+     "SECURITY.md", ".semgrep*", ".semgrep/**", ".gitleaks*", ".trivyignore*",
+     ".github/workflows/**", ".github/codeql/**", "THIRD_PARTY*", "**/sbom*",
+-    *_sp.family_globs(), _sp.rel("audit_config"),
++    *_sp.family_globs(), *_sp.known_rels("audit_config"),
+ )
++#: A moving root file in either place is judged as the root file it is (R1c-3): otherwise its new place,
++#: inside the ``.shipwright`` tree, would fall under the blanket ``.shipwright/**`` bookkeeping that every label
++#: covers, and a ``docs`` iterate could edit a baseline or a risk register it may not touch at the root.
++_AS_ROOT = {where: _sp.name(key) for key in _sp.keys_of(moves=True) if _sp.name(key) in _sp.known_rels(key)
++            for where in _sp.known_rels(key) if where != _sp.name(key)}   # root files only; the root itself unchanged
+ #: The requirement catalogs: ``lib.requirement_impact.is_requirement_spec`` (a split's
+ #: ``spec.md``, never an iterate's own ``iterate/<run_id>/spec.md``) plus the greenfield
+ #: catalog ``.shipwright/agent_docs/spec.md``. Editing
+@@ -202,6 +207,6 @@ def unclassified_paths(paths, change_type: str, shape: str) -> list[str]:
+         path = str(raw).replace("\\", "/").strip()
+         while path.startswith("./"):
+             path = path[2:]
+-        if path and not _covered(path, change_type, shape, patterns):
++        if path and not _covered(_AS_ROOT.get(path, path), change_type, shape, patterns):
+             out.add(path)
+     return sorted(out)
+diff --git a/shared/scripts/lib/churn_merge.py b/shared/scripts/lib/churn_merge.py
+index 9e159bdc5..f40713876 100644
+--- a/shared/scripts/lib/churn_merge.py
++++ b/shared/scripts/lib/churn_merge.py
+@@ -40,6 +40,7 @@ DERIVED_MDS: frozenset[str] = COMPLIANCE_MDS | AGENT_DOC_MDS
+ 
+ EVENTS_LOG = _sp.rel("events")
+ TEST_RESULTS = _sp.rel("test_results")
++TEST_RESULTS_RELS: tuple[str, ...] = _sp.known_rels("test_results")  # both places: what a set must recognise (R1c-3)
+ #: The triage backlog — an append-only JSONL log tracked since campaign
+ #: 2026-06-05-track-triage-jsonl (C). Reconciled like ``EVENTS_LOG`` but with a
+ #: triage-specific dedup whose id-collision rule differs from the events one —
+@@ -99,7 +100,7 @@ THROUGHPUT_REPORT = ".shipwright/compliance/performance/iterate-throughput.md"
+ #: NOTE: ``.shipwright/agent_docs/architecture.md`` is intentionally absent
+ #: (curated prose — must reach a human; folds external-review G4/O1).
+ CHURN_ALLOWLIST: frozenset[str] = DERIVED_MDS | {
+-    EVENTS_LOG, TEST_RESULTS, TRIAGE_LOG, CI_SECURITY_SUMMARY, TEST_TRACEABILITY,
++    EVENTS_LOG, *TEST_RESULTS_RELS, TRIAGE_LOG, CI_SECURITY_SUMMARY, TEST_TRACEABILITY,
+     ADR_INDEX, DECISION_LOG_INDEX, THROUGHPUT_REPORT,
+ }
+ 
+diff --git a/shared/scripts/lib/compliance_refresh.py b/shared/scripts/lib/compliance_refresh.py
+index 68d2c1dfc..399e66c37 100644
+--- a/shared/scripts/lib/compliance_refresh.py
++++ b/shared/scripts/lib/compliance_refresh.py
+@@ -34,7 +34,7 @@ from __future__ import annotations
+ from lib.churn_merge import (
+     CI_SECURITY_SUMMARY,
+     COMPLIANCE_MDS,
+-    TEST_RESULTS,
++    TEST_RESULTS_RELS,
+     TEST_TRACEABILITY,
+     THROUGHPUT_REPORT,
+ )
+@@ -96,7 +96,7 @@ CLASSIFICATION: dict[str, str] = {
+     CI_SECURITY_SUMMARY: DERIVES_FROM_CI_HISTORY,
+     ".shipwright/agent_docs/build_dashboard.md": SESSION_SCOPED,
+     ".shipwright/agent_docs/session_handoff.md": SESSION_SCOPED,
+-    TEST_RESULTS: RUN_WRITTEN,
++    **dict.fromkeys(TEST_RESULTS_RELS, RUN_WRITTEN),  # either place (R1c-3)
+     THROUGHPUT_REPORT: DERIVES_FROM_TREE,
+ }
+ 
+@@ -139,9 +139,9 @@ EXCLUDED: dict[str, str] = {
+         "recomputed by the release phase (PHASE_REPORTS['changelog'] does not name it). "
+         "Excluded by the operator's scope pin, NOT by a classification claim — widening "
+         "the set to include it is a decision, not a fix",
+-    TEST_RESULTS:
++    **dict.fromkeys(TEST_RESULTS_RELS,
+         "run_written — a run writes it and nothing can recompute it (trg-ad29a709, "
+-        "PR #502). Regenerating it would destroy the F5 ledger, not refresh a view",
++        "PR #502). Regenerating it would destroy the F5 ledger, not refresh a view"),
+     THROUGHPUT_REPORT: "tree-derived, but by its OWN producer — same scope pin as triage_inbox.md",
+ }
+ 
+diff --git a/shared/scripts/lib/config.py b/shared/scripts/lib/config.py
+index 1f56e3706..923edf273 100644
+--- a/shared/scripts/lib/config.py
++++ b/shared/scripts/lib/config.py
+@@ -21,18 +21,11 @@ from .events_log import EVENT_FILE
+ from .events_read import AssembledRead, read_events_assembled
+ import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
+ 
+-CONFIG_FILES = {
+-    "run": _sp.rel("run_config"),
+-    "project": _sp.rel("project_config"),
+-    "plan": _sp.rel("plan_config"),
+-    "build": _sp.rel("build_config"),
+-    "security": _sp.rel("security_config"),
+-    "compliance": _sp.rel("compliance_config"),
+-    "events": EVENT_FILE,
+-}
+ #: skill -> resolver key; a moving config is found in either layout through ``_sp.path`` (R1c-2)
+ CONFIG_KEYS = {"run": "run_config", "project": "project_config", "plan": "plan_config", "build": "build_config",
+                "security": "security_config", "compliance": "compliance_config"}
++#: skill -> FILE NAME (a label, never a path to join: ``get_config_path`` resolves it); derived (R1c-3)
++CONFIG_FILES = {**{skill: _sp.name(key) for skill, key in CONFIG_KEYS.items()}, "events": EVENT_FILE}
+ 
+ 
+ def get_config_path(skill: str, project_root: str | Path) -> Path:
+diff --git a/shared/scripts/lib/event_context_query.py b/shared/scripts/lib/event_context_query.py
+index ab1223b39..53d6f6b8e 100644
+--- a/shared/scripts/lib/event_context_query.py
++++ b/shared/scripts/lib/event_context_query.py
+@@ -96,7 +96,7 @@ def resolve_mode(project_root: Path | str, requested: str | None = None) -> tupl
+         config = json.loads(config_path.read_text(encoding="utf-8"))
+         value = config.get("events_context", {}).get("mode", "compact")
+         if value in MODES:
+-            return value, _sp.rel("iterate_config")
++            return value, _sp.name("iterate_config")
+     except (OSError, UnicodeError, json.JSONDecodeError, AttributeError):
+         pass
+     return "compact", "default"
+diff --git a/shared/scripts/lib/events_fold.py b/shared/scripts/lib/events_fold.py
+index 323c58226..f8fe9fc0a 100644
+--- a/shared/scripts/lib/events_fold.py
++++ b/shared/scripts/lib/events_fold.py
+@@ -39,7 +39,7 @@ from .file_lock import FileLock
+ import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
+ 
+ FOLD_AGE_DAYS = 14
+-SYNC_CONFIG = _sp.rel("sync_config")
++SYNC_CONFIG = _sp.name("sync_config")
+ 
+ 
+ @dataclass
+diff --git a/shared/scripts/lib/events_layout.py b/shared/scripts/lib/events_layout.py
+index df4592ae1..aadf22ca7 100644
+--- a/shared/scripts/lib/events_layout.py
++++ b/shared/scripts/lib/events_layout.py
+@@ -55,7 +55,7 @@ from .jsonl_records import ends_without_newline
+ from .events_sentinel import require_writable_layout
+ import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
+ 
+-SYNC_CONFIG = _sp.rel("sync_config")
++SYNC_CONFIG = _sp.name("sync_config")
+ LAYOUTS = ("legacy", "drops")
+ 
+ ENV_LAYOUT = "SHIPWRIGHT_EVENTS_LAYOUT"
+diff --git a/shared/scripts/lib/events_sentinel.py b/shared/scripts/lib/events_sentinel.py
+index 6f2f3141e..500fdb06e 100644
+--- a/shared/scripts/lib/events_sentinel.py
++++ b/shared/scripts/lib/events_sentinel.py
+@@ -25,7 +25,7 @@ from pathlib import Path
+ import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
+ 
+ SUPPORTED_LAYOUTS = ("legacy", "drops")
+-SYNC_CONFIG = _sp.rel("sync_config")
++SYNC_CONFIG = _sp.name("sync_config")
+ DROPS_DIR = ".shipwright/events/drops"
+ UPDATE_HINT = "Update the Shipwright plugins to a version that supports this layout."
+ #: Where the event folders lived before they moved under ``.shipwright/events/`` (old root name -> new name).
+diff --git a/shared/scripts/lib/external_review_config.py b/shared/scripts/lib/external_review_config.py
+index 4c5997aea..969737397 100644
+--- a/shared/scripts/lib/external_review_config.py
++++ b/shared/scripts/lib/external_review_config.py
+@@ -70,7 +70,7 @@ _OPUS_LEG_PROVIDERS: set[str] = {"claude_cli", "openrouter"}
+ _ENV_OVERRIDE_PREFIX = "SHIPWRIGHT_REVIEW_MODEL_"
+ 
+ 
+-_PROJECT_ITERATE_CONFIG_NAME = _sp.rel("iterate_config")
++_PROJECT_ITERATE_CONFIG_NAME = _sp.name("iterate_config")
+ 
+ 
+ def _deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
+diff --git a/shared/scripts/lib/gate_policy.py b/shared/scripts/lib/gate_policy.py
+index 860de1363..fbd01e16b 100644
+--- a/shared/scripts/lib/gate_policy.py
++++ b/shared/scripts/lib/gate_policy.py
+@@ -56,7 +56,7 @@ INERT_MODE = "standalone"
+ _REQUIRED_GATE_KEYS = ("id", "phase", "policy", "default_answer", "constitution", "fires", "summary")
+ 
+ _CATALOG_PATH = Path(__file__).resolve().parents[2] / "config" / "gate_catalog.json"
+-_CONFIG_NAME = _sp.rel("run_config")
++_CONFIG_NAME = _sp.name("run_config")
+ 
+ 
+ class GateCatalogError(ValueError):
+diff --git a/shared/scripts/lib/iterate_entry.py b/shared/scripts/lib/iterate_entry.py
+index f6537fe52..14c6cd571 100644
+--- a/shared/scripts/lib/iterate_entry.py
++++ b/shared/scripts/lib/iterate_entry.py
+@@ -41,7 +41,7 @@ ITERATE_FILE_PREFIX = "iterate-"
+ ITERATE_FILE_SUFFIX = ".json"
+ QUARANTINE_SUBDIR = "_quarantine"
+ META_SUBDIR = "_meta"
+-RUN_CONFIG_NAME = _sp.rel("run_config")
++RUN_CONFIG_NAME = _sp.name("run_config")
+ 
+ # Config keys that persist migration state
+ MIGRATION_STATE_KEY = "_iterate_migration_state"
+diff --git a/shared/scripts/lib/iterate_test_results.py b/shared/scripts/lib/iterate_test_results.py
+index 840f2507e..1b07ac892 100644
+--- a/shared/scripts/lib/iterate_test_results.py
++++ b/shared/scripts/lib/iterate_test_results.py
+@@ -15,7 +15,7 @@ from .iterate_entry import RUN_ID_STRICT, iterates_dir
+ import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
+ 
+ 
+-RESULTS_FILENAME = _sp.rel("test_results")
++RESULTS_FILENAME = _sp.name("test_results")
+ EVIDENCE_SUFFIX = ".test-results.json"
+ 
+ 
+diff --git a/shared/scripts/lib/iterate_tests_block.py b/shared/scripts/lib/iterate_tests_block.py
+index c79f15c9c..fae300e61 100644
+--- a/shared/scripts/lib/iterate_tests_block.py
++++ b/shared/scripts/lib/iterate_tests_block.py
+@@ -41,7 +41,7 @@ from tests_block import validate_tests_block  # noqa: E402
+ import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
+ 
+ #: Results file written by F5, read here at F5b.
+-RESULTS_FILENAME = _sp.rel("test_results")
++RESULTS_FILENAME = _sp.name("test_results")
+ 
+ #: Layers whose counts are summed into the event block. ``e2e`` is summed too
+ #: (see :func:`derive_tests_block`) but is tracked separately for ``e2e_run``.
+diff --git a/shared/scripts/lib/manifest_sync_paths.py b/shared/scripts/lib/manifest_sync_paths.py
+index 5fc68ab70..863bab195 100644
+--- a/shared/scripts/lib/manifest_sync_paths.py
++++ b/shared/scripts/lib/manifest_sync_paths.py
+@@ -18,7 +18,7 @@ import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent
+ 
+ __all__ = ["CONFIG_NAME", "load_declared_manifests", "resolve_contained_path"]
+ 
+-CONFIG_NAME = _sp.rel("changelog_config")
++CONFIG_NAME = _sp.name("changelog_config")
+ 
+ _DRIVE_LETTER_RE = re.compile(r"^[A-Za-z]:")
+ 
+diff --git a/shared/scripts/lib/model_tier_config.py b/shared/scripts/lib/model_tier_config.py
+index 2e425756b..75a4466cf 100644
+--- a/shared/scripts/lib/model_tier_config.py
++++ b/shared/scripts/lib/model_tier_config.py
+@@ -80,7 +80,7 @@ RANKED_TIERS: frozenset[str] = frozenset({"opus", "sonnet", "haiku"})
+ #: Rank order low-to-high, for floor comparisons.
+ RANK: dict[str, int] = {"haiku": 1, "sonnet": 2, "opus": 3}
+ 
+-_CONFIG_FILENAME = _sp.rel("model_config")
++_CONFIG_FILENAME = _sp.name("model_config")
+ 
+ 
+ class ModelTierConfigError(ValueError):
+diff --git a/shared/scripts/lib/phase_invocation_mode.py b/shared/scripts/lib/phase_invocation_mode.py
+index 52780570c..54505dd7c 100644
+--- a/shared/scripts/lib/phase_invocation_mode.py
++++ b/shared/scripts/lib/phase_invocation_mode.py
+@@ -44,7 +44,7 @@ import re
+ from pathlib import Path
+ import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p); from typing import Any, Optional
+ 
+-CONFIG_NAME = _sp.rel("run_config")
++CONFIG_NAME = _sp.name("run_config")
+ 
+ # An unsubstituted prompt template: `{phaseTaskId}`, `<phaseTaskId>`, `${...}`, `{{...}}`.
+ _PLACEHOLDER_RE = re.compile(r"^[\$]?[{<]{1,2}[^}>]*[}>]{1,2}$")
+diff --git a/shared/scripts/lib/project_root.py b/shared/scripts/lib/project_root.py
+index fcfcc7594..c1ec28a1d 100644
+--- a/shared/scripts/lib/project_root.py
++++ b/shared/scripts/lib/project_root.py
+@@ -24,7 +24,7 @@ import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent
+ # project. ``shipwright_run_config.json`` stays first (the canonical primary)
+ # but it carries no special weight in :func:`is_shipwright_project`.
+ CONFIG_MARKERS: tuple[str, ...] = (
+-    *_sp.names_of(marker=True),   # run, project, plan, build config + the event log
++    *_sp.all_known_rels(marker=True),   # run, project, plan, build config (either place, R1c-3) + the event log
+     ".shipwright/events/drops",           # the drops layout leaves no legacy file behind
+     ".shipwright/events/archive",
+     ".shipwright/events/quarantine",
+diff --git a/shared/scripts/lib/required_checks_drift.py b/shared/scripts/lib/required_checks_drift.py
+index 2c27af0b3..5a80fafa7 100644
+--- a/shared/scripts/lib/required_checks_drift.py
++++ b/shared/scripts/lib/required_checks_drift.py
+@@ -38,7 +38,7 @@ ADVISORY_CONTEXTS: frozenset[str] = frozenset()
+ 
+ # Where a consumer repo records its own "deliberately not required" decision:
+ # a top-level list of check names in the run config every Shipwright project has.
+-ADVISORY_CONFIG_FILE = _sp.rel("run_config")
++ADVISORY_CONFIG_FILE = _sp.name("run_config")
+ ADVISORY_CONFIG_KEY = "required_checks_advisory"
+ 
+ 
+diff --git a/shared/scripts/lib/review_diff_threshold.py b/shared/scripts/lib/review_diff_threshold.py
+index 629772884..83947bcc3 100644
+--- a/shared/scripts/lib/review_diff_threshold.py
++++ b/shared/scripts/lib/review_diff_threshold.py
+@@ -56,7 +56,7 @@ UNCOUNTED_PREFIXES: tuple[str, ...] = (
+ #: Root-level ledgers that F5 / F5b rewrite on every run.
+ UNCOUNTED_FILES: frozenset[str] = frozenset({
+     _sp.rel("events"),
+-    _sp.rel("test_results"),
++    *_sp.known_rels("test_results"),
+ })
+ 
+ 
+diff --git a/shared/scripts/lib/section_file_list.py b/shared/scripts/lib/section_file_list.py
+index 165c68dc5..eb4698414 100644
+--- a/shared/scripts/lib/section_file_list.py
++++ b/shared/scripts/lib/section_file_list.py
+@@ -76,7 +76,7 @@ FRAMEWORK_BOOKKEEPING: tuple[str, ...] = (
+     ".shipwright/events/drops/",
+     ".shipwright/events/archive/",
+     ".shipwright/events/quarantine/",
+-    _sp.rel("build_config"),
++    *_sp.known_rels("build_config"),
+     "design-fidelity-report.json",
+ )
+ #: Prose placeholders an LLM writes when a section declares no files. Kept as a
+diff --git a/shared/scripts/lib/shipwright_paths.py b/shared/scripts/lib/shipwright_paths.py
+index 3c2228353..aa39c58a3 100644
+--- a/shared/scripts/lib/shipwright_paths.py
++++ b/shared/scripts/lib/shipwright_paths.py
+@@ -215,12 +215,12 @@ def keys_of(kinds: Iterable[str] | None = None, *, moves: bool | None = None,
+ def snapshot_paths(kind: str = DERIVED) -> frozenset[str]:
+     """Paths of *kind* that must not enter an iterate commit (``DERIVED_SNAPSHOTS`` / ``RESTORABLE_SNAPSHOTS``).
+     R1 emits BOTH the legacy and the new path for kind ``derived`` until R4 (BRIEF 4.7.6)."""
+-    return frozenset(names_of((kind,)))
++    return frozenset(all_known_rels((kind,)))
+ 
+ 
+ def run_written_paths() -> frozenset[str]:
+-    """Snapshot paths a run writes and nothing can re-derive (excluded from the mid-run restore)."""
+-    return frozenset(x.basename for x in _SPECS if x.run_written and not x.retired)
++    """Snapshot paths a run writes and nothing can re-derive (excluded from the mid-run restore), both places."""
++    return frozenset(r for x in _SPECS if x.run_written and not x.retired for r in known_rels(x.key))
+ 
+ 
+ def all_basenames() -> frozenset[str]:
+diff --git a/shared/scripts/profile_consumer.py b/shared/scripts/profile_consumer.py
+index aa36477fa..06ae4da6b 100644
+--- a/shared/scripts/profile_consumer.py
++++ b/shared/scripts/profile_consumer.py
+@@ -33,7 +33,7 @@ import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent
+ if _ADDED:
+     sys.path.remove(_HERE)
+ 
+-RUN_CONFIG = _sp.rel("run_config")
++RUN_CONFIG = _sp.name("run_config")
+ SENTINELS = pr.SENTINELS
+ 
+ 
+diff --git a/shared/scripts/project_facts.py b/shared/scripts/project_facts.py
+index a985feb84..62d93cd76 100644
+--- a/shared/scripts/project_facts.py
++++ b/shared/scripts/project_facts.py
+@@ -18,7 +18,7 @@ import json
+ from pathlib import Path
+ import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[0] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
+ 
+-RUN_CONFIG_NAME = _sp.rel("run_config")
++RUN_CONFIG_NAME = _sp.name("run_config")
+ 
+ 
+ def read_run_config(project_root: Path | str) -> dict:
+diff --git a/shared/scripts/tools/append_phase_history.py b/shared/scripts/tools/append_phase_history.py
+index d70b50e44..4f164e716 100644
+--- a/shared/scripts/tools/append_phase_history.py
++++ b/shared/scripts/tools/append_phase_history.py
+@@ -70,7 +70,7 @@ import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent
+ 
+ 
+ RETENTION_PER_PHASE = 50
+-RUN_CONFIG_NAME = _sp.rel("run_config")
++RUN_CONFIG_NAME = _sp.name("run_config")
+ 
+ 
+ def append_history(
+diff --git a/shared/scripts/tools/check_ac_coverage_ratchet.py b/shared/scripts/tools/check_ac_coverage_ratchet.py
+index 423218914..6169bae05 100644
+--- a/shared/scripts/tools/check_ac_coverage_ratchet.py
++++ b/shared/scripts/tools/check_ac_coverage_ratchet.py
+@@ -54,7 +54,7 @@ EXIT_OK = 0
+ EXIT_BLOCKED = 1
+ EXIT_INFRA = 2
+ 
+-BASELINE_RELPATH = _sp.rel("ac_coverage_baseline")
++BASELINE_RELPATH = _sp.name("ac_coverage_baseline")
+ 
+ 
+ def _emit(payload: dict, code: int) -> int:
+diff --git a/shared/scripts/tools/check_ac_ratchet_f0.py b/shared/scripts/tools/check_ac_ratchet_f0.py
+index c9b6cf948..81603b7f5 100644
+--- a/shared/scripts/tools/check_ac_ratchet_f0.py
++++ b/shared/scripts/tools/check_ac_ratchet_f0.py
+@@ -54,7 +54,7 @@ EXIT_INFRA = 2
+ 
+ _RATCHET = Path(__file__).resolve().parent / "check_ac_coverage_ratchet.py"
+ _COMPLIANCE_PLUGIN = Path("plugins") / "shipwright-compliance"
+-_BASELINE = _sp.rel("ac_coverage_baseline")
++_BASELINE = _sp.name("ac_coverage_baseline")
+ _TIMEOUT_SECONDS = 900
+ 
+ 
+diff --git a/shared/scripts/tools/compliance_input_state.py b/shared/scripts/tools/compliance_input_state.py
+index dba24e815..22a4b5bfa 100644
+--- a/shared/scripts/tools/compliance_input_state.py
++++ b/shared/scripts/tools/compliance_input_state.py
+@@ -48,7 +48,7 @@ __all__ = ["APPEND_ONLY_INPUTS", "PRODUCER_STATE", "event_folder_files", "produc
+ #: rewrites the compliance config unconditionally. Hashing the derived paths while
+ #: letting these drift proves a fixpoint of a projection, not of the producer.
+ PRODUCER_STATE: tuple[str, ...] = (
+-    EVENTS_LOG, TRIAGE_LOG, _sp.rel("compliance_config"),
++    EVENTS_LOG, TRIAGE_LOG, *_sp.known_rels("compliance_config"),
+ )
+ 
+ #: The subset of :data:`PRODUCER_STATE` that is an APPEND-ONLY log, handled
+@@ -88,7 +88,8 @@ def event_folder_files(root: Path) -> list[str]:
+ def producer_inputs(root: Path) -> tuple[str, ...]:
+     """:data:`PRODUCER_STATE` (the config where it lives, R1c-2) plus every event folder file that exists now."""
+     cfg = _sp.path("compliance_config", root).relative_to(root).as_posix()
+-    return tuple(cfg if r == _sp.rel("compliance_config") else r for r in PRODUCER_STATE) + tuple(event_folder_files(root))
++    both = _sp.known_rels("compliance_config")   # PRODUCER_STATE holds both places; one input: where it lives
++    return tuple(dict.fromkeys(cfg if r in both else r for r in PRODUCER_STATE)) + tuple(event_folder_files(root))
+ 
+ 
+ def snapshot(root: Path, rels) -> dict[str, bytes | None]:
+diff --git a/shared/scripts/tools/fold_events.py b/shared/scripts/tools/fold_events.py
+index b1cb5ecd9..c01bbf6c1 100644
+--- a/shared/scripts/tools/fold_events.py
++++ b/shared/scripts/tools/fold_events.py
+@@ -36,21 +36,23 @@ REFUSED = ("conflict", "changed_since_plan", "archive_incomplete", "copy_mismatc
+            "folded_incomplete", "folded_into_legacy_incomplete", "quarantined_incomplete")   # the last three: a file could not be deleted
+ 
+ 
+-def _stage_paths(result: dict) -> list[str]:
++def _stage_paths(result: dict, root: str) -> list[str]:
+     """Exactly what the tool changed (never a folder-level add: other runs may have untracked drops there)."""
+     status, paths = result.get("status", ""), []
++    def sync() -> str:   # where the fold wrote it (R1c-3); resolved only when staged, so a fold that never
++        return _sp.path("sync_config", Path(root)).relative_to(Path(root)).as_posix()   # touches it cannot fail
+     if status.startswith("folded"):   # also *_incomplete: staged as far as it got, the finishing re-run (same command) stages the rest
+         paths.append(f"{DROPS_DIR}/{KEEP_NAME}")
+         paths += [f"{DROPS_DIR}/{n}" for n in result.get("folded_files", [])]
+         paths += [result["archive"]] if result.get("archive") else []
+         paths += result.get("removed_files", [])
+         if result.get("mode") == "emergency" or status == "folded_into_legacy":
+-            paths.append(_sp.rel("sync_config"))
++            paths.append(sync())
+         paths += [result["legacy_log"]] if result.get("legacy_log") else []
+     if status.startswith("quarantined"):
+         paths += [f"{folder}/{n}" for folder in (QUARANTINE_DIR, DROPS_DIR) for n in result.get("files", [])]
+     if status == "nothing_to_fold" and result.get("mode") == "emergency":
+-        paths.append(_sp.rel("sync_config"))   # an emergency fold with nothing left still resets the layout
++        paths.append(sync())   # an emergency fold with nothing left still resets the layout
+     return paths
+ 
+ 
+@@ -104,7 +106,7 @@ def main(argv: list[str] | None = None) -> int:
+     try:
+         result = _run(a)
+         if a.stage and not a.dry_run:
+-            _stage(a.project_root, _stage_paths(result))
++            _stage(a.project_root, _stage_paths(result, a.project_root))
+     except (GitError, ValueError, TypeError, OSError) as exc:
+         print(json.dumps({"status": "error", "error": str(exc)}))
+         return 2
+diff --git a/shared/scripts/tools/fold_events_for_release.py b/shared/scripts/tools/fold_events_for_release.py
+index 829bccf4e..b4b3fdb6d 100644
+--- a/shared/scripts/tools/fold_events_for_release.py
++++ b/shared/scripts/tools/fold_events_for_release.py
+@@ -187,7 +187,7 @@ def _commit_fold(root: str, result: dict, max_age_days: int, existed: frozenset[
+     """Stage and commit what the fold touched; any failure on the way puts the tree back (the fold already moved files).
+ 
+     Whether the commit happened is decided by HEAD, not by the exit code of a hook that may have run after it."""
+-    touched = _stage_paths(result)
++    touched = _stage_paths(result, root)
+     before, reason, count = _head(root), "", len(result.get("folded_files", []))
+     try:
+         known = _stage(root, touched)
+diff --git a/shared/scripts/tools/fr_split.py b/shared/scripts/tools/fr_split.py
+index 212871fa8..afb3b5943 100644
+--- a/shared/scripts/tools/fr_split.py
++++ b/shared/scripts/tools/fr_split.py
+@@ -38,9 +38,9 @@ from lib.fr_split_spec import SplitError, split_spec, taken_fr_numbers  # noqa:
+ from lib.fr_split_tags import rewrite_tags  # noqa: E402
+ import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[1] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
+ 
+-BASELINE = _sp.rel("ac_coverage_baseline")
++BASELINE = _sp.name("ac_coverage_baseline")
+ MANIFEST = ".shipwright/compliance/test-traceability.json"
+-REGISTRY = _sp.rel("ac_registry")
++REGISTRY = _sp.name("ac_registry")
+ NL = chr(10)
+ _BASELINE_ITEM = re.compile(r'^(\s*)"(FR-\d+\.\d+/AC\d+)"(,?)(\r?)$')
+ _REGEN = ("import sys\nfrom pathlib import Path\nsys.path.insert(0, sys.argv[1])\n"
+diff --git a/shared/scripts/tools/generate_session_handoff.py b/shared/scripts/tools/generate_session_handoff.py
+index 022448b3e..828dda23b 100644
+--- a/shared/scripts/tools/generate_session_handoff.py
++++ b/shared/scripts/tools/generate_session_handoff.py
+@@ -23,7 +23,7 @@ from typing import Callable
+ # Add shared lib to path
+ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+ 
+-from lib.config import CONFIG_FILES, read_all_configs, read_events
++from lib.config import get_config_path, read_all_configs, read_events
+ from lib.events_log import latest_event_dt
+ from lib.events_read import sorted_by_ts
+ from lib.handoff_iterate import render_iterate_progress
+@@ -427,7 +427,8 @@ def generate_handoff(
+         if skill == "events":
+             continue  # Listed separately below
+         status = "exists" if config else "missing"
+-        lines.append(f"- `{CONFIG_FILES[skill]}` — {status}")  # repo-relative: follows the file when it moves
++        where = Path(get_config_path(skill, project_root)).relative_to(Path(project_root)).as_posix()
++        lines.append(f"- `{where}` — {status}")  # repo-relative: the place the file lives (R1c-3)
+ 
+     # Event log section (if exists)
+     events = read_events(project_root)
+diff --git a/shared/scripts/tools/get_phase_context.py b/shared/scripts/tools/get_phase_context.py
+index 532f85527..e0a1aca35 100644
+--- a/shared/scripts/tools/get_phase_context.py
++++ b/shared/scripts/tools/get_phase_context.py
+@@ -84,39 +84,53 @@ EXIT_UNRESOLVED_TOKEN = 2
+ # ---------------------------------------------------------------------------
+ 
+ # Maps each phase to (a) its own primary config file and (b) artifact paths
+-# its predecessors typically produce. Intentionally minimal — F5 will tune
++# its predecessors typically produce. A bare registry key (``"plan_config"``) is
++# resolved per project by :func:`_where` (R1c-3: the place the file lives now). Intentionally minimal — F5 will tune
+ # per-skill based on what each Skill actually needs to read.
+ PHASE_OWN_ARTIFACTS: dict[str, list[str]] = {
+     "project": [".shipwright/planning/requirements.md"],
+-    "design": [".shipwright/designs/", _sp.rel("design_config")],
+-    "plan": [".shipwright/agent_docs/sections/", _sp.rel("plan_config")],
+-    "build": [_sp.rel("build_config")],
+-    "test": [_sp.rel("test_results")],
++    "design": [".shipwright/designs/", "design_config"],
++    "plan": [".shipwright/agent_docs/sections/", "plan_config"],
++    "build": ["build_config"],
++    "test": ["test_results"],
+     "security": [".shipwright/compliance/security-scan-report.md"],
+     "changelog": ["CHANGELOG.md"],
+-    "deploy": [_sp.rel("deploy_config")],
++    "deploy": ["deploy_config"],
+ }
+ 
+ # What predecessor artifacts this phase typically reads.
+ PHASE_PREREQ_ARTIFACTS: dict[str, list[str]] = {
+-    "design": [".shipwright/planning/requirements.md", _sp.rel("project_config")],
+-    "plan": [".shipwright/planning/requirements.md", _sp.rel("design_config"),
++    "design": [".shipwright/planning/requirements.md", "project_config"],
++    "plan": [".shipwright/planning/requirements.md", "design_config",
+              ".shipwright/designs/"],
+-    "build": [".shipwright/agent_docs/sections/", _sp.rel("plan_config")],
+-    "test": [_sp.rel("build_config")],
+-    "security": [_sp.rel("test_results")],
+-    "changelog": [_sp.rel("test_results")],
++    "build": [".shipwright/agent_docs/sections/", "plan_config"],
++    "test": ["build_config"],
++    "security": ["test_results"],
++    "changelog": ["test_results"],
+     "deploy": ["CHANGELOG.md"],
+ }
+ 
+ 
+-def _suggest_artifacts(phase: str, split_id: Optional[str]) -> list[str]:
++def _where(entries: list[str], project_root: Path) -> list[str]:
++    """Repo-relative paths: a registry key becomes the place its file lives (two copies: the root name)."""
++    out = []
++    for e in entries:
++        if e in _sp.SPECS:
++            try:
++                e = _sp.path(e, project_root).relative_to(project_root).as_posix()
++            except _sp.LayoutError:   # never raises: the reader that opens it reports the two copies
++                e = _sp.name(e)
++        out.append(e)
++    return out
++
++
++def _suggest_artifacts(phase: str, split_id: Optional[str], project_root: Path) -> list[str]:
+     """Return a deduplicated list of artifact paths the Skill should read.
+ 
+     Combines the phase's prerequisite artifacts with split-scoped subdirs
+     when applicable (e.g. build/01-core reads .shipwright/agent_docs/sections/01-core/).
+     """
+-    paths: list[str] = list(PHASE_PREREQ_ARTIFACTS.get(phase, []))
++    paths: list[str] = _where(PHASE_PREREQ_ARTIFACTS.get(phase, []), project_root)
+     if split_id:
+         # Replace any generic .shipwright/agent_docs/sections/ entry with the split-scoped one
+         scoped = f".shipwright/agent_docs/sections/{split_id}/"
+@@ -168,12 +182,12 @@ def build_phase_context(
+             "phase": pred.get("phase"),
+             "splitId": pred.get("splitId"),
+             "status": pred.get("status"),
+-            "artifacts": PHASE_OWN_ARTIFACTS.get(pred.get("phase") or "", []),
++            "artifacts": _where(PHASE_OWN_ARTIFACTS.get(pred.get("phase") or "", []), Path(project_root)),
+         })
+ 
+     payload["prerequisites"] = prereqs_out
+     payload["skill_artifacts_to_read"] = _suggest_artifacts(
+-        task.get("phase") or "", task.get("splitId"),
++        task.get("phase") or "", task.get("splitId"), Path(project_root),
+     )
+     payload["next_action_hint"] = (
+         "Read the files/dirs listed in skill_artifacts_to_read, then proceed with the "
+diff --git a/shared/scripts/tools/record_coverage_total.py b/shared/scripts/tools/record_coverage_total.py
+index 8e6527eba..479ebc444 100644
+--- a/shared/scripts/tools/record_coverage_total.py
++++ b/shared/scripts/tools/record_coverage_total.py
+@@ -44,7 +44,7 @@ from lib.atomic_write import durable_atomic_write  # noqa: E402
+ from tools.measure_diff_coverage import line_rate_percent  # noqa: E402
+ import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[1] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
+ 
+-RESULTS_REL = _sp.rel("test_results")
++RESULTS_REL = _sp.name("test_results")
+ DEFAULT_TIER = "repo"
+ DEFAULT_SOURCE = "combined coverage.xml (all plugins + shared + integration)"
+ 
+diff --git a/shared/scripts/tools/resolve_churn_conflicts.py b/shared/scripts/tools/resolve_churn_conflicts.py
+index 9b3f7377a..81f5c3788 100644
+--- a/shared/scripts/tools/resolve_churn_conflicts.py
++++ b/shared/scripts/tools/resolve_churn_conflicts.py
+@@ -43,7 +43,7 @@ from lib.churn_merge import (  # noqa: E402
+     COMPLIANCE_MDS,
+     DERIVED_MDS,
+     EVENTS_LOG,
+-    TEST_RESULTS,
++    TEST_RESULTS_RELS,
+     TEST_TRACEABILITY,
+     TRIAGE_LOG,
+     classify,
+@@ -232,7 +232,7 @@ def complete_merge(project_root: Path, *, run_id: str | None = None) -> ResolveR
+                             "cannot union safely — resolve by hand"],
+                 )
+             resolved.append(rel)
+-        elif rel in (EVENTS_LOG, TEST_RESULTS):
++        elif rel == EVENTS_LOG or rel in TEST_RESULTS_RELS:
+             _take_side(project_root, rel, "--ours")
+             resolved.append(rel)
+         else:  # a regenerated allowlisted snapshot or campaign status.json (S3): placeholder, regenerated later
+diff --git a/shared/scripts/tools/stamp_test_results.py b/shared/scripts/tools/stamp_test_results.py
+index cd7d7bf9f..e78927959 100644
+--- a/shared/scripts/tools/stamp_test_results.py
++++ b/shared/scripts/tools/stamp_test_results.py
+@@ -65,8 +65,8 @@ from source_state import (  # noqa: E402
+ from source_state_git import resolve_git_state  # noqa: E402
+ import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[1] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
+ 
+-RESULTS_REL = _sp.rel("test_results")
+-RUN_CONFIG_REL = _sp.rel("run_config")
++RESULTS_REL = _sp.name("test_results")
++RUN_CONFIG_REL = _sp.name("run_config")
+ 
+ 
+ def _run_id_from_config(project_root: Path) -> str | None:
+diff --git a/shared/scripts/tools/suite_units.py b/shared/scripts/tools/suite_units.py
+index 5f36039ff..727176f2e 100644
+--- a/shared/scripts/tools/suite_units.py
++++ b/shared/scripts/tools/suite_units.py
+@@ -38,7 +38,7 @@ UV_RUN = ("uv", "run", "--python", PYTHON_VERSION)
+ SHARED_MARKERS = ("-m", "not slow and not cross_plugin")
+ #: One shared/scripts/tools test drives the real diff-cover gate (parity with ci.yml).
+ SHARED_EXTRA_DEPS = ("diff-cover==10.3.0",)
+-CONFIG_NAME = _sp.rel("test_config")
++CONFIG_NAME = _sp.name("test_config")
+ _ALLOWED_SUITE_KEYS = {"max_workers", "xdist", "timeout_seconds", "_comment"}
+ #: A hung unit holds its budget slot and would otherwise block F0 forever with no
+ #: output (capture_output). Generous by default: this is a hang guard, not a perf gate.
+diff --git a/shared/scripts/tools/verifiers/_iterate_latest.py b/shared/scripts/tools/verifiers/_iterate_latest.py
+index c97e14f50..810e8066a 100644
+--- a/shared/scripts/tools/verifiers/_iterate_latest.py
++++ b/shared/scripts/tools/verifiers/_iterate_latest.py
+@@ -48,7 +48,7 @@ __all__ = [
+     "stale_detail",
+ ]
+ 
+-RESULTS_NAME = _sp.rel("test_results")
++RESULTS_NAME = _sp.name("test_results")
+ 
+ #: The block names this run — the only state in which it is evidence.
+ STATE_CURRENT = "current"
+diff --git a/shared/scripts/tools/verifiers/_project_gate_manifest.py b/shared/scripts/tools/verifiers/_project_gate_manifest.py
+index a0ae08d44..05d068cc5 100644
+--- a/shared/scripts/tools/verifiers/_project_gate_manifest.py
++++ b/shared/scripts/tools/verifiers/_project_gate_manifest.py
+@@ -96,7 +96,7 @@ def _declared_split_names(
+         # this, the real manifest, was present and perfectly valid — the
+         # fallback must never take priority over, or block on, the
+         # manifest it is a fallback FOR.
+-        source = _sp.rel("project_config")
++        source = _sp.name("project_config")
+         try:
+             data = json.loads(path.read_text(encoding="utf-8"))
+         except (json.JSONDecodeError, OSError) as exc:
+@@ -111,7 +111,7 @@ def _declared_split_names(
+         # same way the branch above does, lets a malformed run-config
+         # surface its own error instead of silently becoming "zero splits
+         # declared". Only reached when the project config is ABSENT.
+-        source = _sp.rel("run_config")
++        source = _sp.name("run_config")
+         data: object = {}
+         if run_config_path.exists():
+             try:
+diff --git a/shared/scripts/tools/verifiers/adopt_compliance.py b/shared/scripts/tools/verifiers/adopt_compliance.py
+index 19c9c8bc2..301802692 100644
+--- a/shared/scripts/tools/verifiers/adopt_compliance.py
++++ b/shared/scripts/tools/verifiers/adopt_compliance.py
+@@ -53,7 +53,7 @@ REQUIRED_CONFIGS = ("run_config", "project_config", "plan_config", "build_config
+ def check_a1_configs_present(project_root: Path) -> dict[str, Any]:
+     """A1 (Tier-1): 5 required configs exist and parse as JSON."""
+     name = "A1 All shipwright_*_config.json present + valid JSON"
+-    missing = [_sp.rel(k) for k in REQUIRED_CONFIGS if not _sp.path(k, project_root).exists()]
++    missing = [_sp.name(k) for k in REQUIRED_CONFIGS if not _sp.path(k, project_root).exists()]
+     if missing:
+         return make_finding(
+             "A1", STATUS_FAIL,
+@@ -63,7 +63,7 @@ def check_a1_configs_present(project_root: Path) -> dict[str, Any]:
+             provenance="adopt_config_check",
+         )
+     for k in REQUIRED_CONFIGS:
+-        c = _sp.rel(k)
++        c = _sp.name(k)
+         try:
+             json.loads(_sp.path(k, project_root).read_text(encoding="utf-8"))
+         except (json.JSONDecodeError, OSError) as e:
+diff --git a/shared/scripts/tools/verifiers/ci_supplychain_ack_store.py b/shared/scripts/tools/verifiers/ci_supplychain_ack_store.py
+index 9a8c589b3..cf1768111 100644
+--- a/shared/scripts/tools/verifiers/ci_supplychain_ack_store.py
++++ b/shared/scripts/tools/verifiers/ci_supplychain_ack_store.py
+@@ -48,7 +48,7 @@ __all__ = [
+ 
+ #: Beside ``reviews.json`` in the run's own planning directory.
+ ACK_FILENAME = "ci_supplychain_ack.json"
+-_RESULTS = _sp.rel("test_results")
++_RESULTS = _sp.name("test_results")
+ #: The envelope shape this verifier knows how to read.
+ SCHEMA_VERSION = 1
+ 
+diff --git a/shared/scripts/tools/verifiers/deploy_compliance.py b/shared/scripts/tools/verifiers/deploy_compliance.py
+index 770899074..80cec5db7 100644
+--- a/shared/scripts/tools/verifiers/deploy_compliance.py
++++ b/shared/scripts/tools/verifiers/deploy_compliance.py
+@@ -88,8 +88,8 @@ def _smoke_from_events(project_root: Path) -> str | None:
+ 
+ def check_w7_smoke_status(project_root: Path) -> dict[str, Any]:
+     for source_fn, source_name in (
+-        (_smoke_from_deploy_config, _sp.rel("deploy_config")),
+-        (_smoke_from_test_results, _sp.rel("test_results")),
++        (_smoke_from_deploy_config, _sp.name("deploy_config")),
++        (_smoke_from_test_results, _sp.name("test_results")),
+         (_smoke_from_events, "events.jsonl"),
+     ):
+         status = source_fn(project_root)
+diff --git a/shared/tests/fixtures/shipwright_paths_rel_constants.json b/shared/tests/fixtures/shipwright_paths_rel_constants.json
+index e45bf8d03..76203a906 100644
+--- a/shared/tests/fixtures/shipwright_paths_rel_constants.json
++++ b/shared/tests/fixtures/shipwright_paths_rel_constants.json
+@@ -1,210 +1,51 @@
+ {
+- "_about": "R1b inventory (BRIEF 12.1): module-level names bound to a value built from rel(), frozen at import and joined elsewhere as root / CONST, so they would bypass path() and R1c's new-then-old lookup. Closed list: a new name fails test_no_new_rel_constants; R1c removes entries as it routes them through path() (the list may only shrink). Since R1c-2 no entry of a MOVING file may be joined to a root (test_shipwright_paths_constant_joins.py); what remains are names used as git pathspecs, path sets and messages (R1c-3), and the event log, which stays.",
+- "files": {
+-  "plugins/shipwright-adopt/scripts/checks/setup_adopt.py": [
+-   "_EXISTING_ARTIFACT_CANDIDATES"
+-  ],
+-  "plugins/shipwright-adopt/scripts/lib/inherited_baseline.py": [
+-   "REGISTER_REL"
+-  ],
+-  "plugins/shipwright-adopt/scripts/tools/backfill_phase_tasks.py": [
+-   "RUN_CONFIG_NAME"
+-  ],
+-  "plugins/shipwright-build/scripts/lib/config.py": [
+-   "CONFIG_NAME"
+-  ],
+-  "plugins/shipwright-compliance/scripts/audit/_events_read.py": [
+-   "EVENT_FILE"
+-  ],
+-  "plugins/shipwright-compliance/scripts/lib/audit_disclosure.py": [
+-   "CONFIG_FILE"
+-  ],
+-  "plugins/shipwright-compliance/scripts/lib/collectors/_common.py": [
+-   "CONFIG_FILES"
+-  ],
+-  "plugins/shipwright-compliance/scripts/lib/collectors/change_history.py": [
+-   "EVENT_FILE"
+-  ],
+-  "plugins/shipwright-design/scripts/checks/check-design-gates.py": [
+-   "DESIGN_ALLOWED_PREFIXES"
+-  ],
+-  "plugins/shipwright-design/scripts/checks/setup-design-session.py": [
+-   "PROJECT_CONFIG"
+-  ],
+-  "plugins/shipwright-plan/scripts/checks/check-plan-gates.py": [
+-   "PLAN_ALLOWED_PREFIXES"
+-  ],
+-  "plugins/shipwright-run/scripts/lib/orchestrator_pkg/brief_resume_guard.py": [
+-   "_CONFIG"
+-  ],
+-  "plugins/shipwright-run/scripts/lib/orchestrator_pkg/constants.py": [
+-   "CONFIG_NAME"
+-  ],
+-  "plugins/shipwright-run/scripts/lib/orchestrator_pkg/gate_run_id.py": [
+-   "_RUN_CONFIG"
+-  ],
+-  "plugins/shipwright-run/scripts/lib/phase_task_core.py": [
+-   "CONFIG_NAME"
+-  ],
+-  "plugins/shipwright-run/scripts/lib/run_config_store.py": [
+-   "RUN_CONFIG_NAME"
+-  ],
+-  "plugins/shipwright-run/scripts/lib/single_session/orchestrator_context.py": [
+-   "RUN_CONFIG_REL_PATH"
+-  ],
+-  "plugins/shipwright-security/scripts/lib/pr_review_skip_safety.py": [
+-   "_SKIP_REVIEW_CANONICAL_BASENAME_PATHS"
+-  ],
+-  "plugins/shipwright-security/scripts/tools/finalize_security_compliance.py": [
+-   "PIPELINE_MARKER"
+-  ],
+-  "plugins/shipwright-security/scripts/tools/review_record_tier.py": [
+-   "SENSITIVE_PATH_RE"
+-  ],
+-  "plugins/shipwright-test/scripts/lib/warning_followups.py": [
+-   "RESULTS_NAME"
+-  ],
+-  "shared/scripts/accepted_risks.py": [
+-   "REGISTER_NAME"
+-  ],
+-  "shared/scripts/dev_server/profile_config.py": [
+-   "STATE_FILE"
+-  ],
+-  "shared/scripts/hooks/generate_handoff_on_stop.py": [
+-   "_RUN_CONFIG_NAME"
+-  ],
+-  "shared/scripts/inline_suppression_baseline.py": [
+-   "BASELINE_NAME"
+-  ],
+-  "shared/scripts/known_failures.py": [
+-   "KNOWN_FAILURES_NAME"
+-  ],
+-  "shared/scripts/lib/ac_mode.py": [
+-   "CONFIG_FILE"
+-  ],
+-  "shared/scripts/lib/adr_collision_baseline.py": [
+-   "BASELINE_RELPATH"
+-  ],
+-  "shared/scripts/lib/artifact_migrations.py": [
+-   "ALLOWLIST"
+-  ],
+-  "shared/scripts/lib/bloat_baseline.py": [
+-   "BASELINE_FILENAME"
+-  ],
+-  "shared/scripts/lib/brief_dir_intake.py": [
+-   "CONFIG_NAME"
+-  ],
+-  "shared/scripts/lib/change_type_paths.py": [
+-   "_BOOKKEEPING",
+-   "_COMPLIANCE",
+-   "_INFRA",
+-   "_TOOLING"
+-  ],
+-  "shared/scripts/lib/churn_merge.py": [
+-   "EVENTS_LOG",
+-   "TEST_RESULTS"
+-  ],
+-  "shared/scripts/lib/config.py": [
+-   "CONFIG_FILES"
+-  ],
+-  "shared/scripts/lib/event_context_index.py": [
+-   "EVENT_LOG_NAME"
+-  ],
+-  "shared/scripts/lib/events_fold.py": [
+-   "SYNC_CONFIG"
+-  ],
+-  "shared/scripts/lib/events_layout.py": [
+-   "SYNC_CONFIG"
+-  ],
+-  "shared/scripts/lib/events_log.py": [
+-   "EVENT_FILE"
+-  ],
+-  "shared/scripts/lib/events_sentinel.py": [
+-   "SYNC_CONFIG"
+-  ],
+-  "shared/scripts/lib/external_review_config.py": [
+-   "_PROJECT_ITERATE_CONFIG_NAME"
+-  ],
+-  "shared/scripts/lib/gate_policy.py": [
+-   "_CONFIG_NAME"
+-  ],
+-  "shared/scripts/lib/gitattributes_union.py": [
+-   "UNION_PATHS"
+-  ],
+-  "shared/scripts/lib/gitignore_selfheal.py": [
+-   "MANAGED_MARKER_PATHS"
+-  ],
+-  "shared/scripts/lib/iterate_entry.py": [
+-   "RUN_CONFIG_NAME"
+-  ],
+-  "shared/scripts/lib/iterate_test_results.py": [
+-   "RESULTS_FILENAME"
+-  ],
+-  "shared/scripts/lib/iterate_tests_block.py": [
+-   "RESULTS_FILENAME"
+-  ],
+-  "shared/scripts/lib/manifest_sync_paths.py": [
+-   "CONFIG_NAME"
+-  ],
+-  "shared/scripts/lib/model_tier_config.py": [
+-   "_CONFIG_FILENAME"
+-  ],
+-  "shared/scripts/lib/phase_invocation_mode.py": [
+-   "CONFIG_NAME"
+-  ],
+-  "shared/scripts/lib/required_checks_drift.py": [
+-   "ADVISORY_CONFIG_FILE"
+-  ],
+-  "shared/scripts/lib/review_diff_threshold.py": [
+-   "UNCOUNTED_FILES"
+-  ],
+-  "shared/scripts/lib/section_file_list.py": [
+-   "FRAMEWORK_BOOKKEEPING"
+-  ],
+-  "shared/scripts/profile_consumer.py": [
+-   "RUN_CONFIG"
+-  ],
+-  "shared/scripts/project_facts.py": [
+-   "RUN_CONFIG_NAME"
+-  ],
+-  "shared/scripts/tools/append_phase_history.py": [
+-   "RUN_CONFIG_NAME"
+-  ],
+-  "shared/scripts/tools/check_ac_coverage_ratchet.py": [
+-   "BASELINE_RELPATH"
+-  ],
+-  "shared/scripts/tools/check_ac_ratchet_f0.py": [
+-   "_BASELINE"
+-  ],
+-  "shared/scripts/tools/commit_event_followup.py": [
+-   "EVENT_FILE"
+-  ],
+-  "shared/scripts/tools/compliance_input_state.py": [
+-   "PRODUCER_STATE"
+-  ],
+-  "shared/scripts/tools/fr_split.py": [
+-   "BASELINE",
+-   "REGISTRY"
+-  ],
+-  "shared/scripts/tools/get_phase_context.py": [
+-   "PHASE_OWN_ARTIFACTS",
+-   "PHASE_PREREQ_ARTIFACTS"
+-  ],
+-  "shared/scripts/tools/record_coverage_total.py": [
+-   "RESULTS_REL"
+-  ],
+-  "shared/scripts/tools/stamp_test_results.py": [
+-   "RESULTS_REL",
+-   "RUN_CONFIG_REL"
+-  ],
+-  "shared/scripts/tools/suite_units.py": [
+-   "CONFIG_NAME"
+-  ],
+-  "shared/scripts/tools/verifiers/_iterate_latest.py": [
+-   "RESULTS_NAME"
+-  ],
+-  "shared/scripts/tools/verifiers/ci_supplychain_ack_store.py": [
+-   "_RESULTS"
+-  ]
+- }
++  "_about": "R1b inventory (BRIEF 12.1): module-level names bound to a value built from rel(), frozen at import and joined elsewhere as root / CONST, so they would bypass path() and R1c's new-then-old lookup. Closed list: a new name fails test_no_new_rel_constants; R1c removes entries as it routes them through path() (the list may only shrink). Since R1c-2 no entry of a MOVING file may be joined to a root (test_shipwright_paths_constant_joins.py); since R1c-3 sets, pathspecs and regexes recognise both places (known_rels) and labels use name(); what remains is the event log (it does not move) and churn_merge.TEST_RESULTS (the legacy file name tests write; sets use TEST_RESULTS_RELS).",
++  "files": {
++    "plugins/shipwright-adopt/scripts/checks/setup_adopt.py": [
++      "_EXISTING_ARTIFACT_CANDIDATES"
++    ],
++    "plugins/shipwright-compliance/scripts/audit/_events_read.py": [
++      "EVENT_FILE"
++    ],
++    "plugins/shipwright-compliance/scripts/lib/collectors/change_history.py": [
++      "EVENT_FILE"
++    ],
++    "plugins/shipwright-design/scripts/checks/check-design-gates.py": [
++      "DESIGN_ALLOWED_PREFIXES"
++    ],
++    "plugins/shipwright-plan/scripts/checks/check-plan-gates.py": [
++      "PLAN_ALLOWED_PREFIXES"
++    ],
++    "plugins/shipwright-security/scripts/lib/pr_review_skip_safety.py": [
++      "_SKIP_REVIEW_CANONICAL_BASENAME_PATHS"
++    ],
++    "shared/scripts/lib/change_type_paths.py": [
++      "_BOOKKEEPING"
++    ],
++    "shared/scripts/lib/churn_merge.py": [
++      "EVENTS_LOG",
++      "TEST_RESULTS"
++    ],
++    "shared/scripts/lib/event_context_index.py": [
++      "EVENT_LOG_NAME"
++    ],
++    "shared/scripts/lib/events_log.py": [
++      "EVENT_FILE"
++    ],
++    "shared/scripts/lib/gitattributes_union.py": [
++      "UNION_PATHS"
++    ],
++    "shared/scripts/lib/gitignore_selfheal.py": [
++      "MANAGED_MARKER_PATHS"
++    ],
++    "shared/scripts/lib/review_diff_threshold.py": [
++      "UNCOUNTED_FILES"
++    ],
++    "shared/scripts/lib/section_file_list.py": [
++      "FRAMEWORK_BOOKKEEPING"
++    ],
++    "shared/scripts/tools/commit_event_followup.py": [
++      "EVENT_FILE"
++    ]
++  }
+ }
+diff --git a/shared/tests/test_derived_snapshots.py b/shared/tests/test_derived_snapshots.py
+index 49cdf36f6..a4251d415 100644
+--- a/shared/tests/test_derived_snapshots.py
++++ b/shared/tests/test_derived_snapshots.py
+@@ -77,7 +77,7 @@ def test_registry_covers_every_derived_md_plus_the_two_json_snapshots() -> None:
+     assert ".shipwright/compliance/ci-security.json" in DERIVED_SNAPSHOTS
+     assert ".shipwright/compliance/test-traceability.json" in DERIVED_SNAPSHOTS
+     assert ".shipwright/compliance/performance/iterate-throughput.md" in DERIVED_SNAPSHOTS
+-    assert len(DERIVED_SNAPSHOTS) == 12
++    assert len(DERIVED_SNAPSHOTS) == 13   # twelve files; the run-written ledger in both places (R1c-3)
+ 
+ 
+ def test_registry_excludes_the_append_logs_and_per_run_paths() -> None:
+diff --git a/shared/tests/test_derived_snapshots_run_written.py b/shared/tests/test_derived_snapshots_run_written.py
+index c88bd6eae..37891a417 100644
+--- a/shared/tests/test_derived_snapshots_run_written.py
++++ b/shared/tests/test_derived_snapshots_run_written.py
+@@ -81,9 +81,10 @@ def test_restorable_excludes_exactly_the_run_written_paths() -> None:
+     asserted, not narrated, because the prose in ``docs/hooks-and-pipeline.md`` had already
+     fallen a path behind ("ten of the eleven") before this change touched it.
+     """
+-    assert DERIVED_SNAPSHOTS - RESTORABLE_SNAPSHOTS == {TEST_RESULTS, SESSION_HANDOFF}
++    new_place = ".shipwright/config/" + TEST_RESULTS   # R1c-3: the ledger is recognised in either place
++    assert DERIVED_SNAPSHOTS - RESTORABLE_SNAPSHOTS == {TEST_RESULTS, new_place, SESSION_HANDOFF}
+     assert RESTORABLE_SNAPSHOTS < DERIVED_SNAPSHOTS, "the exclusion must be a real subset"
+-    assert (len(DERIVED_SNAPSHOTS), len(RESTORABLE_SNAPSHOTS)) == (12, 10)
++    assert (len(DERIVED_SNAPSHOTS), len(RESTORABLE_SNAPSHOTS)) == (13, 10)
+ 
+ 
+ def test_the_carve_out_reaches_the_ledger_that_carries_the_bytes() -> None:
+diff --git a/shared/tests/test_shipwright_layout.py b/shared/tests/test_shipwright_layout.py
+index c2e30f181..9093e1943 100644
+--- a/shared/tests/test_shipwright_layout.py
++++ b/shared/tests/test_shipwright_layout.py
+@@ -216,9 +216,10 @@ def test_layout_error_is_not_caught_as_missing_file_bad_json_or_lock_timeout():
+ 
+ @pytest.mark.covers("FR-01.11")
+ def test_no_production_code_writes_the_new_place_before_r3():
+-    """R1c-1 alone is safe only because nothing creates ``.shipwright/config/`` yet (frozen root constants
+-    and the locked writers still name the root until R1c-2/R3): no production file of ANY type (code, prompts,
+-    templates, hooks.json, workflows) names the folder, and nothing outside the resolver asks for the new paths."""
++    """Nothing creates ``.shipwright/config/`` before R3: no production file of ANY type (code, prompts, templates,
++    hooks.json, workflows) names the folder, and nothing outside the resolver asks for the new place ALONE
++    (``new_rel``, what a writer would use). Since R1c-3 the recognisers (sets, pathspecs, regexes) ask for BOTH
++    places through ``known_rels`` / ``all_known_rels``: recognising a file there is reading, not creating it."""
+     allowed = {"shared/scripts/lib/shipwright_paths.py", "shared/scripts/lib/shipwright_layout.py",
+                "shared/scripts/lib/shipwright_pointer.py"}  # the resolver, its lookup, the stub renderer
+     scope = ["--", "plugins", "shared", "scripts", ".github", ":!*/tests/*", ":!shared/testkit/*"]
+@@ -227,7 +228,7 @@ def test_no_production_code_writes_the_new_place_before_r3():
+                             r"shipwright[/\\]+config|runtime[/\\]+shipwright_dev_server", *scope],
+                            capture_output=True, text=True, cwd=str(REPO)).stdout.split()
+     assert [h for h in named if h not in allowed] == []
+-    asked = subprocess.run(["git", "grep", "-l", "--untracked", "-E", r"\b(new_rel|known_rels|all_known_rels)\(", *scope],
++    asked = subprocess.run(["git", "grep", "-l", "--untracked", "-E", r"\bnew_rel\(", *scope],
+                            capture_output=True, text=True, cwd=str(REPO)).stdout.split()
+     assert [h for h in asked if h not in allowed] == []
+ 
+diff --git a/shared/tests/test_shipwright_paths.py b/shared/tests/test_shipwright_paths.py
+index bda25097e..3ab266015 100644
+--- a/shared/tests/test_shipwright_paths.py
++++ b/shared/tests/test_shipwright_paths.py
+@@ -104,9 +104,13 @@ def test_locks_only_where_a_data_file_lock_exists(tmp_path):
+ 
+ @pytest.mark.covers("FR-01.11")
+ def test_generated_lists_equal_the_hand_written_lists_they_replaced():
++    cfg = ".shipwright/config/"   # R1c-3: a marker counts in either place, new first
+     assert CONFIG_MARKERS == (
+-        "shipwright_run_config.json", "shipwright_project_config.json", "shipwright_plan_config.json",
+-        "shipwright_build_config.json", "shipwright_events.jsonl", ".shipwright/events/drops",
++        cfg + "shipwright_run_config.json", "shipwright_run_config.json",
++        cfg + "shipwright_project_config.json", "shipwright_project_config.json",
++        cfg + "shipwright_plan_config.json", "shipwright_plan_config.json",
++        cfg + "shipwright_build_config.json", "shipwright_build_config.json",
++        "shipwright_events.jsonl", ".shipwright/events/drops",
+         ".shipwright/events/archive", ".shipwright/events/quarantine")
+     assert CONFIG_FILES["run"] == "shipwright_run_config.json" and CONFIG_FILES["compliance"].endswith("compliance_config.json")
+     assert sp.family_globs() == ("shipwright_*.json", "shipwright_*.yaml")
+@@ -114,9 +118,10 @@ def test_generated_lists_equal_the_hand_written_lists_they_replaced():
+ 
+ @pytest.mark.covers("FR-01.11")
+ def test_derived_and_restorable_snapshots_come_from_the_kind_list():
+-    assert sp.snapshot_paths() == frozenset({"shipwright_test_results.json"})   # retired names are not snapshots
++    both = frozenset({"shipwright_test_results.json", ".shipwright/config/shipwright_test_results.json"})
++    assert sp.snapshot_paths() == both   # either place (R1c-3); retired names are not snapshots
+     assert sp.run_written_paths() == sp.snapshot_paths()   # restore exclusion comes from the run_written flag
+-    assert "shipwright_test_results.json" in DERIVED_SNAPSHOTS and len(DERIVED_SNAPSHOTS) == 12
++    assert "shipwright_test_results.json" in DERIVED_SNAPSHOTS and len(DERIVED_SNAPSHOTS) == 13
+     assert "shipwright_test_results.json" not in RESTORABLE_SNAPSHOTS and len(RESTORABLE_SNAPSHOTS) == 10
+ 
+ 
+diff --git a/shared/tests/test_shipwright_paths_guard.py b/shared/tests/test_shipwright_paths_guard.py
+index 0cf745516..64385677a 100644
+--- a/shared/tests/test_shipwright_paths_guard.py
++++ b/shared/tests/test_shipwright_paths_guard.py
+@@ -91,7 +91,7 @@ ALLOWED = {"lock-construction": LOCK_ALLOWED, "shipwright-prefix-rule": PREFIX_R
+ #: held by its own inventory (fixtures/shipwright_paths_rel_constants.json), per NAME, not per file
+ INVENTORIED = {"rel-constant"}
+ REL_CONSTANTS = scan.BASELINE.parent / "shipwright_paths_rel_constants.json"
+-REL_CONSTANTS_CAP = 73  # R1c-2: 80 -> 73
++REL_CONSTANTS_CAP = 16  # R1c-3: 73 -> 16 (the event log + churn_merge.TEST_RESULTS)
+ 
+ 
+ def _violations():
+diff --git a/shared/tests/test_shipwright_paths_recognisers.py b/shared/tests/test_shipwright_paths_recognisers.py
+new file mode 100644
+index 000000000..fd4829b44
+--- /dev/null
++++ b/shared/tests/test_shipwright_paths_recognisers.py
+@@ -0,0 +1,180 @@
++"""R1c-3: what RECOGNISES a moving file by its path sees it in the new place too (BRIEF 12.12 (a)).
++
++R1c-2 made every reader and writer find a moving file through ``path()``. What was left recognised a file by
++its root name: derived/run-written snapshot sets, the churn allowlist, review-size and section bookkeeping
++sets, the sensitive-path regex, the skip-review set, the project markers, the compliance producer inputs,
++the fold's pathspec and the phase-context hints. Each case below puts the path in its new place and asks the
++real recogniser. Before R1c-3 every one of them answered "not mine".
++"""
++
++from __future__ import annotations
++
++import ast
++import importlib.util
++import subprocess
++import sys
++from pathlib import Path
++
++import pytest
++
++REPO = Path(__file__).resolve().parents[2]
++sys.path.insert(0, str(REPO / "shared" / "scripts"))
++
++from lib import shipwright_paths as sp  # noqa: E402
++from lib.churn_merge import CHURN_ALLOWLIST  # noqa: E402
++from lib.compliance_refresh import CLASSIFICATION, EXCLUDED, RUN_WRITTEN  # noqa: E402
++from lib.derived_snapshots import DERIVED_SNAPSHOTS, RESTORABLE_SNAPSHOTS  # noqa: E402
++from lib.project_root import is_shipwright_project  # noqa: E402
++from lib.review_diff_threshold import is_counted_path  # noqa: E402
++from lib.section_file_list import is_framework_bookkeeping  # noqa: E402
++
++
++def _new(key: str) -> str:
++    return sp.new_rel(key)
++
++
++def _load(rel: str, name: str):
++    spec = importlib.util.spec_from_file_location(name, REPO / rel)
++    mod = importlib.util.module_from_spec(spec)
++    sys.modules[name] = mod   # register before exec (dataclasses / self-imports)
++    spec.loader.exec_module(mod)
++    return mod
++
++
++@pytest.mark.covers("FR-01.11")
++def test_the_run_written_ledger_is_a_derived_snapshot_in_either_place():
++    for where in sp.known_rels("test_results"):
++        assert where in DERIVED_SNAPSHOTS and where not in RESTORABLE_SNAPSHOTS   # never staged, never reset
++        assert where in CHURN_ALLOWLIST and CLASSIFICATION[where] == RUN_WRITTEN and where in EXCLUDED
++
++
++@pytest.mark.covers("FR-01.11")
++def test_finalization_records_are_not_counted_or_attributed_in_the_new_place():
++    assert not is_counted_path(_new("test_results"))
++    assert is_framework_bookkeeping(_new("build_config"))
++    assert is_counted_path("src/app.py") and not is_framework_bookkeeping("src/app.py")   # real code still counts
++
++
++@pytest.mark.covers("FR-01.11")
++def test_a_no_fr_label_covers_a_moved_file_exactly_as_it_covers_the_root_file():
++    """The new place sits under ``.shipwright/**``, which every label covers as bookkeeping; without R1c-3 a
++    ``docs`` iterate could edit a moved baseline or risk register it may not touch at the root (plan review)."""
++    from lib.change_type_paths import unclassified_paths
++    for key in ("bloat_baseline", "accepted_risks", "run_config", "dev_server"):
++        new = sp.known_rels(key)[0]
++        assert unclassified_paths([new], "docs", "generic") == [new], key   # reported as the path given
++        assert unclassified_paths([sp.name(key)], "docs", "generic") == [sp.name(key)], key   # root: as before
++        assert unclassified_paths([new], "tooling", "generic") == [], key
++    assert unclassified_paths([_new("test_results")], "docs", "generic") == []   # a finalization record
++
++
++@pytest.mark.covers("FR-01.11")
++def test_a_project_whose_config_moved_is_still_a_project(tmp_path):
++    (tmp_path / ".shipwright" / "config").mkdir(parents=True)
++    assert not is_shipwright_project(tmp_path)
++    (tmp_path / _new("run_config")).write_text("{}", encoding="utf-8")
++    assert is_shipwright_project(tmp_path)   # no root stub needed (BRIEF 12.12 (a): CONFIG_MARKERS)
++
++
++@pytest.mark.covers("FR-01.11")
++def test_a_risk_register_or_bloat_baseline_in_the_new_place_is_a_sensitive_path():
++    tier = _load("plugins/shipwright-security/scripts/tools/review_record_tier.py", "review_record_tier_r1c3")
++    for key in ("accepted_risks", "bloat_baseline"):
++        for where in sp.known_rels(key):
++            assert tier.SENSITIVE_PATH_RE.match(where), where
++    assert not tier.SENSITIVE_PATH_RE.match("docs/" + sp.name("bloat_baseline"))   # anchored, not a basename
++
++
++@pytest.mark.covers("FR-01.11")
++def test_the_ledger_is_skip_safe_only_where_it_lives_today():
++    """Skip-safety LOOSENS the required review gate, so unlike every other set it does not run ahead of the move:
++    a PR adding the ledger at the new place (which nothing creates before R3) still gets a review."""
++    skip = _load("plugins/shipwright-security/scripts/lib/pr_review_skip_safety.py", "pr_review_skip_safety_r1c3")
++    assert skip.is_safe_to_skip_review(sp.legacy_rel("test_results"))
++    assert not skip.is_safe_to_skip_review(_new("test_results"))   # R3 flips this together with the move
++    assert not skip.is_safe_to_skip_review("src/" + sp.name("test_results"))   # a planted name borrows nothing
++
++
++@pytest.mark.covers("FR-01.11")
++def test_the_compliance_producer_snapshots_both_places_and_reports_one(tmp_path):
++    from tools import compliance_input_state as cis
++    assert set(sp.known_rels("compliance_config")) <= set(cis.PRODUCER_STATE)
++    p = tmp_path / _new("compliance_config")
++    p.parent.mkdir(parents=True)
++    p.write_text("{}", encoding="utf-8")
++    inputs = cis.producer_inputs(tmp_path)
++    assert _new("compliance_config") in inputs and sp.legacy_rel("compliance_config") not in inputs
++
++
++@pytest.mark.covers("FR-01.11")
++def test_the_fold_stages_the_sync_config_where_it_lives(tmp_path):
++    from tools import fold_events
++    folded = {"status": "folded_into_legacy", "mode": "emergency"}
++    assert sp.name("sync_config") in fold_events._stage_paths(folded, str(tmp_path))   # unmigrated: the root
++    assert fold_events._stage_paths({"status": "folded", "mode": "normal"}, str(tmp_path)) == [
++        f"{fold_events.DROPS_DIR}/{fold_events.KEEP_NAME}"]   # a fold that does not touch it never resolves it
++    p = tmp_path / _new("sync_config")
++    p.parent.mkdir(parents=True)
++    p.write_text("{}", encoding="utf-8")
++    assert _new("sync_config") in fold_events._stage_paths({"status": "nothing_to_fold", "mode": "emergency"},
++                                                            str(tmp_path))
++    assert _new("sync_config") in fold_events._stage_paths(folded, str(tmp_path))
++
++
++@pytest.mark.covers("FR-01.11")
++def test_the_phase_context_points_a_skill_at_the_moved_file(tmp_path):
++    from tools import get_phase_context as gpc
++    assert gpc._where(["plan_config", ".shipwright/designs/"], tmp_path) == [
++        sp.legacy_rel("plan_config"), ".shipwright/designs/"]   # unmigrated: the root, as before
++    p = tmp_path / _new("plan_config")
++    p.parent.mkdir(parents=True)
++    p.write_text("{}", encoding="utf-8")
++    assert gpc._where(["plan_config"], tmp_path) == [_new("plan_config")]
++
++
++#: Production code that may still spell a moving file by ``rel()``: the resolver, and adopt's dry-run
++#: preview, which names the file it WOULD create (creation keeps the root until R3 decides it).
++_REL_ALLOWED = {"shared/scripts/lib/shipwright_paths.py", "plugins/shipwright-adopt/scripts/lib/dry_run_reporter.py"}
++#: Module constants kept on purpose: the legacy ledger name tests write (sets use ``TEST_RESULTS_RELS``).
++_REL_KEPT = {("shared/scripts/lib/churn_merge.py", "test_results"),
++             # skip-safety loosens a gate: root place only until R3 creates the new one (architecture review)
++             ("plugins/shipwright-security/scripts/lib/pr_review_skip_safety.py", "test_results")}
++
++
++def _production_py() -> list[str]:
++    out = subprocess.run(["git", "ls-files", "--", "plugins", "shared", "scripts"], capture_output=True, text=True,
++                         cwd=str(REPO), check=True).stdout.split()
++    return [f for f in out if f.endswith(".py") and "/tests/" not in f and not f.startswith("shared/testkit/")]
++
++
++@pytest.mark.covers("FR-01.11")
++def test_no_production_code_spells_a_moving_file_by_its_root_name():
++    """The R1c-3 net (BRIEF 12.2 / item 10 (d)): once R3 flips ``rel()``, a ``rel()``/``legacy_rel()`` of a moving
++    key in production code would name the wrong place. Recognisers use ``known_rels``, readers and writers
++    ``path()``, labels ``name()``; the event log does not move."""
++    moving = set(sp.keys_of(moves=True))
++    hits = []
++    for rel in _production_py():
++        if rel in _REL_ALLOWED:
++            continue
++        tree = ast.parse((REPO / rel).read_text(encoding="utf-8"))
++        for n in ast.walk(tree):
++            if (isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute) and n.func.attr in {"rel", "legacy_rel"}
++                    and isinstance(n.func.value, ast.Name) and n.func.value.id == "_sp" and n.args):
++                arg = n.args[0]
++                key = arg.value if isinstance(arg, ast.Constant) else None   # a computed key may name any file
++                if (key is None or key in moving) and (rel, key) not in _REL_KEPT:
++                    hits.append(f"{rel}:{n.lineno}: _sp.{n.func.attr}({ast.unparse(arg)})")
++    assert hits == [], "use known_rels (a set), path() (a read/write) or name() (a label):\n" + "\n".join(hits)
++
++
++@pytest.mark.covers("FR-01.11")
++def test_the_net_sees_a_root_spelling(tmp_path, monkeypatch):
++    """Positive control: the scan above flags a planted ``_sp.rel`` of a moving key."""
++    planted = "shared/scripts/lib/planted_r1c3.py"
++    monkeypatch.setattr(sys.modules[__name__], "REPO", tmp_path)
++    monkeypatch.setattr(sys.modules[__name__], "_production_py", lambda: [planted])
++    (tmp_path / planted).parent.mkdir(parents=True)
++    (tmp_path / planted).write_text('X = {_sp.rel("run_config")}\n', encoding="utf-8")
++    with pytest.raises(AssertionError, match="planted_r1c3.py:1"):
++        test_no_production_code_spells_a_moving_file_by_its_root_name()

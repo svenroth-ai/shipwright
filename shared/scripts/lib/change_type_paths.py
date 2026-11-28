@@ -60,7 +60,7 @@ SHAPE_SHIPWRIGHT_MONOREPO = "shipwright-monorepo"
 #: Shipwright's own finalization records, written by every iterate.
 _BOOKKEEPING = (
     ".shipwright/**", "CHANGELOG-unreleased.d/**", "CHANGELOG.md",
-    _sp.rel("events"), _sp.rel("test_results"),
+    _sp.rel("events"), *_sp.known_rels("test_results"),
     ".shipwright/events/drops/**", ".shipwright/events/archive/**", ".shipwright/events/quarantine/**",
 )
 _DOCS = (
@@ -78,7 +78,7 @@ _TOOLING = (
     ".editorconfig", ".pre-commit-config.yaml", "ruff.toml", ".ruff.toml", "pyproject.toml",
     ".eslintrc*", "eslint.config.*", ".prettierrc*", "prettier.config.*", ".prettierignore",
     "vitest.config.*", "jest.config.*", "playwright.config.*", "pytest.ini", "tox.ini",
-    "noxfile.py", "Makefile", "justfile", *_sp.family_globs(), _sp.rel("audit_config"),
+    "noxfile.py", "Makefile", "justfile", *_sp.family_globs(), *_sp.known_rels("audit_config"),
 )
 _INFRA = (
     ".github/**", ".gitlab-ci.yml", ".circleci/**", "Dockerfile*", "**/Dockerfile*",
@@ -89,13 +89,18 @@ _INFRA = (
     "pnpm-workspace.yaml", "yarn.lock", ".npmrc", ".nvmrc", ".python-version",
     "tsconfig*.json", "vite.config.*", "vercel.json", "netlify.toml", "fly.toml",
     "Procfile", ".env.example", "renovate.json", "scripts/**", *_sp.family_globs(),
-    _sp.rel("audit_config"), ".trivyignore*",
+    *_sp.known_rels("audit_config"), ".trivyignore*",
 )
 _COMPLIANCE = (
     "SECURITY.md", ".semgrep*", ".semgrep/**", ".gitleaks*", ".trivyignore*",
     ".github/workflows/**", ".github/codeql/**", "THIRD_PARTY*", "**/sbom*",
-    *_sp.family_globs(), _sp.rel("audit_config"),
+    *_sp.family_globs(), *_sp.known_rels("audit_config"),
 )
+#: A moving root file in either place is judged as the root file it is (R1c-3): otherwise its new place,
+#: inside the ``.shipwright`` tree, would fall under the blanket ``.shipwright/**`` bookkeeping that every label
+#: covers, and a ``docs`` iterate could edit a baseline or a risk register it may not touch at the root.
+_AS_ROOT = {where: _sp.name(key) for key in _sp.keys_of(moves=True) if _sp.name(key) in _sp.known_rels(key)
+            for where in _sp.known_rels(key) if where != _sp.name(key)}   # root files only; the root itself unchanged
 #: The requirement catalogs: ``lib.requirement_impact.is_requirement_spec`` (a split's
 #: ``spec.md``, never an iterate's own ``iterate/<run_id>/spec.md``) plus the greenfield
 #: catalog ``.shipwright/agent_docs/spec.md``. Editing
@@ -202,6 +207,6 @@ def unclassified_paths(paths, change_type: str, shape: str) -> list[str]:
         path = str(raw).replace("\\", "/").strip()
         while path.startswith("./"):
             path = path[2:]
-        if path and not _covered(path, change_type, shape, patterns):
+        if path and not _covered(_AS_ROOT.get(path, path), change_type, shape, patterns):
             out.add(path)
     return sorted(out)

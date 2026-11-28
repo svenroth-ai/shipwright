@@ -24,7 +24,7 @@ import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent
 # project. ``shipwright_run_config.json`` stays first (the canonical primary)
 # but it carries no special weight in :func:`is_shipwright_project`.
 CONFIG_MARKERS: tuple[str, ...] = (
-    *_sp.names_of(marker=True),   # run, project, plan, build config + the event log
+    *_sp.all_known_rels(marker=True),   # run, project, plan, build config (either place, R1c-3) + the event log
     ".shipwright/events/drops",           # the drops layout leaves no legacy file behind
     ".shipwright/events/archive",
     ".shipwright/events/quarantine",

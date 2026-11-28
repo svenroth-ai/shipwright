@@ -70,7 +70,7 @@ _OPUS_LEG_PROVIDERS: set[str] = {"claude_cli", "openrouter"}
 _ENV_OVERRIDE_PREFIX = "SHIPWRIGHT_REVIEW_MODEL_"
 
 
-_PROJECT_ITERATE_CONFIG_NAME = _sp.rel("iterate_config")
+_PROJECT_ITERATE_CONFIG_NAME = _sp.name("iterate_config")
 
 
 def _deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:

@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "Approve extending the existing recognisers through the path registry so they recognise both canonical locations during the migration.\n\nUse `known_rels(key)` for path membership, `path(key, root)` for reported locations, and `name(key)` for labels.\n\nThe ongoing obligation is to maintain the registry\u2019s canonical paths and update the source guard when supported locations or exceptions change.\n\nForecloses: none identified.\n\nNo findings.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "1. **The question, answered in one sentence.** Yes \u2014 but the new standing machinery here is small: one registry lookup function and one AST guard, both of which extend machinery that already exists rather than adding a new place data lives.\n\n2. **The smallest thing that would do.** What is proposed is close to the minimum: teach the existing recogniser sets to ask the registry for both locations (`known_rels`), keep basename matching out of the security sets, and add one AST test to hold the line until R3 retires the transition. I would take that; the rejected alternatives are genuinely worse (waiting for R3 leaves the security sets blind during the exact migration window; basename matching widens the PR-review gate, which is the one boundary that must never gain false positives).\n\n3. **What it costs to keep.** The AST net and the two named exceptions are the ongoing obligation: every future production change that wants to spell a moving path by hand must go through the resolver or justify an exception. That is a real but bounded cost, and the constants inventory shrinking from 73 to 16 shows the guard is being used to remove drift, not just to police it.\n\n4. **What it forecloses.** `known_rels` returning \"new then legacy\" fixes an ordering assumption that future code will inherit silently. Not a blocker, but worth a docstring note.\n\n5. **Findings.**\n\n- Category: proportionality\n- Severity: low\n- Finding: The AST guard and its exception list are transitional machinery whose reason for existence (the two-place window) disappears at R3, but nothing in the brief says they are retired then.\n- Suggestion: Record in the campaign BRIEF that R3 (or R1e) removes the two exceptions and collapses the guard to a single-place check, so the guard does not outlive its purpose unnoticed.\n\n- Category: ownership\n- Severity: low\n- Finding: The AST net is a test that must fail to be noticed \u2014 if the guard itself breaks (e.g. the parser misses a new import style), it fails open in the sense that nothing forces anyone to re-check the inventory count.\n- Suggestion: Keep the constants-inventory count as a hard equality assertion (16, not \"\u2264 previous\"), which it appears to be; that gives the guard a tripwire independent of AST parsing.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "architecture",
+  "capture": {
+    "run_id": "iterate-2026-11-28-r1c3-name-sets",
+    "at": "2026-11-28T14:11:18.949090+00:00"
+  },
+  "verdicts": {
+    "openai": "approve",
+    "glm": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}

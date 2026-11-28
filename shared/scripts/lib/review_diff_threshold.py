@@ -56,7 +56,7 @@ UNCOUNTED_PREFIXES: tuple[str, ...] = (
 #: Root-level ledgers that F5 / F5b rewrite on every run.
 UNCOUNTED_FILES: frozenset[str] = frozenset({
     _sp.rel("events"),
-    _sp.rel("test_results"),
+    *_sp.known_rels("test_results"),
 })
 
 

@@ -9,7 +9,7 @@ from typing import Any
 import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 
-CONFIG_NAME = _sp.rel("build_config")
+CONFIG_NAME = _sp.name("build_config")
 
 DEFAULTS = {
     "auto_push": False,

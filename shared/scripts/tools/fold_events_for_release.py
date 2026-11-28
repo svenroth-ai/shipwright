@@ -187,7 +187,7 @@ def _commit_fold(root: str, result: dict, max_age_days: int, existed: frozenset[
     """Stage and commit what the fold touched; any failure on the way puts the tree back (the fold already moved files).
 
     Whether the commit happened is decided by HEAD, not by the exit code of a hook that may have run after it."""
-    touched = _stage_paths(result)
+    touched = _stage_paths(result, root)
     before, reason, count = _head(root), "", len(result.get("folded_files", []))
     try:
         known = _stage(root, touched)

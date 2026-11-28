@@ -23,7 +23,7 @@ from typing import Callable
 # Add shared lib to path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from lib.config import CONFIG_FILES, read_all_configs, read_events
+from lib.config import get_config_path, read_all_configs, read_events
 from lib.events_log import latest_event_dt
 from lib.events_read import sorted_by_ts
 from lib.handoff_iterate import render_iterate_progress
@@ -427,7 +427,7 @@ def generate_handoff(
         if skill == "events":
             continue  # Listed separately below
         status = "exists" if config else "missing"
-        lines.append(f"- `{CONFIG_FILES[skill]}` — {status}")  # repo-relative: follows the file when it moves
+        lines.append(f"- `{get_config_path(skill, project_root).relative_to(Path(project_root)).as_posix()}` — {status}")
 
     # Event log section (if exists)
     events = read_events(project_root)

@@ -15,7 +15,7 @@ from .iterate_entry import RUN_ID_STRICT, iterates_dir
 import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 
-RESULTS_FILENAME = _sp.rel("test_results")
+RESULTS_FILENAME = _sp.name("test_results")
 EVIDENCE_SUFFIX = ".test-results.json"
 
 
