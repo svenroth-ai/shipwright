@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-28-u4-autonomous-merge-method",
+  "date": "2026-11-28",
+  "section": "Iterate — feature: autonomous release merge picks its method",
+  "title": "merge-ready picks the autonomous merge method, pins the head, stops when the base moved",
+  "context": "An autonomous hand-invoked release ran gh pr merge --merge, which a squash-only repository refuses (D110); a squash onto a base that moved would ship other PRs' code without their changelog entries.",
+  "decision": "release.py merge-ready reads the repository merge settings (merge commit preferred, else squash, else rebase), checks HEAD, the PR head and base, and prints one pinned line gh pr merge --{method} --match-head-commit {head} --delete-branch; before a squash or rebase onto a moved base it refuses with base_moved and a restart message.",
+  "consequences": "A self-merging release works on squash-only repositories and never merges an unchecked head; a moved base stops the release (operator decision). FR-01.09 AC16 is recorded and unit-tested until U6 re-pins the frozen prose (operator option B).",
+  "rationale": "One literal merge line keeps the release guard's judgement; reading settings instead of changing them respects the repository; the head pin and the ancestry check close the two ways a wrong commit could be merged.",
+  "rejected": "Falling back to --merge on any read failure (fails on squash-only repos); gh pr update-branch on a moved base (breaks U3's proof); re-pinning the frozen prose and traces now (option A, rejected by the operator).",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-11-28-u4-autonomous-merge-method.md"
+}

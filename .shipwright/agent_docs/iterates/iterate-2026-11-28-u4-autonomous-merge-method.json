@@ -1,0 +1,111 @@
+{
+  "run_id": "iterate-2026-11-28-u4-autonomous-merge-method",
+  "date": "2026-11-28T16:08:14.020925Z",
+  "event_at": "2026-11-28T13:02:22.941651+00:00",
+  "type": "feature",
+  "complexity": "medium",
+  "prior_source": "keyword",
+  "branch": "iterate/campaign-dfp-changelog-followups--U4-a2",
+  "spec": ".shipwright/planning/iterate/campaigns/dfp-changelog-followups/sub-iterates/U4-autonomous-merge-method.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-11-28-u4-autonomous-merge-method",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "the merge method follows the repository settings, a merge commit preferred, else squash, else rebase; every line pins the head",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-changelog/tests/test_release_merge_ready.py::test_the_method_follows_the_repository_settings_and_prefers_a_merge_commit PASSED"
+      },
+      {
+        "behavior": "a squash onto a base that moved stops with a plain restart message and prints no merge line",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-changelog/tests/test_release_merge_ready.py::test_a_squash_onto_a_base_that_moved_stops_with_a_plain_restart_message PASSED"
+      },
+      {
+        "behavior": "a merge commit does not wait for an up-to-date branch",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-changelog/tests/test_release_merge_ready.py::test_a_merge_commit_does_not_wait_for_an_up_to_date_branch PASSED"
+      },
+      {
+        "behavior": "every case without a safe line is refused with its own reason, never a fallback to --merge",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-changelog/tests/test_release_merge_ready.py::test_every_case_without_a_safe_line_is_refused_with_its_own_reason PASSED"
+      },
+      {
+        "behavior": "only an autonomous release from a feature branch gets a line; no release record is refused",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-changelog/tests/test_release_merge_ready.py::test_only_an_autonomous_release_from_a_feature_branch_gets_a_line PASSED"
+      },
+      {
+        "behavior": "the answer never carries the user and token of the push URL",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-changelog/tests/test_release_merge_ready.py::test_the_answer_never_carries_the_user_and_token_of_the_push_url PASSED"
+      },
+      {
+        "behavior": "SKILL.md carries the one literal merge line merge-ready prints; the CLI answers as JSON",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-changelog/tests/test_release_merge_ready.py::test_the_skill_carries_the_one_literal_merge_line_merge_ready_prints PASSED"
+      },
+      {
+        "behavior": "squash-only repo: a pinned squash line the guard allows, and push-tag proves the merge (real git, gh stub)",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "plugins/shipwright-changelog/tests/test_release_merge_ready_e2e.py::test_a_squash_only_repo_gets_a_pinned_squash_line_the_guard_allows_and_push_tag_proves PASSED"
+      },
+      {
+        "behavior": "merge commits allowed: a pinned --merge line and the tag stays on the release commit",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "plugins/shipwright-changelog/tests/test_release_merge_ready_e2e.py::test_a_repo_that_allows_merge_commits_gets_a_pinned_merge_line_and_the_tag_stays_on_the_release PASSED"
+      },
+      {
+        "behavior": "a base that moved stops before a squash and nothing is merged (real git)",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "plugins/shipwright-changelog/tests/test_release_merge_ready_e2e.py::test_a_base_that_moved_stops_before_a_squash_with_a_restart_message_and_nothing_is_merged PASSED"
+      },
+      {
+        "behavior": "a commit pushed after the answer makes the host refuse the pinned line and the guard deny it",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "plugins/shipwright-changelog/tests/test_release_merge_ready_e2e.py::test_a_commit_pushed_to_the_branch_after_the_answer_makes_the_host_refuse_the_pinned_line PASSED"
+      },
+      {
+        "behavior": "AC16 is exempted from P8c only, through a map naming live, unskipped L1 tests, tied to the pinned merge line (operator option B)",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-changelog/tests/golden/test_scenario_index.py::test_ac16_waits_for_u6_through_a_narrow_exemption_that_names_live_l1_tests PASSED"
+      },
+      {
+        "behavior": "the golden freeze holds: no trace moved, every changed frozen file has an approved delta",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-changelog/tests/golden/test_trace_freeze.py PASSED; golden_lock.py --check status ok"
+      }
+    ],
+    "counts": {
+      "testable": 13,
+      "tested": 13,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 1,
+      "covered_acs": 1
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run --directory plugins/shipwright-changelog pytest tests/test_release_merge_ready.py tests/test_release_merge_ready_e2e.py tests/golden/test_scenario_index.py tests/golden/test_promises_meta.py -q -p no:cacheprovider",
+    "exit_code": 0,
+    "tests_run": 48,
+    "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\campaign-dfp-changelog-followups--U4-a2\\.shipwright\\runs\\iterate-2026-11-28-u4-autonomous-merge-method\\surface_verification.log",
+    "timestamp": "2026-11-28T16:07:30.168Z",
+    "attempts": 1
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": []
+}
