@@ -1,0 +1,21 @@
+{
+ "stage": "doubt",
+ "gating": "advisory-must-address",
+ "doubts": [
+  {
+   "severity": "low",
+   "lens": "boundary & contract",
+   "claim_under_doubt": "base_before shows S grows from the base before the merge",
+   "file": "plugins/shipwright-changelog/scripts/hooks/release_merge_proof.py",
+   "what_would_resolve_it": "Docstring: base_before is meaningful only as U3 writes it; content rests on the tree checks."
+  },
+  {
+   "severity": "low",
+   "lens": "hidden coupling & blast radius",
+   "claim_under_doubt": "D113(1) summary line truthful in every tag_remote state",
+   "file": "plugins/shipwright-changelog/scripts/lib/release_close.py",
+   "what_would_resolve_it": "Trunk wording claims the branch; commit None case wording."
+  }
+ ],
+ "summary": "2 low doubts, no medium or high."
+}

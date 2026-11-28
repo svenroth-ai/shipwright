@@ -1,0 +1,243 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-28-u2-guard-accepts-proven-merge",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-28T06:40:34.562910+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "The proof requires `tree(pr_head) == proof.tree == tree(S)`. This holds for squash and rebase merges, and for a merge commit only when the base hasn't advanced since `base_before`. The e2e test (item 5) exercises only a hand-made squash merge, but `merged_via` accepts `merge` and `rebase`. The `merge` path — especially a merge where the base moved between `base_before` and the merge — is untested and is the case most likely to produce a surprising deny.",
+          "suggestion": "Either add an L1 case for `merged_via: merge` (including base-advanced scenario) or explicitly document/accept the constraint in the rule (e.g., `proof.tree` recorded at PR-head time and the rule compares `tree(S)` to `proof.tree`, with `pr_head` tree check only as the tie-in) — and state in docs that a base-advanced merge will be denied and must re-record.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency ·",
+          "file": null,
+          "line": null,
+          "finding": "Item 4 requires the close summary to know what the verify saw (\"Tag pushed to origin\" only when verify saw the tag on origin naming the release), but the plumbing is only half-specified (\"`tag_remote` carries `on_origin`\"). If `release_close` and `release_verify` are separate invocations, the plan needs to name the channel — verify output JSON, state file field, or re-query — and the current plan doesn't say whether close re-runs git or trusts verify's result. Re-querying on origin in close is a race-window (tag may be pushed between the two); trusting stale verify output is a correctness risk if the tag is deleted or moved.",
+          "suggestion": "Specify the mechanism explicitly: have the verify record `tag_on_origin_commit` into a shared result (or re-run the tag check inside close). Don't leave it implicit.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "pr_state` \"falls back to S on the base when R is not\" — a squash-merged PR is typically closed, not merged, and the PR head commit no longer exists on the remote. The fallback needs to handle: PR head gone, base history rewritten by squash (S's parent is not R), and the PR state query returning CLOSED/MERGED. The plan doesn't say what pr_state actually asserts once it falls back.",
+          "suggestion": "Define pr_state's acceptance condition for the fallback case precisely (e.g., PR state MERGED/CLOSED plus S present in base history via descent), and cover it in the L1 test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk ·",
+          "file": null,
+          "line": null,
+          "finding": "The guard's `_record`/judging private signature change touches two existing tests (acknowledged in item 5) — good — but confirm no other call sites (close-phase re-invokes the guard? other hooks?) read the record through the old helper. Worth a quick grep before implementation rather than discovering it at test time.",
+          "suggestion": "Cheap pre-check of guard call sites; no design change needed.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach ·",
+          "file": null,
+          "line": null,
+          "finding": "The design correctly keeps `main` inert since nothing writes the new fields until U3 — but that also means the L1 tests are the only consumers of the new code path for a whole unit. If the field shapes (`proof = {pr_head, tree, base_before}`) are wrong, U3 discovers it late. The e2e hand-made record effectively locks the schema now, which is the right call — just ensure the schema is documented in `release_state.json`'s write-matrix row (item 6 covers this).",
+          "suggestion": "None — just keep the schema doc in this unit, as planned.",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-28T06:40:06.345417+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] ## Review Findings\n\n- **Category: edge-case · Severity: medium**\n  **Finding:** The proof requires `tree(pr_head) == proof.tree == tree(S)`. This holds for squash and rebase merges, and for a merge commit only when the base hasn't advanced since `base_before`. The e2e test (item 5) exercises only a hand-made squash merge, but `merged_via` accepts `merge` and `rebase`. The `merge` path — especially a merge where the base moved between `base_before` and the merge — is untested and is the case most likely to produce a surprising deny.\n  **Suggestion:** Either add an L1 case for `merged_via: merge` (including base-advanced scenario) or explicitly document/accept the constraint in the rule (e.g., `proof.tree` recorded at PR-head time and the rule compares `tree(S)` to `proof.tree`, with `pr_head` tree check only as the tie-in) — and state in docs that a base-advanced merge will be denied and must re-record.\n\n- **Category: dependency · Severity: medium**\n  **Finding:** Item 4 requires the close summary to know what the verify *saw* (\"Tag pushed to origin\" only when verify saw the tag on origin naming the release), but the plumbing is only half-specified (\"`tag_remote` carries `on_origin`\"). If `release_close` and `release_verify` are separate invocations, the plan needs to name the channel — verify output JSON, state file field, or re-query — and the current plan doesn't say whether close re-runs git or trusts verify's result. Re-querying on origin in close is a race-window (tag may be pushed between the two); trusting stale verify output is a correctness risk if the tag is deleted or moved.\n  **Suggestion:** Specify the mechanism explicitly: have the verify record `tag_on_origin_commit` into a shared result (or re-run the tag check inside close). Don't leave it implicit.\n\n- **Category: edge-case · Severity: low**\n  **Finding:** `pr_state` \"falls back to S on the base when R is not\" — a squash-merged PR is typically *closed*, not merged, and the PR head commi […truncated]\n\n[openai] 1. **Category** security · **Severity** medium  \n   **Finding** The proposed proof establishes that `S` has the audited release tree, but it does not establish that `S` was integrated into the intended base. `proof.base_before` is checked for shape only, and the guard can authorize a tag on a same-tree commit that was never merged. The base check in close-phase `pr_state` does not protect the earlier tag push.  \n   **Suggestion** Specify which step establishes that `S` is on the intended base and how the guard can trust that evidence. If U3 establishes it before recording the proof, document that trust boundary and the purpose of `base_before`. If the guard must establish it independently, add a real-Git case where `S` has the correct tree but is absent from the base.\n\n2. **Category** edge-case · **Severity** medium  \n   **Finding** The second-close summary depends on `tag_remote` reporting the current remote tag even when the local tag is absent or points elsewhere. If the remote check is gated on a passing `tag_local` result, `on_origin` can remain unset even though origin already has the correct tag. It can also conflate a missing tag with a failed remote lookup.  \n   **Suggestion** Verify that the existing remote check can report the tag target independently of local tag state and distinguish lookup failure from absence. Add a repeat-close regression that asserts the summary text after the tag appears on origin, alongside the existing 8-of-8 assertion.\n\nThe shared predicate and squash-merge test are a sound basis. Shell execution was blocked, so this review is based on the supplied plan and could not verify the campaign brief, findings, or current code.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": ".shipwright/planning/iterate/iterate-2026-11-28-u2-guard-accepts-proven-merge/mini-plan.md",
+          "line": 17,
+          "finding": "Plan item 3 says pr_state falls back to S; code checks the commit the tag names.",
+          "suggestion": "Reword item 3.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/tests/test_release_merge_proof.py",
+          "line": 135,
+          "finding": "No passing test for merged_via=merge on an unmoved base.",
+          "suggestion": "Add a --no-ff merge test that is proven.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-changelog/tests/test_release_merge_proof.py",
+          "line": 242,
+          "finding": "Unit test shares its name with the e2e test.",
+          "suggestion": "Rename the unit copy (..._via_verify).",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-28T06:58:27.018219+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "bc2e9f4a534362d4a234aa2595b57e595d77552f",
+      "reviewer_notes": "No hole in the rule; record without new fields unchanged; guard fail-open kept."
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-changelog/scripts/hooks/release_merge_proof.py",
+          "line": null,
+          "finding": "base_before shows S grows from the base before the merge",
+          "suggestion": "Docstring: base_before is meaningful only as U3 writes it; content rests on the tree checks.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling & blast radius",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_close.py",
+          "line": null,
+          "finding": "D113(1) summary line truthful in every tag_remote state",
+          "suggestion": "Trunk wording claims the branch; commit None case wording.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-28T06:58:27.432801+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "bc2e9f4a534362d4a234aa2595b57e595d77552f"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "release_verify.py (`proven_published` / `accepts` interplay via `release_merge_proof.accepts`)",
+          "line": null,
+          "finding": "accepts` calls `claimed(record)` and then `proven(git, record)`, which internally calls `claimed(record)` again — and `proven` also re-runs `release_descent.is_the_release` for `pr_head` even though the tag-push path already ran a descent check on `judged`. This is redundant git work per guard decision, not incorrect output. No user-visible failure; noting for completeness only.",
+          "suggestion": "Acceptable as-is; if it matters, have `accepts` short-circuit `proven`'s re-validation or cache `claimed`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_close.py (summary, new `tag_remote` lookup)",
+          "line": null,
+          "finding": "If `checks` ever arrives without a `tag_remote` entry (a `next(..., {})` default covers missing/renamed), the summary silently falls back to `tag_may_be_pending`, so a guided release whose tag was actually never pushed would still print \"Tag is pushed after the PR is merged\" — the pre-D113 over-optimistic line. This only bites if verify is ever changed to return without the tag check; today verify always appends it.",
+          "suggestion": "Optional hardening: treat a missing `tag_remote` check as \"unknown\" rather than falling through to the mode-based guess.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "tests/test_release_push_rule.py (drift assertion)",
+          "line": null,
+          "finding": "The renamed one-rule assertion now greps for the literal strings `\"release_merge_proof.accepts\"` in `release_guard.py` and `\"release_descent.is_the_release\"` in `release_merge_proof.py`. String-presence checks are weak (a comment would satisfy them), but they were equally weak before, and the behavior is genuinely covered by `test_release_merge_proof.py` on real git. Not a blocker.",
+          "suggestion": "None needed; the behavioral tests carry the weight.  Positive notes on the likely suspects, checked and clean: the `_SHA` regex correctly admits both SHA-1 and SHA-256; `proven` fails closed on unknown commits, malformed proofs, foreign trees, and non-base-grown squashes; a record without the new fields costs no extra git call (verified by the `calls == []` test); the `_pr_check` retry with `published` happens before the `reached is None` branch so an unknown first lookup with a proven merge commit still gets the second chance; `_advice` is safe because `_record` already validated `commit`; the summary's `on_origin: None` (unreachable origin) is distinguished from both \"waiting\" and \"missing\", which matches D113(1). The tests genuinely validate behavior (real git, bare remote, both guard and verify paths, tree-mismatch denial, hand-edited record, orphan-tree commit, moved-base merge), not just call counts.  The acceptance criteria appear fully covered: guard allows a proven merge commit's tag push and close-phase passes 8 of 8 (e2e test), tree mismatch denied by both, absent fields behave as today (including the no-extra-git-call test), and the second close-phase summary flips to \"pushed\" once the tag reaches origin.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-28T06:46:16.439593+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] - Category: bug\n- Severity: low\n- File: release_verify.py (`proven_published` / `accepts` interplay via `release_merge_proof.accepts`)\n- Finding: `accepts` calls `claimed(record)` and then `proven(git, record)`, which internally calls `claimed(record)` again — and `proven` also re-runs `release_descent.is_the_release` for `pr_head` even though the tag-push path already ran a descent check on `judged`. This is redundant git work per guard decision, not incorrect output. No user-visible failure; noting for completeness only.\n- Suggestion: Acceptable as-is; if it matters, have `accepts` short-circuit `proven`'s re-validation or cache `claimed`.\n\n- Category: edge-case\n- Severity: low\n- File: plugins/shipwright-changelog/scripts/lib/release_close.py (summary, new `tag_remote` lookup)\n- Finding: If `checks` ever arrives without a `tag_remote` entry (a `next(..., {})` default covers missing/renamed), the summary silently falls back to `tag_may_be_pending`, so a guided release whose tag was actually never pushed would still print \"Tag is pushed after the PR is merged\" — the pre-D113 over-optimistic line. This only bites if verify is ever changed to return without the tag check; today verify always appends it.\n- Suggestion: Optional hardening: treat a missing `tag_remote` check as \"unknown\" rather than falling through to the mode-based guess.\n\n- Category: test\n- Severity: low\n- File: tests/test_release_push_rule.py (drift assertion)\n- Finding: The renamed one-rule assertion now greps for the literal strings `\"release_merge_proof.accepts\"` in `release_guard.py` and `\"release_descent.is_the_release\"` in `release_merge_proof.py`. String-presence checks are weak (a comment would satisfy them), but they were equally weak before, and the behavior is genuinely covered by `test_release_merge_proof*.py` on real git. Not a blocker.\n- Suggestion: None needed; the behavioral tests carry the weight.\n\nPositive notes on the likely suspects, checked and clean: the `_SHA` regex  […truncated]\n\n[openai] - **Category** spec\n- **Severity** medium\n- **File:line** `plugins/shipwright-changelog/scripts/lib/release_verify.py:108`\n- **Finding** The PR check can pass for a different commit than the one the release publishes. If the original release commit `R` is on the base and a proof-valid `published_commit` `S` is only local, both tag checks pass for tags pointing at `S`. The PR check then succeeds on `R` and never verifies that `S` reached the base. Close-phase can report 8 of 8 even though the published tag points to a commit outside the PR base.\n- **Suggestion** When the remote tag points to `published_commit`, require that commit on the PR base in modes that require a merged PR. Add a bare-remote regression test with `R` on the base and the tag pointing to a same-tree `S` outside the base.\n\n- **Category** test\n- **Severity** low\n- **File:line** `plugins/shipwright-changelog/tests/test_release_merge_proof.py:232`\n- **Finding** The test named for a second guided `close-phase` calls `verify()` and `summary()` directly. It can pass even if the CLI fails on its second invocation or prints a different summary after the first invocation writes close-phase state.\n- **Suggestion** Invoke `release.py close-phase` twice against the same guided release, push the tag between invocations, and assert both summaries from the CLI output.\n\n**Ship-with-fixes.** Tie the PR check to the published tag target and exercise the guided rerun through the CLI. Local shell access was blocked, so this review is based on the supplied diff and specification. I could not inspect the referenced campaign files or run the tests.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-28T06:46:02.138870+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "dd5f9ca3dda7bd83ead3f90822061c6bdf091cbb"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-28T06:40:05.873456+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-28T06:40:06.003641+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

@@ -1,0 +1,1 @@
+The changelog plugin's release guard and closing check can accept a release that was squash- or rebase-merged, when the release record proves the merge commit carries exactly the checked release (the record fields are written from the next release step on).

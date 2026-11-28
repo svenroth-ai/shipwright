@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "## Review Findings\n\n- **Category: edge-case \u00b7 Severity: medium**\n  **Finding:** The proof requires `tree(pr_head) == proof.tree == tree(S)`. This holds for squash and rebase merges, and for a merge commit only when the base hasn't advanced since `base_before`. The e2e test (item 5) exercises only a hand-made squash merge, but `merged_via` accepts `merge` and `rebase`. The `merge` path \u2014 especially a merge where the base moved between `base_before` and the merge \u2014 is untested and is the case most likely to produce a surprising deny.\n  **Suggestion:** Either add an L1 case for `merged_via: merge` (including base-advanced scenario) or explicitly document/accept the constraint in the rule (e.g., `proof.tree` recorded at PR-head time and the rule compares `tree(S)` to `proof.tree`, with `pr_head` tree check only as the tie-in) \u2014 and state in docs that a base-advanced merge will be denied and must re-record.\n\n- **Category: dependency \u00b7 Severity: medium**\n  **Finding:** Item 4 requires the close summary to know what the verify *saw* (\"Tag pushed to origin\" only when verify saw the tag on origin naming the release), but the plumbing is only half-specified (\"`tag_remote` carries `on_origin`\"). If `release_close` and `release_verify` are separate invocations, the plan needs to name the channel \u2014 verify output JSON, state file field, or re-query \u2014 and the current plan doesn't say whether close re-runs git or trusts verify's result. Re-querying on origin in close is a race-window (tag may be pushed between the two); trusting stale verify output is a correctness risk if the tag is deleted or moved.\n  **Suggestion:** Specify the mechanism explicitly: have the verify record `tag_on_origin_commit` into a shared result (or re-run the tag check inside close). Don't leave it implicit.\n\n- **Category: edge-case \u00b7 Severity: low**\n  **Finding:** `pr_state` \"falls back to S on the base when R is not\" \u2014 a squash-merged PR is typically *closed*, not merged, and the PR head commit no longer exists on the remote. The fallback needs to handle: PR head gone, base history rewritten by squash (S's parent is not R), and the PR state query returning CLOSED/MERGED. The plan doesn't say what pr_state actually asserts once it falls back.\n  **Suggestion:** Define pr_state's acceptance condition for the fallback case precisely (e.g., PR state MERGED/CLOSED plus S present in base history via descent), and cover it in the L1 test.\n\n- **Category: risk \u00b7 Severity: low**\n  **Finding:** The guard's `_record`/judging private signature change touches two existing tests (acknowledged in item 5) \u2014 good \u2014 but confirm no other call sites (close-phase re-invokes the guard? other hooks?) read the record through the old helper. Worth a quick grep before implementation rather than discovering it at test time.\n  **Suggestion:** Cheap pre-check of guard call sites; no design change needed.\n\n- **Category: approach \u00b7 Severity: low**\n  **Finding:** The design correctly keeps `main` inert since nothing writes the new fields until U3 \u2014 but that also means the L1 tests are the only consumers of the new code path for a whole unit. If the field shapes (`proof = {pr_head, tree, base_before}`) are wrong, U3 discovers it late. The e2e hand-made record effectively locks the schema now, which is the right call \u2014 just ensure the schema is documented in `release_state.json`'s write-matrix row (item 6 covers this).\n  **Suggestion:** None \u2014 just keep the schema doc in this unit, as planned.\n\n## Overall Assessment\n\nThe approach is sound: one shared stdlib rule consumed by guard and verify avoids drift, and tying S to `pr_head` + tree is a sensibly strong proof. The two items to pin down before implementation are the exact close\u2194verify channel for `on_origin` and the `merged_via: merge` tree semantics with a moved base \u2014 both are specification gaps rather than design flaws.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Category** security \u00b7 **Severity** medium  \n   **Finding** The proposed proof establishes that `S` has the audited release tree, but it does not establish that `S` was integrated into the intended base. `proof.base_before` is checked for shape only, and the guard can authorize a tag on a same-tree commit that was never merged. The base check in close-phase `pr_state` does not protect the earlier tag push.  \n   **Suggestion** Specify which step establishes that `S` is on the intended base and how the guard can trust that evidence. If U3 establishes it before recording the proof, document that trust boundary and the purpose of `base_before`. If the guard must establish it independently, add a real-Git case where `S` has the correct tree but is absent from the base.\n\n2. **Category** edge-case \u00b7 **Severity** medium  \n   **Finding** The second-close summary depends on `tag_remote` reporting the current remote tag even when the local tag is absent or points elsewhere. If the remote check is gated on a passing `tag_local` result, `on_origin` can remain unset even though origin already has the correct tag. It can also conflate a missing tag with a failed remote lookup.  \n   **Suggestion** Verify that the existing remote check can report the tag target independently of local tag state and distinguish lookup failure from absence. Add a repeat-close regression that asserts the summary text after the tag appears on origin, alongside the existing 8-of-8 assertion.\n\nThe shared predicate and squash-merge test are a sound basis. Shell execution was blocked, so this review is based on the supplied plan and could not verify the campaign brief, findings, or current code.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-11-28-u2-guard-accepts-proven-merge",
+    "at": "2026-11-28T06:35:43.982099+00:00"
+  },
+  "verdicts": {
+    "glm": "revise",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}
