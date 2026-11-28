@@ -29,25 +29,56 @@
     },
     "code": {
       "review_type": "code",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-compliance/scripts/lib/collectors/_python_license.py",
+          "line": 146,
+          "finding": "Declared placeholder values ('None', 'Unknown', npm 'none') count as resolved on both surfaces.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "plugins/shipwright-grade/scripts/lib/dependency_signal.py",
+          "line": 3,
+          "finding": "Grader counts no_license only, dashboard now counts no_license + not_installed; grader docstring claims same accounting.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-compliance/scripts/lib/sbom_generator.py",
+          "line": 47,
+          "finding": "resolved list repeats the partition rule inline.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-11-28T10:05:00.134425+00:00",
-      "disposition": "diff of 100 changed lines or fewer, small complexity, no risk flag: cascade not triggered, self-review only",
-      "recorded_by": "none",
+      "completed_at": "2026-11-28T12:12:56.660935+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "diff-below-threshold"
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "1aea71cba09f1616a8e87cdfece777f56864c20d",
+      "reviewer_notes": "Opus code-reviewer at 3f-bis; other readers of deps_unknown_license checked; no blocking finding."
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "not_run",
+      "status": "not_applicable",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-11-28T10:05:00.316034+00:00",
-      "disposition": "diff of 100 changed lines or fewer, small complexity, no risk flag: cascade not triggered, self-review only",
+      "completed_at": "2026-11-28T12:12:56.810511+00:00",
+      "disposition": "Stage 3 is conditional and did not trigger for this diff (about 69 source/test lines, no migration, async, cross-plugin import or irreversible op); Stage 2 passed at 3f-bis",
       "recorded_by": "none",
       "parse_status": null,
       "raw_excerpt": null,
@@ -68,16 +99,18 @@
     },
     "spec": {
       "review_type": "spec",
-      "status": "not_run",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-11-28T10:04:59.943017+00:00",
-      "disposition": "diff of 100 changed lines or fewer, small complexity, no risk flag: cascade not triggered, self-review only",
-      "recorded_by": "none",
+      "completed_at": "2026-11-28T12:12:56.518156+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "reason_code": "diff-below-threshold"
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "1aea71cba09f1616a8e87cdfece777f56864c20d"
     },
     "plan_internal": {
       "review_type": "plan_internal",
