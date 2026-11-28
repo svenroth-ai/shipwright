@@ -1,0 +1,77 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-28-r3-license-count",
+    "date": "2026-11-28",
+    "unit": {
+      "status": "passed",
+      "passed": 2226,
+      "skipped": 5,
+      "total": 2231
+    },
+    "integration": {
+      "status": "not_run",
+      "passed": 0,
+      "skipped": 0,
+      "total": 0
+    },
+    "pgtap": {
+      "status": "not_run",
+      "passed": 0,
+      "skipped": 0,
+      "total": 0
+    },
+    "e2e": {
+      "status": "not_run",
+      "passed": 0,
+      "skipped": 0,
+      "total": 0
+    },
+    "design_fidelity": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "dashboard unresolved-license count equals the SBOM's count on a fixture with unknown and not-installed licenses",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_license_count_single_source.py::test_dashboard_and_sbom_agree_on_unresolved_count PASSED"
+        },
+        {
+          "behavior": "unresolved_count is the SBOM definition (declared-none plus not-installed; empty is 0)",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_license_count_single_source.py::test_unresolved_count_is_the_sbom_definition PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 2,
+        "tested": 2,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 2,
+        "covered_acs": 2
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-11-28-r3-license-count",
+    "commit": "36c56660bfc8e4060976d21311ce43051a182715",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

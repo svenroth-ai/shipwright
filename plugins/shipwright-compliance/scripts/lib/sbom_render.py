@@ -43,6 +43,16 @@ def _classify(deps: list[DependencyInfo]):
     return resolved, no_license, not_installed, copyleft
 
 
+def unresolved_count(deps: list[DependencyInfo]) -> int:
+    """The ONE unresolved-license count: declared-none plus not-installed.
+
+    Every surface (SBOM summary/pie/verdict, the dashboard's Control Grade
+    dependency-hygiene line) reads this -- none counts on its own.
+    """
+    _resolved, no_license, not_installed, _copyleft = _classify(deps)
+    return len(no_license) + len(not_installed)
+
+
 def summary_lines(deps: list[DependencyInfo], *, deduped: int = 0) -> list[str]:
     """Summary table that counts ALL packages (AR-04): a ``Licenses resolved
     X / Y`` row plus a ``(deduplicated)`` annotation on the runtime count when

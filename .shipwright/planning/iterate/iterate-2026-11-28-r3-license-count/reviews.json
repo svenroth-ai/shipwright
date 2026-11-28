@@ -1,0 +1,142 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-28-r3-license-count",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-28T10:05:04.742254+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-28T10:05:04.905008+00:00",
+      "disposition": "small complexity with no risk flag and diff of 100 lines or fewer: plan review not triggered (Step 3.4 plan_review_required=false)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-compliance/scripts/lib/collectors/_python_license.py",
+          "line": 146,
+          "finding": "Declared placeholder values ('None', 'Unknown', npm 'none') count as resolved on both surfaces.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "plugins/shipwright-grade/scripts/lib/dependency_signal.py",
+          "line": 3,
+          "finding": "Grader counts no_license only, dashboard now counts no_license + not_installed; grader docstring claims same accounting.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-compliance/scripts/lib/sbom_generator.py",
+          "line": 47,
+          "finding": "resolved list repeats the partition rule inline.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-28T12:12:56.660935+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "1aea71cba09f1616a8e87cdfece777f56864c20d",
+      "reviewer_notes": "Opus code-reviewer at 3f-bis; other readers of deps_unknown_license checked; no blocking finding."
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-28T12:12:56.810511+00:00",
+      "disposition": "Stage 3 is conditional and did not trigger for this diff (about 69 source/test lines, no migration, async, cross-plugin import or irreversible op); Stage 2 passed at 3f-bis",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "diff-below-threshold"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-28T10:04:59.788967+00:00",
+      "disposition": "diff of 100 changed lines or fewer, small complexity, no risk flag: code-review cascade not triggered",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "diff-below-threshold"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-28T12:12:56.518156+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "1aea71cba09f1616a8e87cdfece777f56864c20d"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-28T10:05:00.496081+00:00",
+      "disposition": "small complexity: below the medium threshold, arm does not run",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-28T10:05:00.663126+00:00",
+      "disposition": "small complexity: below the medium threshold, arm does not run",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}

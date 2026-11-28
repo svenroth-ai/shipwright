@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-28-r3-license-count",
+  "date": "2026-11-28",
+  "section": "Iterate — bug: one source for the unresolved-license count",
+  "title": "SBOM render owns the unresolved-license count",
+  "context": "The dashboard counted only the literal 'unknown' license and missed not-installed packages, so it showed 0 unresolved while sbom.md reported 8.",
+  "decision": "Add sbom_render.unresolved_count (declared-none plus not-installed); the SBOM generator and the Control Grade dependency line both call it. The dashboard's private set is removed.",
+  "consequences": "Both surfaces always show the same number; a test pins it on a fixture. Dependency-hygiene scores may drop for repos with uninstalled dependencies.",
+  "rationale": "One definition next to _classify cannot drift; the SBOM is the documented source of truth.",
+  "rejected": "Keeping two counters and syncing them by test only: drift recurs on the next change.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}
