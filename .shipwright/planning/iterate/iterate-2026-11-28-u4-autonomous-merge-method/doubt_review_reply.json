@@ -41,7 +41,11 @@
     "moved base: direction correct, exit codes other than 0/1 or a failed fetch give base_state_unknown; skipping it for a merge commit is sound",
     "fail closed: unparsable or failed gh answers refuse as pr_state_unknown / repo_settings_unknown; no allowed method refuses; MERGED/CLOSED have own reasons",
     "exemption widening: key set pinned to AC16, ids and covers tag pinned, tied to the pinned --merge line",
-    "reversibility and frozen replay: merge-ready writes only FETCH_HEAD; fetch_base keeps verify keys and order; pinned prose and replay merge line untouched"
+    "reversibility and frozen replay: merge-ready writes only FETCH_HEAD; fetch_base keeps verify keys and order; pinned prose and replay merge line untouched",
+    "rebase cascade 1 (head 781bddf63, merge of #1132): same run config and runstate paths (path() unchanged, plugin literals untouched, manifest_sync CONFIG_NAME same value)",
+    "restore_derived / release_close with #1132's widened path lists: nothing new restorable, extra pathspec harmless; golden replay argv and traces unchanged",
+    "compliance_refresh: new test_results path is RUN_WRITTEN, never regenerated or staged at release",
+    "union-merged triage.jsonl and docs/hooks-and-pipeline.md well-formed (orchestrator: all 2591 triage lines parse as JSON); release guard and push-tag proof untouched by #1132 (orchestrator: git diff 6763f8449 781bddf63 -- plugins/shipwright-changelog is empty)"
   ],
-  "summary": "Orchestrator 3f-bis, opus, attempt 2 (head 6763f8449). One medium (repo/PR identity across pr_url, gh default and origin; fork layouts) accepted for the interval as pre-existing in the target, fail-safe for the release record and not reachable in this repo, carried into U7 with a concrete fail-closed fix; two lows carried into U7; one low rebutted as a visible, deliberate edit. Claims (2)-(5) held; (1) held for the head sha."
+  "summary": "Orchestrator 3f-bis, opus, attempt 2 (head 6763f8449). One medium (repo/PR identity across pr_url, gh default and origin; fork layouts) accepted for the interval as pre-existing in the target, fail-safe for the release record and not reachable in this repo, carried into U7 with a concrete fail-closed fix; two lows carried into U7; one low rebutted as a visible, deliberate edit. Claims (2)-(5) held; (1) held for the head sha. Re-review after rebase cascade 1 (merge of origin/main #1132): no new doubts; the reviewer's two evidence limits were closed by the orchestrator (empty changelog-plugin diff across the merge, triage.jsonl parses line by line)."
 }

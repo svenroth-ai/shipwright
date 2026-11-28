@@ -2,13 +2,13 @@
   "stage": "spec-compliance",
   "verdict": "PASS",
   "spec_citations": [],
-  "summary": "Orchestrator 3f-bis, opus, attempt 2 (head 6763f8449, merge-base e3e1540a0). Code matches brief section 1 U4, FR-01.09 AC16, the binding operator decisions (moved base stops with a restart message; option B: AC16 unit-tested until U6) and the golden-freeze rules of brief section 2. Method from repo settings, merge commit first, unreadable settings refused (repo_settings_unknown); every line carries --match-head-commit; squash/rebase onto a moved base refuses with base_moved and merges nothing; SKILL.md keeps one literal merge line; e2e tests on real git cover squash-only, default --merge, moved base and a late push. Golden freeze: gh_stub_support.py added by re-pin (approved_deltas emptied by design), three later frozen-file changes each carry an approved delta, UNIT_TESTED_UNTIL_U6 holds only AC16, pinned prose unchanged. Reviewer could not run git; orchestrator confirmed golden_lock --check status ok (problems []) and that no frozen golden trace changed (the only trace.json in the diff is the non-frozen promise export).",
+  "summary": "Orchestrator 3f-bis, opus, rebase cascade 1 (head 781bddf63 = merge of origin/main 345a62978 (#1132, R1c-3) into the reviewed head 6763f8449; merge-base 345a62978). First pass on 6763f8449: PASS (code matches brief section 1 U4, FR-01.09 AC16, operator decisions, golden-freeze rules; orchestrator confirmed golden_lock --check ok and no frozen trace moved). Re-review after the merge: #1132 touches nothing under plugins/shipwright-changelog/, shared/testkit/, the golden lock, approved_deltas, scenario_index, the pinned prose or the conversion configs; the only shared file is docs/hooks-and-pipeline.md (one added row, hence the 3148 -> 3149 hunk offset). U4's one link to a changed shared module is release_paths.run_config_path -> shipwright_paths.path('run_config'); #1132 only changed snapshot_paths() and run_written_paths(), path() is unchanged. The release guard uses none of the changed recognisers. release_merge.py:83-100, SKILL.md:214-216 and the option-B exemption are intact. Nothing in the merge weakens U4's acceptance.",
   "ac_verdicts": [
     {
       "ac": "item-1",
       "verdict": "matches",
       "diff_location": "plugins/shipwright-changelog/scripts/lib/release_merge.py:83-100",
-      "reason": "Settings pick the method, merge commit first; the line is pinned to the audited head; squash or rebase onto a moved base refuses with base_moved, merges nothing and tells the operator to restart; shown by the e2e tests.",
+      "reason": "After the merge the settings still pick the method (merge commit first), the line is pinned to the checked head, and a squash or rebase onto a moved base refuses with base_moved and a restart message; #1132 touches none of this code or its imports.",
       "weakens": false
     }
   ]
