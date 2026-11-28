@@ -119,6 +119,9 @@ def test_the_fold_stages_the_sync_config_where_it_lives(tmp_path):
     assert _new("sync_config") in fold_events._stage_paths({"status": "nothing_to_fold", "mode": "emergency"},
                                                             str(tmp_path))
     assert _new("sync_config") in fold_events._stage_paths(folded, str(tmp_path))
+    (tmp_path / sp.name("sync_config")).write_text("{}", encoding="utf-8")   # two copies: never raises (the release
+    staged = fold_events._stage_paths(folded, str(tmp_path))                 # fold calls it before its rollback)
+    assert set(sp.known_rels("sync_config")) <= set(staged)
 
 
 @pytest.mark.covers("FR-01.11")
