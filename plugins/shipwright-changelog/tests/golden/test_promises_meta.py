@@ -162,7 +162,7 @@ def test_every_promise_test_is_bound_by_an_entry_and_carries_that_entrys_covers_
     for ac, ids in unit_tested.items():
         for check in ids:
             path, _, name = check.partition("::")
-            assert path not in promise_paths and ac in ph.covers_of(name, (REPO_ROOT / path).read_text(encoding="utf-8")), check
+            assert path not in promise_paths and ph.covers_of(name, (REPO_ROOT / path).read_text(encoding="utf-8")) == [ac], check
     found = {}
     for path in _promise_files():
         source = path.read_text(encoding="utf-8")

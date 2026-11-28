@@ -3,7 +3,7 @@
     "scenario": "plugins/shipwright-changelog/tests/golden/scenario_index.py",
     "field": "sha256",
     "before": "c0456bc588a908ca7bf1eacbbe050e27739b64d44c56bb24bb71d96553a23922",
-    "after": "92e8a8a86ab52e0ad8dbdd573587bdc556b579543afd6e083b7cb9228603d22a",
+    "after": "b791f67d4c8d9effd2321ab93ba462b70c88dff416e9d6faadaaf5bcd7ffe539",
     "approver": "operator decision 2026-11-28 (Sven, U4 option B: AC16 recorded, unit-tested until U6): scenario_index gains UNIT_TESTED_UNTIL_U6 (only FR-01.09/AC16, with the five merge-ready L1 tests that cover it) and check_unit_tested; check_p8c skips that AC until U6; the pinned prose and every frozen trace are unchanged",
     "date": "2026-11-28",
     "source": "D110; brief unit U4"
@@ -12,7 +12,7 @@
     "scenario": "plugins/shipwright-changelog/tests/golden/test_scenario_index.py",
     "field": "sha256",
     "before": "1eda9b6c2388ed49b63c1333322d3be5f7062fc2f3f5e787e277b061b209bff0",
-    "after": "d635280d1ab0760abbcb406abaf1a0c339f02f347669e7a0f7f2387a02990eba",
+    "after": "02caafda599b9b0bbfd32fbc677cb04d20bd883427075aea96016a8ebc3dc852",
     "approver": "operator decision 2026-11-28 (Sven, U4 option B: AC16 recorded, unit-tested until U6): P8c counts 16 ACs, and a new test keeps the AC16 exemption narrow (AC16 only, its tests exist, no scenario or oracle claims it yet); the pinned prose and every frozen trace are unchanged",
     "date": "2026-11-28",
     "source": "D110; brief unit U4"
@@ -21,7 +21,7 @@
     "scenario": "plugins/shipwright-changelog/tests/golden/test_promises_meta.py",
     "field": "sha256",
     "before": "dbf6263d4086d43fe618f14aace8baa4b3f5817d2957e8f6006fb79891e66318",
-    "after": "be1fe06b5ae2ba8c8f096b4738434e3704f9e90cc4b0fef979fb41bcffb4d5bb",
+    "after": "d39a404aece1b9dbfaabdad02e356225fc0985859e716d2aa02e5c7e7491789a",
     "approver": "operator decision 2026-11-28 (Sven, U4 option B: AC16 recorded, unit-tested until U6): the binding test reads the AC16 entry's L1 tests as the exemption's tests (equal to UNIT_TESTED_UNTIL_U6, not promise files, each tagged covers FR-01.09/AC16) instead of promise tests; the pinned prose and every frozen trace are unchanged",
     "date": "2026-11-28",
     "source": "D110; brief unit U4"

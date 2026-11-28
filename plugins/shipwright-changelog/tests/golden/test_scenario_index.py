@@ -23,6 +23,8 @@ def test_ac16_waits_for_u6_through_a_narrow_exemption_that_names_live_l1_tests()
     assert scenario_index.check_unit_tested(scenario_index.UNIT_TESTED_UNTIL_U6) == []
     declared = {ac for scenario in scenario_index.all_scenarios().values() for ac in scenario.acs}
     assert not set(scenario_index.UNIT_TESTED_UNTIL_U6) & (declared | set(oracle.JUDGES))
+    pinned = (GOLDEN_DIR / "pinned_prose" / "SKILL.md.pin").read_text(encoding="utf-8")
+    assert "gh pr merge --merge --delete-branch" in pinned  # the cause: once U6 re-pins the prose, empty the map
     gone = {"FR-01.09/AC16": ("plugins/shipwright-changelog/tests/test_release_merge_ready.py::test_no_such_test",)}
     assert scenario_index.check_unit_tested(gone) == ["FR-01.09/AC16: the test " + gone["FR-01.09/AC16"][0] + " is gone"]
 

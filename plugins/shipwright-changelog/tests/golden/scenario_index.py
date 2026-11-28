@@ -53,7 +53,8 @@ def check_p8c(tagged: Iterable[str], oracle_acs: Iterable[str]) -> list[str]:
 
 
 def check_unit_tested(exempt: dict[str, tuple[str, ...]]) -> list[str]:
-    """Each exempted AC is still in the spec and names L1 tests that exist (``path::name``)."""
+    """Each exempted AC is still in the spec and names L1 tests that exist (``path::name``) in a file that skips nothing
+    (no ``skip``/``xfail`` anywhere in it, so a skipped test cannot keep the exemption green)."""
     problems = []
     for ac, tests in exempt.items():
         if ac not in spec_acs():
@@ -63,10 +64,12 @@ def check_unit_tested(exempt: dict[str, tuple[str, ...]]) -> list[str]:
         for check in tests:
             path, _, name = check.partition("::")
             file = REPO_ROOT / path
-            defs = {n.name for n in ast.parse(file.read_text(encoding="utf-8")).body
-                    if isinstance(n, ast.FunctionDef)} if file.is_file() else set()
+            source = file.read_text(encoding="utf-8") if file.is_file() else ""
+            defs = {n.name for n in ast.parse(source).body if isinstance(n, ast.FunctionDef)}
             if name not in defs:
                 problems.append(f"{ac}: the test {check} is gone")
+            elif re.search(r"\b(skip|skipif|xfail|importorskip)\b", source):
+                problems.append(f"{ac}: the file of {check} skips or xfails a test")
     return problems
 
 
