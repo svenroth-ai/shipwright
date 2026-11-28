@@ -1,0 +1,80 @@
+{
+  "run_id": "iterate-2026-11-28-u1-root-pyproject-manifest",
+  "date": "2026-11-28T05:33:05.389808Z",
+  "event_at": "2026-11-28T05:32:40.014580+00:00",
+  "type": "feature",
+  "complexity": "small",
+  "prior_source": "keyword",
+  "branch": "iterate/campaign-dfp-changelog-followups--U1",
+  "spec": ".shipwright/planning/iterate/campaigns/dfp-changelog-followups/sub-iterates/U1-root-pyproject-manifest.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-11-28-u1-root-pyproject-manifest",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "pyproject_toml/uv_lock: a bump of copies of the real root files changes only the version line (byte diff)",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tests/test_manifest_sync_toml.py::test_a_copy_of_the_real_root_file_changes_only_its_version_line PASSED"
+      },
+      {
+        "behavior": "a version of another table, the lock's own version and dependency entries are never touched",
+        "disposition": "tested",
+        "evidence": "test_manifest_sync_toml.py::test_pyproject_edit_never_touches_a_version_of_another_table, ::test_lock_edit_touches_only_the_root_package_not_the_lock_version_or_dependencies PASSED"
+      },
+      {
+        "behavior": "CRLF, quotes and comments survive; multi-line strings and array rows are not headers",
+        "disposition": "tested",
+        "evidence": "test_manifest_sync_toml.py::test_crlf_single_quotes_and_comment_survive, ::test_a_multi_line_string_is_text_not_a_header_or_a_version_line, ::test_an_array_row_that_starts_with_a_bracket_does_not_end_the_table PASSED"
+      },
+      {
+        "behavior": "no [project] version / no root package / wrong type / invalid TOML refused by name",
+        "disposition": "tested",
+        "evidence": "test_manifest_sync_toml.py::test_pyproject_without_a_usable_project_version_is_refused_by_name, ::test_lock_without_one_root_package_version_is_refused_by_name PASSED"
+      },
+      {
+        "behavior": "an unplaceable version line or a pre-release/build version is refused before a write",
+        "disposition": "tested",
+        "evidence": "test_manifest_sync_toml.py::test_a_version_line_the_scan_cannot_place_alone_is_refused_not_guessed, ::test_a_prerelease_or_build_version_is_refused_before_a_write PASSED"
+      },
+      {
+        "behavior": "release.py sync moves all five formats on a scratch git project and verify-commit passes; a stale TOML manifest is named",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-changelog/tests/test_release_sync_five_formats.py (3 tests) PASSED"
+      },
+      {
+        "behavior": "this repo declares root pyproject.toml and uv.lock",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_changelog_config_manifest_roster.py::test_root_pyproject_and_uv_lock_are_declared_with_the_toml_formats PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 7,
+      "tested": 7,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 1,
+      "covered_acs": 1
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run --directory plugins/shipwright-changelog pytest tests/test_release_sync_five_formats.py -q -p no:cacheprovider",
+    "exit_code": 0,
+    "tests_run": 3,
+    "evidence_path": ".shipwright/runs/iterate-2026-11-28-u1-root-pyproject-manifest/surface_verification.json",
+    "timestamp": "2026-11-28T05:32:02.973Z",
+    "attempts": 1
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": [
+    "touches_build",
+    "touches_io_boundary"
+  ]
+}

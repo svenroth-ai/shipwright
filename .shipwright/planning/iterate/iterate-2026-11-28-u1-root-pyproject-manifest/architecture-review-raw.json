@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "1. **The question, answered in one sentence.** Yes \u2014 no new standing mechanism is created; the existing manifest sync absorbs two more formats, which is the smallest thing that would do.\n\n2. **The smallest thing that would do** \u2014 exactly what is proposed: two table-scoped format handlers in the existing sync library plus two config entries. The alternative (continuing to hand-bump the root files) is what produced the current one-version-behind drift; teaching the existing mechanism is smaller than any new mechanism.\n\n3. **What it costs to keep** \u2014 the sync library now permanently understands TOML tables and uv.lock's package table; future changes to the root `pyproject.toml` layout (e.g., dynamic versions) or to uv.lock's format will need the parsers updated, and anyone editing those files between releases must expect a byte-diff verify against them.\n\n4. **What it forecloses** \u2014 none identified.\n\n5. Findings:\n\n- Category: proportionality\n- Severity: low\n- Finding: re-parsing with `tomllib` and doing table-scoped edits means any stray formatting in the root `pyproject.toml` (comments, key ordering) may not survive a bump, which would show up as a noisy byte diff rather than the \"only version lines change\" criterion.\n- Suggestion: if the byte-diff criterion chafes in practice, fall back to line-targeted edits (regex on the `version =` line and the lock's package stanza) \u2014 but only after observing a real diff, not preemptively.\n\nNo findings beyond that.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "Extend the existing manifest sync because it already owns release version alignment and both root files fell behind after a release. The smallest change is to declare `pyproject.toml` and `uv.lock` in the existing config and use the same write and verification steps to update the project version and its lockfile entry. The ongoing cost is maintaining two format handlers as the file formats evolve, and what it forecloses is `none identified`.\n\nNo findings.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "architecture",
+  "capture": {
+    "run_id": "iterate-2026-11-28-u1-root-pyproject-manifest",
+    "at": "2026-11-27T23:49:05.838388+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "approve"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}

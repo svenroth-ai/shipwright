@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-28-u1-root-pyproject-manifest",
+  "date": "2026-11-28",
+  "section": "Iterate — feature: root pyproject.toml and uv.lock as release manifests",
+  "title": "TOML release manifests by table-scoped line edit with a re-parse check",
+  "context": "FINDINGS D111: v0.37.0 bumped every plugin manifest but left the root pyproject.toml and the shipwright package in uv.lock at 0.36.0; neither was a declarable manifest (campaign dfp-changelog-followups, unit U1).",
+  "decision": "New formats pyproject_toml and uv_lock in shared/scripts/lib/manifest_sync_toml.py: read with tomllib; write replaces the one version line inside [project] or the root [[package]] (source virtual/editable '.'), then re-parses and refuses unless only that value changed. The repo declares both root files.",
+  "consequences": "Releases move pyproject.toml and uv.lock with every other manifest; uv lock --check accepts the result. New statuses missing_root_package and unsupported_version_for_format (TOML formats take only X.Y.Z). A layout the scan cannot place (dotted key, inline table, quoted key) is refused, never rewritten.",
+  "rationale": "A line edit keeps every other byte (CRLF, comments) and needs no TOML writer dependency; the re-parse equality turns any heuristic miss into a refusal. Reviews: architecture approve x2; plan and external code findings handled; spec PASS; code pass (5 low fixed); doubt: 3 fixed, re-lock doubt rebutted by probe.",
+  "rejected": "A file-wide regex on version = current; a full rewrite with a TOML writer (tomlkit/tomli-w); inserting a missing version.",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-11-28-u1-root-pyproject-manifest.md"
+}

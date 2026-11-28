@@ -1,0 +1,1 @@
+Release manifest sync: the formats `pyproject_toml` and `uv_lock` keep a Python project's `pyproject.toml` and its `uv.lock` at the released version (only the version line changes); this repository now declares its root `pyproject.toml` and `uv.lock`

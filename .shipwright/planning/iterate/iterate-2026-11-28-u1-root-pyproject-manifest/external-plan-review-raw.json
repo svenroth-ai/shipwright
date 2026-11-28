@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "**Findings**\n\n- **Category: dependency / Severity: medium**\n  `tomllib` is stdlib only on Python \u2265 3.11. If the shared scripts (or any consumer repo using `shared/`) still supports 3.10, this breaks. Confirm the minimum Python version pinned for the shared scripts; if 3.10 is in support range, you need a `tomli` fallback or an explicit floor \u2014 the plan should state which.\n\n- **Category: edge-case / Severity: medium**\n  A `{virtual = \".\"}` root package frequently has **no `version` line at all** (virtual roots are for projects without a build backend). The plan treats an absent version as `missing_version_field`, which refuses both read *and* write. That means: (a) you can never release-bump a project whose root version was absent in the lock, and (b) if pyproject has a version but the lock's root entry doesn't (common when `[project].version` is set but the root is still recorded as virtual), the sync refuses on a state the operator may consider normal. Decide explicitly: refuse-only (document it), or support *inserting* the version line into the root table when it's absent. As written, the acceptance criterion \"no root package in the lock is refused\" is covered, but \"root package present without version\" isn't addressed and is the more likely real-world hit.\n\n- **Category: edge-case / Severity: low**\n  Workspaces: uv workspace roots use `{virtual = \".\"}` while members use `{editable = \"<member path>\"}`, so \"exactly one virtual/editable `.`\" is usually fine \u2014 but a repo that vendors a workspace member at the root path could theoretically produce ambiguity. The `ambiguous_manifest_structure` refusal covers it; just make sure the error message names the file and the two matching tables so an operator can resolve it.\n\n- **Category: edge-case / Severity: low**\n  Byte-diff fidelity: the k-th-header-to-kth-entry mapping is sound (TOML arrays preserve file order), but the table-scoped scan must stop at the *next* header of any kind (`[...]` or `[[...]]`), not just `[[package]]` \u2014 editable packages can carry sub-tables (`[package.metadata]`, `[package.dev-dependencies]`) that could theoretically contain a `version = ...` entry in exotic cases. Stating \"next header line\" as the plan does is correct; the test should include a `[package.metadata]` section to pin it.\n\n- **Category: risk / Severity: low**\n  The plan's refusal on `pyproject.toml` dynamic versions (`version` under `[tool.poetry]` or `dynamic = [\"version\"]`) is correct behavior, but confirm the roster declaration for *this* repo's pyproject actually has a static `[project].version` \u2014 otherwise the config change makes every release a STRICT-STOP. Cheap to verify, worth doing before wiring the config.\n\n- **Category: security / Severity: low**\n  No injection or exposure concerns; TOML parsing of repo-own files at release time is fine. The `reformatted: false` + re-parse-and-compare invariant is a good guard against accidental rewrites.\n\n- **Category: approach / Severity: low**\n  Correctly rejects both the global-regex and full-TOML-rewrite alternatives. The table-scoped line edit with re-parse verification is the right amount of machinery; no over-production here.\n\n**Overall assessment:** The approach is sound and well-scoped; the one thing that genuinely needs resolving before implementation is the semantics of a root lock entry with no `version` line (refuse vs. insert), plus confirming the Python floor for `tomllib`. Everything else is test coverage detail.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Dependency \u00b7 High**  \n   **Finding.** Workspace policy blocked reads of the required campaign brief and D111 findings row. The approved documentation delta and any operator decisions remain unverified.  \n   **Suggestion.** Confirm the plan against both files before implementation and apply the campaign\u2019s strict stop if an operator answer is required.\n\n2. **Risk \u00b7 Medium**  \n   **Finding.** Table-scoped replacement and `tomllib` re-parsing protect the parsed values, but ordinary Python text I/O can normalize CRLF throughout the file. The semantic comparison would still pass while the byte-diff acceptance criterion fails.  \n   **Suggestion.** Preserve line endings through both reads and writes. Assert the exact resulting bytes in the CRLF test, including the final newline state.\n\n3. **Edge-case \u00b7 Medium**  \n   **Finding.** The lockfile plan defines errors for zero or multiple root packages but leaves the case of a uniquely identified root package with a missing or non-string `version` unspecified. That case can fail before rendering, including during `--verify-commit`.  \n   **Suggestion.** Validate the lock root\u2019s version in the shared read path and return `missing_version_field`, consistent with the pyproject reader. Test that the refusal leaves the lockfile untouched.\n\n4. **Approach \u00b7 Medium**  \n   **Finding.** Calling `release_sync.sync` directly can pass even if the public `release.py sync` command fails to route the new formats. A passing `--verify-commit` also provides weak coverage unless the test shows that verification rejects a stale committed TOML version.  \n   **Suggestion.** Drive the scratch-project test through `release.py sync`, commit the result, and verify it. Then commit a stale version in each new format in turn and assert that verification identifies the affected manifest.\n\nThe table-scoped edit with a semantic recheck is proportionate and avoids a TOML writer dependency. Approval depends on confirming the campaign prerequisites and covering byte preservation, named refusals, and the public release path.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-11-28-u1-root-pyproject-manifest",
+    "at": "2026-11-27T23:49:05.766145+00:00"
+  },
+  "verdicts": {
+    "glm": "revise",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

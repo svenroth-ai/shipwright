@@ -14,6 +14,8 @@
     {"path": "plugins/shipwright-preview/.claude-plugin/plugin.json", "format": "package_json"},
     {"path": "plugins/shipwright-adopt/.claude-plugin/plugin.json", "format": "package_json"},
     {"path": "plugins/shipwright-grade/.claude-plugin/plugin.json", "format": "package_json"},
-    {"path": ".claude-plugin/marketplace.json", "format": "marketplace_json"}
+    {"path": ".claude-plugin/marketplace.json", "format": "marketplace_json"},
+    {"path": "pyproject.toml", "format": "pyproject_toml"},
+    {"path": "uv.lock", "format": "uv_lock"}
   ]
 }

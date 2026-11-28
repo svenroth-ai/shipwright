@@ -31,6 +31,7 @@ from .manifest_sync_marketplace import (
     validate_marketplace_structure,
 )
 from .manifest_sync_paths import CONFIG_NAME, load_declared_manifests, resolve_contained_path
+from .manifest_sync_toml import TOML_FORMATS, read_toml_version, render_toml_write
 
 __all__ = [
     "ManifestSyncError",
@@ -46,7 +47,7 @@ __all__ = [
     "validate_version",
 ]
 
-SUPPORTED_FORMATS = ("package_json", "marketplace_json", "package_lock_json")
+SUPPORTED_FORMATS = ("package_json", "marketplace_json", "package_lock_json", *TOML_FORMATS)
 
 #: Bare SemVer 2.0.0 X.Y.Z, no leading "v" — canonical semver.org pattern,
 #: rejects leading zeroes (`01.2.3`, `1.2.3-01`) unlike a digit-only regex.
@@ -111,8 +112,9 @@ def read_manifest_version(text: str, fmt: str) -> str:
     ``package_json`` (a single top-level field), ``package_lock_json`` (that
     field plus ``packages[""].version``) and ``marketplace_json`` (the
     same top-level field, plus a ``plugins`` array of entries each carrying
-    their own) are implemented. A duplicate top-level ``"version"`` key is
-    refused (``ambiguous_manifest_structure``) rather than silently taking
+    their own) are implemented here; ``pyproject_toml`` and ``uv_lock`` are
+    read by ``manifest_sync_toml`` (``tomllib``). A duplicate top-level
+    ``"version"`` key is refused (``ambiguous_manifest_structure``) rather than silently taking
     whichever value Python's JSON decoder happened to keep — the check is
     scoped to the ROOT object's own keys, not every nested ``"version"``
     field a manifest might legitimately carry elsewhere (e.g. inside a
@@ -121,6 +123,8 @@ def read_manifest_version(text: str, fmt: str) -> str:
     """
     if fmt not in SUPPORTED_FORMATS:
         raise ManifestSyncError("unsupported_format", f"format {fmt!r} is not supported")
+    if fmt in TOML_FORMATS:
+        return read_toml_version(text, fmt)
 
     object_pairs: list[list[tuple[str, object]]] = []
 
@@ -218,6 +222,9 @@ def render_manifest_write(
 
     if fmt == "package_lock_json":
         return render_lock_write(original_text, new_version)
+
+    if fmt in TOML_FORMATS:
+        return render_toml_write(original_text, fmt, current_version, new_version)
 
     pattern = re.compile(r'("version"\s*:\s*")' + re.escape(current_version) + r'(")')
     matches = list(pattern.finditer(original_text))

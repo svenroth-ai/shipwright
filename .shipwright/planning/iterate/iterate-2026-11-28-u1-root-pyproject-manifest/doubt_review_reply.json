@@ -1,0 +1,11 @@
+{
+  "stage": "doubt",
+  "gating": "advisory-must-address",
+  "doubts": [
+    {"severity": "medium", "claim_under_doubt": "the release commit changes only the version line in uv.lock", "disproof_attempt": "a uv re-lock between sync and commit-and-tag would be swept into the release commit by the manifest pathspec", "response": "rebutted with evidence: on a scratch copy of the real files bumped by the sync, `uv run --offline python -c ...` left uv.lock byte-identical (sha256 before = after) and `uv lock --check --offline` exits 0, so a lock written by the sync is current for uv and a later uv run does not rewrite it; a re-lock from a stale lock happens at the first uv run (fold step) before the sync and is refused as manifest_dirty_before_sync. A hand edit between sync and commit is the same as for package.json today."},
+    {"severity": "low-medium", "claim_under_doubt": "any SemVer accepted can be written into pyproject.toml/uv.lock", "response": "accepted-and-fixed: the TOML formats refuse a version that is not plain X.Y.Z with unsupported_version_for_format before writing; test and status row added"},
+    {"severity": "low", "claim_under_doubt": "JSON-only consumers are unaffected", "response": "accepted-and-fixed: tomllib is imported lazily inside the TOML parse path"},
+    {"severity": "low", "claim_under_doubt": "a stale uv.lock reports a useful error", "response": "accepted-and-fixed: recovery note in manifest-sync.md"}
+  ],
+  "summary": "4 doubts (1 medium rebutted with a probe, 3 fixed). The edit itself could not be disproved."
+}

@@ -30,7 +30,7 @@ if the write didn't actually land.
 No file, no `published_manifests` key, or an empty list — all mean "no
 manifests declared." The sync step is then a clean no-op: nothing is read,
 written, or verified, and the release proceeds exactly as it did before this
-mechanism existed. Three `format` values are implemented; any other value is a
+mechanism existed. Five `format` values are implemented; any other value is a
 named failure, not a silent skip:
 
 - **`package_json`** — a single top-level `"version"` field (`package.json`,
@@ -63,10 +63,25 @@ named failure, not a silent skip:
   `packages[""].version` does not. Projects that do not declare this format
   see no behaviour change.
 
+- **`pyproject_toml`** — a Python `pyproject.toml`; the version is
+  `[project].version`. **`uv_lock`** — a `uv.lock`; the version is that of the
+  project's own `[[package]]`, the one whose `source` is `{ virtual = "." }`
+  or `{ editable = "." }`. Both are read with `tomllib`, and the write changes
+  only the `version = "…"` line inside that one table: a `[tool.*]` version,
+  the lock's own top-level `version` and every dependency entry stay as they
+  are, and CRLF/LF and comments survive byte-for-byte. The edited file is
+  parsed again and must differ from the original in that one value only,
+  else nothing is written (`ambiguous_manifest_structure`). A `pyproject.toml`
+  with no `[project].version` (a dynamic version included) is
+  `missing_version_field`; a lock with no such root package is
+  `missing_root_package`. Both formats take only a plain `X.Y.Z`: a
+  pre-release or build part is not always a valid Python version, so it is
+  refused (`unsupported_version_for_format`) before anything is written.
+
 This monorepo declares its own 14 `plugins/*/.claude-plugin/plugin.json`
-(`package_json`) plus its root `.claude-plugin/marketplace.json`
-(`marketplace_json`) in its own `shipwright_changelog_config.json` — dogfood,
-not just documentation.
+(`package_json`), its root `.claude-plugin/marketplace.json`
+(`marketplace_json`) and its root `pyproject.toml` and `uv.lock` in its own
+`shipwright_changelog_config.json` — dogfood, not just documentation.
 
 **Operator precondition, not tool-checked:** this no-op is indistinguishable
 from "the config exists but is gitignored in this checkout" — confirm
@@ -135,12 +150,14 @@ exact set Step 5.4 actually wrote and staged.
 | `path_is_symlink` | any symlink component in the declared path — **in-root symlinks are refused too**, not just escaping ones: `git add` stages the symlink entry, not the resolved target's changed blob, so a write through an in-root symlink would let the worktree and the staged/committed content diverge |
 | `manifest_missing` | the declared file doesn't exist |
 | `manifest_dirty_before_sync` | the declared file already has uncommitted changes before this tool touched it — refusing to fold unrelated edits into the release commit via `--stage` |
-| `unsupported_format` | `format` isn't `package_json`, `marketplace_json` or `package_lock_json` |
+| `unsupported_format` | `format` isn't `package_json`, `marketplace_json`, `package_lock_json`, `pyproject_toml` or `uv_lock` |
 | `invalid_manifest_structure` | (`marketplace_json`) `"plugins"` is missing, isn't an array, or one of its entries isn't a JSON object; (`package_lock_json`) `"packages"` isn't an object, `packages[""]` isn't an object, or its `version` isn't a string |
-| `parse_error` | the manifest isn't valid JSON |
-| `missing_version_field` | no top-level `"version"` key (e.g. a `"private": true` workspace root) — never injected |
-| `invalid_version_type` | `"version"` present but not a string |
-| `ambiguous_manifest_structure` | duplicate top-level `"version"` keys (or, for `package_lock_json`, duplicate `packages[""].version`) — refuses to guess which one to rewrite |
+| `parse_error` | the manifest isn't valid JSON (or valid TOML, for `pyproject_toml` / `uv_lock`) |
+| `missing_version_field` | no top-level `"version"` key (e.g. a `"private": true` workspace root), no `[project].version`, or a root lock package without a version — never injected |
+| `missing_root_package` | (`uv_lock`) no `[[package]]` whose `source` is `virtual` or `editable` at `"."` |
+| `unsupported_version_for_format` | (`pyproject_toml`, `uv_lock`) the release version is not a plain `X.Y.Z` |
+| `invalid_version_type` | `"version"` present but not a string (or `[project].version` / the root lock package's version, for the TOML formats) |
+| `ambiguous_manifest_structure` | duplicate top-level `"version"` keys (or, for `package_lock_json`, duplicate `packages[""].version`; for `uv_lock`, more than one root package; for the TOML formats, a version line that is not exactly one plain `version = "…"` line in its table) — refuses to guess which one to rewrite |
 | `write_failed` | an I/O error during the write phase (already-written manifests in this pass are restored) |
 | `stage_failed` | `git add` failed after writes succeeded (already-written manifests are restored) |
 | `verify_mismatch` | (verify-commit only) the committed blob's version doesn't match the release |
@@ -153,13 +170,12 @@ process's working directory.
 
 ## What's out of scope, named rather than silently missing
 
-- **Lockfiles other than npm's `package-lock.json`** (`yarn.lock`,
-  `pnpm-lock.yaml`, `uv.lock`, …). Only `package_lock_json` is implemented.
-  The lockfile's dependency entries are never rewritten, and the tool does
-  not run `npm install`.
+- **Lockfiles other than npm's `package-lock.json` and `uv.lock`**
+  (`yarn.lock`, `pnpm-lock.yaml`, …). A lockfile's dependency entries are
+  never rewritten, and the tool runs neither `npm install` nor `uv lock`.
 - **Publishing itself.** Whether/when/how the package reaches npm
   (`npm publish`, `NPM_TOKEN`) is a separate operator task.
-- **Formats other than `package_json`/`marketplace_json`/`package_lock_json`.** Any other value
+- **Formats other than the five above.** Any other value
   in `format` fails closed (`unsupported_format`) rather than a generic
   version-rewriting engine nobody has asked for yet.
 - **A `marketplace_json` manifest whose `plugins[]` entries are already
@@ -182,6 +198,12 @@ manifest. Re-run the release (idempotent — an already-current manifest
 reports `changed: false` and is not rewritten), or `git checkout -- <path>`
 to discard the bump. The standing check (below) catches the case where it
 is later committed by accident.
+
+**A `uv.lock` reported as `manifest_dirty_before_sync`** although nobody
+edited it was most likely re-locked by uv itself (a `uv run` earlier in the
+release, with a stale lock or another uv version). Commit the re-lock, or
+run `uv lock` and commit it, then re-run the release. A lock written by the
+sync is current for uv, so a later `uv run` leaves it as it is.
 
 **If byte-restoration itself fails** after a mid-sequence write or stage
 failure (permission change, disk full mid-restore) — rare, and not

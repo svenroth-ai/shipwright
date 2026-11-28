@@ -229,3 +229,4 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [Release guard hook (P4b, second pass B2)](iterate-2026-11-23-p4b-release-guard-hook-release-guard.md)
 - [ADR (run iterate-2026-11-25-p8a-decisions-q1-q4): release preview before write, branch push before PR, default branch from the remote](iterate-2026-11-25-p8a-decisions-q1-q4-release-fixes.md)
 - [ADR (run iterate-2026-11-25-p8b-decisions-q5-q10): hand-written entries in the release, the version at the boundary, the PR body from a file, a clean index after a refused refresh](iterate-2026-11-25-p8b-decisions-q5-q10-release-decisions.md)
+- [TOML release manifests (root pyproject.toml and uv.lock)](iterate-2026-11-28-u1-root-pyproject-manifest.md)

@@ -1,0 +1,1 @@
+- (2026-11-28) changelog — the consumer probe for a uv.lock version write is `uv lock --check --offline` on a scratch copy: it passes when pyproject.toml and the lock's root package agree and exits 1 on a stale lock. → iterate-2026-11-28-u1-root-pyproject-manifest

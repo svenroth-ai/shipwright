@@ -1,1 +1,11 @@
-[]
+[
+  {
+    "scenario": "plugins/shipwright-changelog/skills/changelog/references/manifest-sync.md",
+    "field": "sha256",
+    "before": "7d600443f22f9315ebf9c49bb14e962b11d040e73b2241d32e6be00140f8522f",
+    "after": "09457db666400582eca4a9a1bcd2aaf76a77437b8e6e87ae6949408af21e3ad5",
+    "approver": "operator decision 2026-11-28 (campaign brief dfp-changelog-followups rev 2, section 5): unit U1 adds the pyproject_toml and uv_lock manifest formats and declares the root pyproject.toml and uv.lock (FINDINGS D111); the reference names the two formats, the new statuses missing_root_package and unsupported_version_for_format, a uv.lock recovery note, and drops uv.lock from the out-of-scope list",
+    "date": "2026-11-28",
+    "source": "D111 (FINDINGS 2026-10-25-dfp-pilot-changelog, row D111); brief unit U1"
+  }
+]
