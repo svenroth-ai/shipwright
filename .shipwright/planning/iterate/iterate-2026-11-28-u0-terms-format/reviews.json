@@ -133,106 +133,197 @@
     "code": {
       "review_type": "code",
       "status": "completed",
-      "findings_count": 4,
+      "findings_count": 10,
       "findings": [
         {
           "severity": "medium",
           "category": "correctness",
-          "file": "shared/requirement-elicitation.md",
-          "line": 347,
-          "finding": "Prompt still calls an FR a capability; fixed by sweep.",
-          "suggestion": "fixed",
+          "file": ".shipwright/planning/01-adopted/spec.md",
+          "line": 155,
+          "finding": "spec.md ACs still use 'capability' in the FR sense.",
+          "suggestion": null,
           "source": "code-reviewer"
         },
         {
           "severity": "medium",
           "category": "correctness",
-          "file": "shared/schemas/intent.schema.json",
-          "line": 22,
-          "finding": "Regex dialect: trailing newline and non-space whitespace pass; fixed with strict patterns and tests.",
-          "suggestion": "fixed",
+          "file": "shared/tests/test_requirement_elicitation_rigor.py",
+          "line": 60,
+          "finding": "AC04 tag over-claims.",
+          "suggestion": null,
           "source": "code-reviewer"
         },
         {
           "severity": "low",
           "category": "correctness",
-          "file": "plugins/shipwright-design/skills/design/references/upload-mode.md",
-          "line": 74,
-          "finding": "Tool messages keep the older word; recorded as deferred.",
-          "suggestion": "follow-up",
+          "file": "shared/tests/test_requirement_elicitation_rigor.py",
+          "line": 215,
+          "finding": "Docstring misquotes AC03.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/schemas/intent.schema.json",
+          "line": 41,
+          "finding": "Id accepts trailing newline.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/schemas/intent.schema.json",
+          "line": 35,
+          "finding": "Status token accepted inside text.",
+          "suggestion": null,
           "source": "code-reviewer"
         },
         {
           "severity": "low",
           "category": "correctness",
           "file": "shared/tests/test_intent_schema.py",
-          "line": 29,
-          "finding": "Reference parser dropped unmatched lines; now raises.",
-          "suggestion": "fixed",
+          "line": 22,
+          "finding": "Reference parser gaps.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-design/skills/design/references/chat-first.md",
+          "line": 19,
+          "finding": "Mixed wording.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/fr-authoring.md",
+          "line": 49,
+          "finding": "Long definition sentence.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/config/constitution_register.md",
+          "line": 52,
+          "finding": "Register order.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": ".shipwright/planning/adr/iterate-2026-11-28-u0-terms-format-capability-column-intent-md.md",
+          "line": 48,
+          "finding": "Deferred line garbled the chat-map item.",
+          "suggestion": null,
           "source": "code-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-11-28T11:25:31.829393+00:00",
+      "completed_at": "2026-11-28T13:03:39.738352+00:00",
       "disposition": null,
       "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus",
       "verdict": "pass",
-      "reviewed_commit": "0c2002cf5852b3b805b912fc0e68e8a606c40595"
+      "reviewed_commit": "8328ece8ff905f3d561eaa2e75c24f634407bc85",
+      "reviewer_notes": "Opus code-reviewer at 3f-bis, two rounds; all fixes verified at 93965a47f. Re-checked at cefc461ff and 66b8be065 (PASS); final low (CLAUDE.md sentence) fixed at 8328ece."
     },
     "doubt": {
       "review_type": "doubt",
       "status": "completed",
-      "findings_count": 4,
+      "findings_count": 8,
       "findings": [
         {
-          "severity": "high",
-          "category": "blast radius",
-          "file": "shared/requirement-elicitation.md",
+          "severity": "medium",
+          "category": null,
+          "file": null,
           "line": null,
-          "finding": "Claim under doubt: The FR-is-function sweep is complete. — requirement-elicitation.md and guide.md still used the old sense.",
-          "suggestion": "sweep; done",
+          "finding": "constitution rule would make agents downgrade hand-typed statuses",
+          "suggestion": null,
           "source": "doubt-reviewer"
         },
         {
           "severity": "medium",
-          "category": "boundary",
-          "file": "shared/scripts/tools/brief_project_mode.py",
+          "category": null,
+          "file": null,
           "line": null,
-          "finding": "Claim under doubt: Prompts and tool strings agree. — Tool strings still say capability.",
-          "suggestion": "named in fr-authoring section 2 and the ADR as follow-up",
+          "finding": "ASK FIRST tier invites ask-then-write",
+          "suggestion": null,
           "source": "doubt-reviewer"
         },
         {
           "severity": "medium",
-          "category": "boundary",
-          "file": "shared/schemas/intent.schema.json",
+          "category": null,
+          "file": null,
           "line": null,
-          "finding": "Claim under doubt: Schema test proves rejection. — Reference parser dropped lines.",
-          "suggestion": "parser raises; rules stated",
+          "finding": "NEVER wording forbade AI drafting needed by U2b/U5",
+          "suggestion": null,
           "source": "doubt-reviewer"
         },
         {
-          "severity": "medium",
-          "category": "honesty",
-          "file": "shared/glossary.md",
+          "severity": "low",
+          "category": null,
+          "file": null,
           "line": null,
-          "finding": "Claim under doubt: Glossary states confirmation accurately. — Present tense for unbuilt F11 rule.",
-          "suggestion": "reworded",
+          "finding": "'function' read as code function",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "residual 'capability' wording in tools/docs",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "constitution bullet length",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "glossary at cap / dropped change-flow clause",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "'F11 refuses' present tense before U2a1",
+          "suggestion": null,
           "source": "doubt-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-11-28T11:25:31.955269+00:00",
+      "completed_at": "2026-11-28T13:03:40.687780+00:00",
       "disposition": null,
       "recorded_by": "doubt-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus",
       "verdict": "pass",
-      "reviewed_commit": "0c2002cf5852b3b805b912fc0e68e8a606c40595"
+      "reviewed_commit": "8328ece8ff905f3d561eaa2e75c24f634407bc85"
     },
     "external_code": {
       "review_type": "external_code",
@@ -293,14 +384,14 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-11-28T11:19:28.105044+00:00",
+      "completed_at": "2026-11-28T13:03:39.181184+00:00",
       "disposition": null,
       "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus",
       "verdict": "pass",
-      "reviewed_commit": "0c2002cf5852b3b805b912fc0e68e8a606c40595"
+      "reviewed_commit": "8328ece8ff905f3d561eaa2e75c24f634407bc85"
     },
     "plan_internal": {
       "review_type": "plan_internal",
