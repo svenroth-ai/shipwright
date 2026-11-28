@@ -1,0 +1,69 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-28-r2-growth-wording",
+    "date": "2026-11-28",
+    "unit": {
+      "status": "passed",
+      "passed": 10,
+      "skipped": 0,
+      "total": 10,
+      "scope": "tests/test_grade_oversize_additive.py"
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "negative ratchet delta renders net shrink",
+          "disposition": "tested",
+          "evidence": "tests/test_grade_oversize_additive.py::TestRatchetDeltaWordingBySign::test_negative_delta_says_net_shrink PASSED"
+        },
+        {
+          "behavior": "zero ratchet delta renders no change",
+          "disposition": "tested",
+          "evidence": "tests/test_grade_oversize_additive.py::TestRatchetDeltaWordingBySign::test_zero_delta_says_no_change PASSED"
+        },
+        {
+          "behavior": "positive ratchet delta renders net growth",
+          "disposition": "tested",
+          "evidence": "tests/test_grade_oversize_additive.py::TestRatchetDeltaWordingBySign::test_positive_delta_says_net_growth PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 3,
+        "tested": 3,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 3,
+        "covered_acs": 3
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-24-r5b-merge-lane",
+    "commit": "032d1ebbf0ef9c99eb98f240c8f1110e981a32a5",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

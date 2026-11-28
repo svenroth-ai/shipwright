@@ -1,0 +1,22 @@
+{
+  "run_id": "iterate-2026-11-28-r2-growth-wording",
+  "date": "2026-11-28T10:11:10.037352Z",
+  "event_at": "2026-11-28T08:17:06.987714+00:00",
+  "type": "bug",
+  "complexity": "trivial",
+  "prior_source": "default",
+  "branch": "iterate/campaign-R2-growth-wording",
+  "spec": ".shipwright/planning/iterate/campaigns/intent-pyramid/sub-iterates/R2-growth-wording.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-11-28-r2-growth-wording",
+  "test_completeness": {
+    "status": "n/a",
+    "reason_code": "trivial-auto"
+  },
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": [],
+  "declared_removals": []
+}

@@ -196,7 +196,9 @@ def _score_dimensions(inp: GradeInputs) -> list[DimensionResult]:
         delta = inp.bloat_ratchet_delta
         mt_score: float | None = (
             1.0 if delta <= 0 else max(0.0, 1.0 - delta / 100.0))
-        mt_detail = f"ratchet delta {delta:+d} lines (net growth)"
+        direction = ("net shrink" if delta < 0
+                     else "no change" if delta == 0 else "net growth")
+        mt_detail = f"ratchet delta {delta:+d} lines ({direction})"
     elif inp.oversize_file_ratio is not None:
         # Static proxy: score = fraction of source files WITHIN the size
         # threshold. The engine gets only the float ratio, so it renders an
