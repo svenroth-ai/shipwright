@@ -1,0 +1,12 @@
+{
+  "section": "U1-root-pyproject-manifest",
+  "verdict": "pass",
+  "review": [
+    {"severity": "low", "category": "correctness", "file": "shared/scripts/lib/manifest_sync_toml.py", "finding": "_ANY_HEADER matched an array row starting with '[' and ended the table early (fail-closed refusal).", "suggestion": "Tighten to a real header shape.", "disposition": "accepted-and-fixed: header-shaped pattern + test_an_array_row_that_starts_with_a_bracket_does_not_end_the_table"},
+    {"severity": "low", "category": "readability", "file": "shared/scripts/lib/manifest_sync_toml.py", "finding": "Lines split and string flags computed twice in render_toml_write.", "suggestion": "Compute once and pass into _table_span.", "disposition": "accepted-and-fixed"},
+    {"severity": "low", "category": "readability", "file": "shared/scripts/lib/manifest_sync_toml.py", "finding": "Over-long spliced docstring lines (also manifest_sync_core.read_manifest_version).", "suggestion": "Re-wrap.", "disposition": "accepted-and-fixed"},
+    {"severity": "low", "category": "correctness", "file": "plugins/shipwright-changelog/skills/changelog/references/manifest-sync.md", "finding": "invalid_version_type row not widened for the TOML formats.", "suggestion": "Widen the row and update the approved delta.", "disposition": "accepted-and-fixed (approved delta after-hash updated)"},
+    {"severity": "low", "category": "correctness", "file": "shared/scripts/tests/test_manifest_sync_toml.py", "finding": "Byte-identity check assumes 9.9.9 does not occur in the real files.", "suggestion": "Assert the sentinel is absent.", "disposition": "accepted-and-fixed"}
+  ],
+  "notes": "No high/medium findings. Verified: k-th [[package]] header mapping, re-parse equality makes any misplaced edit a refusal, CRLF preserved, all consumers route through read_manifest_version/describe_version_state/render_manifest_write, real uv.lock has exactly one root package."
+}

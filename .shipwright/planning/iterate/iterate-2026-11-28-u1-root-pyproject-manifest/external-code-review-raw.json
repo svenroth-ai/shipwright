@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "## Findings\n\n- Category: regression (possible) | Severity: medium\n- File: shared/scripts/lib/manifest_sync_core.py (describe_version_state, not shown in the diff)\n- Finding: The diff adds TOML delegation to `read_manifest_version` and `render_manifest_write`, but no change to `describe_version_state` is visible. If that function (or the verify-commit path in `sync_release_manifests.py`) has its own per-format branch list or an independent JSON-only check rather than going through `read_manifest_version`, `--verify-commit` would refuse or mis-report on `pyproject_toml`/`uv_lock` manifests. The new test `test_describe_version_state` (test_manifest_sync_toml.py:173-177) does assert the correct behavior, so this would be caught at test time \u2014 but the implementation change it depends on is not in this diff.\n- Suggestion: Confirm/commit the `describe_version_state` (and any verify-commit code path) change that routes TOML formats through `read_toml_version`; if it already delegates generically, no action needed.\n\n- Category: edge-case | Severity: low\n- File: shared/scripts/lib/manifest_sync_toml.py:112 (`_table_span`, `_ANY_HEADER`)\n- Finding: `_ANY_HEADER` matches any line starting with `[`, including a line inside a multi-line array or string that begins with `[`. For uv.lock this could truncate the root package's span early (e.g., a wrapped `requires-dist` array item starting with `[`), making the version line unfindable. The re-parse-equality guard turns this into a refusal rather than corruption, so it fails closed \u2014 but a legitimate lock could be refused as `ambiguous_manifest_structure`.\n- Suggestion: Acceptable as-is given fail-closed behavior; if real-world uv.lock files ever hit it, restrict `_ANY_HEADER` to table headers (`[[?name\u2026]]`).\n\n- Category: edge-case | Severity: low\n- File: shared/scripts/lib/manifest_sync_toml.py:65-71 (`_pyproject_version`)\n- Finding: A `pyproject.toml` where `project` is not a table (e.g., `project = \"foo\"` or an array) reports `missing_version_field` rather than a structure-invalid status. Conservative and arguably fine (the reference table ties `missing_version_field` to \"no `[project].version`\"), so this is borderline \u2014 noting only for the error-name contract.\n- Suggestion: Leave as-is, or add an `invalid_manifest_structure` for a non-table `project` key if the error taxonomy matters downstream.\n\n## Assessment of the ACs\n\n- AC1 (byte-diff on copies of the real files): implemented and genuinely tested (`test_a_copy_of_the_real_root_file_changes_only_its_version_line` reads the actual repo files, checks exactly one changed line, and round-trips the bytes; the scratch-project test re-checks CRLF/LF preservation). Real behavior-asserting tests, not smoke tests.\n- AC2 (named refusals): implemented; both `missing_version_field` (incl. dynamic-version hint) and `missing_root_package` are exercised with the exact expected status strings, plus quoted-key/dotted-key/multi-line-string lookalikes all refused.\n- AC3 (five formats to one version in a scratch project): implemented via the L1 test; the `uv run` \u2192 `sys.executable` substitution is reasonable and documented (the scratch pyproject must not become uv's project). The stale-TOML verify test additionally covers the verify-commit error path for the new formats.\n- Config declaration: done (`shipwright_changelog_config.json`), roster test added, docs and golden delta updated consistently (including `unsupported_format`, `parse_error`, and out-of-scope wording).\n\n## Security\n\nNo issues: input is repo-local files, paths go through the existing `resolve_contained_path` machinery, no new subprocess surface beyond the test's own scratch git repo.\n\n## Overall assessment\n\nWell-built, conservative, fail-closed implementation with unusually strong tests; the only open question is the unshown `describe_version_state`/verify-commit delegation, which the new tests would catch if wrong.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "- **Category:** edge-case  \n  **Severity:** medium  \n  **File:** `shared/scripts/lib/manifest_sync_toml.py:103`  \n  **Finding:** The table scanner treats any line beginning with `[` as the next table header. A valid `[project]` with a multiline `description` containing a line such as `[Overview]` before `version = \"1.2.3\"` is refused as `ambiguous_manifest_structure`, even though the version is a plain assignment in the correct table.  \n  **Suggestion:** Track TOML string and array boundaries when scanning for table headers. Add a regression test with bracketed text in a multiline description before the version.\n\n- **Category:** bug  \n  **Severity:** low  \n  **File:** `shared/scripts/lib/manifest_sync_toml.py:138`  \n  **Finding:** A valid `nan` value anywhere in the document, such as under `[tool.example]`, makes the re-parsed document compare unequal to the expected document. The sync therefore refuses a version-only edit even when the `nan` and all other bytes are unchanged.  \n  **Suggestion:** Use a recursive comparison that treats corresponding NaN values as equal. Add a test that bumps the project version while preserving a `nan` setting in another table.\n\n**Overall assessment \u2014 ship-with-fixes.** The diff adds both formats, declares both root manifests, and includes behavioral tests for the three acceptance criteria. Workspace access was blocked, so I could review the supplied diff but could not verify the campaign brief or D111 independently or run the tests.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-11-28-u1-root-pyproject-manifest",
+    "at": "2026-11-27T23:52:23.554981+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

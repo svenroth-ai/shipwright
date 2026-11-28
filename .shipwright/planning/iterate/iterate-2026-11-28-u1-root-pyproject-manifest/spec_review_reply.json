@@ -1,0 +1,9 @@
+{
+  "stage": "spec-compliance",
+  "verdict": "PASS",
+  "spec_citations": [],
+  "summary": "PASS. All three spec ACs and the brief's U1 'Done when' are met. (AC1) test_a_copy_of_the_real_root_file_changes_only_its_version_line bumps copies of the real root pyproject.toml and uv.lock and checks one changed line and byte restoration; other-table, lock top-level and dependency versions untouched. (AC2) missing_version_field / missing_root_package / ambiguous_manifest_structure / invalid_version_type refusals tested and documented in manifest-sync.md. (AC3) test_release_sync_five_formats moves all five formats on a real-git scratch project and verify-commit passes; stale TOML verify named. Test locations (shared/scripts/tests and the changelog plugin root) respect the one-root rule and are not a deviation that matters; driving release_sync.sync (what release.py sync dispatches to) with the real tool satisfies 'release.py sync on a scratch project'. Frozen manifest-sync.md change carries an approved delta citing D111.",
+  "ac_verdicts": [
+    {"ac": "FR-01.09.AC16", "verdict": "matches", "diff_location": "shared/scripts/lib/manifest_sync_toml.py", "reason": "render_toml_write replaces only the one version line in [project] or the root [[package]], refuses a result that re-parses to more than that change; read_toml_version stops with missing_version_field / missing_root_package.", "weakens": false}
+  ]
+}

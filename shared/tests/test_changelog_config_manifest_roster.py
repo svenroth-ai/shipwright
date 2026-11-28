@@ -16,6 +16,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
@@ -42,3 +44,12 @@ def test_every_plugin_json_on_disk_is_declared():
 def test_marketplace_json_is_declared_with_the_marketplace_format():
     declared = {entry["path"]: entry["format"] for entry in _declared_manifests()}
     assert declared.get(".claude-plugin/marketplace.json") == "marketplace_json"
+
+
+@pytest.mark.covers("FR-01.09/AC12")
+def test_root_pyproject_and_uv_lock_are_declared_with_the_toml_formats():
+    """FINDINGS D111: v0.37.0 bumped every plugin manifest but left the root
+    ``pyproject.toml`` (and the ``shipwright`` package in ``uv.lock``) behind."""
+    declared = {entry["path"]: entry["format"] for entry in _declared_manifests()}
+    assert declared.get("pyproject.toml") == "pyproject_toml"
+    assert declared.get("uv.lock") == "uv_lock"

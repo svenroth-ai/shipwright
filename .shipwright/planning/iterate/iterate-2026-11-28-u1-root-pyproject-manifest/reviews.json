@@ -1,0 +1,236 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-28-u1-root-pyproject-manifest",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-27T23:54:50.491066+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter",
+      "completed_at": "2026-11-27T23:51:12.160127+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "unstructured",
+      "raw_excerpt": "[glm] **Findings**\n\n- **Category: dependency / Severity: medium**\n  `tomllib` is stdlib only on Python ≥ 3.11. If the shared scripts (or any consumer repo using `shared/`) still supports 3.10, this breaks. Confirm the minimum Python version pinned for the shared scripts; if 3.10 is in support range, you need a `tomli` fallback or an explicit floor — the plan should state which.\n\n- **Category: edge-case / Severity: medium**\n  A `{virtual = \".\"}` root package frequently has **no `version` line at all** (virtual roots are for projects without a build backend). The plan treats an absent version as `missing_version_field`, which refuses both read *and* write. That means: (a) you can never release-bump a project whose root version was absent in the lock, and (b) if pyproject has a version but the lock's root entry doesn't (common when `[project].version` is set but the root is still recorded as virtual), the sync refuses on a state the operator may consider normal. Decide explicitly: refuse-only (document it), or support *inserting* the version line into the root table when it's absent. As written, the acceptance criterion \"no root package in the lock is refused\" is covered, but \"root package present without version\" isn't addressed and is the more likely real-world hit.\n\n- **Category: edge-case / Severity: low**\n  Workspaces: uv workspace roots use `{virtual = \".\"}` while members use `{editable = \"<member path>\"}`, so \"exactly one virtual/editable `.`\" is usually fine — but a repo that vendors a workspace member at the root path could theoretically produce ambiguity. The `ambiguous_manifest_structure` refusal covers it; just make sure the error message names the file and the two matching tables so an operator can resolve it.\n\n- **Category: edge-case / Severity: low**\n  Byte-diff fidelity: the k-th-header-to-kth-entry mapping is sound (TOML arrays preserve file order), but the table-scoped scan must stop at the *next* header of any kind (`[...]` or `[[...]]`), not  […truncated]\n\n[openai] 1. **Dependency · High**  \n   **Finding.** Workspace policy blocked reads of the required campaign brief and D111 findings row. The approved documentation delta and any operator decisions remain unverified.  \n   **Suggestion.** Confirm the plan against both files before implementation and apply the campaign’s strict stop if an operator answer is required.\n\n2. **Risk · Medium**  \n   **Finding.** Table-scoped replacement and `tomllib` re-parsing protect the parsed values, but ordinary Python text I/O can normalize CRLF throughout the file. The semantic comparison would still pass while the byte-diff acceptance criterion fails.  \n   **Suggestion.** Preserve line endings through both reads and writes. Assert the exact resulting bytes in the CRLF test, including the final newline state.\n\n3. **Edge-case · Medium**  \n   **Finding.** The lockfile plan defines errors for zero or multiple root packages but leaves the case of a uniquely identified root package with a missing or non-string `version` unspecified. That case can fail before rendering, including during `--verify-commit`.  \n   **Suggestion.** Validate the lock root’s version in the shared read path and return `missing_version_field`, consistent with the pyproject reader. Test that the refusal leaves the lockfile untouched.\n\n4. **Approach · Medium**  \n   **Finding.** Calling `release_sync.sync` directly can pass even if the public `release.py sync` command fails to route the new formats. A passing `--verify-commit` also provides weak coverage unless the test shows that verification rejects a stale committed TOML version.  \n   **Suggestion.** Drive the scratch-project test through `release.py sync`, commit the result, and verify it. Then commit a stale version in each new format in turn and assert that verification identifies the affected manifest.\n\nThe table-scoped edit with a semantic recheck is proportionate and avoids a TOML writer dependency. Approval depends on confirming the campaign prerequisites  […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tests/test_manifest_sync_toml.py",
+          "line": null,
+          "finding": "No test reaches the re-parse equality check in render_toml_write; deleting it would leave every test green although the safety argument rests on it.",
+          "suggestion": "Add a case that passes the line scan and is refused only by the re-parse (e.g. a [tool.\"a/b\"] header _ANY_HEADER does not match). Follow-up, not blocking: the check exists and fails closed.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/skills/changelog/references/manifest-sync.md",
+          "line": null,
+          "finding": "'refused before anything is written' is inaccurate: earlier manifests are written then restored by _restore. Declaring the root files means this repo now refuses SemVer pre-release versions.",
+          "suggestion": "Move the plain-X.Y.Z check to preflight or fix the wording; note the pre-release consequence.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/manifest_sync_toml.py",
+          "line": null,
+          "finding": "_ANY_HEADER matches an array row without trailing comma, ending the table early; a later version line then gets 0 hits and is refused (no corruption).",
+          "suggestion": "Track bracket depth or document the refusal in the test.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/manifest_sync_toml.py",
+          "line": null,
+          "finding": "render_toml_write parses the original text twice.",
+          "suggestion": "Reuse the parsed doc.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": ".shipwright/agent_docs/iterates/iterate-2026-10-08-u13-hook-command-shapes.json",
+          "line": null,
+          "finding": "Unrelated iterate record deleted.",
+          "suggestion": "Confirm it is store retention. Orchestrator note: spec-reviewer confirmed append_iterate_entry._apply_retention removes it.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-28T05:43:28.830787+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "reviewer_notes": "Orchestrator 3f-bis, opus. No high finding. Medium and lows carried as follow-ups for the operator report; none blocks the release path (all failure modes refuse, none writes wrong data). File sizes under 300 LOC; CRLF, comments, lock top-level version and dependency entries verified untouched."
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "reversibility",
+          "file": "shared/scripts/tools/sync_release_manifests.py",
+          "line": null,
+          "finding": "a pre-release or build version is refused before anything is written",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling & blast radius",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_sync.py",
+          "line": null,
+          "finding": "declaring uv.lock only changes the version line",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-28T05:43:28.971761+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "regression (possible) |",
+          "file": "shared/scripts/lib/manifest_sync_core.py (describe_version_state, not shown in the diff)",
+          "line": null,
+          "finding": "The diff adds TOML delegation to `read_manifest_version` and `render_manifest_write`, but no change to `describe_version_state` is visible. If that function (or the verify-commit path in `sync_release_manifests.py`) has its own per-format branch list or an independent JSON-only check rather than going through `read_manifest_version`, `--verify-commit` would refuse or mis-report on `pyproject_toml`/`uv_lock` manifests. The new test `test_describe_version_state` (test_manifest_sync_toml.py:173-177) does assert the correct behavior, so this would be caught at test time — but the implementation change it depends on is not in this diff.",
+          "suggestion": "Confirm/commit the `describe_version_state` (and any verify-commit code path) change that routes TOML formats through `read_toml_version`; if it already delegates generically, no action needed.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": "shared/scripts/lib/manifest_sync_toml.py:112 (`_table_span`, `_ANY_HEADER`)",
+          "line": null,
+          "finding": "_ANY_HEADER` matches any line starting with `[`, including a line inside a multi-line array or string that begins with `[`. For uv.lock this could truncate the root package's span early (e.g., a wrapped `requires-dist` array item starting with `[`), making the version line unfindable. The re-parse-equality guard turns this into a refusal rather than corruption, so it fails closed — but a legitimate lock could be refused as `ambiguous_manifest_structure`.",
+          "suggestion": "Acceptable as-is given fail-closed behavior; if real-world uv.lock files ever hit it, restrict `_ANY_HEADER` to table headers (`[[?name…]]`).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": "shared/scripts/lib/manifest_sync_toml.py:65-71 (`_pyproject_version`)",
+          "line": null,
+          "finding": "A `pyproject.toml` where `project` is not a table (e.g., `project = \"foo\"` or an array) reports `missing_version_field` rather than a structure-invalid status. Conservative and arguably fine (the reference table ties `missing_version_field` to \"no `[project].version`\"), so this is borderline — noting only for the error-name contract.",
+          "suggestion": "Leave as-is, or add an `invalid_manifest_structure` for a non-table `project` key if the error taxonomy matters downstream.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/manifest_sync_toml.py",
+          "line": 103,
+          "finding": "The table scanner treats any line beginning with `[` as the next table header. A valid `[project]` with a multiline `description` containing a line such as `[Overview]` before `version = \"1.2.3\"` is refused as `ambiguous_manifest_structure`, even though the version is a plain assignment in the correct table.",
+          "suggestion": "Track TOML string and array boundaries when scanning for table headers. Add a regression test with bracketed text in a multiline description before the version.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "shared/scripts/lib/manifest_sync_toml.py",
+          "line": 138,
+          "finding": "A valid `nan` value anywhere in the document, such as under `[tool.example]`, makes the re-parsed document compare unequal to the expected document. The sync therefore refuses a version-only edit even when the `nan` and all other bytes are unchanged.",
+          "suggestion": "Use a recursive comparison that treats corresponding NaN values as equal. Add a test that bumps the project version while preserving a `nan` setting in another table.  Overall assessment — ship-with-fixes. The diff adds both formats, declares both root manifests, and includes behavioral tests for the three acceptance criteria. Workspace access was blocked, so I could review the supplied diff but could not verify the campaign brief or D111 independently or run the tests.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-27T23:54:26.523976+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- Category: regression (possible) | Severity: medium\n- File: shared/scripts/lib/manifest_sync_core.py (describe_version_state, not shown in the diff)\n- Finding: The diff adds TOML delegation to `read_manifest_version` and `render_manifest_write`, but no change to `describe_version_state` is visible. If that function (or the verify-commit path in `sync_release_manifests.py`) has its own per-format branch list or an independent JSON-only check rather than going through `read_manifest_version`, `--verify-commit` would refuse or mis-report on `pyproject_toml`/`uv_lock` manifests. The new test `test_describe_version_state` (test_manifest_sync_toml.py:173-177) does assert the correct behavior, so this would be caught at test time — but the implementation change it depends on is not in this diff.\n- Suggestion: Confirm/commit the `describe_version_state` (and any verify-commit code path) change that routes TOML formats through `read_toml_version`; if it already delegates generically, no action needed.\n\n- Category: edge-case | Severity: low\n- File: shared/scripts/lib/manifest_sync_toml.py:112 (`_table_span`, `_ANY_HEADER`)\n- Finding: `_ANY_HEADER` matches any line starting with `[`, including a line inside a multi-line array or string that begins with `[`. For uv.lock this could truncate the root package's span early (e.g., a wrapped `requires-dist` array item starting with `[`), making the version line unfindable. The re-parse-equality guard turns this into a refusal rather than corruption, so it fails closed — but a legitimate lock could be refused as `ambiguous_manifest_structure`.\n- Suggestion: Acceptable as-is given fail-closed behavior; if real-world uv.lock files ever hit it, restrict `_ANY_HEADER` to table headers (`[[?name…]]`).\n\n- Category: edge-case | Severity: low\n- File: shared/scripts/lib/manifest_sync_toml.py:65-71 (`_pyproject_version`)\n- Finding: A `pyproject.toml` where `project` is not a table (e.g., `project = \"foo\"` or an array) […truncated]\n\n[openai] - **Category:** edge-case  \n  **Severity:** medium  \n  **File:** `shared/scripts/lib/manifest_sync_toml.py:103`  \n  **Finding:** The table scanner treats any line beginning with `[` as the next table header. A valid `[project]` with a multiline `description` containing a line such as `[Overview]` before `version = \"1.2.3\"` is refused as `ambiguous_manifest_structure`, even though the version is a plain assignment in the correct table.  \n  **Suggestion:** Track TOML string and array boundaries when scanning for table headers. Add a regression test with bracketed text in a multiline description before the version.\n\n- **Category:** bug  \n  **Severity:** low  \n  **File:** `shared/scripts/lib/manifest_sync_toml.py:138`  \n  **Finding:** A valid `nan` value anywhere in the document, such as under `[tool.example]`, makes the re-parsed document compare unequal to the expected document. The sync therefore refuses a version-only edit even when the `nan` and all other bytes are unchanged.  \n  **Suggestion:** Use a recursive comparison that treats corresponding NaN values as equal. Add a test that bumps the project version while preserving a `nan` setting in another table.\n\n**Overall assessment — ship-with-fixes.** The diff adds both formats, declares both root manifests, and includes behavioral tests for the three acceptance criteria. Workspace access was blocked, so I could review the supplied diff but could not verify the campaign brief or D111 independently or run the tests.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-28T05:43:28.707770+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "ac_verdicts": [
+        {
+          "ac": "FR-01.09.AC12",
+          "verdict": "matches",
+          "diff_location": "shared/scripts/lib/manifest_sync_core.py",
+          "reason": "SUPPORTED_FORMATS includes pyproject_toml and uv_lock; read, write and verify-commit route through manifest_sync_toml; the repo config declares both root files; a stale TOML manifest stops the release as verify_mismatch.",
+          "weakens": false
+        }
+      ]
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-27T23:51:36.516513+00:00",
+      "disposition": "effective complexity is small after the Step 3.4 re-check; the internal plan and architecture arms run only at medium or higher (runner Step 3.5)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-27T23:51:37.179712+00:00",
+      "disposition": "effective complexity is small after the Step 3.4 re-check; the internal plan and architecture arms run only at medium or higher (runner Step 3.5)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}

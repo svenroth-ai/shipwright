@@ -1,0 +1,9 @@
+{"items": [
+ {"name": "Spec Compliance", "verdict": "pass", "note": "All three ACs and the brief's Done-when covered by tests (real root files byte diff, named refusals, five-format release sync on a scratch git project)."},
+ {"name": "Error Handling", "verdict": "pass", "note": "Every failure is a ManifestSyncError with a closed-vocabulary status; the re-parse equality check refuses any edit that is not exactly the version change before a byte is written."},
+ {"name": "Security Basics", "verdict": "pass", "note": "Reads repo-local files through the existing resolve_contained_path; no subprocess, no shell, regex built with re.escape on a validated semver."},
+ {"name": "Test Quality", "verdict": "pass", "note": "Tests assert exact changed lines and bytes, each refusal status, and the stale verify-commit path; they fail on the pre-change code (unsupported_format)."},
+ {"name": "Performance Basics", "verdict": "pass", "note": "Linear line scans and two tomllib parses per manifest, once per release."},
+ {"name": "Naming & Structure", "verdict": "pass", "note": "New module next to manifest_sync_lock/marketplace, 159 lines, core stays a dispatcher."},
+ {"name": "Affected Boundaries", "verdict": "pass", "note": "Producer sync_release_manifests -> consumers uv (uv lock --check accepts the bumped pair, rejects a stale lock) and --verify-commit (real round trip in the scratch-project test)."}
+]}
