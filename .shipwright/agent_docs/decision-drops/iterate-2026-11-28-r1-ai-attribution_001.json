@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-28-r1-ai-attribution",
+  "date": "2026-11-28",
+  "section": "Iterate - bug: AI attribution",
+  "title": "Count AI-assisted commits via co-author trailers",
+  "context": "change-history counted AI commits by git author name only; repos with human authors and a Claude co-author trailer reported 0.",
+  "decision": "Collector reads Co-authored-by trailers (NUL-delimited git log format); CommitEntry.is_ai_assisted matches 'claude' in author or co-author display name, email ignored.",
+  "consequences": "Report counts 1707 of 1880 commits AI-assisted here; matching stays a name heuristic (a human named Claude is miscounted).",
+  "rationale": "Smallest fix in the existing collector; both architecture reviewers approved. NUL delimiters also fix a pipe-in-subject field shift.",
+  "rejected": "Counting from the event log (ties report to Shipwright tooling); doing nothing.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

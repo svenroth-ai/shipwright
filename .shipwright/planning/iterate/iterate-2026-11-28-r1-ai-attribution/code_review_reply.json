@@ -1,0 +1,5 @@
+{"section": "iterate-2026-11-28-r1-ai-attribution", "verdict": "approve-with-changes", "review": [
+{"severity":"medium","category":"correctness","file":"plugins/shipwright-compliance/tests/test_change_history.py","finding":"git fixture not hermetic (GIT_* env leak); fixed with hook_env + scrub_git_env"},
+{"severity":"low","category":"correctness","file":"plugins/shipwright-compliance/scripts/lib/collectors/change_history.py","finding":"log.showSignature would glue gpg lines to hash; fixed with --no-show-signature"},
+{"severity":"low","category":"correctness","file":"plugins/shipwright-compliance/scripts/lib/collectors/change_history.py","finding":"trailer format needs git>=2.24; documented"},
+{"severity":"low","category":"readability","file":"plugins/shipwright-compliance/tests/test_change_history.py","finding":"imports at module top; fixed"}]}

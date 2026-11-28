@@ -1,0 +1,4 @@
+# Mini-plan R1: count AI-assisted commits via co-author trailers
+Root cause: collect_git_history reads `%H|%s|%an|%aI` (no trailers); change_history.generate counts AI by author name only. All commits are human-authored with a Co-Authored-By: Claude trailer, hence 0 AI-assisted.
+Steps: (1) failing tests: CommitEntry.co_authors / is_ai_assisted, generate() count, collector against a real temp git repo with `Co-Authored-By` and `Co-authored-by` trailers; (2) CommitEntry gains defaulted `co_authors` tuple + `is_ai_assisted` property; (3) collector uses git `%(trailers:key=Co-authored-by,valueonly,unfold,separator=%x1d)` with unit/record separators (also fixes a "|" in subject shifting fields); (4) generate() uses the property.
+Risks: positional CommitEntry callers (default keeps them valid); strip() eats \x1f so strip only CR/LF.

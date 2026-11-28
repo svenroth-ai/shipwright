@@ -1,0 +1,1 @@
+{"stage": "spec-compliance", "verdict": "PASS", "spec_citations": [], "summary": "PASS. The diff does what R1 asks and adds nothing beyond it; generator output should be demonstrated by running it."}

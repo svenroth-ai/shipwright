@@ -1,0 +1,59 @@
+{
+  "run_id": "iterate-2026-11-28-r1-ai-attribution",
+  "date": "2026-11-28T10:18:54.354376Z",
+  "event_at": "2026-11-28T10:17:54.935179+00:00",
+  "type": "bug",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/campaign-R1-ai-attribution",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-11-28-r1-ai-attribution",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "Co-Authored-By and Co-authored-by Claude trailers count as AI-assisted; plain human commit does not",
+        "disposition": "tested",
+        "evidence": "test_change_history.py::TestCollectGitHistoryTrailers::test_trailers_read_case_insensitively PASSED"
+      },
+      {
+        "behavior": "generate() counts author-or-co-author Claude commits",
+        "disposition": "tested",
+        "evidence": "test_change_history.py::TestCoAuthorAttribution PASSED"
+      },
+      {
+        "behavior": "email-only claude match is not AI",
+        "disposition": "tested",
+        "evidence": "test_change_history.py::TestCoAuthorAttribution::test_email_alone_does_not_count PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 3,
+      "tested": 3,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 0,
+      "covered_acs": 0
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run --project plugins/shipwright-compliance pytest plugins/shipwright-compliance/tests/test_change_history.py -q",
+    "exit_code": 0,
+    "tests_run": 11,
+    "evidence_path": ".shipwright/runs/iterate-2026-11-28-r1-ai-attribution/surface_verification.json",
+    "timestamp": "2026-11-28T10:13:26.767Z",
+    "attempts": 1
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": [
+    "touches_auth"
+  ]
+}

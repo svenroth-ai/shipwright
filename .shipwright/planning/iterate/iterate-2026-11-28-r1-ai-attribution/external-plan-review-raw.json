@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "## Review Findings\n\n**Category: approach \u2014 Severity: low**\n**Finding:** Using unit/record separators (`%x1d`, `%x1f`) in the git format string is sound and also fixes the existing `|`-in-subject field-shift bug \u2014 good catch. However, `%(trailers:key=...)` requires git \u2265 2.32 for the `key=` filter with `valueonly` semantics settling correctly; behavior is subtly broken on older gits (trailer key silently dropped).\n**Suggestion:** Check the repo's minimum git version or fall back to parsing raw `%(trailers)` output; at minimum add the git version assumption as a comment/test-environment note.\n\n**Category: edge-case \u2014 Severity: medium**\n**Finding:** Trailer values are free-form: a co-author can be `Claude <noreply@anthropic.com>` but could also be `claude-3.5-sonnet`, `GitHub Copilot`, or a human whose name contains \"Claude\". Matching \"names Claude, case-insensitive\" may over- or under-count.\n**Suggestion:** Pin down the matching rule (e.g., case-insensitive substring \"claude\" in name or the anthropic noreply email), and document it. Also confirm the AI-author check still matches the existing author-name heuristic so the human-authored count doesn't regress for repos with Claude *authors*.\n\n**Category: edge-case \u2014 Severity: low**\n**Finding:** Multiple trailers per commit: the plan uses a separator but `unfold` and multi-line trailer values could still produce stray newlines; also `-z`-less `git log` splits records on newlines only.\n**Suggestion:** Ensure the record separator scheme keeps each commit on one log line (e.g., strip CR/LF rather than `strip()` as noted, and test a commit with two co-author trailers and a subject containing `\\n`-adjacent characters like pipes and unicode separators).\n\n**Category: risk \u2014 Severity: low**\n**Finding:** CommitEntry grows a defaulted field; positional constructors remain valid per the plan's own risk note. Fine \u2014 but if CommitEntry is serialized anywhere (caching, JSON report payloads), a new field may break older deserialization.\n**Suggestion:** Verify CommitEntry isn't persisted/loaded; if it is, make deserialization tolerant of the missing field.\n\n**Category: edge-case \u2014 Severity: low**\n**Finding:** Empty/absent trailer: `%(trailers:key=Co-authored-by,...)` yields an empty string, so splitting on the separator must skip empty segments, or you'll get a phantom empty co-author (harmless for Claude matching, but noisy for equality tests).\n**Suggestion:** Filter falsy values when splitting.\n\n**Category: edge-case \u2014 Severity: medium**\n**Finding:** Reports already generated with the wrong counts (change-history.md showing 0/1868) \u2014 does regeneration happen automatically or is there a stale-cache/report regeneration step not covered by the plan?\n**Suggestion:** Confirm the collector/report regeneration is triggered (spec's \"Done when\" mentions regeneration); add it to acceptance criteria.\n\n## Overall Assessment\n\nThe approach correctly diagnoses and fixes the root cause, and the separator scheme is a genuine improvement. Main refinements: pin the trailer-matching rule and git version, handle empty trailer fields, and make sure report regeneration is explicitly in scope.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Category** edge-case \u00b7 **Severity** medium  \n   **Finding** The proposed separators can collide with commit text. Python\u2019s `splitlines()` also treats `\\x1d` and `\\x1e` as line boundaries, so retaining line-based parsing could corrupt records for commits with multiple co-authors.  \n   **Suggestion** Use NUL framing for the outer fields and records, and split trailer values explicitly. Add a real Git fixture with a pipe in the subject and multiple co-authors, with Claude listed after a human.\n\n2. **Category** approach \u00b7 **Severity** medium  \n   **Finding** The plan leaves the Claude identity match underspecified. Searching the entire trailer value can count a human whose email contains `claude`, while changing the existing author predicate could alter historical counts.  \n   **Suggestion** Preserve the current author predicate and match the co-author\u2019s display name case-insensitively. Cover a Claude trailer with an email, an unrelated co-author, and an AI author with no trailers. Verify that a commit matching both paths contributes one to the total.\n\n3. **Category** dependency \u00b7 **Severity** low  \n   **Finding** The mini-plan stops at updating `generate()`, while the specification also requires a regenerated compliance report.  \n   **Suggestion** Run the normal report-generation command and verify that the resulting AI-assisted count matches the qualifying commits in the report\u2019s scope. Replace the `TBD` acceptance criterion with the fixture expectations and this report check.\n\nReading Git trailers in the collector and centralizing classification on `CommitEntry` is proportionate to the change. Revise the parsing and matching details before implementation. Shell execution was blocked, so this assessment is based on the supplied plan.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-11-28-r1-ai-attribution",
+    "at": "2026-11-28T10:08:04.168146+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

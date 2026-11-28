@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "1. **The question, answered in one sentence.** Nothing new should exist: this is a bug fix to existing machinery (the compliance collector and report), and option A is the right shape.\n\n2. **The smallest thing that would do.** Add trailer reading to the existing `git log` format string in the collector, one defaulted field on `CommitEntry`, and adjust the AI-detection check to consider co-author trailers case-insensitively. That is option A, and it is the smallest fix.\n\n3. **What it costs to keep.** Effectively nothing: the compliance report already exists and is already kept correct; this changes what it reads, not what it is. The trailer format becomes a permanent input contract of the collector, but that contract already exists implicitly (author name, subject, date were already read).\n\n4. **What it forecloses.** None identified. Option B (counting from the event log) would tie the report to Shipwright-tooling presence and foreclose reporting on plain git history \u2014 strictly worse and larger.\n\n5. **Findings** \u2014 only one, minor:\n\n- Category: proportionality\n- Severity: low\n- Finding: The brief should confirm that counting by \"Claude\" name/trailer match remains a heuristic; a human co-author named Claude will be miscounted. That is acceptable \u2014 it is the same class of imprecision as the current author-name check, not a new mechanism.\n- Suggestion: Fix the collector as proposed; do not add any new config, matching rules table, or pluggable \"AI identity\" registry \u2014 the hard-coded name check is the right size.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "Approve A. The existing Git-based report should count Claude co-authorship using the trailers already recorded in commit history. The smallest change is to read those trailers in the existing collector and count a commit when either the author or a co-author names Claude, case-insensitively. The ongoing cost is maintaining that classification rule and one field on the existing commit record.\n\n**What it forecloses** \u2014 none identified.\n\nNo findings.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "architecture",
+  "capture": {
+    "run_id": "iterate-2026-11-28-r1-ai-attribution",
+    "at": "2026-11-28T10:08:22.982317+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "approve"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}

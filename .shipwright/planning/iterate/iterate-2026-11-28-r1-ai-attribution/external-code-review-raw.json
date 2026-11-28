@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "The diff correctly implements the spec: the collector now reads Co-authored-by trailers via `%(trailers:key=...)`, `CommitEntry` gains `co_authors` and an `is_ai_assisted` property that checks author OR co-authors case-insensitively, and the report generator delegates to it. The record-separator rewrite also fixes a latent bug (subjects containing `|` shifting fields) and the tests exercise both the pure logic and a real git repo with both trailer casings.\n\nFindings:\n\n- Category: edge-case\n  Severity: low\n  File: plugins/shipwright-compliance/scripts/lib/collectors/change_history.py \u2014 `_LOG_FORMAT`\n  Finding: `%(trailers:key=...,valueonly,separator=...)` requires git \u2265 2.22\u20132.27. On older git, the command fails and the existing `except`/return-[] path silently yields zero commits (worse than before, where the plain format always worked).\n  Suggestion: Acceptable given the repo's git is modern; optionally detect git version or let the failure surface with a warning log instead of silently returning `[]`.\n\n- Category: test\n  Severity: low\n  File: plugins/shipwright-compliance/tests/test_change_history.py \u2014 `TestCollectGitHistoryTrailers.test_trailers_read_case_insensitively`\n  Finding: The end-to-end test never asserts the parsed `co_authors` values themselves (e.g. that commit 3 has two co-authors, one of them Ada). A parser that dropped all but the first trailer would still pass.\n  Suggestion: Add an assertion on `co_authors` contents, e.g. `len(commits[3].co_authors) == 2`.\n\n- Category: edge-case\n  Severity: low\n  File: plugins/shipwright-compliance/scripts/lib/collectors/change_history.py \u2014 `is_ai_assisted` / trailer matching\n  Finding: A trailer value like \"Claire Claude-hater <x@y.z>\" or an author whose *email* contains \"claude\" (e.g. `bob@claude.dev`) counts as AI-assisted. This matches the pre-existing author-name heuristic the spec asks to extend, so it's within spec, but worth knowing.\n  Suggestion: If precision matters later, match on the name token or the noreply@anthropic.com address; not required by this spec.\n\nNo security issues (the git plumbing is fixed-format, no injection), no breaking regressions (`co_authors` defaults to `()`, report callers unchanged), and both happy and negative paths are tested. The remaining AC \u2014 \"regenerated shipwright report no longer shows 0 AI-assisted\" \u2014 is an operational step outside the diff, but nothing in the diff would block it.\n\nOverall assessment: ship-as-is; findings are refinements only.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "- Category: spec\n- Severity: medium\n- File:line \u2014 `plugins/shipwright-compliance/scripts/lib/change_history.py:93`\n- Finding: The diff updates the generator but omits the regenerated `.shipwright/compliance/change-history.md`. The scope explicitly requires the Shipwright report to show a nonzero AI-assisted count, and the fixture tests only establish that result for synthetic history.\n- Suggestion: Regenerate the report against Shipwright\u2019s history and include the updated artifact. Verify that the AI-assisted count is nonzero.\n\n- Category: bug\n- Severity: medium\n- File:line \u2014 `plugins/shipwright-compliance/scripts/lib/collectors/change_history.py:62`\n- Finding: Git commit subjects can contain the control bytes used as delimiters. A subject containing `\\x1f` produces six fields and raises `ValueError` at unpacking, aborting the entire collection. A subject containing `\\x1e` splits the record and can cause the commit to be silently omitted.\n- Suggestion: Use NUL-delimited fields and records with fixed field counts. Add a fixture commit containing the current delimiter bytes and assert that collection preserves it and its attribution.\n\n- Category: spec\n- Severity: low\n- File:line \u2014 `plugins/shipwright-compliance/scripts/lib/collectors/_types.py:61`\n- Finding: The classifier searches the entire trailer value, including the email address. A human co-author such as `Ada <ada@claude.example>` counts as AI-assisted even though the co-author\u2019s name does not contain Claude.\n- Suggestion: Match against the co-author\u2019s display name after removing any angle-bracketed email address. Add a test for a human name with `claude` only in the email.\n\n- Category: test\n- Severity: low\n- File:line \u2014 `plugins/shipwright-compliance/tests/test_change_history.py:121`\n- Finding: The aggregate assertion checks how many commits were classified as AI-assisted without checking which ones. It can pass if a required trailer variant is missed and the plain human commit is incorrectly counted.\n- Suggestion: Assert attribution by commit subject for all four fixtures and verify that the two co-authors on the last fixture are parsed as separate values.\n\nShip-with-fixes. The approach fits the specification, but delimiter collisions can break collection, and the regenerated Shipwright report is still missing.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-11-28-r1-ai-attribution",
+    "at": "2026-11-28T10:09:58.451747+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

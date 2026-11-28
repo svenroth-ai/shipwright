@@ -1,0 +1,1 @@
+Goal: Count AI-assisted commits via Co-authored-by trailers in the compliance change history | Reason: Report showed 0 AI-assisted commits because only the author name was read | Reference: campaign intent-pyramid unit R1
