@@ -202,6 +202,13 @@ def test_the_verify_denies_a_merge_commit_whose_tree_does_not_match(merged):
     assert [n for n in ("tag_local", "tag_remote", "pr_state") if checks[n]["ok"]] == []
 
 
+def test_the_pr_check_follows_the_tag_a_merge_commit_off_the_base_fails_even_when_the_release_commit_is_on_it(merged):
+    git(merged["repo"], "push", "-q", "-f", "origin", f"{merged['H']}:refs/heads/main")  # R reached the base; S (the tag) did not
+    _record(merged)
+    checks, _ = _verify(merged)
+    assert checks["tag_local"]["ok"] and not checks["pr_state"]["ok"] and merged["S"][:10] in checks["pr_state"]["detail"]
+
+
 def test_the_verify_of_a_record_without_the_new_fields_asks_nothing_new(merged):
     release_commit.write_state(merged["repo"], {"schema": 1, "version": VERSION, "tag": TAG, "commit": merged["R"], "checks_passed": []})
     checks, keys = _verify(merged)
@@ -214,6 +221,7 @@ def _summary(state: dict, remote: dict) -> str:
     return release_close.summary(VERSION, state, [{"name": "tag_remote", "detail": "", **remote}], "skipped", None, "n")
 
 
+@pytest.mark.covers("FR-01.09/AC11")
 @pytest.mark.parametrize(("remote", "line"), [
     ({"ok": True, "on_origin": True}, "Tag pushed to origin"),
     ({"ok": True, "on_origin": False}, "Tag is pushed after the PR is merged"),
@@ -224,11 +232,13 @@ def test_the_summary_of_a_guided_release_says_pushed_only_when_origin_holds_the_
     assert f"\n\n{line}\n" in text
 
 
+@pytest.mark.covers("FR-01.09/AC11")
 def test_a_release_that_does_not_wait_and_whose_tag_is_missing_says_so():
     text = _summary({"mode": "pipeline", "on_trunk": False, "pr_url": "u"}, {"ok": False, "on_origin": False})
     assert f"Tag {TAG} is not on origin" in text and "Tag pushed to origin" not in text
 
 
+@pytest.mark.covers("FR-01.09/AC11")
 def test_the_second_close_phase_of_a_guided_release_says_pushed_once_the_tag_is_on_origin(merged, plugin_root):
     repo = merged["repo"]
     release_runstate.patch(repo, VERSION, mode="standalone", autonomy="guided", on_trunk=False, pr_url="u", branch="release/next")

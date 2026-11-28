@@ -78,7 +78,7 @@ def verify(rec: Recorder, plugin_root: Path, *, version: str, state: dict[str, A
     drops = sorted(str(p.relative_to(root / DROP_DIR).as_posix()) for p in (root / DROP_DIR).rglob("*")
                    if p.is_file() and not p.name.lower().startswith(("readme", "index", ".git")) and not p.name.endswith(".tmp")) if (root / DROP_DIR).is_dir() else []
     checks.append(_check("no_decision_drops", not drops, "none left" if not drops else f"left: {', '.join(drops[:5])}"))
-    checks.append(_pr_check(rec, state, commit, published))
+    checks.append(_pr_check(rec, state, commit, published, local))
     status = (release_status or "").lower()
     if status in ("ok", "exists"):
         checks.append(_check("release_page", True, f"{status}: {release_note or 'url reported'}"))
@@ -98,17 +98,17 @@ def proven_published(rec: Recorder, record: dict[str, Any]) -> str | None:
     return release_merge_proof.proven(git, record) if release_merge_proof.claimed(record) else None
 
 
-def _pr_check(rec: Recorder, state: dict[str, Any], commit: str | None, published: str | None = None) -> dict[str, Any]:
+def _pr_check(rec: Recorder, state: dict[str, Any], commit: str | None, published: str | None = None, tagged: str = "") -> dict[str, Any]:
     if state.get("on_trunk"):
         return _check("pr_state", not state.get("pr_url"), "released on the trunk: no PR")
     if not state.get("pr_url"):
         return _check("pr_state", False, "released from a feature branch but no PR was opened")
     if state.get("mode") != "standalone" or state.get("autonomy") not in AUTONOMOUS:  # a driven run never merges its PR; a guided one waits for a person
         return _check("pr_state", True, f"PR opened, left for the merge: {state['pr_url']}")
-    reached, base, detail = on_base(rec, state, commit)
-    what = "the release commit"
-    if reached is False and published:  # a squash or rebase merge: the proven merge commit is what reached the base
+    if published and tagged == published:  # a squash or rebase merge: the tag names the proven merge commit, so that must be on the base
         (reached, base, detail), what = on_base(rec, state, published), f"the release's merge commit {published[:10]}"
+    else:
+        (reached, base, detail), what = on_base(rec, state, commit), "the release commit"
     if reached is None:
         return _check("pr_state", False, f"unknown: cannot tell whether {what} reached {base} ({detail})")
     return _check("pr_state", reached, f"{what} is on {base} (origin)" if reached else f"this run merges its PR, but {what} is not on {base}")

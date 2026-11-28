@@ -33,7 +33,7 @@ def summary(version: str, state: dict[str, Any], checks: list[dict[str, Any]], r
     if remote.get("on_origin"):  # D113(1): what origin holds, not what the mode expects
         done = f"Tag + {state.get('branch') or 'main'} pushed to origin" if state.get("on_trunk") else "Tag pushed to origin"
         pushed = done if remote.get("ok") else f"Tag v{version} on origin names another commit than the release"
-    elif "on_origin" in remote and remote["on_origin"] is None:  # the lookup failed: unknown is not "waiting" and not "missing"
+    elif remote.get("on_origin") is None:  # the lookup failed (or no tag check ran): unknown is not "waiting" and not "missing"
         pushed = f"Tag v{version}: origin could not be asked whether it holds the tag"
     elif release_verify.tag_may_be_pending(state):
         pushed = "Tag is pushed after the PR is merged"

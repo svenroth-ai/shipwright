@@ -82,6 +82,19 @@ def test_a_squash_merged_release_with_a_valid_proof_passes_the_guard_and_closes_
     assert "\nTag pushed to origin\n" in out["summary"]
 
 
+@pytest.mark.covers("FR-01.09/AC11")
+def test_the_second_close_phase_of_a_guided_release_says_pushed_once_the_tag_is_on_origin(make_project):
+    s = ss.ready_release(make_project)
+    driver = CliDriver()
+    results = release_flow(driver, s, "guided")  # waits for the merge: no tag push, no release page
+    assert all(r.exit_code == 0 for r in results), [(r.step, r.exit_code) for r in results]
+    code, out = driver._release(s, "close-phase", "--version", VERSION, "--release-status", "waiting", "--release-note", "waits for the PR merge")
+    assert code == 0 and "\nTag is pushed after the PR is merged\n" in out["summary"], out.get("verify")
+    s.git("push", "-q", "origin", f"refs/tags/{TAG}")  # after the merge the tag goes out
+    code, out = _close(driver, s)
+    assert code == 0 and "\nTag pushed to origin\n" in out["summary"], out.get("verify")
+
+
 def test_a_squash_merged_release_whose_tree_does_not_match_is_denied_by_both(make_project, monkeypatch):
     s, driver, seen = _squashed_release(make_project)
     for key, value in s.env.items():
