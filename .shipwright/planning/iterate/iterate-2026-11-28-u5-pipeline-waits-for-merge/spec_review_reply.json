@@ -1,0 +1,19 @@
+{
+  "stage": "spec-compliance",
+  "verdict": "PASS",
+  "spec_citations": [],
+  "summary": "Re-review of fix commit 5c437cfdb on top of 8f010425d: the fix still meets the spec and adds no new divergence. All 4 acceptance criteria still hold (AC4 per the caller's 928/928 report; no shell in this review).",
+  "per_ac": [
+    {"ac": "AC1 waiting result: task not done, run not complete, deploy not scheduled", "finding": "met", "evidence": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_wait.py:52-94; test_single_session_waiting.py:131-148"},
+    {"ac": "AC2 loop reports waiting with PR URL; resume re-dispatches the same task", "finding": "met", "evidence": "single_session_loop.py:158-161; single_session_wait.py:105-130; single_session_recovery.py:139-155; loop_state.py:120,133-140; tests :152-171, :207-216"},
+    {"ac": "AC3 second ok result moves on to deploy, or ends the run with deploy_target none", "finding": "met", "evidence": "test_single_session_waiting.py:175-193"},
+    {"ac": "AC4 every current shipwright-run test stays green", "finding": "met per caller report"}
+  ],
+  "notes_non_blocking": [
+    "PR link regex requires a host; the stop-hook copy is identical; negative cases cover it.",
+    "hooks/master_stop_check.py _waiting_task does not check the new 'released' flag: between a confirmed resume and the next single-session-next the banner could still name the PR. Not a spec divergence."
+  ],
+  "ac_verdicts": [
+    {"ac": "item-1", "verdict": "matches", "diff_location": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_wait.py:52", "reason": "A contract-valid waiting result leaves the task in_progress and not failed, schedules no successor and leaves the run status unchanged; next answers waiting with the link and next step; a confirmed resume releases the hold so the same task is dispatched again; a later ok moves on to deploy or completes the run when deploy_target is none.", "weakens": false}
+  ]
+}

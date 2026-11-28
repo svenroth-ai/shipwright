@@ -34,11 +34,12 @@ SINGLE_SESSION_COMMANDS: frozenset[str] = frozenset(
 
 # CAS-reject reasons that map to a fail-closed apply exit code (mirrors router).
 _FAIL_CLOSED_REASONS = frozenset(
-    {"stale_version", "stale_session", "invalid_status_for_completion"}
+    {"stale_version", "stale_session", "invalid_status_for_completion", "held_for_outside_event"}
 )
 
 # Terminal / dispatch signals that are a successful `next` outcome (exit 0).
-_OK_NEXT_ACTIONS = ("dispatch", "complete", "failed", "needs_validation", "ask_human")
+_OK_NEXT_ACTIONS = ("dispatch", "complete", "failed", "needs_validation", "ask_human",
+                    "waiting")
 
 
 def dispatch_single_session(args: argparse.Namespace, project_root: Path) -> int:

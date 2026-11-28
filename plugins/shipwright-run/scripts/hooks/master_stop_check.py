@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -47,6 +48,39 @@ except ImportError:  # stale shared cache: this hook keeps its own fallback
 # banner here, and then be refused by /shipwright-run itself.
 SINGLE_SESSION = "single_session"
 LEGACY_MULTI_SESSION = "multi_session"
+
+# Mirror of single_session.result_contract.PR_URL_RE: the loop state is a plain file, so the
+# link is re-checked before it reaches the terminal (no control or escape characters).
+_PR_URL_RE = re.compile(r"(?=.{9,508}$)https://[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*(?::[0-9]{1,5})?"
+                        r"(?:[/?#][A-Za-z0-9._~:/?#\[\]@!$&'()*+,;=%-]*)?")
+_LOOP_STATE_REL = Path(".shipwright") / "run_loop_state.json"
+
+
+def _waiting_task(project_root: Path, config: dict[str, Any]) -> dict[str, Any] | None:
+    """The task the loop holds for an outside event (U5 ``waiting`` marker), or None.
+
+    The loop's own rule: this run's marker, on a task still ``in_progress`` at the marker's
+    version (a recover or re-dispatch makes it stale). Returns ``{"task", "pr_url"}``; a
+    link that is not a plain https URL is dropped (``pr_url`` None)."""
+    try:
+        state = json.loads((project_root / _LOOP_STATE_REL).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    marker = state.get("waiting") if isinstance(state, dict) else None
+    if (not isinstance(marker, dict) or marker.get("released")
+            or state.get("runId") != config.get("runId")):
+        return None  # a hold the operator released (Resume) no longer waits
+    for t in config.get("phase_tasks") or []:
+        if t.get("phaseTaskId") == marker.get("phaseTaskId") and t.get("status") == "in_progress":
+            try:
+                if int(t.get("version", 1)) != int(marker.get("version")):
+                    return None
+            except (TypeError, ValueError):
+                return None
+            url = marker.get("prUrl")
+            ok = isinstance(url, str) and _PR_URL_RE.fullmatch(url)
+            return {"task": t, "pr_url": url if ok else None}
+    return None
 
 
 def _summarise(config: dict[str, Any]) -> tuple[list[dict], list[dict], list[dict]]:
@@ -120,6 +154,23 @@ def _not_drivable_lines(run_id: str, mode: object) -> list[str]:
     ]
 
 
+def _waiting_lines(held: dict[str, Any], orch_path: str) -> list[str]:
+    """Banner for a run whose frontier phase waits for a pull request merge (U5)."""
+    task = held["task"]
+    link = held["pr_url"] or "the pull request (link not shown: not a plain https address)"
+    return [
+        f"PIPELINE WAITING — the {task.get('phase')} phase waits for a pull request merge.",
+        "",
+        f"  Merge {link} on the code host,",
+        "  then re-invoke /shipwright-run and choose Resume: that phase runs again and finishes.",
+        "",
+        "If the pull request was closed without merging, re-run the phase now:",
+        _format_recover_command(task, orch_path),
+        "  or stop the run there:",
+        _format_recover_command(task, orch_path, force_status="failed"),
+    ]
+
+
 def run(project_root: Path) -> int:
     config_path = project_root / "shipwright_run_config.json" if _sp is None else _sp.path("run_config", project_root)
     if not config_path.exists():
@@ -173,6 +224,8 @@ def run(project_root: Path) -> int:
         lines.append("")
         lines.append("After recover-phase-task, re-invoke /shipwright-run — the master")
         lines.append("resumes the loop from the recovered phase.")
+    elif pending and (held := _waiting_task(project_root, config)) is not None:
+        lines.extend(_waiting_lines(held, orch_path))
     elif pending:
         lines.append("PIPELINE IN PROGRESS — the master session ended mid-run.")
         lines.append("")

@@ -1,0 +1,164 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-28-u5-pipeline-waits-for-merge",
+    "date": "2026-11-28",
+    "unit": {
+      "status": "passed",
+      "passed": 28204,
+      "skipped": 114,
+      "total": 28318
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run --directory plugins/shipwright-run --extra dev pytest tests/test_single_session_waiting.py tests/test_single_session_observability.py -q -p no:cacheprovider",
+      "exit_code": 0,
+      "tests_run": 44,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\campaign-dfp-changelog-followups--U5\\.shipwright\\runs\\iterate-2026-11-28-u5-pipeline-waits-for-merge\\surface_verification.log",
+      "timestamp": "2026-11-28T18:30:11.865Z",
+      "attempts": 1
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "a changelog result may carry waiting {waiting_for_merge, pr_url}; malformed blocks, non-changelog phases, ok:true and unsafe URLs are refused",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_single_session_waiting.py::test_contract_refuses_a_malformed_waiting_result PASSED"
+        },
+        {
+          "behavior": "a waiting reason without the waiting block is refused",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_single_session_waiting.py::test_contract_refuses_a_waiting_reason_without_the_block PASSED"
+        },
+        {
+          "behavior": "a waiting result holds the task: no new dispatch, nothing failed, run not complete, deploy not planned",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_single_session_waiting.py::test_waiting_result_holds_the_task_and_schedules_nothing PASSED"
+        },
+        {
+          "behavior": "next keeps answering waiting with the resume card until Resume, then dispatches the same changelog task again",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_single_session_waiting.py::test_next_keeps_answering_waiting_until_resume_then_redispatches_the_same_task PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "a later ok result moves on to deploy",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_single_session_waiting.py::test_ok_after_waiting_moves_on_to_deploy PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "a later ok result ends the run when deploy_target is none",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_single_session_waiting.py::test_ok_after_waiting_ends_the_run_without_a_deploy_target PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "a late waiting result from an older dispatch writes nothing",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_single_session_waiting.py::test_a_late_waiting_result_from_an_older_dispatch_writes_nothing PASSED"
+        },
+        {
+          "behavior": "a replayed waiting result cannot undo a confirmed resume",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_single_session_waiting.py::test_a_replayed_waiting_result_cannot_undo_a_confirmed_resume PASSED"
+        },
+        {
+          "behavior": "an unreadable loop state fails the waiting apply closed",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_single_session_waiting.py::test_an_unreadable_loop_state_fails_the_waiting_apply_closed PASSED"
+        },
+        {
+          "behavior": "waiting refuses an override and a task that is not open",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_single_session_waiting.py::test_waiting_refuses_an_override_and_a_task_that_is_not_open PASSED"
+        },
+        {
+          "behavior": "recover makes the hold stale",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_single_session_waiting.py::test_recover_makes_the_hold_stale PASSED"
+        },
+        {
+          "behavior": "a gate decision for a person comes before the hold",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_single_session_waiting.py::test_a_gate_decision_for_a_person_comes_before_the_hold PASSED"
+        },
+        {
+          "behavior": "waiting resets the retry count",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_single_session_waiting.py::test_waiting_resets_the_retry_count PASSED"
+        },
+        {
+          "behavior": "the CLI exits 0 for a waiting apply and a waiting next",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_single_session_waiting.py::test_cli_apply_and_next_exit_zero_for_waiting PASSED"
+        },
+        {
+          "behavior": "the Stop hook names the waiting pull request and ignores a released hold",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_single_session_waiting.py::test_stop_hook_in_process_reports_a_hold_and_not_a_released_one PASSED"
+        },
+        {
+          "behavior": "the Stop hook as a subprocess prints the PIPELINE WAITING banner",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_single_session_waiting.py::test_stop_hook_names_the_waiting_pull_request PASSED"
+        },
+        {
+          "behavior": "a task of another phase cannot be held",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_single_session_waiting.py::test_a_task_of_another_phase_cannot_be_held PASSED"
+        },
+        {
+          "behavior": "the held dispatch cannot finish the phase without Resume and a re-dispatch",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_single_session_waiting.py::test_the_held_dispatch_cannot_finish_the_phase_without_resume_and_a_rerun PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "every existing shipwright-run test stays green",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests: 931 passed (F0 run_test_suite unit plugins/shipwright-run/tests PASSED)"
+        }
+      ],
+      "counts": {
+        "testable": 19,
+        "tested": 19,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 1,
+        "covered_acs": 1
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-11-28-u5-pipeline-waits-for-merge",
+    "commit": "a751841747939c2d819225c437310d5026bb9cfe",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

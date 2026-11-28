@@ -46,6 +46,7 @@ LOOP_EVENT_TYPES = (
     "human_gate_resume",  # the human released the gate; the loop continues
     "resume",             # the master re-entered a dead run and confirmed resume
     "recovery",           # recover-phase-task cleared a wedged task in-loop
+    "phase_waiting",      # a phase reported it waits for an outside event (U5)
 )
 
 

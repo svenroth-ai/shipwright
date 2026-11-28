@@ -1263,6 +1263,24 @@ After build completes: shows split summary table. After test completes: shows te
 > called, which is why removing that hook cost the pipeline nothing.** Loop-state
 > holds no authoritative phase status. Splits are serial in v1. The master-side
 > protocol is `plugins/shipwright-run/skills/run/references/single-session-loop.md`.
+>
+> **A phase that waits for an outside event (U5, campaign dfp-changelog-followups).** A
+> phase-runner result may carry `waiting: {reason: "waiting_for_merge", pr_url}` (changelog
+> phase only, `ok: false`, validated by `single_session/result_contract.py`). Apply then
+> completes NOTHING (`orchestrator_pkg/single_session_wait.py`): the task stays
+> `in_progress`, no successor is planned (deploy is not scheduled), the run status is
+> unchanged, and a `waiting` hold is written to `.shipwright/run_loop_state.json`, keyed to
+> run id + phase task id + the task's version (the `gateTerminal` pattern; a stale or
+> late result is refused `stale_version` and writes nothing; any other result for the held
+> dispatch is refused `held_for_outside_event`, exit 2). While the hold is current,
+> `single-session-next` answers `action: "waiting"` (link + `next_step`) after any
+> `ask_human` and claims nothing; the master ends its turn. `single-session-resume` shows
+> the hold on the card, and `--confirm` releases it, so the next `single-session-next`
+> re-dispatches the SAME task (new version). A recover drops the hold too. The master's
+> Stop hook prints a **PIPELINE WAITING** banner with the link (re-checked as a plain https
+> URL). No run_config schema value is involved: run_config shows the task as `in_progress`
+> only, and the phase's duration includes the wait (known limits). Inert until the
+> changelog phase emits it (U6). Loop event `phase_waiting`.
 
 > **Resumability / recovery + observability (Campaign 2026-07-07, SS5).** The
 > master IS the driver, so a closed/crashed master is simply a paused run:
@@ -1282,7 +1300,7 @@ After build completes: shows split summary table. After test completes: shows te
 > **`.shipwright/run_loop_events.jsonl`** (append-only JSONL, gitignored by the
 > `/.shipwright/*` wildcard, distinct from the tracked `shipwright_events.jsonl`;
 > event types `dispatch` / `phase_result` / `strict_stop` / `human_gate_pause` /
-> `human_gate_resume` / `resume` / `recovery`), best-effort (a write failure warns
+> `human_gate_resume` / `resume` / `recovery` / `phase_waiting`), best-effort (a write failure warns
 > to stderr, never crashes the loop). The durable, tracked `phase_started` /
 > `phase_completed` pairs in `shipwright_events.jsonl` are emitted by the loop CLI
 > (`single-session-next` → `record_phase_started`, `single-session-apply` →
@@ -1518,11 +1536,15 @@ MASTER writes shipwright_run_config.json (mode: single_session), then LOOPS:
    |         ask issues -> phase_gate_failed, NO mutation (master re-dispatches
    |         with issues[]; MAX_GATE_RETRIES then ask_human | mark_phase_failed)
    |       - freeze_splits when a design phase completes
+   |       - a `waiting` result (changelog, waiting_for_merge): NO completion,
+   |         NO successor; hold in run_loop_state.json -> next answers `waiting`
+   |         until a confirmed single-session-resume
    |       - complete_phase_task (ok:false -> mark_phase_failed, NO successor)
    |         -> plan_next_phase appends the successor task
    |       - record_phase_end -> shipwright_events.jsonl (tracked)
    |
    +--> loop until terminal: complete | failed | needs_validation
+   |    (or pause: ask_human | waiting -- the master ends its turn)
 ```
 
 Phase plugins keep their ordinary SessionStart behavior (one cache-ready wrapper

@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-28-u5-pipeline-waits-for-merge",
+  "date": "2026-11-28",
+  "section": "shipwright-run single-session loop",
+  "title": "The pipeline holds a phase that waits for a merge, and resumes it by re-dispatching",
+  "context": "The changelog phase will (U6) open a release PR that a person or auto-merge must merge before deploy. Until now a phase result was either ok or failed, so a run could only fail or move on while the PR was open.",
+  "decision": "A phase-runner result may carry waiting {reason: waiting_for_merge, pr_url} (changelog only, ok:false). Apply records a hold in run_loop_state.json keyed to run, task and version; next/resume answer action waiting with a resume card; the Stop hook prints PIPELINE WAITING. Resume releases the hold and the same task is dispatched again; other results for the held dispatch are refused held_for_outside_event.",
+  "consequences": "Nothing emits waiting until U6, so current runs are unchanged. The re-dispatched changelog phase must check its outward work first (U6 contract). An older applier strict-stops on a waiting result (ok:false), which is safe.",
+  "rationale": "Reuses the gateTerminal marker pattern and the existing dispatch CAS, so no run_config schema value and no new task status were needed.",
+  "rejected": "A new task status (schema change, strict-stop); polling the PR inside the loop (blocks the session); a waitCount cap (each wait already needs a person's Resume).",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-11-28-u5-pipeline-waits-for-merge.md"
+}

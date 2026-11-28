@@ -1,0 +1,1 @@
+- (2026-11-28) iterate/run — a loop hold that blocks single-session-next must also block single-session-apply for the same task version (released or not), or a late ok result for the held dispatch finishes the phase without the re-check. → iterate-2026-11-28-u5-pipeline-waits-for-merge

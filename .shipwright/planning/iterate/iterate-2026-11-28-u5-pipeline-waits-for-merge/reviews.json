@@ -1,0 +1,324 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-28-u5-pipeline-waits-for-merge",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-28T18:12:37.181178+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "Pin the reason taxonomy: if `waiting` is absent, the closed reason set must not include `waiting_for_merge`.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "State in the plan that tests inject the waiting result directly; no U6 dependency for testing.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk ·",
+          "file": null,
+          "line": null,
+          "finding": "Either document that infinite waiting is intended (operator drives resume each time — the resume/confirm flow makes this semi-interactive, which may be sufficient), or add a counter with a stop after N waits.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "Spell out the ordering: confirm → `clear_waiting` → dispatch (new version). If dispatch happens before clear, the key check can miss.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk ·",
+          "file": null,
+          "line": null,
+          "finding": "Add an explicit AC/test: a waiting result emits no retry/error events and does not increment `attempt` (beyond the reset).",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security ·",
+          "file": null,
+          "line": null,
+          "finding": "Render as text; no action needed if the card format is plain.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency ·",
+          "file": null,
+          "line": null,
+          "finding": "Note in the plan that U6 must reuse the documented shape verbatim (or the contract module is the single source of truth and the doc references it).",
+          "suggestion": null,
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-28T17:46:39.448869+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] ## Findings\n\n**Category: edge-case · Severity: medium**\n`pr_url` validation requires `https://` — fine, but nothing specifies what happens if a waiting result arrives with *no* `waiting` block but a reason string like `waiting_for_merge` in the free-text reason (U6 phase-runner could emit it inconsistently). The contract should reject `reason == \"waiting_for_merge\"` outside the `waiting` block, or state explicitly that it's allowed and treated as a normal failure. Otherwise an older/buggy phase-runner silently burns retry budget on what is conceptually a wait.\n*Suggestion:* Pin the reason taxonomy: if `waiting` is absent, the closed reason set must not include `waiting_for_merge`.\n\n**Category: edge-case · Severity: medium**\nLost loop state + PR already merged: the plan says \"the task is re-dispatched, and the phase reports waiting again if the PR is still open.\" That covers the open-PR case, but does U6 (not in scope here) guarantee the re-dispatch produces a normal `ok` when the PR is merged? If U6 is the sole emitter, this is fine — but U5's end-to-end test only simulates the waiting result. Confirm U5 tests only need a synthetic waiting result, not a real phase-runner (it should — say so explicitly so the test isn't blocked on U6).\n*Suggestion:* State in the plan that tests inject the waiting result directly; no U6 dependency for testing.\n\n**Category: risk · Severity: medium**\nAttempt/`gateRejections` reset on a waiting result: resetting `attempt` means a task that repeatedly emits waiting (e.g., a phase-runner bug, or PR merges but the next run also waits on a *new* PR) can loop forever with an unbounded budget and no terminal condition. Is there any cap on consecutive waiting results (e.g., after N waits, require operator confirmation)?\n*Suggestion:* Either document that infinite waiting is intended (operator drives resume each time — the resume/confirm flow makes this semi-interactive, which may be sufficient), or add a counter with a stop after N […truncated]\n\n[openai] This review is based on the supplied mini-plan. Workspace access was blocked, so I couldn’t verify the campaign brief, pipeline documentation, or current implementation.\n\n1. **Risk · Medium**\n   - **Finding** — Confirmed resume clears the waiting marker before the same task is dispatched. If dispatch fails or the process exits between those steps, the next invocation can lose the PR guidance and retry without a recorded confirmation.\n   - **Suggestion** — Keep the marker valid until dispatch successfully rotates the task’s CAS version. Use that version change to invalidate the old marker, and test a failed dispatch after confirmation.\n\n2. **Edge case · Medium**\n   - **Finding** — The plan checks the marker’s run, task, and version in the loop, but describes the stop hook as showing the PR whenever the loop state holds a marker. A stale marker could still tell the operator to wait after the task advances or another run starts.\n   - **Suggestion** — Use the same current-marker check for `next`, resume, and the stop hook. Test that a stale marker neither blocks dispatch nor appears in the banner.\n\n3. **Approach · Low**\n   - **Finding** — The new `single_session_wait.py` splits a small state transition across apply, loop, and recovery, and the plan lists both `record_waiting` and `hold_waiting` without identifying distinct responsibilities.\n   - **Suggestion** — Keep marker operations in `loop_state.py` and put the apply, next, and resume branches in their existing owners. Add a shared helper where those branches need identical logic, such as checking whether a marker is current.\n\nKeeping waiting in loop state preserves the existing run schema and leaves deploy gated on changelog completion. Make confirmed resume safe to retry and apply the same marker validity rule across all three entry points before implementation.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_wait.py",
+          "line": 83,
+          "finding": "The changelog-only rule (WAITING_PHASES) is checked against result['phase'], never the task's phase, and nothing compares result phase with task phase, so a non-changelog task can be held by a result that claims phase 'changelog'.",
+          "suggestion": "In apply_waiting refuse with reason 'waiting_phase_mismatch' (nothing written) when task['phase'] not in WAITING_PHASES[reason] or result['phase'] != task['phase']; add a test.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-run/scripts/hooks/master_stop_check.py",
+          "line": 69,
+          "finding": "_waiting_task ignores the marker's 'released' flag, so after a confirmed Resume (before the version is rotated) the stop banner still says PIPELINE WAITING while the loop would dispatch.",
+          "suggestion": "Return None when marker.get('released') is truthy; add a hook test.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_apply.py",
+          "line": 182,
+          "finding": "A waiting result skips the artifact check and its summary/artifacts are recorded nowhere, so the waiting pass leaves no record beyond reason and URL.",
+          "suggestion": "Document in phase-runner.md that a waiting result's artifacts are not recorded (or require artifacts: []), or carry the summary on the phase_waiting event.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-28T18:09:08.243164+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "af6bb77e6a70cc5ddaffacf9b41812b959dd902c",
+      "reviewer_notes": "code-reviewer (opus) on origin/main...5c437cfdb. All three findings accepted and fixed in the next commit."
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_apply.py:182; single_session_wait.py:86",
+          "line": null,
+          "finding": "a held phase only finishes via Resume + re-dispatch",
+          "suggestion": "refuse any apply whose task has a waiting marker at the current version",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "concurrency",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_wait.py:80-96",
+          "line": null,
+          "finding": "the marker write is race-free",
+          "suggestion": "confirm a single serial writer or lock",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "blast radius",
+          "file": "plugins/shipwright-run/scripts/lib/single_session/loop_state.py:108",
+          "line": null,
+          "finding": "the gate retry cap still holds",
+          "suggestion": "accept as intended or preserve gateRejections",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-run/scripts/lib/single_session/result_contract.py:171",
+          "line": null,
+          "finding": "runs that never emit waiting are unchanged",
+          "suggestion": "accept; no pipeline producer emits it today",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "reversibility",
+          "file": "plugins/shipwright-run/scripts/lib/single_session/result_contract.py:30-36",
+          "line": null,
+          "finding": "re-dispatching the held phase is safe",
+          "suggestion": "U6 test: a re-run with an open PR reports waiting without a second PR",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-28T18:12:37.040216+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "7fb13a45bf5917617a3733a1f2fecffedb33ecc6"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_wait.py` (apply_waiting, `loop_state_unreadable` branch) and `plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_cli.py:38` (`_FAIL_CLOSED_REASONS`)",
+          "line": null,
+          "finding": "apply_waiting` can return a new refusal reason `loop_state_unreadable`, but the diff does not add it to any CLI-side refusal/exit-code mapping (`_FAIL_CLOSED_REASONS` or an equivalent failure set). Depending on how `single_session_cli.py` classifies unknown `ok: False` reasons, an unreadable loop state on a waiting apply may exit 0 (looking like success) instead of failing closed — the exact failure mode the code comments say they want to avoid. There is also no test for this path.",
+          "suggestion": "Add `loop_state_unreadable` to the CLI's failure classification and add a test that a waiting apply with an unreadable/corrupt `run_loop_state.json` exits non-zero and writes nothing.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_recovery.py` (~line 136–150)",
+          "line": null,
+          "finding": "When `confirm=True` on a waiting run, the function re-resolves `resolved` after releasing the hold, but the returned `context` was loaded before the release and `loop_state` in the returned pointer comes from the pre-release state in the non-waiting path — in the waiting path `loop_state` is reassigned so that's fine, but the stale `context` (and the fact that `waiting` in the output is the entire old `resolved` dict, including `action`/`next_step`, not a minimal `{pr_url, next_step}` block) makes the confirmed resume card structurally inconsistent with the unconfirmed one. Tests only assert `waiting is not None` / `pr_url` presence, so this asymmetry is unvalidated.",
+          "suggestion": "Return a stable minimal `waiting` block (pr_url, reason, next_step) in both confirmed and unconfirmed resume responses, and re-load `context` after the hold release.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "plugins/shipwright-run/tests/test_single_session_waiting.py` (`test_a_late_waiting_result_from_an_older_dispatch_writes_nothing`)",
+          "line": null,
+          "finding": "The assertion `applied == {applied, \"ok\": False, \"reason\": \"stale_version\"}` is a tautology-compatible pattern only if `applied` has no other keys; it actually asserts the dict equals itself with two keys overridden — i.e. it only checks `ok` and `reason` and silently permits any extra keys, so a regression adding stale fields to the refusal would still pass.",
+          "suggestion": "Assert `applied[\"ok\"] is False and applied[\"reason\"] == \"stale_version\"` and, if the exact refusal shape matters, compare the full dict.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "plugins/shipwright-run/scripts/hooks/master_stop_check.py` (`_waiting_task`)",
+          "line": null,
+          "finding": "If the run config's task is `in_progress` and versions match but the loop-state marker was written by a different session of the same task (session UUID rotated by a re-dispatch that didn't bump version), the hook still prints the WAITING banner; the loop-side `waiting_action` has the same property. Given `record_waiting`/`waiting_for` never check the session, this is consistent with the design, but it means a stale marker that survives a same-version session change is indistinguishable. Low impact since version rotation covers re-dispatch.",
+          "suggestion": "None needed unless session rotation without version bump is possible; if it is, key the marker on sessionUuid too.  Security: the `pr_url` is validated as a plain https URL with a character-class regex excluding control/escape chars in both the contract and the Stop hook, and the hook re-validates before printing — no injection path found. Event emission is best-effort with a closed type set. No auth/secrets concerns.  Spec compliance: all four ACs are implemented and exercised by real end-to-end tests (task stays in_progress, run not complete, no deploy task; `next` answers `waiting` with the link; resume re-dispatches the same task with a rotated version; ok-after-waiting both schedules deploy and ends the run with `deploy_target: none`). Docs, skill, reference, agent contract, and observability are all updated consistently, including the \"inert until U6\" gating (changelog phase only, validated).  Overall assessment: a well-executed, thoroughly tested change; the findings are refinements, the most concrete being the unclassified `loop_state_unreadable` refusal reason. Ship-with-fixes.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_recovery.py",
+          "line": 143,
+          "finding": "Confirming Resume clears the hold while the previous dispatch’s version is still valid. If that dispatch’s waiting result is retried before the next `single-session-next` call, apply accepts it and reinstates the hold. The next call then reports `waiting` again instead of redispatching the changelog task. The existing stale-result test only retries after the version has already rotated.",
+          "suggestion": "Invalidate the previous dispatch as part of releasing the hold. Add a test that confirms Resume, replays the old result before calling next, and verifies that next dispatches the same task.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "plugins/shipwright-run/scripts/lib/single_session/result_contract.py",
+          "line": 189,
+          "finding": "The regex checks allowed characters but does not require a hostname. A value such as `https:///pull/42` passes validation and puts the run on hold with an unusable PR link.",
+          "suggestion": "Keep the character check, parse the URL, and require a nonempty hostname. Add a regression case for a missing hostname.  Ship-with-fixes. The diff covers the expected wait, resume, and deploy transitions, but a replay can undo a confirmed resume. Workspace commands were blocked, so I reviewed the supplied diff and could not verify the full campaign brief, pipeline document, or test suite.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-28T17:49:14.698744+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] Findings:\n\n- Category: bug\n  Severity: medium\n  File: `plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_wait.py` (apply_waiting, `loop_state_unreadable` branch) and `plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_cli.py:38` (`_FAIL_CLOSED_REASONS`)\n  Finding: `apply_waiting` can return a new refusal reason `loop_state_unreadable`, but the diff does not add it to any CLI-side refusal/exit-code mapping (`_FAIL_CLOSED_REASONS` or an equivalent failure set). Depending on how `single_session_cli.py` classifies unknown `ok: False` reasons, an unreadable loop state on a waiting apply may exit 0 (looking like success) instead of failing closed — the exact failure mode the code comments say they want to avoid. There is also no test for this path.\n  Suggestion: Add `loop_state_unreadable` to the CLI's failure classification and add a test that a waiting apply with an unreadable/corrupt `run_loop_state.json` exits non-zero and writes nothing.\n\n- Category: bug\n  Severity: low\n  File: `plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_recovery.py` (~line 136–150)\n  Finding: When `confirm=True` on a waiting run, the function re-resolves `resolved` after releasing the hold, but the returned `context` was loaded before the release and `loop_state` in the returned pointer comes from the pre-release state in the non-waiting path — in the waiting path `loop_state` is reassigned so that's fine, but the stale `context` (and the fact that `waiting` in the output is the *entire* old `resolved` dict, including `action`/`next_step`, not a minimal `{pr_url, next_step}` block) makes the confirmed resume card structurally inconsistent with the unconfirmed one. Tests only assert `waiting is not None` / `pr_url` presence, so this asymmetry is unvalidated.\n  Suggestion: Return a stable minimal `waiting` block (pr_url, reason, next_step) in both confirmed and unconfirmed resume responses, and re-load `context` after the hold relea […truncated]\n\n[openai] - **Category:** bug  \n  **Severity:** medium  \n  **File:line:** `plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_recovery.py:143`  \n  **Finding:** Confirming Resume clears the hold while the previous dispatch’s version is still valid. If that dispatch’s waiting result is retried before the next `single-session-next` call, apply accepts it and reinstates the hold. The next call then reports `waiting` again instead of redispatching the changelog task. The existing stale-result test only retries after the version has already rotated.  \n  **Suggestion:** Invalidate the previous dispatch as part of releasing the hold. Add a test that confirms Resume, replays the old result before calling next, and verifies that next dispatches the same task.\n\n- **Category:** edge-case  \n  **Severity:** low  \n  **File:line:** `plugins/shipwright-run/scripts/lib/single_session/result_contract.py:189`  \n  **Finding:** The regex checks allowed characters but does not require a hostname. A value such as `https:///pull/42` passes validation and puts the run on hold with an unusable PR link.  \n  **Suggestion:** Keep the character check, parse the URL, and require a nonempty hostname. Add a regression case for a missing hostname.\n\n**Ship-with-fixes.** The diff covers the expected wait, resume, and deploy transitions, but a replay can undo a confirmed resume. Workspace commands were blocked, so I reviewed the supplied diff and could not verify the full campaign brief, pipeline document, or test suite.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-28T18:09:08.100329+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "af6bb77e6a70cc5ddaffacf9b41812b959dd902c",
+      "ac_verdicts": [
+        {
+          "ac": "item-1",
+          "verdict": "matches",
+          "diff_location": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_wait.py:52",
+          "reason": "A contract-valid waiting result leaves the task in_progress and not failed, schedules no successor and leaves the run status unchanged; next answers waiting with the link and next step; a confirmed resume releases the hold so the same task is dispatched again; a later ok moves on to deploy or completes the run when deploy_target is none.",
+          "weakens": false
+        }
+      ]
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-28T17:46:39.578804+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-28T17:46:39.716703+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

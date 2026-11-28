@@ -24,7 +24,16 @@ Shape::
       "reason": str,         # required WHEN ok is False (failure reason)
       "metrics": {...},      # optional — small structured extras
       "review_status": {...},# optional — review-cascade state (see below)
+      "waiting": {...},      # optional — the phase waits for an outside event (below)
     }
+
+``waiting`` (U5) says the phase is NOT done and NOT failed: it waits for something outside
+the run — ``{"reason": "waiting_for_merge", "pr_url": "https://..."}``. Such a result is
+``ok: false`` (so an applier that does not know ``waiting`` strict-stops instead of
+completing the phase and running deploy) and carries the usual ``reason``. The loop holds
+the task, answers ``waiting`` with the link, and dispatches the SAME task again on resume —
+so a phase that reports waiting must check the outside state itself when re-run, and report
+``waiting`` again or ``ok``, never repeat its outward work. Only ``WAITING_REASONS`` exist.
 
 ``review_status`` is backward-compatible (absent = phase prescribes no cascade,
 or an older runner): ``{"state": <REVIEW_STATES>, "reason_code": str,
@@ -40,6 +49,7 @@ drift guard).
 """
 from __future__ import annotations
 
+import re
 from pathlib import PurePosixPath, PureWindowsPath
 from typing import Any
 
@@ -52,6 +62,16 @@ REVIEW_STATES = ("completed", "partial", "deferred", "skipped", "not_applicable"
 _REVIEW_STATES_NEEDING_REASON = ("partial", "deferred", "skipped")
 
 REQUIRED_RESULT_KEYS = ("ok", "phase", "summary", "artifacts")
+
+# The outside events a phase may wait for (closed set — not a general pause mechanism).
+WAITING_REASONS = ("waiting_for_merge",)
+# The phases allowed to report each reason: the release phase is the only producer (U6).
+WAITING_PHASES = {"waiting_for_merge": ("changelog",)}
+# A plain https link with a host name, at most 508 characters, URL characters only: no
+# space, control or escape character reaches a terminal or a card. Mirrored literally in
+# hooks/master_stop_check.py.
+PR_URL_RE = re.compile(r"(?=.{9,508}$)https://[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*(?::[0-9]{1,5})?"
+                       r"(?:[/?#][A-Za-z0-9._~:/?#\[\]@!$&'()*+,;=%-]*)?")
 
 # Mirror of shared/schemas/run_config.v2.schema.json $defs.Phase.enum. Kept as a
 # literal (no runtime import coupling); drift is caught by the contract test.
@@ -146,6 +166,31 @@ def validate_phase_runner_result(result: Any) -> list[str]:
     if "review_status" in result:
         errors.extend(_validate_review_status(result["review_status"]))
 
+    if "waiting" in result:
+        errors.extend(_validate_waiting(result["waiting"], ok, phase))
+    elif result.get("reason") in WAITING_REASONS:
+        errors.append(f"reason {result['reason']!r} needs the 'waiting' block "
+                      "(else the phase would be counted failed)")
+
+    return errors
+
+
+def _validate_waiting(waiting: Any, ok: Any, phase: Any) -> list[str]:
+    if not isinstance(waiting, dict):
+        return ["'waiting' must be a dict"]
+    errors: list[str] = []
+    if ok is not False:
+        errors.append("a waiting result must be ok=False (the phase is not done)")
+    if waiting.get("reason") not in WAITING_REASONS:
+        errors.append(f"'waiting.reason' must be one of {WAITING_REASONS}, "
+                      f"got {waiting.get('reason')!r}")
+    elif phase not in WAITING_PHASES[waiting["reason"]]:
+        errors.append(f"only the {WAITING_PHASES[waiting['reason']]} phase may report "
+                      f"{waiting['reason']!r}, not {phase!r}")
+    url = waiting.get("pr_url")
+    if not (isinstance(url, str) and PR_URL_RE.fullmatch(url)):
+        errors.append("'waiting.pr_url' must be a plain https:// link "
+                      "with a host name (URL characters only, at most 508)")
     return errors
 
 
@@ -185,6 +230,7 @@ def build_phase_runner_result(
     split_id: str | None = None,
     metrics: dict[str, Any] | None = None,
     review_status: dict[str, Any] | None = None,
+    waiting: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Construct a validated phase-runner result.
 
@@ -207,6 +253,8 @@ def build_phase_runner_result(
         result["metrics"] = metrics
     if review_status is not None:
         result["review_status"] = review_status
+    if waiting is not None:
+        result["waiting"] = waiting
 
     errors = validate_phase_runner_result(result)
     if errors:
