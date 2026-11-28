@@ -3,10 +3,10 @@
 Date: 2026-11-28 · Status: READY rev 10, nothing built.
 - rev 2: operator answers of 2026-11-27, prior-art research, repo impact survey, drift prototype.
 - rev 3: Opus plan review (verdict "ready after fixes"; H1-H5, M1-M5, L1-L4 worked in, see §12).
-- rev 10 (2026-11-29): Opus review of rev 9 worked in (§12).
-- rev 9 (2026-11-29): no upper limits on capabilities, scenarios or text length; split/merge rule instead, size shown as information.
-- rev 8 (2026-11-29): Install = Claude Code only, Codex back to Extend; English capability names.
-- rev 7 (2026-11-29): R1-R4 report bug units at the start; CAP-07 Einrichten (install + Codex), Erweiterung = profile rules only; SCN-09 now installation; naming proposal Neu bauen / Weiterentwickeln.
+- rev 10 (2026-11-28): Opus review of rev 9 worked in (§12).
+- rev 9 (2026-11-28): no upper limits on capabilities, scenarios or text length; split/merge rule instead, size shown as information.
+- rev 8 (2026-11-28): Install = Claude Code only, Codex back to Extend; English capability names.
+- rev 7 (2026-11-28): R1-R4 report bug units at the start; CAP-07 Einrichten (install + Codex), Erweiterung = profile rules only; SCN-09 now installation; naming proposal Neu bauen / Weiterentwickeln.
 - rev 6 (2026-11-28): research on FR/AC views (§6a) and readable reports (§6b); U6d added; four report bugs verified.
 - rev 5 (2026-11-28): element defined; 10 h run on demand only, release suite one test per scenario (U8c); scenarios SCN-06/07/03 widened, SCN-10 audit added; CAP-06 dissolved; Ship's Log links the intent; webui/leadwright iterates run from here; PR #1055 closed, its cut moves to U7.
 - rev 4: operator decisions (Capability, placement in §8, confirmation variant A); Opus UX design of the confirmation (§4).
@@ -40,7 +40,7 @@ A person (product owner, domain side) can see what the product does and accept i
 | Key scenario SCN-xx: user does A -> system does B -> result C | human-confirmed | at least one per CAP; no upper limit | `intent.md` (text only, no FR ids) |
 | FR -> AC -> test, FR -> CAP, SCN -> FR path | AI | as today | `spec.md`, tests |
 
-**No upper limits (operator 2026-11-29):** a fixed cap is wrong for larger applications. The rule agents follow instead: a capability is something a user would name as a reason to use the product; split one only when the user's goal differs, merge two when a user would not tell them apart. Size is shown as information in the report (count, longest sentence), never a gate rule. Shipwright itself lands at 7 because that is what it has, not because of a limit.
+**No upper limits (operator 2026-11-28):** a fixed cap is wrong for larger applications. The rule agents follow instead: a capability is something a user would name as a reason to use the product; split one only when the user's goal differs, merge two when a user would not tell them apart. Size is shown as information in the report (count, longest sentence), never a gate rule. Shipwright itself lands at 7 because that is what it has, not because of a limit.
 
 Every human element carries `status: confirmed | assumption`. **Element** = one human-owned entry in `intent.md`: the intent text, each non-goal, each CAP, each SCN (about 20 for shipwright). FRs, ACs, tests and every link between levels are AI-owned and carry no status.
 **Ownership rule (from review H4):** `intent.md` holds only human text. Every link that names an FR lives on the AI side, so a mechanical `fr_split` never touches the human file:
@@ -152,7 +152,7 @@ Candidate scenarios (operator confirms in U2b; completeness check of 2026-11-28 
 - SCN-08 grade any repo without writing to it (18)
 - SCN-09 a fresh machine: Shipwright is installed into Claude Code with one command and the setup check is green (FR-01.23); harness in U8c (scratch HOME, install, verify-setup)
 - SCN-10 an auditor asks which requirement is tested where and what changed; the cross-check names where evidence and code disagree (10)
-Not in any scenario (information, gate P needs a scenario per CAP, not per FR): 15 cross-repo contract, 20 cost meter, 22 reminders (its tests stay, without a scenario marker; replaced as SCN-09 by installation 2026-11-29).
+Not in any scenario (information, gate P needs a scenario per CAP, not per FR): 15 cross-repo contract, 20 cost meter, 22 reminders (its tests stay, without a scenario marker; replaced as SCN-09 by installation 2026-11-28).
 
 ## 8. Capability proposal for shipwright (operator edits in U2b)
 | CAP | Sentence | FRs |
@@ -164,7 +164,7 @@ Not in any scenario (information, gate P needs a scenario per CAP, not per FR): 
 | CAP-05 Evolve | Ongoing changes and taken-over codebases get exactly as much process as they need, every finding lands in one inbox, and the operator is reminded of what is still open. | 11, 13, 14, 22 |
 | CAP-06 Extend | Teams plug in their own technology rules per stack profile without changing the framework, and Shipwright can run partly in another AI assistant (Codex; recommended route: codextender). | 21; from U7 also the new "architecture rules per profile" FR (today FR-01.01 AC13-38) |
 | CAP-07 Install | Shipwright installs into Claude Code with one command, checks its own setup and stays up to date. | FR-01.23 "installation and setup check" (`scripts/install.sh`, `verify-setup.sh`, marketplace + cache sync), minted in U1c |
-CAP-07 Install added 2026-11-29 (operator: "installation is a capability"; Claude Code only, Codex stays in Extend because it is only partial, recommended via codextender; a separate "Supported agents" capability was considered and dropped: it would put Codex more prominently than wanted); the npx installer/updater is webui FR-01.49 and stays in the webui intent, which links to it. Seven CAPs (no limit applies, §3). **Names decided 2026-11-29, in English:** Build new (a new product, first time), Evolve (everything after: iterate, adopt, triage, reminders), Verify, Ship, Prove, Extend, Install; a capability groups what the user gets, not which plugin code runs, so iterate sits in Evolve although it reuses plan/build/test. The former CAP-06 "Betrieb" was dissolved 2026-11-28 and its id reused for Extend: there is no telemetry (the cost meter reads the local session record, nothing leaves the machine), so two small FRs did not earn a capability; 20 -> Prove, 22 -> Evolve. Seven capabilities; final ids are assigned in U2b. Placement (operator reviews in U2b): 15 -> Verify (a gate that blocks a change, not an evidence document); 16 -> Build new (asking what is needed is the first step of building; adopt and iterate reuse the method); 13 -> Evolve (taking over existing code, then changing it); 21 -> Extend. **Until U7 splits it, FR-01.01 is mapped to Build new as a whole** (its AC13-38 belong to Extend; the drift check flags exactly that, which is the U3 calibration case).
+CAP-07 Install added 2026-11-28 (operator: "installation is a capability"; Claude Code only, Codex stays in Extend because it is only partial, recommended via codextender; a separate "Supported agents" capability was considered and dropped: it would put Codex more prominently than wanted); the npx installer/updater is webui FR-01.49 and stays in the webui intent, which links to it. Seven CAPs (no limit applies, §3). **Names decided 2026-11-28, in English:** Build new (a new product, first time), Evolve (everything after: iterate, adopt, triage, reminders), Verify, Ship, Prove, Extend, Install; a capability groups what the user gets, not which plugin code runs, so iterate sits in Evolve although it reuses plan/build/test. The former CAP-06 "Betrieb" was dissolved 2026-11-28 and its id reused for Extend: there is no telemetry (the cost meter reads the local session record, nothing leaves the machine), so two small FRs did not earn a capability; 20 -> Prove, 22 -> Evolve. Seven capabilities; final ids are assigned in U2b. Placement (operator reviews in U2b): 15 -> Verify (a gate that blocks a change, not an evidence document); 16 -> Build new (asking what is needed is the first step of building; adopt and iterate reuse the method); 13 -> Evolve (taking over existing code, then changing it); 21 -> Extend. **Until U7 splits it, FR-01.01 is mapped to Build new as a whole** (its AC13-38 belong to Extend; the drift check flags exactly that, which is the U3 calibration case).
 
 ## 9. Units
 Each unit is one iterate with the review cascade (spec -> code -> doubt, model=opus explicit), at most ~5-8 files.
@@ -232,7 +232,7 @@ Opus plan review of rev 2 (2026-11-28, verdict "ready after fixes"):
 - L3 -> word limits defined.
 - L4 -> dedup fixture.
 
-Opus review of rev 9 (2026-11-29, "ready after fixes"): H1 CAP-07 without FR -> U1c mints FR-01.23, FR-01.01 mapped to Build new until U7; H2 caps left in the dialog design -> builder chunks by measured preview limit; H3 chain forks in parallel worktrees + 12x hook fan-out -> per-session drop files, one registered hook, dedupe by tool_use_id; M1 stale names -> fixed; M2 readers of test-evidence/change-history -> inventory step, U6a split, webui tolerates absence first; M3 snapshot lists named; M4 U6d after U2b, R4 part removed; M5 unit count, SCN-09/10 harnesses; M6 fallback rule + Codex = assumption only; L1-L4 -> R1 collector scope, R3/R4 canonical sources, U10 dependency, dwell stamp.
+Opus review of rev 9 (2026-11-28, "ready after fixes"): H1 CAP-07 without FR -> U1c mints FR-01.23, FR-01.01 mapped to Build new until U7; H2 caps left in the dialog design -> builder chunks by measured preview limit; H3 chain forks in parallel worktrees + 12x hook fan-out -> per-session drop files, one registered hook, dedupe by tool_use_id; M1 stale names -> fixed; M2 readers of test-evidence/change-history -> inventory step, U6a split, webui tolerates absence first; M3 snapshot lists named; M4 U6d after U2b, R4 part removed; M5 unit count, SCN-09/10 harnesses; M6 fallback rule + Codex = assumption only; L1-L4 -> R1 collector scope, R3/R4 canonical sources, U10 dependency, dwell stamp.
 
 Opus UX review of the confirmation (2026-11-28): read on a page, decide in at most two dialogs, change flow as a diff, preview-verified hook record with a chain -> §4; U2a split into U2a1/U2a2.
 
@@ -241,5 +241,5 @@ Opus UX review of the confirmation (2026-11-28): read on a page, decide in at mo
 2. ~~§8 placement~~ proposal written into §8; final check in U2b.
 3. ~~§4 channel~~ decided 2026-11-28: hook-recorded answer (variant A), designed for little reading in the terminal (§4); webui button later.
 4. ~~FR/AC view and readable reports~~ researched 2026-11-28 -> §6a, §6b, units U2a2, U2c, U4, U6a, U6b, U6d.
-5. ~~report bugs~~ decided 2026-11-29: in the campaign as R1-R4, run at the start alongside U0.
-6. ~~installation gap~~ decided 2026-11-29: own capability CAP-07 Install (Claude Code only); Codex stays in Extend; capability names in English.
+5. ~~report bugs~~ decided 2026-11-28: in the campaign as R1-R4, run at the start alongside U0.
+6. ~~installation gap~~ decided 2026-11-28: own capability CAP-07 Install (Claude Code only); Codex stays in Extend; capability names in English.
