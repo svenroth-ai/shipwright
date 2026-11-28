@@ -38,6 +38,7 @@ matches ``getattr(exc, "code", None)``, not the class.
 
 from __future__ import annotations
 
+import subprocess
 from os.path import isfile as _isfile  # never raises (Path.is_file re-raises EACCES on 3.11)
 from pathlib import Path
 from typing import Callable
@@ -116,3 +117,43 @@ def locate(key: str, root: Path | str, new_rel: str | None, legacy_rel: str, *,
     if new_there and old_there:
         raise LayoutError("both_copies", key, new, old)
     return new if new_there else old
+
+
+class GitReadError(OSError):
+    """``locate_at(strict=True)`` could not ASK git (unresolvable commit, git missing, timeout) - never
+    the same answer as "the new path is not in that commit" (plan + architecture review, R1d)."""
+
+
+def locate_at(root: Path | str, commit: str | None, new_rel: str | None, legacy_rel: str, *,
+              strict: bool = False) -> str:
+    """Repo-relative POSIX path a moving file has at *commit* (``None``: the working tree), for git readers.
+
+    "Migrated?" is decided by the NEW path existing at that commit, never by the root blob missing: after
+    R3 the root blob is the pointer stub (BRIEF 14.4). ``git ls-tree`` tells "not in that tree" (exit 0, no
+    output) from "could not ask" (non-zero, timeout, no git). The second reads as the root path for a Python
+    reader, whose own ``git show`` then reports the real error; with ``strict`` it raises
+    :class:`GitReadError`, for a caller (CI) that would otherwise read the wrong place silently. An empty or
+    dash-led *commit* is no commit (an empty rev would read the INDEX; a dash would reach git as an option).
+    Both copies at one commit answer the new one: a history reader reads, it never repairs, and after R3 the
+    root copy is the stub - the on-disk :func:`locate` is where two full copies are an error. A file that
+    does not move answers its root path; ``strict`` still checks that git can read *commit* (code review)."""
+    base = root if isinstance(root, Path) else Path(root)
+    if commit is None or (new_rel is None and not strict):
+        return new_rel if new_rel is not None and _isfile(base / new_rel) else legacy_rel
+    if not commit.strip() or commit.lstrip().startswith("-"):
+        if strict:
+            raise GitReadError(f"not a commit: {commit!r}")
+        return legacy_rel
+    try:
+        proc = subprocess.run(["git", "-C", str(base), "ls-tree", "--full-tree", "--name-only", f"{commit}^{{tree}}", "--",
+                               new_rel or legacy_rel],
+                              capture_output=True, timeout=30, check=False)
+        failed = proc.returncode != 0
+    except (OSError, subprocess.SubprocessError) as exc:
+        proc, failed = None, exc
+    if failed:
+        if strict:
+            raise GitReadError(f"cannot read commit {commit!r} in {base}: "
+                               f"{failed if proc is None else proc.stderr.decode('utf-8', 'replace').strip()}")
+        return legacy_rel
+    return new_rel if new_rel is not None and proc.stdout.strip() else legacy_rel

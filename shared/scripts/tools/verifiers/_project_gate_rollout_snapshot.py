@@ -169,11 +169,11 @@ def _rollout_declared_split_names(project_root: Path, sha: str) -> frozenset[str
     key = (sha, str(project_root))
     if key in _MANIFEST_CACHE:
         return _MANIFEST_CACHE[key]
-    primary_text = _read_at_commit(project_root, sha, _sp.rel_at("project_config", sha))
+    primary_text = _read_at_commit(project_root, sha, _sp.rel_at("project_config", sha, project_root))
     if primary_text is not None:
         result = _parse_declared_split_names(primary_text) or frozenset()
     else:
-        fallback_text = _read_at_commit(project_root, sha, _sp.rel_at("run_config", sha))
+        fallback_text = _read_at_commit(project_root, sha, _sp.rel_at("run_config", sha, project_root))
         result = _parse_declared_split_names(fallback_text) or frozenset()
     _MANIFEST_CACHE[key] = result
     return result

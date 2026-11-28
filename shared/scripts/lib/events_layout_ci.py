@@ -29,7 +29,7 @@ from .events_sentinel import SUPPORTED_LAYOUTS, SYNC_CONFIG
 
 def _layout_at(root: Path, rev: str) -> object:
     """The raw ``events_layout`` at ``rev`` (``None`` = absent / unreadable file)."""
-    data = blob(root, rev, _sp.rel_at("sync_config", rev))
+    data = blob(root, rev, _sp.rel_at("sync_config", rev, root))
     if data is None:
         return None
     try:

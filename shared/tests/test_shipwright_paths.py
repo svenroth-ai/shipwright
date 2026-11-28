@@ -45,7 +45,7 @@ FROZEN = {
 @pytest.mark.covers("FR-01.11")
 def test_every_name_is_the_pre_resolver_root_name():
     assert {k: sp.rel(k) for k in sp.SPECS} == FROZEN
-    assert sp.name("run_config") == sp.legacy_rel("run_config") == sp.rel_at("run_config", "deadbeef")
+    assert sp.name("run_config") == sp.legacy_rel("run_config") == sp.rel_at("run_config", "deadbeef", _SCRIPTS.parents[1])   # R1d: an unknown commit reads as unmigrated
 
 
 @pytest.mark.covers("FR-01.11")

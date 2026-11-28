@@ -1,0 +1,651 @@
+diff --git a/.github/workflows/bloat-check.yml b/.github/workflows/bloat-check.yml
+index 625b66cf9..74df2d586 100644
+--- a/.github/workflows/bloat-check.yml
++++ b/.github/workflows/bloat-check.yml
+@@ -81,9 +81,16 @@ jobs:
+         run: |
+           set -euo pipefail
+           if [ "${{ steps.base.outputs.base_available }}" = "true" ]; then
+-            git show "${{ steps.base.outputs.base_sha }}:shipwright_bloat_baseline.json" \
+-                > /tmp/baseline_base.json 2>/dev/null \
+-                || echo '{"version":1,"entries":[]}' > /tmp/baseline_base.json
++            # Where the baseline lives AT THE BASE (R1d): its new place if that exists there, else
++            # the root - so a moved baseline is never read as "absent" and diffed against nothing.
++            # Its own assignment, so `set -e` stops the step when git cannot answer (exit 3).
++            base_rel="$(uv run shared/scripts/tools/shipwright_rel_at.py bloat_baseline \
++                --commit "${{ steps.base.outputs.base_sha }}")"
++            if ! git show "${{ steps.base.outputs.base_sha }}:${base_rel}" \
++                > /tmp/baseline_base.json 2>/dev/null; then
++              echo "::warning::the base commit has no bloat baseline in either place — the allowlist diff is computed against an EMPTY baseline"
++              echo '{"version":1,"entries":[]}' > /tmp/baseline_base.json
++            fi
+           else
+             echo "::notice::no resolvable base for this event — the allowlist diff is computed against an EMPTY baseline, so every entry reads as new"
+             echo '{"version":1,"entries":[]}' > /tmp/baseline_base.json
+@@ -94,7 +101,7 @@ jobs:
+         run: |
+           set +e
+           uv run shared/scripts/hooks/anti_ratchet_check.py \
+-              --project-root . \
++              --project-root . --require-baseline \
+               --worktree --json > /tmp/ratchet.json 2> /tmp/ratchet.stderr
+           echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+           cat /tmp/ratchet.json
+@@ -103,10 +110,14 @@ jobs:
+ 
+       - name: Build allowlist diff
+         id: diff
++        shell: bash
+         run: |
++          set -euo pipefail
++          # Its own assignment (not inline in an argument), so a failing lookup stops the step.
++          head_rel="$(uv run shared/scripts/tools/shipwright_rel_at.py bloat_baseline)"
+           uv run shared/scripts/hooks/build_bloat_diff.py \
+               --base /tmp/baseline_base.json \
+-              --head shipwright_bloat_baseline.json \
++              --head "$head_rel" \
+               --ratchet /tmp/ratchet.json \
+               > /tmp/diff.md
+ 
+diff --git a/docs/guide.md b/docs/guide.md
+index f23dca272..4bbda10e0 100644
+--- a/docs/guide.md
++++ b/docs/guide.md
+@@ -2209,6 +2209,8 @@ Hooks are Python and shell scripts that fire on specific Claude Code events. The
+ | `bloat_gate_on_stop.py` | Stop | Reads the session bloat marker and refuses to finalize a turn while a ratchet is pending: the gate that catches in-session ratchets the same Claude that wrote them. |
+ | `.github/workflows/bloat-check.yml` | CI on PRs to main | Same anti-ratchet rule on the merge gate, defense-in-depth against operators who skip the pre-commit install. |
+ 
++In this repo the pre-commit hook and CI both pass `--require-baseline`: a baseline missing from **both** of its places (the root, or `.shipwright/` once the root files move) fails the check instead of skipping it, and CI reads the base commit's baseline wherever it lived **at that commit** (`shared/scripts/tools/shipwright_rel_at.py`). A consumer project with no baseline yet still skips.
++
+ Exception path: write an ADR using `.shipwright/planning/adr/_template-bloat-exception.md` (mandatory Ousterhout / YAGNI / Chesterton-Fence / Re-Review-Date / Incident-Reference sections), bump the entry's `current` in the allowlist with `state="exception"` and `adr="ADR-NNN"`.
+ 
+ **Reducibility reviewer (the qualitative complement).** The anti-ratchet hook above is purely *quantitative*: it counts lines, which cannot tell long-but-coherent code from genuinely reducible code. The reducibility reviewer closes that gap: a line-count crossing is treated as a **router**, not a verdict (`LOC-as-Router`), escalating the file to a reviewer that blocks **only** on a concrete, falsifiable reduction from a closed catalog (`D` duplication · `A` needless-abstraction · `X` dead-code · `C` control-flow · `S` data-shape · `M` comment-restating-code · `P` dependency-footprint · `T` test-repetition), each citing what-to-remove + est-LOC-saved + keeps-tests-green. No concrete finding → PASS, so coherent long code is never churned (guardrails G1–G6). It runs at two enforcement surfaces (the local diff reviewer in `plugins/shipwright-build/agents/code-reviewer.md`, bounce-back cascade, and the CI Tier-3 reviewer in `shared/prompts/pr_reviewer/system`), plus an advisory plan-stage pre-emption in `shared/prompts/iterate_reviewer/system`. The rubric and per-language idiom-map live in `shared/reducibility-catalog.md` and `shared/profiles/reducibility-idioms.json`.
+diff --git a/docs/hooks-and-pipeline.md b/docs/hooks-and-pipeline.md
+index b72d11169..49a75c1bd 100644
+--- a/docs/hooks-and-pipeline.md
++++ b/docs/hooks-and-pipeline.md
+@@ -144,8 +144,9 @@ artifact has exactly one documented resolution strategy:
+ | `shipwright_test_results.json` | **ours** (PR-owned snapshot) |
+ | `.shipwright/config/shipwright_test_results.json` | **ours** (the same snapshot in its new place, recognised from R1c-3 on) |
+ 
+-> **Since iterate-2026-07-27-derived-snapshots-off-branch the twelve
+-> `DERIVED_SNAPSHOTS` rows above describe a path an iterate no longer takes.**
++> **Since iterate-2026-07-27-derived-snapshots-off-branch the thirteen
++> `DERIVED_SNAPSHOTS` rows above (twelve files; the test-results snapshot counts in both
++> of its places since R1c-3) describe a path an iterate no longer takes.**
+ > (The `.shipwright/planning/adr/INDEX.md` row is the exception and is *not* one
+ > of them — an iterate branch deliberately DOES carry the index, which is why it
+ > needed registering at all.) The strategies above remain the
+@@ -175,13 +176,13 @@ artifact has exactly one documented resolution strategy:
+ > reported **skipped**, never clean — a merge HEAD reports no paths, so "clean"
+ > cannot be told from "blind".
+ >
+-> **Ten of the twelve, not all twelve** (trg-ad29a709, then P2.15/trg-01cd6aef). The
++> **Ten of the thirteen, not all thirteen** (trg-ad29a709, then P2.15/trg-01cd6aef). The
+ > restore resets `RESTORABLE_SNAPSHOTS` — everything a producer can RE-DERIVE. **Two
+-> paths are excluded**, and the counts are asserted, not narrated
++> files (three paths) are excluded**, and the counts are asserted, not narrated
+ > (`test_derived_snapshots_run_written.py`), because this paragraph had already fallen a
+ > path behind — it read "ten of the eleven" after the throughput report joined the set.
+ >
+-> - `shipwright_test_results.json` — the run WRITES it (the F5 ledger) and nothing can
++> - `shipwright_test_results.json` (in either place) — the run WRITES it (the F5 ledger) and nothing can
+ >   recompute it: resetting a MODIFIED copy is not undoing a regeneration, it is deleting
+ >   this run's evidence, and it did so silently in two separate sessions.
+ > - `.shipwright/agent_docs/session_handoff.md` — its BODY is re-derivable, but its canon
+@@ -259,9 +260,9 @@ artifact has exactly one documented resolution strategy:
+ > before the abort paths breaks them, silently (`error: Entry '<path>' not uptodate`,
+ > exit 128, `MERGE_HEAD` left standing). The `finally` runs after any abort.
+ >
+-> **Write matrix consequence.** No *phase* writes these twelve onto the default
++> **Write matrix consequence.** No *phase* writes these thirteen onto the default
+ > branch. Seven of them — the compliance directory — are written by the **release**
+-> and by an **on-demand documents-only PR**; the other five stay frozen by
++> and by an **on-demand documents-only PR**; the other six (five files) stay frozen by
+ > classification (see the next block). Freezing was deliberate rather than
+ > incidental: a branch-local derivation is not merely conflict-prone but wrong,
+ > reading the branch's git history (pre-squash SHAs) and an event log missing every
+@@ -3382,7 +3383,10 @@ Two surfaces (plan v7 Option Z, 2026-04-19):
+ > - *Git-side check (second enforcement point)*: `scripts/hooks/pre-commit`
+ >   (enabled per clone by `scripts/install-hooks.sh`, `core.hooksPath`) runs
+ >   `git_precommit_rtm_coverage.py` after the bloat anti-ratchet step (both always
+->   run; the commit is blocked if either blocks). Git runs it inside the real
++>   run; the commit is blocked if either blocks). The anti-ratchet step runs with
++>   `--require-baseline` (R1d): a baseline in neither its root nor its new place blocks
++>   instead of skipping, and `bloat-check.yml` does the same and reads the base
++>   commit's baseline where it lived at that commit (`shipwright_rel_at.py`). Git runs it inside the real
+ >   `git commit`, so no shell shape can hide the commit, and it measures the manifest
+ >   **staged for that commit** (git supplies the real or temporary index, so `-a` and
+ >   pathspec commits are judged on what they will commit - the PreToolUse "ordering
+diff --git a/scripts/hooks/pre-commit b/scripts/hooks/pre-commit
+index 0d77ccd7e..0a651e92a 100755
+--- a/scripts/hooks/pre-commit
++++ b/scripts/hooks/pre-commit
+@@ -28,7 +28,14 @@ framework_root="$(cd "$hooks_dir/../.." && pwd)"
+ status=0
+ 
+ # --- 1. bloat anti-ratchet --------------------------------------------------
+-if [ -f "$repo_root/shipwright_bloat_baseline.json" ]; then
++# Runs every time (R1d): this repo always has a baseline, at the root or in its new
++# place, and --require-baseline fails the check when it is in neither on disk. (A staged
++# deletion that leaves the file on disk is caught by CI's --require-baseline, not here.)
++# A missing checker blocks too: deleting it must not switch the gate off.
++if [ ! -f "$repo_root/shared/scripts/hooks/anti_ratchet_check.py" ]; then
++    echo "anti-ratchet pre-commit: shared/scripts/hooks/anti_ratchet_check.py is missing - blocking" >&2
++    status=1
++else
+     if ! command -v uv >/dev/null 2>&1; then
+         cat >&2 <<'EOF'
+ anti-ratchet pre-commit: 'uv' is not on PATH.
+@@ -40,7 +47,7 @@ Temporary bypass (one commit):  git commit --no-verify
+ EOF
+         status=1
+     elif ! uv run "$repo_root/shared/scripts/hooks/anti_ratchet_check.py" \
+-        --project-root "$repo_root" \
++        --project-root "$repo_root" --require-baseline \
+         --staged; then
+         status=1
+     fi
+diff --git a/shared/scripts/hooks/anti_ratchet_check.py b/shared/scripts/hooks/anti_ratchet_check.py
+index 2f8d95048..37213b091 100644
+--- a/shared/scripts/hooks/anti_ratchet_check.py
++++ b/shared/scripts/hooks/anti_ratchet_check.py
+@@ -6,8 +6,10 @@ Two measurement modes: ``--staged`` (default, pre-commit use) and
+ ``--worktree`` (CI use). Block rule: for every entry in
+ ``shipwright_bloat_baseline.json``, if measured > entry.current → exit 1.
+ New files outside the baseline are advisory. An ABSENT baseline →
+-fail-open exit 0; a PRESENT-but-malformed baseline → fail-closed exit 1
+-(a corrupt baseline must not silently disable the gate).
++fail-open exit 0, unless ``--require-baseline`` (this repo's own hook and CI,
++R1d: a baseline missing from BOTH of its places must not pass green); a
++PRESENT-but-malformed baseline → fail-closed exit 1 (a corrupt baseline must
++not silently disable the gate).
+ 
+ # source-hash-canonical: see shared/tests/test_anti_ratchet_check_staged.py
+ # — webui vendored copy pins the canonical hash via this marker.
+@@ -53,6 +55,8 @@ def _build_parser() -> argparse.ArgumentParser:
+         help="Measure files on disk (CI use).",
+     )
+     p.add_argument("--json", action="store_true", help="Emit JSON on stdout.")
++    p.add_argument("--require-baseline", action="store_true",
++                   help="An absent baseline fails (exit 1) instead of skipping: for a repo that has one.")
+     p.set_defaults(mode="staged")
+     return p
+ 
+@@ -94,10 +98,17 @@ def main(argv: list[str] | None = None) -> int:
+                     {"status": "error", "reason": "malformed-baseline", "ratchets": []}
+                 ))
+             return 1
++        if args.require_baseline:
++            other = "" if args.baseline is not None else " (nor in its other place)"
++            print(f"anti_ratchet_check: no baseline at {baseline_path}{other} — "
++                  "failing closed (--require-baseline: the gate would have checked nothing)", file=sys.stderr)
++            if args.json:
++                print(json.dumps({"status": "error", "reason": "missing-baseline", "ratchets": []}))
++            return 1
+         if args.baseline is None:
+             print(
+                 "anti_ratchet_check: baseline not found at "
+-                f"{_bb.baseline_path(project_root)} — skipping check (fail-open)",
++                f"{baseline_path} — skipping check (fail-open)",
+                 file=sys.stderr,
+             )
+         if args.json:
+diff --git a/shared/scripts/hooks/build_bloat_diff.py b/shared/scripts/hooks/build_bloat_diff.py
+index 008fb9ee5..171042546 100644
+--- a/shared/scripts/hooks/build_bloat_diff.py
++++ b/shared/scripts/hooks/build_bloat_diff.py
+@@ -73,6 +73,8 @@ def _render(diff: dict[str, list], ratchet: dict) -> str:
+         lines.append("")
+     elif status == "skipped":
+         lines.append("**Status:** :information_source: baseline missing — check skipped")
++    elif status == "error":   # missing/malformed baseline: the job fails, the comment must not say green
++        lines.append(f"**Status:** :x: anti-ratchet could not run ({ratchet.get('reason', 'error')})")
+     else:
+         lines.append("**Status:** :white_check_mark: no anti-ratchet violation")
+     lines.append("")
+diff --git a/shared/scripts/lib/events_layout_ci.py b/shared/scripts/lib/events_layout_ci.py
+index 92fdd6e56..066302f2e 100644
+--- a/shared/scripts/lib/events_layout_ci.py
++++ b/shared/scripts/lib/events_layout_ci.py
+@@ -29,7 +29,7 @@ from .events_sentinel import SUPPORTED_LAYOUTS, SYNC_CONFIG
+ 
+ def _layout_at(root: Path, rev: str) -> object:
+     """The raw ``events_layout`` at ``rev`` (``None`` = absent / unreadable file)."""
+-    data = blob(root, rev, _sp.rel_at("sync_config", rev))
++    data = blob(root, rev, _sp.rel_at("sync_config", rev, root))
+     if data is None:
+         return None
+     try:
+diff --git a/shared/scripts/lib/shipwright_layout.py b/shared/scripts/lib/shipwright_layout.py
+index 04f74261b..48631949a 100644
+--- a/shared/scripts/lib/shipwright_layout.py
++++ b/shared/scripts/lib/shipwright_layout.py
+@@ -38,6 +38,7 @@ matches ``getattr(exc, "code", None)``, not the class.
+ 
+ from __future__ import annotations
+ 
++import subprocess
+ from os.path import isfile as _isfile  # never raises (Path.is_file re-raises EACCES on 3.11)
+ from pathlib import Path
+ from typing import Callable
+@@ -116,3 +117,43 @@ def locate(key: str, root: Path | str, new_rel: str | None, legacy_rel: str, *,
+     if new_there and old_there:
+         raise LayoutError("both_copies", key, new, old)
+     return new if new_there else old
++
++
++class GitReadError(OSError):
++    """``locate_at(strict=True)`` could not ASK git (unresolvable commit, git missing, timeout) - never
++    the same answer as "the new path is not in that commit" (plan + architecture review, R1d)."""
++
++
++def locate_at(root: Path | str, commit: str | None, new_rel: str | None, legacy_rel: str, *,
++              strict: bool = False) -> str:
++    """Repo-relative POSIX path a moving file has at *commit* (``None``: the working tree), for git readers.
++
++    "Migrated?" is decided by the NEW path existing at that commit, never by the root blob missing: after
++    R3 the root blob is the pointer stub (BRIEF 14.4). ``git ls-tree`` tells "not in that tree" (exit 0, no
++    output) from "could not ask" (non-zero, timeout, no git). The second reads as the root path for a Python
++    reader, whose own ``git show`` then reports the real error; with ``strict`` it raises
++    :class:`GitReadError`, for a caller (CI) that would otherwise read the wrong place silently. An empty or
++    dash-led *commit* is no commit (an empty rev would read the INDEX; a dash would reach git as an option).
++    Both copies at one commit answer the new one: a history reader reads, it never repairs, and after R3 the
++    root copy is the stub - the on-disk :func:`locate` is where two full copies are an error. A file that
++    does not move answers its root path; ``strict`` still checks that git can read *commit* (code review)."""
++    base = root if isinstance(root, Path) else Path(root)
++    if commit is None or (new_rel is None and not strict):
++        return new_rel if new_rel is not None and _isfile(base / new_rel) else legacy_rel
++    if not commit.strip() or commit.lstrip().startswith("-"):
++        if strict:
++            raise GitReadError(f"not a commit: {commit!r}")
++        return legacy_rel
++    try:
++        proc = subprocess.run(["git", "-C", str(base), "ls-tree", "--full-tree", "--name-only", f"{commit}^{{tree}}", "--",
++                               new_rel or legacy_rel],
++                              capture_output=True, timeout=30, check=False)
++        failed = proc.returncode != 0
++    except (OSError, subprocess.SubprocessError) as exc:
++        proc, failed = None, exc
++    if failed:
++        if strict:
++            raise GitReadError(f"cannot read commit {commit!r} in {base}: "
++                               f"{failed if proc is None else proc.stderr.decode('utf-8', 'replace').strip()}")
++        return legacy_rel
++    return new_rel if new_rel is not None and proc.stdout.strip() else legacy_rel
+diff --git a/shared/scripts/lib/shipwright_paths.py b/shared/scripts/lib/shipwright_paths.py
+index aa39c58a3..82dc6edbd 100644
+--- a/shared/scripts/lib/shipwright_paths.py
++++ b/shared/scripts/lib/shipwright_paths.py
+@@ -132,12 +132,10 @@ def legacy_rel(key: str) -> str:
+     return spec(key).basename
+ 
+ 
+-def rel_at(key: str, commit: str | None = None) -> str:
+-    """Repo-relative POSIX path of *key* at *commit* (``None``: the working tree) for ``git show`` & co.
+-    Root today (R1d resolves it per commit); 'migrated?' at a commit is decided by the NEW path existing,
+-    never by the root blob missing - after R3 it is the stub (BRIEF 14.4)."""
+-    del commit  # R0b: one layout for every commit
+-    return spec(key).basename
++def rel_at(key: str, commit: str | None, root: Path | str, *, strict: bool = False) -> str:
++    """Repo-relative POSIX path of *key* at *commit* of the repo at *root* (``None``: its working tree) for
++    ``git show`` & co. (R1d): the new place if it exists THERE, else the root - never "root blob missing"."""
++    return _LAYOUT.locate_at(root, commit, new_rel(key), legacy_rel(key), strict=strict)  # strict: GitReadError
+ 
+ 
+ def path(key: str, root: Path | str) -> Path:
+diff --git a/shared/scripts/tools/shipwright_rel_at.py b/shared/scripts/tools/shipwright_rel_at.py
+new file mode 100644
+index 000000000..d8e15ae84
+--- /dev/null
++++ b/shared/scripts/tools/shipwright_rel_at.py
+@@ -0,0 +1,43 @@
++#!/usr/bin/env python3
++"""Print where a Shipwright project file lives at a commit (or in the working tree), repo-relative.
++
++For readers that are not Python - workflow YAML, the bash pre-commit hook - so they never spell a moving
++file by its root name (campaign root-files-into-config R1d, BRIEF 4.1 "bloat gate fails OPEN"): ``git show
++"$sha:$(uv run shared/scripts/tools/shipwright_rel_at.py bloat_baseline --commit "$sha")"``. The answer is
++the new place when it exists AT THAT COMMIT, else the root (``shipwright_paths.rel_at``).
++
++Exit 0 and one line on stdout; exit 2 for an unknown key; exit 3 when git cannot answer for ``--commit``
++(an unresolvable commit, no git, a timeout) - never a silent root answer that CI would then read.
++"""
++
++from __future__ import annotations
++
++import argparse
++import sys
++from pathlib import Path
++
++sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
++
++from lib import shipwright_paths as _sp  # noqa: E402
++
++
++def main(argv: list[str] | None = None) -> int:
++    p = argparse.ArgumentParser(description=__doc__.split("\n")[0])
++    p.add_argument("key", help="registry key, e.g. bloat_baseline")
++    p.add_argument("--commit", default=None, help="a commit-ish; omitted: the working tree")
++    p.add_argument("--project-root", default=".")
++    a = p.parse_args(argv)
++    if a.key not in _sp.SPECS:
++        print(f"shipwright_rel_at: unknown key {a.key!r}", file=sys.stderr)
++        return 2
++    try:
++        rel = _sp.rel_at(a.key, a.commit, a.project_root, strict=True)
++        sys.stdout.buffer.write((rel + "\n").encode("utf-8"))   # LF even on Windows: bash $(...) keeps a CR
++    except OSError as exc:   # GitReadError
++        print(f"shipwright_rel_at: {exc}", file=sys.stderr)
++        return 3
++    return 0
++
++
++if __name__ == "__main__":
++    sys.exit(main())
+diff --git a/shared/scripts/tools/verifiers/_ac_baseline_growth.py b/shared/scripts/tools/verifiers/_ac_baseline_growth.py
+index ac968f625..6c9494519 100644
+--- a/shared/scripts/tools/verifiers/_ac_baseline_growth.py
++++ b/shared/scripts/tools/verifiers/_ac_baseline_growth.py
+@@ -86,6 +86,7 @@ import json
+ from pathlib import Path
+ 
+ from lib.ac_move_map import parse_move_map, resolve_ac
++from lib import shipwright_paths as _sp
+ 
+ from .git_blob_read import blob_oid
+ from .git_helpers import _run_git
+@@ -134,6 +135,11 @@ def baseline_grown_since_parent(project_root: Path, baseline_path: Path,
+     except ValueError as exc:
+         return [], [f"--baseline {baseline_path} is not under --project-root {project_root}: {exc}"]
+ 
++    if rel in _sp.known_rels("ac_coverage_baseline"):   # the parent may hold it in the OTHER place (R1d):
++        try:                                             # else a move reads as a bootstrap
++            rel = _sp.rel_at("ac_coverage_baseline", resolved, project_root, strict=True)
++        except OSError as exc:   # git could not answer: say so, never guess the root (a silent bootstrap)
++            return [], [f"could not locate the baseline at the parent commit ({resolved}): {exc}"]
+     oid, err = blob_oid(project_root, resolved, rel)
+     if err:
+         # A genuine git-level read fault (corrupt tree, unreadable object) —
+diff --git a/shared/scripts/tools/verifiers/_project_gate_rollout_snapshot.py b/shared/scripts/tools/verifiers/_project_gate_rollout_snapshot.py
+index 500607b1b..7a2069ca8 100644
+--- a/shared/scripts/tools/verifiers/_project_gate_rollout_snapshot.py
++++ b/shared/scripts/tools/verifiers/_project_gate_rollout_snapshot.py
+@@ -169,11 +169,11 @@ def _rollout_declared_split_names(project_root: Path, sha: str) -> frozenset[str
+     key = (sha, str(project_root))
+     if key in _MANIFEST_CACHE:
+         return _MANIFEST_CACHE[key]
+-    primary_text = _read_at_commit(project_root, sha, _sp.rel_at("project_config", sha))
++    primary_text = _read_at_commit(project_root, sha, _sp.rel_at("project_config", sha, project_root))
+     if primary_text is not None:
+         result = _parse_declared_split_names(primary_text) or frozenset()
+     else:
+-        fallback_text = _read_at_commit(project_root, sha, _sp.rel_at("run_config", sha))
++        fallback_text = _read_at_commit(project_root, sha, _sp.rel_at("run_config", sha, project_root))
+         result = _parse_declared_split_names(fallback_text) or frozenset()
+     _MANIFEST_CACHE[key] = result
+     return result
+diff --git a/shared/scripts/tools/verifiers/ci_supplychain_ack_store.py b/shared/scripts/tools/verifiers/ci_supplychain_ack_store.py
+index cf1768111..17a120cc5 100644
+--- a/shared/scripts/tools/verifiers/ci_supplychain_ack_store.py
++++ b/shared/scripts/tools/verifiers/ci_supplychain_ack_store.py
+@@ -132,7 +132,7 @@ def _read_legacy(
+     on disk yields an ack that will not ship — and reporting it merely as "legacy"
+     dropped the non-shipping warning for exactly that case (external code review).
+     """
+-    raw, err = read_committed_text(project_root, commit, _sp.rel_at("test_results", commit))
++    raw, err = read_committed_text(project_root, commit, _sp.rel_at("test_results", commit, project_root))
+     if err:
+         return None, err, False
+     from_commit = raw is not None
+diff --git a/shared/scripts/tools/verifiers/test_results_backfill_check.py b/shared/scripts/tools/verifiers/test_results_backfill_check.py
+index 7bde6bd42..4362c7e58 100644
+--- a/shared/scripts/tools/verifiers/test_results_backfill_check.py
++++ b/shared/scripts/tools/verifiers/test_results_backfill_check.py
+@@ -102,7 +102,7 @@ def _is_modified_snapshot_status(status: str) -> bool:
+     if len(lines) != 1 or len(lines[0]) < 4:
+         return False
+     xy, path = lines[0][:2], lines[0][3:]
+-    return xy in {" M", "M ", "MM"} and path == _sp.rel_at("test_results")
++    return xy in {" M", "M ", "MM"} and path in _sp.known_rels("test_results")
+ 
+ 
+ def _validate_source(
+@@ -117,7 +117,7 @@ def _validate_source(
+     commit_match = _COMMIT_SOURCE.fullmatch(source)
+     if commit_match:
+         commit = _reachable_commit(root, commit_match.group(1), run_id)
+-        candidate = committed_bytes_reader(root, commit)(_sp.rel_at("test_results", commit))
++        candidate = committed_bytes_reader(root, commit)(_sp.rel_at("test_results", commit, root))
+         if candidate is None:
+             raise BackfillError(f"{run_id} source blob is absent")
+         rc, commit_text, _ = _run_git(root, "cat-file", "-p", commit)
+@@ -131,7 +131,7 @@ def _validate_source(
+             if rc != 0:
+                 raise BackfillError(f"{run_id} source parent commit is unavailable")
+             inherited = committed_bytes_reader(root, parent.strip())(
+-                _sp.rel_at("test_results", parent.strip())
++                _sp.rel_at("test_results", parent.strip(), root)
+             )
+             if inherited == candidate:
+                 raise BackfillError(f"{run_id} source blob is inherited unchanged")
+@@ -149,7 +149,7 @@ def _validate_source(
+     if not head.startswith(expected_head):
+         raise BackfillError(f"{run_id} source worktree HEAD changed")
+     rc, status, _ = _run_git(
+-        worktree, "status", "--porcelain=v1", "--", _sp.rel_at("test_results")
++        worktree, "status", "--porcelain=v1", "--", *_sp.known_rels("test_results")
+     )
+     if rc != 0 or not _is_modified_snapshot_status(status):
+         raise BackfillError(f"{run_id} source worktree snapshot is not run-written dirty")
+diff --git a/shared/tests/test_shipwright_monorepo_profile.py b/shared/tests/test_shipwright_monorepo_profile.py
+index 59067f027..123398fb4 100644
+--- a/shared/tests/test_shipwright_monorepo_profile.py
++++ b/shared/tests/test_shipwright_monorepo_profile.py
+@@ -91,7 +91,7 @@ def test_each_repo_only_mechanism_is_invoked_by_something():
+     hook = (ROOT / "scripts" / "hooks" / "pre-commit").read_text(encoding="utf-8")
+     assert "shared/scripts/hooks/anti_ratchet_check.py" in hook
+     wf = (ROOT / ".github" / "workflows" / "bloat-check.yml").read_text(encoding="utf-8")
+-    assert "anti_ratchet_check.py" in wf and "shipwright_bloat_baseline.json" in wf and "exit 1" in wf
++    assert "anti_ratchet_check.py" in wf and "shipwright_rel_at.py bloat_baseline" in wf and "exit 1" in wf   # R1d: resolved per commit
+     ci = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+     assert "shared/tests" in ci and "pytest" in ci
+     hooks = (ROOT / "plugins" / "shipwright-iterate" / "hooks" / "hooks.json").read_text(encoding="utf-8")
+diff --git a/shared/tests/test_shipwright_paths.py b/shared/tests/test_shipwright_paths.py
+index 3ab266015..5a15740b8 100644
+--- a/shared/tests/test_shipwright_paths.py
++++ b/shared/tests/test_shipwright_paths.py
+@@ -45,7 +45,7 @@ FROZEN = {
+ @pytest.mark.covers("FR-01.11")
+ def test_every_name_is_the_pre_resolver_root_name():
+     assert {k: sp.rel(k) for k in sp.SPECS} == FROZEN
+-    assert sp.name("run_config") == sp.legacy_rel("run_config") == sp.rel_at("run_config", "deadbeef")
++    assert sp.name("run_config") == sp.legacy_rel("run_config") == sp.rel_at("run_config", "deadbeef", _SCRIPTS.parents[1])   # R1d: an unknown commit reads as unmigrated
+ 
+ 
+ @pytest.mark.covers("FR-01.11")
+diff --git a/shared/tests/test_shipwright_paths_silent_gates.py b/shared/tests/test_shipwright_paths_silent_gates.py
+new file mode 100644
+index 000000000..10de5b0b3
+--- /dev/null
++++ b/shared/tests/test_shipwright_paths_silent_gates.py
+@@ -0,0 +1,179 @@
++"""R1d: the silent-failure gates of BRIEF 4.1 / 11.7.4 read a moving file where it lives, per commit.
++
++Before R1d ``rel_at`` always answered the root name, so a reader of a HISTORICAL commit (``git show
++<sha>:<path>``) saw a moved file as absent: the bloat gate diffed against an empty baseline, the AC
++baseline growth check read a move as a bootstrap, the events-layout CI read no layout. And the anti-ratchet
++skipped itself when no baseline was found. Each case below builds a real git history with the file in
++its new place and asks the real reader.
++"""
++
++from __future__ import annotations
++
++import json
++import subprocess
++import sys
++from pathlib import Path
++
++import pytest
++
++REPO = Path(__file__).resolve().parents[2]
++sys.path.insert(0, str(REPO / "shared" / "scripts"))
++
++from lib import shipwright_paths as sp  # noqa: E402
++
++BS, NL = chr(92), chr(10)   # a backslash line continuation, spelled without an escape
++
++
++def _git(root: Path, *args: str) -> str:
++    return subprocess.run(["git", "-C", str(root), *args], capture_output=True, text=True, check=True).stdout.strip()
++
++
++def _repo(tmp_path: Path) -> Path:
++    _git(tmp_path, "init", "-q")
++    _git(tmp_path, "config", "user.email", "t@example.invalid")
++    _git(tmp_path, "config", "user.name", "t")
++    _git(tmp_path, "config", "commit.gpgsign", "false")
++    return tmp_path
++
++
++def _commit(root: Path, files: dict[str, str | None], msg: str) -> str:
++    for rel, text in files.items():
++        p = root / rel
++        if text is None:
++            _git(root, "rm", "-q", "--", rel)
++            continue
++        p.parent.mkdir(parents=True, exist_ok=True)
++        p.write_text(text, encoding="utf-8")
++        _git(root, "add", "--", rel)
++    _git(root, "commit", "-q", "--no-verify", "-m", msg)
++    return _git(root, "rev-parse", "HEAD")
++
++
++def _move(root: Path, key: str, text: str) -> tuple[str, str]:
++    before = _commit(root, {sp.legacy_rel(key): text}, "at the root")
++    after = _commit(root, {sp.legacy_rel(key): None, sp.new_rel(key): text}, "moved")
++    return before, after
++
++
++@pytest.mark.covers("FR-01.11")
++def test_rel_at_answers_the_place_the_file_has_at_each_commit(tmp_path):
++    root = _repo(tmp_path)
++    before, after = _move(root, "bloat_baseline", "{}")
++    assert sp.rel_at("bloat_baseline", before, root) == sp.legacy_rel("bloat_baseline")
++    assert sp.rel_at("bloat_baseline", after, root) == sp.new_rel("bloat_baseline")
++    assert sp.rel_at("bloat_baseline", None, root) == sp.new_rel("bloat_baseline")   # the working tree
++    assert sp.rel_at("bloat_baseline", "no-such-commit", root) == sp.legacy_rel("bloat_baseline")
++    assert sp.rel_at("events", after, root) == sp.legacy_rel("events")   # a file that never moves
++    # strict: "git could not answer" is never the same answer as "not in that commit" (CI reads by it)
++    assert sp.rel_at("bloat_baseline", before, root, strict=True) == sp.legacy_rel("bloat_baseline")
++    with pytest.raises(OSError, match="cannot read commit"):
++        sp.rel_at("bloat_baseline", "no-such-commit", root, strict=True)
++    for bad in ("", "  ", "--all"):   # an empty rev would read the INDEX; a dash would be a git option
++        assert sp.rel_at("bloat_baseline", bad, root) == sp.legacy_rel("bloat_baseline")
++        with pytest.raises(OSError, match="not a commit"):
++            sp.rel_at("bloat_baseline", bad, root, strict=True)
++
++
++@pytest.mark.covers("FR-01.11")
++def test_migrated_means_the_new_path_exists_never_that_the_root_blob_is_missing(tmp_path):
++    """BRIEF 14.4: after R3 the root holds a pointer stub, so "root blob present" must not mean "not moved"."""
++    root = _repo(tmp_path)
++    key = "run_config"
++    stub = _commit(root, {sp.legacy_rel(key): "shipwright-pointer stub", sp.new_rel(key): "{}"}, "stub + new")
++    assert sp.rel_at(key, stub, root) == sp.new_rel(key)
++    only_root = _commit(root, {sp.new_rel(key): None}, "new removed again")
++    assert sp.rel_at(key, only_root, root) == sp.legacy_rel(key)
++
++
++@pytest.mark.covers("FR-01.11")
++def test_the_cli_gives_yaml_and_bash_the_same_answer(tmp_path):
++    root = _repo(tmp_path)
++    before, after = _move(root, "bloat_baseline", "{}")
++    tool = REPO / "shared" / "scripts" / "tools" / "shipwright_rel_at.py"
++    run = lambda *a: subprocess.run([sys.executable, str(tool), *a, "--project-root", str(root)],  # noqa: E731
++                                    capture_output=True, text=True)
++    assert run("bloat_baseline", "--commit", before).stdout.strip() == sp.legacy_rel("bloat_baseline")
++    assert run("bloat_baseline", "--commit", after).stdout.strip() == sp.new_rel("bloat_baseline")
++    assert run("no_such_key").returncode == 2
++    assert run("bloat_baseline", "--commit", "no-such-commit").returncode == 3   # never a silent root answer
++    assert run("events", "--commit", "no-such-commit").returncode == 3   # a file that never moves, too
++    assert run("events", "--commit", after).stdout.strip() == sp.legacy_rel("events")
++
++
++@pytest.mark.covers("FR-01.11")
++def test_ac_baseline_growth_across_a_move_is_growth_not_a_bootstrap(tmp_path):
++    from tools.verifiers._ac_baseline_growth import baseline_grown_since_parent
++    root = _repo(tmp_path)
++    parent, _ = _move(root, "ac_coverage_baseline", json.dumps({"unbound": ["FR-01.01/AC1"]}))
++    grown, warnings = baseline_grown_since_parent(root, root / sp.new_rel("ac_coverage_baseline"),
++                                                  {"FR-01.01/AC1", "FR-01.02/AC1"}, parent_sha=parent)
++    assert grown == ["FR-01.02/AC1"] and warnings == []   # before R1d: [] (the parent "had no baseline")
++
++
++@pytest.mark.covers("FR-01.11")
++def test_the_events_layout_ci_reads_the_sync_config_where_it_lives_at_the_commit(tmp_path):
++    from lib.events_layout_ci import _layout_at
++    root = _repo(tmp_path)
++    _, after = _move(root, "sync_config", json.dumps({"events_layout": "drops"}))
++    assert _layout_at(root, after) == "drops"   # before R1d: None (read the root, which is gone)
++
++
++@pytest.mark.covers("FR-01.11")
++def test_the_rollout_snapshot_reads_the_project_manifest_where_it_lives_at_the_commit(tmp_path):
++    from tools.verifiers._project_gate_rollout_snapshot import _rollout_declared_split_names
++    root = _repo(tmp_path)
++    _, after = _move(root, "project_config", json.dumps({"splits": [{"name": "01-core"}]}))
++    assert _rollout_declared_split_names(root, after) == frozenset({"01-core"})   # before R1d: empty
++
++
++@pytest.mark.covers("FR-01.11")
++def test_the_backfill_check_accepts_the_run_written_snapshot_in_either_place():
++    from tools.verifiers.test_results_backfill_check import _is_modified_snapshot_status
++    for rel in sp.known_rels("test_results"):
++        assert _is_modified_snapshot_status(f" M {rel}")
++    assert not _is_modified_snapshot_status(" M elsewhere/shipwright_test_results.json")
++
++
++@pytest.mark.covers("FR-01.11")
++def test_the_pr_comment_never_shows_green_when_the_gate_could_not_run():
++    sys.path.insert(0, str(REPO / "shared" / "scripts" / "hooks"))
++    from build_bloat_diff import _render
++    text = _render({"added": [], "removed": [], "changed": []}, {"status": "error", "reason": "missing-baseline"})
++    assert "could not run (missing-baseline)" in text and "no anti-ratchet violation" not in text
++
++
++def _ratchet(root: Path, *flags: str) -> subprocess.CompletedProcess:
++    hook = REPO / "shared" / "scripts" / "hooks" / "anti_ratchet_check.py"
++    return subprocess.run([sys.executable, str(hook), "--project-root", str(root), "--worktree", *flags],
++                          capture_output=True, text=True)
++
++
++@pytest.mark.covers("FR-01.11")
++def test_the_anti_ratchet_fails_closed_without_a_baseline_when_one_is_required(tmp_path):
++    assert _ratchet(tmp_path).returncode == 0                       # a fresh consumer repo: still fail-open
++    missing = _ratchet(tmp_path, "--require-baseline")
++    assert missing.returncode == 1 and "failing closed" in missing.stderr
++    as_json = _ratchet(tmp_path, "--require-baseline", "--json")   # what bloat-check.yml reads
++    assert as_json.returncode == 1 and json.loads(as_json.stdout)["reason"] == "missing-baseline"
++    moved = tmp_path / sp.new_rel("bloat_baseline")
++    moved.parent.mkdir(parents=True)
++    moved.write_text(json.dumps({"version": 1, "entries": []}), encoding="utf-8")
++    assert _ratchet(tmp_path, "--require-baseline").returncode == 0   # found in its new place
++
++
++@pytest.mark.covers("FR-01.11")
++def test_this_repos_bloat_gates_require_the_baseline_and_resolve_it_per_commit():
++    """The workflow and the pre-commit hook are not Python, so the behaviour above only protects them if they
++    call it: both require the baseline, and the workflow reads the base baseline where it lives at the base."""
++    wf = (REPO / ".github" / "workflows" / "bloat-check.yml").read_text(encoding="utf-8")
++    hook = (REPO / "scripts" / "hooks" / "pre-commit").read_text(encoding="utf-8")
++    # the commands themselves, not a comment that mentions them (external code review)
++    assert "--project-root . --require-baseline " + BS + NL + "              --worktree --json" in wf
++    assert 'base_rel="$(uv run shared/scripts/tools/shipwright_rel_at.py bloat_baseline ' + BS in wf
++    assert 'git show "${{ steps.base.outputs.base_sha }}:${base_rel}"' in wf
++    assert 'head_rel="$(uv run shared/scripts/tools/shipwright_rel_at.py bloat_baseline)"' in wf
++    assert '--head "$head_rel"' in wf
++    assert ":shipwright_bloat_baseline.json" not in wf   # no `git show <base>:<root name>` left
++    assert '--project-root "$repo_root" --require-baseline ' + BS + NL + "        --staged; then" in hook
++    assert '-f "$repo_root/shipwright_bloat_baseline.json"' not in hook   # the hook no longer skips on it
++    assert "anti_ratchet_check.py is missing - blocking" in hook   # nor on a deleted checker

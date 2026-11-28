@@ -73,6 +73,8 @@ def _render(diff: dict[str, list], ratchet: dict) -> str:
         lines.append("")
     elif status == "skipped":
         lines.append("**Status:** :information_source: baseline missing — check skipped")
+    elif status == "error":   # missing/malformed baseline: the job fails, the comment must not say green
+        lines.append(f"**Status:** :x: anti-ratchet could not run ({ratchet.get('reason', 'error')})")
     else:
         lines.append("**Status:** :white_check_mark: no anti-ratchet violation")
     lines.append("")

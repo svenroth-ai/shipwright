@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-28-r1d-silent-gates",
+  "ci_supplychain_ack": {
+    "run_id": "iterate-2026-11-28-r1d-silent-gates",
+    "paths_fingerprint": "0aa686aa45455dba10307341e925bd27375d749d6cd880c98755918a9f81b767",
+    "consistent_with": "iterate-2026-11-28-r1d-silent-gates",
+    "statement": "bloat-check.yml runs one more repo-local script (shipwright_rel_at.py) from the same checkout and passes --require-baseline to the existing anti-ratchet step; no new third-party action, no secret, no permission change, no trigger change.",
+    "ci_paths": [
+      ".github/workflows/bloat-check.yml"
+    ],
+    "provenance": "commit",
+    "provenance_ref": "bc970bda0779dd1ddef1a34b6c867deacbe8df47"
+  }
+}

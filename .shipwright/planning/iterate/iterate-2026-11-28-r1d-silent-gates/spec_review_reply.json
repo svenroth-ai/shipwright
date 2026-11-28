@@ -1,0 +1,6 @@
+{
+"stage": "spec-compliance",
+"verdict": "PASS",
+"spec_citations": [],
+"summary": "All six ACs are implemented and each is proven by a real-git or subprocess test. No scope creep; R1d-2, R1e and R3 untouched. Low notes addressed: spec wording aligned to ls-tree, JSON missing-baseline output tested, backfill status check tested."
+}

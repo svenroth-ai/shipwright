@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-28-r1d-silent-gates",
+  "date": "2026-11-28",
+  "section": "Iterate — change: R1d-1 silent-failure gates",
+  "title": "Historical readers resolve a moving file per commit; the bloat gate fails closed in this repo (R1d-1)",
+  "context": "rel_at(key, commit) ignored the commit, so after R3 every reader of a historical commit would see a moved file as absent and treat it as harmless (empty bloat base, AC growth read as a bootstrap, no events layout, no manifest); the anti-ratchet skipped itself when no baseline was found and the pre-commit hook only ran it if the root file existed.",
+  "decision": "rel_at(key, commit, root) answers the new place if it exists in that commit's tree (git ls-tree --full-tree), else the root; strict=True raises GitReadError when git cannot answer. Every historical reader passes its repo. anti_ratchet_check --require-baseline blocks a baseline missing from both places; this repo's pre-commit hook and bloat-check.yml pass it and resolve the baseline through shipwright_rel_at.py.",
+  "consequences": "Unmigrated repos behave as before. Consumers without a baseline still skip. A deleted checker or baseline now blocks locally and in CI. R1d-2 covers .gitignore, inline_suppressions in SENSITIVE_PATH_RE, the pr-review-run regex and consumer templates; R3 must not start before it.",
+  "rationale": "One per-commit rule in the resolver is testable and needed anyway once the root holds a pointer stub; 'could not ask git' must never read as 'not migrated' in CI.",
+  "rejected": "Trying both paths at every reader (duplicated, and still needs new-first with a stub); a hard missing-baseline failure for every project (consumers legitimately start without one).",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ""
+}

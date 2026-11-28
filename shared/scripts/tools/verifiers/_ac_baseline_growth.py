@@ -86,6 +86,7 @@ import json
 from pathlib import Path
 
 from lib.ac_move_map import parse_move_map, resolve_ac
+from lib import shipwright_paths as _sp
 
 from .git_blob_read import blob_oid
 from .git_helpers import _run_git
@@ -134,6 +135,11 @@ def baseline_grown_since_parent(project_root: Path, baseline_path: Path,
     except ValueError as exc:
         return [], [f"--baseline {baseline_path} is not under --project-root {project_root}: {exc}"]
 
+    if rel in _sp.known_rels("ac_coverage_baseline"):   # the parent may hold it in the OTHER place (R1d):
+        try:                                             # else a move reads as a bootstrap
+            rel = _sp.rel_at("ac_coverage_baseline", resolved, project_root, strict=True)
+        except OSError as exc:   # git could not answer: say so, never guess the root (a silent bootstrap)
+            return [], [f"could not locate the baseline at the parent commit ({resolved}): {exc}"]
     oid, err = blob_oid(project_root, resolved, rel)
     if err:
         # A genuine git-level read fault (corrupt tree, unreadable object) —

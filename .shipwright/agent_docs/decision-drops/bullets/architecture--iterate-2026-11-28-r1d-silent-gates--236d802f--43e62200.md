@@ -1,0 +1,1 @@
+- **iterate-2026-11-28-r1d-silent-gates** (2026-11-28): Component — Readers of a moving root file at a historical commit use shipwright_paths.rel_at(key, commit, root) (strict for CI, via shared/scripts/tools/shipwright_rel_at.py); this repo's bloat gate runs anti_ratchet_check --require-baseline. → decision_log (ADR via Run-ID: iterate-2026-11-28-r1d-silent-gates)
