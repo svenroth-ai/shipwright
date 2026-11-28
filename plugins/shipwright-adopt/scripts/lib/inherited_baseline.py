@@ -230,7 +230,7 @@ def build_register(
 
 def write_register(project_root: Path, register: dict[str, Any]) -> Path:
     """Write the register. Idempotent — a re-adopt overwrites in place."""
-    out = Path(project_root) / REGISTER_REL
+    out = _sp.path("known_failures", Path(project_root))
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(
         json.dumps(register, indent=2, ensure_ascii=False) + "\n", encoding="utf-8",

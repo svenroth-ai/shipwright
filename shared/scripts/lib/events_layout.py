@@ -71,7 +71,7 @@ def events_layout(project_root: Path | str) -> str:
         if forced in LAYOUTS:
             return forced
     try:
-        cfg = json.loads((Path(project_root) / SYNC_CONFIG).read_text(encoding="utf-8-sig"))
+        cfg = json.loads((_sp.path("sync_config", Path(project_root))).read_text(encoding="utf-8-sig"))
         value = cfg.get("events_layout") if isinstance(cfg, dict) else None
     except (OSError, ValueError):
         return "legacy"

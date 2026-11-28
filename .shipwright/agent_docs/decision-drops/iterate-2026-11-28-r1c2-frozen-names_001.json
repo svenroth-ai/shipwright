@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-28-r1c2-frozen-names",
+  "date": "2026-11-28",
+  "section": "Iterate — change: R1c-2 frozen names through path()",
+  "title": "Every reader and writer of a moving root file resolves it through path() (R1c-2)",
+  "context": "R1c-1 gave path() a new-then-old lookup, but about 60 modules still joined the project root to a file name frozen at import (NAME = _sp.rel(key); root / NAME). After R3 moves the files into .shipwright/config/ those readers would see only the root or the pointer stub.",
+  "decision": "Every join of a frozen name of a moving file calls _sp.path(key, root): codemod for constants and importers, key lists, stale-cache fallbacks (legacy literal if _sp is None else path()), indirect joins, and five readers the plan review found. audit_config (D2) and dev_server (D1) move. A guard forbids frozen-name joins in every shape it sees; the security gate reads a broken layout as zero tolerance.",
+  "consequences": "Unmigrated repos read and write the same files (the root config's 2 KiB stub check now also runs at existence-only sites; writers retry the Windows sharing violation). Pathspecs, path sets, regexes and messages are R1c-3; the safety window runs until R1c-3 merges; the LayoutError surface per module is an R1e precondition before the next release (BRIEF 12.12).",
+  "rationale": "Routing the reads and writes first, behind one lookup, is the smallest change that makes R3 possible; the recognition sets need both-layout reasoning and are a separate risk.",
+  "rejected": "Flipping rel() to the new place (BRIEF 12.1: an unmigrated repo would read as not a Shipwright project); waiting until R3 (readers must work in both layouts before the move); a lazy function per module (same effect, more surface).",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ""
+}

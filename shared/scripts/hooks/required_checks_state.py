@@ -78,7 +78,7 @@ def throttle_hours(project_root: Path | None = None) -> float:
     """
     if project_root is not None:
         try:
-            raw = (Path(project_root) / ("shipwright_run_config.json" if _sp is None else _sp.rel("run_config"))).read_text(
+            raw = (Path(project_root) / "shipwright_run_config.json" if _sp is None else _sp.path("run_config", Path(project_root))).read_text(
                 encoding="utf-8"
             )
             cfg = json.loads(raw).get("triage")

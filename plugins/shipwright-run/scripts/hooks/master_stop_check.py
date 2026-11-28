@@ -37,8 +37,6 @@ except ImportError:  # stale shared cache: this hook keeps its own fallback
     _sp = None
 
 
-CONFIG_NAME = "shipwright_run_config.json" if _sp is None else _sp.rel("run_config")
-
 # Mirror of orchestrator_pkg.constants (a hook must not import the plugin lib).
 #
 # THE INVARIANT, shared with config_io.is_single_session and
@@ -123,7 +121,7 @@ def _not_drivable_lines(run_id: str, mode: object) -> list[str]:
 
 
 def run(project_root: Path) -> int:
-    config_path = project_root / CONFIG_NAME
+    config_path = project_root / "shipwright_run_config.json" if _sp is None else _sp.path("run_config", project_root)
     if not config_path.exists():
         return 0
     try:

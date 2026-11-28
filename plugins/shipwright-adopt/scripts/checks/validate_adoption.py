@@ -54,13 +54,8 @@ def _events_read():
     return mod
 
 
-REQUIRED_CONFIGS = [
-    _sp.rel("run_config"),
-    _sp.rel("project_config"),
-    _sp.rel("plan_config"),
-    _sp.rel("build_config"),
-    _sp.rel("compliance_config"),
-]
+#: registry keys, resolved per project through ``_sp.path`` (R1c-2: either layout)
+REQUIRED_CONFIGS = ("run_config", "project_config", "plan_config", "build_config", "compliance_config")
 
 REQUIRED_AGENT_DOCS = [
     ".shipwright/agent_docs/architecture.md",
@@ -72,8 +67,8 @@ REQUIRED_AGENT_DOCS = [
 
 def _validate_configs(project_root: Path) -> list[str]:
     errors: list[str] = []
-    for name in REQUIRED_CONFIGS:
-        p = project_root / name
+    for key in REQUIRED_CONFIGS:
+        name, p = _sp.rel(key), _sp.path(key, project_root)
         if not p.exists():
             errors.append(f"missing: {name}")
             continue
@@ -152,7 +147,7 @@ def _validate_events(project_root: Path) -> list[str]:
 _HONESTY_ARTIFACTS = (
     (".shipwright/adopt/derived-catalogue.json",
      "Step E (generate_adoption_artifacts.py)"),
-    (_sp.rel("known_failures"),
+    ("known_failures",  # a registry key: resolved through _sp.path (R1c-2)
      "Step E.18 (record_inherited_baseline.py)"),
 )
 
@@ -178,9 +173,9 @@ def _derived_catalogue_doc():
 
 def _validate_honesty_artifacts(project_root: Path) -> list[str]:
     errors = [
-        f"missing: {rel} — written by {step}; re-run it"
+        f"missing: {_sp.rel(rel) if rel in _sp.SPECS else rel} — written by {step}; re-run it"
         for rel, step in _HONESTY_ARTIFACTS
-        if not (project_root / rel).exists()
+        if not (_sp.path(rel, project_root) if rel in _sp.SPECS else project_root / rel).exists()
     ]
     if errors:
         return errors

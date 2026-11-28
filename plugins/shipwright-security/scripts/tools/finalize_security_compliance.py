@@ -58,7 +58,7 @@ PIPELINE_MARKER = _sp.rel("project_config")
 
 
 def _is_pipeline_mode(project_root: Path) -> bool:
-    return (project_root / PIPELINE_MARKER).exists()
+    return (_sp.path("project_config", project_root)).exists()
 
 
 def _is_ci_or_noninteractive() -> bool:

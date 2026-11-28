@@ -65,7 +65,7 @@ def _diff(rel: str, old: str, new: str) -> str:
 
 def _baseline(root: Path, moves: dict[str, str]) -> tuple[str, str] | None:
     """The AC-coverage baseline with moved ids renamed IN PLACE (line edit: indentation, line endings and the rest stay byte-identical)."""
-    p = root / BASELINE
+    p = _sp.path("ac_coverage_baseline", root)
     if not p.is_file():
         return None
     old = _read_text(p)
@@ -90,7 +90,7 @@ def _baseline(root: Path, moves: dict[str, str]) -> tuple[str, str] | None:
 def _registry(root: Path, old_acs: dict[str, str], src: str, moves: dict[str, str]) -> tuple[str, str]:
     """The AC-number registry with the high-water mark of the source (as it was BEFORE the cut) and of every new FR, so the minter can
     never hand out a number again that has moved away: ``FR-01.11/AC48`` must stay retired when AC48 became ``FR-01.22/AC48``."""
-    p = root / REGISTRY
+    p = _sp.path("ac_registry", root)
     old = _read_text(p) if p.is_file() else ""
     data = json.loads(old) if old.strip() else {}
     top: dict[str, int] = {}
@@ -129,7 +129,8 @@ def plan(root: Path, grouping: dict, allow_shared: bool = False) -> dict:
     holder = next((p for p, t in specs.items() if heading.search(t)), None)
     if holder is None:
         raise SplitError(f"no spec.md under .shipwright/planning has a section for {src}")
-    reg = _read_text(root / REGISTRY) if (root / REGISTRY).is_file() else ""  # a number that ever had minted criteria is never reused
+    rp = _sp.path("ac_registry", root)
+    reg = _read_text(rp) if rp.is_file() else ""  # a number that ever had minted criteria is never reused
     taken = {int(m) for m in re.findall(rf'"FR-{src[3:5]}\.(\d+)"', reg)}
     for t in specs.values():
         taken |= taken_fr_numbers(t, src[3:5])
@@ -172,12 +173,12 @@ def plan(root: Path, grouping: dict, allow_shared: bool = False) -> dict:
     base = _baseline(root, moves)
     notes_extra: list[str] = []
     if base and base[0] != base[1]:
-        files[BASELINE] = base
-    elif (root / BASELINE).is_file() and any(f'"{o}"' in _read_text(root / BASELINE) for o in moves):
+        files[_sp.path("ac_coverage_baseline", root).relative_to(root).as_posix()] = base  # where it lives (R1c-2)
+    elif (bp := _sp.path("ac_coverage_baseline", root)).is_file() and any(f'"{o}"' in _read_text(bp) for o in moves):
         notes_extra.append(f"{BASELINE} names moved criteria but its id list is not one block; rename them by hand")
     reg = _registry(root, parse_catalog(old_spec)[0], src, moves)
     if reg[0] != reg[1]:
-        files[REGISTRY] = reg
+        files[_sp.path("ac_registry", root).relative_to(root).as_posix()] = reg
     if not (root / MANIFEST).is_file():
         notes_extra.append("no committed traceability manifest: the manifest binding is not re-checked")
     if mentions:

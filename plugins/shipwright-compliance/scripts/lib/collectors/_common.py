@@ -20,13 +20,20 @@ CONFIG_FILES = {
     "plan": _sp.rel("plan_config"),
     "build": _sp.rel("build_config"),
 }
+#: CONFIG_FILES key -> resolver key (R1c-2: a moving config is found in either layout)
+CONFIG_KEYS = {"run": "run_config", "project": "project_config", "plan": "plan_config", "build": "build_config"}
+
+
+def config_path(key: str, project_root: Path) -> Path:
+    """Where the *key* config (``CONFIG_FILES`` key) lives under *project_root*."""
+    return _sp.path(CONFIG_KEYS[key], project_root)
 
 
 def collect_configs(project_root: Path) -> dict[str, dict]:
     """Read all shipwright config files. Returns empty dicts for missing files."""
     configs: dict[str, dict] = {}
-    for key, filename in CONFIG_FILES.items():
-        path = project_root / filename
+    for key in CONFIG_FILES:
+        path = config_path(key, project_root)
         if path.exists():
             configs[key] = json.loads(path.read_text(encoding="utf-8"))
         else:

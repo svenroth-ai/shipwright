@@ -49,7 +49,7 @@ def load_advisory_checks(project_root: Path | str) -> list[str]:
     declaration must never suppress a finding, so the producer keeps reporting.
     """
     try:
-        data = json.loads((Path(project_root) / ADVISORY_CONFIG_FILE).read_text(encoding="utf-8-sig"))
+        data = json.loads((_sp.path("run_config", Path(project_root))).read_text(encoding="utf-8-sig"))
     except (OSError, ValueError):
         return []
     value = data.get(ADVISORY_CONFIG_KEY) if isinstance(data, dict) else None

@@ -249,14 +249,14 @@ def scan(project_root: Path | str) -> list[dict]:
 # Baseline file I/O
 # ---------------------------------------------------------------------
 
-def _baseline_path(project_root: Path | str) -> Path:
-    return Path(project_root) / BASELINE_FILENAME
+def baseline_path(project_root: Path | str) -> Path:
+    return _sp.path("bloat_baseline", Path(project_root))
 
 
 def write_baseline(project_root: Path | str, doc: dict) -> Path:
     """Atomically + durably write the baseline (tmp + fsync + os.replace via the
     shared :func:`durable_atomic_write`). Returns the written path."""
-    target = _baseline_path(project_root)
+    target = baseline_path(project_root)
     durable_atomic_write(target, json.dumps(doc, indent=2, sort_keys=False) + "\n")
     return target
 
@@ -265,7 +265,7 @@ def load(project_root: Path | str) -> dict | None:
     """Load baseline; ``None`` on missing / malformed (fail-open with stderr
     diagnostic on malformed). On success, ``entries[*].path`` is
     POSIX-normalised so callers can compare against marker paths."""
-    target = _baseline_path(project_root)
+    target = baseline_path(project_root)
     if not target.is_file():
         return None
     try:

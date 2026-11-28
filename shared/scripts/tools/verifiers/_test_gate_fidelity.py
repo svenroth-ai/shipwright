@@ -99,7 +99,7 @@ def check_design_fidelity_triage_matches_recomputation(project_root: Path) -> Ch
             severity=Severity.SKIPPED.value,
         )
 
-    results_path = _safe_project_file(project_root, _sp.rel("test_results"))
+    results_path = _safe_project_file(project_root, _sp.path("test_results", project_root).relative_to(project_root))
     if results_path is None:
         return CheckResult(
             name, False,

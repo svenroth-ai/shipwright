@@ -46,19 +46,14 @@ from lib.events_read import read_events_assembled  # noqa: E402
 import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[2] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 
-REQUIRED_CONFIGS = [
-    _sp.rel("run_config"),
-    _sp.rel("project_config"),
-    _sp.rel("plan_config"),
-    _sp.rel("build_config"),
-    _sp.rel("compliance_config"),
-]
+#: registry keys, resolved per project through ``_sp.path`` (R1c-2: either layout)
+REQUIRED_CONFIGS = ("run_config", "project_config", "plan_config", "build_config", "compliance_config")
 
 
 def check_a1_configs_present(project_root: Path) -> dict[str, Any]:
     """A1 (Tier-1): 5 required configs exist and parse as JSON."""
     name = "A1 All shipwright_*_config.json present + valid JSON"
-    missing = [c for c in REQUIRED_CONFIGS if not (project_root / c).exists()]
+    missing = [_sp.rel(k) for k in REQUIRED_CONFIGS if not _sp.path(k, project_root).exists()]
     if missing:
         return make_finding(
             "A1", STATUS_FAIL,
@@ -67,9 +62,10 @@ def check_a1_configs_present(project_root: Path) -> dict[str, Any]:
             remediation="Re-run /shipwright-adopt — pre-flight should have aborted",
             provenance="adopt_config_check",
         )
-    for c in REQUIRED_CONFIGS:
+    for k in REQUIRED_CONFIGS:
+        c = _sp.rel(k)
         try:
-            json.loads((project_root / c).read_text(encoding="utf-8"))
+            json.loads(_sp.path(k, project_root).read_text(encoding="utf-8"))
         except (json.JSONDecodeError, OSError) as e:
             return make_finding(
                 "A1", STATUS_FAIL,

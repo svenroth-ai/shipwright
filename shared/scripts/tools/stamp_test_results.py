@@ -75,7 +75,7 @@ def _run_id_from_config(project_root: Path) -> str | None:
     A corrupt run config must not stop the record from being stamped with what IS
     resolvable — the alternative is an unstamped record, which is strictly worse.
     """
-    config = project_root / RUN_CONFIG_REL
+    config = _sp.path("run_config", project_root)
     if not config.exists():
         return None
     try:
@@ -185,7 +185,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     project_root = Path(args.project_root).resolve()
 
-    results = Path(args.results) if args.results else project_root / RESULTS_REL
+    results = Path(args.results) if args.results else _sp.path("test_results", project_root)
     if not results.is_absolute():
         results = project_root / results
 

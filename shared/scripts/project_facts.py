@@ -28,10 +28,9 @@ def read_run_config(project_root: Path | str) -> dict:
     project is this?", and a missing or corrupt config must degrade to the
     conservative answer, never raise into a phase.
     """
-    path = Path(project_root) / RUN_CONFIG_NAME
-    try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError, ValueError):
+    try:  # path() inside: two copies (LayoutError) also degrade to the conservative answer
+        data = json.loads(_sp.path("run_config", Path(project_root)).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError, ValueError, _sp.LayoutError):
         return {}
     return data if isinstance(data, dict) else {}
 

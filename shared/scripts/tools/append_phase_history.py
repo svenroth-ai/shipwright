@@ -86,7 +86,7 @@ def append_history(
     verbatim so parallel iterate runs, migrations, or out-of-band edits
     don't get clobbered (GPT R2 writer audit).
     """
-    path = project_root / RUN_CONFIG_NAME
+    path = _sp.path("run_config", project_root)
     if not path.exists():
         raise FileNotFoundError(
             f"{RUN_CONFIG_NAME} not found at {path} — run config must exist before phase history"

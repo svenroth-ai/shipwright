@@ -165,7 +165,7 @@ def ensure_keep(root: Path) -> None:
 
 def read_sync_config(root: Path | str) -> dict:
     """The sync config as a dict; ValueError when it is not valid JSON or not an object (checked BEFORE anything moves)."""
-    path = Path(root) / SYNC_CONFIG
+    path = _sp.path("sync_config", Path(root))
     cfg = json.loads(path.read_text(encoding="utf-8-sig")) if path.exists() else {}
     if not isinstance(cfg, dict):
         raise ValueError(f"{SYNC_CONFIG} is not a JSON object")
@@ -174,7 +174,7 @@ def read_sync_config(root: Path | str) -> dict:
 
 def set_layout(root: Path | str, value: str) -> None:
     """Write ``events_layout`` into the sync config (other keys untouched; created when absent)."""
-    path = Path(root) / SYNC_CONFIG
+    path = _sp.path("sync_config", Path(root))
     cfg = read_sync_config(root)
     cfg["events_layout"] = value
     durable_atomic_write(path, json.dumps(cfg, indent=2, ensure_ascii=False) + "\n")

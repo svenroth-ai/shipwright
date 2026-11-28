@@ -1,0 +1,141 @@
+{
+  "run_id": "iterate-2026-11-28-r1c2-frozen-names",
+  "date": "2026-11-28T10:33:29.742064Z",
+  "event_at": "2026-11-28T10:33:16.565363+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "prior_source": "history",
+  "branch": "iterate/r1c2-frozen-names",
+  "spec": ".shipwright/planning/iterate/2026-11-28-r1c2-frozen-names.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-11-28-r1c2-frozen-names",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "AC1 no root join of a frozen moving name in production code",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_shipwright_paths_constant_joins.py::test_no_root_join_of_a_frozen_moving_name PASSED"
+      },
+      {
+        "behavior": "AC1 guard sees a join in the defining module and in an importer",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_shipwright_paths_constant_joins.py::test_the_guard_sees_a_join_here_and_in_an_importer PASSED"
+      },
+      {
+        "behavior": "AC1 guard sees every join shape (IfExp/Path/str/name bindings, try/if, /=, os.path.join, Path(a,b), joinpath, use-site wrappers, joined defaults)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_shipwright_paths_constant_joins.py::test_the_guard_sees_every_join_shape PASSED"
+      },
+      {
+        "behavior": "AC1 guard sees a module attribute join (root / mod.NAME)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_shipwright_paths_constant_joins.py::test_the_guard_sees_a_module_attribute PASSED"
+      },
+      {
+        "behavior": "AC1 a default used only as a message label is not a join",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_shipwright_paths_constant_joins.py::test_a_default_used_only_as_a_label_is_not_a_join PASSED"
+      },
+      {
+        "behavior": "AC2 config readers read the new place",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_shipwright_paths_moved_layout.py::test_config_readers_read_the_new_place PASSED"
+      },
+      {
+        "behavior": "AC2 a baseline reader reads the new place",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_shipwright_paths_moved_layout.py::test_a_baseline_reader_reads_the_new_place PASSED"
+      },
+      {
+        "behavior": "AC2 path helpers point at the new place (accepted risks, inline suppressions, bloat baseline)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_shipwright_paths_moved_layout.py::test_path_helpers_point_at_the_new_place PASSED"
+      },
+      {
+        "behavior": "AC2 a config writer updates the new copy and creates no root copy",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_shipwright_paths_moved_layout.py::test_a_writer_updates_the_new_copy_and_creates_no_root_copy PASSED"
+      },
+      {
+        "behavior": "AC2 the stack profile is read from the new place; a file name is rejected",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_shipwright_paths_moved_layout.py::test_the_stack_profile_is_read_from_the_new_place PASSED"
+      },
+      {
+        "behavior": "AC3 every stale-cache fallback has the checkable shape and names the legacy file",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_shipwright_paths_fallbacks.py::test_every_resolver_fallback_has_the_one_checkable_shape PASSED"
+      },
+      {
+        "behavior": "AC3 hidden resolver: the session hook finds the project by the legacy literal",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_shipwright_paths_fallbacks.py::test_resolver_hidden_branch_session_start_finds_the_project_by_the_literal PASSED"
+      },
+      {
+        "behavior": "AC4 dev_server state follows its file to .shipwright/runtime/ (production writer)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_shipwright_paths_moved_layout.py::test_the_dev_server_state_follows_its_file PASSED"
+      },
+      {
+        "behavior": "AC4 audit_config and dev_server have their new locations",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_shipwright_paths_identity.py::test_known_locations PASSED"
+      },
+      {
+        "behavior": "AC5 two copies stop a routed reader",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_shipwright_paths_moved_layout.py::test_two_copies_stop_a_routed_reader PASSED"
+      },
+      {
+        "behavior": "AC5 the security gate reads the new place and never widens on two copies",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_shipwright_paths_moved_layout.py::test_the_security_gate_reads_the_new_place_and_never_widens_on_two_copies PASSED"
+      },
+      {
+        "behavior": "safety window: nothing names the new config folder or the D1 dev-server file",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_shipwright_layout.py::test_no_production_code_writes_the_new_place_before_r3 PASSED"
+      },
+      {
+        "behavior": "AC7 the real SessionStart hook, run as its own process, recognises a project whose run config is only in .shipwright/config/",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "shared/tests/test_shipwright_paths_moved_layout.py::test_the_session_start_hook_recognises_a_moved_project PASSED (fails on the pre-change hook)"
+      },
+      {
+        "behavior": "AC6 inventory 80 -> 73 and the unmigrated repo behaves as before",
+        "disposition": "tested",
+        "evidence": "full F0 suite, 18 units GREEN (28189 tests collected), test_shipwright_paths_guard.py cap 73"
+      }
+    ],
+    "counts": {
+      "testable": 19,
+      "tested": 19,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 7,
+      "covered_acs": 7
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run pytest -p no:cacheprovider -q shared/tests/test_shipwright_paths_moved_layout.py shared/tests/test_shipwright_paths_constant_joins.py shared/tests/test_shipwright_paths_fallbacks.py shared/tests/test_shipwright_paths_guard.py shared/tests/test_shipwright_paths_identity.py shared/tests/test_shipwright_layout.py",
+    "exit_code": 0,
+    "tests_run": 1,
+    "evidence_path": ".shipwright/runs/iterate-2026-11-28-r1c2-frozen-names/surface_verification.json",
+    "timestamp": "2026-11-28T09:46:32.670Z"
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": [
+    "touches_shared_infra",
+    "touches_io_boundary",
+    "cross_component"
+  ]
+}

@@ -15,13 +15,13 @@ import json
 from pathlib import Path
 from typing import Any
 
-from ._common import CONFIG_FILES
+from ._common import config_path as _config_path
 from ._types import RequirementInfo, SectionInfo, SplitInfo
 
 
 def collect_splits(project_root: Path) -> list[SplitInfo]:
     """Read splits from project config."""
-    config_path = project_root / CONFIG_FILES["project"]
+    config_path = _config_path("project", project_root)
     if not config_path.exists():
         return []
 
@@ -71,7 +71,7 @@ def collect_sections(project_root: Path) -> list[SectionInfo]:
     archived splits under ``split_NN_sections`` keys.  This function reads
     all of them and maps each group to its parent split.
     """
-    build_path = project_root / CONFIG_FILES["build"]
+    build_path = _config_path("build", project_root)
     if not build_path.exists():
         return []
 

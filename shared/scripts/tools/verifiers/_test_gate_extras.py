@@ -115,7 +115,8 @@ def check_e2e_counts_reconciled(project_root: Path) -> CheckResult:
     module's counting rules ever change — see the note in its own docstring.
     """
     name = "e2e counts reconciled against the playwright tool's own stats"
-    results_path, results_escaped = _project_file_or_escape(project_root, _sp.rel("test_results"))
+    results_path, results_escaped = _project_file_or_escape(
+        project_root, _sp.path("test_results", project_root).relative_to(project_root))
     pw_path, pw_escaped = _project_file_or_escape(project_root, "e2e-results.json")
 
     # Stage-2 code-reviewer (2026-09-12, PR #748 re-review): the Tier-3 CI

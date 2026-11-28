@@ -89,12 +89,9 @@ _EXISTING_ARTIFACT_CANDIDATES: tuple[str, ...] = (
     ".shipwright/agent_docs/guideline.md",
     ".shipwright/designs/visual-guidelines.md",
     _sp.rel("events"),
-    _sp.rel("sync_config"),
-    _sp.rel("project_config"),
-    _sp.rel("plan_config"),
-    _sp.rel("build_config"),
-    _sp.rel("compliance_config"),
 )
+#: config files adopt touches, as registry keys: found wherever the resolver finds them (R1c-2)
+_EXISTING_CONFIG_KEYS = ("sync_config", "project_config", "plan_config", "build_config", "compliance_config")
 
 
 def _detect_existing_artifacts(project_root: Path) -> list[str]:
@@ -111,6 +108,10 @@ def _detect_existing_artifacts(project_root: Path) -> list[str]:
     for rel in _EXISTING_ARTIFACT_CANDIDATES:
         if (project_root / rel).is_file():
             found.append(rel)
+    for key in _EXISTING_CONFIG_KEYS:
+        p = _sp.path(key, project_root)
+        if p.is_file():
+            found.append(p.relative_to(project_root).as_posix())
     planning = project_root / ".shipwright" / "planning"
     for spec in _discovery().iter_spec_files(
         planning, recursive=True, guard="is_dir", sort=True, include_iterate=True, require="exists"

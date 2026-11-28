@@ -76,7 +76,7 @@ def main(argv: list[str] | None = None) -> int:
     if doc is None:
         baseline_path = (
             Path(args.baseline) if args.baseline is not None
-            else project_root / _bb.BASELINE_FILENAME
+            else _bb.baseline_path(project_root)
         )
         # A PRESENT-but-unreadable/malformed/wrong-shape baseline must NOT
         # silently disable the gate: fail-open here would let a real ratchet
@@ -97,7 +97,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.baseline is None:
             print(
                 "anti_ratchet_check: baseline not found at "
-                f"{project_root / _bb.BASELINE_FILENAME} — skipping check (fail-open)",
+                f"{_bb.baseline_path(project_root)} — skipping check (fail-open)",
                 file=sys.stderr,
             )
         if args.json:

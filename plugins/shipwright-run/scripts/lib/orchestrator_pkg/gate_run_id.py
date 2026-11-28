@@ -53,7 +53,7 @@ def canon_run_id(project_root: Path, task: dict[str, Any], config: dict[str, Any
     if not isinstance(run_id, str) or not run_id.strip():
         return run_id
     try:
-        on_disk = json.loads((project_root / _RUN_CONFIG).read_text(encoding="utf-8"))
+        on_disk = json.loads((_sp.path("run_config", project_root)).read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return run_id
     history = on_disk.get("phase_history") if isinstance(on_disk, dict) else None

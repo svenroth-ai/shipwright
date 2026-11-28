@@ -29,6 +29,8 @@ try:
     import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 except ImportError:  # stale or absent shared tree: keep this module usable
     _sp = None
+#: The class path() raises (two copies, an unfinished move); no resolver, nothing to catch.
+_LAYOUT_ERROR = _sp.LayoutError if _sp is not None else ()
 
 #: Canonical literal (not assembled from segments) so the artifact-path-canon
 #: AST lint sees the ``.shipwright/`` prefix — same reason as ci_security.py.
@@ -36,8 +38,6 @@ CI_SECURITY_REL = ".shipwright/compliance/ci-security.json"
 
 #: :func:`read_security_summary` sentinel for a present-but-untrustworthy file.
 UNUSABLE = "unusable"
-
-CONFIG_FILENAME = ("shipwright_compliance_config.json" if _sp is None else _sp.rel("compliance_config"))
 
 
 def read_security_summary(project_root: str | Path) -> dict | str | None:
@@ -106,10 +106,12 @@ def load_threshold(project_root: str | Path) -> int:
     must never raise into the hook's fail-open wrapper, which would allow the
     deploy outright.
     """
-    config_path = Path(project_root) / CONFIG_FILENAME
     try:
+        config_path = Path(project_root) / "shipwright_compliance_config.json" if _sp is None else _sp.path("compliance_config", project_root)
         config = json.loads(config_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError, UnicodeDecodeError):
+        return 0
+    except _LAYOUT_ERROR:  # a broken layout never widens the gate, and never reaches the fail-open wrapper
         return 0
     if not isinstance(config, dict):
         return 0

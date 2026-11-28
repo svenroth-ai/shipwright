@@ -43,7 +43,7 @@ def load_declared_manifests(project_root: Path) -> list[dict]:
     fail-closed, since this config is read even from projects
     ``/shipwright-adopt`` runs against untrusted brownfield repos.
     """
-    config_path = project_root / CONFIG_NAME
+    config_path = _sp.path("changelog_config", project_root)
     if not config_path.is_file():
         return []
     try:

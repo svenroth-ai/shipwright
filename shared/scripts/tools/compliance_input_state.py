@@ -86,8 +86,9 @@ def event_folder_files(root: Path) -> list[str]:
 
 
 def producer_inputs(root: Path) -> tuple[str, ...]:
-    """:data:`PRODUCER_STATE` plus every event folder file that exists right now."""
-    return PRODUCER_STATE + tuple(event_folder_files(root))
+    """:data:`PRODUCER_STATE` (the config where it lives, R1c-2) plus every event folder file that exists now."""
+    cfg = _sp.path("compliance_config", root).relative_to(root).as_posix()
+    return tuple(cfg if r == _sp.rel("compliance_config") else r for r in PRODUCER_STATE) + tuple(event_folder_files(root))
 
 
 def snapshot(root: Path, rels) -> dict[str, bytes | None]:

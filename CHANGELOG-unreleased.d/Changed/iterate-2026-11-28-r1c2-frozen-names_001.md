@@ -1,0 +1,1 @@
+Every part of Shipwright that reads or writes a project file now finds it in its new folder as well as at the project root, including the hooks, the deploy security gate and the stack-profile lookup (no files move yet)

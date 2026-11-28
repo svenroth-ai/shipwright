@@ -70,7 +70,7 @@ def _append(project_root: Path, **kwargs) -> str | None:
 
 
 def _read_results(project_root: Path, results_file: Path | None = None) -> dict:
-    path = results_file or (project_root / RESULTS_NAME)
+    path = results_file or (_sp.path("test_results", project_root))
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError, ValueError):

@@ -125,7 +125,7 @@ def run(project_root: Path, run_id: str, scratch_parent: Path | None = None) -> 
 
 
 def _run(project_root: Path, run_id: str, scratch_parent: Path | None) -> int:
-    if not ((project_root / _COMPLIANCE_PLUGIN).is_dir() and (project_root / _BASELINE).is_file()):
+    if not ((project_root / _COMPLIANCE_PLUGIN).is_dir() and (_sp.path("ac_coverage_baseline", project_root)).is_file()):
         print(f"SKIP: no {_COMPLIANCE_PLUGIN.as_posix()} + {_BASELINE} here - this project "
               "does not run the AC coverage ratchet, nothing to mirror.")
         return EXIT_OK

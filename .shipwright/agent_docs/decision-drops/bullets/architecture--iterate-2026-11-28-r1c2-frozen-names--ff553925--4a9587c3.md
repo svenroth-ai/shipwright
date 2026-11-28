@@ -1,0 +1,1 @@
+- **iterate-2026-11-28-r1c2-frozen-names** (2026-11-28): Component — Every Python reader and writer of a moving root file resolves it through shipwright_paths.path() (no frozen-name joins, guarded by test_shipwright_paths_constant_joins.py); audit_config and dev_server rows move. → decision_log (ADR via Run-ID: iterate-2026-11-28-r1c2-frozen-names)

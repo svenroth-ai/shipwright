@@ -33,7 +33,6 @@ try:
 except ImportError:  # stale shared cache: this hook keeps its own fallback
     _sp = None
 
-CONFIG_NAME = "shipwright_run_config.json" if _sp is None else _sp.rel("run_config")
 PROMPT_NAME = "using-shipwright.md"
 _SENTINEL_PREFIX = "using_shipwright_bootstrap"
 
@@ -105,7 +104,7 @@ def _claim_once(project_root: Path, session_id: str) -> bool:
 
 def run(*, project_root: Path, session_id: str, prompts_dir: Path) -> str:
     """Return the stdout string to emit (``""`` = stay silent)."""
-    if not (project_root / CONFIG_NAME).is_file():
+    if not (project_root / "shipwright_run_config.json" if _sp is None else _sp.path("run_config", project_root)).is_file():
         return ""  # non-Shipwright project — no false trigger
     prompt = prompts_dir / PROMPT_NAME
     try:

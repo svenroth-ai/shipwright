@@ -137,7 +137,7 @@ def _read_legacy(
         return None, err, False
     from_commit = raw is not None
     if raw is None:
-        path = project_root / _RESULTS
+        path = _sp.path("test_results", project_root)
         if not path.exists():
             return None, None, False
         try:

@@ -84,6 +84,19 @@ def _is_rel_call(n: ast.AST) -> bool:
             and n.func.value.id in {"_sp", "sp", "shipwright_paths"})
 
 
+def _in_git_call(fn: ast.AST, target: ast.AST) -> bool:
+    """True when *target* sits inside the arguments of a blob reader, a ``*git*`` call, or a call whose argv
+    names git (``subprocess.run(["git", "show", ...])``) in *fn*."""
+    for c in ast.walk(fn):
+        if not isinstance(c, ast.Call) or c is target:
+            continue
+        argv_git = any(isinstance(x, ast.Constant) and x.value == "git" for a in c.args for x in ast.walk(a))
+        if _call_name(c) in _BLOB_CALLS or "git" in _call_name(c) or argv_git:
+            if any(target is x for arg in [*c.args, *(k.value for k in c.keywords)] for x in ast.walk(arg)):
+                return True
+    return False
+
+
 def _call_name(n: ast.Call) -> str:
     return n.func.attr if isinstance(n.func, ast.Attribute) else getattr(n.func, "id", "")
 
@@ -223,7 +236,8 @@ def scan_python(rel: str) -> list[tuple[str, int, str]]:
                 isinstance(c, ast.Call) and _call_name(c) in _BLOB_CALLS for c in ast.walk(n))
             if git_shape:
                 for c in ast.walk(n):
-                    if _is_rel_call(c):
+                    # path() is a working-tree read beside the git one (R1c-2); it counts only as a git ARGUMENT
+                    if _is_rel_call(c) and (c.func.attr != "path" or _in_git_call(n, c)):
                         out.append(("class8-uses-rel", c.lineno, f"{n.name}: reads git objects/status but calls rel(); use rel_at()"))
     return out
 

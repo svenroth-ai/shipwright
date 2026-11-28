@@ -27,6 +27,7 @@ from .constants import (
 # ``run_config_store`` is a top-level module in this plugin's scripts/lib;
 # importing ``.constants`` above already put that dir on sys.path.
 from run_config_store import atomic_write_json, durable_read_text  # noqa: E402
+from .constants import _sp  # noqa: E402  (the package binds the resolver once)
 
 
 # The error contract lives in its own module (five importers, and this one is at
@@ -108,7 +109,7 @@ def read_run_config(
     either as "your config is corrupt" would send the operator to delete a file
     that is fine.
     """
-    config, present = _read_parse_shape(project_root / CONFIG_NAME)
+    config, present = _read_parse_shape(_sp.path("run_config", project_root))
     if not present or not migrate:
         return config, present
     # Lazy import to avoid a circular dep: legacy_migration imports config_io.
@@ -163,7 +164,7 @@ def save_run_config(project_root: Path, config: dict[str, Any]) -> None:
     re-entering (deadlocking) it.
     """
     config["updated_at"] = datetime.now(timezone.utc).isoformat()
-    atomic_write_json(project_root / CONFIG_NAME, config)
+    atomic_write_json(_sp.path("run_config", project_root), config)
 
 
 def is_v2_config(config: dict[str, Any]) -> bool:

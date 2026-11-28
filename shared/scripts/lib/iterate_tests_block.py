@@ -69,7 +69,7 @@ def _read_latest(project_root: Path | str, run_id: str) -> dict | None:
     totals into this run's event — a fabricated coverage claim, which is worse
     than the missing key this module exists to fix.
     """
-    path = Path(project_root) / RESULTS_FILENAME
+    path = _sp.path("test_results", Path(project_root))
     if not path.is_file():
         return None
     try:

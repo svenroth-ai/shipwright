@@ -70,7 +70,7 @@ def load(project_root: Path) -> dict[str, list[str]]:
     :func:`collect_collisions` produces — otherwise the pin is silently
     inert and a grandfathered file reads as a brand-new collision.
     """
-    path = Path(project_root) / BASELINE_RELPATH
+    path = _sp.path("adr_collision_baseline", Path(project_root))
     try:
         doc = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):

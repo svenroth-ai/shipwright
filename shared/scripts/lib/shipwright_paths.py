@@ -79,8 +79,8 @@ _SPECS: tuple[FileSpec, ...] = (
     FileSpec("model_config", "shipwright_model_config.json", CONFIG, main_root=True),
     FileSpec("design_config", "shipwright_design_config.json", CONFIG),
     FileSpec("deploy_config", "shipwright_deploy_config.json", CONFIG),
-    # D2 (operator, 2026-11-21): moves too; the row flips in R1c-2 together with its readers
-    FileSpec("audit_config", "audit_config.json", CONFIG, moves=False),
+    # D2 (operator, 2026-11-21): moves too (row flipped in R1c-2; its readers go through path())
+    FileSpec("audit_config", "audit_config.json", CONFIG),
     # --- baselines
     FileSpec("bloat_baseline", "shipwright_bloat_baseline.json", BASELINE),
     FileSpec("ac_coverage_baseline", "shipwright_ac_coverage_baseline.json", BASELINE),
@@ -95,8 +95,8 @@ _SPECS: tuple[FileSpec, ...] = (
              fixed_tmp=("shipwright_test_results.json.tmp",)),
     FileSpec("audit_report", "shipwright_audit_report.json", DERIVED, moves=False, retired=True),
     FileSpec("plan_snapshot", "shipwright_plan_snapshot.json", DERIVED, moves=False, retired=True),
-    # --- runtime state; D1: moves to .shipwright/runtime/ (the row flips in R1c-2)
-    FileSpec("dev_server", "shipwright_dev_server.json", STATE, moves=False, target=".shipwright/runtime"),
+    # --- runtime state; D1: moves to .shipwright/runtime/ (row flipped in R1c-2)
+    FileSpec("dev_server", "shipwright_dev_server.json", STATE, target=".shipwright/runtime"),
 )
 
 SPECS: dict[str, FileSpec] = {s.key: s for s in _SPECS}

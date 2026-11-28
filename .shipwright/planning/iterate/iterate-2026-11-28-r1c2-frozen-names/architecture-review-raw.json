@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "Approve option 1: extend the existing `path()` resolver to every moving-file read and write before R3, with one regression rule in the existing test suite.\n\nThe smallest change is to replace the frozen-name joins with `path(key, root)`, register the two agreed moves, and leave pathspecs and path sets to R1c-3.\n\nThe ongoing cost is maintaining one resolver contract and keeping the guard aligned with the moving-key registry.\n\n**What it forecloses** \u2014 none identified.\n\nNo findings.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "1. **The question, answered in one sentence.** Mostly no new mechanism is needed \u2014 this routes joins through the resolver (`path()`) that already exists \u2014 and the one standing thing it adds, the constant-join guard test, is small, pinned by positive controls, and proportionate to the risk it guards (a one-line `root / NAME` regression that silently reintroduces exactly the bug this PR fixes).\n\n2. **The smallest thing that would do.** What is proposed: rewrite the joins to `path()` calls, keep the two registry row flips (their readers already resolve), and hold the pathspec/set/message work for R1c-3. A lazy-function-per-module alternative (option 4) costs more surface for the same effect; flipping `rel()` now (option 2) breaks unmigrated repos, which is the campaign's stated invariant; deferring to R3 (option 3) leaves the readers broken at the moment of migration. Option 1 is the smallest correct move.\n\n3. **What it costs to keep.** The guard test `test_shipwright_paths_constant_joins.py` \u2014 anyone adding a moving-key constant must route joins through `path()` or extend the guard's allowlist; the allowlist (currently the two event-log files) will need tending if it grows. Also the split itself: 73 frozen-name entries remain and must be finished in R1c-3, so the codebase temporarily holds two regimes for the same names. That is a known, bounded debt, not a permanent mechanism.\n\n4. **What it forecloses.** None identified. If anything it un-forecloses: keeping readers dual-layout now means R3 can flip layouts without a big-bang reader rewrite.\n\n5. **Findings.**\n\n- Category: ownership\n- Severity: low\n- Finding: The guard test is the only standing mechanism added, and it is the kind that silently rots if the allowlist or the class-8 exception is edited away to make a failing PR pass; nothing outside the guard notices a regression until R3.\n- Suggestion: Acceptable as-is given the positive controls and the shrinking-inventory cap (AC6); no change required \u2014 just keep the allowlist additions out of routine PR fixes, i.e. allowlist edits should cite the reason.\n\nNo other findings.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "architecture",
+  "capture": {
+    "run_id": "iterate-2026-11-28-r1c2-frozen-names",
+    "at": "2026-11-28T09:12:36.185492+00:00"
+  },
+  "verdicts": {
+    "openai": "approve",
+    "glm": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}

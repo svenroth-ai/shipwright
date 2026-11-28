@@ -152,7 +152,8 @@ def own_entry_file_is_corrupt(
     """
     if not run_id:
         return False
-    from lib.iterate_entry import RUN_CONFIG_NAME, entry_file_for, read_iterate_entries
+    from lib import shipwright_paths as _sp
+    from lib.iterate_entry import entry_file_for, read_iterate_entries
 
     try:
         target = entry_file_for(project_root, run_id)
@@ -162,7 +163,7 @@ def own_entry_file_is_corrupt(
         # so a dangling one must count as "present but unreadable", not "absent".
         own_file_exists = target.exists() or target.is_symlink()
         legacy_unreadable = False
-        legacy_config = project_root / RUN_CONFIG_NAME
+        legacy_config = _sp.path("run_config", project_root)
         if legacy_config.exists():
             try:
                 json.loads(legacy_config.read_text(encoding="utf-8"))

@@ -4451,6 +4451,8 @@ No module names a root `shipwright_*` file itself any more: it asks the resolver
 
 **Guard.** `shared/tests/test_shipwright_paths_guard.py` fails on a new literal, an f-string/concatenation that builds a `shipwright_<name>`, a `.lock` suffix built by hand, a class-8 reader (git object / porcelain) that uses `rel()` instead of `rel_at()`, and an unlisted rule over the whole `.shipwright/` tree (BRIEF 11.9 6c). The allowlists carry a reason per entry. Bash, YAML, deploy-profile JSON, SKILL/agent/reference markdown and templates cannot call a Python resolver: they are held to a per-file count that may only fall (`shared/tests/fixtures/shipwright_paths_carriers.json`; regenerate with `uv run python shared/tests/_shipwright_paths_scan.py --write`) and flip with the plugin version in R3.
 
+**Where a file is found (R1c).** `path(key, root)` looks in the file's new place first (`.shipwright/config/`, `.shipwright/runtime/` for the dev-server state) and then at the root; two copies stop the caller with `LayoutError`. Since R1c-2 every Python reader and writer of a moving file goes through it, hooks included (`session_start_using_shipwright`, `master_stop_check`, `suggest_iterate`, `required_checks_state`, `generate_handoff_on_stop`, `iterate_worktree_gate`). A hook's stale-cache fallback still names the root file. Until R3 migrates, nothing exists in the new places, so every hook reads exactly what it read before. `test_shipwright_paths_constant_joins.py` forbids joining a root to a name frozen at import.
+
 ---
 
 ## Context Loading by Phase

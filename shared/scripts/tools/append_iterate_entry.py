@@ -89,7 +89,7 @@ def _atomic_write_json(target: Path, data: Any) -> None:
 
 
 def _load_config(project_root: Path) -> dict[str, Any]:
-    path = project_root / RUN_CONFIG_NAME
+    path = _sp.path("run_config", project_root)
     if not path.exists():
         return {}
     try:
@@ -116,7 +116,7 @@ def _save_config(
     """
     if bump_updated_at:
         data["updated_at"] = datetime.now(timezone.utc).isoformat()
-    _atomic_write_json(project_root / RUN_CONFIG_NAME, data)
+    _atomic_write_json(_sp.path("run_config", project_root), data)
 
 
 def _write_entry_file(

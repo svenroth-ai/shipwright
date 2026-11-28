@@ -222,7 +222,9 @@ def test_no_production_code_writes_the_new_place_before_r3():
     allowed = {"shared/scripts/lib/shipwright_paths.py", "shared/scripts/lib/shipwright_layout.py",
                "shared/scripts/lib/shipwright_pointer.py"}  # the resolver, its lookup, the stub renderer
     scope = ["--", "plugins", "shared", "scripts", ".github", ":!*/tests/*", ":!shared/testkit/*"]
-    named = subprocess.run(["git", "grep", "-l", "--untracked", "-E", r"shipwright[/\\]+config", *scope],
+    # R1c-2 (D1): the dev-server state's new place is a FILE in the already-used runtime folder, so name it
+    named = subprocess.run(["git", "grep", "-l", "--untracked", "-E",
+                            r"shipwright[/\\]+config|runtime[/\\]+shipwright_dev_server", *scope],
                            capture_output=True, text=True, cwd=str(REPO)).stdout.split()
     assert [h for h in named if h not in allowed] == []
     asked = subprocess.run(["git", "grep", "-l", "--untracked", "-E", r"\b(new_rel|known_rels|all_known_rels)\(", *scope],
@@ -272,3 +274,13 @@ def test_a_missing_sibling_is_an_import_error_the_guarded_hooks_catch(tmp_path):
             print(json.dumps({{"raised": type(exc).__name__, "left": "shipwright_paths" in sys.modules}}))
     """)
     assert res == {"raised": "ImportError", "left": False}
+
+
+@pytest.mark.covers("FR-01.11")
+def test_path_reuses_a_path_root_under_a_faked_os_name(tmp_path, monkeypatch):
+    """The dev-server tests fake ``os.name`` (the Windows branch under test reads it). On 3.11 a
+    fresh ``Path()`` then raises "cannot instantiate"; path() must reuse the caller's Path object,
+    as the ``root / NAME`` join it replaced did (CI failure on PR #1128)."""
+    import os
+    monkeypatch.setattr(os, "name", "posix" if os.name == "nt" else "nt")
+    assert sp.path("dev_server", tmp_path) == tmp_path / sp.legacy_rel("dev_server")

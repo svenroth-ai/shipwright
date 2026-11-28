@@ -161,8 +161,8 @@ def read_run_config_mode(project_root: Any) -> str:
     if project_root is None:
         return INERT_MODE
     try:
-        parsed = json.loads(durable_read_text(Path(project_root) / _CONFIG_NAME, encoding="utf-8-sig"))
-    except (ValueError, OSError, RecursionError, TypeError):
+        parsed = json.loads(durable_read_text(_sp.path("run_config", Path(project_root)), encoding="utf-8-sig"))
+    except (ValueError, OSError, RecursionError, TypeError, _sp.LayoutError):  # two copies: fail safe too
         return INERT_MODE
     mode = parsed.get("mode") if isinstance(parsed, dict) else None
     return SINGLE_SESSION if mode == SINGLE_SESSION else INERT_MODE

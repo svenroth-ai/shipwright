@@ -79,7 +79,7 @@ def _mk(
 
 def _check_h0(project_root: Path) -> tuple[list[Finding], dict | None]:
     """([h0], doc_or_None). doc=None → callers skip H1-H6 (no data)."""
-    if not (project_root / _bb.BASELINE_FILENAME).is_file():
+    if not _bb.baseline_path(project_root).is_file():
         return ([_mk("H0", "skip",
                      f"no {_bb.BASELINE_FILENAME} (greenfield / pre-adopt)")],
                 None)

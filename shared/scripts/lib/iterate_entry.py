@@ -269,7 +269,7 @@ def _read_legacy_array(project_root: Path) -> list[dict[str, Any]]:
     JSON returns an empty list and the caller is responsible for surfacing
     the corruption via logs / verifier signals. ``UnicodeDecodeError`` is caught here as in
     :func:`_read_iterates_dir`, but SILENTLY: an undecodable config drops the array."""
-    config_path = project_root / RUN_CONFIG_NAME
+    config_path = _sp.path("run_config", project_root)
     if not config_path.exists():
         return []
     try:

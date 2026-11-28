@@ -122,7 +122,7 @@ def _now_iso() -> str:
 
 
 def _read_config(project_root: Path) -> dict[str, Any]:
-    path = project_root / CONFIG_NAME
+    path = _sp.path("run_config", project_root)
     if not path.exists():
         raise FileNotFoundError(f"{CONFIG_NAME} not found at {project_root}")
     return json.loads(durable_read_text(path))  # delete-pending safe (WP2/F12)
@@ -130,7 +130,7 @@ def _read_config(project_root: Path) -> dict[str, Any]:
 
 def _write_config(project_root: Path, config: dict[str, Any]) -> None:
     config["updated_at"] = _now_iso()
-    atomic_write_json(project_root / CONFIG_NAME, config)  # atomic; readers never see a partial write (WP2/F12)
+    atomic_write_json(_sp.path("run_config", project_root), config)  # atomic; readers never see a partial write (WP2/F12)
 
 
 def _find_task(config: dict[str, Any], phase_task_id: str) -> Optional[dict[str, Any]]:

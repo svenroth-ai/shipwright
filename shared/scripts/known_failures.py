@@ -97,7 +97,7 @@ def load_accepted_baseline(project_root: Path | str) -> AcceptedBaseline:
     unreadable → ``malformed=True`` with the same zero-baseline result, so a
     corrupt file can never *widen* what is excused.
     """
-    path = Path(project_root) / KNOWN_FAILURES_NAME
+    path = _sp.path("known_failures", Path(project_root))
     if not path.exists():
         return AcceptedBaseline()
 

@@ -95,14 +95,16 @@ def search_dirs_with_bundled(project_root, bundled: str) -> list:
     return [(s, bundled if s == "bundled" else d) for s, d in pr.search_dirs(project_root)]
 
 
-def config_profile(project_root, filename: str = RUN_CONFIG) -> str | None:
-    """The ``profile`` named in ``<project_root>/<filename>``.
+def config_profile(project_root, key: str = "run_config") -> str | None:
+    """The ``profile`` named in the project's ``<key>`` config, wherever it lives (``path()``, R1c-2).
 
     Absent file, absent key, null or empty -> ``None`` ("names nothing"). A file that
     is corrupt, not an object, or whose ``profile`` is not a string raises (never a
     silent default).
     """
-    path = os.path.join(os.fspath(project_root), filename)
+    if key not in _sp.SPECS:  # the parameter was a FILE NAME before R1c-2; say so instead of a bare KeyError
+        raise ValueError(f"config_profile takes a registry key such as 'run_config', not {key!r}")
+    path = os.fspath(_sp.path(key, os.fspath(project_root)))
     try:
         with open(path, encoding="utf-8-sig") as fh:
             data = json.load(fh)

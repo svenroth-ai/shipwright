@@ -139,7 +139,7 @@ def today_utc() -> date:
 
 
 def register_path(project_root: Path | str) -> Path:
-    return Path(project_root) / REGISTER_NAME
+    return _sp.path("accepted_risks", Path(project_root))
 
 
 def register_exists(project_root: Path | str) -> bool:

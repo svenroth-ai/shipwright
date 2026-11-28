@@ -44,7 +44,7 @@ class BaselineError(ValueError):
 
 
 def baseline_path(project_root: Path | str) -> Path:
-    return Path(project_root) / BASELINE_NAME
+    return _sp.path("inline_suppressions", Path(project_root))
 
 
 def _entry_error(entry: Any, index: int, seen: set[str]) -> str | None:

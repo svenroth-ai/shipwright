@@ -241,7 +241,7 @@ def _seed_legacy_phase_task_history(
     Best-effort: any failure here just means the next Stop-hook invocation
     retries the cutover.
     """
-    run_config_path = project_root / _RUN_CONFIG_NAME
+    run_config_path = _sp.path("run_config", project_root)
     lock_path = project_root / _RUN_CONFIG_LOCK_NAME
     now = datetime.now(timezone.utc).isoformat()
     try:
@@ -382,7 +382,7 @@ def main() -> int:
 
         # Fallback: detect incomplete phase-completion and trigger it
         try:
-            run_config_path = project_root / _RUN_CONFIG_NAME
+            run_config_path = _sp.path("run_config", project_root)
             if run_config_path.exists():
                 run_config = json.loads(run_config_path.read_text(encoding="utf-8"))
 
