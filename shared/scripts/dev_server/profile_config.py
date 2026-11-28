@@ -37,7 +37,7 @@ def _pkg():
 # Constants
 # ---------------------------------------------------------------------------
 
-STATE_FILE = _sp.rel("dev_server")
+STATE_FILE = _sp.name("dev_server")
 STATE_VERSION = 2
 
 # Default service used if no profile / no build_config / no inline JSON.

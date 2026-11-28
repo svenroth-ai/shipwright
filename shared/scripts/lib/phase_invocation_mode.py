@@ -44,7 +44,7 @@ import re
 from pathlib import Path
 import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p); from typing import Any, Optional
 
-CONFIG_NAME = _sp.rel("run_config")
+CONFIG_NAME = _sp.name("run_config")
 
 # An unsubstituted prompt template: `{phaseTaskId}`, `<phaseTaskId>`, `${...}`, `{{...}}`.
 _PLACEHOLDER_RE = re.compile(r"^[\$]?[{<]{1,2}[^}>]*[}>]{1,2}$")

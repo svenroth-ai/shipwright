@@ -48,7 +48,7 @@ __all__ = ["APPEND_ONLY_INPUTS", "PRODUCER_STATE", "event_folder_files", "produc
 #: rewrites the compliance config unconditionally. Hashing the derived paths while
 #: letting these drift proves a fixpoint of a projection, not of the producer.
 PRODUCER_STATE: tuple[str, ...] = (
-    EVENTS_LOG, TRIAGE_LOG, _sp.rel("compliance_config"),
+    EVENTS_LOG, TRIAGE_LOG, *_sp.known_rels("compliance_config"),
 )
 
 #: The subset of :data:`PRODUCER_STATE` that is an APPEND-ONLY log, handled
@@ -88,7 +88,8 @@ def event_folder_files(root: Path) -> list[str]:
 def producer_inputs(root: Path) -> tuple[str, ...]:
     """:data:`PRODUCER_STATE` (the config where it lives, R1c-2) plus every event folder file that exists now."""
     cfg = _sp.path("compliance_config", root).relative_to(root).as_posix()
-    return tuple(cfg if r == _sp.rel("compliance_config") else r for r in PRODUCER_STATE) + tuple(event_folder_files(root))
+    both = _sp.known_rels("compliance_config")   # PRODUCER_STATE holds both places; one input: where it lives
+    return tuple(dict.fromkeys(cfg if r in both else r for r in PRODUCER_STATE)) + tuple(event_folder_files(root))
 
 
 def snapshot(root: Path, rels) -> dict[str, bytes | None]:

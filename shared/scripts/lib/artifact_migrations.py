@@ -154,7 +154,7 @@ ALLOWLIST: dict[str, list[str]] = {
         # so inline `artifact-path-canon: legacy` markers can't be applied.
         # Same class as conventions.md (Learnings prose) and architecture.md
         # / decision_log.md. Added in iterate-2026-05-21-post-43-hygiene.
-        _sp.rel("test_results"),
+        *_sp.known_rels("test_results"),
         ".shipwright/compliance/change-history.md",
         # Generated agent-doc caches (single-producer trio, ADR-089) render
         # arbitrary text — triage finding detail/launchPayload, iterate/build
@@ -254,7 +254,7 @@ ALLOWLIST: dict[str, list[str]] = {
         ".shipwright/agent_docs/decision_log_index.md",
         ".shipwright/agent_docs/conventions.md",
         # See "planning" entry for shipwright_test_results.json rationale.
-        _sp.rel("test_results"),
+        *_sp.known_rels("test_results"),
         ".shipwright/compliance/change-history.md",
         # Generated agent-doc caches (single-producer trio, ADR-089) render
         # arbitrary text — triage finding detail/launchPayload, iterate/build
@@ -333,7 +333,7 @@ ALLOWLIST: dict[str, list[str]] = {
         ".shipwright/agent_docs/decision_log_index.md",
         ".shipwright/agent_docs/conventions.md",
         # See "planning" entry for shipwright_test_results.json rationale.
-        _sp.rel("test_results"),
+        *_sp.known_rels("test_results"),
         ".shipwright/compliance/change-history.md",
         # Generated agent-doc caches (single-producer trio, ADR-089) render
         # arbitrary text — triage finding detail/launchPayload, iterate/build
@@ -361,7 +361,7 @@ ALLOWLIST: dict[str, list[str]] = {
         ".shipwright/planning/adr/**.md",
         # Campaign handover / state files (see "planning" entry above).
         ".shipwright/planning/campaigns/**.md",
-        _sp.rel("project_config"),
+        *_sp.known_rels("project_config"),
         # Layer-2 setup-contract test references both paths by design
         "shared/tests/test_setup_writes_canonical.py",
         # Edge-case test file that intentionally references both paths (introduced in designs migration)
@@ -458,7 +458,7 @@ ALLOWLIST: dict[str, list[str]] = {
         # Same generated-cache class as the agent_docs siblings below.
         ".shipwright/agent_docs/triage_inbox.md",
         # See "planning" entry for shipwright_test_results.json rationale.
-        _sp.rel("test_results"),
+        *_sp.known_rels("test_results"),
         ".shipwright/compliance/change-history.md",
         # test-traceability.json is the generated requirement→test manifest
         # (test_links collector) — a per-iterate churn artifact update_compliance
@@ -618,7 +618,7 @@ ALLOWLIST: dict[str, list[str]] = {
         # iterate-2026-08-01-canon-lookbehind-hyphen, which fixed it at the root
         # (pinned per file in test_artifact_path_canon_manifest_allowlist.py).
         "shared/contracts/**",
-        _sp.rel("bloat_baseline"),
+        *_sp.known_rels("bloat_baseline"),
     ],
 }
 

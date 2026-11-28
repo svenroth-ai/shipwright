@@ -30,7 +30,8 @@ __all__ = ["is_safe_to_skip_review"]
 # never the actual regenerated artifact the basename rule was written for —
 # must not borrow that classification (Stage-3 doubt review, medium finding).
 _SKIP_REVIEW_CANONICAL_BASENAME_PATHS = frozenset({
-    _sp.rel("test_results"),
+    _sp.rel("test_results"),   # the ROOT place only until R3 creates the new one: skip-safety loosens a gate, so it
+                               # follows the file, never ahead of it (R1c-3 architecture review)
     _sp.rel("events"),
     ".shipwright/triage.jsonl",
     ".shipwright/triage.outbox.jsonl",

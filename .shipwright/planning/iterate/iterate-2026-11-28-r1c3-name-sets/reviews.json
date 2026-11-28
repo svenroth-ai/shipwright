@@ -1,0 +1,293 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-28-r1c3-name-sets",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-28T14:35:54.084477+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Verify whether the process is single-project per invocation. If not, convert message sites that run per-project to resolve `name()` at call time rather than via a module constant.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Audit every consumer of `DERIVED_SNAPSHOTS`/`RESTORABLE_SNAPSHOTS`/`CHURN_ALLOWLIST` for git invocations; use `:(exist,literal)` pathspec magic or filter to existing paths before invoking git.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Build the regex from an explicit non-capturing group `^(?:legacy|new)` and add a negative test for the legacy-path-only basename under a different directory.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The new recogniser test should assert recognition both ways (legacy still recognized, new recognized), not only the new place, to catch sets that over-replaced.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "Confirm `known_rels()`-derived paths are only ever consumed in membership/read contexts, or add a write-side guard (e.g., lint that `known_rels` results never reach an open-for-write or `touch`). Cheap insurance before R3.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Resolve the check before merge, not after; if it's write-side, defer it to R3 explicitly in the out-of-scope list.",
+          "suggestion": null,
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-28T14:35:55.595037+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] ## Findings\n\n**Category: edge-case — Severity: medium**\nModule constants bound to `_sp.name(key)` at import time are static. If the resolver is per-project (nested projects are explicitly in scope — AC3, \"resolve them per project\"), a constant like `CONFIG_NAME` captured at import in a long-lived process will reflect the *first* project's layout, not the current one. The plan distinguishes \"labels use `name()`\" from \"readers resolve per project,\" but any label printed during a nested-project run could be wrong.\n*Suggestion:* Verify whether the process is single-project per invocation. If not, convert message sites that run per-project to resolve `name()` at call time rather than via a module constant.\n\n**Category: risk — Severity: medium**\n`snapshot_paths()` / `run_written_paths()` now emit paths that don't exist. These feed git operations (staging, reset, churn pathspecs). Some git subcommands error on pathspecs matching nothing (`git add` does unless `--ignore-errors`/pathspec magic `:(exist)`; `git commit -- paths` semantics differ). If any consumer passes these sets directly to `git add` or `git checkout --`, the nonexistent entries could turn a previously-working operation into a failure.\n*Suggestion:* Audit every consumer of `DERIVED_SNAPSHOTS`/`RESTORABLE_SNAPSHOTS`/`CHURN_ALLOWLIST` for git invocations; use `:(exist,literal)` pathspec magic or filter to existing paths before invoking git.\n\n**Category: edge-case — Severity: medium**\n`SENSITIVE_PATH_RE` gains a second location. If built by string-joining the two rels, escaping and anchoring must be rechecked: the new path contains `/` so the anchor must be a full-path anchor (not basename anchored), and the alternation must not accidentally unanchor the legacy branch. AC4 asserts the basename case, but a regex with `^...|...$` alternation precedence bugs is a classic failure.\n*Suggestion:* Build the regex from an explicit non-capturing group `^(?:legacy|new)` and add a negative test for the legacy […truncated]\n\n[openai] 1. **Category** security · **Severity** medium  \n   **Finding** The acceptance criteria check the moved ledger’s skip eligibility and the moved risk register’s sensitivity independently. They leave the required gate’s decision on a mixed diff unverified. A PR that changes both files must still receive the sensitive review tier.  \n   **Suggestion** Add a test through the required gate’s normal entry point with both files in the same diff. Assert that review is required at the sensitive tier. Keep the ledger-only and noncanonical-basename cases as controls.\n\n2. **Category** risk · **Severity** medium  \n   **Finding** The mini-plan names a Git pathspec and lists `gitignore_selfheal.MANAGED_MARKER_PATHS` as an item to check. The implemented summary gives no disposition for either. A Python membership test can pass while the actual Git command still selects only the root path or the moved path has different ignore behavior.  \n   **Suggestion** Record the intended behavior for each Git filter. For any filter that should recognize both layouts, exercise the actual Git command in a temporary repository with the file at each canonical path and an unrelated file with the same basename.\n\n3. **Category** edge-case · **Severity** medium  \n   **Finding** The plan tests recognition in each layout, but leaves the simultaneous-copy case unspecified. Recognition should cover both copies, while phase hints, handoff, and fold staging need to agree with the resolver about the active config. A stale root copy is a practical migration case.  \n   **Suggestion** Add a fixture with distinct `sync_config` contents at both locations. Assert that fold staging selects exactly the path returned by `path()` and that the handoff reports that same path. If the resolver rejects simultaneous copies, assert that the fold stages neither.\n\nUsing registry-derived paths is sound for this change. This review is based on the supplied plan because workspace commands were blocked, so the mixed-dif […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "approve"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/tests/test_shipwright_paths_basenames.py",
+          "line": 77,
+          "finding": "the existing moved-layout test asserted CONFIG_FILES follows a patched rel(), which R1c-3 deliberately removed",
+          "suggestion": "FIXED: asserts CONFIG_FILES is a bare-name label and that the handoff names the place path() finds (file written at the new place); docstring updated",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "error-handling",
+          "file": "shared/scripts/tools/fold_events.py",
+          "line": 41,
+          "finding": "sync() path() may raise LayoutError outside the except tuple in main",
+          "suggestion": "FIXED: LayoutError caught in main; resolution is lazy, so a fold that never stages sync_config never resolves it",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_shipwright_paths_recognisers.py",
+          "line": 150,
+          "finding": "AST net matches only the _sp receiver and positional args",
+          "suggestion": "accepted: no production site uses other forms (grep); computed keys are now flagged",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "simplification",
+          "file": "shared/scripts/lib/change_type_paths.py",
+          "line": 100,
+          "finding": "_AS_ROOT root-file clause always true; audit_config known_rels entries redundant",
+          "suggestion": "kept: the clause states the invariant and protects a future key whose legacy place is not the root",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-28T14:35:54.502505+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "concurrency & ordering",
+          "file": "shared/scripts/tools/fold_events.py",
+          "line": null,
+          "finding": "Claim under doubt: the fold cannot fail after moving files — sync() path() raises LayoutError after apply_fold if a second copy appears concurrently",
+          "suggestion": "FIXED: LayoutError reported as a JSON error in main; resolution lazy; read_sync_config already resolves before any move, so only a concurrent writer reaches it (R1e)",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "blast radius",
+          "file": "shared/scripts/lib/project_root.py",
+          "line": null,
+          "finding": "Claim under doubt: project detection unchanged — a file planted at the new marker place now ranks a subfolder as a configured project",
+          "suggestion": "ACCEPTED: gives nothing a root-name marker or .shipwright/agent_docs/ did not already give; no such folder exists today",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-28T14:35:54.733429+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/fold_events.py — `_stage_paths(result, root)` computes `sync` via `_sp.path(\"sync_config\", ...)` before the status branches, i.e. unconditionally. If the resolver ever raises (or returns a place the fold did not write) when no sync config exists anywhere, an emergency fold in a repo with no sync config would fail where the old `rel()` never could. The comment in ` […truncated]",
+          "line": null,
+          "finding": "compute `sync` lazily inside the branches that actually use it, or assert the never-raises invariant in `test_shipwright_paths_recognisers.py`.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/get_phase_context.py — `except _sp.LayoutError` assumes the resolver module re-exports `LayoutError`. If it lives only in `shipwright_layout` and is not re-exported, the handler itself raises `AttributeError` and masks the original error. Worth a one-line confirmation (e.g. `assert hasattr(sp, \"LayoutError\")` in the new test).",
+          "line": null,
+          "finding": "verify the re-export or import `LayoutError` from its defining module.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "regression",
+          "file": "all sites changing `_sp.rel(...)` → `_sp.name(...)` (e.g. `required_checks_drift.ADVISORY_CONFIG_FILE`, `brief_resume_guard._CONFIG`, `backfill_phase_tasks.RUN_CONFIG_NAME`, `stamp_test_results.RESULTS_REL`). `name()` is correct only if the constant is truly a label; if any of these is ever joined to a root to read/write the file (rather than routed through `path()`), the reader silen […truncated]",
+          "line": null,
+          "finding": "add a guard test (or extend the AST net) that flags `Path(...) /` or `os.path.join` against `name()`-derived constants for moving keys, or confirm each consumer in the PR description.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_shipwright_paths_recognisers.py — `test_the_fold_stages_the_sync_config_where_it_lives` covers only the `nothing_to_fold`/emergency branch. The `folded`/`folded_into_legacy` branch appends the same `sync` variable, so a regression that stages the wrong place only in the folded path would still pass. Same for the unmigrated-repo case (sync at the root) which is the st […truncated]",
+          "line": null,
+          "finding": "add one assertion for the folded branch and one for a root-placed sync config.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "plugins/shipwright-adopt/scripts/lib/nested_project_detector.py — the marker string changed from the fixed `\"shipwright_run_config.json\"` to a resolved relative path. Any consumer comparing `markers` against the literal basename (not visible in this diff) would now see `config/shipwright_run_config.json` in a migrated nested project. Confirm no string-equality consumer exists.",
+          "line": null,
+          "finding": "grep consumers of the returned `markers` list for literal comparisons.  Nothing security-relevant was introduced: the sensitive-path regex gains paths via escaped alternations and stays anchored, and the skip-safety set deliberately does not loosen (AC5 is verified by a test that the new place is NOT skip-safe, including a planted basename).  Overall: the change is sound, spec-compliant, and well-tested; the findings above are verification hardening rather than blocking defects.  SHIPWRIGHT_VERDICT: approve",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/tests/test_shipwright_paths_guard.py",
+          "line": 95,
+          "finding": "The diff lowers the inventory cap from 73 to 16 but leaves `shared/tests/fixtures/shipwright_paths_rel_constants.json` unchanged. AC7 requires the checked-in inventory itself to shrink to 16 entries.",
+          "suggestion": "Regenerate the fixture and verify that its remaining entries are the event-log constants and `churn_merge.TEST_RESULTS`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_shipwright_paths_recognisers.py",
+          "line": 159,
+          "finding": "The AST guard only checks literal positional arguments. The new `_sp.legacy_rel(e)` call in `get_phase_context.py:124` therefore passes unnoticed even though it resolves moving keys to root paths and is outside the specified exceptions. The positive control only checks a literal `_sp.rel(\"run_config\")` call.",
+          "suggestion": "Have the guard flag calls with unresolved keys outside the explicit exceptions. Remove the phase-context fallback or document and narrowly test it if the specification is updated to allow it.  Overall assessment: Ship-with-fixes. Update the inventory fixture and close the AST guard gap before merging. The workspace shell was blocked, so the review was limited to the supplied diff.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-28T14:35:55.814648+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] I reviewed the diff against the R1c-3 spec. The implementation matches the design closely: the snapshot sets return both places, hand-written sets use `known_rels`, labels use `name()`, skip-safety stays at the root on purpose, and the new guard test drives each recogniser with a path in the new place plus a positive control for the AST net. Findings:\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/tools/fold_events.py — `_stage_paths(result, root)` computes `sync` via `_sp.path(\"sync_config\", ...)` before the status branches, i.e. unconditionally. If the resolver ever raises (or returns a place the fold did not write) when no sync config exists anywhere, an emergency fold in a repo with no sync config would fail where the old `rel()` never could. The comment in `get_phase_context._where` claims `path()` \"never raises\" but that invariant is not asserted anywhere in this diff (R1e is out of scope, so this is a documented risk rather than a bug).\n  Suggestion: compute `sync` lazily inside the branches that actually use it, or assert the never-raises invariant in `test_shipwright_paths_recognisers.py`.\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/tools/get_phase_context.py — `except _sp.LayoutError` assumes the resolver module re-exports `LayoutError`. If it lives only in `shipwright_layout` and is not re-exported, the handler itself raises `AttributeError` and masks the original error. Worth a one-line confirmation (e.g. `assert hasattr(sp, \"LayoutError\")` in the new test).\n  Suggestion: verify the re-export or import `LayoutError` from its defining module.\n\n- Category: regression\n  Severity: medium\n  File: all sites changing `_sp.rel(...)` → `_sp.name(...)` (e.g. `required_checks_drift.ADVISORY_CONFIG_FILE`, `brief_resume_guard._CONFIG`, `backfill_phase_tasks.RUN_CONFIG_NAME`, `stamp_test_results.RESULTS_REL`). `name()` is correct only if the constant is truly a label; if any of these is ever joined to a root to read/write  […truncated]\n\n[openai] - **Category:** spec  \n  **Severity:** medium  \n  **File:line:** `shared/tests/test_shipwright_paths_guard.py:95`  \n  **Finding:** The diff lowers the inventory cap from 73 to 16 but leaves `shared/tests/fixtures/shipwright_paths_rel_constants.json` unchanged. AC7 requires the checked-in inventory itself to shrink to 16 entries.  \n  **Suggestion:** Regenerate the fixture and verify that its remaining entries are the event-log constants and `churn_merge.TEST_RESULTS`.\n\n- **Category:** test  \n  **Severity:** medium  \n  **File:line:** `shared/tests/test_shipwright_paths_recognisers.py:159`  \n  **Finding:** The AST guard only checks literal positional arguments. The new `_sp.legacy_rel(e)` call in `get_phase_context.py:124` therefore passes unnoticed even though it resolves moving keys to root paths and is outside the specified exceptions. The positive control only checks a literal `_sp.rel(\"run_config\")` call.  \n  **Suggestion:** Have the guard flag calls with unresolved keys outside the explicit exceptions. Remove the phase-context fallback or document and narrowly test it if the specification is updated to allow it.\n\n**Overall assessment:** Ship-with-fixes. Update the inventory fixture and close the AST guard gap before merging. The workspace shell was blocked, so the review was limited to the supplied diff.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-28T14:35:54.299657+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-28T14:35:55.166858+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-28T14:35:55.379470+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

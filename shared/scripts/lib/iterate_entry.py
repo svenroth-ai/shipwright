@@ -41,7 +41,7 @@ ITERATE_FILE_PREFIX = "iterate-"
 ITERATE_FILE_SUFFIX = ".json"
 QUARANTINE_SUBDIR = "_quarantine"
 META_SUBDIR = "_meta"
-RUN_CONFIG_NAME = _sp.rel("run_config")
+RUN_CONFIG_NAME = _sp.name("run_config")
 
 # Config keys that persist migration state
 MIGRATION_STATE_KEY = "_iterate_migration_state"

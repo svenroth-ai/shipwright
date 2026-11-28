@@ -54,7 +54,7 @@ COMPLIANCE_DIR = ".shipwright/compliance"
 # Files that signal "this project went through the orchestrator pipeline".
 # Their presence is what distinguishes pipeline-mode security from
 # standalone-mode security.
-PIPELINE_MARKER = _sp.rel("project_config")
+PIPELINE_MARKER = _sp.name("project_config")
 
 
 def _is_pipeline_mode(project_root: Path) -> bool:

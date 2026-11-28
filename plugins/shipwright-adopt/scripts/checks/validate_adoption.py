@@ -68,7 +68,7 @@ REQUIRED_AGENT_DOCS = [
 def _validate_configs(project_root: Path) -> list[str]:
     errors: list[str] = []
     for key in REQUIRED_CONFIGS:
-        name, p = _sp.rel(key), _sp.path(key, project_root)
+        name, p = _sp.name(key), _sp.path(key, project_root)
         if not p.exists():
             errors.append(f"missing: {name}")
             continue
@@ -173,7 +173,7 @@ def _derived_catalogue_doc():
 
 def _validate_honesty_artifacts(project_root: Path) -> list[str]:
     errors = [
-        f"missing: {_sp.rel(rel) if rel in _sp.SPECS else rel} — written by {step}; re-run it"
+        f"missing: {_sp.name(rel) if rel in _sp.SPECS else rel} — written by {step}; re-run it"
         for rel, step in _HONESTY_ARTIFACTS
         if not (_sp.path(rel, project_root) if rel in _sp.SPECS else project_root / rel).exists()
     ]

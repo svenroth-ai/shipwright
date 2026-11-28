@@ -43,7 +43,7 @@ import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent
 # Constants
 # ---------------------------------------------------------------------
 
-BASELINE_FILENAME = _sp.rel("bloat_baseline")
+BASELINE_FILENAME = _sp.name("bloat_baseline")
 MARKER_TTL_SECONDS = 3600  # 1 hour — campaign §5.2
 
 LIMIT_RUNTIME_PROMPT = 400

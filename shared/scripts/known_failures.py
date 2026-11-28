@@ -38,7 +38,7 @@ from dataclasses import dataclass
 from pathlib import Path
 import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[0] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
-KNOWN_FAILURES_NAME = _sp.rel("known_failures")
+KNOWN_FAILURES_NAME = _sp.name("known_failures")
 
 # A declared id shorter than this is not used for substring matching — a
 # one- or two-character entry would swallow unrelated failures. Such an entry

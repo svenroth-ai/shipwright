@@ -215,12 +215,12 @@ def keys_of(kinds: Iterable[str] | None = None, *, moves: bool | None = None,
 def snapshot_paths(kind: str = DERIVED) -> frozenset[str]:
     """Paths of *kind* that must not enter an iterate commit (``DERIVED_SNAPSHOTS`` / ``RESTORABLE_SNAPSHOTS``).
     R1 emits BOTH the legacy and the new path for kind ``derived`` until R4 (BRIEF 4.7.6)."""
-    return frozenset(names_of((kind,)))
+    return frozenset(all_known_rels((kind,)))
 
 
 def run_written_paths() -> frozenset[str]:
-    """Snapshot paths a run writes and nothing can re-derive (excluded from the mid-run restore)."""
-    return frozenset(x.basename for x in _SPECS if x.run_written and not x.retired)
+    """Snapshot paths a run writes and nothing can re-derive (excluded from the mid-run restore), both places."""
+    return frozenset(r for x in _SPECS if x.run_written and not x.retired for r in known_rels(x.key))
 
 
 def all_basenames() -> frozenset[str]:

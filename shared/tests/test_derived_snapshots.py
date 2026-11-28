@@ -27,6 +27,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "shared" / "scripts"))
 
@@ -69,6 +71,7 @@ def _write(root: Path, rel: str, text: str) -> None:
 
 # --- the registry -----------------------------------------------------------
 
+@pytest.mark.covers("FR-01.11")
 def test_registry_covers_every_derived_md_plus_the_two_json_snapshots() -> None:
     """The twelve paths, derived from the churn registry rather than hand-listed
     so a newly added derived MD is picked up here instead of drifting."""
@@ -77,7 +80,7 @@ def test_registry_covers_every_derived_md_plus_the_two_json_snapshots() -> None:
     assert ".shipwright/compliance/ci-security.json" in DERIVED_SNAPSHOTS
     assert ".shipwright/compliance/test-traceability.json" in DERIVED_SNAPSHOTS
     assert ".shipwright/compliance/performance/iterate-throughput.md" in DERIVED_SNAPSHOTS
-    assert len(DERIVED_SNAPSHOTS) == 12
+    assert len(DERIVED_SNAPSHOTS) == 13   # twelve files; the run-written ledger in both places (R1c-3)
 
 
 def test_registry_excludes_the_append_logs_and_per_run_paths() -> None:

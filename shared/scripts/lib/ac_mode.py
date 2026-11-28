@@ -23,7 +23,7 @@ __all__ = ["ENV", "MODES", "is_safe_run_id", "marker_path", "read_marker", "reso
 
 ENV = "SHIPWRIGHT_AC_MODE"
 MODES = ("ask", "auto", "off")
-CONFIG_FILE = _sp.rel("iterate_config")
+CONFIG_FILE = _sp.name("iterate_config")
 
 
 def is_safe_run_id(run_id: object) -> bool:

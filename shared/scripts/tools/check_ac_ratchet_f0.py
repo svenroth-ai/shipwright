@@ -54,7 +54,7 @@ EXIT_INFRA = 2
 
 _RATCHET = Path(__file__).resolve().parent / "check_ac_coverage_ratchet.py"
 _COMPLIANCE_PLUGIN = Path("plugins") / "shipwright-compliance"
-_BASELINE = _sp.rel("ac_coverage_baseline")
+_BASELINE = _sp.name("ac_coverage_baseline")
 _TIMEOUT_SECONDS = 900
 
 

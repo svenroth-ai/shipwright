@@ -44,7 +44,7 @@ from lib.atomic_write import durable_atomic_write  # noqa: E402
 from tools.measure_diff_coverage import line_rate_percent  # noqa: E402
 import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[1] / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
-RESULTS_REL = _sp.rel("test_results")
+RESULTS_REL = _sp.name("test_results")
 DEFAULT_TIER = "repo"
 DEFAULT_SOURCE = "combined coverage.xml (all plugins + shared + integration)"
 

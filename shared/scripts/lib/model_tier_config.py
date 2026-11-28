@@ -80,7 +80,7 @@ RANKED_TIERS: frozenset[str] = frozenset({"opus", "sonnet", "haiku"})
 #: Rank order low-to-high, for floor comparisons.
 RANK: dict[str, int] = {"haiku": 1, "sonnet": 2, "opus": 3}
 
-_CONFIG_FILENAME = _sp.rel("model_config")
+_CONFIG_FILENAME = _sp.name("model_config")
 
 
 class ModelTierConfigError(ValueError):

@@ -57,7 +57,7 @@ from atomic_write import durable_atomic_write, durable_read_text  # noqa: E402
 from file_lock import LockTimeout, file_lock  # noqa: E402
 import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
-RUN_CONFIG_NAME = _sp.rel("run_config")
+RUN_CONFIG_NAME = _sp.name("run_config")
 # Same lock-file PATH `plugins/shipwright-run/scripts/lib/run_config_store.py`
 # uses -- mutual exclusion is guaranteed by the shared path, not by which
 # module acquired it (see that module's docstring). This tool never imports

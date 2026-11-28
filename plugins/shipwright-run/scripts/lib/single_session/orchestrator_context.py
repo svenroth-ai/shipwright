@@ -24,7 +24,7 @@ from .result_contract import MAX_SUMMARY_CHARS
 import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parents[5] / "shared" / "scripts" / "lib"); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 # Public config name (stable per the Shipwright ``shipwright_`` config prefix).
-RUN_CONFIG_REL_PATH = _sp.rel("run_config")
+RUN_CONFIG_REL_PATH = _sp.name("run_config")
 
 # Keys copied verbatim from a phase_tasks[] entry into a compact summary record.
 # Deliberately small — the reload never pulls anything transcript-sized.

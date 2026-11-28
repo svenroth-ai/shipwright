@@ -38,7 +38,7 @@ UV_RUN = ("uv", "run", "--python", PYTHON_VERSION)
 SHARED_MARKERS = ("-m", "not slow and not cross_plugin")
 #: One shared/scripts/tools test drives the real diff-cover gate (parity with ci.yml).
 SHARED_EXTRA_DEPS = ("diff-cover==10.3.0",)
-CONFIG_NAME = _sp.rel("test_config")
+CONFIG_NAME = _sp.name("test_config")
 _ALLOWED_SUITE_KEYS = {"max_workers", "xdist", "timeout_seconds", "_comment"}
 #: A hung unit holds its budget slot and would otherwise block F0 forever with no
 #: output (capture_output). Generous by default: this is a hang guard, not a perf gate.

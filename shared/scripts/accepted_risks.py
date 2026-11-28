@@ -61,7 +61,7 @@ import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent
 
 #: Repo-root register filename. Follows the ``shipwright_`` config prefix
 #: convention; YAML (not JSON) because it is hand-written and needs comments.
-REGISTER_NAME = _sp.rel("accepted_risks")
+REGISTER_NAME = _sp.name("accepted_risks")
 SCHEMA_VERSION = 1
 
 TARGET_TRIVY_IGNORE = "trivy-ignore"

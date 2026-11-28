@@ -34,7 +34,7 @@ from __future__ import annotations
 from lib.churn_merge import (
     CI_SECURITY_SUMMARY,
     COMPLIANCE_MDS,
-    TEST_RESULTS,
+    TEST_RESULTS_RELS,
     TEST_TRACEABILITY,
     THROUGHPUT_REPORT,
 )
@@ -96,7 +96,7 @@ CLASSIFICATION: dict[str, str] = {
     CI_SECURITY_SUMMARY: DERIVES_FROM_CI_HISTORY,
     ".shipwright/agent_docs/build_dashboard.md": SESSION_SCOPED,
     ".shipwright/agent_docs/session_handoff.md": SESSION_SCOPED,
-    TEST_RESULTS: RUN_WRITTEN,
+    **dict.fromkeys(TEST_RESULTS_RELS, RUN_WRITTEN),  # either place (R1c-3)
     THROUGHPUT_REPORT: DERIVES_FROM_TREE,
 }
 
@@ -139,9 +139,9 @@ EXCLUDED: dict[str, str] = {
         "recomputed by the release phase (PHASE_REPORTS['changelog'] does not name it). "
         "Excluded by the operator's scope pin, NOT by a classification claim — widening "
         "the set to include it is a decision, not a fix",
-    TEST_RESULTS:
+    **dict.fromkeys(TEST_RESULTS_RELS,
         "run_written — a run writes it and nothing can recompute it (trg-ad29a709, "
-        "PR #502). Regenerating it would destroy the F5 ledger, not refresh a view",
+        "PR #502). Regenerating it would destroy the F5 ledger, not refresh a view"),
     THROUGHPUT_REPORT: "tree-derived, but by its OWN producer — same scope pin as triage_inbox.md",
 }
 

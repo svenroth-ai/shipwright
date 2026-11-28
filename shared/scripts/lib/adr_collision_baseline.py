@@ -28,7 +28,7 @@ from pathlib import Path
 from lib.adr_index import parse_adr_number
 import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
-BASELINE_RELPATH = _sp.rel("adr_collision_baseline")
+BASELINE_RELPATH = _sp.name("adr_collision_baseline")
 
 
 def collect_collisions(folder: Path) -> dict[str, list[str]]:

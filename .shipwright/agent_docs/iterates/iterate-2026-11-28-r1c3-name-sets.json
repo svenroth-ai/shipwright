@@ -1,0 +1,116 @@
+{
+  "run_id": "iterate-2026-11-28-r1c3-name-sets",
+  "date": "2026-11-28T15:04:51.869229Z",
+  "event_at": "2026-11-28T13:02:22.941651+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "prior_source": "keyword",
+  "branch": "iterate/r1c3-name-sets",
+  "spec": ".shipwright/planning/iterate/2026-11-28-r1c3-name-sets.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-11-28-r1c3-name-sets",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "AC1 the ledger is a derived, never-restored, churn-allowlisted, run-written snapshot in either place",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_shipwright_paths_recognisers.py::test_the_run_written_ledger_is_a_derived_snapshot_in_either_place PASSED"
+      },
+      {
+        "behavior": "AC2 finalization records in the new place are not counted or attributed; real code still counts",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_shipwright_paths_recognisers.py::test_finalization_records_are_not_counted_or_attributed_in_the_new_place PASSED"
+      },
+      {
+        "behavior": "AC3 a project whose config moved is still a project",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_shipwright_paths_recognisers.py::test_a_project_whose_config_moved_is_still_a_project PASSED"
+      },
+      {
+        "behavior": "AC4 a risk register or bloat baseline in the new place is a sensitive path; the match stays anchored",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_shipwright_paths_recognisers.py::test_a_risk_register_or_bloat_baseline_in_the_new_place_is_a_sensitive_path PASSED"
+      },
+      {
+        "behavior": "AC5 the ledger is skip-safe only where it lives today",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_shipwright_paths_recognisers.py::test_the_ledger_is_skip_safe_only_where_it_lives_today PASSED"
+      },
+      {
+        "behavior": "AC6 a no-FR label covers a moved root file exactly as it covers the root file",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_shipwright_paths_recognisers.py::test_a_no_fr_label_covers_a_moved_file_exactly_as_it_covers_the_root_file PASSED"
+      },
+      {
+        "behavior": "AC6 the compliance producer snapshots and reports the config where it lives",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_shipwright_paths_recognisers.py::test_the_compliance_producer_snapshots_both_places_and_reports_one PASSED"
+      },
+      {
+        "behavior": "AC6 the fold stages sync_config where it lives",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_shipwright_paths_recognisers.py::test_the_fold_stages_the_sync_config_where_it_lives PASSED"
+      },
+      {
+        "behavior": "AC6 the phase context points a skill at the moved file",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_shipwright_paths_recognisers.py::test_the_phase_context_points_a_skill_at_the_moved_file PASSED"
+      },
+      {
+        "behavior": "AC7 no production code spells a moving file by its root name",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_shipwright_paths_recognisers.py::test_no_production_code_spells_a_moving_file_by_its_root_name PASSED"
+      },
+      {
+        "behavior": "AC7 the net sees a planted root spelling (positive control)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_shipwright_paths_recognisers.py::test_the_net_sees_a_root_spelling PASSED"
+      },
+      {
+        "behavior": "safety window: nothing writes the new place alone (new_rel) before R3",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_shipwright_layout.py::test_no_production_code_writes_the_new_place_before_r3 PASSED"
+      },
+      {
+        "behavior": "integration: under a moved layout, in its own interpreter, labels stay bare names and the session handoff names the place the run config lives",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "shared/tests/test_shipwright_paths_basenames.py::test_basename_sets_survive_a_moved_layout_while_path_tables_follow PASSED"
+      },
+      {
+        "behavior": "AC7 inventory 73 -> 16 and the unmigrated repo behaves as before",
+        "disposition": "tested",
+        "evidence": "full F0 suite, 18 units GREEN (28288 tests collected), test_shipwright_paths_guard.py cap 16"
+      }
+    ],
+    "counts": {
+      "testable": 14,
+      "tested": 14,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 7,
+      "covered_acs": 7
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run pytest -p no:cacheprovider -q shared/tests/test_shipwright_paths_recognisers.py shared/tests/test_shipwright_paths_guard.py shared/tests/test_shipwright_layout.py shared/tests/test_shipwright_paths_basenames.py",
+    "exit_code": 0,
+    "tests_run": 1,
+    "evidence_path": ".shipwright/runs/iterate-2026-11-28-r1c3-name-sets/surface_verification.json",
+    "timestamp": "2026-11-28T14:39:34.245Z"
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": [
+    "touches_shared_infra",
+    "touches_io_boundary",
+    "cross_component"
+  ]
+}

@@ -41,7 +41,7 @@ from tests_block import validate_tests_block  # noqa: E402
 import sys as _sys, pathlib as _pl; _p = str(_pl.Path(__file__).resolve().parent); _a = _p not in _sys.path; _a and _sys.path.append(_p); import shipwright_paths as _sp; _a and _sys.path.remove(_p)  # noqa: E402
 
 #: Results file written by F5, read here at F5b.
-RESULTS_FILENAME = _sp.rel("test_results")
+RESULTS_FILENAME = _sp.name("test_results")
 
 #: Layers whose counts are summed into the event block. ``e2e`` is summed too
 #: (see :func:`derive_tests_block`) but is tracked separately for ``e2e_run``.

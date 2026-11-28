@@ -97,8 +97,8 @@ DESIGNS_DIRNAME = ".shipwright/designs"
 #: that patches shared plumbing has stopped producing mockups.
 DESIGN_ALLOWED_PREFIXES = (
     ".shipwright/",
-    _sp.rel("run_config"),
-    _sp.rel("project_config"),
+    *_sp.known_rels("run_config"),
+    *_sp.known_rels("project_config"),
     "CHANGELOG-unreleased.d/",
     "CHANGELOG.md",  # the design verifier (C5) REQUIRES the "Design: N screens + M flows added" line there
     _sp.rel("events"), ".shipwright/events/drops/", ".shipwright/events/archive/", ".shipwright/events/quarantine/",  # the pipeline's own event log (file and drops folders): bookkeeping, not a breach
