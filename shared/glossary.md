@@ -279,7 +279,8 @@
   changes an element's status or text outside the recorded confirmation or change
   flow; it may add new elements as `assumption`; without a record a `confirmed`
   is read as `assumption` and reported, never edited. An id is never reused once
-  confirmed. A missing `intent.md` means "no intent declared". FRs and ACs carry no status.
+  confirmed; F11 refuses a reworded `confirmed` element without a change-flow
+  record. A missing `intent.md` means "no intent declared". FRs and ACs carry no status.
 - **Acceptance Criterion** — One testable behaviour of an FR,
   `- (E) Given … when … then …`; the unit REQ-3 binds tests to. `TBD` = a gap.
 - **Basis** — Catalog column, *how we know* a requirement:

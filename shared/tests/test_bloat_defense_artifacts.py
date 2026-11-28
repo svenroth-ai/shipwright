@@ -172,7 +172,7 @@ def test_glossary_under_loc_limit():
     #
     # Raised 540 → 565 (campaign intent-pyramid U0, 2026-11-28) — the THIRD raise. The
     # intent pyramid adds a product level above the FR (Intent, Non-goal, Capability,
-    # Key scenario, Element: 5 terms and the FR entry, 23 net lines). They are the vocabulary the operator
+    # Key scenario, Element: 5 terms and the FR entry, 24 net lines). They are the vocabulary the operator
     # approves at Stop 1 and later units bind to; each also disambiguates against an
     # existing term (Feature, Intent as change kind), so they cannot be dropped. The
     # existing entries were not compressible without losing collision splits.

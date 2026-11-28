@@ -125,7 +125,7 @@ evidence under `.shipwright/compliance/`, architecture/decision memory under
 `.shipwright/profiles/` holds the project's own stack profiles, which a human
 writes and commits (`docs/stack-profiles.md`), and
 `.shipwright/planning/intent.md` holds the product's intent (purpose,
-non-goals, capabilities, key scenarios); human-owned: an agent never sets `confirmed` and never changes an element's status or text outside the recorded confirmation or change flow (U2a1); it may add new elements as `assumption`; without a record a `confirmed` is read as `assumption` and reported, never edited, and its format is `shared/schemas/intent.schema.json`. A file that is neither belongs nowhere: a **record of
+non-goals, capabilities, key scenarios); human-owned: an agent never sets `confirmed` and never changes an element's status or text outside the recorded confirmation or change flow (U2a1); it may add new elements as `assumption`; without a record a `confirmed` is read as `assumption` and reported, never edited. Format: `shared/schemas/intent.schema.json`. A file that is neither belongs nowhere: a **record of
 finished work** is deleted (git history keeps it); a **generated** file is
 never filed among the hand-written ones — it lives **next to the source it is
 generated from**, so source and render are read together (`gate_catalog.json`
