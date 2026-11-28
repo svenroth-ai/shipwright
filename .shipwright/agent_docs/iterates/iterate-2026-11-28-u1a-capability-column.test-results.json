@@ -1,0 +1,94 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-28-u1a-capability-column",
+    "date": "2026-11-28",
+    "unit": {
+      "status": "passed",
+      "passed": 22558,
+      "skipped": 96,
+      "total": 22654
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 689,
+      "skipped": 0,
+      "total": 689
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "every FR-table reader reads a spec with and without the Capability column",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_fr_table_capability_column.py 25 PASSED; adopt and compliance counterparts PASSED"
+        },
+        {
+          "behavior": "layer writer accepts either header, refuses mixed headers and ragged rows",
+          "disposition": "tested",
+          "evidence": "test_layer_cell_writer_* PASSED"
+        },
+        {
+          "behavior": "label-hit scan keeps Description, drops bookkeeping, resets at headings",
+          "disposition": "tested",
+          "evidence": "test_label_hit_* PASSED"
+        },
+        {
+          "behavior": "digest ignores Capability, sees normative edits",
+          "disposition": "tested",
+          "evidence": "test_a_capability_reassignment_is_not_a_normative_text_change PASSED"
+        },
+        {
+          "behavior": "readers compose across shared, adopt, compliance, integration roots",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "integration-tests 689 passed; shared/tests 15743 passed"
+        }
+      ],
+      "counts": {
+        "testable": 5,
+        "tested": 5,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 1,
+        "covered_acs": 1
+      }
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run pytest shared/tests/test_fr_table_capability_column.py -q -p no:cacheprovider",
+      "exit_code": 0,
+      "tests_run": 25,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\campaign-intent-pyramid--U1a\\.shipwright\\runs\\iterate-2026-11-28-u1a-capability-column\\surface_verification.log",
+      "timestamp": "2026-11-28T14:34:24.362Z",
+      "attempts": 1
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-24-r5b-merge-lane",
+    "commit": "032d1ebbf0ef9c99eb98f240c8f1110e981a32a5",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

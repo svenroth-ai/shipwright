@@ -152,7 +152,9 @@ If no boundaries touched: write `n/a` with one-line justification.}
        business-language description a product owner can sign off. Put the
        implementation detail in `architecture.md`, not the row.
      - **The row has seven cells:**
-       `| ID | Area | Name | Priority | Description | Basis | Layers |`.
+       `| ID | Area | Name | Priority | Description | Basis | Layers |`
+       (eight when the table's header carries the optional `Capability`
+       column after `Area`: match the header of the table you add to).
        `Area` is the split's name (it must match the ID's group digit — if it
        does not, the FR belongs in a different split). `Basis` is ONE value
        from `interview` / `code` / `observed` / `tests` / `assumed` /

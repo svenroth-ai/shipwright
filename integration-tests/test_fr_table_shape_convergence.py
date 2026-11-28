@@ -33,7 +33,7 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT / "shared" / "scripts" / "lib"))
 
-from fr_table_shape import FR_TABLE_HEADER, render_layers  # noqa: E402
+from fr_table_shape import FR_TABLE_HEADER, columns_of_canonical_header, render_layers  # noqa: E402
 
 LIVE_SPEC = REPO_ROOT / ".shipwright" / "planning" / "01-adopted" / "spec.md"
 GREENFIELD_REF = (
@@ -73,15 +73,22 @@ def _census(spec_path: Path) -> list[dict]:
 # ---------------------------------------------------------------------------
 
 
+def _canonical_header_lines(text: str) -> list[str]:
+    """Header lines equal to a canonical header, with or without the optional Capability column."""
+    return [ln for ln in text.splitlines() if columns_of_canonical_header(ln) is not None]
+
+
+@pytest.mark.covers("FR-01.10")
 def test_the_live_catalog_carries_the_canonical_header() -> None:
-    assert FR_TABLE_HEADER in LIVE_SPEC.read_text(encoding="utf-8")
+    assert _canonical_header_lines(LIVE_SPEC.read_text(encoding="utf-8"))
 
 
+@pytest.mark.covers("FR-01.10")
 def test_the_greenfield_template_and_example_both_carry_it() -> None:
     """The EXAMPLE is the more copyable of the two and was the one missing a
     mandated column (SPEC §2.1) — so it is asserted, not assumed."""
     text = GREENFIELD_REF.read_text(encoding="utf-8")
-    assert text.count(FR_TABLE_HEADER) >= 2, (
+    assert len(_canonical_header_lines(text)) >= 2, (
         "both the FR-table template and the worked example must carry the "
         "canonical header"
     )
@@ -227,12 +234,16 @@ _EXPECTED_BASIS["FR-01.21"] = "other: campaign spec"
 _EXPECTED_BASIS["FR-01.22"] = "other: campaign brief"
 
 
+@pytest.mark.covers("FR-01.10")
 def test_every_live_requirement_carries_its_decided_basis() -> None:
-    rows = {
-        line.split("|")[1].strip(): line.split("|")[6].strip()
-        for line in LIVE_SPEC.read_text(encoding="utf-8").splitlines()
-        if line.startswith("| FR-")
-    }
+    rows: dict[str, str] = {}
+    basis_idx = 6  # | ID | Area | Name | Priority | Description | Basis | Layers |
+    for line in LIVE_SPEC.read_text(encoding="utf-8").splitlines():
+        cols = columns_of_canonical_header(line)
+        if cols is not None:
+            basis_idx = cols.index("Basis") + 1  # +1: the split leaves a leading empty cell; tolerates Capability
+        elif line.startswith("| FR-"):
+            rows[line.split("|")[1].strip()] = line.split("|")[basis_idx].strip()
     assert rows == _EXPECTED_BASIS
 
 

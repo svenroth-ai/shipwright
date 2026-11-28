@@ -8,7 +8,8 @@ FR table rather than regenerating it — regenerating would blow away every
 hand edit a maintainer made to the surrounding rows.
 
 **Deliberately requires the canonical column order** (``fr_table_shape.
-FR_TABLE_COLUMNS``) to be exactly what the table's header line declares —
+FR_TABLE_COLUMNS``, or the same with the optional ``Capability`` column after
+``Area``) to be exactly what the table's header line declares —
 refuses (raises) rather than guessing a column index from a re-ordered or
 non-canonical header. ``fr_table_reader`` tolerates re-ordered/renamed
 columns because it only ever READS; a WRITER that guessed wrong would corrupt
@@ -33,9 +34,9 @@ try:  # Package context (shared/tests: `shared/scripts` on sys.path).
     from .atomic_write import durable_atomic_write
     from .fr_table_reader import read_fr_rows
     from .fr_table_shape import (
-        FR_TABLE_COLUMNS,
         FR_TABLE_HEADER,
         INFERRED_MARKER_RE,
+        columns_of_canonical_header,
         has_inferred_marker,
     )
     from .requirement_model import LAYERS
@@ -43,9 +44,9 @@ except ImportError:  # Loaded by file path.
     from atomic_write import durable_atomic_write  # type: ignore
     from fr_table_reader import read_fr_rows  # type: ignore
     from fr_table_shape import (  # type: ignore
-        FR_TABLE_COLUMNS,
         FR_TABLE_HEADER,
         INFERRED_MARKER_RE,
+        columns_of_canonical_header,
         has_inferred_marker,
     )
     from requirement_model import LAYERS  # type: ignore
@@ -85,34 +86,32 @@ def _line_ending(line: str) -> tuple[str, str]:
     return line, ""
 
 
-def _canonical_layers_index(content: str) -> tuple[int, int]:
-    """The canonical header's own 0-based line number, and the 0-based index
-    of its ``Layers`` column — requiring EXACTLY one line in ``content`` to
-    equal :data:`FR_TABLE_HEADER` verbatim (trailing whitespace aside).
-    Raises on zero or more-than-one such line — a writer must never guess
-    between two candidate headers.
+def _canonical_layers_index(content: str) -> tuple[int, int, tuple[str, ...]]:
+    """The canonical header's 0-based line number, its ``Layers`` index and its
+    column tuple — requiring EXACTLY one line to equal a canonical header
+    verbatim (with or without the optional ``Capability`` column; trailing
+    whitespace aside). Raises on zero or several, whatever the mix: a writer
+    must never guess between two candidate headers.
 
-    The line number is returned so a caller can also confirm the ROW it is
-    about to edit is actually governed by THIS header, not merely that this
-    header exists somewhere in the document: a canonical id living only
-    under a second, differently-shaped priority-bearing table would
-    otherwise get a hardcoded column index applied to a row that header
-    never declared."""
+    The line number lets a caller confirm the ROW it edits is governed by THIS
+    header, not by a second, differently-shaped priority-bearing table."""
     matches = [
-        lineno for lineno, line in enumerate(content.splitlines())
-        if line.rstrip() == FR_TABLE_HEADER
+        (lineno, columns)
+        for lineno, line in enumerate(content.splitlines())
+        if (columns := columns_of_canonical_header(line)) is not None
     ]
     if not matches:
         raise LayerCellWriteError(
             "no line in this spec matches the canonical FR-table header "
-            f"{FR_TABLE_HEADER!r} — refusing to guess a column layout"
+            f"{FR_TABLE_HEADER!r} (or with Capability) — refusing to guess a layout"
         )
     if len(matches) > 1:
         raise LayerCellWriteError(
             f"{len(matches)} lines match the canonical FR-table header — "
             "refusing to guess which one governs the target row"
         )
-    return matches[0], FR_TABLE_COLUMNS.index("Layers")
+    lineno, columns = matches[0]
+    return lineno, columns.index("Layers"), columns
 
 
 def write_layers_cell(content: str, fr_id: str, new_cell_text: str) -> str:
@@ -168,7 +167,7 @@ def write_layers_cell(content: str, fr_id: str, new_cell_text: str) -> str:
     if target.layers_cell == new_cell_text:
         return content
 
-    header_lineno, layers_idx = _canonical_layers_index(content)
+    header_lineno, layers_idx, columns = _canonical_layers_index(content)
     if target.lineno <= header_lineno:
         raise LayerCellWriteError(
             f"row for {fr_id!r} (line {target.lineno + 1}) is not below the "
@@ -176,10 +175,10 @@ def write_layers_cell(content: str, fr_id: str, new_cell_text: str) -> str:
             "to guess it is governed by a header it precedes"
         )
     cells = list(target.cells)
-    if len(cells) != len(FR_TABLE_COLUMNS):
+    if len(cells) != len(columns):
         raise LayerCellWriteError(
             f"row for {fr_id!r} (line {target.lineno + 1}) has {len(cells)} "
-            f"cell(s), not the {len(FR_TABLE_COLUMNS)} the canonical header "
+            f"cell(s), not the {len(columns)} the canonical header "
             "declares — refusing to guess it is governed by that header "
             "rather than a second, differently-shaped table"
         )

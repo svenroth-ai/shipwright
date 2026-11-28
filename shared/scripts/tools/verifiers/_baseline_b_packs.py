@@ -10,20 +10,26 @@ the labels folder.
 from __future__ import annotations
 
 import re
+import sys
 from pathlib import Path
 
-from ._baseline_touch_git import GitRev
+_SCRIPTS_ROOT = Path(__file__).resolve().parents[2]
+if str(_SCRIPTS_ROOT) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS_ROOT))
+
+from lib.fr_table_reader import read_fr_rows  # noqa: E402
+
+from ._baseline_touch_git import GitRev  # noqa: E402
 
 __all__ = ["catalog", "build_pack", "write_catalog"]
 
 _OMIT = re.compile(r"^(\.shipwright/|CHANGELOG|docs/|shipwright_events|.*\.lock$|.*package-lock\.json$)")
 _FILE_CAP, _TOTAL_CAP = 120, 700
-_ROW = re.compile(r"^\|\s*(FR-\d{2}\.\d{2})\s*\|\s*[^|]*\|\s*([^|]*?)\s*\|\s*[^|]*\|\s*(.*?)\s*\|[^|]*\|[^|]*\|\s*$")
 
 
 def catalog(spec_text: str) -> list[dict]:
     """``[{id, name, statement, acs: [(AC id, text)]}]`` from the adopted spec."""
-    rows = {m[1]: (m[2], m[3]) for line in spec_text.splitlines() if (m := _ROW.match(line))}
+    rows = {r.id: (r.name, r.text) for r in read_fr_rows(spec_text)}  # by header name: with or without the Capability column
     sections = re.split(r"(?m)^### (FR-\d{2}\.\d{2}) .*$", spec_text)
     acs: dict[str, list[tuple[str, str]]] = {}
     for fr, body in zip(sections[1::2], sections[2::2]):

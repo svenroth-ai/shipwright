@@ -1,0 +1,5 @@
+Goal: Add an optional Capability column to the FR table and make every FR-table reader take the table with and without it
+Reason: Intent pyramid U1a: the stored FR-to-capability mapping needs a home before values (U2b) and a gate (U1b); fixed-shape readers would break on it
+Reference: campaign intent-pyramid U1a, ADR iterate-2026-11-28-u1a-capability-column-fr-table-reader-inventory
+AC item: {"ac": "FR-01.16.AC02", "confirmed": false, "decided_by": "code", "files": ["plugins/shipwright-iterate/skills/iterate/references/path-a-feature.md", "plugins/shipwright-iterate/skills/iterate/references/path-b-change.md", "shared/scripts/lib/fr_layer_cell_writer.py", "shared/scripts/lib/fr_table_shape.py", "shared/scripts/tools/verifiers/_baseline_b_packs.py", "shared/scripts/tools/verifiers/_baseline_label_hits.py", "shared/scripts/tools/verifiers/_baseline_touch_spec.py"], "kind": "unchanged"}
+AC decisions: [{"ac": "FR-01.16.AC02", "mode": "auto", "answer": "auto", "kind": "unchanged", "answered_via": "none", "decided_by": "code", "confirmed": false}]

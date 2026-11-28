@@ -30,7 +30,7 @@ _FR = r"FR-\d{2}\.\d{2}"
 _ROW = re.compile(rf"^\|\s*({_FR})\s*\|(.*)\|\s*$")
 _HEAD = re.compile(rf"^(#{{1,6}})\s+({_FR})\b(.*)$")
 _ANY_HEAD = re.compile(r"^(#{1,6})\s")
-_IGNORED_COL = re.compile(r"^(basis|layers?|status|evidence|promotion)\b", re.I)
+IGNORED_COL_RE = re.compile(r"^(basis|layers?|capability|status|evidence|promotion)\b", re.I)
 _IGNORED_LINE = re.compile(r"^\W*(status|promot\w*|layers?|evidence|basis)\W*:", re.I)
 _NOISE = re.compile(r"\[AC\d+\]|\(inferred\)|<!--.*?-->", re.I | re.S)
 _BULLET = re.compile(r"^\s*[-*+]\s+")
@@ -74,7 +74,7 @@ def fr_digests(text: str) -> dict[str, str]:
         if line.startswith("|"):
             cells = [c for c in line.strip().strip("|").split("|")]
             if cells and cells[0].strip().lower() == "id":
-                ignored = {i for i, c in enumerate(cells) if _IGNORED_COL.match(c.strip())}
+                ignored = {i for i, c in enumerate(cells) if IGNORED_COL_RE.match(c.strip())}
                 continue
         row = _ROW.match(line)
         if row:

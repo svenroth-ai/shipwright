@@ -1,0 +1,4 @@
+{"section":"U1a-capability-column","review":[
+{"severity":"high","category":"correctness","file":"shared/scripts/tools/verifiers/_baseline_b_packs.py","line":21,"finding":"Fixed-position FR row regex missed in the inventory; would read the CAP id as the name.","suggestion":"fixed: rows read by header name, test added"},
+{"severity":"low","category":"correctness","file":"shared/scripts/tools/verifiers/_baseline_label_hits.py","line":224,"finding":"Extra legacy columns after Description now counted as normative.","suggestion":"fixed: columns up to Description only"},
+{"severity":"low","category":"readability","file":"shared/scripts/tools/verifiers/_baseline_label_hits.py","line":204,"finding":"Two bookkeeping predicates could disagree.","suggestion":"fixed: one shared _IGNORED_COL"}]}

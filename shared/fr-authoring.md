@@ -46,7 +46,7 @@ deferred, nothing sits blocked) and drops only the mechanism.
 
 ## 2. Altitude — one function, not a route and not a change
 
-An FR is **one stable, observable function or guarantee** of the product. A *capability* (`intent.md`, CAP-xx) is the level above (to be stored in the FR table's `Capability` column from intent-pyramid U1a, AI-assigned, product-level; unlike `Area`, which is only the rendered split name; the column is not in the template yet): it groups several FRs and is what a user would name as a reason to use the product. An FR is never a capability. (Tool output, audit titles and `chat-map.json` still use the older word "capability" for an FR-level item until a follow-up renames them.) These are *not* FRs:
+An FR is **one stable, observable function or guarantee** of the product. A *capability* (`intent.md`, CAP-xx) is the level above (to be stored in the FR table's `Capability` column from intent-pyramid U1a, AI-assigned, product-level; unlike `Area`, which is only the rendered split name; optional; the readers take it since U1a, the template does not emit it and no value is filled yet, see section 4a): it groups several FRs and is what a user would name as a reason to use the product. An FR is never a capability. (Tool output, audit titles and `chat-map.json` still use the older word "capability" for an FR-level item until a follow-up renames them.) These are *not* FRs:
 
 | Not an FR | Where it belongs |
 |---|---|
@@ -301,6 +301,13 @@ Every FR table, greenfield and brownfield, has one shape:
 
 Do not add, drop, rename or reorder a column. Columns are resolved by NAME, so
 a renamed column is not a cosmetic choice — it is a column that stopped existing.
+
+One column is optional: `Capability`, placed directly after `Area`
+(`| ID | Area | Capability | Name | ... |`). It holds the id of the capability
+(CAP-xx) the FR belongs to, assigned by the AI, and may be absent. Every reader
+accepts the table with and without it; the template does not emit it and no unit
+fills it yet (intent-pyramid U2b). Do not write it by hand into a table that has
+no such header.
 
 ### `Basis` — how we know this requirement
 

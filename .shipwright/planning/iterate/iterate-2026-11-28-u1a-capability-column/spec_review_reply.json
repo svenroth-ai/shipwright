@@ -1,0 +1,1 @@
+{"stage":"spec-compliance","verdict":"PASS","spec_citations":[],"summary":"Round 2 PASS; round 1 rejected the label-hit column indices leaking past their table, fixed by a reset at every heading plus a regression test."}

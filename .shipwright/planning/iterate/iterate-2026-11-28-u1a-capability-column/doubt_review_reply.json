@@ -1,0 +1,5 @@
+{"stage":"doubt","gating":"advisory-must-address","doubts":[
+{"severity":"medium","lens":"boundary & contract","claim_under_doubt":"both baseline modules agree","disproof_attempt":"Source-era column after Description counted by the digest, cut by the label.","file":"shared/scripts/tools/verifiers/_baseline_label_hits.py","what_would_resolve_it":"fixed: one predicate, no cut at Description"},
+{"severity":"low","lens":"hidden coupling","claim_under_doubt":"label independence","disproof_attempt":"shared private predicate","file":"shared/scripts/tools/verifiers/_baseline_label_hits.py","what_would_resolve_it":"accepted, stated in the code comment"},
+{"severity":"low","lens":"blast radius","claim_under_doubt":"no remaining reader breaks when the column is filled","disproof_attempt":"convergence test asserts the seven-column header literal","file":"integration-tests/test_fr_table_shape_convergence.py","what_would_resolve_it":"recorded as a U2b prerequisite in the ADR"}],
+"summary":"No high doubt; the medium one is fixed."}

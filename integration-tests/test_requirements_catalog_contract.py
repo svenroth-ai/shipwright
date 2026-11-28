@@ -66,13 +66,18 @@ def _requirement_text(text: str) -> list[tuple[str, str]]:
     """
     out: list[tuple[str, str]] = []
     current = "?"
+    description_idx = 4  # | ID | Area | Name | Priority | Description | Basis | Layers |
     for line in text.splitlines():
         row = _TABLE_ROW.match(line)
         if row:
             cells = [c.strip() for c in line.strip().strip("|").split("|")]
-            # | ID | Area | Name | Priority | Description | Basis | Layers |
-            out.append((f"{row.group(1)} description", cells[4]))
+            out.append((f"{row.group(1)} description", cells[description_idx]))
             continue
+        if line.lstrip().startswith("|") and "description" in line.lower() and "priority" in line.lower():
+            head = [c.strip().lower() for c in line.strip().strip("|").split("|")]
+            if head and head[0] == "id" and "description" in head and "priority" in head:
+                description_idx = head.index("description")  # tolerates the optional Capability column
+                continue
         heading = re.match(r"^###\s+(FR-\d+\.\d+)\b", line)
         if heading:
             current = heading.group(1)
@@ -234,6 +239,7 @@ def test_the_catalog_declares_no_removed_requirements_section(catalog):
     assert not re.search(r"^#{2,3}\s+Removed Requirements\s*$", catalog, re.M)
 
 
+@pytest.mark.covers("FR-01.10")
 def test_every_layers_cell_keeps_the_inferred_marker(catalog):
     """Layers stay NON-authoritative through the merge.
 
@@ -244,9 +250,13 @@ def test_every_layers_cell_keeps_the_inferred_marker(catalog):
     nobody introduced. Narrow regex on purpose: ``unit, e2e (auto)`` does not
     match and would yield ``explicit``.
     """
-    cells = [
-        [c.strip() for c in line.strip().strip("|").split("|")][6]
-        for line in catalog.splitlines() if _TABLE_ROW.match(line)
-    ]
+    cells = []
+    layers_idx = 6  # | ID | Area | Name | Priority | Description | Basis | Layers |
+    for line in catalog.splitlines():
+        head = [c.strip().lower() for c in line.strip().strip("|").split("|")]
+        if line.lstrip().startswith("|") and head[0] == "id" and "layers" in head:
+            layers_idx = head.index("layers")  # tolerates the optional Capability column
+        elif _TABLE_ROW.match(line):
+            cells.append([c.strip() for c in line.strip().strip("|").split("|")][layers_idx])
     assert len(cells) == len(EXPECTED_IDS)
     assert all(re.search(r"\(\s*inferred\s*\)", c, re.I) for c in cells)

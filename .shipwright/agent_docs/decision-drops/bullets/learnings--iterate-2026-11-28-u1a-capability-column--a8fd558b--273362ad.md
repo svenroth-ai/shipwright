@@ -1,0 +1,1 @@
+- (2026-11-28) iterate — a reader that slices an FR-table row by position (cells[:5], cells[4], a seven-cell regex) breaks when an optional column is inserted: resolve columns from the header by name, and include prompts that tell an agent how many cells a row has in the reader inventory. [→ iterate-2026-11-28-u1a-capability-column]

@@ -1,0 +1,9 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"Optional column defined after Area; readers inventoried and made tolerant; no values filled, no gate rule; ADR holds inventory; fr-authoring and hooks-and-pipeline mention the column."},
+{"name":"Error Handling","verdict":"pass","note":"Layer writer still refuses zero or several headers and ragged rows; tests cover both."},
+{"name":"Security Basics","verdict":"pass","note":"Table parsing only; no new trust boundary."},
+{"name":"Test Quality","verdict":"pass","note":"One fixture rendered with and without the column through every fixed or header-driven reader, distinct values per column, digest and label-hit assertions."},
+{"name":"Performance Basics","verdict":"pass","note":"No runtime cost."},
+{"name":"Naming & Structure","verdict":"pass","note":"Constants and helper live in fr_table_shape next to the canonical header."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Spec table producer to readers probed by the with/without round trip; external positional readers recorded as follow-ups."},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"No sleeps, no network, tmp_path only."}]}

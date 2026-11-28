@@ -19,7 +19,7 @@ import copy
 import re
 
 from ._baseline_touch_git import GitRev
-from ._baseline_touch_spec import SPEC_PATH_RE
+from ._baseline_touch_spec import IGNORED_COL_RE, SPEC_PATH_RE
 
 __all__ = ["label_test_hit", "label_static_hit", "label_spec_hit", "fr_in"]
 
@@ -204,12 +204,24 @@ def _def(tree: ast.Module, name: str):
 def _spec_lines(text: str | None, fr: str) -> set[str]:
     out: set[str] = set()
     section = False
+    drop: set[int] | None = None  # bookkeeping column indices of the governing table header
+    width = 0
     for line in (text or "").splitlines():
         if line.startswith("#"):
-            section = fr in line
+            section = fr in line  # a heading does not end a table: another TABLE does (fr_table_reader rule 3)
             continue
+        if line.lstrip().startswith("|"):
+            head = [c.strip() for c in line.strip().strip("|").split("|")]
+            if head and head[0].lower() == "id":
+                # Normative text = every column the touch digest does not ignore (one predicate, shared on purpose).
+                drop, width = {i for i, c in enumerate(head) if IGNORED_COL_RE.match(c)}, len(head)
+                continue
+            if head and not re.match(r"^(FR-|:?-+:?$|$)", head[0]):
+                drop = None  # a non-FR table row: we left the requirements table
         if line.lstrip().startswith("|") and fr in line.split("|")[1:2][0]:
-            cells = [c.strip() for c in line.strip().strip("|").split("|")][:5]  # ID..Description; Basis/Layers are bookkeeping
+            cells = [c.strip() for c in line.strip().strip("|").split("|")]
+            # A row of another width than its header is not governed by it: ID..Description, as before.
+            cells = cells[:5] if drop is None or len(cells) != width else [c for i, c in enumerate(cells) if i not in drop]
             line = "|".join(cells)
         elif not section:
             continue

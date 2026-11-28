@@ -1,0 +1,69 @@
+{
+  "run_id": "iterate-2026-11-28-u1a-capability-column",
+  "date": "2026-11-28T14:40:35.486172Z",
+  "event_at": "2026-11-28T13:02:22.941651+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "prior_source": "history",
+  "branch": "iterate/campaign-U1a-capability-column",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-11-28-u1a-capability-column",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "every FR-table reader reads a spec with and without the Capability column",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_fr_table_capability_column.py 25 PASSED; adopt and compliance counterparts PASSED"
+      },
+      {
+        "behavior": "layer writer accepts either header, refuses mixed headers and ragged rows",
+        "disposition": "tested",
+        "evidence": "test_layer_cell_writer_* PASSED"
+      },
+      {
+        "behavior": "label-hit scan keeps Description, drops bookkeeping, resets at headings",
+        "disposition": "tested",
+        "evidence": "test_label_hit_* PASSED"
+      },
+      {
+        "behavior": "digest ignores Capability, sees normative edits",
+        "disposition": "tested",
+        "evidence": "test_a_capability_reassignment_is_not_a_normative_text_change PASSED"
+      },
+      {
+        "behavior": "readers compose across shared, adopt, compliance, integration roots",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "integration-tests 689 passed; shared/tests 15743 passed"
+      }
+    ],
+    "counts": {
+      "testable": 5,
+      "tested": 5,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 1,
+      "covered_acs": 1
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run pytest shared/tests/test_fr_table_capability_column.py -q -p no:cacheprovider",
+    "exit_code": 0,
+    "tests_run": 25,
+    "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\campaign-intent-pyramid--U1a\\.shipwright\\runs\\iterate-2026-11-28-u1a-capability-column\\surface_verification.log",
+    "timestamp": "2026-11-28T14:34:24.362Z",
+    "attempts": 1
+  },
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": [
+    "touches_auth"
+  ]
+}

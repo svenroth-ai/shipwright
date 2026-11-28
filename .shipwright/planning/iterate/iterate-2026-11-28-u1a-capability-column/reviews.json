@@ -1,0 +1,360 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-28-u1a-capability-column",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-28T14:12:21.354093+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Point 4 only fixes `_baseline_label_hits._spec_lines` and `_baseline_touch_spec` for the digest/baseline mechanism, but the plan doesn't inventory where else positional assumptions live until step 1 completes. If any reader does `cells[1]` for Description (or similar positional indexing on FR rows) outside those two named spots, inserting Capability at index 2 silently shifts every subsequent field. The plan names two fixes up front but the actual safety depends entirely on the step-1 inventory being complete — including plugin specs.",
+          "suggestion": "Make step 1 produce a written artifact (a table of reader → header-driven/positional → verified tolerant) before any code changes, and gate step 2–5 on it. If the inventory is recorded only in the ADR at the end, mid-implementation discoveries can be missed.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "\"Header-driven\" parsing introduces a new failure mode: a spec with a misspelled or non-canonical header (e.g. `Capabilty` or a hand-edited table). Previously column count was fixed; now a malformed header could be interpreted as \"no Capability column\" and silently mis-parse a spec that actually has 6 columns. This is worse than an error — it's silent data misalignment.",
+          "suggestion": "Define the tolerance rule precisely: a reader accepts exactly the two canonical headers; any other column count or header set should fail loudly (or at least warn), not fall back.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Mixed/transition states aren't addressed: a repo or plugin whose fixture set is half-old-format at test time, or a spec where the header says Capability but some rows have 5 cells (ragged rows). Markdown tables are hand-edited; ragged rows are common.",
+          "suggestion": "State explicitly how ragged rows are handled (error vs. pad vs. ignore) and ensure the parametrized tests include a ragged-row case for both shapes.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "_baseline_touch_spec` excluding the Capability cell from the normative digest is a compatibility decision with forward implications: U2b will fill values in, and if the digest never includes them, downstream consumers diffing specs won't see capability changes. That may be intentional for this iterate, but it should be recorded as an explicit, revisitable decision in the ADR — otherwise U2b inherits an invisible constraint.",
+          "suggestion": "Add an ADR note: \"Capability excluded from digest for U1a tolerance; revisit in U2b whether filled values should be digested.\"",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The alternative \"column last\" was rejected correctly per the ADR, but the plan defers external positional readers (webui/leadwright) as follow-ups without a rollback trigger. If a webui reader breaks in production before the follow-up lands, there's no stated mitigation.",
+          "suggestion": "Since no values are filled in this unit and the column is optional, existing specs won't carry it — so external readers are safe today. Note that explicitly in the ADR, and make the webui/leadwright follow-up a hard prerequisite of U2b (when real specs start carrying the column), not merely recorded.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Acceptance criteria are \"TBD\" for a change whose whole point is \"done when every inventoried reader passes on a spec with and without the column.\" The plan is otherwise concrete; leaving AC empty invites scope drift.",
+          "suggestion": "Fill the ACs now from the plan's own done-definition: inventory recorded in ADR, parametrized with/without tests green across shared/adopt/compliance, docs updated.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "No meaningful security surface for this change; only note is that a new header-driven parse must not treat arbitrary header cell contents as code or paths.",
+          "suggestion": "Keep header comparison to literal canonical strings.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency ·",
+          "file": null,
+          "line": null,
+          "finding": "The plan records follow-ups for incompatible WebUI or Leadwright readers but leaves rollout order unspecified. If either reader consumes updated specs, it could break as soon as an author adds an empty `Capability` column, before U2b populates it.",
+          "suggestion": "Keep the external review read-only. If it finds an incompatible reader, record the follow-up and make that fix a prerequisite for introducing the column into specs the reader consumes.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach ·",
+          "file": null,
+          "line": null,
+          "finding": "The inventory covers every plugin, but the implementation and test steps name only a subset of readers. With acceptance criteria still marked `TBD`, there’s no explicit closure check for readers such as `spec_table.py` and grill-trace.",
+          "suggestion": "Use the ADR inventory as the acceptance checklist. For each in-repo reader, record whether it already supports both shapes or needs a fix, and identify the automated check that demonstrates both. Reuse existing reader tests where possible.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "A two-shape fixture that only checks whether a spec parses could miss the positional regressions this change introduces. A reader could accept the row while misreading `Description`, a layer update could touch the wrong cell, or inserting a blank `Capability` cell could change the normative digest.",
+          "suggestion": "Give the shared fixture distinct values in the existing columns. Assert that both shapes produce the same description and label-hit results, that the layer writer changes only the intended cell in either shape, and that inserting a blank `Capability` cell leaves the digest unchanged while editing a normative cell still changes it.  Adding the optional column after `Area` is sound and respects the U0 ADR. Fill in the acceptance criteria to cover every inventoried reader, protect the positional behavior with explicit assertions, and resolve any external compatibility dependency before rollout.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-28T14:12:07.416518+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Review Findings\n\n**Category: risk — Severity: high**\nFinding: Point 4 only fixes `_baseline_label_hits._spec_lines` and `_baseline_touch_spec` for the digest/baseline mechanism, but the plan doesn't inventory *where else* positional assumptions live until step 1 completes. If any reader does `cells[1]` for Description (or similar positional indexing on FR rows) outside those two named spots, inserting Capability at index 2 silently shifts every subsequent field. The plan names two fixes up front but the actual safety depends entirely on the step-1 inventory being complete — including plugin specs.\nSuggestion: Make step 1 produce a written artifact (a table of reader → header-driven/positional → verified tolerant) *before* any code changes, and gate step 2–5 on it. If the inventory is recorded only in the ADR at the end, mid-implementation discoveries can be missed.\n\n**Category: edge-case — Severity: medium**\nFinding: \"Header-driven\" parsing introduces a new failure mode: a spec with a *misspelled or non-canonical* header (e.g. `Capabilty` or a hand-edited table). Previously column count was fixed; now a malformed header could be interpreted as \"no Capability column\" and silently mis-parse a spec that actually has 6 columns. This is worse than an error — it's silent data misalignment.\nSuggestion: Define the tolerance rule precisely: a reader accepts *exactly* the two canonical headers; any other column count or header set should fail loudly (or at least warn), not fall back.\n\n**Category: edge-case — Severity: medium**\nFinding: Mixed/transition states aren't addressed: a repo or plugin whose fixture set is half-old-format at test time, or a spec where the header says Capability but some rows have 5 cells (ragged rows). Markdown tables are hand-edited; ragged rows are common.\nSuggestion: State explicitly how ragged rows are handled (error vs. pad vs. ignore) and ensure the parametrized tests include a ragged-row case for both shapes.\n\n**Category: depend […truncated]\n\n[openai] 1. **Category:** dependency · **Severity:** medium  \n   **Finding:** The plan records follow-ups for incompatible WebUI or Leadwright readers but leaves rollout order unspecified. If either reader consumes updated specs, it could break as soon as an author adds an empty `Capability` column, before U2b populates it.  \n   **Suggestion:** Keep the external review read-only. If it finds an incompatible reader, record the follow-up and make that fix a prerequisite for introducing the column into specs the reader consumes.\n\n2. **Category:** approach · **Severity:** medium  \n   **Finding:** The inventory covers every plugin, but the implementation and test steps name only a subset of readers. With acceptance criteria still marked `TBD`, there’s no explicit closure check for readers such as `spec_table.py` and grill-trace.  \n   **Suggestion:** Use the ADR inventory as the acceptance checklist. For each in-repo reader, record whether it already supports both shapes or needs a fix, and identify the automated check that demonstrates both. Reuse existing reader tests where possible.\n\n3. **Category:** edge-case · **Severity:** medium  \n   **Finding:** A two-shape fixture that only checks whether a spec parses could miss the positional regressions this change introduces. A reader could accept the row while misreading `Description`, a layer update could touch the wrong cell, or inserting a blank `Capability` cell could change the normative digest.  \n   **Suggestion:** Give the shared fixture distinct values in the existing columns. Assert that both shapes produce the same description and label-hit results, that the layer writer changes only the intended cell in either shape, and that inserting a blank `Capability` cell leaves the digest unchanged while editing a normative cell still changes it.\n\nAdding the optional column after `Area` is sound and respects the U0 ADR. Fill in the acceptance criteria to cover every inventoried reader, protect the positional behavior wi […truncated]",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      },
+      "model_tier": "opus"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "_spec_lines reset its column map at every heading (FV-5 shape: Capability kept, Description dropped)",
+          "suggestion": "fixed: map kept across headings, width fallback, test with an id only under the later heading",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "cross-repo prerequisites only in a closed unit's ADR",
+          "suggestion": "fixed: recorded in campaign.md, cited by the ADR",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": null,
+          "line": null,
+          "finding": "private _IGNORED_COL imported across modules",
+          "suggestion": "fixed: public IGNORED_COL_RE",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": null,
+          "line": null,
+          "finding": "floating comment; hooks-and-pipeline listed only some readers",
+          "suggestion": "fixed",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "b_packs row set now follows read_fr_rows; description_idx from any id header",
+          "suggestion": "fixed: ADR note; header must contain priority",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": null,
+          "line": null,
+          "finding": "heading test passed without the fix",
+          "suggestion": "fixed",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-28T16:58:36.220953+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "0a9589ec69cf750e0129f57869a3650318f628d2"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "inventory complete",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "U2b spec carries prerequisites",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "old _spec_lines handled Source like the new",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "digest exclusion hides no requirement change",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-28T16:58:36.469026+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "0a9589ec69cf750e0129f57869a3650318f628d2"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec |",
+          "file": null,
+          "line": null,
+          "finding": "add the inventory (readers changed / unchanged / cross-repo follow-ups) to the referenced ADR or the U1a iterate spec file.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "when `drop is None` and the cell count exceeds the expected normative width (or a row appears before any header), skip or flag the row rather than silently truncating; reset `drop` on a section heading.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "lowercase-compare is already applied to `head` — also accept `head` detection on the canonical header strings from `fr_table_shape` for robustness.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test |",
+          "file": null,
+          "line": null,
+          "finding": "add a case asserting the fallback path either errors or behaves deterministically for an 8-cell row with no header seen.  No security issues (all parsing of repo-internal spec text, no injection surface). No regression risk found: the changed `_canonical_layers_index` signature is module-private and its only caller is updated; `__all__` additions are purely additive; producers still emit the 7-column shape.  Overall: the code itself is ship-with-fixes quality — the only real gap against the spec is the missing ADR/iterate-spec inventory record; the rest are low-severity edge-case hardening in the baseline label-hit scanner.  SHIPWRIGHT_VERDICT: revise",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "docs/hooks-and-pipeline.md",
+          "line": 4428,
+          "finding": "The diff summarizes several readers in the pipeline docs, but it leaves the required ADR or iterate-spec inventory missing. It also identifies positional readers in shipwright-webui and leadwright without recording follow-ups in those repos. The proposed timing leaves a compatibility gap because an empty `Capability` cell already shifts the later columns.",
+          "suggestion": "Record the complete reader inventory and each reader’s verification result in the ADR or iterate spec. Record both downstream follow-ups and make them prerequisites for introducing eight-column specs to those consumers.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "regression",
+          "file": "shared/scripts/tools/verifiers/_baseline_label_hits.py",
+          "line": 218,
+          "finding": "_spec_lines` carries bookkeeping indices across Markdown headings. If an eight-column table is followed in a new section by a headerless seven-cell FR row, the stale indices drop that row’s `Name` and retain its `Basis`. The previous implementation kept the name and excluded the basis, so this can hide a name-only edit or report a bookkeeping edit as substantive.",
+          "suggestion": "Reset the indices when leaving the table so headerless rows use the existing five-cell fallback. Add a regression test with an eight-column table followed by a headerless legacy row.  Ship-with-fixes. Complete the reader inventory and downstream follow-ups, and scope the baseline scanner’s column indices to the table that declared them.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-28T14:14:06.883249+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Review\n\nThe core change is sound and well-tested: the two fixed-shape readers (`fr_layer_cell_writer`, `_baseline_label_hits`/`_baseline_touch_spec`) are converted to header-driven, `columns_of_canonical_header` is a clean two-sided contract, and the tests genuinely pin behavior (idempotence, refusal on two candidate headers across shapes, wrong-cell-count refusal, capability-reassignment digest invariance, blank-cell digest equality). The header-driven readers (`fr_table_reader`, `ac_catalog`, etc.) are asserted for both shapes rather than just assumed.\n\n### Findings\n\n- **Category: spec | Severity: medium**\n  `File: diff (no ADR / iterate-spec file changed)` — The spec requires \"the inventory is recorded in the ADR/iterate spec\". The diff contains no change to an ADR or the U1a iterate spec; the inventory lives only in a prose paragraph in `docs/hooks-and-pipeline.md`. If the ADR \"Capability column next to D7\" exists in the repo, it needs the reader inventory appended; if not, it's a missing deliverable.\n  **Suggestion:** add the inventory (readers changed / unchanged / cross-repo follow-ups) to the referenced ADR or the U1a iterate spec file.\n\n- **Category: edge-case | Severity: low**\n  `shared/scripts/tools/verifiers/_baseline_label_hits.py` (`_spec_lines`) — when no header has been seen (`drop is None`), the fallback keeps `cells[:5]`, which for an 8-column row keeps the `Capability` cell and drops the description entirely (silent mis-digestion rather than error). Also `drop` is set by the first `| ID | …` header and never reset, so a later table with a different header shape keeps stale column indices.\n  **Suggestion:** when `drop is None` and the cell count exceeds the expected normative width (or a row appears before any header), skip or flag the row rather than silently truncating; reset `drop` on a section heading.\n\n- **Category: edge-case | Severity: low**\n  `integration-tests/test_requirements_catalog_contract.py:69-73` — header detection  […truncated]\n\n[openai] - Category: spec\n- Severity: medium\n- File: `docs/hooks-and-pipeline.md:4428`\n- Finding: The diff summarizes several readers in the pipeline docs, but it leaves the required ADR or iterate-spec inventory missing. It also identifies positional readers in shipwright-webui and leadwright without recording follow-ups in those repos. The proposed timing leaves a compatibility gap because an empty `Capability` cell already shifts the later columns.\n- Suggestion: Record the complete reader inventory and each reader’s verification result in the ADR or iterate spec. Record both downstream follow-ups and make them prerequisites for introducing eight-column specs to those consumers.\n\n- Category: regression\n- Severity: medium\n- File: `shared/scripts/tools/verifiers/_baseline_label_hits.py:218`\n- Finding: `_spec_lines` carries bookkeeping indices across Markdown headings. If an eight-column table is followed in a new section by a headerless seven-cell FR row, the stale indices drop that row’s `Name` and retain its `Basis`. The previous implementation kept the name and excluded the basis, so this can hide a name-only edit or report a bookkeeping edit as substantive.\n- Suggestion: Reset the indices when leaving the table so headerless rows use the existing five-cell fallback. Add a regression test with an eight-column table followed by a headerless legacy row.\n\nShip-with-fixes. Complete the reader inventory and downstream follow-ups, and scope the baseline scanner’s column indices to the table that declared them.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-28T16:58:35.756253+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "0a9589ec69cf750e0129f57869a3650318f628d2"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-28T14:12:07.682021+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-28T14:12:08.164615+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

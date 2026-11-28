@@ -1,0 +1,1 @@
+- **iterate-2026-11-28-u1a-capability-column** (2026-11-28): Convention — FR table: optional Capability column after Area; readers resolve columns by header name (fr_table_shape.columns_of_canonical_header for the writer). [→ iterate-2026-11-28-u1a-capability-column]. → decision_log (ADR via Run-ID: iterate-2026-11-28-u1a-capability-column)

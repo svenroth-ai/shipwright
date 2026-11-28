@@ -4421,6 +4421,12 @@ orchestrator (mandate, not a guarantee): writes the reply to its payload
 
 ---
 
+## The FR table's optional `Capability` column (intent-pyramid U1a)
+
+The FR table may carry a stored `Capability` column (a CAP id, assigned by the AI) directly after `Area`: `| ID | Area | Capability | Name | Priority | Description | Basis | Layers |` (`fr_table_shape.FR_TABLE_COLUMNS_WITH_CAPABILITY`). It is optional and not filled yet (U2b fills it, U1b adds the gate rule); producers (adopt `spec_table`, the greenfield template) still emit the seven-column shape. **Every reader takes a spec with and without it**: the header-driven readers (`fr_table_reader`, `ac_catalog`, `fr_scope_check`, `grill_trace_fr_coverage`, adopt `traceability_layers`, compliance `_requirement_parse`) needed no change; the fixed-shape ones were changed (the full per-reader table is the ADR `iterate-2026-11-28-u1a-capability-column-fr-table-reader-inventory`: `fr_layer_cell_writer`, `_baseline_label_hits`, `_baseline_touch_spec`, `_baseline_b_packs`, the path-a/path-b row prompts and one integration test). `fr_layer_cell_writer` accepts either canonical header (exactly one header line in the document, whatever the mix) and takes its column count from the header it found. `_baseline_label_hits._spec_lines` resolves its bookkeeping columns (`IGNORED_COL_RE`: `Basis`, `Layers`, `Capability`, `Status`, ...) from the table header, kept across headings, instead of keeping the first five cells, and `_baseline_touch_spec` leaves a `Capability` cell out of the normative digest (a capability move by the AI is not a change to what the requirement says). Pinned by `shared/tests/test_fr_table_capability_column.py` and the two plugin tests of the same name suffix. Readers in other repos that index cells by position (shipwright-webui `fold-map.ts`, leadwright `tests/lib/spec-ac-parsing.ts`) need a follow-up before U2b fills the column.
+
+---
+
 ## Config File Data Flow
 
 | Config File | Written By | Read By |
