@@ -1,1 +1,15 @@
-{"stage": "spec-compliance", "verdict": "PASS", "spec_citations": [], "summary": "Every U4 acceptance criterion, FR-01.09 AC16 and the brief U4 Done-when items are met. The golden-freeze handling follows brief section 2. Code-reviewer may run next."}
+{
+  "stage": "spec-compliance",
+  "verdict": "PASS",
+  "spec_citations": [],
+  "summary": "Orchestrator 3f-bis, opus, attempt 2 (head 6763f8449, merge-base e3e1540a0). Code matches brief section 1 U4, FR-01.09 AC16, the binding operator decisions (moved base stops with a restart message; option B: AC16 unit-tested until U6) and the golden-freeze rules of brief section 2. Method from repo settings, merge commit first, unreadable settings refused (repo_settings_unknown); every line carries --match-head-commit; squash/rebase onto a moved base refuses with base_moved and merges nothing; SKILL.md keeps one literal merge line; e2e tests on real git cover squash-only, default --merge, moved base and a late push. Golden freeze: gh_stub_support.py added by re-pin (approved_deltas emptied by design), three later frozen-file changes each carry an approved delta, UNIT_TESTED_UNTIL_U6 holds only AC16, pinned prose unchanged. Reviewer could not run git; orchestrator confirmed golden_lock --check status ok (problems []) and that no frozen golden trace changed (the only trace.json in the diff is the non-frozen promise export).",
+  "ac_verdicts": [
+    {
+      "ac": "item-1",
+      "verdict": "matches",
+      "diff_location": "plugins/shipwright-changelog/scripts/lib/release_merge.py:83-100",
+      "reason": "Settings pick the method, merge commit first; the line is pinned to the audited head; squash or rebase onto a moved base refuses with base_moved, merges nothing and tells the operator to restart; shown by the e2e tests.",
+      "weakens": false
+    }
+  ]
+}

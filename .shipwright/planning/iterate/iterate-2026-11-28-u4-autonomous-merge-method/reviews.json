@@ -34,36 +34,62 @@
     "code": {
       "review_type": "code",
       "status": "completed",
-      "findings_count": 2,
+      "findings_count": 5,
       "findings": [
         {
           "severity": "low",
-          "category": "readability",
-          "file": "plugins/shipwright-changelog/scripts/lib/release_merge.py",
-          "line": 74,
-          "finding": "The PR-state refusal builds two inline dict lookups chained across a line break; a reason/detail pair is easy to get out of step.",
-          "suggestion": "One module-level mapping of state to (reason, detail) with a default.",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
+          "line": 216,
+          "finding": "SKILL says any refused merge-ready stops the release, but repo_settings_unknown, base_state_unknown and pr_state_unknown say 'run merge-ready again' in detail; the two instructions disagree (fail-safe direction: the agent stops).",
+          "suggestion": null,
           "source": "code-reviewer"
         },
         {
           "severity": "low",
           "category": "correctness",
+          "file": "plugins/shipwright-changelog/tests/golden/scenario_index.py",
+          "line": 71,
+          "finding": "check_unit_tested only sees a skip written in the named test file; a fixture skip (golden/conftest.py warm_uv outside CI) escapes it. In CI warm_uv raises, so not fail-open in CI.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_verify.py",
+          "line": 122,
+          "finding": "fetch_base lacks release_publish._remote's no-prompt protections (credential.interactive=never, NO_PROMPT env, timeout); a GUI credential helper could stall an unattended merge-ready. Pre-existing in on_base, now also on the autonomous path.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
           "file": "plugins/shipwright-changelog/scripts/lib/release_merge.py",
-          "line": 93,
-          "finding": "base_state_unknown drops git's own error text, and the wording is wrong when the fetch succeeded and only the ancestry check failed.",
-          "suggestion": "Word it as 'could not tell whether the base moved' and add git's short, redacted error.",
+          "line": 94,
+          "finding": "Uses private release_publish._USERINFO; fetch_base(prefix='merge') yields trace key 'merge-base' that reads like git merge-base.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/testkit/gh_stub.py",
+          "line": 101,
+          "finding": "Stub settings() coerces non-bool values with bool(), so a scenario writing \"false\" means allowed; real gh returns JSON booleans.",
+          "suggestion": null,
           "source": "code-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-11-28T13:03:05.953922+00:00",
+      "completed_at": "2026-11-28T16:23:35.172107+00:00",
       "disposition": null,
       "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "1a7dd376055a5429c8367cf5f7dbf165476e3762"
+      "reviewer_notes": "Orchestrator 3f-bis, opus, attempt 2 (head 6763f8449, merge-base e3e1540a0). No blocking findings. The autonomous merge path cannot merge something unverified: state checks, HEAD = release or event commit, PR head on host = HEAD, retargeted base refused, unknown gh/git answers refuse, method from settings, head always pinned, moved base refuses, merge-ready never merges itself; token redacted. AC16 exemption (option B) is narrow: map keys pinned to FR-01.09/AC16 only, frozen via approved delta, must go once a scenario or the oracle claims AC16, tied to the pinned --merge line, missing or skipped named tests refuse, promise-list tests must equal the map with the exact covers tag. Five lows, all carried into U7 (none is core-path high; frozen-file wording changes belong with U7's guard and seam work)."
     },
     "doubt": {
       "review_type": "doubt",
@@ -72,50 +98,48 @@
       "findings": [
         {
           "severity": "medium",
-          "category": null,
-          "file": "plugins/shipwright-changelog/scripts/hooks/release_guard.py",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_merge.py (74, 83, 91, 99); scripts/lib/release_verify.py fetch_base",
           "line": null,
-          "finding": "the head is always pinned to the audited commit",
+          "finding": "the line merges the PR merge-ready checked, and the checked base is the base the host merges into",
           "suggestion": null,
           "source": "doubt-reviewer"
         },
         {
           "severity": "low",
-          "category": null,
-          "file": "plugins/shipwright-changelog/scripts/hooks/release_guard_commands.py",
+          "category": "concurrency & ordering",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_merge.py:91-92",
           "line": null,
-          "finding": "the guard parses every gh pr merge form",
+          "finding": "'base not moved' is read from the base just fetched",
           "suggestion": null,
           "source": "doubt-reviewer"
         },
         {
           "severity": "low",
-          "category": null,
-          "file": "plugins/shipwright-changelog/scripts/lib/release_merge.py",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_merge.py:80-82, 91",
           "line": null,
-          "finding": "repo merge settings decide the accepted method",
+          "finding": "a PR retargeted away from the checked base is always refused",
           "suggestion": null,
           "source": "doubt-reviewer"
         },
         {
           "severity": "low",
-          "category": null,
-          "file": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
+          "category": "hidden coupling",
+          "file": "plugins/shipwright-changelog/tests/golden/scenario_index.py:55-73",
           "line": null,
-          "finding": "retryable refusals are retried",
+          "finding": "the AC16 exemption cannot stay green once its tests stop running",
           "suggestion": null,
           "source": "doubt-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-11-28T13:10:57.109073+00:00",
+      "completed_at": "2026-11-28T16:23:35.299293+00:00",
       "disposition": null,
       "recorded_by": "doubt-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
-      "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "9e4dfe2e4022732a8600b3950216f8a60c7fde84"
+      "model_tier": "opus"
     },
     "external_code": {
       "review_type": "external_code",
@@ -203,14 +227,21 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-11-28T13:01:25.335649+00:00",
+      "completed_at": "2026-11-28T16:23:35.029169+00:00",
       "disposition": null,
       "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus",
-      "verdict": "pass",
-      "reviewed_commit": "2d1e678a5131c2ca49084fe05051207bfa35c8fa"
+      "ac_verdicts": [
+        {
+          "ac": "item-1",
+          "verdict": "matches",
+          "diff_location": "plugins/shipwright-changelog/scripts/lib/release_merge.py:83-100",
+          "reason": "Settings pick the method, merge commit first; the line is pinned to the audited head; squash or rebase onto a moved base refuses with base_moved, merges nothing and tells the operator to restart; shown by the e2e tests.",
+          "weakens": false
+        }
+      ]
     },
     "plan_internal": {
       "review_type": "plan_internal",
