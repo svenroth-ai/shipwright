@@ -10,6 +10,7 @@ changing because one artifact's shape changed.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 
 
@@ -52,6 +53,14 @@ class CommitEntry:
     description: str
     date: str
     author: str
+    #: Values of the ``Co-authored-by`` trailers (git matches the key case-insensitively).
+    co_authors: tuple[str, ...] = ()
+
+    @property
+    def is_ai_assisted(self) -> bool:
+        """True when the author or any co-author trailer names Claude (case-insensitive)."""
+        names = (self.author, *(re.sub(r"<[^>]*>", "", c) for c in self.co_authors))
+        return any("claude" in n.lower() for n in names)
 
 
 @dataclass

@@ -90,7 +90,7 @@ def generate(data: ComplianceData) -> str:
         lines.append("")
 
     # AI attribution
-    ai_commits = sum(1 for c in commits if "Claude" in c.author or "claude" in c.author.lower())
+    ai_commits = sum(1 for c in commits if c.is_ai_assisted)
     lines.extend([
         "## AI Attribution",
         "",

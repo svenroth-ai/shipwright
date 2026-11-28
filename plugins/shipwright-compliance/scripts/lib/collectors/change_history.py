@@ -31,11 +31,22 @@ _CONVENTIONAL_RE = re.compile(
 )
 
 
+# NUL separates the fields (git rejects NUL in a commit message, so no subject can shift
+# a field); each record ends with one too, giving exactly five fields per commit. The trailer
+# key is matched case-insensitively by git, which covers both "Co-Authored-By" (Claude Code)
+# and "Co-authored-by" (GitHub squash merges; needs git >= 2.24); unfolded values never contain a newline.
+_LOG_FORMAT = (
+    "--format=%H%x00%s%x00%an%x00%aI%x00"
+    "%(trailers:key=Co-authored-by,valueonly,unfold,separator=%n)%x00"
+)
+_FIELDS = 5
+
+
 def collect_git_history(project_root: Path) -> list[CommitEntry]:
     """Parse git log for conventional commits."""
     try:
         result = subprocess.run(
-            ["git", "log", "--format=%H|%s|%an|%aI", "--no-merges"],
+            ["git", "log", "--no-merges", "--no-show-signature", _LOG_FORMAT],
             capture_output=True,
             text=True,
             cwd=str(project_root),
@@ -49,12 +60,11 @@ def collect_git_history(project_root: Path) -> list[CommitEntry]:
         return []
 
     commits: list[CommitEntry] = []
-    for line in result.stdout.strip().splitlines():
-        parts = line.split("|", 3)
-        if len(parts) < 4:
-            continue
-
-        hash_, subject, author, date = parts
+    fields = result.stdout.split("\x00")
+    for n in range(0, len(fields) - _FIELDS + 1, _FIELDS):
+        hash_, subject, author, date, trailers = fields[n:n + _FIELDS]
+        hash_ = hash_.strip("\r\n")
+        co_authors = tuple(t.strip() for t in trailers.splitlines() if t.strip())
         match = _CONVENTIONAL_RE.match(subject)
         if match:
             commits.append(CommitEntry(
@@ -64,6 +74,7 @@ def collect_git_history(project_root: Path) -> list[CommitEntry]:
                 description=match.group(3),
                 date=date,
                 author=author,
+                co_authors=co_authors,
             ))
         else:
             # Non-conventional commits get type "other"
@@ -74,6 +85,7 @@ def collect_git_history(project_root: Path) -> list[CommitEntry]:
                 description=subject,
                 date=date,
                 author=author,
+                co_authors=co_authors,
             ))
 
     return commits

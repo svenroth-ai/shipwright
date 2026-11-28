@@ -1,0 +1,277 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-28-r1-ai-attribution",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-28T10:24:06.238558+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Using unit/record separators (`%x1d`, `%x1f`) in the git format string is sound and also fixes the existing `|`-in-subject field-shift bug — good catch. However, `%(trailers:key=...)` requires git ≥ 2.32 for the `key=` filter with `valueonly` semantics settling correctly; behavior is subtly broken on older gits (trailer key silently dropped).",
+          "suggestion": "Check the repo's minimum git version or fall back to parsing raw `%(trailers)` output; at minimum add the git version assumption as a comment/test-environment note.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Trailer values are free-form: a co-author can be `Claude <noreply@anthropic.com>` but could also be `claude-3.5-sonnet`, `GitHub Copilot`, or a human whose name contains \"Claude\". Matching \"names Claude, case-insensitive\" may over- or under-count.",
+          "suggestion": "Pin down the matching rule (e.g., case-insensitive substring \"claude\" in name or the anthropic noreply email), and document it. Also confirm the AI-author check still matches the existing author-name heuristic so the human-authored count doesn't regress for repos with Claude authors.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Multiple trailers per commit: the plan uses a separator but `unfold` and multi-line trailer values could still produce stray newlines; also `-z`-less `git log` splits records on newlines only.",
+          "suggestion": "Ensure the record separator scheme keeps each commit on one log line (e.g., strip CR/LF rather than `strip()` as noted, and test a commit with two co-author trailers and a subject containing `\\n`-adjacent characters like pipes and unicode separators).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "CommitEntry grows a defaulted field; positional constructors remain valid per the plan's own risk note. Fine — but if CommitEntry is serialized anywhere (caching, JSON report payloads), a new field may break older deserialization.",
+          "suggestion": "Verify CommitEntry isn't persisted/loaded; if it is, make deserialization tolerant of the missing field.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Empty/absent trailer: `%(trailers:key=Co-authored-by,...)` yields an empty string, so splitting on the separator must skip empty segments, or you'll get a phantom empty co-author (harmless for Claude matching, but noisy for equality tests).",
+          "suggestion": "Filter falsy values when splitting.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Reports already generated with the wrong counts (change-history.md showing 0/1868) — does regeneration happen automatically or is there a stale-cache/report regeneration step not covered by the plan?",
+          "suggestion": "Confirm the collector/report regeneration is triggered (spec's \"Done when\" mentions regeneration); add it to acceptance criteria.",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-28T10:08:40.060993+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] ## Review Findings\n\n**Category: approach — Severity: low**\n**Finding:** Using unit/record separators (`%x1d`, `%x1f`) in the git format string is sound and also fixes the existing `|`-in-subject field-shift bug — good catch. However, `%(trailers:key=...)` requires git ≥ 2.32 for the `key=` filter with `valueonly` semantics settling correctly; behavior is subtly broken on older gits (trailer key silently dropped).\n**Suggestion:** Check the repo's minimum git version or fall back to parsing raw `%(trailers)` output; at minimum add the git version assumption as a comment/test-environment note.\n\n**Category: edge-case — Severity: medium**\n**Finding:** Trailer values are free-form: a co-author can be `Claude <noreply@anthropic.com>` but could also be `claude-3.5-sonnet`, `GitHub Copilot`, or a human whose name contains \"Claude\". Matching \"names Claude, case-insensitive\" may over- or under-count.\n**Suggestion:** Pin down the matching rule (e.g., case-insensitive substring \"claude\" in name or the anthropic noreply email), and document it. Also confirm the AI-author check still matches the existing author-name heuristic so the human-authored count doesn't regress for repos with Claude *authors*.\n\n**Category: edge-case — Severity: low**\n**Finding:** Multiple trailers per commit: the plan uses a separator but `unfold` and multi-line trailer values could still produce stray newlines; also `-z`-less `git log` splits records on newlines only.\n**Suggestion:** Ensure the record separator scheme keeps each commit on one log line (e.g., strip CR/LF rather than `strip()` as noted, and test a commit with two co-author trailers and a subject containing `\\n`-adjacent characters like pipes and unicode separators).\n\n**Category: risk — Severity: low**\n**Finding:** CommitEntry grows a defaulted field; positional constructors remain valid per the plan's own risk note. Fine — but if CommitEntry is serialized anywhere (caching, JSON report payloads), a new field may break older des […truncated]\n\n[openai] 1. **Category** edge-case · **Severity** medium  \n   **Finding** The proposed separators can collide with commit text. Python’s `splitlines()` also treats `\\x1d` and `\\x1e` as line boundaries, so retaining line-based parsing could corrupt records for commits with multiple co-authors.  \n   **Suggestion** Use NUL framing for the outer fields and records, and split trailer values explicitly. Add a real Git fixture with a pipe in the subject and multiple co-authors, with Claude listed after a human.\n\n2. **Category** approach · **Severity** medium  \n   **Finding** The plan leaves the Claude identity match underspecified. Searching the entire trailer value can count a human whose email contains `claude`, while changing the existing author predicate could alter historical counts.  \n   **Suggestion** Preserve the current author predicate and match the co-author’s display name case-insensitively. Cover a Claude trailer with an email, an unrelated co-author, and an AI author with no trailers. Verify that a commit matching both paths contributes one to the total.\n\n3. **Category** dependency · **Severity** low  \n   **Finding** The mini-plan stops at updating `generate()`, while the specification also requires a regenerated compliance report.  \n   **Suggestion** Run the normal report-generation command and verify that the resulting AI-assisted count matches the qualifying commits in the report’s scope. Replace the `TBD` acceptance criterion with the fixture expectations and this report check.\n\nReading Git trailers in the collector and centralizing classification on `CommitEntry` is proportionate to the change. Revise the parsing and matching details before implementation. Shell execution was blocked, so this assessment is based on the supplied plan.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      },
+      "model_tier": "opus"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-compliance/tests/test_change_history.py",
+          "line": null,
+          "finding": "git fixture not hermetic (GIT_* env leak); fixed with hook_env + scrub_git_env",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-compliance/scripts/lib/collectors/change_history.py",
+          "line": null,
+          "finding": "log.showSignature would glue gpg lines to hash; fixed with --no-show-signature",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-compliance/scripts/lib/collectors/change_history.py",
+          "line": null,
+          "finding": "trailer format needs git>=2.24; documented",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-compliance/tests/test_change_history.py",
+          "line": null,
+          "finding": "imports at module top; fixed",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-28T10:12:53.598352+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "af9a0c475cf879d726dde1be1e375918fb74414d"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-28T10:12:54.155631+00:00",
+      "disposition": "closed by reason_code diff-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "diff-below-threshold"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "plugins/shipwright-compliance/scripts/lib/collectors/change_history.py — `_LOG_FORMAT",
+          "line": null,
+          "finding": "%(trailers:key=...,valueonly,separator=...)` requires git ≥ 2.22–2.27. On older git, the command fails and the existing `except`/return-[] path silently yields zero commits (worse than before, where the plain format always worked).",
+          "suggestion": "Acceptable given the repo's git is modern; optionally detect git version or let the failure surface with a warning log instead of silently returning `[]`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "plugins/shipwright-compliance/tests/test_change_history.py — `TestCollectGitHistoryTrailers.test_trailers_read_case_insensitively",
+          "line": null,
+          "finding": "The end-to-end test never asserts the parsed `co_authors` values themselves (e.g. that commit 3 has two co-authors, one of them Ada). A parser that dropped all but the first trailer would still pass.",
+          "suggestion": "Add an assertion on `co_authors` contents, e.g. `len(commits[3].co_authors) == 2`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "plugins/shipwright-compliance/scripts/lib/collectors/change_history.py — `is_ai_assisted` / trailer matching",
+          "line": null,
+          "finding": "A trailer value like \"Claire Claude-hater <x@y.z>\" or an author whose email contains \"claude\" (e.g. `bob@claude.dev`) counts as AI-assisted. This matches the pre-existing author-name heuristic the spec asks to extend, so it's within spec, but worth knowing.",
+          "suggestion": "If precision matters later, match on the name token or the noreply@anthropic.com address; not required by this spec.  No security issues (the git plumbing is fixed-format, no injection), no breaking regressions (`co_authors` defaults to `()`, report callers unchanged), and both happy and negative paths are tested. The remaining AC — \"regenerated shipwright report no longer shows 0 AI-assisted\" — is an operational step outside the diff, but nothing in the diff would block it.  Overall assessment: ship-as-is; findings are refinements only.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "line — `plugins/shipwright-compliance/scripts/lib/change_history.py",
+          "line": 93,
+          "finding": "The diff updates the generator but omits the regenerated `.shipwright/compliance/change-history.md`. The scope explicitly requires the Shipwright report to show a nonzero AI-assisted count, and the fixture tests only establish that result for synthetic history.",
+          "suggestion": "Regenerate the report against Shipwright’s history and include the updated artifact. Verify that the AI-assisted count is nonzero.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "line — `plugins/shipwright-compliance/scripts/lib/collectors/change_history.py",
+          "line": 62,
+          "finding": "Git commit subjects can contain the control bytes used as delimiters. A subject containing `\\x1f` produces six fields and raises `ValueError` at unpacking, aborting the entire collection. A subject containing `\\x1e` splits the record and can cause the commit to be silently omitted.",
+          "suggestion": "Use NUL-delimited fields and records with fixed field counts. Add a fixture commit containing the current delimiter bytes and assert that collection preserves it and its attribution.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "spec",
+          "file": "line — `plugins/shipwright-compliance/scripts/lib/collectors/_types.py",
+          "line": 61,
+          "finding": "The classifier searches the entire trailer value, including the email address. A human co-author such as `Ada <ada@claude.example>` counts as AI-assisted even though the co-author’s name does not contain Claude.",
+          "suggestion": "Match against the co-author’s display name after removing any angle-bracketed email address. Add a test for a human name with `claude` only in the email.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "line — `plugins/shipwright-compliance/tests/test_change_history.py",
+          "line": 121,
+          "finding": "The aggregate assertion checks how many commits were classified as AI-assisted without checking which ones. It can pass if a required trailer variant is missed and the plain human commit is incorrectly counted.",
+          "suggestion": "Assert attribution by commit subject for all four fixtures and verify that the two co-authors on the last fixture are parsed as separate values.  Ship-with-fixes. The approach fits the specification, but delimiter collisions can break collection, and the regenerated Shipwright report is still missing.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-28T10:11:11.663910+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] The diff correctly implements the spec: the collector now reads Co-authored-by trailers via `%(trailers:key=...)`, `CommitEntry` gains `co_authors` and an `is_ai_assisted` property that checks author OR co-authors case-insensitively, and the report generator delegates to it. The record-separator rewrite also fixes a latent bug (subjects containing `|` shifting fields) and the tests exercise both the pure logic and a real git repo with both trailer casings.\n\nFindings:\n\n- Category: edge-case\n  Severity: low\n  File: plugins/shipwright-compliance/scripts/lib/collectors/change_history.py — `_LOG_FORMAT`\n  Finding: `%(trailers:key=...,valueonly,separator=...)` requires git ≥ 2.22–2.27. On older git, the command fails and the existing `except`/return-[] path silently yields zero commits (worse than before, where the plain format always worked).\n  Suggestion: Acceptable given the repo's git is modern; optionally detect git version or let the failure surface with a warning log instead of silently returning `[]`.\n\n- Category: test\n  Severity: low\n  File: plugins/shipwright-compliance/tests/test_change_history.py — `TestCollectGitHistoryTrailers.test_trailers_read_case_insensitively`\n  Finding: The end-to-end test never asserts the parsed `co_authors` values themselves (e.g. that commit 3 has two co-authors, one of them Ada). A parser that dropped all but the first trailer would still pass.\n  Suggestion: Add an assertion on `co_authors` contents, e.g. `len(commits[3].co_authors) == 2`.\n\n- Category: edge-case\n  Severity: low\n  File: plugins/shipwright-compliance/scripts/lib/collectors/change_history.py — `is_ai_assisted` / trailer matching\n  Finding: A trailer value like \"Claire Claude-hater <x@y.z>\" or an author whose *email* contains \"claude\" (e.g. `bob@claude.dev`) counts as AI-assisted. This matches the pre-existing author-name heuristic the spec asks to extend, so it's within spec, but worth knowing.\n  Suggestion: If precision matters later, match on the name  […truncated]\n\n[openai] - Category: spec\n- Severity: medium\n- File:line — `plugins/shipwright-compliance/scripts/lib/change_history.py:93`\n- Finding: The diff updates the generator but omits the regenerated `.shipwright/compliance/change-history.md`. The scope explicitly requires the Shipwright report to show a nonzero AI-assisted count, and the fixture tests only establish that result for synthetic history.\n- Suggestion: Regenerate the report against Shipwright’s history and include the updated artifact. Verify that the AI-assisted count is nonzero.\n\n- Category: bug\n- Severity: medium\n- File:line — `plugins/shipwright-compliance/scripts/lib/collectors/change_history.py:62`\n- Finding: Git commit subjects can contain the control bytes used as delimiters. A subject containing `\\x1f` produces six fields and raises `ValueError` at unpacking, aborting the entire collection. A subject containing `\\x1e` splits the record and can cause the commit to be silently omitted.\n- Suggestion: Use NUL-delimited fields and records with fixed field counts. Add a fixture commit containing the current delimiter bytes and assert that collection preserves it and its attribution.\n\n- Category: spec\n- Severity: low\n- File:line — `plugins/shipwright-compliance/scripts/lib/collectors/_types.py:61`\n- Finding: The classifier searches the entire trailer value, including the email address. A human co-author such as `Ada <ada@claude.example>` counts as AI-assisted even though the co-author’s name does not contain Claude.\n- Suggestion: Match against the co-author’s display name after removing any angle-bracketed email address. Add a test for a human name with `claude` only in the email.\n\n- Category: test\n- Severity: low\n- File:line — `plugins/shipwright-compliance/tests/test_change_history.py:121`\n- Finding: The aggregate assertion checks how many commits were classified as AI-assisted without checking which ones. It can pass if a required trailer variant is missed and the plain human commit is incorrectly coun […truncated]",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      },
+      "model_tier": "opus"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-28T10:11:10.868733+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "0464fd6b32254528d18f1fdb74a258a955be06d1"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-28T10:08:40.522864+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-28T10:08:40.952442+00:00",
+      "disposition": "closed by reason_code complexity-below-threshold",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "reason_code": "complexity-below-threshold"
+    }
+  }
+}
