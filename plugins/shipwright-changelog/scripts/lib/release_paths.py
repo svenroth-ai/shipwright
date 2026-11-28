@@ -32,7 +32,11 @@ def run_config_path(shared: Path, project_root: Path) -> Path:
         spec = importlib.util.spec_from_file_location(name, Path(shared) / "scripts" / "lib" / f"{name}.py")
         module = importlib.util.module_from_spec(spec)
         sys.modules[name] = module  # register before exec, or its dataclasses cannot resolve their own module
-        spec.loader.exec_module(module)
+        try:
+            spec.loader.exec_module(module)
+        except BaseException:  # e.g. a sibling missing from a half-synced cache: leave no half-built module
+            sys.modules.pop(name, None)
+            raise
     return module.path("run_config", project_root)
 
 

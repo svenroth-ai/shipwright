@@ -1,0 +1,8 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"AC1-AC7 met: state table for every moving key with real files, pointer fixture rows, error contract, one layout module per tree, dead check_file_size fallback removed, real Stop hook integration (negative control fails on the old hook), full F0 suite."},
+{"name":"Error Handling","verdict":"pass","note":"LayoutError subclasses Exception (not OSError/ValueError/RuntimeError); unreadable files count as not a stub; a sibling load failure is an ImportError with no half module left; the Stop hook reports the error instead of swallowing it."},
+{"name":"Security Basics","verdict":"pass","note":"The stub text is never followed (fixed registry target, tested); reads are bounded (2 KiB head, 64 KiB cap) for untrusted repos read by adopt/grade; only regular files are read."},
+{"name":"Code Quality","verdict":"pass","note":"Resolver at its 300-line cap with the lookup in a 115-line sibling; Stop hook line count unchanged; check_file_size one line shorter; ruff clean."},
+{"name":"Test Coverage","verdict":"pass","note":"221 layout tests plus 8 integration cases; read-size counting; widened invariant guard; eight copy-the-resolver tests now copy the siblings."},
+{"name":"Scope","verdict":"pass","note":"Frozen constants, indirect joins, audit_config/dev_server flips and carriers are R1c-2; dual lock decided again before R3; hook matrix items recorded for R1e (BRIEF 12 item 11)."}
+]}

@@ -1,0 +1,360 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-28-r1c1-layout-lookup",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-28T07:56:39.107198+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Add an explicit test that all seven writers acquire in the same order (e.g., hold the new lock, assert a writer blocks on root-lock acquisition first — proves order, not just mutual exclusion), and add a comment in `file_locks` that ordering is a caller contract.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Confirm readers were already unlocked pre-change; if so, note it as out of scope. If any reader holds a lock today, verify it uses `lock_paths` not `lock_for` after this change.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Have writers re-run `locate()` inside the dual lock before writing, or state explicitly that divergence created by unlocked legacy writers is R3's problem.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Compare resolved (`Path.resolve()`) paths, or pass an explicit flag from callers instead of sniffing the path.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Add a checklist item: enumerate hook entry points catching broad exceptions and confirm the error message (not a traceback) is what the user sees.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "Confirm the allowlist location and whether production behavior changes.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Add the symlinked-tree alias to the AC4 test matrix.",
+          "suggestion": null,
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-28T07:56:40.255448+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] ## Review Findings\n\n**Approach — overall:** The plan is sound. The state table is complete and unambiguous, the dual-lock transition is the right mechanism for mixed-version readers, and deferring constant routing to R1c-2 keeps this PR reviewable. Findings below are refinements, mostly edge cases.\n\n1. **Category: risk — Severity: high — Dual-lock acquisition is not atomic.** A writer acquires the legacy root lock, then the new lock. Between acquisitions, another process (e.g., an updated writer that already took both, or a code path reading without locks) can mutate the file. More importantly, two writers could deadlock if any writer ever takes them in reverse order. The spec mandates a fixed order for updated writers, but AC3 only proves \"waits for each lock,\" not global ordering consistency.\n   **Suggestion:** Add an explicit test that all seven writers acquire in the same order (e.g., hold the new lock, assert a writer blocks on root-lock acquisition first — proves order, not just mutual exclusion), and add a comment in `file_locks` that ordering is a caller contract.\n\n2. **Category: edge-case — Severity: medium — Unlocked readers during dual-layout window.** Readers going through `path()` (e.g., `check_file_size`, Stop hook evidence reads) don't hold locks. If a writer creates the new-place file while a reader is mid-`locate()` (root absent → reads new → fine), or worse, a reader sees \"both copies, byte-identical\" resolve to new while a writer updates one copy, torn reads are possible. This is pre-existing (single-lock era had the same), but the dual-path lookup widens the window.\n   **Suggestion:** Confirm readers were already unlocked pre-change; if so, note it as out of scope. If any reader holds a lock today, verify it uses `lock_paths` not `lock_for` after this change.\n\n3. **Category: edge-case — Severity: medium — Byte-identical check is time-of-check.** `locate()` compares copies, returns the new path, and the writer later writes. If the roo […truncated]\n\n[openai] 1. **Category** risk · **Severity** high  \n   **Finding** The plan adds dual locking without requiring writers to resolve the data path and perform the full read–modify–write under both locks. A writer can select the legacy path, wait for a lock, and then write to that path after another lock holder changes the layout. The explicit two-lock implementation in `_PhaseTasksLock` also needs to release the first lock if acquiring the second fails.  \n   **Suggestion** Require writers to acquire both locks before resolving or reading the project file, and hold both through the write. Use the shared `ExitStack` acquisition path in `_PhaseTasksLock`, adapting it to the existing lock primitive if needed. Test that a second-lock timeout releases the first lock and that a waiting writer resolves the path after acquisition.\n\n2. **Category** edge-case · **Severity** high  \n   **Finding** `mint_ac_ids` identifies the project registry by comparing the explicit path with the resolver’s current answer. Once the registry moves, an explicit legacy path fails that comparison and can enter the custom-file branch. That can recreate the legacy registry and cause subsequent lookups to fail with `both_copies`.  \n   **Suggestion** Recognize both registered project locations, including equivalent path spellings, as project-owned. Acquire both locks and resolve the active path under them. Route an explicit inactive project location to the active path or reject it with a clear error. Preserve `lock_beside` for genuinely independent registries.\n\n3. **Category** dependency · **Severity** medium  \n   **Finding** The new lock directory is required on the first write in an unmigrated checkout, while the plan does not establish who creates it. The existing lock helper may have only been exercised with an existing parent directory.  \n   **Suggestion** Verify that lock acquisition creates `.shipwright/locks/` safely when needed, and add that behavior if missing. Exercise a real writer again […truncated]",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/shipwright_paths.py",
+          "line": 268,
+          "finding": "except BaseException turns KeyboardInterrupt/SystemExit during sibling load into ImportError, which guarded hook imports swallow",
+          "suggestion": "catch Exception only",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/hooks/check_file_size.py",
+          "line": 78,
+          "finding": "LayoutError from path() is swallowed by the top-level except Exception -> exit 0; the size check is skipped silently on two copies",
+          "suggestion": "report on stderr before exit 0, or record it for R1e",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/shipwright_layout.py",
+          "line": 215,
+          "finding": "path() now calls Path.is_file(), which on Py3.11 re-raises EACCES",
+          "suggestion": "use os.path.isfile",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_handoff_stop_reads_new_layout.py",
+          "line": 613,
+          "finding": "assertion also passes when LayoutError reaches the outer 'generation skipped' handler",
+          "suggestion": "also assert 'generated at' in err and 'generation skipped' not in err",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_shipwright_layout.py",
+          "line": 888,
+          "finding": "'left' is collected but not asserted",
+          "suggestion": "assert res == {'raised':'ImportError','left':False}",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/scripts/lib/shipwright_paths.py",
+          "line": 274,
+          "finding": "12 hooks without a fallback now also need both siblings synced",
+          "suggestion": "record it in the R1e hook matrix",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-28T07:56:40.921552+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "2a0dcadc517f2d075a36d921c16b032104b0ad0b",
+      "reviewer_notes": "No high or medium finding. Fixes: 1, 3, 4, 5 applied; 2 and 6 recorded for R1e (BRIEF 12 item 11e)."
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_paths.py",
+          "line": null,
+          "finding": "Claim under doubt: a half-copied cache surfaces as a clean ImportError — hand loader registers before exec and never pops on failure",
+          "suggestion": "pop on failure - FIXED",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "shared/scripts/lib/shipwright_layout.py",
+          "line": null,
+          "finding": "Claim under doubt: a large root config is judged on one 2 KiB read — blank-led 2 KiB head read the whole file",
+          "suggestion": "blank head = not a stub, follow-on read capped at 64 KiB - FIXED",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling & blast radius",
+          "file": "shared/tests/test_shipwright_layout.py",
+          "line": null,
+          "finding": "Claim under doubt: the invariant test pins the R1c-1-alone invariant — only *.py scanned; new_rel callers unchecked",
+          "suggestion": "every file type under plugins/shared/scripts/.github and no new-path helper callers - FIXED",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "concurrency & ordering",
+          "file": "shared/scripts/lib/shipwright_layout.py",
+          "line": null,
+          "finding": "Claim under doubt: path() is still a pure name join — Windows sharing violations on concurrent replace",
+          "suggestion": "resolved by atomic_write retry and OSError -> not_stub; R3 transient-misread note in BRIEF 12.11e",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling & blast radius",
+          "file": "plugins/shipwright-adopt/scripts/lib/nested_project_detector.py",
+          "line": null,
+          "finding": "Claim under doubt: probes over foreign trees stay probes — after R3 a child with a stub or two copies aborts the scan",
+          "suggestion": "R1e caller matrix - RECORDED",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "boundary & contract",
+          "file": "shared/scripts/lib/shipwright_layout.py",
+          "line": null,
+          "finding": "Claim under doubt: LayoutError behaves like an ordinary exception — not picklable",
+          "suggestion": "nothing pickles it today - ACCEPTED",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-28T07:56:41.175807+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "2a0dcadc517f2d075a36d921c16b032104b0ad0b"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "test / spec",
+          "file": "shared/tests/test_shipwright_layout.py — `test_no_production_code_writes_the_new_place_before_r3",
+          "line": null,
+          "finding": "The test greps production files for the string `shipwright/config` and allows only `shipwright_paths.py` and `shipwright_pointer.py`, but the NEW production file `shared/scripts/lib/shipwright_layout.py` contains the literal string several times (module docstring: \"the move into\\n+``.shipwright/config/`` did not finish\", and the `incomplete_migration` fix text). Git pathspec `shared/scripts/.py` matches `lib/` files (git's `` crosses `/`), so the grep hits `shared/scripts/lib/shipwright_layout.py`, which is neither under `/tests/` nor in `allowed` — the assertion `== []` fails on this very diff. This also exposes an AC3 ambiguity: the AC says \"no production file names `.shipwright/config` outside the resolver and the stub renderer\", and `shipwright_layout.py` is a production file that names it.",
+          "suggestion": "Add `shared/scripts/lib/shipwright_layout.py` to `allowed` (treating the layout module as part of the resolver), or change the grep to anchor on writes/joins rather than any textual mention. Run the test to confirm.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/shipwright_layout.py — `locate()",
+          "line": null,
+          "finding": "new_there`/`old_there` are `Path.exists()`, so a directory (or FIFO/symlink loop) at the new path satisfies `new_there`, `_verdict` returns `not_stub` (it guards with `is_file()`), and `path()` returns the directory path as the file's location even when a valid root file exists. `test_a_directory_in_the_new_place_is_never_read_as_a_stub` even pins this. A writer calling `path()` then writing will get `IsADirectoryError` from the write, not a `LayoutError`, and a reader will get a confusing parse error. `exists()`/`is_file()` TOCTOU is also possible but low-risk.",
+          "suggestion": "Either treat a non-regular file at the new path as \"not there\" (fall back to root) or raise a `LayoutError`; document whichever the spec intends, since \"only regular files are read\" currently only applies to stub classification, not presence.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "regression",
+          "file": "shared/scripts/hooks/check_file_size.py — `_limit_for",
+          "line": null,
+          "finding": "_sp.path(\"build_config\", cwd)` can raise `LayoutError` (both_copies / stub cases). Unlike the previous `cwd / rel(...)` construction, this is a new exception path out of `_limit_for`; nothing in the diff shows `main()` handling it, and the spec deliberately makes `LayoutError` not caught by the usual OSError/ValueError handlers. Pre-R3 this is unreachable (no repo has the new-place copy), but post-R3 the hook will hard-crash on divergent copies unless a handler is added in R1e/R3.",
+          "suggestion": "Confirm the hook matrix work (R1e) covers this, or add a small `except Exception` around the per-file limit computation that reports once and falls back to the baseline limit.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_shipwright_layout.py — `test_a_writer_and_a_reader_meet_in_both_layouts",
+          "line": null,
+          "finding": "assert not (root / sp.legacy_rel(\"test_config\")).exists() if migrated else True` parses as `(assert A) if migrated else (assert True)` — in the unmigrated branch the final statement asserts `True`, i.e. nothing; it also never checks that the migrated write went to the new path explicitly beyond the read round-trip. The core write-then-read loop is fine, so this is a weak assertion, not a false pass, but the AC1 \"round trip in both layouts\" check is thinner than it looks.",
+          "suggestion": "Replace with explicit asserts per branch: migrated → wrote to new, legacy absent; unmigrated → wrote to root, new absent.  Otherwise the state table, ordering (stub-at-new → root verdict → both-copies), sibling loading (CRC-named, registered-before-exec, ImportError on missing), `LayoutError` subclassing, the dead-fallback removal with xfail cleanup, and the seven test-tree sibling copies all match the spec. AC1–AC5 and AC7 are implemented; AC6 has real integration tests with no patching.  Overall: one concrete failing test (the R3-pinning grep omits `shipwright_layout.py`) plus minor edge cases — ship-with-fixes.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "shared/scripts/lib/shipwright_layout.py",
+          "line": 52,
+          "finding": "AC3’s production-path guard will flag the new layout module itself. The recovery message contains `shipwright/config`, which the guard searches for, and the module is outside the guard’s two-file allowlist. This also prevents AC7’s full-suite requirement from being met.",
+          "suggestion": "Build the recovery message from the resolved paths already passed to `LayoutError`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/lib/shipwright_layout.py",
+          "line": 118,
+          "finding": "The duplicate-copy check reads both paths without verifying that they are regular files. On POSIX, if both paths are FIFOs, their reported sizes match and `read_bytes()` can block waiting for a writer. The lookup hangs before it can raise `both_copies`.",
+          "suggestion": "Remove the content comparison. Both copies require the same error and recovery step regardless of their contents.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/lib/shipwright_layout.py",
+          "line": 83,
+          "finding": "A valid single-line config larger than 2 KiB triggers a full-file read because the prefix has no newline. This violates the specified bounded read for ordinary configs. The test named `test_a_large_root_config_is_judged_on_one_short_read` checks only the returned path, so it passes even when the entire file is read.",
+          "suggestion": "Make the bounded prefix decision consistent with the shared recognizer’s signature rules, and assert the bytes read for a large single-line config.  Ship-with-fixes. The lookup structure fits the specification, but the guard failure and file-read defects need correction before merge. This was a static review of the supplied diff. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-28T07:56:41.421706+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] - Category: test / spec\n- Severity: high\n- File: shared/tests/test_shipwright_layout.py — `test_no_production_code_writes_the_new_place_before_r3`\n- Finding: The test greps production files for the string `shipwright/config` and allows only `shipwright_paths.py` and `shipwright_pointer.py`, but the NEW production file `shared/scripts/lib/shipwright_layout.py` contains the literal string several times (module docstring: \"the move into\\n+``.shipwright/config/`` did not finish\", and the `incomplete_migration` fix text). Git pathspec `shared/scripts/*.py` matches `lib/` files (git's `*` crosses `/`), so the grep hits `shared/scripts/lib/shipwright_layout.py`, which is neither under `/tests/` nor in `allowed` — the assertion `== []` fails on this very diff. This also exposes an AC3 ambiguity: the AC says \"no production file names `.shipwright/config` outside the resolver and the stub renderer\", and `shipwright_layout.py` is a production file that names it.\n- Suggestion: Add `shared/scripts/lib/shipwright_layout.py` to `allowed` (treating the layout module as part of the resolver), or change the grep to anchor on writes/joins rather than any textual mention. Run the test to confirm.\n\n- Category: edge-case\n- Severity: low\n- File: shared/scripts/lib/shipwright_layout.py — `locate()`\n- Finding: `new_there`/`old_there` are `Path.exists()`, so a **directory** (or FIFO/symlink loop) at the new path satisfies `new_there`, `_verdict` returns `not_stub` (it guards with `is_file()`), and `path()` returns the directory path as the file's location even when a valid root file exists. `test_a_directory_in_the_new_place_is_never_read_as_a_stub` even pins this. A writer calling `path()` then writing will get `IsADirectoryError` from the write, not a `LayoutError`, and a reader will get a confusing parse error. `exists()`/`is_file()` TOCTOU is also possible but low-risk.\n- Suggestion: Either treat a non-regular file at the new path as \"not there\" (fall back to root) or raise  […truncated]\n\n[openai] - **Category:** spec  \n  **Severity:** high  \n  **File:line:** `shared/scripts/lib/shipwright_layout.py:52`  \n  **Finding:** AC3’s production-path guard will flag the new layout module itself. The recovery message contains `shipwright/config`, which the guard searches for, and the module is outside the guard’s two-file allowlist. This also prevents AC7’s full-suite requirement from being met.  \n  **Suggestion:** Build the recovery message from the resolved paths already passed to `LayoutError`.\n\n- **Category:** bug  \n  **Severity:** medium  \n  **File:line:** `shared/scripts/lib/shipwright_layout.py:118`  \n  **Finding:** The duplicate-copy check reads both paths without verifying that they are regular files. On POSIX, if both paths are FIFOs, their reported sizes match and `read_bytes()` can block waiting for a writer. The lookup hangs before it can raise `both_copies`.  \n  **Suggestion:** Remove the content comparison. Both copies require the same error and recovery step regardless of their contents.\n\n- **Category:** spec  \n  **Severity:** medium  \n  **File:line:** `shared/scripts/lib/shipwright_layout.py:83`  \n  **Finding:** A valid single-line config larger than 2 KiB triggers a full-file read because the prefix has no newline. This violates the specified bounded read for ordinary configs. The test named `test_a_large_root_config_is_judged_on_one_short_read` checks only the returned path, so it passes even when the entire file is read.  \n  **Suggestion:** Make the bounded prefix decision consistent with the shared recognizer’s signature rules, and assert the bytes read for a large single-line config.\n\nShip-with-fixes. The lookup structure fits the specification, but the guard failure and file-read defects need correction before merge. This was a static review of the supplied diff.\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-28T07:56:40.660101+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "2a0dcadc517f2d075a36d921c16b032104b0ad0b"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-28T07:56:39.604849+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-28T07:56:39.988433+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

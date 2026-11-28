@@ -56,6 +56,7 @@ _GIT_ENV = {
 #: This list is hand-maintained, and this test failing loudly IS its drift guard.
 _COMBINER_FILES = (
     "scripts/lib/atomic_write.py", "scripts/lib/shipwright_paths.py",
+    "scripts/lib/shipwright_layout.py", "scripts/lib/shipwright_pointer.py",
     "scripts/lib/durable_publish.py",
     "scripts/lib/diff_coverage_gate.py",
     "scripts/tools/measure_diff_coverage.py",

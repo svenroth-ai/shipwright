@@ -1,0 +1,1 @@
+Shipwright now looks for its project files in .shipwright/config/ first and at the project root second, and stops with a clear message when both places hold a copy or a move into the new folder did not finish (no files move yet)

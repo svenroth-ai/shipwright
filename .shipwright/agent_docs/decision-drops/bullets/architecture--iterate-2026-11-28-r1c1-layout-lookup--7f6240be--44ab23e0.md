@@ -1,0 +1,1 @@
+- **iterate-2026-11-28-r1c1-layout-lookup** (2026-11-28): Component — shipwright_paths.path() delegates to shipwright_layout.locate (new-then-old lookup, LayoutError on a broken layout); siblings load by file, one module per tree. → decision_log (ADR via Run-ID: iterate-2026-11-28-r1c1-layout-lookup)

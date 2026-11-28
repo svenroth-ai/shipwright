@@ -1,0 +1,147 @@
+{
+  "run_id": "iterate-2026-11-28-r1c1-layout-lookup",
+  "date": "2026-11-28T08:16:24.109160Z",
+  "event_at": "2026-11-28T08:15:59.266544+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "prior_source": "keyword",
+  "branch": "iterate/r1c1-layout-lookup",
+  "spec": ".shipwright/planning/iterate/2026-11-28-r1c1-layout-lookup.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-11-28-r1c1-layout-lookup",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "AC1 state table rows for every moving key (neither / root only / new only)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_shipwright_layout.py::test_path_follows_the_file PASSED"
+      },
+      {
+        "behavior": "AC1 two regular copies are a loud error, identical copies included",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_shipwright_layout.py::test_two_copies_are_a_loud_error_even_when_identical PASSED"
+      },
+      {
+        "behavior": "AC1 keys that do not move ignore a new-place copy",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_shipwright_layout.py::test_files_that_do_not_move_ignore_a_new_place_copy PASSED"
+      },
+      {
+        "behavior": "AC1 only regular files count as a copy (directory / non-file)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_shipwright_layout.py::test_a_directory_or_other_non_file_is_no_copy PASSED"
+      },
+      {
+        "behavior": "AC1 main_path and json_path_or_none use the lookup",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_shipwright_layout.py::test_main_path_and_json_path_or_none_use_the_lookup PASSED"
+      },
+      {
+        "behavior": "AC1 a writer and a reader meet in both layouts (round trip)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_shipwright_layout.py::test_a_writer_and_a_reader_meet_in_both_layouts PASSED"
+      },
+      {
+        "behavior": "AC2 root run_config per shared pointer fixture row x new copy present/absent",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_shipwright_layout.py::test_root_run_config_per_shared_fixture_row PASSED"
+      },
+      {
+        "behavior": "AC2 a stub at the new path is never config, for every key",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_shipwright_layout.py::test_a_stub_at_the_new_path_is_never_config PASSED"
+      },
+      {
+        "behavior": "AC2 incomplete migration names the missing copy and the recovery",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_shipwright_layout.py::test_incomplete_migration_names_the_missing_copy_and_the_recovery PASSED"
+      },
+      {
+        "behavior": "AC2 a stub on another key is ordinary content",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_shipwright_layout.py::test_a_stub_on_another_key_is_ordinary_content PASSED"
+      },
+      {
+        "behavior": "AC2 the stub text is never followed",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_shipwright_layout.py::test_the_stub_text_is_never_followed PASSED"
+      },
+      {
+        "behavior": "large root config judged on one bounded read (three shapes)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_shipwright_layout.py::test_a_large_root_config_is_judged_on_one_short_read PASSED"
+      },
+      {
+        "behavior": "AC3 LayoutError is not caught as missing file, bad JSON or lock timeout",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_shipwright_layout.py::test_layout_error_is_not_caught_as_missing_file_bad_json_or_lock_timeout PASSED"
+      },
+      {
+        "behavior": "AC3 R1c-1 alone: no production file names the new folder or asks for the new paths",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_shipwright_layout.py::test_no_production_code_writes_the_new_place_before_r3 PASSED"
+      },
+      {
+        "behavior": "AC4 every alias shares one layout module, another tree its own",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_shipwright_layout.py::test_every_alias_shares_one_layout_module_and_another_tree_has_its_own PASSED"
+      },
+      {
+        "behavior": "AC4 a missing sibling is an ImportError and leaves no half-built resolver",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_shipwright_layout.py::test_a_missing_sibling_is_an_import_error_the_guarded_hooks_catch PASSED"
+      },
+      {
+        "behavior": "AC5 check_file_size dead fallback removed; hooks with a fallback import with the resolver hidden",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_shipwright_paths_fallbacks.py::test_every_hook_with_a_fallback_imports_with_the_resolver_hidden PASSED"
+      },
+      {
+        "behavior": "AC6 Stop hook (real main(), real resolver and lookup) reads phase evidence from .shipwright/config/",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "shared/tests/test_handoff_stop_reads_new_layout.py::test_the_hook_reads_phase_evidence_from_the_new_place PASSED (fails on the pre-change hook)"
+      },
+      {
+        "behavior": "AC6 Stop hook reports two copies on stderr from the phase-completion block instead of swallowing them",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "shared/tests/test_handoff_stop_reads_new_layout.py::test_two_copies_stop_the_detector_and_are_reported PASSED (fails on the pre-change hook)"
+      },
+      {
+        "behavior": "AC7 unmigrated repo resolves exactly as before",
+        "disposition": "tested",
+        "evidence": "full F0 suite, 18 units GREEN (28077 tests, 0 failed)"
+      }
+    ],
+    "counts": {
+      "testable": 20,
+      "tested": 20,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 7,
+      "covered_acs": 7
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run pytest -p no:cacheprovider -q shared/tests/test_shipwright_layout.py shared/tests/test_handoff_stop_reads_new_layout.py shared/tests/test_shipwright_pointer.py shared/tests/test_shipwright_paths.py shared/tests/test_shipwright_paths_identity.py shared/tests/test_shipwright_paths_fallbacks.py shared/tests/test_shipwright_paths_guard.py",
+    "exit_code": 0,
+    "tests_run": 1,
+    "evidence_path": ".shipwright/runs/iterate-2026-11-28-r1c1-layout-lookup/surface_verification.json",
+    "timestamp": "2026-11-28T07:57:33.369Z"
+  },
+  "declared_removals": [],
+  "exemptions": {
+    "count": 0,
+    "items": []
+  },
+  "risk_flags": [
+    "touches_migrations",
+    "touches_shared_infra",
+    "cross_component"
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "1. **The question, answered in one sentence.** Yes \u2014 a new-then-old lookup with loud errors is the right standing mechanism for the migration window, but the dual lock should not exist.\n\n2. **The smallest thing that would do** \u2014 Option 1's lookup (single `locate()`, reads and writes sharing one answer), but with **one lock, not two**: every writer keeps taking the legacy root lock file until R4, regardless of where the data lives. The lock path does not need to sit next to the data file; interop with old plugins *requires* the root lock anyway, so the second `.shipwright/locks/<name>.lock` adds no protection that the root lock doesn't already give, and it drags seven writers into a fixed-order two-lock protocol with its own deadlock class to reason about forever. Drop it: `lock_paths()` returns the legacy path only, unchanged from today; the seven writers need no edits at all.\n\n3. **What it costs to keep** \u2014 one stdlib module (`shipwright_layout.py`) with the state table and error type, the hand-load-by-directory convention so aliases share one copy, and the `check_file_size` fallback change. All removed at R4. With the dual lock dropped, the added obligation is just the lookup itself.\n\n4. **What it forecloses** \u2014 none identified. The lookup is additive and removed at R4; the fixed lock order, had it stayed, would have constrained any future writer that touches those files to reproduce the order \u2014 the main reason to drop it now.\n\n5. **Findings**\n\n- Category: simpler-alternative\n- Severity: high\n- Finding: The dual lock is redundant machinery. No code path will ever take only the new `.shipwright/locks/<name>.lock` before R4 \u2014 old plugins take the root lock, and all updated writers take both. So the second lock protects against a writer that does not exist, while costing a two-lock ordering rule that all seven writers and every future writer must preserve.\n- Suggestion: Keep `lock_paths(key)` returning the single legacy root lock until R4; at R4, when the legacy lock's last consumer is gone, move/rename the lock with the data. Writers of the two locked files then need no change at all, and AC3's two-way wait tests reduce to \"unchanged\".\n\n- Category: existence\n- Severity: low\n- Finding: The lookup itself is warranted: old/new coexistence is real (plugin caches on other machines), and a silent read of a stale divergent copy is exactly the failure the both-copies error should prevent. The stub-pointer cases inherit the same mechanism rather than adding a second one, which is the right shape.\n- Suggestion: none\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "The shared resolver lookup should exist, with one lock per file throughout the compatibility window.\n\n**Smallest thing that would do.** Take option 1 for path resolution. Readers and writers use the same lookup and reject divergent copies or an incomplete move. Keep both layouts on the legacy lock for `run_config` and `ac_registry`, then move each lock at R4 once legacy writers are out of support.\n\n**What it costs to keep.** Shipwright maintainers own one lookup and one lock per file, then retire the root fallback and switch lock paths at R4.\n\n**What it forecloses.** Moving the two locks independently of the legacy writer support cutoff.\n\n**Findings**\n\nCategory: simpler-alternative  \nSeverity: medium  \nFinding: The second lock adds an acquisition obligation for every updated writer while the legacy lock is still required to coordinate with old writers.  \nSuggestion: Keep the legacy lock as the shared lock across both data layouts and move it to `.shipwright/locks/` when R4 retires legacy writer support.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "architecture",
+  "capture": {
+    "run_id": "iterate-2026-11-28-r1c1-layout-lookup",
+    "at": "2026-11-28T06:33:40.078592+00:00"
+  },
+  "verdicts": {
+    "glm": "revise",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

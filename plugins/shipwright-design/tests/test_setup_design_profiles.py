@@ -110,7 +110,8 @@ def test_resolver_imports_through_the_plugin_cache_layout(tmp_path):
     for name in ("profile_resolver.py", "profile_model.py", "profile_schema_check.py", "profile_architecture_rules.py", "profile_consumer.py",
                  "shared_lib_loader.py"):
         shutil.copy(_SHARED / "scripts" / name, scripts / name)
-    for name in ("planning_discovery.py", "phase_boundary_baseline.py", "shipwright_paths.py"):  # the boundary baseline is shared with plan
+    for name in ("planning_discovery.py", "phase_boundary_baseline.py", "shipwright_paths.py", "shipwright_layout.py",
+                 "shipwright_pointer.py"):  # the boundary baseline is shared with plan
         shutil.copy(_SHARED / "scripts" / "lib" / name, scripts / "lib" / name)
     shutil.copytree(_SHARED / "schemas", cache / "shared" / "schemas")
     shutil.copytree(_SHARED / "profiles", cache / "shared" / "profiles", ignore=shutil.ignore_patterns("deploy"))
