@@ -17,6 +17,8 @@ from __future__ import annotations
 
 import dataclasses
 
+import pytest
+
 from scripts.lib.control_grade import GradeInputs, compute_grade
 
 
@@ -130,3 +132,24 @@ class TestNewOversizeBranch:
         m = _maint(compute_grade(_measurable_base(oversize_file_ratio=0.0)))
         assert m.score == 1.0
         assert m.detail == "0% of source files over the size threshold"
+
+
+@pytest.mark.covers("FR-01.18")
+class TestRatchetDeltaWordingBySign:
+    """The detail names the direction of the delta: shrink is not 'growth'."""
+
+    def test_negative_delta_says_net_shrink(self):
+        m = _maint(compute_grade(_measurable_base(bloat_ratchet_delta=-509)))
+        assert m.score == 1.0
+        assert m.detail == "ratchet delta -509 lines (net shrink)"
+        assert m.anchor == "no unchecked code-size growth (ISO/IEC 25010)"
+
+    def test_zero_delta_says_no_change(self):
+        m = _maint(compute_grade(_measurable_base(bloat_ratchet_delta=0)))
+        assert m.score == 1.0
+        assert m.detail == "ratchet delta +0 lines (no change)"
+        assert m.anchor == "no unchecked code-size growth (ISO/IEC 25010)"
+
+    def test_positive_delta_says_net_growth(self):
+        m = _maint(compute_grade(_measurable_base(bloat_ratchet_delta=1)))
+        assert m.detail == "ratchet delta +1 lines (net growth)"

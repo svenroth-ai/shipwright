@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-28-r2-growth-wording",
+  "risk_recheck": {
+    "changed_file_count": 2,
+    "diff_loc": 24,
+    "risk_flags": [],
+    "diff_risk_flags": [],
+    "complexity_floor": "trivial",
+    "stage1_complexity": "trivial",
+    "declared_complexity": "trivial",
+    "effective_complexity": "trivial",
+    "upgraded": false,
+    "plan_review_required": false,
+    "ci_ack_recorded": false,
+    "escalate": {
+      "required": false,
+      "reason_code": null,
+      "paths": []
+    }
+  }
+}

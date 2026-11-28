@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-11-28-r2-growth-wording",
+  "date": "2026-11-28",
+  "section": "Iterate — bug: control-grade ratchet delta wording",
+  "title": "Ratchet delta wording follows the sign",
+  "context": "The maintainability detail always said '(net growth)', so a -509 line delta read as growth.",
+  "decision": "Render net shrink for a negative delta, no change for zero, net growth for positive; score and anchor untouched.",
+  "consequences": "Dashboard text matches the number; three tests pin all signs.",
+  "rationale": "",
+  "rejected": "",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

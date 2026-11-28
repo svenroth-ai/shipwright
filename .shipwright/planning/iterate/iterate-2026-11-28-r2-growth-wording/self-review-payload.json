@@ -1,0 +1,8 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"Negative/zero/positive delta wording pinned by three tests; score and anchor unchanged."},
+{"name":"Error Handling","verdict":"pass","note":"Pure string formatting, no new failure modes."},
+{"name":"Security Basics","verdict":"pass","note":"No input, secrets or I/O involved."},
+{"name":"Test Quality","verdict":"pass","note":"Two tests failed before the fix (negative, zero); positive guards the existing wording."},
+{"name":"Performance Basics","verdict":"pass","note":"One comparison."},
+{"name":"Naming & Structure","verdict":"pass","note":"Local variable direction; minimal diff. _control_block.py:242 prose says net growth is a control failure, which is sign-neutral and stays correct."},
+{"name":"Affected Boundaries","verdict":"pass","note":"Detail string is read by dashboard/control block as display text only; no parser of '(net growth)' found by grep over plugins/shared/integration-tests."}]}
