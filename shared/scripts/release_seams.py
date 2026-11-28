@@ -9,9 +9,11 @@ path is byte-for-byte what it was before the seam existed.
 ``SHIPWRIGHT_TEST_GH_ARGV_PREFIX``         JSON array of strings, e.g.
                                            ``["python", "/x/gh_stub.py"]``. It
                                            replaces the leading ``gh`` of every
-                                           ``gh`` call made by those two scripts
+                                           ``gh`` call made by those scripts
                                            (``setup-changelog.py``,
-                                           ``create_github_release.py``);
+                                           ``create_github_release.py``, the
+                                           ``gh pr view`` of ``release.py
+                                           push-tag``, unit U3);
                                            the SKILL.md ``gh pr create`` and
                                            ``gh pr merge`` steps are NOT seamed. An
                                            argv prefix, not a ``.cmd`` shim: on
@@ -32,7 +34,7 @@ seam is also set, so a stray condensation variable can never put fixture notes
 on a real release page (:func:`fixture_notes_refusal`).
 
 **Test-only.** Never put a seam variable in a CI workflow's ``env:`` or an operator
-shell profile: it redirects every ``gh`` call of the two scripts above.
+shell profile: it redirects every ``gh`` call of the scripts above.
 
 A set-but-malformed value raises :class:`SeamError` rather than being ignored:
 a test that believes it is driving a stub must not silently reach the real

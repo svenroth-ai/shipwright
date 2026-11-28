@@ -23,6 +23,7 @@ made (operator decision 2026-11-26; before, the commit was made and the release 
 from __future__ import annotations
 
 import json
+import os
 import re
 import subprocess
 from datetime import datetime, timezone
@@ -125,7 +126,9 @@ def _failed(rec: Recorder, reason: str, code: int, **fields: Any) -> tuple[int, 
 def write_state(root: Path, record: dict[str, Any]) -> Path:
     path = root / RELEASE_STATE
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(record, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
+    part = path.with_name(path.name + ".part")  # push-tag rewrites the only record of R after the merge: never leave it torn
+    part.write_text(json.dumps(record, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
+    os.replace(part, path)
     return path
 
 

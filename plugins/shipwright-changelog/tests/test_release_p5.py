@@ -120,12 +120,15 @@ def test_a_waiting_release_is_not_told_the_pr_is_merged_when_it_is_open(tmp_path
     assert code == 1 and out["status"] == "waiting_for_merge" and fake.argv("push-pr-view")[:4] == ["gh", "pr", "view", PR]
 
 
-def test_a_squash_merged_pr_is_refused_not_left_waiting_for_good(tmp_path, plugin_root):
+def test_a_squash_merged_pr_whose_head_gh_does_not_report_is_refused_not_left_waiting_for_good(tmp_path, plugin_root):
+    """U3: a squash or rebase merge goes to the merge proof (``release_publish``; end to end in ``test_release_push_merge_e2e``),
+    which needs the PR head at the merge and its merge commit; without them it refuses and writes nothing."""
     feature(tmp_path)
     fake = Fake(**MERGED, **{"verify-merged": {"exit": 1}, "push-pr-view": {"stdout": json.dumps({"state": "MERGED", "mergeCommit": {"oid": "c" * 40}})}})
     code, out = ask(tmp_path, plugin_root, fake)
-    assert code == 1 and out["status"] == "refused" and out["reason"] == "merged_without_release_commit"
-    assert "not on the trunk" in out["detail"] and "run this again" not in out["detail"] and "line" not in out
+    assert code == 1 and out["status"] == "refused" and out["reason"] == "merge_commit_unknown"
+    assert "run this again" not in out["detail"] and "line" not in out and "published_commit" not in release_commit.read_state(tmp_path)
+    assert fake.argv("push-pr-view")[-1] == "state,mergeCommit,headRefOid,baseRefName"
 
 
 @pytest.mark.parametrize("view", [{"stdout": "not json"}, {"exit": 1}, {"stdout": "[]"}])

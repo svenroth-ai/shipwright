@@ -1,0 +1,1 @@
+{"stage": "spec-compliance", "verdict": "PASS", "spec_citations": [], "summary": "Round 2 PASS (round 1 REJECT: the merge-commit e2e test did not run the guard; fixed by a guard check before push-tags). All four U3 ACs and both orchestrator items (parent-tied proof with moved-base test; trunk not-on-origin summary) are met."}

@@ -1,0 +1,160 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-28-u3-push-tag-squash-proof",
+    "date": "2026-11-28",
+    "unit": {
+      "status": "passed",
+      "passed": 27798,
+      "skipped": 116,
+      "total": 27914
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [
+      "F0 resumed: 17 of 18 units reused green from the full run of the same commit (0 files changed), shared/scripts/tools/tests re-run"
+    ],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run --directory plugins/shipwright-changelog pytest tests/test_release_push_merge_e2e.py tests/test_release_publish.py -q -p no:cacheprovider",
+      "exit_code": 0,
+      "tests_run": 22,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\campaign-dfp-changelog-followups--U3\\.shipwright\\runs\\iterate-2026-11-28-u3-push-tag-squash-proof\\surface_verification.log",
+      "timestamp": "2026-11-28T10:54:40.781Z",
+      "attempts": 1
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "squash and rebase merge: push-tag proves, records, retags, the guard allows the push, close-phase 8 of 8, re-run identical",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-changelog/tests/test_release_push_merge_e2e.py::test_a_squash_or_rebase_merged_release_is_proven_retagged_pushed_through_the_guard_and_closes_8_of_8 PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "merge commit: the tag stays on the release commit, the guard allows it, close-phase 8 of 8",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-changelog/tests/test_release_push_merge_e2e.py::test_a_merge_commit_keeps_the_tag_on_the_release_commit_and_closes_8_of_8 PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "a foreign commit with a drop stops with foreign_commits_on_base naming it and its drop; record and tag unchanged",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-changelog/tests/test_release_push_merge_e2e.py::test_a_foreign_commit_merged_before_the_squash_stops_naming_it_and_its_drop PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "a re-run before the tag push gives the same answer",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-changelog/tests/test_release_push_merge_e2e.py::test_a_re_run_before_the_tag_push_gives_the_same_answer PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "a tag already on origin is never moved",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-changelog/tests/test_release_publish.py::test_every_refusal_writes_nothing_and_moves_no_tag PASSED"
+        },
+        {
+          "behavior": "a tag on origin already on the merge commit is taken as its exact object",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-changelog/tests/test_release_push_merge_e2e.py::test_a_tag_on_origin_already_on_the_merge_commit_is_taken_as_it_is PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "PR head past the release or a merge commit off the base is refused and writes nothing",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-changelog/tests/test_release_push_merge_e2e.py::test_a_pr_head_past_the_release_or_a_merge_commit_off_the_base_is_refused_and_writes_nothing PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "a retargeted PR is refused (pr_base_changed)",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-changelog/tests/test_release_push_merge_e2e.py::test_a_pr_retargeted_to_another_base_is_refused PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "the push-tag answer carries no user or token of the push URL",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-changelog/tests/test_release_push_merge_e2e.py::test_the_push_tag_answer_carries_no_user_or_token_of_the_push_url PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "squash, rebase and merge proven in process; rebase detected by patch",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-changelog/tests/test_release_publish.py::test_a_rebase_is_proven_as_a_rebase PASSED"
+        },
+        {
+          "behavior": "foreign commit with or without drops: named, subject sanitised, housekeeping note",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-changelog/tests/test_release_publish.py::test_a_foreign_commit_stops_it_naming_the_commit_and_its_drop PASSED"
+        },
+        {
+          "behavior": "a merge commit of another shape is refused with the shape named",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-changelog/tests/test_release_publish.py::test_a_merge_commit_of_another_shape_is_refused_with_the_shape_named PASSED"
+        },
+        {
+          "behavior": "a record naming another merge commit is refused",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-changelog/tests/test_release_publish.py::test_a_record_naming_another_merge_commit_is_refused PASSED"
+        },
+        {
+          "behavior": "proof tied to parents: R's tree on a moved base is denied by the guard and fails close-phase",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-changelog/tests/test_release_merge_proof.py::test_the_release_tree_committed_onto_a_moved_base_is_denied_by_the_guard_and_failed_by_the_close PASSED"
+        },
+        {
+          "behavior": "a rebase claim through a second parent or through a foreign commit is not proven",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-changelog/tests/test_release_merge_proof.py::test_a_rebase_claim_whose_chain_runs_through_a_foreign_commit_is_not_proven PASSED"
+        },
+        {
+          "behavior": "the trunk close-phase summary says the tag is not on origin",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-changelog/tests/test_release_merge_proof.py::test_the_summary_on_the_trunk_says_the_tag_is_not_on_origin PASSED"
+        },
+        {
+          "behavior": "gh stub merges by squash and rebase and reports pr view fields",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_gh_stub.py::test_pr_merge_squash_puts_one_commit_with_the_head_tree_on_the_base PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 17,
+        "tested": 17,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 4,
+        "covered_acs": 4
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-11-28-u3-push-tag-squash-proof",
+    "commit": "0ae2d89262b49aef1d053bb08d50d8475aa377a8",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

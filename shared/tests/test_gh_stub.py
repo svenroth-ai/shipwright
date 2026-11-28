@@ -65,8 +65,9 @@ def test_pr_create_defaults_the_base_to_the_remote_default_branch(tmp_path):
     assert s.gh_state()["prs"][0]["base"] == "master"
 
 
-@pytest.mark.parametrize(("flags", "code"), [([], 1), (["--squash"], 2), (["--rebase"], 2)])
-def test_pr_merge_refuses_without_a_merge_flag_and_for_unsupported_ones(scratch, flags, code):
+@pytest.mark.covers_none("tooling")
+@pytest.mark.parametrize(("flags", "code"), [([], 1), (["--merge", "--squash"], 1), (["--squash", "--rebase"], 1)])
+def test_pr_merge_refuses_without_exactly_one_merge_flag(scratch, flags, code):
     push_feature(scratch)
     gh(scratch, "pr", "create", "--title", "t", "--body", "b", "--base", "main")
     before = remote_refs(scratch)
@@ -283,3 +284,73 @@ def test_a_local_checkout_that_cannot_follow_a_merge_that_already_happened_warns
     assert done.returncode == 0 and "warning: the merge succeeded but the local checkout was not moved" in done.stderr
     assert scratch.gh_state()["prs"][0]["state"] == "merged" and "refs/heads/feat/x" not in remote_refs(scratch)
     assert scratch.git("rev-parse", "--abbrev-ref", "HEAD") == "feat/x"  # the checkout stayed where it was
+
+
+# ---- unit U3 (FINDINGS D114): squash and rebase merges, and ``pr view`` with the merge commit -----------------------
+
+def _two_commit_pr(s: rs.Scratch) -> str:
+    push_feature(s)
+    (s.repo / "b.txt").write_text("b\n", encoding="utf-8")
+    s.git("add", "b.txt")
+    s.git("commit", "-q", "-m", "feat: add b.txt")
+    s.git("push", "-q", "origin", "feat/x")
+    gh(s, "pr", "create", "--title", "Release v1", "--body", "b", "--base", "main")
+    return s.git("rev-parse", "HEAD")
+
+
+def _view(s: rs.Scratch, fields: str = "state,mergeCommit,headRefOid,baseRefName") -> dict:
+    done = gh(s, "pr", "view", f"https://github.com/{rs.FAKE_SLUG}/pull/1", "--json", fields)
+    assert done.returncode == 0, done.stderr
+    return json.loads(done.stdout)
+
+
+def _bare(s: rs.Scratch, *args: str) -> str:
+    return s.git("--git-dir", s.origin.as_posix(), *args)
+
+
+@pytest.mark.covers_none("tooling")
+def test_pr_view_of_an_open_pr_reports_the_remote_head_and_no_merge_commit(scratch):
+    head = _two_commit_pr(scratch)
+    assert _view(scratch) == {"state": "OPEN", "mergeCommit": None, "headRefOid": head, "baseRefName": "main"}
+    assert _view(scratch, "number,headRefName") == {"number": 1, "headRefName": "feat/x"}
+
+
+@pytest.mark.covers_none("tooling")
+@pytest.mark.parametrize(("fields", "code"), [("state,title", 1), ("", 2)])
+def test_pr_view_refuses_a_field_it_does_not_know_and_a_view_without_json(scratch, fields, code):
+    _two_commit_pr(scratch)
+    args = ["--json", fields] if fields else []
+    assert gh(scratch, "pr", "view", "1", *args).returncode == code
+
+
+@pytest.mark.covers_none("tooling")
+def test_pr_merge_squash_puts_one_commit_with_the_head_tree_on_the_base(scratch):
+    base = scratch.git("rev-parse", "main")
+    head = _two_commit_pr(scratch)
+    assert gh(scratch, "pr", "merge", "--squash", "--delete-branch").returncode == 0
+    squash = remote_refs(scratch)["refs/heads/main"]
+    assert _bare(scratch, "rev-list", "--parents", "-n", "1", squash).split()[1:] == [base]
+    assert _bare(scratch, "rev-parse", f"{squash}^{{tree}}") == scratch.git("rev-parse", f"{head}^{{tree}}")
+    assert _bare(scratch, "log", "-1", "--format=%s", squash) == "Release v1 (#1)"
+    assert _view(scratch) == {"state": "MERGED", "mergeCommit": {"oid": squash}, "headRefOid": head, "baseRefName": "main"}
+    assert scratch.git("rev-parse", "--abbrev-ref", "HEAD") == "main" and scratch.git("rev-parse", "HEAD") == squash
+
+
+@pytest.mark.covers_none("tooling")
+def test_pr_merge_rebase_replays_each_commit_as_a_new_one(scratch):
+    base = scratch.git("rev-parse", "main")
+    head = _two_commit_pr(scratch)
+    assert gh(scratch, "pr", "merge", "--rebase").returncode == 0
+    tip = remote_refs(scratch)["refs/heads/main"]
+    replayed = _bare(scratch, "rev-list", "--first-parent", f"{base}..{tip}").split()
+    assert len(replayed) == 2 and head not in replayed
+    assert _bare(scratch, "rev-parse", f"{tip}^{{tree}}") == scratch.git("rev-parse", f"{head}^{{tree}}")
+    assert _view(scratch)["mergeCommit"] == {"oid": tip} and _view(scratch)["headRefOid"] == head
+
+
+@pytest.mark.covers_none("tooling")
+def test_pr_merge_merge_commit_is_reported_by_pr_view(scratch):
+    head = _two_commit_pr(scratch)
+    assert gh(scratch, "pr", "merge", "--merge").returncode == 0
+    merge = remote_refs(scratch)["refs/heads/main"]
+    assert _view(scratch) == {"state": "MERGED", "mergeCommit": {"oid": merge}, "headRefOid": head, "baseRefName": "main"}

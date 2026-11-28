@@ -1,0 +1,39 @@
+{
+ "stage": "doubt",
+ "gating": "advisory-must-address",
+ "doubts": [
+  {
+   "severity": "high",
+   "real": true,
+   "claim_under_doubt": "a hand-edited record cannot approve another commit",
+   "finding": "the rebase proof checked only the chain shape; S = commit-tree tree(H) -p F (F a foreign single-parent commit on base_before) passed and the guard would approve a trunk push undoing F",
+   "disposition": "accepted-and-fixed: on_base_as_merged also requires git cherry to find every chain commit patch-equal to a PR commit; regression test with that exact forged S, shown to fail without the check",
+   "disproof_attempt": "the rebase proof checked only the chain shape; S = commit-tree tree(H) -p F (F a foreign single-parent commit on base_before) passed and the guard would approve a trunk push undoing F"
+  },
+  {
+   "severity": "medium",
+   "real": true,
+   "claim_under_doubt": "a crash mid-write is harmless",
+   "finding": "write_state was a plain write_text and push-tag now rewrites the only record of R after the merge",
+   "disposition": "accepted-and-fixed: write to a .part file then os.replace",
+   "disproof_attempt": "write_state was a plain write_text and push-tag now rewrites the only record of R after the merge"
+  },
+  {
+   "severity": "low",
+   "real": "hypothetical",
+   "finding": "FETCH_HEAD can be rewritten by a concurrent fetch between fetch and rev-parse",
+   "disposition": "rejected-with-reason: fails toward merge_commit_not_on_base, and the closing verify re-checks S on origin's base; a private ref would add a ref to the user's repository",
+   "claim_under_doubt": "FETCH_HEAD after the fetch is the base branch just fetched",
+   "disproof_attempt": "FETCH_HEAD can be rewritten by a concurrent fetch between fetch and rev-parse"
+  },
+  {
+   "severity": "low",
+   "real": "fails safe",
+   "finding": "a rebase merge of a PR branch that contains merge commits cannot be proven and is refused",
+   "disposition": "disclosed: known refusal, the detail says the merge commit is not a squash, merge or rebase of the PR head",
+   "claim_under_doubt": "a rebase merge is recognised and proven",
+   "disproof_attempt": "a rebase merge of a PR branch that contains merge commits cannot be proven and is refused"
+  }
+ ],
+ "summary": "One high and one medium doubt fixed; two low doubts fail safe and are disclosed."
+}

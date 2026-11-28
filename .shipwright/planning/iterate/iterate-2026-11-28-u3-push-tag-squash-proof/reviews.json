@@ -1,0 +1,268 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-28-u3-push-tag-squash-proof",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-28T08:41:50.187618+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter",
+      "completed_at": "2026-11-28T08:41:27.814398+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "unstructured",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: edge-case · Severity: medium** — Squash and rebase merges are shape-ambiguous when the PR is a single commit: a rebase merge of one commit produces S with exactly one parent on base_before, identical to a squash's shape. `_method` would classify it as squash. This mostly matters if `merged_via` is recorded and later gates re-run acceptance or foreign-commit replay detection (\"patch-equivalent replays\" logic is per-method). Suggestion: verify the replay-detection path is method-agnostic (compare patches regardless of classified method), or classify rebase-vs-squash by comparing S's patch to H's patch rather than parent shape alone.\n\n- **Category: edge-case · Severity: medium** — \"Event-only descendant\" of R (the PR head H) is load-bearing for check (1) but the mini-plan never defines which commits qualify. If a human pushed anything after R to the PR branch, is that event-only? Different answers change whether push-tag succeeds or stops. Suggestion: pin the exact rule (likely: commits matching the event-marker format from the campaign's existing tooling, anything else fails), and add a proof test for a non-event commit on top of R.\n\n- **Category: edge-case · Severity: medium** — \"A tag already on origin is never moved\" leaves the re-run outcome unspecified when origin's tag points at R (e.g., someone pushed it manually before this unit ran). Is that a stop with a distinct reason, an operator decision (the brief says unanswered operator questions are STRICT-STOP), or acceptance? The L1 test covers \"never moved\" but the plan doesn't state what the user sees. Suggestion: define and test the \"tag on origin at R\" branch explicitly with its own exit reason.\n\n- **Category: risk · Severity: low** — TOCTOU window: base is fetched, ancestor check passes, then more commits land on base before the tag push. The proof was true at fetch time. The closing verify presumably catches this for the squash tree, but for the retag-to-S path the wind […truncated]\n\n[openai] 1. **Category** dependency · **Severity** high  \n   **Finding.** The required campaign brief and D110/D112 rows could not be read because the workspace command was blocked. The review is based on the supplied specification and mini-plan, so the golden freeze and operator decisions remain unverified.  \n   **Suggestion.** Check the proposed `gh_stub.py`, documentation, and shared proof changes against the brief before implementation. Apply its strict-stop rule wherever an operator decision is required.\n\n2. **Category** approach · **Severity** high  \n   **Finding.** The rebase proof checks chain length and final tree equality, while the diagnostic filters out patch-equivalent commits. An equal-length chain can reach the same final tree through different commits. A clean rebase can also contain multiple replayed commits, so identifying the method from the final commit’s shape alone is ambiguous.  \n   **Suggestion.** Anchor the proof at the shared base and verify the replay sequence against the original PR commits in order. Treat a valid single-commit squash or rebase as ambiguous if the evidence cannot distinguish them, and follow the campaign’s rule for recording that case. Add a real-Git test with multiple PR commits and an event-only descendant.\n\n3. **Category** risk · **Severity** high  \n   **Finding.** Writing the proof and retagging are separate operations. If either fails, a rerun can encounter a partially published state. The proposed rerun rule also accepts a tag based on the record’s claimed merge commit, which is weaker than revalidating the proof. The origin check and the eventual push are separated by the returned command, so origin can acquire the tag in between.  \n   **Suggestion.** Make retries revalidate the recorded proof and reconcile a partial write or retag only while the remote tag is absent. If the remote tag exists, compare its peeled target with the proven target and stop on a mismatch. Keep the returned push non-forcing and test bo […truncated]",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_push.py",
+          "line": 77,
+          "finding": "push-tag JSON still carried the push URL with user:token through release_verify.on_base's recorded calls; only release_publish._remote calls were redacted.",
+          "suggestion": "Redact all recorder results in answer(); add a push-tag-level test.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_publish.py",
+          "line": 63,
+          "finding": "A failed or empty git cherry counted as all-replayed and chose rebase.",
+          "suggestion": "Require exit 0 and a non-blank line.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_publish.py",
+          "line": 132,
+          "finding": "Detail said content differs even when only the shape failed.",
+          "suggestion": "Pick wording from the two trees.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_publish.py",
+          "line": 36,
+          "finding": "Userinfo regex stopped at the first @.",
+          "suggestion": "Match up to the last @ before the host.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/testkit/gh_stub.py",
+          "line": 300,
+          "finding": "Frozen stub at the 300-line cap.",
+          "suggestion": "Note in the hand-over.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-28T08:59:08.562511+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "866ecbdbd7849a5c78094f3c96404f6cf3812781"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: a hand-edited record cannot approve another commit — the rebase proof checked only the chain shape; S = commit-tree tree(H) -p F (F a foreign single-parent commit on base_before) passed and the guard would approve a trunk push undoing F",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: a crash mid-write is harmless — write_state was a plain write_text and push-tag now rewrites the only record of R after the merge",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: FETCH_HEAD after the fetch is the base branch just fetched — FETCH_HEAD can be rewritten by a concurrent fetch between fetch and rev-parse",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: a rebase merge is recognised and proven — a rebase merge of a PR branch that contains merge commits cannot be proven and is refused",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-28T09:03:43.066033+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "ffdd68400d604d5b93b6a53e19144c5f7bd134ff"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_publish.py` (`_method`)",
+          "line": null,
+          "finding": "A rebase merge of a single-commit PR is misdetected: `int(count) > 1` gates the rebase branch, so a one-commit rebase falls through to `(\"squash\", first)`. The proof still holds (one parent == base, tree equal), so the release is accepted, but the record's `merged_via` says `squash` and the tag message says \"squash merge\" for what was a rebase — the record and SKILL's contract (`merged_via` ∈ merge/squash/rebase, truthful) are wrong for this shape.",
+          "suggestion": "drop the `> 1` requirement, or verify the rebase shape for `count == 1` the same way (the `cherry` check works for one commit too).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug |",
+          "file": "plugins/shipwright-changelog/scripts/lib/release_publish.py` (`publish`, the `retag_failed` return)",
+          "line": null,
+          "finding": "On `retag_failed`, `write_state` has already run, so the record now claims `published_commit = S` while the local tag still names R — a partial write on a failure path, against the module's \"refuses and writes nothing\" framing (which the docs apply to the other refusals). The guard will then accept a tag push of R (it is the record's commit), and the SKILL's \"a refused push stops the release\" is the only thing preventing a mis-tagged push. A re-run recovers, but the intermediate state is inconsistent.",
+          "suggestion": "Either retag first and write state only after the tag names S (the guard-ordering concern in the comment can be handled by refusing on failure, not by ordering), or state clearly in the docs that `retag_failed` is the one refusal with the record written.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug |",
+          "file": "plugins/shipwright/scripts/lib/release_paths.py` (`gh`) / `release_push._pr_view",
+          "line": null,
+          "finding": "When the test seam is set but malformed, `gh()` returns `None` (swallowing `SeamError`), `_pr_view` returns `{}`, and `push-tag` answers `waiting_for_merge` — a quiet wrong answer that contradicts the seam contract in `release_seams.py` (\"a set but malformed value is refused loudly, never ignored\") for this caller. A test with a broken seam would loop on \"waiting\" instead of failing loudly.",
+          "suggestion": "On a set-but-unusable seam, refuse (e.g. `merge_state_unknown`/exit non-zero with a detail naming the seam) rather than falling back to waiting.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": "shared/testkit/gh_stub.py` (`pr_view`, key parsing)",
+          "line": null,
+          "finding": "key = (...).rsplit(\"/\", 1)[-1]` truncates a branch name given by branch (`pr view feat/x` looks up `x`). `gh` accepts branch names containing slashes; a release flow that queries by branch would hit \"no pull requests found\". Test-stub-only, but the release PR branch is `release/next`-shaped in this very project, so the failure shape is realistic if anything ever views by branch.",
+          "suggestion": "Only take the last path segment when the positional looks like a URL (contains \"://\"), otherwise match the raw branch name.  Non-findings I checked and consider sound: the `on_base_as_merged` rebase-length and parent checks, the `foreign_commits` fork/cherry/first-parent computation (the squash-on-moved-base D112 case is caught by the parent rule and covered by a dedicated test), the `tag_on_origin_not_the_merge_commit` handling and re-run idempotency (both exercised end to end, including byte-comparison of the record), the `_redact` token scrubbing (tested), and the U2 record-field regression paths. The e2e tests assert real git state (tag placement, guard decision, 8/8 verify) rather than just return codes; a broken implementation would not pass them.  Overall assessment: the unit implements the spec (proof, record, retag-only-when-not-on-origin, foreign-commits stop, idempotent re-run) and the tests are behavioral; the findings above are low-severity refinements. Ship-as-is with fixes welcome.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "line — `plugins/shipwright-changelog/scripts/lib/release_push.py",
+          "line": 86,
+          "finding": "push-tag` requests `baseRefName` from GitHub but proves the merge against the base saved in the run state. If the release PR is retargeted, a valid merge on the new base is refused while the old base lacks the merge commit. Conversely, if that commit also reaches the old base, the check can pass after the actual PR base has been rewritten to exclude it.",
+          "suggestion": "Require the reported base to match the recorded base and explicitly refuse a mismatch, or use the reported base consistently for the fresh fetch and closing verification.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": "line — `plugins/shipwright-changelog/scripts/hooks/release_merge_proof.py",
+          "line": 94,
+          "finding": "The shared rebase proof checks ancestry and first-parent range length. The recorded base can be reachable only through a second parent, and the range can still have the expected length. For example, let `B` and `X` be sibling commits, let the PR head be two commits past `B`, and let `S` have parents `X` and `B` and the PR head’s tree. `B..S` has two first-parent commits, so the guard and closing verifier can accept `S` as a rebase even though it sits on `X` and can discard its changes.",
+          "suggestion": "Walk the claimed replay chain for the expected number of commits, require exactly one parent at each step, and require the walk to end at the recorded base. Add this graph as a negative test for the shared proof.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "line — `plugins/shipwright-changelog/scripts/lib/release_publish.py",
+          "line": 147,
+          "finding": "When origin already has an annotated tag on the correct merge commit but the local tag still names the release commit, `push-tag` creates a new local annotated tag and returns the push line. The new tag object can differ from the one on origin even though both peel to the same commit. A normal tag push then fails with “already exists,” breaking recovery and the rerun guarantee. The tests cover an origin tag on the wrong commit and a rerun with an already-aligned local tag.",
+          "suggestion": "When origin already holds the correct tag, reuse its exact tag object before returning the push line. Add an end-to-end case with an independently annotated origin tag and a stale local tag.  Ship-with-fixes. The diff includes lifecycle tests for all three merge methods, but the proof and rerun cases above need fixes. Shell execution was blocked, so I could neither read the campaign files nor run the tests. This review is based on the supplied specification and diff.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-28T08:52:08.814825+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] **Findings**\n\n- Category: edge-case | Severity: low\n  File: `plugins/shipwright-changelog/scripts/lib/release_publish.py` (`_method`)\n  Finding: A rebase merge of a **single-commit** PR is misdetected: `int(count) > 1` gates the rebase branch, so a one-commit rebase falls through to `(\"squash\", first)`. The proof still holds (one parent == base, tree equal), so the release is accepted, but the record's `merged_via` says `squash` and the tag message says \"squash merge\" for what was a rebase — the record and SKILL's contract (`merged_via` ∈ merge/squash/rebase, truthful) are wrong for this shape.\n  Suggestion: drop the `> 1` requirement, or verify the rebase shape for `count == 1` the same way (the `cherry` check works for one commit too).\n\n- Category: bug | Severity: low\n  File: `plugins/shipwright-changelog/scripts/lib/release_publish.py` (`publish`, the `retag_failed` return)\n  Finding: On `retag_failed`, `write_state` has already run, so the record now claims `published_commit = S` while the local tag still names R — a partial write on a failure path, against the module's \"refuses and writes nothing\" framing (which the docs apply to the other refusals). The guard will then accept a tag push of R (it is the record's commit), and the SKILL's \"a refused push stops the release\" is the only thing preventing a mis-tagged push. A re-run recovers, but the intermediate state is inconsistent.\n  Suggestion: Either retag first and write state only after the tag names S (the guard-ordering concern in the comment can be handled by refusing on failure, not by ordering), or state clearly in the docs that `retag_failed` is the one refusal with the record written.\n\n- Category: bug | Severity: low\n  File: `plugins/shipwright/scripts/lib/release_paths.py` (`gh`) / `release_push._pr_view`\n  Finding: When the test seam is set but malformed, `gh()` returns `None` (swallowing `SeamError`), `_pr_view` returns `{}`, and `push-tag` answers `waiting_for_merge` — a quiet wrong an […truncated]\n\n[openai] - Category: spec\n- Severity: high\n- File:line — `plugins/shipwright-changelog/scripts/lib/release_push.py:86`\n- Finding: `push-tag` requests `baseRefName` from GitHub but proves the merge against the base saved in the run state. If the release PR is retargeted, a valid merge on the new base is refused while the old base lacks the merge commit. Conversely, if that commit also reaches the old base, the check can pass after the actual PR base has been rewritten to exclude it.\n- Suggestion: Require the reported base to match the recorded base and explicitly refuse a mismatch, or use the reported base consistently for the fresh fetch and closing verification.\n\n- Category: bug\n- Severity: high\n- File:line — `plugins/shipwright-changelog/scripts/hooks/release_merge_proof.py:94`\n- Finding: The shared rebase proof checks ancestry and first-parent range length. The recorded base can be reachable only through a second parent, and the range can still have the expected length. For example, let `B` and `X` be sibling commits, let the PR head be two commits past `B`, and let `S` have parents `X` and `B` and the PR head’s tree. `B..S` has two first-parent commits, so the guard and closing verifier can accept `S` as a rebase even though it sits on `X` and can discard its changes.\n- Suggestion: Walk the claimed replay chain for the expected number of commits, require exactly one parent at each step, and require the walk to end at the recorded base. Add this graph as a negative test for the shared proof.\n\n- Category: spec\n- Severity: medium\n- File:line — `plugins/shipwright-changelog/scripts/lib/release_publish.py:147`\n- Finding: When origin already has an annotated tag on the correct merge commit but the local tag still names the release commit, `push-tag` creates a new local annotated tag and returns the push line. The new tag object can differ from the one on origin even though both peel to the same commit. A normal tag push then fails with “already exists,” breaking r […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-28T08:51:54.252415+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "e87d6625a7e51beb91c14125e5c03d41088c2885"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-28T08:41:27.630988+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-28T08:35:35.467635+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

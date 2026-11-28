@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "## Findings\n\n- **Category: edge-case \u00b7 Severity: medium** \u2014 Squash and rebase merges are shape-ambiguous when the PR is a single commit: a rebase merge of one commit produces S with exactly one parent on base_before, identical to a squash's shape. `_method` would classify it as squash. This mostly matters if `merged_via` is recorded and later gates re-run acceptance or foreign-commit replay detection (\"patch-equivalent replays\" logic is per-method). Suggestion: verify the replay-detection path is method-agnostic (compare patches regardless of classified method), or classify rebase-vs-squash by comparing S's patch to H's patch rather than parent shape alone.\n\n- **Category: edge-case \u00b7 Severity: medium** \u2014 \"Event-only descendant\" of R (the PR head H) is load-bearing for check (1) but the mini-plan never defines which commits qualify. If a human pushed anything after R to the PR branch, is that event-only? Different answers change whether push-tag succeeds or stops. Suggestion: pin the exact rule (likely: commits matching the event-marker format from the campaign's existing tooling, anything else fails), and add a proof test for a non-event commit on top of R.\n\n- **Category: edge-case \u00b7 Severity: medium** \u2014 \"A tag already on origin is never moved\" leaves the re-run outcome unspecified when origin's tag points at R (e.g., someone pushed it manually before this unit ran). Is that a stop with a distinct reason, an operator decision (the brief says unanswered operator questions are STRICT-STOP), or acceptance? The L1 test covers \"never moved\" but the plan doesn't state what the user sees. Suggestion: define and test the \"tag on origin at R\" branch explicitly with its own exit reason.\n\n- **Category: risk \u00b7 Severity: low** \u2014 TOCTOU window: base is fetched, ancestor check passes, then more commits land on base before the tag push. The proof was true at fetch time. The closing verify presumably catches this for the squash tree, but for the retag-to-S path the window means S can be non-tip at push time. Suggestion: at minimum document that the close-phase verify is the backstop; ideally re-check `merge-base` immediately before push or after a re-fetch in the same invocation.\n\n- **Category: risk \u00b7 Severity: low** \u2014 Retagging with `git tag -f -a` rewrites the annotation. If existing automation or humans rely on the tag's tagger/message (e.g., tag message contains R's changelog entry), silently regenerating it is a behavior change. Suggestion: carry the original tag message forward (edit only the target), or confirm the message format is deterministic.\n\n- **Category: dependency \u00b7 Severity: low** \u2014 The record write depends on U2's reader fields (`published_commit`, `merged_via`, `proof`) existing with exactly those names. The plan asserts this but should verify U2 actually landed in the record schema before starting; otherwise this unit's writer and U2's reader drift. Also confirm `release_seams.py`'s gh seam (change 5) isn't already present from U1/U2 \u2014 if so, change 5 is a no-op and should be dropped from the plan rather than re-implemented.\n\n- **Category: edge-case \u00b7 Severity: low** \u2014 Rebase chain \"first-parent chain from S to base_before as long as pr_head's\": if the rebase dropped a commit (became empty on rebase), chain lengths differ and the proof fails. That's likely correct (stop), but the failure reason will read as a broken proof rather than `foreign_commits_on_base` \u2014 make sure the error names the actual situation so the operator isn't told \"foreign commits\" for a legitimately dropped empty commit. This may warrant an operator decision (D112-adjacent).\n\nNo security concerns beyond what's already in the plan \u2014 the gh-stub changes are test-only and frozen with approved deltas.\n\n**Overall assessment:** The approach is sound and appropriately strict \u2014 the proof checks match the brief's \"nothing weaker\" requirement, and the rejected alternatives are correctly rejected. The findings are refinements around shape ambiguity, the undefined \"event-only descendant\" rule, and unspecified outcomes for pre-existing origin tags; none undermine the design.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Category** dependency \u00b7 **Severity** high  \n   **Finding.** The required campaign brief and D110/D112 rows could not be read because the workspace command was blocked. The review is based on the supplied specification and mini-plan, so the golden freeze and operator decisions remain unverified.  \n   **Suggestion.** Check the proposed `gh_stub.py`, documentation, and shared proof changes against the brief before implementation. Apply its strict-stop rule wherever an operator decision is required.\n\n2. **Category** approach \u00b7 **Severity** high  \n   **Finding.** The rebase proof checks chain length and final tree equality, while the diagnostic filters out patch-equivalent commits. An equal-length chain can reach the same final tree through different commits. A clean rebase can also contain multiple replayed commits, so identifying the method from the final commit\u2019s shape alone is ambiguous.  \n   **Suggestion.** Anchor the proof at the shared base and verify the replay sequence against the original PR commits in order. Treat a valid single-commit squash or rebase as ambiguous if the evidence cannot distinguish them, and follow the campaign\u2019s rule for recording that case. Add a real-Git test with multiple PR commits and an event-only descendant.\n\n3. **Category** risk \u00b7 **Severity** high  \n   **Finding.** Writing the proof and retagging are separate operations. If either fails, a rerun can encounter a partially published state. The proposed rerun rule also accepts a tag based on the record\u2019s claimed merge commit, which is weaker than revalidating the proof. The origin check and the eventual push are separated by the returned command, so origin can acquire the tag in between.  \n   **Suggestion.** Make retries revalidate the recorded proof and reconcile a partial write or retag only while the remote tag is absent. If the remote tag exists, compare its peeled target with the proven target and stop on a mismatch. Keep the returned push non-forcing and test both an interrupted local update and a remote tag created after the initial check.\n\n4. **Category** edge-case \u00b7 **Severity** medium  \n   **Finding.** A failed proof does not always identify foreign commits. For example, GitHub can report a merge commit that is missing from the fetched base after a branch rewrite. Also, when a foreign PR was merged with a merge commit, a first-parent scan sees the merge commit but can miss its pending drops if it examines only files authored directly by that commit.  \n   **Suggestion.** Handle missing objects, an off-base merge commit, and invalid PR-head ancestry before computing or reporting foreign commits. For a foreign merge commit, inspect the change relative to its first parent so the diagnostic includes the drops introduced by the merge. Cover both cases and assert that the tag and record remain byte-for-byte unchanged.\n\nThe fetched-base and exact-tree checks are a sound foundation. Resolve replay identity, partial-state recovery, and diagnostic coverage before implementation, then verify the planned changes against the campaign brief.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-11-28-u3-push-tag-squash-proof",
+    "at": "2026-11-28T08:34:48.493072+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

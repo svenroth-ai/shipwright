@@ -13,6 +13,7 @@ import importlib.util
 import re
 import sys
 from pathlib import Path
+from typing import Any
 
 ORCHESTRATOR = ("scripts", "lib", "orchestrator.py")  # inside the run plugin
 RUN_PLUGIN = "shipwright-run"
@@ -26,14 +27,28 @@ def shared_root(plugin_root: Path) -> Path:
 def run_config_path(shared: Path, project_root: Path) -> Path:
     """The run config's path through the shared resolver (programme P16: a root file is named through ``shipwright_paths`` only).
     The module is loaded by file, never as ``lib.shipwright_paths``: this plugin has its own ``lib`` package."""
-    name = "shipwright_paths"
+    return shared_module(shared, "lib", "shipwright_paths").path("run_config", project_root)
+
+
+def shared_module(shared: Path, folder: str, name: str) -> Any:
+    """``shared/scripts/<folder>/<name>.py`` loaded by file (``folder`` ``""`` is ``shared/scripts`` itself), once per process."""
     module = sys.modules.get(name)
     if module is None:
-        spec = importlib.util.spec_from_file_location(name, Path(shared) / "scripts" / "lib" / f"{name}.py")
+        spec = importlib.util.spec_from_file_location(name, Path(shared) / "scripts" / folder / f"{name}.py")
         module = importlib.util.module_from_spec(spec)
         sys.modules[name] = module  # register before exec, or its dataclasses cannot resolve their own module
         spec.loader.exec_module(module)
-    return module.path("run_config", project_root)
+    return module
+
+
+def gh(plugin_root: Path, *args: str) -> list[str] | None:
+    """``gh <args>`` through the test seam (``shared/scripts/release_seams.py``: inert unless a test sets it); ``None`` when a seam
+    is set but unusable (a test that believes it drives a stub must never reach the real ``gh``)."""
+    seams = shared_module(shared_root(plugin_root), "", "release_seams")
+    try:
+        return seams.gh_command(*args)
+    except seams.SeamError:
+        return None
 
 
 def _version_key(path: Path) -> tuple[int, ...]:

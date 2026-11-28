@@ -219,3 +219,10 @@ Older workflow tools (state machines, BPMN, job schedulers) have the same shape,
 2. **What the reviews added.** The base-ancestry check (plan review: a same-tree orphan commit passed), and the PR check following the commit the tag names (external code review: the release commit on the base made a merge commit off the base pass). Both are now tested on real git.
 3. **Pitfalls.** A guided release closed before the merge needs `--release-status waiting` and a note, or `release_page` fails the first close. The harness's `origin` fetches from a fake URL; the bare remote is only the push URL.
 4. **For U3.** Write `base_before` as the base tip the squash was made on, and `tree` from the PR head; the rule refuses anything else. The `gh` stub needs squash and rebase support (D114).
+
+### U3 (2026-11-28): push-tag proves a squash or rebase merge commit
+
+1. **What it is.** `lib/release_publish.py` behind `push-tag`: PR head is the release, gh's base is the recorded one, the merge commit is on the freshly fetched base and the shared proof holds; then the record is written (atomically) and the local tag moved while origin does not hold it. Foreign commits stop it, named with their drops.
+2. **What the reviews added.** Retargeted PR refusal, single-parent rebase walk, fetching an origin tag already on S as its exact object (external code review); `git cherry` patch equality in the shared proof (doubt review: a forged rebase chain through a foreign commit passed); redaction of the whole push-tag answer (code review: on_base's calls carried the push URL); atomic record write.
+3. **Pitfalls.** Subprocess e2e tests are invisible to diff coverage: the writer needs in-process tests. A SKILL.md edit moves the promise-list anchor hash and the conversion check's `trace.json` export (`--write-export`). `SHIPWRIGHT_F0_RESUME=0` leaks into the resume unit's own tests. `commit-tree` with equal tree, parent and message in the same second returns the same SHA.
+4. **Open.** A rebase merge of a PR branch that holds merge commits cannot be proven and is refused; `gh_stub.py` sits at exactly 300 lines.
