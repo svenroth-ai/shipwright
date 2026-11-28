@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-28-r3-license-count",
+  "risk_recheck": {
+    "changed_file_count": 4,
+    "diff_loc": 69,
+    "risk_flags": [],
+    "diff_risk_flags": [],
+    "complexity_floor": "trivial",
+    "stage1_complexity": "small",
+    "declared_complexity": "small",
+    "effective_complexity": "small",
+    "upgraded": false,
+    "plan_review_required": false,
+    "ci_ack_recorded": false,
+    "escalate": {
+      "required": false,
+      "reason_code": null,
+      "paths": []
+    }
+  }
+}

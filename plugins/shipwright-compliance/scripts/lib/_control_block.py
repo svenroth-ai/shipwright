@@ -26,12 +26,12 @@ from scripts.lib._reconciliation import compute_reconciliation
 from scripts.lib._traceability import count_traced
 from scripts.lib.ci_security import grade_security_signal, load_ci_security
 from scripts.lib.control_grade import GradeInputs, GradeReport, compute_grade
+from scripts.lib.sbom_render import unresolved_count
 
 if TYPE_CHECKING:
     from scripts.lib.data_collector import ComplianceData
 
 _COPYLEFT = ("GPL", "AGPL", "LGPL", "MPL")
-_UNKNOWN_LICENSES = {"unknown", "-", "", "none"}
 _STATUS_MARK = {"ok": "✅", "gap": "⚠️", "n/a": "n/a"}
 
 
@@ -87,8 +87,8 @@ def build_grade_inputs(data: ComplianceData) -> GradeInputs:
     reconciliation_measurable = bool(frs_behavior_touched)
 
     deps = data.dependencies
-    unknown = sum(
-        1 for d in deps if (d.license or "").strip().lower() in _UNKNOWN_LICENSES)
+    # One source: the SBOM's unresolved count (declared-none + not-installed).
+    unknown = unresolved_count(deps)
     copyleft = sum(
         1 for d in deps
         if any(cl in (d.license or "").upper() for cl in _COPYLEFT))

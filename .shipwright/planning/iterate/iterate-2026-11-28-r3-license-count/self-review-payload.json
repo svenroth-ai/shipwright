@@ -1,0 +1,9 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"Dashboard Control Grade now reads sbom_render.unresolved_count, the SBOM's own count; test pins equality on a fixture with unknown + not-installed licenses."},
+{"name":"Error Handling","verdict":"pass","note":"Pure counting over an existing list; empty deps returns 0."},
+{"name":"Security Basics","verdict":"pass","note":"No I/O, no input parsing, no secrets."},
+{"name":"Test Quality","verdict":"pass","note":"Test fails on the old dashboard count (3 vs 8) and asserts against the rendered SBOM text, not a re-implementation."},
+{"name":"Performance Basics","verdict":"pass","note":"One extra linear pass over dependencies."},
+{"name":"Naming & Structure","verdict":"pass","note":"Removed the dashboard's private _UNKNOWN_LICENSES set; one helper next to _classify."},
+{"name":"Affected Boundaries","verdict":"n/a","note":"No serialized format changed; both surfaces consume the in-memory DependencyInfo list."},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"No skips or only-markers added."}]}

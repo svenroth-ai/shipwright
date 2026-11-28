@@ -27,11 +27,7 @@ from typing import TYPE_CHECKING
 from scripts.lib.collectors import NOT_INSTALLED, UNKNOWN_LICENSE
 from scripts.lib.mermaid import license_pie
 from scripts.lib._provenance import provenance_lines
-from scripts.lib.sbom_render import (
-    license_cell,
-    license_compliance_lines,
-    summary_lines,
-)
+from scripts.lib.sbom_render import license_cell, license_compliance_lines, summary_lines, unresolved_count
 
 if TYPE_CHECKING:
     from scripts.lib.data_collector import ComplianceData
@@ -49,7 +45,7 @@ def generate(data: ComplianceData) -> str:
     """
     deps = data.dependencies
     resolved = [d for d in deps if d.license not in (NOT_INSTALLED, UNKNOWN_LICENSE)]
-    unresolved = len(deps) - len(resolved)
+    unresolved = unresolved_count(deps)
 
     # Only doc that annotates its own Generated: line. Splatted, never unpacked — the
     # provenance block's length is not a contract (see _provenance.provenance_lines).

@@ -1,0 +1,1 @@
+{"run_id":"iterate-2026-11-28-r3-license-count","goal":"Dashboard and SBOM report one unresolved-license count","reason":"Dashboard said 0 unresolved while the SBOM said 8 could not be resolved; the dashboard missed not-installed packages","ref":"campaign intent-pyramid R3"}
