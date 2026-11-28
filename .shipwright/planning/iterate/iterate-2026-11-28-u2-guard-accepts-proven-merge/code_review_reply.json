@@ -1,0 +1,30 @@
+{
+ "section": "U2-guard-accepts-proven-merge",
+ "review": [
+  {
+   "severity": "low",
+   "category": "readability",
+   "file": ".shipwright/planning/iterate/iterate-2026-11-28-u2-guard-accepts-proven-merge/mini-plan.md",
+   "line": 17,
+   "finding": "Plan item 3 says pr_state falls back to S; code checks the commit the tag names.",
+   "suggestion": "Reword item 3."
+  },
+  {
+   "severity": "low",
+   "category": "correctness",
+   "file": "plugins/shipwright-changelog/tests/test_release_merge_proof.py",
+   "line": 135,
+   "finding": "No passing test for merged_via=merge on an unmoved base.",
+   "suggestion": "Add a --no-ff merge test that is proven."
+  },
+  {
+   "severity": "low",
+   "category": "readability",
+   "file": "plugins/shipwright-changelog/tests/test_release_merge_proof.py",
+   "line": 242,
+   "finding": "Unit test shares its name with the e2e test.",
+   "suggestion": "Rename the unit copy (..._via_verify)."
+  }
+ ],
+ "notes": "No hole in the rule; record without new fields unchanged; guard fail-open kept."
+}

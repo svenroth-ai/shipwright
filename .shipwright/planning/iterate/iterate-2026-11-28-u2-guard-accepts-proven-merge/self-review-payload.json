@@ -1,0 +1,10 @@
+{"items": [
+  {"name": "Spec Compliance", "verdict": "pass", "note": "All four ACs have real-git tests: valid proof allows the S tag push and close-phase passes 8 of 8 (L1 e2e), mismatched tree denied by guard and verify, field-less record unchanged (all existing tests green), second close summary says pushed."},
+  {"name": "Error Handling", "verdict": "pass", "note": "Malformed or partial fields are no claim; missing objects fail rev-parse and deny; an ls-remote failure now yields on_origin None and its own summary line."},
+  {"name": "Security Basics", "verdict": "pass", "note": "A hand-edited record cannot approve other content: pr_head must be the release, trees must match, base_before must be an ancestor of S; the guard stays fail-open only for its own errors as before."},
+  {"name": "Test Quality", "verdict": "pass", "note": "Real git with a bare remote throughout; negative cases for orphan, foreign tree, moved base, hand-edited tree, non-release head; no-new-git-call assertion for field-less records."},
+  {"name": "Performance Basics", "verdict": "pass", "note": "No git call unless the record claims a published commit; claimed path adds at most six local git calls, no remote call in the guard."},
+  {"name": "Naming & Structure", "verdict": "pass", "note": "Rule lives in a new stdlib module next to release_descent (guard stays at 233 lines, under the 300 cap); one rule shared by guard and verify."},
+  {"name": "Affected Boundaries", "verdict": "pass", "note": "Boundary release_state.json (U3 producer, guard/verify consumers): round-trip probed in the e2e test by writing the fields with release_commit.write_state and reading them back through read_state, the guard and close-phase."},
+  {"name": "Test Hygiene Probe", "verdict": "pass", "note": "scan_test_hygiene.py --diff: no findings."}
+]}

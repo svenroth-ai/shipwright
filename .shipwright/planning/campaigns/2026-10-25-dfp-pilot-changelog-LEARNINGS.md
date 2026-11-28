@@ -210,3 +210,12 @@ Older workflow tools (state machines, BPMN, job schedulers) have the same shape,
    - Map every stop-2 finding to a unit before the campaign closes.
    - Run the canary under the real repo's merge rules.
    - Treat "the plugin finishes in our own repo" as an acceptance test, not a stretch goal.
+
+## Follow-up campaign (dfp-changelog-followups)
+
+### U2 (2026-11-28): guard and close-phase accept a proven merge commit
+
+1. **What it is.** One stdlib rule (`scripts/hooks/release_merge_proof.py`) used by the guard and the closing verify: the release as before, or the recorded merge commit when the PR head is the release, both trees match and the merge commit grows from the recorded base. Inert until U3 writes the record fields.
+2. **What the reviews added.** The base-ancestry check (plan review: a same-tree orphan commit passed), and the PR check following the commit the tag names (external code review: the release commit on the base made a merge commit off the base pass). Both are now tested on real git.
+3. **Pitfalls.** A guided release closed before the merge needs `--release-status waiting` and a note, or `release_page` fails the first close. The harness's `origin` fetches from a fake URL; the bare remote is only the push URL.
+4. **For U3.** Write `base_before` as the base tip the squash was made on, and `tree` from the PR head; the rule refuses anything else. The `gh` stub needs squash and rebase support (D114).

@@ -5,16 +5,24 @@ names the release commit; the tag on ``origin`` names it too (or is not pushed y
 F1b); the CHANGELOG matches the tag (the F7 verifiers); the ``phase_completed`` event is committed; no decision drop is left;
 the PR state fits the mode (merged when the run merges it, opened otherwise, none on the trunk); the GitHub Release page is
 present, or skipped with a reason. A check that is broken is ``ok: false`` with the reason; ``verify`` never repairs.
+
+After a squash or rebase merge the release record may name the PR's merge commit (``published_commit`` with its proof, D110): the tag
+checks then accept the tag on that commit, and the PR check accepts that commit on the base, while the proof still holds
+(``scripts/hooks/release_merge_proof``, the rule the release guard uses too). A record without those fields is judged as before.
 """
 
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 from typing import Any
 
-from . import release_commit, release_paths
-from .release_runner import Recorder, uv_script
+sys.path.append(str(Path(__file__).resolve().parents[1] / "hooks"))  # appended: never shadow a module of the caller
+import release_merge_proof  # noqa: E402  (stdlib-only, shared with the release guard hook)
+
+from . import release_commit, release_paths  # noqa: E402
+from .release_runner import Recorder, uv_script  # noqa: E402
 
 AUTONOMOUS = ("autonomous", "unattended")
 DROP_DIR = ".shipwright/agent_docs/decision-drops"
@@ -40,19 +48,22 @@ def verify(rec: Recorder, plugin_root: Path, *, version: str, state: dict[str, A
     root, tag = rec.cwd, f"v{version}"
     record = release_commit.read_state(root) or {}
     commit = record.get("commit") if record.get("version") == version else None
+    published = proven_published(rec, record) if commit else None
+    named = {c for c in (commit, published) if c}  # the commits the tag may name
+    merged = f"; merge commit {published}" if published else ""
     checks: list[dict[str, Any]] = []
     local = rec.run("verify-local-tag", ["git", "rev-parse", "--verify", "-q", f"refs/tags/{tag}^{{commit}}"]).stdout.strip()
-    checks.append(_check("tag_local", bool(commit) and local == commit, f"{tag} -> {local or 'missing'}; release commit {commit or 'unknown'}"))
+    checks.append(_check("tag_local", local in named, f"{tag} -> {local or 'missing'}; release commit {commit or 'unknown'}{merged}"))
     url = rec.run("verify-remote-url", ["git", "remote", "get-url", "--push", "origin"]).stdout.strip() or "origin"  # where a push goes
     remote = rec.run("verify-remote-tag", ["git", "ls-remote", "--tags", "--end-of-options", url, f"refs/tags/{tag}", f"refs/tags/{tag}^{{}}"])
     shas = {line.split()[1]: line.split()[0] for line in remote.stdout.splitlines() if len(line.split()) == 2}
     pushed = shas.get(f"refs/tags/{tag}^{{}}") or shas.get(f"refs/tags/{tag}")
     if pushed:
-        checks.append(_check("tag_remote", bool(commit) and pushed == commit, f"origin {tag} -> {pushed}"))
+        checks.append({**_check("tag_remote", pushed in named, f"origin {tag} -> {pushed}"), "on_origin": True})
     else:
         waiting = tag_may_be_pending(state)
-        checks.append(_check("tag_remote", waiting and remote.exit == 0, "not pushed: waits for the PR merge" if waiting else f"{tag} is not on origin"
-                             + (f" ({remote.stderr.strip()})" if remote.exit else "")))
+        checks.append({**_check("tag_remote", waiting and remote.exit == 0, "not pushed: waits for the PR merge" if waiting else f"{tag} is not on origin"
+                                + (f" ({remote.stderr.strip()})" if remote.exit else "")), "on_origin": False if remote.exit == 0 else None})  # None: origin not asked
     shared = release_paths.shared_root(plugin_root)
     tagged = rec.run("verify-tag", uv_script(plugin_root / "scripts/checks/verify_release_tag.py", "--shared-root", str(shared),
                                              "--project-root", str(root), "--version", version))
@@ -67,7 +78,7 @@ def verify(rec: Recorder, plugin_root: Path, *, version: str, state: dict[str, A
     drops = sorted(str(p.relative_to(root / DROP_DIR).as_posix()) for p in (root / DROP_DIR).rglob("*")
                    if p.is_file() and not p.name.lower().startswith(("readme", "index", ".git")) and not p.name.endswith(".tmp")) if (root / DROP_DIR).is_dir() else []
     checks.append(_check("no_decision_drops", not drops, "none left" if not drops else f"left: {', '.join(drops[:5])}"))
-    checks.append(_pr_check(rec, state, commit))
+    checks.append(_pr_check(rec, state, commit, published, local))
     status = (release_status or "").lower()
     if status in ("ok", "exists"):
         checks.append(_check("release_page", True, f"{status}: {release_note or 'url reported'}"))
@@ -78,17 +89,29 @@ def verify(rec: Recorder, plugin_root: Path, *, version: str, state: dict[str, A
     return checks
 
 
-def _pr_check(rec: Recorder, state: dict[str, Any], commit: str | None) -> dict[str, Any]:
+def proven_published(rec: Recorder, record: dict[str, Any]) -> str | None:
+    """The record's merge commit when it claims one and the proof holds (``release_merge_proof``); no git call when it claims none."""
+    def git(*args: str) -> tuple[int, str]:
+        done = rec.run("verify-proof", ["git", *args])
+        return done.exit, done.stdout
+
+    return release_merge_proof.proven(git, record) if release_merge_proof.claimed(record) else None
+
+
+def _pr_check(rec: Recorder, state: dict[str, Any], commit: str | None, published: str | None = None, tagged: str = "") -> dict[str, Any]:
     if state.get("on_trunk"):
         return _check("pr_state", not state.get("pr_url"), "released on the trunk: no PR")
     if not state.get("pr_url"):
         return _check("pr_state", False, "released from a feature branch but no PR was opened")
     if state.get("mode") != "standalone" or state.get("autonomy") not in AUTONOMOUS:  # a driven run never merges its PR; a guided one waits for a person
         return _check("pr_state", True, f"PR opened, left for the merge: {state['pr_url']}")
-    reached, base, detail = on_base(rec, state, commit)
+    if published and tagged == published:  # a squash or rebase merge: the tag names the proven merge commit, so that must be on the base
+        (reached, base, detail), what = on_base(rec, state, published), f"the release's merge commit {published[:10]}"
+    else:
+        (reached, base, detail), what = on_base(rec, state, commit), "the release commit"
     if reached is None:
-        return _check("pr_state", False, f"unknown: cannot tell whether the release commit reached {base} ({detail})")
-    return _check("pr_state", reached, f"the release commit is on {base} (origin)" if reached else f"this run merges its PR, but the release commit is not on {base}")
+        return _check("pr_state", False, f"unknown: cannot tell whether {what} reached {base} ({detail})")
+    return _check("pr_state", reached, f"{what} is on {base} (origin)" if reached else f"this run merges its PR, but {what} is not on {base}")
 
 
 def on_base(rec: Recorder, state: dict[str, Any], commit: str | None) -> tuple[bool | None, str, str]:
