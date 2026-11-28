@@ -15,7 +15,9 @@ version, naming the release commit. The commit judged is HEAD, or it must be tha
 event commit only (``record-event`` runs after ``commit-and-tag`` and adds one commit that touches nothing but the event files; an
 empty commit or a merge commit is not one). For a push that sends only a tag, and for ``gh release create``, the judged commit is
 the tag's own (``refs/tags/v<version>``): ``gh pr merge`` leaves HEAD on the trunk at the merge commit, and SKILL.md Step 7 pushes
-the tag after it. A record for any other commit, or no record, blocks.
+the tag after it. After a squash or rebase merge the record may also name the PR's merge commit (``published_commit`` with its proof,
+D110): that commit passes too while its tree is still the audited release's (``release_merge_proof``, shared with the closing verify).
+A record for any other commit, or no record, blocks.
 
 Fail-open: any error in this hook's own parsing or in the git calls that locate the state allows the command; only a remote that cannot be asked (the tag lookup) keeps a deny standing. ``SHIPWRIGHT_RELEASE_GUARD=off`` lifts it.
 Cooperative enforcement against a forgetful model, not an adversarial boundary.
@@ -33,6 +35,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import release_descent  # noqa: E402
+import release_merge_proof  # noqa: E402
 from release_guard_commands import Action, find_actions  # noqa: E402
 
 RUN_STATE_GIT_PATH = "shipwright/release_run.json"
@@ -135,22 +138,23 @@ def _active_state(cwd: Path) -> dict | None:
     return data if here == Path(root).resolve() or Path(root).resolve() in here.parents else None
 
 
-def _record_commit(root: Path, version: str) -> str | None:
+def _record(root: Path, version: str) -> dict | None:
     try:
         rec = json.loads((root / RECORD_REL).read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return None
     ok = isinstance(rec, dict) and rec.get("version") == version and _SHA.fullmatch(str(rec.get("commit", "")))
-    return rec["commit"] if ok else None
+    return rec if ok else None
 
 
-def _is_the_release(root: Path, commit: str, tip: str) -> bool:
-    """``tip`` is the record's commit, or descends from it through event-only commits (the rule is ``release_descent``, shared with ``release.py push-tag``)."""
+def _is_the_release(root: Path, record: dict, tip: str) -> bool:
+    """``tip`` is the record's commit, an event-only descendant of it (``release_descent``, shared with ``release.py push-tag``), or
+    the record's proven merge commit (``release_merge_proof``, shared with the closing verify)."""
     def git(*args: str) -> tuple[int, str]:
         done = _git(root, *args)
         return done.returncode, done.stdout
 
-    return release_descent.is_the_release(git, commit, tip)
+    return release_merge_proof.accepts(git, record, tip)
 
 
 def _judged_commit(root: Path, version: str, by_tag: bool) -> str:
@@ -171,12 +175,14 @@ def _tag_is_on_origin(root: Path, version: str) -> bool:
     return done.returncode == 0 and bool(done.stdout.strip())
 
 
-def _advice(commit: str | None, judged: str, version: str, by_tag: bool) -> str:
+def _advice(record: dict | None, judged: str, version: str, by_tag: bool) -> str:
     subject = f"the tag v{version}" if by_tag and judged else "HEAD"
-    if not commit:
+    if not record:
         return (f"{RECORD_REL} does not exist yet; run `release.py commit-and-tag` (and `record-event`) first")
+    commit, merged = record["commit"], release_merge_proof.claimed(record)
+    also = f", nor its merge commit {merged[:10]} with a proof that still holds" if merged else ""
     return (f"its record names {commit[:10]}, but {subject} is {judged[:10] or 'unknown'}, which is neither that commit nor an event-only "
-            f"descendant of it; check out the release commit or branch (the release was verified for {commit[:10]}), re-run "
+            f"descendant of it{also}; check out the release commit or branch (the release was verified for {commit[:10]}), re-run "
             f"`release.py commit-and-tag` only if the release content changed")
 
 
@@ -190,14 +196,14 @@ def decide(command: str, base_cwd: Path) -> str | None:
         if action.kind == "merge" and not _is_this_releases_merge(cwd, action, state):
             continue
         root, version = Path(state["project_root"]), state["version"]
-        commit, by_tag = _record_commit(root, version), _judges_the_tag(cwd, action)
+        record, by_tag = _record(root, version), _judges_the_tag(cwd, action)
         judged = _judged_commit(root, version, by_tag)
-        if commit and _is_the_release(root, commit, judged):
+        if record and _is_the_release(root, record, judged):
             continue
         if _tag_is_on_origin(root, version):
             continue  # the release is out: nothing left to guard
         what = {"push": "git push of a tag or the trunk", "merge": "gh pr merge", "release": "gh release create"}[action.kind]
-        return (f"Release v{version} is in progress and {_advice(commit, judged, version, by_tag)}: `{what}` would publish a release "
+        return (f"Release v{version} is in progress and {_advice(record, judged, version, by_tag)}: `{what}` would publish a release "
                 f"that has not been verified. If this release is abandoned, ask the user to confirm first: only the user can lift this "
                 f"guard ({_OFF_ENV}=off in the session environment, or removing {RUN_STATE_GIT_PATH} from the git directory).")
     return None

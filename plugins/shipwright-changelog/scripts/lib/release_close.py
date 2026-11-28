@@ -9,7 +9,8 @@ canon records are the master's gate input and stay: C2, C3 with ``--canon-marker
 completes the phase task and runs that gate; it never writes ``phase_history`` itself, so the entry stays with this call.
 ``orchestrator.py update-step`` is never called: the tag/CHANGELOG check it provided runs in ``commit-and-tag`` (F7).
 
-Then A9 (the closing summary and a one-line status, printed by code) and B4 (``release_verify``: read-only; a failed check is exit 1).
+Then A9 (the closing summary and a one-line status, printed by code; the tag line says "pushed" only when the closing verify saw the
+release's tag on origin, D113(1)) and B4 (``release_verify``: read-only; a failed check is exit 1).
 """
 
 from __future__ import annotations
@@ -28,12 +29,17 @@ ADVISORY = ".shipwright/triage.jsonl"  # the release audit's advisory finding, u
 
 def summary(version: str, state: dict[str, Any], checks: list[dict[str, Any]], release_status: str | None, release_url: str | None,
             release_note: str | None) -> str:
-    waiting = release_verify.tag_may_be_pending(state)
-    if state.get("on_trunk"):
-        pr, pushed = "skipped (on main)", f"Tag + {state.get('branch') or 'main'} pushed to origin"
+    remote = next((c for c in checks if c.get("name") == "tag_remote"), {})
+    if remote.get("on_origin"):  # D113(1): what origin holds, not what the mode expects
+        done = f"Tag + {state.get('branch') or 'main'} pushed to origin" if state.get("on_trunk") else "Tag pushed to origin"
+        pushed = done if remote.get("ok") else f"Tag v{version} on origin names another commit than the release"
+    elif "on_origin" in remote and remote["on_origin"] is None:  # the lookup failed: unknown is not "waiting" and not "missing"
+        pushed = f"Tag v{version}: origin could not be asked whether it holds the tag"
+    elif release_verify.tag_may_be_pending(state):
+        pushed = "Tag is pushed after the PR is merged"
     else:
-        pr = state.get("pr_url") or "not opened"
-        pushed = "Tag is pushed after the PR is merged" if waiting else "Tag pushed to origin"
+        pushed = f"Tag v{version} is not on origin"
+    pr = "skipped (on main)" if state.get("on_trunk") else state.get("pr_url") or "not opened"
     page = {"ok": release_url, "exists": release_url}.get((release_status or "").lower()) or f"{release_status or 'not reported'}: {release_note or ''}".rstrip(": ")
     return "\n".join([RULE, "SHIPWRIGHT-CHANGELOG COMPLETE", RULE, f"Version:    v{version}",
                       f"Commits:    {state.get('commits', '?')} categorized", "Changelog:  CHANGELOG.md updated",
