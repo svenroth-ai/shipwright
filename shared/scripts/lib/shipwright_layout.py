@@ -95,10 +95,11 @@ def locate(key: str, root: Path | str, new_rel: str | None, legacy_rel: str, *,
            stub_capable: bool, classify: Callable[[bytes], object]) -> Path:
     """The path *key* lives at under *root* (see the module table). ``new_rel`` ``None``: the file
     does not move and resolves to the root. ``classify`` is ``shipwright_pointer.classify``."""
-    old = Path(root) / legacy_rel
+    base = root if isinstance(root, Path) else Path(root)  # reuse: a faked os.name breaks Path() on 3.11
+    old = base / legacy_rel
     if new_rel is None:
         return old
-    new = Path(root) / new_rel
+    new = base / new_rel
     new_there, old_there = _isfile(new), _isfile(old)
     if new_there and _verdict(new, classify) != "not_stub":
         raise LayoutError("stub_at_new_path", key, new, old)

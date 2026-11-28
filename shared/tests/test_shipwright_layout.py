@@ -274,3 +274,13 @@ def test_a_missing_sibling_is_an_import_error_the_guarded_hooks_catch(tmp_path):
             print(json.dumps({{"raised": type(exc).__name__, "left": "shipwright_paths" in sys.modules}}))
     """)
     assert res == {"raised": "ImportError", "left": False}
+
+
+@pytest.mark.covers("FR-01.11")
+def test_path_reuses_a_path_root_under_a_faked_os_name(tmp_path, monkeypatch):
+    """The dev-server tests fake ``os.name`` (the Windows branch under test reads it). On 3.11 a
+    fresh ``Path()`` then raises "cannot instantiate"; path() must reuse the caller's Path object,
+    as the ``root / NAME`` join it replaced did (CI failure on PR #1128)."""
+    import os
+    monkeypatch.setattr(os, "name", "posix" if os.name == "nt" else "nt")
+    assert sp.path("dev_server", tmp_path) == tmp_path / sp.legacy_rel("dev_server")
