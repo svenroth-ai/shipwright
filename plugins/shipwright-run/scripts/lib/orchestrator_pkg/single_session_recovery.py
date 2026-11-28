@@ -48,6 +48,7 @@ from .config_io import load_run_config  # noqa: E402
 from .config_io import is_single_session, mode_rejection  # noqa: E402
 from .constants import SCHEMA_VERSION  # noqa: E402
 from .single_session_loop import resolve_next_dispatch  # noqa: E402
+from .single_session_wait import release_waiting  # noqa: E402
 
 
 def _lifecycle():
@@ -123,7 +124,7 @@ def resume_run(project_root: Path, *, confirm: bool = False) -> dict[str, Any]:
     context = reload_orchestrator_context(project_root)  # read-only, compact
     action = resolved.get("action")
 
-    if action != "dispatch":
+    if action not in ("dispatch", "waiting"):
         # The run already finished / is blocked / waits for a person — nothing to
         # re-dispatch. Surface the real signal (complete | failed | needs_validation |
         # blocked | ask_human: the frontier is past its gate cap) and emit
@@ -135,20 +136,23 @@ def resume_run(project_root: Path, *, confirm: bool = False) -> dict[str, Any]:
             "next": resolved,
         }
 
+    # A phase held for an outside event (U5): the card names it; Resume releases the hold,
+    # so single-session-next dispatches the same task again.
+    waiting = resolved if action == "waiting" else None
+    if confirm and waiting is not None:
+        loop_state = release_waiting(project_root, loop_state)
+        resolved = resolve_next_dispatch(project_root)
     if confirm:
         obs.emit(
             project_root, event_type="resume", run_id=run_id, resumeAction="dispatch",
             currentPhaseTaskId=loop_state.get("currentPhaseTaskId"),
-            attempt=loop_state.get("attempt"),
+            attempt=loop_state.get("attempt"), waiting=waiting is not None,
         )
-    return {
-        "action": "resume",
-        "resumeAction": "dispatch",
-        "loopState": _loop_pointer(loop_state),
-        "context": context,
-        "next": resolved,
-        "confirmed": confirm,
-    }
+    out = {"action": "resume", "resumeAction": "dispatch", "loopState": _loop_pointer(loop_state),
+           "context": context, "next": resolved, "confirmed": confirm}
+    if waiting is not None:
+        out["waiting"] = waiting
+    return out
 
 
 def mark_human_gate(

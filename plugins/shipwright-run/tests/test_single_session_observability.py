@@ -27,6 +27,7 @@ def test_loop_event_types_are_the_closed_reconciled_set():
         "human_gate_resume",
         "resume",
         "recovery",
+        "phase_waiting",
     )
 
 

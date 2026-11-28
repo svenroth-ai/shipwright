@@ -45,6 +45,12 @@ Repeat until a terminal signal:
      for a `terminal: "ask_human"` rejection in step 3; an override uses this `version`.
      When `recover_useful` is false (an archived split) do not offer "more tries": its
      re-dispatched build would work on the next split.
+   - `waiting` → the frontier phase waits for an outside event (`reason:
+     "waiting_for_merge"`, `pr_url`, `task`, `next_step`). Nothing was claimed, nothing
+     failed, no later phase was planned. **End the turn** in every autonomy mode: print
+     `next_step` (merge the pull request, then re-invoke `/shipwright-run` and choose
+     Resume), with the link as plain text. Never confirm the resume yourself — only a
+     person's Resume answer releases the hold (Resumability below).
    - `complete` → the pipeline finished. Stop; print the completion summary.
    - `failed` → a phase strict-stopped (`failed_tasks`). Stop; surface it.
    - `needs_validation` → deploy done but tasks non-terminal (`blocked`). Stop; skipping
@@ -130,6 +136,15 @@ Repeat until a terminal signal:
    `informCount`, `overridden`); the inform notes themselves are not persisted, only
    counted.
 
+   **A waiting result** (`ok: false` with a `waiting` block, changelog only — see the
+   result contract) is not a strict-stop: apply completes nothing, plans no successor and
+   records a hold in loop state (`waiting`, keyed to the task's `version`); it answers
+   `ok: true`, `waiting`, and `next.action: "waiting"`. A late waiting result from an
+   earlier dispatch is refused `stale_version` like any apply. `--override-reason` is
+   refused for it (`override_requires_ok_result`). A recover bumps the version and so
+   drops the hold. Known limits: run_config shows the task only as `in_progress`, and
+   the phase's duration includes the wait.
+
    **Override (ASK FIRST).** `--override-reason "<why>"` on `single-session-apply` completes
    a phase over its gate: the gate still runs, and its findings, the reason, the task and
    the run's autonomy are written to `validation_overrides[]` in the same locked write as
@@ -200,7 +215,10 @@ resumes via a **confirm card** rather than starting fresh:
      current (`loopState.currentPhaseTaskId`), `attempt`, and what resuming will do
      (`resumeAction`, always `dispatch`). Ask the user **Resume vs Abandon** (constitution
      AskUserQuestion). This call CLAIMS nothing and emits nothing — Abandon leaves
-     state clean.
+     state clean. When the run waits for an outside event the card carries `waiting`
+     (`pr_url`, `next_step`): show it and ask whether it is done (the pull request is
+     merged) before Resume; `--confirm` releases the hold, and `next` is then a
+     dispatch of the SAME phase, which checks the merge itself.
    - `complete` / `failed` / `needs_validation` → the run already FINISHED — not
      resumable. Surface it (a `failed` run recovers via `single-session-recover`, then
      resume); do not loop. No event is emitted.
@@ -243,7 +261,7 @@ overturned.
 The loop appends structured telemetry to `.shipwright/run_loop_events.jsonl` (append-only
 JSONL, gitignored, distinct from the tracked pipeline `shipwright_events.jsonl`). Event
 types: `dispatch`, `phase_result`, `strict_stop`, `human_gate_pause`,
-`human_gate_resume`, `resume`, `recovery`. Emission is **best-effort** — a config that
+`human_gate_resume`, `resume`, `recovery`, `phase_waiting`. Emission is **best-effort** — a config that
 is not a drivable single-session run never reaches these paths (so it never grows the
 file), and a telemetry write failure never crashes the loop (it warns to stderr).
 

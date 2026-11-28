@@ -45,6 +45,7 @@ from single_session.result_contract import validate_phase_runner_result  # noqa:
 from . import phase_gate  # noqa: E402
 from .completion_hook import completion_hook  # noqa: E402
 from .config_io import is_single_session, load_run_config, mode_rejection  # noqa: E402
+from .single_session_wait import apply_waiting  # noqa: E402
 
 
 def _lifecycle():
@@ -178,6 +179,9 @@ def apply_phase_result(
             return refused
     elif override_skipped:
         override_reason = None
+    if "waiting" in result:  # not done, not failed: hold the task for the outside event (U5)
+        return apply_waiting(project_root, config, task, session_uuid=session_uuid,
+                             expected_version=expected_version, result=result)
 
     # A successful, current apply must have PERSISTED every artifact it claims.
     # Verify on disk before any mutation — a claimed-but-unwritten artifact is

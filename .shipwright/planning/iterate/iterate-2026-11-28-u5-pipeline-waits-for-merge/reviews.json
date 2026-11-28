@@ -1,0 +1,172 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-28-u5-pipeline-waits-for-merge",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "pending",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": null,
+      "disposition": null,
+      "recorded_by": null,
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "Pin the reason taxonomy: if `waiting` is absent, the closed reason set must not include `waiting_for_merge`.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "State in the plan that tests inject the waiting result directly; no U6 dependency for testing.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk ·",
+          "file": null,
+          "line": null,
+          "finding": "Either document that infinite waiting is intended (operator drives resume each time — the resume/confirm flow makes this semi-interactive, which may be sufficient), or add a counter with a stop after N waits.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "Spell out the ordering: confirm → `clear_waiting` → dispatch (new version). If dispatch happens before clear, the key check can miss.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk ·",
+          "file": null,
+          "line": null,
+          "finding": "Add an explicit AC/test: a waiting result emits no retry/error events and does not increment `attempt` (beyond the reset).",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security ·",
+          "file": null,
+          "line": null,
+          "finding": "Render as text; no action needed if the card format is plain.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency ·",
+          "file": null,
+          "line": null,
+          "finding": "Note in the plan that U6 must reuse the documented shape verbatim (or the contract module is the single source of truth and the doc references it).",
+          "suggestion": null,
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-11-28T17:46:39.448869+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] ## Findings\n\n**Category: edge-case · Severity: medium**\n`pr_url` validation requires `https://` — fine, but nothing specifies what happens if a waiting result arrives with *no* `waiting` block but a reason string like `waiting_for_merge` in the free-text reason (U6 phase-runner could emit it inconsistently). The contract should reject `reason == \"waiting_for_merge\"` outside the `waiting` block, or state explicitly that it's allowed and treated as a normal failure. Otherwise an older/buggy phase-runner silently burns retry budget on what is conceptually a wait.\n*Suggestion:* Pin the reason taxonomy: if `waiting` is absent, the closed reason set must not include `waiting_for_merge`.\n\n**Category: edge-case · Severity: medium**\nLost loop state + PR already merged: the plan says \"the task is re-dispatched, and the phase reports waiting again if the PR is still open.\" That covers the open-PR case, but does U6 (not in scope here) guarantee the re-dispatch produces a normal `ok` when the PR is merged? If U6 is the sole emitter, this is fine — but U5's end-to-end test only simulates the waiting result. Confirm U5 tests only need a synthetic waiting result, not a real phase-runner (it should — say so explicitly so the test isn't blocked on U6).\n*Suggestion:* State in the plan that tests inject the waiting result directly; no U6 dependency for testing.\n\n**Category: risk · Severity: medium**\nAttempt/`gateRejections` reset on a waiting result: resetting `attempt` means a task that repeatedly emits waiting (e.g., a phase-runner bug, or PR merges but the next run also waits on a *new* PR) can loop forever with an unbounded budget and no terminal condition. Is there any cap on consecutive waiting results (e.g., after N waits, require operator confirmation)?\n*Suggestion:* Either document that infinite waiting is intended (operator drives resume each time — the resume/confirm flow makes this semi-interactive, which may be sufficient), or add a counter with a stop after N […truncated]\n\n[openai] This review is based on the supplied mini-plan. Workspace access was blocked, so I couldn’t verify the campaign brief, pipeline documentation, or current implementation.\n\n1. **Risk · Medium**\n   - **Finding** — Confirmed resume clears the waiting marker before the same task is dispatched. If dispatch fails or the process exits between those steps, the next invocation can lose the PR guidance and retry without a recorded confirmation.\n   - **Suggestion** — Keep the marker valid until dispatch successfully rotates the task’s CAS version. Use that version change to invalidate the old marker, and test a failed dispatch after confirmation.\n\n2. **Edge case · Medium**\n   - **Finding** — The plan checks the marker’s run, task, and version in the loop, but describes the stop hook as showing the PR whenever the loop state holds a marker. A stale marker could still tell the operator to wait after the task advances or another run starts.\n   - **Suggestion** — Use the same current-marker check for `next`, resume, and the stop hook. Test that a stale marker neither blocks dispatch nor appears in the banner.\n\n3. **Approach · Low**\n   - **Finding** — The new `single_session_wait.py` splits a small state transition across apply, loop, and recovery, and the plan lists both `record_waiting` and `hold_waiting` without identifying distinct responsibilities.\n   - **Suggestion** — Keep marker operations in `loop_state.py` and put the apply, next, and resume branches in their existing owners. Add a shared helper where those branches need identical logic, such as checking whether a marker is current.\n\nKeeping waiting in loop state preserves the existing run schema and leaves deploy gated on changelog completion. Make confirmed resume safe to retry and apply the same marker validity rule across all three entry points before implementation.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "pending",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": null,
+      "disposition": null,
+      "recorded_by": null,
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "pending",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": null,
+      "disposition": null,
+      "recorded_by": null,
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "pending",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": null,
+      "disposition": null,
+      "recorded_by": null,
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "pending",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": null,
+      "disposition": null,
+      "recorded_by": null,
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-28T17:46:39.578804+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-28T17:46:39.716703+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

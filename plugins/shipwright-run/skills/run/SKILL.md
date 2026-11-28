@@ -217,7 +217,9 @@ alternate `single-session-next` (resolve + claim the frontier phase) and
 `single-session-apply` (validate + complete the phase-runner's result), with a
 `shipwright-run:phase-runner` subagent in between, until a terminal signal
 (`complete` / `failed` / `needs_validation`), or `ask_human` when a
-phase's gate rejection waits for a person.
+phase's gate rejection waits for a person, or `waiting` when a phase waits for an
+outside event (the release pull request must be merged): end the turn with its
+`next_step` and the link, and never confirm the resume yourself.
 
 **When apply says `phase_gate_failed`** (the phase's own checks found problems — the
 gate is enforced by default), nothing was completed: follow the reference's
@@ -339,7 +341,8 @@ for the full protocol.
    - `resume` → print the resume card (last-done phase, current phase, `attempt`,
      and what resuming will do), then ask the user **Resume vs Abandon**
      (constitution AskUserQuestion). On Resume, re-run with `--confirm` and
-     re-enter the loop at Step 5.
+     re-enter the loop at Step 5. A card with `waiting` names the pull request to
+     merge first (`next_step`); Resume then runs that same phase again.
    - `complete` / `failed` / `needs_validation` → the run already finished →
      [Step 6](#step-6-final-wrap-up).
    - `not_resumable` → single-session but nothing was ever dispatched → start the

@@ -180,6 +180,14 @@ Rules:
   `delegated-to-orchestrator`, `unavailable`, `user-opt-out`). `passes`
   optionally maps pass name → its status. Never claim `completed` for a pass
   whose subagent did not return a verdict.
+- `waiting` — OPTIONAL, changelog phase only: the phase is not done and not
+  failed, it waits for an outside event — `{"reason": "waiting_for_merge",
+  "pr_url": "https://..."}` (the release pull request still has to be merged).
+  Return it with `ok: false` and `reason: "waiting_for_merge"`; the master then
+  stops the run as **waiting** (no successor, nothing failed) and, after a person
+  resumes, dispatches the SAME phase again. So a phase that can report waiting
+  must check the outside state itself when re-run and return `waiting` again or
+  `ok` — never repeat its outward work (no second pull request, version or tag).
 
 Return ONLY this contract as your structured result. Prose before the JSON block
 is fine for a human reading the transcript, but the JSON block is the payload the

@@ -56,6 +56,7 @@ from .config_io import (  # noqa: E402
     mode_rejection,
 )
 from . import phase_gate  # noqa: E402
+from .single_session_wait import waiting_action  # noqa: E402
 from .constants import SCHEMA_VERSION  # noqa: E402
 
 # The APPLY half lives in ``single_session_apply`` (split out when the drivability guard
@@ -110,6 +111,7 @@ def resolve_next_dispatch(project_root: Path) -> dict[str, Any]:
     loop's next action. Returns one ``action``: ``no_config`` | ``mode_unsupported``
     | ``complete`` | ``failed`` (+ ``failed_tasks``) | ``needs_validation`` (+
     ``blocked``) | ``ask_human`` (the frontier waits for a person, ``_awaiting_human``) |
+    ``waiting`` (it waits for an outside event, a PR merge: ``single_session_wait``) |
     ``dispatch`` (+ ``dispatch`` descriptor) | ``blocked`` (non-terminal but nothing runnable).
 
     The mode guard is the loop's FIRST gate, so a config that is not an explicit
@@ -152,7 +154,9 @@ def resolve_next_dispatch(project_root: Path) -> dict[str, Any]:
     frontier = _frontier_task(tasks)
     if frontier is None:
         return {"action": "blocked", "reason": "no_dispatchable_task"}
-    waiting = _awaiting_human(project_root, config, frontier)
+    # A person's gate decision first, then a phase held for an outside event (U5).
+    waiting = (_awaiting_human(project_root, config, frontier)
+               or waiting_action(project_root, config, frontier))
     if waiting is not None:
         return waiting
     return {"action": "dispatch", "dispatch": _dispatch_descriptor(frontier)}

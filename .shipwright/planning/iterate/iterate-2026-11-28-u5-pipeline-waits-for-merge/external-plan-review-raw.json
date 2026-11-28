@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "glm": {
+      "feedback": "## Findings\n\n**Category: edge-case \u00b7 Severity: medium**\n`pr_url` validation requires `https://` \u2014 fine, but nothing specifies what happens if a waiting result arrives with *no* `waiting` block but a reason string like `waiting_for_merge` in the free-text reason (U6 phase-runner could emit it inconsistently). The contract should reject `reason == \"waiting_for_merge\"` outside the `waiting` block, or state explicitly that it's allowed and treated as a normal failure. Otherwise an older/buggy phase-runner silently burns retry budget on what is conceptually a wait.\n*Suggestion:* Pin the reason taxonomy: if `waiting` is absent, the closed reason set must not include `waiting_for_merge`.\n\n**Category: edge-case \u00b7 Severity: medium**\nLost loop state + PR already merged: the plan says \"the task is re-dispatched, and the phase reports waiting again if the PR is still open.\" That covers the open-PR case, but does U6 (not in scope here) guarantee the re-dispatch produces a normal `ok` when the PR is merged? If U6 is the sole emitter, this is fine \u2014 but U5's end-to-end test only simulates the waiting result. Confirm U5 tests only need a synthetic waiting result, not a real phase-runner (it should \u2014 say so explicitly so the test isn't blocked on U6).\n*Suggestion:* State in the plan that tests inject the waiting result directly; no U6 dependency for testing.\n\n**Category: risk \u00b7 Severity: medium**\nAttempt/`gateRejections` reset on a waiting result: resetting `attempt` means a task that repeatedly emits waiting (e.g., a phase-runner bug, or PR merges but the next run also waits on a *new* PR) can loop forever with an unbounded budget and no terminal condition. Is there any cap on consecutive waiting results (e.g., after N waits, require operator confirmation)?\n*Suggestion:* Either document that infinite waiting is intended (operator drives resume each time \u2014 the resume/confirm flow makes this semi-interactive, which may be sufficient), or add a counter with a stop after N waits.\n\n**Category: edge-case \u00b7 Severity: low**\nCAS-keyed marker (`run id + phase task id + task CAS version`): on resume, the \"same changelog task is dispatched again\" \u2014 does re-dispatch rotate the version? The test says \"resume confirm -> same task dispatched with a rotated version.\" If the version rotates but the marker is keyed to the old CAS version, `resolve_next_dispatch` checking \"a frontier with a current marker\" may not match after rotation. Clarify whether `clear_waiting` happens at resume-confirm (before dispatch rotates the version) \u2014 the plan implies yes, but the ordering between `--confirm` clearing the marker and the new dispatch's version assignment should be stated, since a stale-keyed marker is a silent no-op.\n*Suggestion:* Spell out the ordering: confirm \u2192 `clear_waiting` \u2192 dispatch (new version). If dispatch happens before clear, the key check can miss.\n\n**Category: risk \u00b7 Severity: low**\nRouting in `single_session_apply.py`: \"after the override check... before artifacts/gate/completion.\" A waiting result is `ok: false` \u2014 verify the existing failure path doesn't consume it first (retries, error events) before the `waiting` branch runs. The plan's ordering statement suggests this is handled, but a test should cover \"waiting result does not trigger retry/error handling.\"\n*Suggestion:* Add an explicit AC/test: a waiting result emits no retry/error events and does not increment `attempt` (beyond the reset).\n\n**Category: security \u00b7 Severity: low**\n`pr_url` is emitted into resume cards, banners, and events. It's validated for scheme/whitespace/length, which is good. Ensure it's rendered as plain text in the resume card (not rendered as a clickable/auto-linked URL in any WebUI context) to avoid crafted-URL display issues. Given the brief's context (internal tooling), this is low.\n*Suggestion:* Render as text; no action needed if the card format is plain.\n\n**Category: dependency \u00b7 Severity: low**\nDocs list is broad (5 doc files + spec + skill). Fine for this codebase's conventions, but confirm `agents/phase-runner.md` result-shape doc is coordinated with U6 so the two units don't describe the shape differently.\n*Suggestion:* Note in the plan that U6 must reuse the documented shape verbatim (or the contract module is the single source of truth and the doc references it).\n\n## Overall assessment\n\nThe approach is sound and shows good fail-safe reasoning (waiting as `ok:false` so older appliers strict-stop; loop-state marker instead of a schema value). The main things to nail down are the marker-lifetime/CAS-version ordering across resume, and whether unbounded re-waiting needs a cap. These are clarifications and hardening, not redesign.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "This review is based on the supplied mini-plan. Workspace access was blocked, so I couldn\u2019t verify the campaign brief, pipeline documentation, or current implementation.\n\n1. **Risk \u00b7 Medium**\n   - **Finding** \u2014 Confirmed resume clears the waiting marker before the same task is dispatched. If dispatch fails or the process exits between those steps, the next invocation can lose the PR guidance and retry without a recorded confirmation.\n   - **Suggestion** \u2014 Keep the marker valid until dispatch successfully rotates the task\u2019s CAS version. Use that version change to invalidate the old marker, and test a failed dispatch after confirmation.\n\n2. **Edge case \u00b7 Medium**\n   - **Finding** \u2014 The plan checks the marker\u2019s run, task, and version in the loop, but describes the stop hook as showing the PR whenever the loop state holds a marker. A stale marker could still tell the operator to wait after the task advances or another run starts.\n   - **Suggestion** \u2014 Use the same current-marker check for `next`, resume, and the stop hook. Test that a stale marker neither blocks dispatch nor appears in the banner.\n\n3. **Approach \u00b7 Low**\n   - **Finding** \u2014 The new `single_session_wait.py` splits a small state transition across apply, loop, and recovery, and the plan lists both `record_waiting` and `hold_waiting` without identifying distinct responsibilities.\n   - **Suggestion** \u2014 Keep marker operations in `loop_state.py` and put the apply, next, and resume branches in their existing owners. Add a shared helper where those branches need identical logic, such as checking whether a marker is current.\n\nKeeping waiting in loop state preserves the existing run schema and leaves deploy gated on changelog completion. Make confirmed resume safe to retry and apply the same marker validity rule across all three entry points before implementation.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-11-28-u5-pipeline-waits-for-merge",
+    "at": "2026-11-28T17:39:22.858541+00:00"
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

@@ -81,7 +81,14 @@ def gate_terminal_for(
     state: Any, *, run_id: Any, phase_task_id: Any, version: int,
 ) -> Optional[dict[str, Any]]:
     """The ``gateTerminal`` marker when it describes this run's task at this version."""
-    marker = state.get("gateTerminal") if isinstance(state, dict) else None
+    return _current_marker(state, "gateTerminal", run_id=run_id,
+                           phase_task_id=phase_task_id, version=version)
+
+
+def _current_marker(
+    state: Any, key: str, *, run_id: Any, phase_task_id: Any, version: int,
+) -> Optional[dict[str, Any]]:
+    marker = state.get(key) if isinstance(state, dict) else None
     if (not isinstance(marker, dict) or state.get("runId") != run_id
             or marker.get("phaseTaskId") != phase_task_id):
         return None
@@ -89,6 +96,31 @@ def gate_terminal_for(
         return marker if int(marker.get("version")) == int(version) else None
     except (TypeError, ValueError):
         return None
+
+
+def record_waiting(
+    state: dict[str, Any], *, phase_task_id: str, version: int, reason: str, pr_url: str,
+) -> dict[str, Any]:
+    """Return a new state recording that THIS task at THIS ``version`` waits for an outside
+    event (``waiting``). Keyed like ``gateTerminal``: a recover (version bump) or a
+    re-dispatch (version rotation) makes it stale with no reset code of its own. A waiting
+    pass is a finished pass, not a retry, so ``attempt`` / ``gateRejections`` restart."""
+    return {**state, "attempt": 0, "gateRejections": 0,
+            "waiting": {"phaseTaskId": phase_task_id, "version": int(version),
+                        "reason": reason, "prUrl": pr_url}}
+
+
+def waiting_for(
+    state: Any, *, run_id: Any, phase_task_id: Any, version: int,
+) -> Optional[dict[str, Any]]:
+    """The ``waiting`` marker when it describes this run's task at this version."""
+    return _current_marker(state, "waiting", run_id=run_id,
+                           phase_task_id=phase_task_id, version=version)
+
+
+def clear_waiting(state: dict[str, Any]) -> dict[str, Any]:
+    """Return a new state without the ``waiting`` marker (the operator resumed)."""
+    return {k: v for k, v in state.items() if k != "waiting"}
 
 
 def hold_gate_terminal(
