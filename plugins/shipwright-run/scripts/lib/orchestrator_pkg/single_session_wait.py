@@ -12,8 +12,10 @@ This module is the loop's whole handling of it, in three beats:
   ``stale_session``) and writes nothing.
 * **next** (``waiting_action``) — while the marker is current, ``single-session-next``
   answers ``waiting`` (the link and what to do) instead of dispatching.
-* **resume** (``release_waiting``) — a confirmed ``single-session-resume`` clears the marker;
-  ``single-session-next`` then re-dispatches the SAME task (rotating its version).
+* **resume** (``release_waiting``) — a confirmed ``single-session-resume`` releases the
+  marker (kept, flagged ``released``, so a replayed result of that same dispatch is refused
+  ``stale_version`` instead of re-holding); ``single-session-next`` then re-dispatches the
+  SAME task (rotating its version, which makes the marker stale).
 
 No run_config schema value is involved. Losing the loop state only loses the hold: the task
 is re-dispatched, and a phase that reports waiting checks the outside state itself on a
@@ -37,6 +39,7 @@ from single_session.loop_state import (  # noqa: E402
     record_waiting,
     save_loop_state,
     waiting_for,
+    waiting_released_for,
 )
 
 
@@ -71,6 +74,10 @@ def apply_waiting(
         return {"ok": False, "reason": "loop_state_unreadable", "error": str(exc)}
     run_id = config.get("runId")
     phase_task_id = task["phaseTaskId"]
+    if waiting_released_for(state, run_id=run_id, phase_task_id=phase_task_id, version=version):
+        return {"ok": False, "reason": "stale_version",
+                "detail": "Resume released this dispatch's hold: apply only the result of "
+                          "the next single-session-next dispatch."}
     if not isinstance(state, dict) or state.get("runId") != run_id:
         state = init_loop_state(run_id, current_phase_task_id=phase_task_id)
     waiting = result["waiting"]
@@ -93,6 +100,11 @@ def next_step_text(phase: Any, reason: str, pr_url: str) -> str:
         return (f"Merge the pull request {pr_url} on the code host. Then re-invoke "
                 f"/shipwright-run and choose Resume: the {phase} phase runs again and finishes.")
     return f"Then re-invoke /shipwright-run and choose Resume: the {phase} phase runs again."
+
+
+def card_block(action: dict[str, Any]) -> dict[str, Any]:
+    """The stable ``waiting`` block of a resume card (confirmed or not)."""
+    return {k: action.get(k) for k in ("reason", "pr_url", "task", "next_step")}
 
 
 def waiting_action(
@@ -119,7 +131,7 @@ def waiting_action(
 
 
 def release_waiting(project_root: Path, loop_state: dict[str, Any]) -> dict[str, Any]:
-    """The operator confirmed Resume on a waiting run: drop the hold so the next
+    """The operator confirmed Resume on a waiting run: release the hold so the next
     ``single-session-next`` dispatches the same task again. Returns the saved state."""
     state = clear_waiting(loop_state)
     save_loop_state(project_root, state)

@@ -67,9 +67,11 @@ REQUIRED_RESULT_KEYS = ("ok", "phase", "summary", "artifacts")
 WAITING_REASONS = ("waiting_for_merge",)
 # The phases allowed to report each reason: the release phase is the only producer (U6).
 WAITING_PHASES = {"waiting_for_merge": ("changelog",)}
-# A plain https link: URL characters only, so no space, control or escape character
-# reaches a terminal or a card. Mirrored literally in hooks/master_stop_check.py.
-PR_URL_RE = re.compile(r"https://[A-Za-z0-9._~:/?#\[\]@!$&'()*+,;=%-]{1,500}")
+# A plain https link with a host name, at most 508 characters, URL characters only: no
+# space, control or escape character reaches a terminal or a card. Mirrored literally in
+# hooks/master_stop_check.py.
+PR_URL_RE = re.compile(r"(?=.{9,508}$)https://[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*(?::[0-9]{1,5})?"
+                       r"(?:[/?#][A-Za-z0-9._~:/?#\[\]@!$&'()*+,;=%-]*)?")
 
 # Mirror of shared/schemas/run_config.v2.schema.json $defs.Phase.enum. Kept as a
 # literal (no runtime import coupling); drift is caught by the contract test.
@@ -188,7 +190,7 @@ def _validate_waiting(waiting: Any, ok: Any, phase: Any) -> list[str]:
     url = waiting.get("pr_url")
     if not (isinstance(url, str) and PR_URL_RE.fullmatch(url)):
         errors.append("'waiting.pr_url' must be a plain https:// link "
-                      "(URL characters only, at most 500 after the scheme)")
+                      "with a host name (URL characters only, at most 508)")
     return errors
 
 

@@ -1,0 +1,15 @@
+{
+  "stage": "spec-compliance",
+  "verdict": "PASS",
+  "spec_citations": [],
+  "summary": "All 4 acceptance criteria of U5 are met. AC1: a waiting changelog result goes to apply_waiting (single_session_apply.py:182-184), which completes nothing and plans no successor; the task stays in_progress, the run status does not change, and a hold keyed to run, task and version is written to the loop state. AC2: resolve_next_dispatch answers action waiting with pr_url and next_step; the CLI exits 0; a confirmed resume releases the hold and the same task is dispatched again with a new version. AC3: an ok result after resume moves on to deploy, or ends the run complete with deploy_target none. AC4 not run by this reviewer (no shell), rests on the reported 924 passing. No run_config schema value; inert until U6 (changelog-only, ok:false).",
+  "per_ac": [
+    {"ac": "AC1 waiting result: task not done, run not complete, deploy not scheduled", "result": "met", "evidence": ["plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_apply.py:182", "plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_wait.py:49-87", "plugins/shipwright-run/tests/test_single_session_waiting.py:129-146"]},
+    {"ac": "AC2 loop reports waiting with PR URL; resume re-dispatches the changelog task", "result": "met", "evidence": ["plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_loop.py:157-161", "plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_recovery.py:139-155", "plugins/shipwright-run/tests/test_single_session_waiting.py:150-167"]},
+    {"ac": "AC3 second ok result moves on to deploy, or ends the run with deploy_target none", "result": "met", "evidence": ["plugins/shipwright-run/tests/test_single_session_waiting.py:171-189"]},
+    {"ac": "AC4 every current shipwright-run test stays green", "result": "not verified by this reviewer (no shell access); rests on the reported 924 passing locally"}
+  ],
+  "ac_verdicts": [
+    {"ac": "item-1", "verdict": "matches", "diff_location": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_wait.py:49", "reason": "The waiting result marks nothing done or failed and starts no later phase, the run is not reported finished, next and the resume card give the next step with the link, a confirmed resume runs the same phase again, and a later ok goes on to deploy or ends the run when there is no deploy target.", "weakens": false}
+  ]
+}

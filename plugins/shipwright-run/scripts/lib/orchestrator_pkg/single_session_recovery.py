@@ -48,7 +48,7 @@ from .config_io import load_run_config  # noqa: E402
 from .config_io import is_single_session, mode_rejection  # noqa: E402
 from .constants import SCHEMA_VERSION  # noqa: E402
 from .single_session_loop import resolve_next_dispatch  # noqa: E402
-from .single_session_wait import release_waiting  # noqa: E402
+from .single_session_wait import card_block, release_waiting  # noqa: E402
 
 
 def _lifecycle():
@@ -151,7 +151,7 @@ def resume_run(project_root: Path, *, confirm: bool = False) -> dict[str, Any]:
     out = {"action": "resume", "resumeAction": "dispatch", "loopState": _loop_pointer(loop_state),
            "context": context, "next": resolved, "confirmed": confirm}
     if waiting is not None:
-        out["waiting"] = waiting
+        out["waiting"] = card_block(waiting)
     return out
 
 

@@ -113,14 +113,31 @@ def record_waiting(
 def waiting_for(
     state: Any, *, run_id: Any, phase_task_id: Any, version: int,
 ) -> Optional[dict[str, Any]]:
-    """The ``waiting`` marker when it describes this run's task at this version."""
-    return _current_marker(state, "waiting", run_id=run_id,
-                           phase_task_id=phase_task_id, version=version)
+    """The ``waiting`` marker when it holds this run's task at this version (a released
+    marker holds nothing)."""
+    marker = _current_marker(state, "waiting", run_id=run_id,
+                             phase_task_id=phase_task_id, version=version)
+    return None if marker is None or marker.get("released") else marker
+
+
+def waiting_released_for(
+    state: Any, *, run_id: Any, phase_task_id: Any, version: int,
+) -> bool:
+    """True when the operator released this task's hold at this version: a waiting result
+    of that same dispatch, replayed, must not hold the task again."""
+    marker = _current_marker(state, "waiting", run_id=run_id,
+                             phase_task_id=phase_task_id, version=version)
+    return bool(marker and marker.get("released"))
 
 
 def clear_waiting(state: dict[str, Any]) -> dict[str, Any]:
-    """Return a new state without the ``waiting`` marker (the operator resumed)."""
-    return {k: v for k, v in state.items() if k != "waiting"}
+    """Return a new state whose ``waiting`` marker is released (the operator resumed).
+    Kept, not deleted, so the released dispatch cannot re-hold; the next dispatch rotates
+    the version and makes it stale."""
+    marker = state.get("waiting")
+    if not isinstance(marker, dict):
+        return dict(state)
+    return {**state, "waiting": {**marker, "released": True}}
 
 
 def hold_gate_terminal(

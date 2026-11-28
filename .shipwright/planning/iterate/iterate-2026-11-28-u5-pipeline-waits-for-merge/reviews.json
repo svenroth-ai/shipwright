@@ -132,15 +132,27 @@
     },
     "spec": {
       "review_type": "spec",
-      "status": "pending",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": null,
+      "completed_at": "2026-11-28T17:48:19.349728+00:00",
       "disposition": null,
-      "recorded_by": null,
+      "recorded_by": "spec-reviewer",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "opus",
+      "verdict": "pass",
+      "reviewed_commit": "8f010425d78c58520824ec4e4a2bfc458c498f2d",
+      "ac_verdicts": [
+        {
+          "ac": "item-1",
+          "verdict": "matches",
+          "diff_location": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/single_session_wait.py:49",
+          "reason": "The waiting result marks nothing done or failed and starts no later phase, the run is not reported finished, next and the resume card give the next step with the link, a confirmed resume runs the same phase again, and a later ok goes on to deploy or ends the run when there is no deploy target.",
+          "weakens": false
+        }
+      ]
     },
     "plan_internal": {
       "review_type": "plan_internal",

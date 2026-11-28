@@ -104,6 +104,8 @@ def test_contract_accepts_a_changelog_waiting_result():
     ({"waiting": {"reason": "waiting_for_merge", "pr_url": PR + " rm"}}, "pr_url"),
     ({"waiting": {"reason": "waiting_for_merge", "pr_url": PR + "\x1b[2J"}}, "pr_url"),
     ({"waiting": {"reason": "waiting_for_merge", "pr_url": "https://" + "a" * 501}}, "pr_url"),
+    ({"waiting": {"reason": "waiting_for_merge", "pr_url": "https:///pull/42"}}, "pr_url"),
+    ({"waiting": {"reason": "waiting_for_merge", "pr_url": "https://"}}, "pr_url"),
     ({"waiting": {"reason": "waiting_for_merge"}}, "pr_url"),
     ({"waiting": "merge"}, "'waiting' must be a dict"),
     ({"phase": "build"}, "only the ('changelog',) phase"),
@@ -157,11 +159,13 @@ def test_next_keeps_answering_waiting_until_resume_then_redispatches_the_same_ta
     card = resume_run(tmp_project)
     assert card["action"] == "resume" and card["confirmed"] is False
     assert card["waiting"]["pr_url"] == PR and card["next"]["action"] == "waiting"
+    assert set(card["waiting"]) == {"reason", "pr_url", "task", "next_step"}
     assert loop.next_dispatch(tmp_project)["action"] == "waiting"  # the card claims nothing
 
     confirmed = resume_run(tmp_project, confirm=True)
     assert confirmed["action"] == "resume" and confirmed["next"]["action"] == "dispatch"
-    assert "waiting" not in load_loop_state(tmp_project)
+    assert confirmed["waiting"] == card["waiting"]  # the same block, confirmed or not
+    assert load_loop_state(tmp_project)["waiting"]["released"] is True
 
     again = _dispatch(tmp_project)
     assert again["phaseTaskId"] == d["phaseTaskId"] and again["version"] != d["version"]
@@ -195,9 +199,33 @@ def test_a_late_waiting_result_from_an_older_dispatch_writes_nothing(tmp_project
     old = _dispatch(tmp_project)
     _dispatch(tmp_project)  # a second next rotates the version
     applied = _apply(tmp_project, old, _waiting())
-    assert applied == {**applied, "ok": False, "reason": "stale_version"}
+    assert applied["ok"] is False and applied["reason"] == "stale_version"
     assert "waiting" not in (load_loop_state(tmp_project) or {})
     assert loop.resolve_next_dispatch(tmp_project)["action"] == "dispatch"
+
+
+def test_a_replayed_waiting_result_cannot_undo_a_confirmed_resume(tmp_project):
+    """Resume released the hold of dispatch d; d's waiting result, applied again before the
+    next dispatch, is refused and the next call still dispatches the same task."""
+    _run_to_changelog(tmp_project)
+    d, _ = _wait(tmp_project)
+    resume_run(tmp_project, confirm=True)
+    replay = _apply(tmp_project, d, _waiting())
+    assert replay["ok"] is False and replay["reason"] == "stale_version"
+    again = _dispatch(tmp_project)
+    assert again["phaseTaskId"] == d["phaseTaskId"]
+
+
+def test_an_unreadable_loop_state_fails_the_waiting_apply_closed(tmp_project):
+    _run_to_changelog(tmp_project)
+    d = _dispatch(tmp_project)
+    path = tmp_project / ".shipwright" / "run_loop_state.json"
+    path.write_text("{not json", encoding="utf-8")
+    applied = _apply(tmp_project, d, _waiting())
+    assert applied["ok"] is False and applied["reason"] == "loop_state_unreadable"
+    assert path.read_text(encoding="utf-8") == "{not json"  # nothing written
+    task = next(t for t in _cfg(tmp_project)["phase_tasks"] if t["phaseTaskId"] == d["phaseTaskId"])
+    assert task["status"] == "in_progress"
 
 
 def test_waiting_refuses_an_override_and_a_task_that_is_not_open(tmp_project):

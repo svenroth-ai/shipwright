@@ -51,7 +51,8 @@ LEGACY_MULTI_SESSION = "multi_session"
 
 # Mirror of single_session.result_contract.PR_URL_RE: the loop state is a plain file, so the
 # link is re-checked before it reaches the terminal (no control or escape characters).
-_PR_URL_RE = re.compile(r"https://[A-Za-z0-9._~:/?#\[\]@!$&'()*+,;=%-]{1,500}")
+_PR_URL_RE = re.compile(r"(?=.{9,508}$)https://[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*(?::[0-9]{1,5})?"
+                        r"(?:[/?#][A-Za-z0-9._~:/?#\[\]@!$&'()*+,;=%-]*)?")
 _LOOP_STATE_REL = Path(".shipwright") / "run_loop_state.json"
 
 
