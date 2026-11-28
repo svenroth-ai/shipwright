@@ -144,8 +144,9 @@ artifact has exactly one documented resolution strategy:
 | `shipwright_test_results.json` | **ours** (PR-owned snapshot) |
 | `.shipwright/config/shipwright_test_results.json` | **ours** (the same snapshot in its new place, recognised from R1c-3 on) |
 
-> **Since iterate-2026-07-27-derived-snapshots-off-branch the twelve
-> `DERIVED_SNAPSHOTS` rows above describe a path an iterate no longer takes.**
+> **Since iterate-2026-07-27-derived-snapshots-off-branch the thirteen
+> `DERIVED_SNAPSHOTS` rows above (twelve files; the test-results snapshot counts in both
+> of its places since R1c-3) describe a path an iterate no longer takes.**
 > (The `.shipwright/planning/adr/INDEX.md` row is the exception and is *not* one
 > of them — an iterate branch deliberately DOES carry the index, which is why it
 > needed registering at all.) The strategies above remain the
@@ -175,13 +176,13 @@ artifact has exactly one documented resolution strategy:
 > reported **skipped**, never clean — a merge HEAD reports no paths, so "clean"
 > cannot be told from "blind".
 >
-> **Ten of the twelve, not all twelve** (trg-ad29a709, then P2.15/trg-01cd6aef). The
+> **Ten of the thirteen, not all thirteen** (trg-ad29a709, then P2.15/trg-01cd6aef). The
 > restore resets `RESTORABLE_SNAPSHOTS` — everything a producer can RE-DERIVE. **Two
-> paths are excluded**, and the counts are asserted, not narrated
+> files (three paths) are excluded**, and the counts are asserted, not narrated
 > (`test_derived_snapshots_run_written.py`), because this paragraph had already fallen a
 > path behind — it read "ten of the eleven" after the throughput report joined the set.
 >
-> - `shipwright_test_results.json` — the run WRITES it (the F5 ledger) and nothing can
+> - `shipwright_test_results.json` (in either place) — the run WRITES it (the F5 ledger) and nothing can
 >   recompute it: resetting a MODIFIED copy is not undoing a regeneration, it is deleting
 >   this run's evidence, and it did so silently in two separate sessions.
 > - `.shipwright/agent_docs/session_handoff.md` — its BODY is re-derivable, but its canon
@@ -259,9 +260,9 @@ artifact has exactly one documented resolution strategy:
 > before the abort paths breaks them, silently (`error: Entry '<path>' not uptodate`,
 > exit 128, `MERGE_HEAD` left standing). The `finally` runs after any abort.
 >
-> **Write matrix consequence.** No *phase* writes these twelve onto the default
+> **Write matrix consequence.** No *phase* writes these thirteen onto the default
 > branch. Seven of them — the compliance directory — are written by the **release**
-> and by an **on-demand documents-only PR**; the other five stay frozen by
+> and by an **on-demand documents-only PR**; the other six (five files) stay frozen by
 > classification (see the next block). Freezing was deliberate rather than
 > incidental: a branch-local derivation is not merely conflict-prone but wrong,
 > reading the branch's git history (pre-squash SHAs) and an event log missing every
@@ -3382,7 +3383,10 @@ Two surfaces (plan v7 Option Z, 2026-04-19):
 > - *Git-side check (second enforcement point)*: `scripts/hooks/pre-commit`
 >   (enabled per clone by `scripts/install-hooks.sh`, `core.hooksPath`) runs
 >   `git_precommit_rtm_coverage.py` after the bloat anti-ratchet step (both always
->   run; the commit is blocked if either blocks). Git runs it inside the real
+>   run; the commit is blocked if either blocks). The anti-ratchet step runs with
+>   `--require-baseline` (R1d): a baseline in neither its root nor its new place blocks
+>   instead of skipping, and `bloat-check.yml` does the same and reads the base
+>   commit's baseline where it lived at that commit (`shipwright_rel_at.py`). Git runs it inside the real
 >   `git commit`, so no shell shape can hide the commit, and it measures the manifest
 >   **staged for that commit** (git supplies the real or temporary index, so `-a` and
 >   pathspec commits are judged on what they will commit - the PreToolUse "ordering

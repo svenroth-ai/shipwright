@@ -1,0 +1,1 @@
+Checks that look at earlier commits now find Shipwright's project files in their new folder as well as at the root, and this repository's file-size check now fails instead of passing silently when its baseline is missing (no files move yet)

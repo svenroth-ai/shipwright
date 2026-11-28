@@ -28,7 +28,17 @@ framework_root="$(cd "$hooks_dir/../.." && pwd)"
 status=0
 
 # --- 1. bloat anti-ratchet --------------------------------------------------
-if [ -f "$repo_root/shipwright_bloat_baseline.json" ]; then
+# Runs every time (R1d): this repo always has a baseline, at the root or in its new
+# place, and --require-baseline fails the check when it is in neither on disk. (A staged
+# deletion that leaves the file on disk is caught by CI's --require-baseline, not here.)
+# A missing checker blocks too when the repo tracks a baseline (in either place):
+# deleting it must not switch the gate off. A repo with neither has no bloat gate.
+if [ ! -f "$repo_root/shared/scripts/hooks/anti_ratchet_check.py" ]; then
+    if git -C "$repo_root" ls-files | grep -q 'shipwright_bloat_baseline\.json$'; then
+        echo "anti-ratchet pre-commit: shared/scripts/hooks/anti_ratchet_check.py is missing - blocking" >&2
+        status=1
+    fi
+else
     if ! command -v uv >/dev/null 2>&1; then
         cat >&2 <<'EOF'
 anti-ratchet pre-commit: 'uv' is not on PATH.
@@ -40,7 +50,7 @@ Temporary bypass (one commit):  git commit --no-verify
 EOF
         status=1
     elif ! uv run "$repo_root/shared/scripts/hooks/anti_ratchet_check.py" \
-        --project-root "$repo_root" \
+        --project-root "$repo_root" --require-baseline \
         --staged; then
         status=1
     fi

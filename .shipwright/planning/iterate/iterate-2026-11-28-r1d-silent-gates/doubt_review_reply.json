@@ -1,0 +1,38 @@
+{
+"stage": "doubt",
+"gating": "advisory-must-address",
+"doubts": [
+{
+"severity": "high",
+"lens": "hidden coupling & blast radius",
+"claim_under_doubt": "nothing else depends on the workflow spelling the baseline by its root name",
+"file": "shared/tests/test_shipwright_monorepo_profile.py",
+"disproof_attempt": "line 94 asserted the root name in bloat-check.yml",
+"what_would_resolve_it": "FIXED: asserts the per-commit lookup"
+},
+{
+"severity": "low",
+"lens": "reversibility",
+"claim_under_doubt": "the hook never blocks a legitimate commit",
+"file": "scripts/hooks/pre-commit",
+"disproof_attempt": "an old branch with the checker but no baseline now blocks; a deleted checker skipped",
+"what_would_resolve_it": "deleted checker FIXED (blocks); old-branch case accepted"
+},
+{
+"severity": "low",
+"lens": "boundary & contract",
+"claim_under_doubt": "ls-tree asks about the same path git show reads",
+"file": "shared/scripts/lib/shipwright_layout.py",
+"disproof_attempt": "-C root resolves relative to cwd",
+"what_would_resolve_it": "FIXED: --full-tree"
+},
+{
+"severity": "info",
+"lens": "hidden coupling",
+"claim_under_doubt": "changing anti_ratchet_check.py is local",
+"file": "shared/scripts/hooks/anti_ratchet_check.py",
+"disproof_attempt": "webui vendors it with a canonical hash",
+"what_would_resolve_it": "recorded for the webui card (BRIEF 12.14 (b))"
+}
+]
+}

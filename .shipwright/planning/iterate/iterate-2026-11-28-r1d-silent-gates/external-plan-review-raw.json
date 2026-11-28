@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "1. **Category:** risk \u00b7 **Severity:** high  \n   **Finding:** Required-baseline mode covers the head baseline, but the plan does not specify what happens when CI cannot read the base baseline. If base capture turns a failed `git show` into an empty baseline, the workflow can still compare against the wrong data and pass.  \n   **Suggestion:** Make a failed base read terminate the workflow before comparison. Exercise the actual capture step with a moved baseline, a missing baseline, and an invalid base ref. The current workflow content test cannot establish those outcomes.\n\n2. **Category:** edge-case \u00b7 **Severity:** medium  \n   **Finding:** The pre-commit hook resolves the baseline from the working tree. A staged deletion can therefore pass if an unstaged copy still exists, even though the resulting commit will contain neither baseline path. A partial commit can similarly check baseline contents that differ from what will be committed.  \n   **Suggestion:** Resolve both paths and read the baseline from the Git index for the pre-commit check. Add a regression case that stages deletion while leaving a working-tree copy.\n\n3. **Category:** security \u00b7 **Severity:** medium  \n   **Finding:** The workflow now executes an additional checkout-supplied Python entry point during base capture. The plan verifies that `uv` is installed by then, but does not establish which revision supplies the helper or what credentials and permissions are available at that step. If the helper comes from the PR head, its code can influence which baseline the required gate compares.  \n   **Suggestion:** Verify the workflow trigger, checkout ref, and token permissions. If base capture is intended to be trusted independently of the PR, perform the base lookup using trusted workflow code and the registered paths, while retaining the shared resolver for unprivileged callers.\n\nPer-commit path resolution is the right approach, and a required mode preserves the consumer default. This review is based on the supplied specification and test ledger. Verify that CI fails closed when the base cannot be read and that the hook checks what will actually be committed before merging.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "## Review Findings\n\n- **Category: edge-case \u2014 Severity: high**\n  **Finding:** In `bloat-check.yml`, `shipwright_rel_at.py bloat_baseline --commit <base>` runs `git cat-file -e <base>:<path>`. With GitHub's default shallow checkout (`fetch-depth: 1`), the base commit object is frequently **not present** in the clone for PR runs. Per design, \"an unreadable commit reads as root\" \u2014 so the tool silently falls back to the root path. Pre-R3 that fallback happens to be correct; post-R3 the root holds a pointer stub, so the base baseline resolves to nothing and the required gate fails red on a healthy PR. The probes checked uv step ordering but not commit-object availability.\n  **Suggestion:** Ensure the workflow fetches the base commit (explicit `git fetch origin <base_sha>` in the base-capture step, or `fetch-depth: 0`), and/or have the CLI distinguish \"commit not present\" from \"path absent at commit\" so a missing commit is a hard error rather than a silent root fallback.\n\n- **Category: edge-case \u2014 Severity: medium**\n  **Finding:** The \"unreadable repo/commit reads as root\" fallback cannot distinguish repo corruption, a typo'd rev, and a legitimately absent path. That's fine for the readers whose own `git show` then errors, but for `rel_at` used to *decide which path to read* (the workflow, the AC growth check) the fallback changes which file is diffed rather than surfacing an error \u2014 a silent wrong answer, exactly the class of failure this PR exists to close.\n  **Suggestion:** Keep the fallback for readers that re-read anyway, but for the CLI used in CI, make \"commit not resolvable\" a distinct non-zero exit (not a root answer), so the gate fails loudly rather than diffing against the wrong place.\n\n- **Category: risk \u2014 Severity: medium**\n  **Finding:** The pre-commit hook hardcodes `--require-baseline` and now runs \"whenever the checker script exists.\" If consumers copy this hook (hooks are commonly copied), they inherit fail-closed behavior while the CLI's stated consumer contract is fail-open. Spec Impact says consumers keep the default skip \u2014 the hook undermines that claim.\n  **Suggestion:** Note this in the hooks docs explicitly, or gate `--require-baseline` on a marker (e.g., the baseline's expected location existing / a repo-level config) rather than unconditionally.\n\n- **Category: dependency \u2014 Severity: low**\n  **Finding:** `rel_at(key, commit, root)` makes `root` required and updates the 6 in-repo callers, but `shared/` implies possible cross-repo vendoring/pinning. A consumer pinning an older shared copy with newer call sites (or vice versa) breaks at runtime, not at review time.\n  **Suggestion:** Confirm shared scripts are versioned/pinned together; if consumers vendor them, flag the signature change as a breaking bump in the changelog/docs.\n\n- **Category: edge-case \u2014 Severity: low**\n  **Finding:** AC3 only applies `rel_at(..., parent)` when the baseline path matches the registry's AC baseline (either place). A custom baseline path that itself moved between parent and head is read \"as before\" \u2014 the same silent-failure class, just narrower.\n  **Suggestion:** Acceptable to leave out of scope, but worth one line in the mini-plan acknowledging it so R3 doesn't reintroduce the bug for custom baselines.\n\n- **Category: approach \u2014 Severity: low (positive)**\n  **Finding:** The negative control (7/7 fail on `origin/main`), per-caller caller search, and the step-order probe are the right calibration discipline. The fail-closed direction for the required gate is correct.\n\n## Overall Assessment\n\nThe design is sound and well-tested, but the required CI gate's base-commit resolution depends on the base commit actually being fetched, and the \"unreadable commit reads as root\" fallback converts a missing commit into a silently wrong baseline location in exactly the post-R3 world this change prepares for. Fix the fetch/CLI-error handling before this ships.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "iterate",
+  "capture": {
+    "run_id": "iterate-2026-11-28-r1d-silent-gates",
+    "at": "2026-11-28T16:46:19.243111+00:00"
+  },
+  "verdicts": {
+    "openai": "revise",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

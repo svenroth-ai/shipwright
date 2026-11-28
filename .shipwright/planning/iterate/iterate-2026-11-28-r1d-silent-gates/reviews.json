@@ -1,0 +1,310 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-11-28-r1d-silent-gates",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-28T16:54:06.155945+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "In `bloat-check.yml`, `shipwright_rel_at.py bloat_baseline --commit <base>` runs `git cat-file -e <base>:<path>`. With GitHub's default shallow checkout (`fetch-depth: 1`), the base commit object is frequently not present in the clone for PR runs. Per design, \"an unreadable commit reads as root\" — so the tool silently falls back to the root path. Pre-R3 that fallback happens to be correct; post-R3 the root holds a pointer stub, so the base baseline resolves to nothing and the required gate fails red on a healthy PR. The probes checked uv step ordering but not commit-object availability.",
+          "suggestion": "Ensure the workflow fetches the base commit (explicit `git fetch origin <base_sha>` in the base-capture step, or `fetch-depth: 0`), and/or have the CLI distinguish \"commit not present\" from \"path absent at commit\" so a missing commit is a hard error rather than a silent root fallback.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The \"unreadable repo/commit reads as root\" fallback cannot distinguish repo corruption, a typo'd rev, and a legitimately absent path. That's fine for the readers whose own `git show` then errors, but for `rel_at` used to decide which path to read (the workflow, the AC growth check) the fallback changes which file is diffed rather than surfacing an error — a silent wrong answer, exactly the class of failure this PR exists to close.",
+          "suggestion": "Keep the fallback for readers that re-read anyway, but for the CLI used in CI, make \"commit not resolvable\" a distinct non-zero exit (not a root answer), so the gate fails loudly rather than diffing against the wrong place.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The pre-commit hook hardcodes `--require-baseline` and now runs \"whenever the checker script exists.\" If consumers copy this hook (hooks are commonly copied), they inherit fail-closed behavior while the CLI's stated consumer contract is fail-open. Spec Impact says consumers keep the default skip — the hook undermines that claim.",
+          "suggestion": "Note this in the hooks docs explicitly, or gate `--require-baseline` on a marker (e.g., the baseline's expected location existing / a repo-level config) rather than unconditionally.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "rel_at(key, commit, root)` makes `root` required and updates the 6 in-repo callers, but `shared/` implies possible cross-repo vendoring/pinning. A consumer pinning an older shared copy with newer call sites (or vice versa) breaks at runtime, not at review time.",
+          "suggestion": "Confirm shared scripts are versioned/pinned together; if consumers vendor them, flag the signature change as a breaking bump in the changelog/docs.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "AC3 only applies `rel_at(..., parent)` when the baseline path matches the registry's AC baseline (either place). A custom baseline path that itself moved between parent and head is read \"as before\" — the same silent-failure class, just narrower.",
+          "suggestion": "Acceptable to leave out of scope, but worth one line in the mini-plan acknowledging it so R3 doesn't reintroduce the bug for custom baselines.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The negative control (7/7 fail on `origin/main`), per-caller caller search, and the step-order probe are the right calibration discipline. The fail-closed direction for the required gate is correct.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "risk ·",
+          "file": null,
+          "line": null,
+          "finding": "Required-baseline mode covers the head baseline, but the plan does not specify what happens when CI cannot read the base baseline. If base capture turns a failed `git show` into an empty baseline, the workflow can still compare against the wrong data and pass.",
+          "suggestion": "Make a failed base read terminate the workflow before comparison. Exercise the actual capture step with a moved baseline, a missing baseline, and an invalid base ref. The current workflow content test cannot establish those outcomes.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "The pre-commit hook resolves the baseline from the working tree. A staged deletion can therefore pass if an unstaged copy still exists, even though the resulting commit will contain neither baseline path. A partial commit can similarly check baseline contents that differ from what will be committed.",
+          "suggestion": "Resolve both paths and read the baseline from the Git index for the pre-commit check. Add a regression case that stages deletion while leaving a working-tree copy.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security ·",
+          "file": null,
+          "line": null,
+          "finding": "The workflow now executes an additional checkout-supplied Python entry point during base capture. The plan verifies that `uv` is installed by then, but does not establish which revision supplies the helper or what credentials and permissions are available at that step. If the helper comes from the PR head, its code can influence which baseline the required gate compares.",
+          "suggestion": "Verify the workflow trigger, checkout ref, and token permissions. If base capture is intended to be trusted independently of the PR, perform the base lookup using trusted workflow code and the registered paths, while retaining the shared resolver for unprivileged callers.  Per-commit path resolution is the right approach, and a required mode preserves the consumer default. This review is based on the supplied specification and test ledger. Verify that CI fails closed when the base cannot be read and that the hook checks what will actually be committed before merging.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-28T16:54:12.232445+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Review Findings\n\n- **Category: edge-case — Severity: high**\n  **Finding:** In `bloat-check.yml`, `shipwright_rel_at.py bloat_baseline --commit <base>` runs `git cat-file -e <base>:<path>`. With GitHub's default shallow checkout (`fetch-depth: 1`), the base commit object is frequently **not present** in the clone for PR runs. Per design, \"an unreadable commit reads as root\" — so the tool silently falls back to the root path. Pre-R3 that fallback happens to be correct; post-R3 the root holds a pointer stub, so the base baseline resolves to nothing and the required gate fails red on a healthy PR. The probes checked uv step ordering but not commit-object availability.\n  **Suggestion:** Ensure the workflow fetches the base commit (explicit `git fetch origin <base_sha>` in the base-capture step, or `fetch-depth: 0`), and/or have the CLI distinguish \"commit not present\" from \"path absent at commit\" so a missing commit is a hard error rather than a silent root fallback.\n\n- **Category: edge-case — Severity: medium**\n  **Finding:** The \"unreadable repo/commit reads as root\" fallback cannot distinguish repo corruption, a typo'd rev, and a legitimately absent path. That's fine for the readers whose own `git show` then errors, but for `rel_at` used to *decide which path to read* (the workflow, the AC growth check) the fallback changes which file is diffed rather than surfacing an error — a silent wrong answer, exactly the class of failure this PR exists to close.\n  **Suggestion:** Keep the fallback for readers that re-read anyway, but for the CLI used in CI, make \"commit not resolvable\" a distinct non-zero exit (not a root answer), so the gate fails loudly rather than diffing against the wrong place.\n\n- **Category: risk — Severity: medium**\n  **Finding:** The pre-commit hook hardcodes `--require-baseline` and now runs \"whenever the checker script exists.\" If consumers copy this hook (hooks are commonly copied), they inherit fail-closed behavior while the CLI's st […truncated]\n\n[openai] 1. **Category:** risk · **Severity:** high  \n   **Finding:** Required-baseline mode covers the head baseline, but the plan does not specify what happens when CI cannot read the base baseline. If base capture turns a failed `git show` into an empty baseline, the workflow can still compare against the wrong data and pass.  \n   **Suggestion:** Make a failed base read terminate the workflow before comparison. Exercise the actual capture step with a moved baseline, a missing baseline, and an invalid base ref. The current workflow content test cannot establish those outcomes.\n\n2. **Category:** edge-case · **Severity:** medium  \n   **Finding:** The pre-commit hook resolves the baseline from the working tree. A staged deletion can therefore pass if an unstaged copy still exists, even though the resulting commit will contain neither baseline path. A partial commit can similarly check baseline contents that differ from what will be committed.  \n   **Suggestion:** Resolve both paths and read the baseline from the Git index for the pre-commit check. Add a regression case that stages deletion while leaving a working-tree copy.\n\n3. **Category:** security · **Severity:** medium  \n   **Finding:** The workflow now executes an additional checkout-supplied Python entry point during base capture. The plan verifies that `uv` is installed by then, but does not establish which revision supplies the helper or what credentials and permissions are available at that step. If the helper comes from the PR head, its code can influence which baseline the required gate compares.  \n   **Suggestion:** Verify the workflow trigger, checkout ref, and token permissions. If base capture is intended to be trusted independently of the PR, perform the base lookup using trusted workflow code and the registered paths, while retaining the shared resolver for unprivileged callers.\n\nPer-commit path resolution is the right approach, and a required mode preserves the consumer default. This review is b […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      },
+      "contradiction_resolution": "both revise; findings fixed or answered in the spec (External Plan Review)"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/hooks/build_bloat_diff.py",
+          "line": 62,
+          "finding": "the new error status (missing/malformed baseline) rendered as a green check while the job failed",
+          "suggestion": "FIXED: renders 'could not run (<reason>)', with a test",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/hooks/anti_ratchet_check.py",
+          "line": 102,
+          "finding": "'nor in its other place' printed for an explicit --baseline",
+          "suggestion": "FIXED: suffix only without --baseline",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "portability",
+          "file": "shared/scripts/tools/shipwright_rel_at.py",
+          "line": 34,
+          "finding": "print() writes CRLF on Windows; bash $(...) keeps the CR",
+          "suggestion": "FIXED: writes LF bytes",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/shipwright_layout.py",
+          "line": 147,
+          "finding": "ls-tree resolves paths from -C root, git show from the top level",
+          "suggestion": "FIXED: --full-tree",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "spec",
+          "file": ".shipwright/planning/iterate/2026-11-28-r1d-silent-gates.md",
+          "line": 12,
+          "finding": "spec names cat-file -e, code uses ls-tree",
+          "suggestion": "FIXED: aligned",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/scripts/tools/verifiers/test_results_backfill_check.py",
+          "line": 105,
+          "finding": "known_rels acceptance untested",
+          "suggestion": "FIXED: test for both places and a planted basename",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-28T16:54:06.523804+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "hidden coupling & blast radius",
+          "file": "shared/tests/test_shipwright_monorepo_profile.py",
+          "line": null,
+          "finding": "Claim under doubt: nothing else depends on the workflow spelling the baseline by its root name — line 94 asserted the root name in bloat-check.yml",
+          "suggestion": "FIXED: asserts the per-commit lookup",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "reversibility",
+          "file": "scripts/hooks/pre-commit",
+          "line": null,
+          "finding": "Claim under doubt: the hook never blocks a legitimate commit — an old branch with the checker but no baseline now blocks; a deleted checker skipped",
+          "suggestion": "deleted checker FIXED (blocks); old-branch case accepted",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "shared/scripts/lib/shipwright_layout.py",
+          "line": null,
+          "finding": "Claim under doubt: ls-tree asks about the same path git show reads — -C root resolves relative to cwd",
+          "suggestion": "FIXED: --full-tree",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "hidden coupling",
+          "file": "shared/scripts/hooks/anti_ratchet_check.py",
+          "line": null,
+          "finding": "Claim under doubt: changing anti_ratchet_check.py is local — webui vendors it with a canonical hash",
+          "suggestion": "recorded for the webui card (BRIEF 12.14 (b))",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-28T16:54:06.697954+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/verifiers/test_results_backfill_check.py (`_is_modified_snapshot_status`)",
+          "line": null,
+          "finding": "The working-tree dirty check now passes both places to `git status --` and requires exactly one status line. After R3, a staged move of the snapshot (old deleted + new added, or a detected rename `R  old -> new`) produces two lines (or an `R ` xy-pair that isn't in `{\" M\", \"M \", \"MM\"}`), so the check returns False and rejects a legitimately dirty snapshot. The spec's \"accepts either place\" is only implemented for the one-place-modified case.",
+          "suggestion": "Either match either path in a multi-line result, or add `--no-renames` and accept a line whose path is either known rel with a modification-classified xy.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_shipwright_paths_silent_gates.py (content-pinning test for the workflow/hook)",
+          "line": null,
+          "finding": "The `\"shipwright_rel_at.py bloat_baseline\" in wf` and `\"--require-baseline\" in wf/hook` assertions would still pass if the flags were wired to the wrong step or the wrong script arguments; they pin text, not wiring. This is acknowledged in the test docstring and is the only practical option for non-Python surfaces, so no change is demanded — but the base-capture step's fallback-to-empty path (base baseline missing in both places at the base) has no test at any level.",
+          "suggestion": "Optional: extend the content assertion to pin the full `git show \"${{ steps.base.outputs.base_sha }}:${base_rel}\"` line so a future edit can't silently reintroduce a root-name read.  Positive verification (things I checked and found sound):  - `locate_at` correctly distinguishes \"not in that tree\" (exit 0, empty stdout) from \"could not ask\" (non-zero/timeout/missing git), and the `proc`/`failed` tuple pattern never dereferences an unbound `proc`. Empty/dash-led commit handling prevents the index-read and option-injection cases. - The `--require-baseline` placement in `anti_ratchet_check.py` sits after the malformed-baseline branch, so a corrupt baseline still fails for the specific malformed reason rather than the missing one — matching the documented contract. - The `_ac_baseline_growth.py` override only fires when the given baseline rel is one of the known places, preserving the \"any other path read as before\" clause of the spec, and a git read failure becomes a warning rather than a silent root guess. - The workflow's head lookup in its own assignment under `set -e` (AC6), and the CLI's exit-3 propagation, are both present and exercised by real subprocess tests that would fail on a root-always implementation (negative control recorded: 7/7 fail on origin/main). - The `rel_at` signature change: every caller visible in the diff was updated, and the one external test caller (`test_shipwright_paths.py`) was too; the confidence ledger records a full caller search.  Overall: the implementation matches the spec's six acceptance criteria, the tests are behavioral (real git histories, real subprocess runs) rather than smoke tests, and the only findings are a low-severity edge case in the backfill status check that becomes reachable only after R3. Ship-as-is is reasonable; the backfill edge can ride with R3.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-11-28T16:54:12.421099+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] **Findings**\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/tools/verifiers/test_results_backfill_check.py (`_is_modified_snapshot_status`)\n  Finding: The working-tree dirty check now passes both places to `git status --` and requires exactly one status line. After R3, a *staged* move of the snapshot (old deleted + new added, or a detected rename `R  old -> new`) produces two lines (or an `R ` xy-pair that isn't in `{\" M\", \"M \", \"MM\"}`), so the check returns False and rejects a legitimately dirty snapshot. The spec's \"accepts either place\" is only implemented for the one-place-modified case.\n  Suggestion: Either match either path in a multi-line result, or add `--no-renames` and accept a line whose path is either known rel with a modification-classified xy.\n\n- Category: test\n  Severity: low\n  File: shared/tests/test_shipwright_paths_silent_gates.py (content-pinning test for the workflow/hook)\n  Finding: The `\"shipwright_rel_at.py bloat_baseline\" in wf` and `\"--require-baseline\" in wf/hook` assertions would still pass if the flags were wired to the wrong step or the wrong script arguments; they pin text, not wiring. This is acknowledged in the test docstring and is the only practical option for non-Python surfaces, so no change is demanded — but the base-capture step's fallback-to-empty path (base baseline missing in both places at the base) has no test at any level.\n  Suggestion: Optional: extend the content assertion to pin the full `git show \"${{ steps.base.outputs.base_sha }}:${base_rel}\"` line so a future edit can't silently reintroduce a root-name read.\n\n**Positive verification** (things I checked and found sound):\n\n- `locate_at` correctly distinguishes \"not in that tree\" (exit 0, empty stdout) from \"could not ask\" (non-zero/timeout/missing git), and the `proc`/`failed` tuple pattern never dereferences an unbound `proc`. Empty/dash-led commit handling prevents the index-read and option-injection cases.\n- The `--require-baseline` plac […truncated]\n\n[openai] - **Category** spec | **Severity** medium | `scripts/hooks/pre-commit:34`  \n  **Finding** The hook still skips the bloat gate if `anti_ratchet_check.py` is missing. A developer can stage deletion of the checker and baseline together without the bloat step blocking the commit. With a root baseline present, the old hook would at least attempt to run the missing checker and fail.  \n  **Suggestion** Remove the checker-existence guard so a missing checker fails the hook, or explicitly report the missing checker and set a failing status.\n\n- **Category** spec | **Severity** medium | `shared/scripts/lib/shipwright_layout.py:141`  \n  **Finding** Non-moving keys return before strict commit validation. For example, `shipwright_rel_at.py events --commit no-such-commit` prints the root path and exits 0, despite AC2 requiring exit 3 when Git cannot resolve the commit.  \n  **Suggestion** Validate an explicit commit in strict mode before returning the fixed path. Add a CLI test using an invalid commit and a non-moving key.\n\n- **Category** test | **Severity** low | `shared/tests/test_shipwright_paths_silent_gates.py:148`  \n  **Finding** The AC6 test would still pass if `--require-baseline` were removed from the hook command, because the hook comment contains the same string. It also passes if either workflow lookup is removed while the other remains.  \n  **Suggestion** Assert against the executable commands for the hook and both workflow steps, or exercise them with a stub that records the arguments.\n\n**Overall assessment — ship-with-fixes.** The historical readers are wired to the resolver, but the hook can still bypass enforcement and the CLI can report success for an invalid commit. This review was based on the supplied diff. Local execution was blocked by the workspace policy.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "approve"
+      },
+      "contradiction_resolution": "GPT revise, GLM approve; GPT findings fixed (spec External Code Review)"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-28T16:54:06.346439+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-28T16:54:06.854068+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "architecture_internal": {
+      "review_type": "architecture_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-11-28T16:54:07.017970+00:00",
+      "disposition": null,
+      "recorded_by": "architecture-internal-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

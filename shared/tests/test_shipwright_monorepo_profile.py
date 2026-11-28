@@ -91,7 +91,7 @@ def test_each_repo_only_mechanism_is_invoked_by_something():
     hook = (ROOT / "scripts" / "hooks" / "pre-commit").read_text(encoding="utf-8")
     assert "shared/scripts/hooks/anti_ratchet_check.py" in hook
     wf = (ROOT / ".github" / "workflows" / "bloat-check.yml").read_text(encoding="utf-8")
-    assert "anti_ratchet_check.py" in wf and "shipwright_bloat_baseline.json" in wf and "exit 1" in wf
+    assert "anti_ratchet_check.py" in wf and "shipwright_rel_at.py bloat_baseline" in wf and "exit 1" in wf   # R1d: resolved per commit
     ci = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
     assert "shared/tests" in ci and "pytest" in ci
     hooks = (ROOT / "plugins" / "shipwright-iterate" / "hooks" / "hooks.json").read_text(encoding="utf-8")

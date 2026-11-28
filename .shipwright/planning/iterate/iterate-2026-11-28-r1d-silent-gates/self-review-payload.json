@@ -1,0 +1,29 @@
+{
+"items": [
+{
+"name": "Spec Compliance",
+"verdict": "pass",
+"note": "AC1-AC6 met: rel_at per commit (new path exists, even beside a root stub), strict mode, CLI exit 2/3, AC growth across a move, events-layout CI and rollout snapshot read the moved file, --require-baseline in hook and CI; negative control 7/7 fail on origin/main."
+},
+{
+"name": "Error Handling",
+"verdict": "pass",
+"note": "git cannot answer is distinct from not in that commit (GitReadError under strict, CLI exit 3, AC growth warns); empty/dash commits refused; the workflow stops on a failed lookup and warns before an empty base fallback; the PR comment renders the error status."
+},
+{
+"name": "Security Basics",
+"verdict": "pass",
+"note": "no new permissions or secrets in the pull_request workflow; argv lists, no shell; a deleted checker or missing baseline now blocks instead of passing."
+},
+{
+"name": "Code Quality",
+"verdict": "pass",
+"note": "one lookup in shipwright_layout, thin CLI; files under 300 lines; ruff clean."
+},
+{
+"name": "Test Coverage",
+"verdict": "pass",
+"note": "test_shipwright_paths_silent_gates.py drives real readers on real git histories and the CLI/anti-ratchet as subprocesses; profile test updated; full F0 suite."
+}
+]
+}

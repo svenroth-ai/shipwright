@@ -81,9 +81,16 @@ jobs:
         run: |
           set -euo pipefail
           if [ "${{ steps.base.outputs.base_available }}" = "true" ]; then
-            git show "${{ steps.base.outputs.base_sha }}:shipwright_bloat_baseline.json" \
-                > /tmp/baseline_base.json 2>/dev/null \
-                || echo '{"version":1,"entries":[]}' > /tmp/baseline_base.json
+            # Where the baseline lives AT THE BASE (R1d): its new place if that exists there, else
+            # the root - so a moved baseline is never read as "absent" and diffed against nothing.
+            # Its own assignment, so `set -e` stops the step when git cannot answer (exit 3).
+            base_rel="$(uv run shared/scripts/tools/shipwright_rel_at.py bloat_baseline \
+                --commit "${{ steps.base.outputs.base_sha }}")"
+            if ! git show "${{ steps.base.outputs.base_sha }}:${base_rel}" \
+                > /tmp/baseline_base.json 2>/dev/null; then
+              echo "::warning::the base commit has no bloat baseline in either place — the allowlist diff is computed against an EMPTY baseline"
+              echo '{"version":1,"entries":[]}' > /tmp/baseline_base.json
+            fi
           else
             echo "::notice::no resolvable base for this event — the allowlist diff is computed against an EMPTY baseline, so every entry reads as new"
             echo '{"version":1,"entries":[]}' > /tmp/baseline_base.json
@@ -94,7 +101,7 @@ jobs:
         run: |
           set +e
           uv run shared/scripts/hooks/anti_ratchet_check.py \
-              --project-root . \
+              --project-root . --require-baseline \
               --worktree --json > /tmp/ratchet.json 2> /tmp/ratchet.stderr
           echo "exit_code=$?" >> "$GITHUB_OUTPUT"
           cat /tmp/ratchet.json
@@ -103,10 +110,14 @@ jobs:
 
       - name: Build allowlist diff
         id: diff
+        shell: bash
         run: |
+          set -euo pipefail
+          # Its own assignment (not inline in an argument), so a failing lookup stops the step.
+          head_rel="$(uv run shared/scripts/tools/shipwright_rel_at.py bloat_baseline)"
           uv run shared/scripts/hooks/build_bloat_diff.py \
               --base /tmp/baseline_base.json \
-              --head shipwright_bloat_baseline.json \
+              --head "$head_rel" \
               --ratchet /tmp/ratchet.json \
               > /tmp/diff.md
 

@@ -102,7 +102,7 @@ def _is_modified_snapshot_status(status: str) -> bool:
     if len(lines) != 1 or len(lines[0]) < 4:
         return False
     xy, path = lines[0][:2], lines[0][3:]
-    return xy in {" M", "M ", "MM"} and path == _sp.rel_at("test_results")
+    return xy in {" M", "M ", "MM"} and path in _sp.known_rels("test_results")
 
 
 def _validate_source(
@@ -117,7 +117,7 @@ def _validate_source(
     commit_match = _COMMIT_SOURCE.fullmatch(source)
     if commit_match:
         commit = _reachable_commit(root, commit_match.group(1), run_id)
-        candidate = committed_bytes_reader(root, commit)(_sp.rel_at("test_results", commit))
+        candidate = committed_bytes_reader(root, commit)(_sp.rel_at("test_results", commit, root))
         if candidate is None:
             raise BackfillError(f"{run_id} source blob is absent")
         rc, commit_text, _ = _run_git(root, "cat-file", "-p", commit)
@@ -131,7 +131,7 @@ def _validate_source(
             if rc != 0:
                 raise BackfillError(f"{run_id} source parent commit is unavailable")
             inherited = committed_bytes_reader(root, parent.strip())(
-                _sp.rel_at("test_results", parent.strip())
+                _sp.rel_at("test_results", parent.strip(), root)
             )
             if inherited == candidate:
                 raise BackfillError(f"{run_id} source blob is inherited unchanged")
@@ -149,7 +149,7 @@ def _validate_source(
     if not head.startswith(expected_head):
         raise BackfillError(f"{run_id} source worktree HEAD changed")
     rc, status, _ = _run_git(
-        worktree, "status", "--porcelain=v1", "--", _sp.rel_at("test_results")
+        worktree, "status", "--porcelain=v1", "--", *_sp.known_rels("test_results")
     )
     if rc != 0 or not _is_modified_snapshot_status(status):
         raise BackfillError(f"{run_id} source worktree snapshot is not run-written dirty")

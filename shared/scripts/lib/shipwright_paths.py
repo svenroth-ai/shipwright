@@ -132,12 +132,10 @@ def legacy_rel(key: str) -> str:
     return spec(key).basename
 
 
-def rel_at(key: str, commit: str | None = None) -> str:
-    """Repo-relative POSIX path of *key* at *commit* (``None``: the working tree) for ``git show`` & co.
-    Root today (R1d resolves it per commit); 'migrated?' at a commit is decided by the NEW path existing,
-    never by the root blob missing - after R3 it is the stub (BRIEF 14.4)."""
-    del commit  # R0b: one layout for every commit
-    return spec(key).basename
+def rel_at(key: str, commit: str | None, root: Path | str, *, strict: bool = False) -> str:
+    """Repo-relative POSIX path of *key* at *commit* of the repo at *root* (``None``: its working tree) for
+    ``git show`` & co. (R1d): the new place if it exists THERE, else the root - never "root blob missing"."""
+    return _LAYOUT.locate_at(root, commit, new_rel(key), legacy_rel(key), strict=strict)  # strict: GitReadError
 
 
 def path(key: str, root: Path | str) -> Path:

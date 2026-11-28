@@ -1,0 +1,54 @@
+{
+"section": "iterate-2026-11-28-r1d-silent-gates",
+"verdict": "APPROVE",
+"review": [
+{
+"severity": "medium",
+"category": "correctness",
+"file": "shared/scripts/hooks/build_bloat_diff.py",
+"line": 62,
+"finding": "the new error status (missing/malformed baseline) rendered as a green check while the job failed",
+"suggestion": "FIXED: renders 'could not run (<reason>)', with a test"
+},
+{
+"severity": "low",
+"category": "correctness",
+"file": "shared/scripts/hooks/anti_ratchet_check.py",
+"line": 102,
+"finding": "'nor in its other place' printed for an explicit --baseline",
+"suggestion": "FIXED: suffix only without --baseline"
+},
+{
+"severity": "low",
+"category": "portability",
+"file": "shared/scripts/tools/shipwright_rel_at.py",
+"line": 34,
+"finding": "print() writes CRLF on Windows; bash $(...) keeps the CR",
+"suggestion": "FIXED: writes LF bytes"
+},
+{
+"severity": "low",
+"category": "correctness",
+"file": "shared/scripts/lib/shipwright_layout.py",
+"line": 147,
+"finding": "ls-tree resolves paths from -C root, git show from the top level",
+"suggestion": "FIXED: --full-tree"
+},
+{
+"severity": "low",
+"category": "spec",
+"file": ".shipwright/planning/iterate/2026-11-28-r1d-silent-gates.md",
+"line": 12,
+"finding": "spec names cat-file -e, code uses ls-tree",
+"suggestion": "FIXED: aligned"
+},
+{
+"severity": "low",
+"category": "test",
+"file": "shared/scripts/tools/verifiers/test_results_backfill_check.py",
+"line": 105,
+"finding": "known_rels acceptance untested",
+"suggestion": "FIXED: test for both places and a planted basename"
+}
+]
+}

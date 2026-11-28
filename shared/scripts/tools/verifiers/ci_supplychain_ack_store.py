@@ -132,7 +132,7 @@ def _read_legacy(
     on disk yields an ack that will not ship — and reporting it merely as "legacy"
     dropped the non-shipping warning for exactly that case (external code review).
     """
-    raw, err = read_committed_text(project_root, commit, _sp.rel_at("test_results", commit))
+    raw, err = read_committed_text(project_root, commit, _sp.rel_at("test_results", commit, project_root))
     if err:
         return None, err, False
     from_commit = raw is not None

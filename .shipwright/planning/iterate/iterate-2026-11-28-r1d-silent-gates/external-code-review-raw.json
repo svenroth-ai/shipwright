@@ -1,0 +1,44 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews_expected": 2,
+  "reviewed": true,
+  "reviews": {
+    "openai": {
+      "feedback": "- **Category** spec | **Severity** medium | `scripts/hooks/pre-commit:34`  \n  **Finding** The hook still skips the bloat gate if `anti_ratchet_check.py` is missing. A developer can stage deletion of the checker and baseline together without the bloat step blocking the commit. With a root baseline present, the old hook would at least attempt to run the missing checker and fail.  \n  **Suggestion** Remove the checker-existence guard so a missing checker fails the hook, or explicitly report the missing checker and set a failing status.\n\n- **Category** spec | **Severity** medium | `shared/scripts/lib/shipwright_layout.py:141`  \n  **Finding** Non-moving keys return before strict commit validation. For example, `shipwright_rel_at.py events --commit no-such-commit` prints the root path and exits 0, despite AC2 requiring exit 3 when Git cannot resolve the commit.  \n  **Suggestion** Validate an explicit commit in strict mode before returning the fixed path. Add a CLI test using an invalid commit and a non-moving key.\n\n- **Category** test | **Severity** low | `shared/tests/test_shipwright_paths_silent_gates.py:148`  \n  **Finding** The AC6 test would still pass if `--require-baseline` were removed from the hook command, because the hook comment contains the same string. It also passes if either workflow lookup is removed while the other remains.  \n  **Suggestion** Assert against the executable commands for the hook and both workflow steps, or exercise them with a stub that records the arguments.\n\n**Overall assessment \u2014 ship-with-fixes.** The historical readers are wired to the resolver, but the hook can still bypass enforcement and the CLI can report success for an invalid commit. This review was based on the supplied diff. Local execution was blocked by the workspace policy.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "**Findings**\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/tools/verifiers/test_results_backfill_check.py (`_is_modified_snapshot_status`)\n  Finding: The working-tree dirty check now passes both places to `git status --` and requires exactly one status line. After R3, a *staged* move of the snapshot (old deleted + new added, or a detected rename `R  old -> new`) produces two lines (or an `R ` xy-pair that isn't in `{\" M\", \"M \", \"MM\"}`), so the check returns False and rejects a legitimately dirty snapshot. The spec's \"accepts either place\" is only implemented for the one-place-modified case.\n  Suggestion: Either match either path in a multi-line result, or add `--no-renames` and accept a line whose path is either known rel with a modification-classified xy.\n\n- Category: test\n  Severity: low\n  File: shared/tests/test_shipwright_paths_silent_gates.py (content-pinning test for the workflow/hook)\n  Finding: The `\"shipwright_rel_at.py bloat_baseline\" in wf` and `\"--require-baseline\" in wf/hook` assertions would still pass if the flags were wired to the wrong step or the wrong script arguments; they pin text, not wiring. This is acknowledged in the test docstring and is the only practical option for non-Python surfaces, so no change is demanded \u2014 but the base-capture step's fallback-to-empty path (base baseline missing in both places at the base) has no test at any level.\n  Suggestion: Optional: extend the content assertion to pin the full `git show \"${{ steps.base.outputs.base_sha }}:${base_rel}\"` line so a future edit can't silently reintroduce a root-name read.\n\n**Positive verification** (things I checked and found sound):\n\n- `locate_at` correctly distinguishes \"not in that tree\" (exit 0, empty stdout) from \"could not ask\" (non-zero/timeout/missing git), and the `proc`/`failed` tuple pattern never dereferences an unbound `proc`. Empty/dash-led commit handling prevents the index-read and option-injection cases.\n- The `--require-baseline` placement in `anti_ratchet_check.py` sits after the malformed-baseline branch, so a corrupt baseline still fails for the specific malformed reason rather than the missing one \u2014 matching the documented contract.\n- The `_ac_baseline_growth.py` override only fires when the given baseline rel is one of the known places, preserving the \"any other path read as before\" clause of the spec, and a git read failure becomes a warning rather than a silent root guess.\n- The workflow's head lookup in its own assignment under `set -e` (AC6), and the CLI's exit-3 propagation, are both present and exercised by real subprocess tests that would fail on a root-always implementation (negative control recorded: 7/7 fail on origin/main).\n- The `rel_at` signature change: every caller visible in the diff was updated, and the one external test caller (`test_shipwright_paths.py`) was too; the confidence ledger records a full caller search.\n\nOverall: the implementation matches the spec's six acceptance criteria, the tests are behavioral (real git histories, real subprocess runs) rather than smoke tests, and the only findings are a low-severity edge case in the backfill status check that becomes reachable only after R3. Ship-as-is is reasonable; the backfill edge can ride with R3.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "missing_legs": [],
+  "driver": "claude",
+  "driver_requested": "claude",
+  "codextender_active": false,
+  "mode": "code",
+  "capture": {
+    "run_id": "iterate-2026-11-28-r1d-silent-gates",
+    "at": "2026-11-28T16:50:19.703670+00:00"
+  },
+  "verdicts": {
+    "openai": "revise",
+    "glm": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

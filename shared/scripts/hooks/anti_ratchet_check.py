@@ -6,8 +6,10 @@ Two measurement modes: ``--staged`` (default, pre-commit use) and
 ``--worktree`` (CI use). Block rule: for every entry in
 ``shipwright_bloat_baseline.json``, if measured > entry.current → exit 1.
 New files outside the baseline are advisory. An ABSENT baseline →
-fail-open exit 0; a PRESENT-but-malformed baseline → fail-closed exit 1
-(a corrupt baseline must not silently disable the gate).
+fail-open exit 0, unless ``--require-baseline`` (this repo's own hook and CI,
+R1d: a baseline missing from BOTH of its places must not pass green); a
+PRESENT-but-malformed baseline → fail-closed exit 1 (a corrupt baseline must
+not silently disable the gate).
 
 # source-hash-canonical: see shared/tests/test_anti_ratchet_check_staged.py
 # — webui vendored copy pins the canonical hash via this marker.
@@ -53,6 +55,8 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Measure files on disk (CI use).",
     )
     p.add_argument("--json", action="store_true", help="Emit JSON on stdout.")
+    p.add_argument("--require-baseline", action="store_true",
+                   help="An absent baseline fails (exit 1) instead of skipping: for a repo that has one.")
     p.set_defaults(mode="staged")
     return p
 
@@ -94,10 +98,17 @@ def main(argv: list[str] | None = None) -> int:
                     {"status": "error", "reason": "malformed-baseline", "ratchets": []}
                 ))
             return 1
+        if args.require_baseline:
+            other = "" if args.baseline is not None else " (nor in its other place)"
+            print(f"anti_ratchet_check: no baseline at {baseline_path}{other} — "
+                  "failing closed (--require-baseline: the gate would have checked nothing)", file=sys.stderr)
+            if args.json:
+                print(json.dumps({"status": "error", "reason": "missing-baseline", "ratchets": []}))
+            return 1
         if args.baseline is None:
             print(
                 "anti_ratchet_check: baseline not found at "
-                f"{_bb.baseline_path(project_root)} — skipping check (fail-open)",
+                f"{baseline_path} — skipping check (fail-open)",
                 file=sys.stderr,
             )
         if args.json:

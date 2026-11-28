@@ -1,0 +1,139 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-11-28-r1d-silent-gates",
+    "date": "2026-11-28",
+    "unit": {
+      "status": "passed",
+      "passed": 27607,
+      "total": 27607
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 691,
+      "total": 691
+    },
+    "pgtap": {
+      "status": "not_run",
+      "passed": 0,
+      "skipped": 0,
+      "total": 0
+    },
+    "e2e": {
+      "status": "not_run",
+      "passed": 0,
+      "skipped": 0,
+      "total": 0
+    },
+    "design_fidelity": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run pytest -q -p no:cacheprovider shared/tests/test_shipwright_paths_silent_gates.py shared/tests/test_shipwright_paths.py shared/tests/test_shipwright_layout.py shared/tests/test_anti_ratchet_check_staged.py shared/tests/test_shipwright_monorepo_profile.py",
+      "exit_code": 0,
+      "tests_run": 273,
+      "evidence_path": ".shipwright/runs/iterate-2026-11-28-r1d-silent-gates/surface_verification.json",
+      "timestamp": "2026-11-28T16:55:36.763Z"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "AC1 rel_at per commit, working tree, unknown/empty/dash commit, strict mode, non-moving key",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_shipwright_paths_silent_gates.py::test_rel_at_answers_the_place_the_file_has_at_each_commit PASSED"
+        },
+        {
+          "behavior": "AC1 migrated = the new path exists, even beside a root stub (BRIEF 14.4)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_shipwright_paths_silent_gates.py::test_migrated_means_the_new_path_exists_never_that_the_root_blob_is_missing PASSED"
+        },
+        {
+          "behavior": "AC2 the CLI gives YAML and bash the same answer; exit 2 unknown key, exit 3 unreadable commit",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_shipwright_paths_silent_gates.py::test_the_cli_gives_yaml_and_bash_the_same_answer PASSED"
+        },
+        {
+          "behavior": "AC3 AC baseline growth across a move is growth, not a bootstrap",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_shipwright_paths_silent_gates.py::test_ac_baseline_growth_across_a_move_is_growth_not_a_bootstrap PASSED"
+        },
+        {
+          "behavior": "AC4 the events-layout CI reads the sync config where it lives at the commit",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_shipwright_paths_silent_gates.py::test_the_events_layout_ci_reads_the_sync_config_where_it_lives_at_the_commit PASSED"
+        },
+        {
+          "behavior": "AC4 the rollout snapshot reads the project manifest where it lives at the commit",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_shipwright_paths_silent_gates.py::test_the_rollout_snapshot_reads_the_project_manifest_where_it_lives_at_the_commit PASSED"
+        },
+        {
+          "behavior": "AC4 the backfill check accepts the run-written snapshot in either place",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_shipwright_paths_silent_gates.py::test_the_backfill_check_accepts_the_run_written_snapshot_in_either_place PASSED"
+        },
+        {
+          "behavior": "AC5 the anti-ratchet fails closed without a baseline when required; finds the new place; consumer default unchanged",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_shipwright_paths_silent_gates.py::test_the_anti_ratchet_fails_closed_without_a_baseline_when_one_is_required PASSED"
+        },
+        {
+          "behavior": "AC5 the PR comment never shows green when the gate could not run",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_shipwright_paths_silent_gates.py::test_the_pr_comment_never_shows_green_when_the_gate_could_not_run PASSED"
+        },
+        {
+          "behavior": "AC6 this repo's hook and workflow require the baseline and resolve it per commit",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_shipwright_paths_silent_gates.py::test_this_repos_bloat_gates_require_the_baseline_and_resolve_it_per_commit PASSED"
+        },
+        {
+          "behavior": "AC6 the repo-only mechanisms stay invoked (profile)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_shipwright_monorepo_profile.py::test_each_repo_only_mechanism_is_invoked_by_something PASSED"
+        },
+        {
+          "behavior": "integration: the anti-ratchet CLI and the rel_at CLI run in their own interpreter against real directories and real git histories",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "shared/tests/test_shipwright_paths_silent_gates.py::test_the_anti_ratchet_fails_closed_without_a_baseline_when_one_is_required PASSED"
+        },
+        {
+          "behavior": "unmigrated repo behaves as before",
+          "disposition": "tested",
+          "evidence": "full F0 suite GREEN (28298 tests collected)"
+        }
+      ],
+      "counts": {
+        "testable": 13,
+        "tested": 13,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 6,
+        "covered_acs": 6
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-24-r5b-merge-lane",
+    "commit": "032d1ebbf0ef9c99eb98f240c8f1110e981a32a5",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
